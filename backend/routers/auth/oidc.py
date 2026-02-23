@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Union
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from models.auth import (
     LoginResponse,
     OIDCCallbackRequest,
@@ -16,7 +16,7 @@ from models.auth import (
     ApprovalPendingResponse,
     OIDCTestLoginRequest,
 )
-from core.auth import create_access_token
+from core.auth import create_access_token, require_role
 from services.auth.oidc import oidc_service
 from settings_manager import settings_manager
 from config import settings
@@ -382,7 +382,7 @@ async def oidc_logout(provider_id: str, id_token_hint: str = Query(None)):
         )
 
 
-@router.get("/debug")
+@router.get("/debug", dependencies=[Depends(require_role("admin"))])
 async def get_oidc_debug_info():
     """
     Get detailed debug information about OIDC configuration.

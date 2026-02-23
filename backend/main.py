@@ -8,11 +8,16 @@ for better code organization and maintainability.
 from __future__ import annotations
 import logging
 import os
+import asyncio
+from contextlib import asynccontextmanager
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
-import asyncio
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from core.limiter import limiter
 
 # Import routers
 # Auth routers now use feature-based structure (Phase 3.5 migration)
@@ -87,6 +92,15 @@ from routers.agents import deploy_router as agents_deploy_router
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan – replaces deprecated @app.on_event handlers."""
+    await _startup_services()
+    yield
+    _shutdown_event()
+
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Cockpit API",
@@ -95,7 +109,24 @@ app = FastAPI(
     docs_url=None,  # Disable default docs to use custom ones
     redoc_url=None,  # Disable default redoc to use custom one
     redirect_slashes=True,
+    lifespan=lifespan,
 )
+
+# Rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next) -> Response:
+    """Add security headers to all responses."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
 
 # Mount swagger-ui static files for air-gapped environments
 # This serves Swagger UI assets locally instead of from CDN
@@ -195,12 +226,6 @@ async def health_check():
     }
 
 
-@app.get("/api/test")
-async def test_endpoint():
-    """Simple test endpoint."""
-    return {"message": "Test endpoint working", "timestamp": datetime.now().isoformat()}
-
-
 @app.post("/api/nautobot/graphql")
 async def nautobot_graphql_endpoint(query_data: dict):
     """
@@ -237,9 +262,11 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=settings.port)
 
 
-# Startup prefetch for Git cache (commits, optionally refresh loop)
-@app.on_event("startup")
-async def startup_services():
+# ---------------------------------------------------------------------------
+# Startup / shutdown logic (called by the lifespan context manager above)
+# ---------------------------------------------------------------------------
+
+async def _startup_services():
     """Initialize all services on startup."""
     logger.info("=== Application startup - initializing services ===")
 
@@ -479,8 +506,7 @@ async def startup_services():
         logger.warning(f"Startup cache: Failed to initialize cache prefetch: {e}")
 
 
-@app.on_event("shutdown")
-async def shutdown_event():
+def _shutdown_event():
     """Cleanup on application shutdown."""
     # Note: Celery workers are managed separately and do not need shutdown here
     logger.info("Application shutdown completed")

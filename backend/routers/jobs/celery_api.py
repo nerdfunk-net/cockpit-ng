@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from fastapi.responses import FileResponse
 from celery.result import AsyncResult
 from kombu import Queue
-from core.auth import require_permission
+from core.auth import require_permission, verify_token
 from core.celery_error_handler import handle_celery_errors
 from celery_app import celery_app
 from pydantic import BaseModel
@@ -126,13 +126,16 @@ class BackupCheckResponse(BaseModel):
     devices: List[DeviceBackupStatus]
 
 
-# Test endpoint (no auth required for testing)
+# Test endpoints require authentication
 @router.post("/test", response_model=TaskResponse)
 @handle_celery_errors("submit test task")
-async def submit_test_task(request: TestTaskRequest):
+async def submit_test_task(
+    request: TestTaskRequest,
+    _: dict = Depends(verify_token),
+):
     """
     Submit a test task to verify Celery is working.
-    No authentication required for testing.
+    Requires authentication.
     """
     from tasks import test_tasks
 
@@ -146,10 +149,13 @@ async def submit_test_task(request: TestTaskRequest):
 
 @router.post("/test/progress", response_model=TaskResponse)
 @handle_celery_errors("submit progress test task")
-async def submit_progress_test_task(request: ProgressTaskRequest):
+async def submit_progress_test_task(
+    request: ProgressTaskRequest,
+    _: dict = Depends(verify_token),
+):
     """
     Submit a test task that reports progress.
-    No authentication required for testing.
+    Requires authentication.
     """
     from tasks import test_tasks
 

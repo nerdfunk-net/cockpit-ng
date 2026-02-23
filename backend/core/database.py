@@ -6,6 +6,7 @@ Replaces all SQLite-based database operations.
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from config import settings
+from contextlib import contextmanager
 from typing import Generator
 import logging
 
@@ -62,6 +63,34 @@ def get_db_session() -> Session:
             db.close()
     """
     return SessionLocal()
+
+
+@contextmanager
+def db_transaction() -> Generator[Session, None, None]:
+    """
+    Context manager for multi-step database transactions.
+
+    Opens a single session shared across all operations inside the block,
+    commits on exit, and rolls back on exception.
+
+    Use this in service-layer code when you need multiple repository calls
+    to participate in the same transaction::
+
+        from core.database import db_transaction
+
+        with db_transaction() as db:
+            user = user_repo.get_by_id(user_id, db=db)
+            profile = profile_repo.get_by_username(username, db=db)
+    """
+    db = SessionLocal()
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 
 def init_db():

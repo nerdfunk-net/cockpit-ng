@@ -12,6 +12,8 @@ import os
 from datetime import datetime, date
 from typing import Any, Dict, List, Optional
 from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes
 from config import settings as config_settings
 from repositories import CredentialsRepository
 from core.models import Credential
@@ -19,10 +21,26 @@ from core.models import Credential
 # Initialize repository
 _creds_repo = CredentialsRepository()
 
+# Fixed salt for deterministic key derivation.
+# Changing this salt makes all stored credentials unreadable —
+# run migration 015 whenever the key derivation changes.
+_KDF_SALT = b"cockpit-credential-encryption-v2"
+_KDF_ITERATIONS = 100_000
+
 
 def _build_key(secret: str) -> bytes:
-    digest = hashlib.sha256(secret.encode("utf-8")).digest()
-    return base64.urlsafe_b64encode(digest)
+    """Derive a Fernet-compatible key from *secret* using PBKDF2-HMAC-SHA256.
+
+    Using PBKDF2 instead of a bare SHA-256 hash makes offline brute-force of
+    the SECRET_KEY significantly more expensive.
+    """
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=_KDF_SALT,
+        iterations=_KDF_ITERATIONS,
+    )
+    return base64.urlsafe_b64encode(kdf.derive(secret.encode("utf-8")))
 
 
 class EncryptionService:

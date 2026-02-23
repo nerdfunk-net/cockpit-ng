@@ -8,6 +8,7 @@ from datetime import timedelta
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from models.auth import UserLogin, LoginResponse
 from core.auth import create_access_token, get_api_key_user
+from core.limiter import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,8 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(user_data: UserLogin):
+@limiter.limit("10/minute")
+async def login(request: Request, user_data: UserLogin):
     """
     Authenticate user against new user database.
     """

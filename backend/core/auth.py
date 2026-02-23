@@ -71,12 +71,17 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
 
 
 def verify_admin_token(user_info: dict = Depends(verify_token)) -> dict:
-    """Verify token and ensure user has admin permissions."""
+    """Verify token and ensure user has admin permissions.
+
+    Deprecated: Prefer ``require_role("admin")`` for new endpoints.
+    """
     from user_db_manager import PERMISSIONS_ADMIN
 
-    # Check if user has full admin permissions (exact match)
+    # Bitwise check: all admin permission bits must be set.
+    # Using != (exact match) breaks when the user has *additional* permission
+    # flags set beyond PERMISSIONS_ADMIN.
     user_permissions = user_info["permissions"]
-    if user_permissions != PERMISSIONS_ADMIN:
+    if (user_permissions & PERMISSIONS_ADMIN) != PERMISSIONS_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
         )
