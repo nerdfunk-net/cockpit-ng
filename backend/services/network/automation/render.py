@@ -72,7 +72,7 @@ class RenderService:
                 credential_id=credential_id,
             )
         except Exception as e:
-            logger.error(f"Error rendering {category} template: {e}")
+            logger.error("Error rendering %s template: %s", category, e)
             raise ValueError(f"Template rendering failed: {str(e)}")
 
     async def render_netmiko_template(
@@ -144,8 +144,8 @@ class RenderService:
                     )
 
                 logger.info(
-                    f"Pre-run command executed successfully. Raw length: {len(context['pre_run_output'])}, "
-                    f"Parsed records: {len(context['pre_run_parsed'])}"
+                    "Pre-run command executed successfully. Raw length: %s, Parsed records: %s",
+                    len(context['pre_run_output']), len(context['pre_run_parsed']),
                 )
             except Exception as e:
                 error_msg = f"Failed to execute pre-run command: {str(e)}"
@@ -311,8 +311,8 @@ class RenderService:
         password = credentials_manager.get_decrypted_password(credential_id)
 
         logger.info(
-            f"Executing pre-run command on {nautobot_device.get('name', device_id)} "
-            f"({primary_ip}): {command}"
+            "Executing pre-run command on %s (%s): %s",
+            nautobot_device.get('name', device_id), primary_ip, command,
         )
 
         try:
@@ -352,7 +352,7 @@ class RenderService:
                         )
 
                 except Exception as parse_err:
-                    logger.warning(f"TextFSM parsing failed: {parse_err}")
+                    logger.warning("TextFSM parsing failed: %s", parse_err)
                     result["parse_error"] = str(parse_err)
                     # Fall back to raw output
                     result["raw_output"] = connection.send_command(
@@ -362,7 +362,7 @@ class RenderService:
                     )
 
         except Exception as e:
-            logger.error(f"Pre-run command execution failed: {e}")
+            logger.error("Pre-run command execution failed: %s", e)
             raise ValueError(f"Failed to execute command on device: {str(e)}")
 
         return result
@@ -402,7 +402,7 @@ class RenderService:
                 return value
 
         # Default to cisco_ios if unknown
-        logger.warning(f"Unknown platform '{platform_name}', defaulting to cisco_ios")
+        logger.warning("Unknown platform '%s', defaulting to cisco_ios", platform_name)
         return "cisco_ios"
 
     def _extract_template_variables(self, template_content: str) -> List[str]:

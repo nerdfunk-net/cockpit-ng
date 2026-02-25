@@ -42,7 +42,7 @@ async def validate_yaml_content(
         # Try to parse the YAML content
         yaml.safe_load(file_content.content)
 
-        logger.info(f"YAML validation successful for user: {current_user}")
+        logger.info("YAML validation successful for user: %s", current_user)
         return {
             "success": True,
             "valid": True,
@@ -61,7 +61,7 @@ async def validate_yaml_content(
             error_column = mark.column + 1  # +1 because columns are 0-based
 
         logger.info(
-            f"YAML validation failed for user: {current_user} - {error_message}"
+            "YAML validation failed for user: %s - %s", current_user, error_message
         )
         return {
             "success": True,
@@ -73,7 +73,7 @@ async def validate_yaml_content(
         }
 
     except Exception as e:
-        logger.error(f"Unexpected error during YAML validation: {e}")
+        logger.error("Unexpected error during YAML validation: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error validating YAML content: {str(e)}",
@@ -109,7 +109,7 @@ async def read_config_file(
                 content = f.read()
 
             logger.info(
-                f"Successfully read config file: {filename} by user: {current_user}"
+                "Successfully read config file: %s by user: %s", filename, current_user
             )
             return {
                 "success": True,
@@ -118,7 +118,7 @@ async def read_config_file(
             }
 
         except Exception as e:
-            logger.error(f"Error reading config file {filename}: {e}")
+            logger.error("Error reading config file %s: %s", filename, e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error reading configuration file: {str(e)}",
@@ -127,7 +127,7 @@ async def read_config_file(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Unexpected error reading config file {filename}: {e}")
+        logger.error("Unexpected error reading config file %s: %s", filename, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Unexpected error: {str(e)}",
@@ -162,12 +162,12 @@ async def write_config_file(
             # Reload config cache to ensure changes are picked up by services
             config_service.reload_config()
             logger.info(
-                f"Successfully wrote config file: {filename} by user: {current_user}"
+                "Successfully wrote config file: %s by user: %s", filename, current_user
             )
             return {"success": True, "message": f"Successfully saved {filename}"}
 
         except Exception as e:
-            logger.error(f"Error writing config file {filename}: {e}")
+            logger.error("Error writing config file %s: %s", filename, e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error writing configuration file: {str(e)}",
@@ -176,7 +176,7 @@ async def write_config_file(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Unexpected error writing config file {filename}: {e}")
+        logger.error("Unexpected error writing config file %s: %s", filename, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Unexpected error: {str(e)}",
@@ -210,7 +210,7 @@ async def list_config_files(
                 )
 
         logger.info(
-            f"Successfully listed {len(yaml_files)} config files for user: {current_user}"
+            "Successfully listed %s config files for user: %s", len(yaml_files), current_user
         )
         return {
             "success": True,
@@ -219,7 +219,7 @@ async def list_config_files(
         }
 
     except Exception as e:
-        logger.error(f"Error listing config files: {e}")
+        logger.error("Error listing config files: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error listing configuration files: {str(e)}",

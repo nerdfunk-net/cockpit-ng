@@ -56,13 +56,13 @@ async def test_device_ids(real_nautobot_service):
     # Cleanup: Delete all created devices
     for device_id in created_device_ids:
         try:
-            logger.info(f"Cleaning up test device: {device_id}")
+            logger.info("Cleaning up test device: %s", device_id)
             await real_nautobot_service.rest_request(
                 endpoint=f"dcim/devices/{device_id}/", method="DELETE"
             )
-            logger.info(f"✓ Successfully deleted test device: {device_id}")
+            logger.info("✓ Successfully deleted test device: %s", device_id)
         except Exception as e:
-            logger.warning(f"Failed to cleanup device {device_id}: {e}")
+            logger.warning("Failed to cleanup device %s: %s", device_id, e)
 
 
 @pytest.fixture
@@ -137,7 +137,7 @@ async def baseline_device_ids(real_nautobot_service):
     # Restore original values after tests
     for device_name, device_info in device_ids.items():
         try:
-            logger.info(f"Restoring baseline device: {device_name}")
+            logger.info("Restoring baseline device: %s", device_name)
 
             # Prepare restore data
             restore_data = {}
@@ -156,9 +156,9 @@ async def baseline_device_ids(real_nautobot_service):
                     method="PATCH",
                     data=restore_data,
                 )
-                logger.info(f"✓ Successfully restored {device_name}")
+                logger.info("✓ Successfully restored %s", device_name)
         except Exception as e:
-            logger.warning(f"Failed to restore {device_name}: {e}")
+            logger.warning("Failed to restore %s: %s", device_name, e)
 
 
 async def get_required_ids(nautobot: NautobotService) -> Dict[str, str]:
@@ -481,7 +481,7 @@ class TestAddDevice:
             )
             logger.info("✓ Cleaned up auto-created prefix")
         except Exception as e:
-            logger.warning(f"Failed to cleanup prefix: {e}")
+            logger.warning("Failed to cleanup prefix: %s", e)
 
     @pytest.mark.asyncio
     async def test_add_device_without_prefix_creation_fails(
@@ -532,13 +532,13 @@ class TestAddDevice:
             existing_devices = cleanup_result.get("data", {}).get("devices", [])
             for device in existing_devices:
                 logger.info(
-                    f"Cleaning up existing device {device['id']} from previous test run"
+                    "Cleaning up existing device %s from previous test run", device['id']
                 )
                 await real_nautobot_service.rest_request(
                     endpoint=f"dcim/devices/{device['id']}/", method="DELETE"
                 )
         except Exception as e:
-            logger.warning(f"Could not cleanup existing device: {e}")
+            logger.warning("Could not cleanup existing device: %s", e)
 
         # Create device request with IP in non-existent prefix
         request = AddDeviceRequest(
@@ -611,10 +611,10 @@ class TestAddDevice:
                 device_id = devices[0]["id"]
                 test_device_ids.append(device_id)  # Track for cleanup
                 logger.info(
-                    f"Device {device_id} was created before IP failure, will be cleaned up"
+                    "Device %s was created before IP failure, will be cleaned up", device_id
                 )
         except Exception as e:
-            logger.warning(f"Could not check for orphaned device: {e}")
+            logger.warning("Could not check for orphaned device: %s", e)
 
         logger.info(
             "✓ Device creation correctly raised exception when add_prefix=False and parent prefix missing"
@@ -898,7 +898,7 @@ class TestBulkEdit:
             if existing_ip.get("interfaces"):
                 # IP is assigned to interface, delete it and recreate
                 logger.info(
-                    f"IP {existing_unassigned_ip} exists and is assigned, deleting it"
+                    "IP %s exists and is assigned, deleting it", existing_unassigned_ip
                 )
                 await real_nautobot_service.rest_request(
                     endpoint=f"ipam/ip-addresses/{created_ip_id}/", method="DELETE"
@@ -911,14 +911,14 @@ class TestBulkEdit:
                     "type": "host",
                 }
 
-                logger.info(f"Creating unassigned IP: {existing_unassigned_ip}")
+                logger.info("Creating unassigned IP: %s", existing_unassigned_ip)
                 ip_create_result = await real_nautobot_service.rest_request(
                     endpoint="ipam/ip-addresses/", method="POST", data=create_ip_payload
                 )
                 created_ip_id = ip_create_result["id"]
             else:
                 # IP exists and is unassigned, perfect - use it
-                logger.info(f"Using existing unassigned IP: {existing_unassigned_ip}")
+                logger.info("Using existing unassigned IP: %s", existing_unassigned_ip)
         else:
             # IP doesn't exist, create it
             create_ip_payload = {
@@ -928,13 +928,13 @@ class TestBulkEdit:
                 "type": "host",
             }
 
-            logger.info(f"Creating unassigned IP: {existing_unassigned_ip}")
+            logger.info("Creating unassigned IP: %s", existing_unassigned_ip)
             ip_create_result = await real_nautobot_service.rest_request(
                 endpoint="ipam/ip-addresses/", method="POST", data=create_ip_payload
             )
             created_ip_id = ip_create_result["id"]
 
-        logger.info(f"✓ Unassigned IP ready with ID: {created_ip_id}")
+        logger.info("✓ Unassigned IP ready with ID: %s", created_ip_id)
 
         # Verify IP exists and is not assigned
         ip_query = f"""
@@ -957,7 +957,7 @@ class TestBulkEdit:
 
         # Step 2: Update device to use this existing unassigned IP
         logger.info(
-            f"Updating device {device_info['name']} to use existing unassigned IP"
+            "Updating device %s to use existing unassigned IP", device_info['name']
         )
         result = await device_update_service.update_device(
             device_identifier={"id": device_info["id"]},
@@ -1172,7 +1172,7 @@ class TestAddDeviceWithTagsAndCustomFields:
                 f"Tag {tag_id} should be assigned to device"
             )
 
-        logger.info(f"✓ Device created with {len(device['tags'])} tags")
+        logger.info("✓ Device created with %s tags", len(device['tags']))
 
     @pytest.mark.asyncio
     async def test_add_device_with_custom_fields(

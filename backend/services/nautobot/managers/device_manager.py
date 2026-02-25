@@ -107,7 +107,7 @@ class DeviceManager:
                 )
                 current_primary_ip4 = ip_details.get("address")
                 logger.info(
-                    f"Current primary_ip4 (from UUID lookup): {current_primary_ip4}"
+                    "Current primary_ip4 (from UUID lookup): %s", current_primary_ip4
                 )
                 return current_primary_ip4
             except Exception as e:
@@ -148,7 +148,7 @@ class DeviceManager:
 
         except Exception as e:
             logger.error(
-                f"Failed to assign primary IPv4 to device {device_id}: {str(e)}"
+                "Failed to assign primary IPv4 to device %s: %s", device_id, str(e)
             )
             return False
 
@@ -198,8 +198,8 @@ class DeviceManager:
                                 }
                             )
                             logger.warning(
-                                f"Custom field '{cf_name}' mismatch: expected '{cf_expected}', "
-                                f"got '{cf_actual}'"
+                                "Custom field '%s' mismatch: expected '%s', got '%s'",
+                                cf_name, cf_expected, cf_actual,
                             )
                 continue
 
@@ -220,8 +220,8 @@ class DeviceManager:
                     }
                 )
                 logger.warning(
-                    f"Field '{field}' mismatch: expected '{expected_value}', "
-                    f"got '{actual_value}'"
+                    "Field '%s' mismatch: expected '%s', got '%s'",
+                    field, expected_value, actual_value,
                 )
 
         if mismatches:

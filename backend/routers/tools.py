@@ -90,7 +90,7 @@ async def seed_rbac(remove_existing: bool = False) -> Dict[str, Any]:
             sys.stdout = old_stdout
 
     except Exception as e:
-        logger.error(f"Error seeding RBAC: {e}", exc_info=True)
+        logger.error("Error seeding RBAC: %s", e, exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to seed RBAC system: {str(e)}"
         )
@@ -127,15 +127,15 @@ async def create_tests_baseline() -> Dict[str, Any]:
         return result
 
     except FileNotFoundError as e:
-        logger.error(f"Baseline directory not found: {e}")
+        logger.error("Baseline directory not found: %s", e)
         raise HTTPException(
             status_code=404, detail=f"Baseline directory not found: {str(e)}"
         )
     except ValueError as e:
-        logger.error(f"Invalid baseline data: {e}")
+        logger.error("Invalid baseline data: %s", e)
         raise HTTPException(status_code=400, detail=f"Invalid baseline data: {str(e)}")
     except Exception as e:
-        logger.error(f"Error creating test baseline: {e}", exc_info=True)
+        logger.error("Error creating test baseline: %s", e, exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to create test baseline: {str(e)}"
         )

@@ -66,7 +66,7 @@ class NautobotService:
                 return config
         except Exception as e:
             logger.warning(
-                f"Failed to get database settings, falling back to environment: {e}"
+                "Failed to get database settings, falling back to environment: %s", e
             )
 
         # Fallback to environment variables (cache these since they don't change)

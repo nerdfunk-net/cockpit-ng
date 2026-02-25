@@ -99,7 +99,7 @@ async def get_backup_devices(
         return result
 
     except Exception as e:
-        logger.error(f"Error getting backup devices: {e}", exc_info=True)
+        logger.error("Error getting backup devices: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -134,10 +134,10 @@ async def trigger_backup(
         return result
 
     except ValueError as e:
-        logger.error(f"Validation error triggering backup: {e}")
+        logger.error("Validation error triggering backup: %s", e)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error triggering backup: {e}", exc_info=True)
+        logger.error("Error triggering backup: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -175,10 +175,10 @@ async def trigger_bulk_backup(
         return result
 
     except ValueError as e:
-        logger.error(f"Validation error triggering bulk backup: {e}")
+        logger.error("Validation error triggering bulk backup: %s", e)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error triggering bulk backup: {e}", exc_info=True)
+        logger.error("Error triggering bulk backup: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -218,7 +218,7 @@ async def get_backup_history(
         return history
 
     except Exception as e:
-        logger.error(f"Error getting backup history: {e}", exc_info=True)
+        logger.error("Error getting backup history: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -258,10 +258,10 @@ async def download_backup(
         )
 
     except ValueError as e:
-        logger.error(f"Backup not found: {e}")
+        logger.error("Backup not found: %s", e)
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"Error downloading backup: {e}", exc_info=True)
+        logger.error("Error downloading backup: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -298,8 +298,8 @@ async def restore_backup(
         return result
 
     except ValueError as e:
-        logger.error(f"Validation error restoring backup: {e}")
+        logger.error("Validation error restoring backup: %s", e)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error restoring backup: {e}", exc_info=True)
+        logger.error("Error restoring backup: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

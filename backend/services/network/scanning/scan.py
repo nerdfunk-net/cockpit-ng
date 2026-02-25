@@ -97,7 +97,7 @@ class ScanService:
         ]
         for job_id in expired_jobs:
             self._jobs.pop(job_id, None)
-            logger.info(f"Purged expired scan job: {job_id}")
+            logger.info("Purged expired scan job: %s", job_id)
 
     def _next_job_id(self) -> str:
         return f"scan_{int(time.time() * 1000)}_{len(self._jobs) + 1}"
@@ -121,7 +121,7 @@ class ScanService:
                 network = ipaddress.ip_network(cidr, strict=False)
                 # Safety check: enforce /22 minimum (max ~1024 hosts)
                 if network.prefixlen < 22:
-                    logger.warning(f"Skipping oversized network: {cidr}")
+                    logger.warning("Skipping oversized network: %s", cidr)
                     continue
 
                 for ip in network.hosts():
@@ -130,7 +130,7 @@ class ScanService:
                         seen.add(ip_str)
                         targets.append(ip_str)
             except Exception as e:
-                logger.error(f"Invalid CIDR {cidr}: {e}")
+                logger.error("Invalid CIDR %s: %s", cidr, e)
                 continue
 
         job = ScanJob(
@@ -145,7 +145,7 @@ class ScanService:
         )
 
         self._jobs[job.job_id] = job
-        logger.info(f"Started scan job {job.job_id} with {len(targets)} targets")
+        logger.info("Started scan job %s with %s targets", job.job_id, len(targets))
 
         # Start background scan task
         asyncio.create_task(self._run_scan(job, targets, parser_template_ids or []))
@@ -166,13 +166,13 @@ class ScanService:
         try:
             credentials = {c["id"]: c for c in list_credentials()}  # type: ignore
         except Exception as e:
-            logger.error(f"Failed to load credentials: {e}")
+            logger.error("Failed to load credentials: %s", e)
             job.state = "finished"
             return
 
         # Preload parser templates content
         parser_templates: List[Tuple[int, str]] = []
-        logger.info(f"Processing parser_template_ids: {parser_template_ids}")
+        logger.info("Processing parser_template_ids: %s", parser_template_ids)
         if parser_template_ids and textfsm is not None:
             for tid in parser_template_ids:
                 try:
@@ -186,11 +186,11 @@ class ScanService:
                         if content:
                             parser_templates.append((tid, content))
                             logger.info(
-                                f"Loaded parser template {tid}: {t.get('name', 'Unknown')}"
+                                "Loaded parser template %s: %s", tid, t.get('name', 'Unknown')
                             )
                 except Exception as e:
-                    logger.warning(f"Failed to preload parser template {tid}: {e}")
-        logger.info(f"Total parser templates loaded: {len(parser_templates)}")
+                    logger.warning("Failed to preload parser template %s: %s", tid, e)
+        logger.info("Total parser templates loaded: %s", len(parser_templates))
         if not parser_template_ids:
             logger.info("No parser templates specified")
         elif textfsm is None:
@@ -207,12 +207,12 @@ class ScanService:
                     cidr_ips = self._expand_cidr_to_ips(cidr)
                     all_ips.extend(cidr_ips)
                 except Exception as e:
-                    logger.error(f"Invalid CIDR {cidr}: {e}")
+                    logger.error("Invalid CIDR %s: %s", cidr, e)
                     continue
 
             alive_ips = await asyncio.to_thread(self._fping_networks, all_ips)
             logger.info(
-                f"fping found {len(alive_ips)} alive hosts out of {len(targets)} targets"
+                "fping found %s alive hosts out of %s targets", len(alive_ips), len(targets)
             )
         else:
             # Use individual ping operations (original behavior)
@@ -227,12 +227,12 @@ class ScanService:
         try:
             await asyncio.gather(*[worker(ip) for ip in targets])
         except Exception as e:
-            logger.error(f"Scan job {job.job_id} failed: {e}")
+            logger.error("Scan job %s failed: %s", job.job_id, e)
             job.errors.append(str(e))
         finally:
             job.state = "finished"
             logger.info(
-                f"Scan job {job.job_id} completed: {job.authenticated} authenticated, {job.unreachable} unreachable, {job.auth_failed} auth failed"
+                "Scan job %s completed: %s authenticated, %s unreachable, %s auth failed", job.job_id, job.authenticated, job.unreachable, job.auth_failed
             )
 
     async def _process_ip(
@@ -251,7 +251,7 @@ class ScanService:
             # Use pre-computed alive_ips from fping
             alive = ip in alive_ips
             if alive:
-                logger.debug(f"Host {ip} is alive (from fping results)")
+                logger.debug("Host %s is alive (from fping results)", ip)
         else:
             # Use individual ping operations (original behavior)
             for attempt in range(RETRY_ATTEMPTS):
@@ -260,7 +260,7 @@ class ScanService:
                         alive = True
                         break
                 except Exception as e:
-                    logger.debug(f"Ping attempt {attempt + 1} failed for {ip}: {e}")
+                    logger.debug("Ping attempt %s failed for %s: %s", attempt + 1, ip, e)
 
         if not alive:
             job.unreachable += 1
@@ -272,7 +272,7 @@ class ScanService:
         # If no credentials provided, this is ping-only mode - just record as alive
         if not job.credential_ids or len(job.credential_ids) == 0:
             logger.debug(
-                f"Host {ip} is alive (ping-only mode, no authentication attempted)"
+                "Host %s is alive (ping-only mode, no authentication attempted)", ip
             )
             job.results.append(
                 ScanResult(
@@ -290,7 +290,7 @@ class ScanService:
             job.scanned += 1
             return
 
-        logger.debug(f"Host {ip} is alive, trying credentials...")
+        logger.debug("Host %s is alive, trying credentials...", ip)
 
         # Step 2: Try credentials sequentially (stop on first success)
         for cred_id in job.credential_ids:
@@ -303,7 +303,7 @@ class ScanService:
                 password = get_decrypted_password(cred_id)
             except Exception as e:
                 logger.error(
-                    f"Failed to decrypt password for credential {cred_id}: {e}"
+                    "Failed to decrypt password for credential %s: %s", cred_id, e
                 )
                 continue
 
@@ -330,7 +330,7 @@ class ScanService:
                 job.authenticated += 1
                 job.scanned += 1
                 logger.info(
-                    f"Device detected: {ip} (type: {result['device_type']}, platform: {result.get('platform', 'unknown')})"
+                    "Device detected: %s (type: %s, platform: %s)", ip, result['device_type'], result.get('platform', 'unknown')
                 )
                 return
 
@@ -421,7 +421,7 @@ class ScanService:
 
             # Step 1: Try 'show version' command to detect Cisco device
             try:
-                logger.info(f"Trying 'show version' command on {ip}")
+                logger.info("Trying 'show version' command on %s", ip)
                 stdin, stdout, stderr = client.exec_command("show version", timeout=10)
                 stdout_data = stdout.read().decode().strip()
                 stderr_data = stderr.read().decode().strip()
@@ -429,7 +429,7 @@ class ScanService:
                 # If we get meaningful output and no errors, it's likely a Cisco device
                 if stdout_data and len(stdout_data) > 50 and not stderr_data:
                     logger.info(
-                        f"'show version' succeeded on {ip}, detected as Cisco device"
+                        "'show version' succeeded on %s, detected as Cisco device", ip
                     )
                     # Parse with TextFSM templates if available
                     hostname = None
@@ -467,7 +467,7 @@ class ScanService:
                                     break
                             except Exception as e:
                                 logger.debug(
-                                    f"TextFSM parse failed for template {tid} on {ip}: {e}"
+                                    "TextFSM parse failed for template %s on %s: %s", tid, ip, e
                                 )
                     # Fallback heuristic if no hostname yet
                     if not hostname:
@@ -493,16 +493,16 @@ class ScanService:
                     }
 
             except Exception as e:
-                logger.info(f"'show version' failed on {ip}: {e}")
+                logger.info("'show version' failed on %s: %s", ip, e)
 
             # Step 2: Try Linux commands ('uname -a' and 'hostname')
             try:
-                logger.info(f"Trying Linux commands on {ip}")
+                logger.info("Trying Linux commands on %s", ip)
 
                 # Try hostname command
                 hostname = None
                 try:
-                    logger.info(f"Executing 'hostname' command on {ip}")
+                    logger.info("Executing 'hostname' command on %s", ip)
                     stdin, stdout, stderr = client.exec_command("hostname", timeout=5)
                     # Wait for command to complete
                     exit_status = stdout.channel.recv_exit_status()
@@ -514,24 +514,24 @@ class ScanService:
                     )
 
                     logger.info(
-                        f"Hostname command on {ip} - exit_status: {exit_status}, stdout: '{hostname_output}', stderr: '{stderr_output}'"
+                        "Hostname command on %s - exit_status: %s, stdout: '%s', stderr: '%s'", ip, exit_status, hostname_output, stderr_output
                     )
 
                     if hostname_output and exit_status == 0:
                         hostname = hostname_output
-                        logger.info(f"Hostname command succeeded on {ip}: {hostname}")
+                        logger.info("Hostname command succeeded on %s: %s", ip, hostname)
                     else:
                         logger.info(
-                            f"Hostname command failed on {ip} - exit_status: {exit_status}"
+                            "Hostname command failed on %s - exit_status: %s", ip, exit_status
                         )
 
                 except Exception as e:
-                    logger.info(f"Hostname command exception on {ip}: {e}")
+                    logger.info("Hostname command exception on %s: %s", ip, e)
 
                 # Try uname -a command
                 platform = None
                 try:
-                    logger.info(f"Executing 'uname -a' command on {ip}")
+                    logger.info("Executing 'uname -a' command on %s", ip)
                     stdin, stdout, stderr = client.exec_command("uname -a", timeout=5)
                     # Wait for command to complete
                     exit_status = stdout.channel.recv_exit_status()
@@ -543,25 +543,25 @@ class ScanService:
                     )
 
                     logger.info(
-                        f"uname command on {ip} - exit_status: {exit_status}, stdout: '{uname_output}', stderr: '{stderr_output}'"
+                        "uname command on %s - exit_status: %s, stdout: '%s', stderr: '%s'", ip, exit_status, uname_output, stderr_output
                     )
 
                     if uname_output and exit_status == 0:
                         platform = uname_output
-                        logger.info(f"uname -a command succeeded on {ip}: {platform}")
+                        logger.info("uname -a command succeeded on %s: %s", ip, platform)
                     else:
                         logger.info(
-                            f"uname -a command failed on {ip} - exit_status: {exit_status}"
+                            "uname -a command failed on %s - exit_status: %s", ip, exit_status
                         )
 
                 except Exception as e:
-                    logger.info(f"uname -a command exception on {ip}: {e}")
+                    logger.info("uname -a command exception on %s: %s", ip, e)
 
                 # If at least hostname worked, consider it a Linux device
                 # (uname might fail on some restricted systems but hostname usually works)
                 if hostname:
                     logger.info(
-                        f"Detected Linux device on {ip} - hostname: {hostname}, platform: {platform or 'unknown'}"
+                        "Detected Linux device on %s - hostname: %s, platform: %s", ip, hostname, platform or 'unknown'
                     )
                     client.close()
                     return {
@@ -571,14 +571,14 @@ class ScanService:
                     }
                 else:
                     logger.info(
-                        f"Linux detection failed on {ip} - no hostname obtained"
+                        "Linux detection failed on %s - no hostname obtained", ip
                     )
 
             except Exception as e:
-                logger.info(f"Linux commands failed on {ip}: {e}")
+                logger.info("Linux commands failed on %s: %s", ip, e)
 
             # Step 3: If neither worked, return basic SSH connectivity info
-            logger.info(f"Could not detect device type for {ip}, marking as unknown")
+            logger.info("Could not detect device type for %s, marking as unknown", ip)
             client.close()
             return {
                 "device_type": "unknown",
@@ -587,7 +587,7 @@ class ScanService:
             }
 
         except Exception as e:
-            logger.info(f"Basic SSH login failed for {ip}: {e}")
+            logger.info("Basic SSH login failed for %s: %s", ip, e)
             return None
 
     def _ping_host(self, ip: str) -> bool:
@@ -631,13 +631,13 @@ class ScanService:
                     temp_file.write(f"{ip}\n")
 
             logger.info(
-                f"Created temporary file {temp_file_path} with {len(ip_list)} IP addresses"
+                "Created temporary file %s with %s IP addresses", temp_file_path, len(ip_list)
             )
 
             # Run fping command reading from the temporary file
             cmd = ["fping"]
 
-            logger.info(f"Running fping command: {' '.join(cmd)} < {temp_file_path}")
+            logger.info("Running fping command: %s < %s", ' '.join(cmd), temp_file_path)
 
             # Use shell=True to support input redirection
             result = subprocess.run(
@@ -683,7 +683,7 @@ class ScanService:
                             # We ignore "is unreachable" and other statuses (like duplicates)
 
             logger.info(
-                f"fping discovered {len(alive_ips)} alive hosts out of {len(ip_list)} targets"
+                "fping discovered %s alive hosts out of %s targets", len(alive_ips), len(ip_list)
             )
 
         except subprocess.TimeoutExpired:
@@ -693,16 +693,16 @@ class ScanService:
                 "fping command not found. Please install fping or use 'ping' mode instead"
             )
         except Exception as e:
-            logger.error(f"fping command failed: {e}")
+            logger.error("fping command failed: %s", e)
         finally:
             # Clean up temporary file
             if temp_file_path and os.path.exists(temp_file_path):
                 try:
                     os.unlink(temp_file_path)
-                    logger.debug(f"Cleaned up temporary file {temp_file_path}")
+                    logger.debug("Cleaned up temporary file %s", temp_file_path)
                 except Exception as e:
                     logger.warning(
-                        f"Failed to clean up temporary file {temp_file_path}: {e}"
+                        "Failed to clean up temporary file %s: %s", temp_file_path, e
                     )
 
         return alive_ips
@@ -751,7 +751,7 @@ class ScanService:
                 if result:
                     return result
             except Exception as e:
-                logger.debug(f"Napalm {driver_name} failed for {ip}: {e}")
+                logger.debug("Napalm %s failed for %s: %s", driver_name, ip, e)
                 continue
 
         return None
@@ -777,7 +777,7 @@ class ScanService:
                 device.close()
 
         except Exception as e:
-            logger.debug(f"Napalm {driver_name} connection failed for {ip}: {e}")
+            logger.debug("Napalm %s connection failed for %s: %s", driver_name, ip, e)
             return None
 
     async def _try_linux_server(
@@ -817,11 +817,11 @@ class ScanService:
             if kernel.lower() == "linux":
                 return {"hostname": hostname, "platform": "linux"}
             else:
-                logger.debug(f"Non-Linux system detected on {ip}: {kernel}")
+                logger.debug("Non-Linux system detected on %s: %s", ip, kernel)
                 return None
 
         except Exception as e:
-            logger.debug(f"Paramiko connection failed for {ip}: {e}")
+            logger.debug("Paramiko connection failed for %s: %s", ip, e)
             return None
         finally:
             try:
@@ -871,7 +871,7 @@ class ScanService:
                 }
 
                 logger.debug(
-                    f"Trying netmiko connection to {ip} with device_type: {device_type}"
+                    "Trying netmiko connection to %s with device_type: %s", ip, device_type
                 )
 
                 # Establish connection using netmiko
@@ -943,7 +943,7 @@ class ScanService:
                                             else "Not a dict"
                                         )
                                     logger.info(
-                                        f"Netmiko TextFSM parsing successful for {ip}, hostname: {hostname}"
+                                        "Netmiko TextFSM parsing successful for %s, hostname: %s", ip, hostname
                                     )
 
                             # Fallback: try raw show version if structured parsing failed
@@ -971,14 +971,14 @@ class ScanService:
 
                         except Exception as e:
                             logger.debug(
-                                f"Show version failed for {ip} with {device_type}: {e}"
+                                "Show version failed for %s with %s: %s", ip, device_type, e
                             )
                             if debug_data:
                                 debug_data["error"] = str(e)
 
                     # If we got here, connection was successful
                     logger.info(
-                        f"Netmiko connection successful to {ip} as {device_type}"
+                        "Netmiko connection successful to %s as %s", ip, device_type
                     )
 
                     result = {
@@ -1001,12 +1001,12 @@ class ScanService:
 
             except Exception as e:
                 logger.debug(
-                    f"Netmiko connection failed for {ip} with {device_type}: {e}"
+                    "Netmiko connection failed for %s with %s: %s", ip, device_type, e
                 )
                 continue
 
         # All device types failed
-        logger.debug(f"All netmiko device types failed for {ip}")
+        logger.debug("All netmiko device types failed for %s", ip)
         return None
 
 

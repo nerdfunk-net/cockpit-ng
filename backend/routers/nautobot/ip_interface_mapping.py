@@ -57,14 +57,14 @@ async def assign_ip_address_to_interface(
         )
 
         logger.info(
-            f"Assigned IP address {assignment_data.get('ip_address')} to interface {assignment_data.get('interface')}"
+            "Assigned IP address %s to interface %s", assignment_data.get('ip_address'), assignment_data.get('interface')
         )
         return result
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to assign IP address to interface: {str(e)}")
+        logger.error("Failed to assign IP address to interface: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to assign IP address to interface: {str(e)}",

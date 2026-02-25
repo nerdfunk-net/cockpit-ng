@@ -136,7 +136,7 @@ class GitDiffService:
                 )
             except KeyError:
                 content1 = ""
-                logger.warning(f"File {file_path} not found in commit {commit1}")
+                logger.warning("File %s not found in commit %s", file_path, commit1)
 
             try:
                 content2 = (
@@ -144,7 +144,7 @@ class GitDiffService:
                 )
             except KeyError:
                 content2 = ""
-                logger.warning(f"File {file_path} not found in commit {commit2}")
+                logger.warning("File %s not found in commit %s", file_path, commit2)
 
             # Generate diff
             lines1 = content1.splitlines(keepends=True)
@@ -158,7 +158,7 @@ class GitDiffService:
             )
 
         except Exception as e:
-            logger.error(f"Error comparing file versions: {e}")
+            logger.error("Error comparing file versions: %s", e)
             raise
 
     def compare_files_across_repos(
@@ -193,7 +193,7 @@ class GitDiffService:
             except KeyError:
                 content1 = ""
                 logger.warning(
-                    f"File {file_path} not found in repo1 at commit {commit1}"
+                    "File %s not found in repo1 at commit %s", file_path, commit1
                 )
 
             try:
@@ -203,7 +203,7 @@ class GitDiffService:
             except KeyError:
                 content2 = ""
                 logger.warning(
-                    f"File {file_path} not found in repo2 at commit {commit2}"
+                    "File %s not found in repo2 at commit %s", file_path, commit2
                 )
 
             # Generate diff
@@ -218,7 +218,7 @@ class GitDiffService:
             )
 
         except Exception as e:
-            logger.error(f"Error comparing files across repos: {e}")
+            logger.error("Error comparing files across repos: %s", e)
             raise
 
     def compare_text_content(self, content1: str, content2: str) -> DiffResult:

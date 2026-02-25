@@ -33,7 +33,7 @@ async def check_compliance(
     """
     try:
         logger.info(
-            f"Starting compliance check for {len(check_request.devices)} devices"
+            "Starting compliance check for %s devices", len(check_request.devices)
         )
 
         # Validate that at least one check type is enabled
@@ -245,8 +245,8 @@ async def check_compliance(
         }
 
         logger.info(
-            f"Compliance check completed: {summary['devices_passed']} passed, "
-            f"{summary['devices_failed']} failed, {summary['devices_skipped']} skipped"
+            "Compliance check completed: %s passed, %s failed, %s skipped",
+            summary['devices_passed'], summary['devices_failed'], summary['devices_skipped'],
         )
 
         return {
@@ -259,7 +259,7 @@ async def check_compliance(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error performing compliance check: {e}", exc_info=True)
+        logger.error("Error performing compliance check: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Compliance check failed: {str(e)}",

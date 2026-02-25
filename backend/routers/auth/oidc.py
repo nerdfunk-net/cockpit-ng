@@ -64,7 +64,7 @@ async def get_oidc_providers():
         )
 
     except Exception as e:
-        logger.error(f"Failed to get OIDC providers: {e}")
+        logger.error("Failed to get OIDC providers: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve OIDC providers",
@@ -107,7 +107,7 @@ async def oidc_login(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"OIDC login initiation failed for provider '{provider_id}': {e}")
+        logger.error("OIDC login initiation failed for provider '%s': %s", provider_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to initiate OIDC login with provider '{provider_id}'",
@@ -134,8 +134,8 @@ async def oidc_test_login(provider_id: str, test_params: OIDCTestLoginRequest):
         # Include provider_id in state for callback validation
         state_with_provider = f"{provider_id}:{state}"
 
-        logger.info(f"[OIDC Test] Initiating test login for provider '{provider_id}'")
-        logger.info(f"[OIDC Test] Test parameters: {test_params.model_dump()}")
+        logger.info("[OIDC Test] Initiating test login for provider '%s'", provider_id)
+        logger.info("[OIDC Test] Test parameters: %s", test_params.model_dump())
 
         # Generate authorization URL with test overrides
         auth_url = oidc_service.generate_authorization_url(
@@ -165,7 +165,7 @@ async def oidc_test_login(provider_id: str, test_params: OIDCTestLoginRequest):
         raise
     except Exception as e:
         logger.error(
-            f"OIDC test login initiation failed for provider '{provider_id}': {e}"
+            "OIDC test login initiation failed for provider '%s': %s", provider_id, e
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -228,7 +228,7 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
         # Check if user is inactive (new users awaiting approval)
         if not user.get("is_active", True):
             logger.info(
-                f"[OIDC Debug] User '{user['username']}' created but awaiting admin approval from provider '{provider_id}'"
+                "[OIDC Debug] User '%s' created but awaiting admin approval from provider '%s'", user['username'], provider_id
             )
             return ApprovalPendingResponse(
                 status="approval_pending",
@@ -246,7 +246,7 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
 
         if not user_with_roles:
             logger.warning(
-                f"get_user_with_rbac returned None for user_id={user['id']}, using base user"
+                "get_user_with_rbac returned None for user_id=%s, using base user", user['id']
             )
             user_with_roles = user
             user_with_roles["roles"] = []
@@ -283,7 +283,7 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
         )
 
         logger.info(
-            f"[OIDC Debug] User '{user['username']}' authenticated successfully via OIDC provider '{provider_id}'"
+            "[OIDC Debug] User '%s' authenticated successfully via OIDC provider '%s'", user['username'], provider_id
         )
 
         # Log successful OIDC login to audit log
@@ -331,7 +331,7 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"OIDC callback failed for provider '{provider_id}': {e}")
+        logger.error("OIDC callback failed for provider '%s': %s", provider_id, e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"OIDC authentication failed with provider '{provider_id}'",
@@ -375,7 +375,7 @@ async def oidc_logout(provider_id: str, id_token_hint: str = Query(None)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"OIDC logout failed for provider '{provider_id}': {e}")
+        logger.error("OIDC logout failed for provider '%s': %s", provider_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process OIDC logout for provider '{provider_id}'",
@@ -476,7 +476,7 @@ async def get_oidc_debug_info():
 
                 except Exception as e:
                     logger.error(
-                        f"Failed to load configuration for provider '{provider_id}': {e}"
+                        "Failed to load configuration for provider '%s': %s", provider_id, e
                     )
                     providers_debug.append(
                         {
@@ -504,7 +504,7 @@ async def get_oidc_debug_info():
         }
 
     except Exception as e:
-        logger.error(f"Failed to get OIDC debug info: {e}")
+        logger.error("Failed to get OIDC debug info: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve OIDC debug information: {str(e)}",

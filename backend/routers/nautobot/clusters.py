@@ -64,7 +64,7 @@ async def get_clusters(
         clusters = await resolver.get_all_clusters(group=group_filter)
         return clusters
     except Exception as e:
-        logger.error(f"Failed to fetch clusters: {e}", exc_info=True)
+        logger.error("Failed to fetch clusters: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch clusters: {str(e)}",
@@ -98,7 +98,7 @@ async def get_cluster_groups(
         cluster_groups = await resolver.get_all_cluster_groups()
         return cluster_groups
     except Exception as e:
-        logger.error(f"Failed to fetch cluster groups: {e}", exc_info=True)
+        logger.error("Failed to fetch cluster groups: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch cluster groups: {str(e)}",
@@ -153,7 +153,7 @@ async def get_cluster_by_id(
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
-        logger.error(f"Failed to fetch cluster {cluster_id}: {e}", exc_info=True)
+        logger.error("Failed to fetch cluster %s: %s", cluster_id, e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch cluster: {str(e)}",
@@ -210,19 +210,19 @@ async def create_virtual_machine(
         logger.info("=" * 80)
         logger.info("======= RECEIVED VM CREATION REQUEST =======")
         logger.info("=" * 80)
-        logger.info(f"Request data: {vm_request.model_dump()}")
+        logger.info("Request data: %s", vm_request.model_dump())
         logger.info("=" * 80)
         logger.info("======= PHASE 1: CREATE VIRTUAL MACHINE =======")
         logger.info("=" * 80)
-        logger.info(f"VM Name: {vm_request.name}")
-        logger.info(f"Cluster: {vm_request.cluster}")
-        logger.info(f"Status: {vm_request.status}")
-        logger.info(f"Custom Fields: {vm_request.customFieldValues}")
-        logger.info(f"Interfaces count: {len(vm_request.interfaces)}")
+        logger.info("VM Name: %s", vm_request.name)
+        logger.info("Cluster: %s", vm_request.cluster)
+        logger.info("Status: %s", vm_request.status)
+        logger.info("Custom Fields: %s", vm_request.customFieldValues)
+        logger.info("Interfaces count: %s", len(vm_request.interfaces))
         # Legacy format logging
         if vm_request.interfaceName:
-            logger.info(f"Legacy Interface Name: {vm_request.interfaceName}")
-            logger.info(f"Legacy Primary IPv4: {vm_request.primaryIpv4}")
+            logger.info("Legacy Interface Name: %s", vm_request.interfaceName)
+            logger.info("Legacy Primary IPv4: %s", vm_request.primaryIpv4)
 
         # Initialize the VM manager
         vm_manager = VirtualMachineManager(nautobot_service)
@@ -252,7 +252,7 @@ async def create_virtual_machine(
         if not vm_id:
             raise Exception("VM creation succeeded but no ID returned")
 
-        logger.info(f"✓ PHASE 1 COMPLETE: VM created with ID: {vm_id}")
+        logger.info("✓ PHASE 1 COMPLETE: VM created with ID: %s", vm_id)
 
         response_data = {
             "virtual_machine": vm_result,
@@ -291,16 +291,16 @@ async def create_virtual_machine(
             logger.info("=" * 80)
             logger.info("======= PHASE 2: CREATE INTERFACES (NEW FORMAT) =======")
             logger.info("=" * 80)
-            logger.info(f"Processing {len(vm_request.interfaces)} interfaces")
+            logger.info("Processing %s interfaces", len(vm_request.interfaces))
 
             for idx, interface_data in enumerate(vm_request.interfaces):
                 try:
                     logger.info(
-                        f"\n--- Interface {idx + 1}/{len(vm_request.interfaces)}: {interface_data.name} ---"
+                        "\n--- Interface %s/%s: %s ---", idx + 1, len(vm_request.interfaces), interface_data.name
                     )
 
                     # Create the virtual interface with all properties
-                    logger.info(f"Creating interface '{interface_data.name}'...")
+                    logger.info("Creating interface '%s'...", interface_data.name)
                     interface_result = await vm_manager.create_virtual_interface(
                         name=interface_data.name,
                         virtual_machine_id=vm_id,
@@ -328,7 +328,7 @@ async def create_virtual_machine(
                         )
 
                     logger.info(
-                        f"✓ Interface '{interface_data.name}' created with ID: {interface_id}"
+                        "✓ Interface '%s' created with ID: %s", interface_data.name, interface_id
                     )
                     response_data["interfaces"].append(
                         {
@@ -345,7 +345,7 @@ async def create_virtual_machine(
                     ):
                         logger.info("")
                         logger.info(
-                            f"📍 Processing {len(interface_data.ip_addresses)} IP address(es) for interface '{interface_data.name}'"
+                            "📍 Processing %s IP address(es) for interface '%s'", len(interface_data.ip_addresses), interface_data.name
                         )
 
                         for ip_idx, ip_data in enumerate(interface_data.ip_addresses):
@@ -353,14 +353,14 @@ async def create_virtual_machine(
                                 logger.info("")
                                 logger.info("=" * 60)
                                 logger.info(
-                                    f"======== IP ADDRESS {ip_idx + 1}/{len(interface_data.ip_addresses)}: {ip_data.address} ========"
+                                    "======== IP ADDRESS %s/%s: %s ========", ip_idx + 1, len(interface_data.ip_addresses), ip_data.address
                                 )
                                 logger.info("=" * 60)
-                                logger.info(f"  Interface: {interface_data.name}")
-                                logger.info(f"  Namespace: {ip_data.namespace}")
-                                logger.info(f"  IP Role: {ip_data.ip_role or 'None'}")
+                                logger.info("  Interface: %s", interface_data.name)
+                                logger.info("  Namespace: %s", ip_data.namespace)
+                                logger.info("  IP Role: %s", ip_data.ip_role or 'None')
                                 logger.info(
-                                    f"  Is Primary: {ip_data.is_primary or False}"
+                                    "  Is Primary: %s", ip_data.is_primary or False
                                 )
                                 logger.info("")
 
@@ -374,7 +374,7 @@ async def create_virtual_machine(
                                 if ip_data.ip_role:
                                     ip_kwargs["role"] = {"id": ip_data.ip_role}
                                     logger.info(
-                                        f"  → Including IP role: {ip_data.ip_role}"
+                                        "  → Including IP role: %s", ip_data.ip_role
                                     )
 
                                 ip_id = await ip_manager.ensure_ip_address_exists(
@@ -386,13 +386,13 @@ async def create_virtual_machine(
                                 )
 
                                 logger.info(
-                                    f"  ✓ Step 1 Complete: IP address ID: {ip_id}"
+                                    "  ✓ Step 1 Complete: IP address ID: %s", ip_id
                                 )
                                 logger.info("")
 
                                 # Assign IP to virtual interface
                                 logger.info(
-                                    f"  → Step 2: Assigning IP to interface '{interface_data.name}'..."
+                                    "  → Step 2: Assigning IP to interface '%s'...", interface_data.name
                                 )
                                 await vm_manager.assign_ip_to_virtual_interface(
                                     ip_address_id=ip_id,
@@ -421,7 +421,7 @@ async def create_virtual_machine(
 
                                 logger.info("=" * 60)
                                 logger.info(
-                                    f"✅ IP ADDRESS {ip_data.address} PROCESSED SUCCESSFULLY"
+                                    "✅ IP ADDRESS %s PROCESSED SUCCESSFULLY", ip_data.address
                                 )
                                 logger.info("=" * 60)
 
@@ -429,10 +429,10 @@ async def create_virtual_machine(
                                 logger.error("")
                                 logger.error("=" * 60)
                                 logger.error(
-                                    f"❌ FAILED TO PROCESS IP: {ip_data.address}"
+                                    "❌ FAILED TO PROCESS IP: %s", ip_data.address
                                 )
                                 logger.error("=" * 60)
-                                logger.error(f"  Error: {ip_error}")
+                                logger.error("  Error: %s", ip_error)
                                 logger.error("=" * 60)
                                 response_data["warnings"].append(
                                     f"Failed to create/assign IP {ip_data.address} on interface {interface_data.name}: {str(ip_error)}"
@@ -440,7 +440,7 @@ async def create_virtual_machine(
 
                 except Exception as iface_error:
                     logger.error(
-                        f"✗ Failed to create interface '{interface_data.name}': {iface_error}",
+                        "✗ Failed to create interface '%s': %s", interface_data.name, iface_error,
                         exc_info=True,
                     )
                     response_data["warnings"].append(
@@ -449,7 +449,7 @@ async def create_virtual_machine(
 
             logger.info("")
             logger.info(
-                f"✓ PHASE 2 COMPLETE: Created {len(response_data['interfaces'])} interfaces"
+                "✓ PHASE 2 COMPLETE: Created %s interfaces", len(response_data['interfaces'])
             )
 
         elif use_legacy_format:
@@ -458,7 +458,7 @@ async def create_virtual_machine(
             logger.info("=" * 80)
             logger.info("======= PHASE 2: CREATE INTERFACE (LEGACY FORMAT) =======")
             logger.info("=" * 80)
-            logger.info(f"Interface Name: {vm_request.interfaceName}")
+            logger.info("Interface Name: %s", vm_request.interfaceName)
 
             try:
                 interface_result = await vm_manager.create_virtual_interface(
@@ -472,7 +472,7 @@ async def create_virtual_machine(
                 if not interface_id:
                     raise Exception("Interface creation succeeded but no ID returned")
 
-                logger.info(f"✓ Interface created with ID: {interface_id}")
+                logger.info("✓ Interface created with ID: %s", interface_id)
                 response_data["interfaces"].append(
                     {
                         "name": vm_request.interfaceName,
@@ -487,12 +487,12 @@ async def create_virtual_machine(
                         logger.info("")
                         logger.info("=" * 60)
                         logger.info(
-                            f"======== IP ADDRESS: {vm_request.primaryIpv4} ========"
+                            "======== IP ADDRESS: %s ========", vm_request.primaryIpv4
                         )
                         logger.info("=" * 60)
-                        logger.info(f"  Interface: {vm_request.interfaceName}")
+                        logger.info("  Interface: %s", vm_request.interfaceName)
                         logger.info(
-                            f"  Namespace: {vm_request.namespace or 'Global (default)'}"
+                            "  Namespace: %s", vm_request.namespace or 'Global (default)'
                         )
                         logger.info("  Is Primary: True")
                         logger.info("")
@@ -506,7 +506,7 @@ async def create_virtual_machine(
                             )
                             if not namespace_id:
                                 raise Exception("Could not resolve 'Global' namespace")
-                            logger.info(f"  ✓ Resolved namespace ID: {namespace_id}")
+                            logger.info("  ✓ Resolved namespace ID: %s", namespace_id)
                             logger.info("")
 
                         # Create or get the IP address
@@ -520,12 +520,12 @@ async def create_virtual_machine(
                             add_prefixes_automatically=True,
                         )
 
-                        logger.info(f"  ✓ Step 1 Complete: IP address ID: {ip_id}")
+                        logger.info("  ✓ Step 1 Complete: IP address ID: %s", ip_id)
                         logger.info("")
 
                         # Assign IP to virtual interface
                         logger.info(
-                            f"  → Step 2: Assigning IP to interface '{vm_request.interfaceName}'..."
+                            "  → Step 2: Assigning IP to interface '%s'...", vm_request.interfaceName
                         )
                         await vm_manager.assign_ip_to_virtual_interface(
                             ip_address_id=ip_id,
@@ -536,7 +536,7 @@ async def create_virtual_machine(
                         logger.info("")
                         logger.info("=" * 60)
                         logger.info(
-                            f"✅ IP ADDRESS {vm_request.primaryIpv4} PROCESSED SUCCESSFULLY"
+                            "✅ IP ADDRESS %s PROCESSED SUCCESSFULLY", vm_request.primaryIpv4
                         )
                         logger.info("=" * 60)
 
@@ -555,10 +555,10 @@ async def create_virtual_machine(
                         logger.error("")
                         logger.error("=" * 60)
                         logger.error(
-                            f"❌ FAILED TO PROCESS IP: {vm_request.primaryIpv4}"
+                            "❌ FAILED TO PROCESS IP: %s", vm_request.primaryIpv4
                         )
                         logger.error("=" * 60)
-                        logger.error(f"  Error: {ip_error}")
+                        logger.error("  Error: %s", ip_error)
                         logger.error("=" * 60)
                         response_data["warnings"].append(
                             f"VM and interface created, but IP assignment failed: {str(ip_error)}"
@@ -566,7 +566,7 @@ async def create_virtual_machine(
 
             except Exception as iface_error:
                 logger.error(
-                    f"✗ Interface creation failed: {iface_error}", exc_info=True
+                    "✗ Interface creation failed: %s", iface_error, exc_info=True
                 )
                 response_data["warnings"].append(
                     f"VM created, but interface creation failed: {str(iface_error)}"
@@ -579,8 +579,8 @@ async def create_virtual_machine(
                 logger.info("=" * 80)
                 logger.info("======= PHASE 3: SET PRIMARY IP FOR VM =======")
                 logger.info("=" * 80)
-                logger.info(f"VM ID: {vm_id}")
-                logger.info(f"Primary IP ID: {primary_ip_id}")
+                logger.info("VM ID: %s", vm_id)
+                logger.info("Primary IP ID: %s", primary_ip_id)
 
                 await vm_manager.assign_primary_ip_to_vm(
                     vm_id=vm_id,
@@ -598,7 +598,7 @@ async def create_virtual_machine(
 
             except Exception as primary_error:
                 logger.error(
-                    f"✗ Failed to set primary IP: {primary_error}", exc_info=True
+                    "✗ Failed to set primary IP: %s", primary_error, exc_info=True
                 )
                 response_data["warnings"].append(
                     f"VM and interfaces created, but failed to set primary IP: {str(primary_error)}"
@@ -618,11 +618,11 @@ async def create_virtual_machine(
         logger.info("=" * 80)
         logger.info("======= ALL PHASES COMPLETE =======")
         logger.info("=" * 80)
-        logger.info(f"VM ID: {vm_id}")
-        logger.info(f"Interfaces created: {len(response_data['interfaces'])}")
-        logger.info(f"IP addresses created: {len(response_data['ip_addresses'])}")
-        logger.info(f"Primary IP: {primary_ip_id}")
-        logger.info(f"Warnings: {len(response_data['warnings'])}")
+        logger.info("VM ID: %s", vm_id)
+        logger.info("Interfaces created: %s", len(response_data['interfaces']))
+        logger.info("IP addresses created: %s", len(response_data['ip_addresses']))
+        logger.info("Primary IP: %s", primary_ip_id)
+        logger.info("Warnings: %s", len(response_data['warnings']))
 
         return response_data
 
@@ -631,7 +631,7 @@ async def create_virtual_machine(
         logger.error("=" * 80)
         logger.error("======= FATAL ERROR =======")
         logger.error("=" * 80)
-        logger.error(f"Error: {e}", exc_info=True)
+        logger.error("Error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create virtual machine: {str(e)}",
@@ -676,8 +676,8 @@ async def create_virtual_interface(
     """
     try:
         logger.info(
-            f"Creating virtual interface '{interface_request.name}' "
-            f"for VM {interface_request.virtual_machine}"
+            "Creating virtual interface '%s' for VM %s",
+            interface_request.name, interface_request.virtual_machine,
         )
 
         # Initialize the VM manager
@@ -699,13 +699,13 @@ async def create_virtual_interface(
         )
 
         logger.info(
-            f"Successfully created interface '{interface_request.name}' "
-            f"with ID: {result.get('id')}"
+            "Successfully created interface '%s' with ID: %s",
+            interface_request.name, result.get('id'),
         )
         return result
 
     except Exception as e:
-        logger.error(f"Failed to create virtual interface: {e}", exc_info=True)
+        logger.error("Failed to create virtual interface: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create virtual interface: {str(e)}",

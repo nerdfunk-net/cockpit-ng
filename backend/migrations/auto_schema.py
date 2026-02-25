@@ -128,13 +128,13 @@ class AutoSchemaMigration:
                 continue
 
             try:
-                logger.info(f"Creating missing table: {table_name}")
+                logger.info("Creating missing table: %s", table_name)
                 table = self.base.metadata.tables[table_name]
                 table.create(bind=self.engine)
                 created_count += 1
-                logger.info(f"✓ Created table: {table_name}")
+                logger.info("✓ Created table: %s", table_name)
             except Exception as e:
-                logger.error(f"✗ Failed to create table {table_name}: {e}")
+                logger.error("✗ Failed to create table %s: %s", table_name, e)
 
         return created_count
 
@@ -166,7 +166,7 @@ class AutoSchemaMigration:
                     # Skip primary key columns
                     if column.primary_key:
                         logger.warning(
-                            f"Skipping primary key column {col_name} in {table_name}"
+                            "Skipping primary key column %s in %s", col_name, table_name
                         )
                         continue
 
@@ -175,18 +175,18 @@ class AutoSchemaMigration:
                         f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_def}"
                     )
 
-                    logger.info(f"Adding column {table_name}.{col_name}")
-                    logger.debug(f"SQL: {alter_sql}")
+                    logger.info("Adding column %s.%s", table_name, col_name)
+                    logger.debug("SQL: %s", alter_sql)
 
                     with self.engine.connect() as conn:
                         conn.execute(text(alter_sql))
                         conn.commit()
 
                     added_count += 1
-                    logger.info(f"✓ Added column: {table_name}.{col_name}")
+                    logger.info("✓ Added column: %s.%s", table_name, col_name)
 
                 except Exception as e:
-                    logger.error(f"✗ Failed to add column {table_name}.{col_name}: {e}")
+                    logger.error("✗ Failed to add column %s.%s: %s", table_name, col_name, e)
 
         return added_count
 
@@ -210,12 +210,12 @@ class AutoSchemaMigration:
             for index in table.indexes:
                 if index.name and index.name not in existing_indexes:
                     try:
-                        logger.info(f"Creating index {index.name} on {table_name}")
+                        logger.info("Creating index %s on %s", index.name, table_name)
                         index.create(bind=self.engine)
                         created_count += 1
-                        logger.info(f"✓ Created index: {index.name}")
+                        logger.info("✓ Created index: %s", index.name)
                     except Exception as e:
-                        logger.warning(f"✗ Failed to create index {index.name}: {e}")
+                        logger.warning("✗ Failed to create index %s: %s", index.name, e)
 
         return created_count
 
@@ -241,7 +241,7 @@ class AutoSchemaMigration:
             results["indexes_created"] = self.create_missing_indexes()
 
         except Exception as e:
-            logger.error(f"Schema migration failed: {e}")
+            logger.error("Schema migration failed: %s", e)
             raise
 
         return results

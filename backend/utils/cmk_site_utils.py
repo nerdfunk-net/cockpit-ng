@@ -42,7 +42,7 @@ def get_monitored_site(
         by_name_config = site_config.get("by_name", {})
         if device_name and device_name in by_name_config:
             logger.debug(
-                f"Found site for device '{device_name}' by name: {by_name_config[device_name]}"
+                "Found site for device '%s' by name: %s", device_name, by_name_config[device_name]
             )
             return by_name_config[device_name]
 
@@ -54,7 +54,7 @@ def get_monitored_site(
                 site_value = custom_field_data[by_nautobot_config]
                 if site_value and site_value != "default":
                     logger.debug(
-                        f"Found site for device '{device_name}' by Nautobot field '{by_nautobot_config}': {site_value}"
+                        "Found site for device '%s' by Nautobot field '%s': %s", device_name, by_nautobot_config, site_value
                     )
                     return site_value
 
@@ -64,7 +64,7 @@ def get_monitored_site(
             site = _match_ip_to_site(device_ip, by_ip_config)
             if site:
                 logger.debug(
-                    f"Found site for device '{device_name}' by IP '{device_ip}': {site}"
+                    "Found site for device '%s' by IP '%s': %s", device_name, device_ip, site
                 )
                 return site
 
@@ -76,16 +76,16 @@ def get_monitored_site(
             and device_location in by_location_config
         ):
             logger.debug(
-                f"Found site for device '{device_name}' by location '{device_location}': {by_location_config[device_location]}"
+                "Found site for device '%s' by location '%s': %s", device_name, device_location, by_location_config[device_location]
             )
             return by_location_config[device_location]
 
         # 5. Return default site
-        logger.debug(f"Returning default site for device '{device_name}'")
+        logger.debug("Returning default site for device '%s'", device_name)
         return config_service.get_default_site()
 
     except Exception as e:
-        logger.error(f"Error determining site for device: {e}")
+        logger.error("Error determining site for device: %s", e)
         return config_service.get_default_site()
 
 
@@ -108,7 +108,7 @@ def get_device_site_from_normalized_data(normalized_data: Dict[str, Any]) -> str
         return config_service.get_default_site()
 
     except Exception as e:
-        logger.error(f"Error getting device site from normalized data: {e}")
+        logger.error("Error getting device site from normalized data: %s", e)
         return config_service.get_default_site()
 
 
@@ -150,10 +150,10 @@ def get_device_folder(
         # Determine which role configuration to use
         if device_role and device_role in folders_config:
             role_config = folders_config[device_role]
-            logger.debug(f"Using role-specific folder config for role '{device_role}'")
+            logger.debug("Using role-specific folder config for role '%s'", device_role)
         elif "default" in folders_config:
             role_config = folders_config["default"]
-            logger.debug(f"Using default folder config (device role: '{device_role}')")
+            logger.debug("Using default folder config (device role: '%s')", device_role)
         else:
             logger.warning("No default folder configuration found")
             role_config = {}
@@ -190,7 +190,7 @@ def get_device_folder(
         return folder.replace("//", "/")
 
     except Exception as e:
-        logger.error(f"Error determining folder for device: {e}")
+        logger.error("Error determining folder for device: %s", e)
         return "/"
 
 
@@ -230,11 +230,11 @@ def _match_ip_to_site(device_ip: str, by_ip_config: Dict[str, str]) -> Optional[
                 if device_ip_obj in network:
                     return site_value
             except ipaddress.AddressValueError:
-                logger.warning(f"Invalid CIDR network in site config: {cidr_network}")
+                logger.warning("Invalid CIDR network in site config: %s", cidr_network)
                 continue
 
     except ipaddress.AddressValueError:
-        logger.warning(f"Invalid device IP address for site matching: {device_ip}")
+        logger.warning("Invalid device IP address for site matching: %s", device_ip)
 
     return None
 
@@ -259,10 +259,10 @@ def _match_ip_to_folder(device_ip: str, by_ip_config: Dict[str, str]) -> Optiona
                 if device_ip_obj in network:
                     return folder_template
             except ipaddress.AddressValueError:
-                logger.warning(f"Invalid CIDR network in folder config: {cidr_network}")
+                logger.warning("Invalid CIDR network in folder config: %s", cidr_network)
                 continue
 
     except ipaddress.AddressValueError:
-        logger.warning(f"Invalid device IP address for folder matching: {device_ip}")
+        logger.warning("Invalid device IP address for folder matching: %s", device_ip)
 
     return None

@@ -49,11 +49,11 @@ def replace_template_variables(template: str, device_data: Dict[str, Any]) -> st
         if value is not None:
             # Replace the variable with its value
             result = result.replace(f"{{{match}}}", str(value))
-            logger.debug(f"Replaced {{{match}}} with '{value}'")
+            logger.debug("Replaced {%s} with '%s'", match, value)
         else:
             # Keep the original variable if not found, or replace with empty string
             logger.warning(
-                f"Variable '{match}' not found in device data, keeping as-is"
+                "Variable '%s' not found in device data, keeping as-is", match
             )
             # Optionally: result = result.replace(f"{{{match}}}", "")
 
@@ -89,7 +89,7 @@ def _get_nested_value(data: Dict[str, Any], path: str) -> Optional[Any]:
     # For backwards compatibility: map custom_fields to custom_field_data
     if path.startswith("custom_fields."):
         path = path.replace("custom_fields.", "custom_field_data.", 1)
-        logger.debug(f"Mapping custom_fields to custom_field_data: {path}")
+        logger.debug("Mapping custom_fields to custom_field_data: %s", path)
 
     # Split the path and traverse the dictionary
     keys = path.split(".")
@@ -143,13 +143,13 @@ def validate_template_path(template: str) -> bool:
     close_count = template.count("}")
 
     if open_count != close_count:
-        logger.error(f"Unbalanced braces in template: {template}")
+        logger.error("Unbalanced braces in template: %s", template)
         return False
 
     # Check for empty variables
     pattern = r"\{\s*\}"
     if re.search(pattern, template):
-        logger.error(f"Empty variable in template: {template}")
+        logger.error("Empty variable in template: %s", template)
         return False
 
     return True

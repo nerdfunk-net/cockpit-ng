@@ -86,7 +86,7 @@ class NetworkScanService:
         try:
             targets = self._expand_cidr_to_ips(cidr)
         except Exception as e:
-            logger.error(f"Invalid CIDR {cidr}: {e}")
+            logger.error("Invalid CIDR %s: %s", cidr, e)
             return NetworkScanResult(
                 cidr=cidr,
                 ping_mode=ping_mode,
@@ -105,7 +105,7 @@ class NetworkScanService:
             self._active_scans[scan_id] = progress
 
         logger.info(
-            f"Starting network scan of {cidr} with {len(targets)} targets using {ping_mode}"
+            "Starting network scan of %s with %s targets using %s", cidr, len(targets), ping_mode
         )
 
         alive_hosts: Set[str] = set()
@@ -141,14 +141,14 @@ class NetworkScanService:
             )
 
             logger.info(
-                f"Network scan completed: {len(alive_hosts)} alive, "
-                f"{len(unreachable_hosts)} unreachable, {scan_duration:.2f}s"
+                "Network scan completed: %s alive, %s unreachable, %.2fs",
+                len(alive_hosts), len(unreachable_hosts), scan_duration,
             )
 
             return result
 
         except Exception as e:
-            logger.error(f"Network scan failed: {e}")
+            logger.error("Network scan failed: %s", e)
             return NetworkScanResult(
                 cidr=cidr,
                 ping_mode=ping_mode,
@@ -212,7 +212,7 @@ class NetworkScanService:
                             alive = True
                             break
                     except Exception as e:
-                        logger.debug(f"Ping attempt {attempt + 1} failed for {ip}: {e}")
+                        logger.debug("Ping attempt %s failed for %s: %s", attempt + 1, ip, e)
 
                 # Update results and progress
                 if alive:
@@ -229,7 +229,7 @@ class NetworkScanService:
                     try:
                         await progress_callback(progress)
                     except Exception as e:
-                        logger.warning(f"Progress callback failed: {e}")
+                        logger.warning("Progress callback failed: %s", e)
 
         # Execute all ping operations concurrently
         await asyncio.gather(*[ping_single_target(ip) for ip in targets])
@@ -291,13 +291,13 @@ class NetworkScanService:
                     temp_file.write(f"{ip}\n")
 
             logger.info(
-                f"Created temporary file {temp_file_path} with {len(ip_list)} IP addresses"
+                "Created temporary file %s with %s IP addresses", temp_file_path, len(ip_list)
             )
 
             # Run fping command reading from the temporary file
             cmd = ["fping"]
 
-            logger.info(f"Running fping command: {' '.join(cmd)} < {temp_file_path}")
+            logger.info("Running fping command: %s < %s", ' '.join(cmd), temp_file_path)
 
             # Use shell=True to support input redirection
             result = subprocess.run(
@@ -343,7 +343,7 @@ class NetworkScanService:
                             # We ignore "is unreachable" and other statuses (like duplicates)
 
             logger.info(
-                f"fping discovered {len(alive_ips)} alive hosts out of {len(ip_list)} targets"
+                "fping discovered %s alive hosts out of %s targets", len(alive_ips), len(ip_list)
             )
 
         except subprocess.TimeoutExpired:
@@ -353,16 +353,16 @@ class NetworkScanService:
                 "fping command not found. Please install fping or use 'ping' mode instead"
             )
         except Exception as e:
-            logger.error(f"fping command failed: {e}")
+            logger.error("fping command failed: %s", e)
         finally:
             # Clean up temporary file
             if temp_file_path and os.path.exists(temp_file_path):
                 try:
                     os.unlink(temp_file_path)
-                    logger.debug(f"Cleaned up temporary file {temp_file_path}")
+                    logger.debug("Cleaned up temporary file %s", temp_file_path)
                 except Exception as e:
                     logger.warning(
-                        f"Failed to clean up temporary file {temp_file_path}: {e}"
+                        "Failed to clean up temporary file %s: %s", temp_file_path, e
                     )
 
         return alive_ips

@@ -48,16 +48,16 @@ class BaseMigration(ABC):
 
     def log_info(self, message: str):
         """Log info message with migration name prefix."""
-        logger.info(f"[{self.name}] {message}")
+        logger.info("[%s] %s", self.name, message)
 
     def log_debug(self, message: str):
         """Log debug message with migration name prefix."""
-        logger.debug(f"[{self.name}] {message}")
+        logger.debug("[%s] %s", self.name, message)
 
     def log_warning(self, message: str):
         """Log warning message with migration name prefix."""
-        logger.warning(f"[{self.name}] {message}")
+        logger.warning("[%s] %s", self.name, message)
 
     def log_error(self, message: str):
         """Log error message with migration name prefix."""
-        logger.error(f"[{self.name}] {message}")
+        logger.error("[%s] %s", self.name, message)

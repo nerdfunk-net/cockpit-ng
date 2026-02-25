@@ -51,7 +51,7 @@ async def get_all_settings(
         return {"settings": settings_data}
 
     except Exception as e:
-        logger.error(f"Error getting settings: {e}")
+        logger.error("Error getting settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve settings: {str(e)}",
@@ -70,7 +70,7 @@ async def get_nautobot_settings(
         return {"success": True, "data": nautobot_settings}
 
     except Exception as e:
-        logger.error(f"Error getting Nautobot settings: {e}")
+        logger.error("Error getting Nautobot settings: %s", e)
         return {
             "success": False,
             "message": f"Failed to retrieve Nautobot settings: {str(e)}",
@@ -89,7 +89,7 @@ async def get_git_settings(
         return {"success": True, "data": git_settings}
 
     except Exception as e:
-        logger.error(f"Error getting Git settings: {e}")
+        logger.error("Error getting Git settings: %s", e)
         return {
             "success": False,
             "message": f"Failed to retrieve Git settings: {str(e)}",
@@ -107,7 +107,7 @@ async def get_cache_settings(
         cache_settings = settings_manager.get_cache_settings()
         return {"success": True, "data": cache_settings}
     except Exception as e:
-        logger.error(f"Error getting Cache settings: {e}")
+        logger.error("Error getting Cache settings: %s", e)
         return {
             "success": False,
             "message": f"Failed to retrieve Cache settings: {str(e)}",
@@ -138,7 +138,7 @@ async def update_cache_settings(
                 detail="Failed to update Cache settings",
             )
     except Exception as e:
-        logger.error(f"Error updating Cache settings: {e}")
+        logger.error("Error updating Cache settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update Cache settings: {str(e)}",
@@ -166,7 +166,7 @@ async def create_cache_settings(
         else:
             return {"success": False, "message": "Failed to update Cache settings"}
     except Exception as e:
-        logger.error(f"Error updating Cache settings: {e}")
+        logger.error("Error updating Cache settings: %s", e)
         return {
             "success": False,
             "message": f"Failed to update Cache settings: {str(e)}",
@@ -203,7 +203,7 @@ async def update_all_settings(
             )
 
     except Exception as e:
-        logger.error(f"Error updating settings: {e}")
+        logger.error("Error updating settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update settings: {str(e)}",
@@ -233,7 +233,7 @@ async def update_nautobot_settings(
             )
 
     except Exception as e:
-        logger.error(f"Error updating Nautobot settings: {e}")
+        logger.error("Error updating Nautobot settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update Nautobot settings: {str(e)}",
@@ -263,7 +263,7 @@ async def update_git_settings(
             )
 
     except Exception as e:
-        logger.error(f"Error updating Git settings: {e}")
+        logger.error("Error updating Git settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update Git settings: {str(e)}",
@@ -292,7 +292,7 @@ async def create_nautobot_settings(
             return {"success": False, "message": "Failed to update Nautobot settings"}
 
     except Exception as e:
-        logger.error(f"Error updating Nautobot settings: {e}")
+        logger.error("Error updating Nautobot settings: %s", e)
         return {
             "success": False,
             "message": f"Failed to update Nautobot settings: {str(e)}",
@@ -320,7 +320,7 @@ async def create_git_settings(
             return {"success": False, "message": "Failed to update Git settings"}
 
     except Exception as e:
-        logger.error(f"Error updating Git settings: {e}")
+        logger.error("Error updating Git settings: %s", e)
         return {"success": False, "message": f"Failed to update Git settings: {str(e)}"}
 
 
@@ -345,7 +345,7 @@ async def test_nautobot_connection(
         }
 
     except Exception as e:
-        logger.error(f"Error testing Nautobot connection: {e}")
+        logger.error("Error testing Nautobot connection: %s", e)
         return {
             "success": False,
             "message": f"Test failed: {str(e)}",
@@ -366,7 +366,7 @@ async def get_checkmk_settings(
         return {"success": True, "data": settings_data}
 
     except Exception as e:
-        logger.error(f"Error getting CheckMK settings: {e}")
+        logger.error("Error getting CheckMK settings: %s", e)
         return {
             "success": False,
             "message": f"Failed to get CheckMK settings: {str(e)}",
@@ -394,7 +394,7 @@ async def create_checkmk_settings(
             return {"success": False, "message": "Failed to update CheckMK settings"}
 
     except Exception as e:
-        logger.error(f"Error updating CheckMK settings: {e}")
+        logger.error("Error updating CheckMK settings: %s", e)
         return {
             "success": False,
             "message": f"Failed to update CheckMK settings: {str(e)}",
@@ -426,7 +426,7 @@ async def test_checkmk_connection(
         }
 
     except Exception as e:
-        logger.error(f"Error testing CheckMK connection: {e}")
+        logger.error("Error testing CheckMK connection: %s", e)
         return {
             "success": False,
             "message": f"Test failed: {str(e)}",
@@ -453,7 +453,7 @@ async def get_agents_settings(
         return {"success": True, "data": settings}
 
     except Exception as e:
-        logger.error(f"Error getting Agents settings: {e}")
+        logger.error("Error getting Agents settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get Agents settings: {str(e)}",
@@ -485,7 +485,7 @@ async def create_agents_settings(
             }
 
     except Exception as e:
-        logger.error(f"Error creating/updating Agents settings: {e}")
+        logger.error("Error creating/updating Agents settings: %s", e)
         return {
             "success": False,
             "message": f"Failed to update Agents settings: {str(e)}",
@@ -606,7 +606,7 @@ async def test_agents_connection(
             }
 
     except Exception as e:
-        logger.error(f"Error testing Agents connection: {e}")
+        logger.error("Error testing Agents connection: %s", e)
         return {
             "success": False,
             "message": f"Test failed: {str(e)}",
@@ -636,7 +636,7 @@ async def test_git_connection(
         }
 
     except Exception as e:
-        logger.error(f"Error testing Git connection: {e}")
+        logger.error("Error testing Git connection: %s", e)
         return {
             "success": False,
             "message": f"Test failed: {str(e)}",
@@ -676,7 +676,7 @@ async def get_telegraf_config(
             content = f.read()
 
         logger.info(
-            f"Successfully read Telegraf config for user: {current_user.get('username')}"
+            "Successfully read Telegraf config for user: %s", current_user.get('username')
         )
         return {
             "success": True,
@@ -685,7 +685,7 @@ async def get_telegraf_config(
         }
 
     except Exception as e:
-        logger.error(f"Error reading Telegraf config: {e}")
+        logger.error("Error reading Telegraf config: %s", e)
         return {
             "success": False,
             "message": f"Failed to read Telegraf config: {str(e)}",
@@ -722,12 +722,12 @@ async def save_telegraf_config(
             f.write(content)
 
         logger.info(
-            f"Successfully saved Telegraf config by user: {current_user.get('username')}"
+            "Successfully saved Telegraf config by user: %s", current_user.get('username')
         )
         return {"success": True, "message": "Telegraf configuration saved successfully"}
 
     except Exception as e:
-        logger.error(f"Error saving Telegraf config: {e}")
+        logger.error("Error saving Telegraf config: %s", e)
         return {
             "success": False,
             "message": f"Failed to save Telegraf config: {str(e)}",
@@ -756,7 +756,7 @@ async def reset_settings_to_defaults(
             )
 
     except Exception as e:
-        logger.error(f"Error resetting settings: {e}")
+        logger.error("Error resetting settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to reset settings: {str(e)}",
@@ -785,7 +785,7 @@ async def check_settings_health(
             }
 
     except Exception as e:
-        logger.error(f"Settings health check failed: {e}")
+        logger.error("Settings health check failed: %s", e)
         return {
             "status": "error",
             "message": f"Health check failed: {str(e)}",
@@ -833,7 +833,7 @@ async def get_nautobot_defaults(
         return {"success": True, "data": defaults}
 
     except Exception as e:
-        logger.error(f"Error getting Nautobot defaults: {e}", exc_info=True)
+        logger.error("Error getting Nautobot defaults: %s", e, exc_info=True)
         return {
             "success": False,
             "message": f"Failed to retrieve Nautobot defaults: {str(e)}",
@@ -861,7 +861,7 @@ async def update_nautobot_defaults(
             return {"success": False, "message": "Failed to update Nautobot defaults"}
 
     except Exception as e:
-        logger.error(f"Error updating Nautobot defaults: {e}")
+        logger.error("Error updating Nautobot defaults: %s", e)
         return {
             "success": False,
             "message": f"Failed to update Nautobot defaults: {str(e)}",
@@ -880,7 +880,7 @@ async def get_device_offboarding_settings(
         return {"success": True, "data": offboarding_settings}
 
     except Exception as e:
-        logger.error(f"Error getting device offboarding settings: {e}")
+        logger.error("Error getting device offboarding settings: %s", e)
         return {
             "success": False,
             "message": f"Failed to retrieve device offboarding settings: {str(e)}",
@@ -913,7 +913,7 @@ async def update_device_offboarding_settings(
             }
 
     except Exception as e:
-        logger.error(f"Error updating device offboarding settings: {e}")
+        logger.error("Error updating device offboarding settings: %s", e)
         return {
             "success": False,
             "message": f"Failed to update device offboarding settings: {str(e)}",

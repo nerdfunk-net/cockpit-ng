@@ -376,7 +376,7 @@ class DeviceNormalizationService:
                 if isinstance(additional_attrs, dict):
                     extensions.attributes.update(additional_attrs)
                     logger.info(
-                        f"Added additional attributes for device '{device_name}': {list(additional_attrs.keys())}"
+                        "Added additional attributes for device '%s': %s", device_name, list(additional_attrs.keys())
                     )
 
             # 2. Check by_ip (second priority, can add more attributes)
@@ -424,21 +424,21 @@ class DeviceNormalizationService:
                                 if isinstance(additional_attrs, dict):
                                     extensions.attributes.update(additional_attrs)
                                     logger.info(
-                                        f"Added additional attributes for device IP '{device_ip}' matching '{ip_or_cidr}': {list(additional_attrs.keys())}"
+                                        "Added additional attributes for device IP '%s' matching '%s': %s", device_ip, ip_or_cidr, list(additional_attrs.keys())
                                     )
                         except ipaddress.AddressValueError:
                             logger.warning(
-                                f"Invalid IP address or CIDR in additional_attributes config: {ip_or_cidr}"
+                                "Invalid IP address or CIDR in additional_attributes config: %s", ip_or_cidr
                             )
                 except Exception as e:
                     logger.warning(
-                        f"Error processing additional_attributes IP rule '{ip_or_cidr}': {e}"
+                        "Error processing additional_attributes IP rule '%s': %s", ip_or_cidr, e
                     )
                     continue
 
         except ipaddress.AddressValueError:
             logger.warning(
-                f"Invalid device IP address for additional_attributes: {device_ip}"
+                "Invalid device IP address for additional_attributes: %s", device_ip
             )
 
     def _process_cf2htg_mappings(

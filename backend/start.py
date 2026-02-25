@@ -40,7 +40,7 @@ def initialize_database_settings():
             logger.info("Using existing database settings")
 
     except Exception as e:
-        logger.error(f"Error initializing database settings: {e}")
+        logger.error("Error initializing database settings: %s", e)
 
 
 def main():
@@ -71,19 +71,19 @@ def main():
     logger = logging.getLogger(__name__)
 
     # Log current log level for verification
-    logger.debug(f"DEBUG: Logging configured at {settings.log_level} level")
-    logger.debug(f"DEBUG: Environment LOG_LEVEL = {os.getenv('LOG_LEVEL', 'not set')}")
+    logger.debug("DEBUG: Logging configured at %s level", settings.log_level)
+    logger.debug("DEBUG: Environment LOG_LEVEL = %s", os.getenv('LOG_LEVEL', 'not set'))
 
     # Initialize database settings
     initialize_database_settings()
 
     # Log startup information
     logger.info("Starting Cockpit Backend Server")
-    logger.info(f"Server: {settings.host}:{settings.port}")
-    logger.info(f"Log Level: {settings.log_level}")
-    logger.info(f"Data Directory: {settings.data_directory}")
-    logger.info(f"Nautobot (env): {settings.nautobot_url}")
-    logger.info(f"Git SSL Verification: {settings.git_ssl_verify}")
+    logger.info("Server: %s:%s", settings.host, settings.port)
+    logger.info("Log Level: %s", settings.log_level)
+    logger.info("Data Directory: %s", settings.data_directory)
+    logger.info("Nautobot (env): %s", settings.nautobot_url)
+    logger.info("Git SSL Verification: %s", settings.git_ssl_verify)
 
     # Start the server
     # Get the backend directory path

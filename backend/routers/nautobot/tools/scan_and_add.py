@@ -130,7 +130,7 @@ async def start_scan(
         credential_ids = request.credential_ids or []
 
         logger.info(
-            f"Starting scan job with CIDRs: {request.cidrs}, credentials: {credential_ids}, mode: {request.discovery_mode}, ping_mode: {request.ping_mode}, template id: {request.parser_template_ids}, debug: {debug_enabled}"
+            "Starting scan job with CIDRs: %s, credentials: %s, mode: %s, ping_mode: %s, template id: %s, debug: %s", request.cidrs, credential_ids, request.discovery_mode, request.ping_mode, request.parser_template_ids, debug_enabled
         )
         job = await scan_service.start_job(
             request.cidrs,
@@ -145,7 +145,7 @@ async def start_scan(
             job_id=job.job_id, total_targets=job.total_targets, state=job.state
         )
     except Exception as e:
-        logger.error(f"Failed to start scan: {e}")
+        logger.error("Failed to start scan: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start scan: {str(e)}",

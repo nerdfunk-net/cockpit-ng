@@ -59,7 +59,7 @@ def init_worker_process(**kwargs):
     from config import settings
 
     pid = os.getpid()
-    logger.info(f"[Worker Init] Initializing database engine for worker PID={pid}")
+    logger.info("[Worker Init] Initializing database engine for worker PID=%s", pid)
 
     # CRITICAL: Dispose of any inherited connections from parent process
     # This prevents connection sharing across processes which causes SIGSEGV
@@ -70,19 +70,19 @@ def init_worker_process(**kwargs):
             # Set to None to ensure we don't accidentally reuse it
             database.engine = None
         except Exception as e:
-            logger.warning(f"[Worker Init] Error disposing parent engine: {e}")
+            logger.warning("[Worker Init] Error disposing parent engine: %s", e)
 
     # Also dispose SessionLocal if it exists
     if hasattr(database, "SessionLocal") and database.SessionLocal is not None:
         try:
             database.SessionLocal.close_all()
         except Exception as e:
-            logger.warning(f"[Worker Init] Error closing sessions: {e}")
+            logger.warning("[Worker Init] Error closing sessions: %s", e)
 
     # Create new engine with fresh connection pool for this worker process
     logger.info(
-        f"[Worker Init] Creating new database engine: "
-        f"postgresql://{settings.database_username}@{settings.database_host}:{settings.database_port}/{settings.database_name}"
+        "[Worker Init] Creating new database engine: postgresql://%s@%s:%s/%s",
+        settings.database_username, settings.database_host, settings.database_port, settings.database_name,
     )
 
     try:
@@ -110,11 +110,11 @@ def init_worker_process(**kwargs):
         # 4. Lazy connection creation avoids immediate psycopg2 calls after fork
 
         logger.info(
-            f"[Worker Init] Database engine initialized successfully for PID={pid}"
+            "[Worker Init] Database engine initialized successfully for PID=%s", pid
         )
 
     except Exception as e:
-        logger.error(f"[Worker Init] Failed to initialize database engine: {e}")
+        logger.error("[Worker Init] Failed to initialize database engine: %s", e)
         import traceback
 
         logger.error(traceback.format_exc())
@@ -137,7 +137,7 @@ def shutdown_worker_process(**kwargs):
     from core import database
 
     logger.info(
-        f"[Worker Shutdown] Cleaning up database connections for worker {kwargs.get('sender')}"
+        "[Worker Shutdown] Cleaning up database connections for worker %s", kwargs.get('sender')
     )
 
     if hasattr(database, "engine") and database.engine:
@@ -145,7 +145,7 @@ def shutdown_worker_process(**kwargs):
             database.engine.dispose()
             logger.info("[Worker Shutdown] Database engine disposed")
         except Exception as e:
-            logger.warning(f"[Worker Shutdown] Error disposing engine: {e}")
+            logger.warning("[Worker Shutdown] Error disposing engine: %s", e)
 
 
 @signals.worker_init.connect
@@ -165,7 +165,7 @@ def init_worker(**kwargs):
     from core import database
 
     pid = os.getpid()
-    logger.info(f"[Worker Main] Celery worker initialized (parent process PID={pid})")
+    logger.info("[Worker Main] Celery worker initialized (parent process PID=%s)", pid)
 
     # CRITICAL: Dispose of any database connections in parent process
     # before forking to avoid connection sharing
@@ -177,13 +177,13 @@ def init_worker(**kwargs):
             database.engine.dispose(close=False)
             database.engine = None
         except Exception as e:
-            logger.warning(f"[Worker Main] Error disposing engine: {e}")
+            logger.warning("[Worker Main] Error disposing engine: %s", e)
 
     if hasattr(database, "SessionLocal") and database.SessionLocal is not None:
         try:
             database.SessionLocal.close_all()
         except Exception as e:
-            logger.warning(f"[Worker Main] Error closing sessions: {e}")
+            logger.warning("[Worker Main] Error closing sessions: %s", e)
 
     logger.info(
         "[Worker Main] Worker child processes will initialize their own database engines"

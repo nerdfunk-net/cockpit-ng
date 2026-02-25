@@ -28,7 +28,7 @@ def log_auth_event(
             severity=severity,
         )
     except Exception as e:
-        logger.error(f"Failed to create auth audit log: {e}")
+        logger.error("Failed to create auth audit log: %s", e)
 
 
 def log_device_onboarding(
@@ -47,7 +47,7 @@ def log_device_onboarding(
         message += f" - Error: {error_message}"
 
     logger.info(
-        f"Creating audit log: username={username}, device={device_name}, device_id={device_id}"
+        "Creating audit log: username=%s, device=%s, device_id=%s", username, device_name, device_id
     )
 
     try:
@@ -61,10 +61,10 @@ def log_device_onboarding(
             resource_name=device_name,
             severity=severity,
         )
-        logger.info(f"Audit log created successfully for device {device_name}")
+        logger.info("Audit log created successfully for device %s", device_name)
     except Exception as e:
         logger.error(
-            f"Failed to create device onboarding audit log: {e}", exc_info=True
+            "Failed to create device onboarding audit log: %s", e, exc_info=True
         )
 
 
@@ -84,4 +84,4 @@ def log_system_event(
             extra_data=extra_data,
         )
     except Exception as e:
-        logger.error(f"Failed to create system audit log: {e}")
+        logger.error("Failed to create system audit log: %s", e)

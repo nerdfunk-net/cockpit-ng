@@ -119,8 +119,8 @@ class IPManager:
                 and use_assigned_ip_if_exists
             ):
                 logger.warning(
-                    f"IP creation failed: IP {ip_address} already exists with different netmask. "
-                    f"Attempting to find existing IP..."
+                    "IP creation failed: IP %s already exists with different netmask. Attempting to find existing IP...",
+                    ip_address,
                 )
 
                 # Extract the host IP without netmask (e.g., "192.168.1.1/24" -> "192.168.1.1")
@@ -168,7 +168,7 @@ class IPManager:
 
                 except Exception as lookup_error:
                     logger.error(
-                        f"Failed to find existing IP for {ip_address}: {lookup_error}"
+                        "Failed to find existing IP for %s: %s", ip_address, lookup_error
                     )
                     raise NautobotAPIError(
                         f"Failed to create IP {ip_address} and could not find existing IP: {lookup_error}"
@@ -209,7 +209,7 @@ class IPManager:
                         )
 
                         logger.info(
-                            f"Successfully created prefix {network_prefix}, retrying IP creation..."
+                            "Successfully created prefix %s, retrying IP creation...", network_prefix
                         )
 
                         # Retry IP creation
@@ -221,13 +221,13 @@ class IPManager:
 
                         ip_id = ip_create_result["id"]
                         logger.info(
-                            f"Created IP address after prefix creation: {ip_id}"
+                            "Created IP address after prefix creation: %s", ip_id
                         )
                         return ip_id
 
                     except Exception as prefix_error:
                         logger.error(
-                            f"Failed to auto-create prefix for {ip_address}: {prefix_error}"
+                            "Failed to auto-create prefix for %s: %s", ip_address, prefix_error
                         )
                         raise NautobotAPIError(
                             f"Failed to create IP {ip_address} and could not auto-create prefix: {prefix_error}"
@@ -235,8 +235,8 @@ class IPManager:
                 else:
                     # User has disabled automatic prefix creation - stop and raise clear error
                     logger.error(
-                        f"IP creation failed: No suitable parent prefix exists for {ip_address}. "
-                        f"Automatic prefix creation is disabled. Error: {error_message}"
+                        "IP creation failed: No suitable parent prefix exists for %s. Automatic prefix creation is disabled. Error: %s",
+                        ip_address, error_message,
                     )
                     raise NautobotAPIError(
                         f"Cannot create IP address {ip_address}: No suitable parent prefix exists. "

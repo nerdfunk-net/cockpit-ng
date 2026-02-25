@@ -139,7 +139,7 @@ async def agent_deploy_dry_run(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in agent deployment dry run: {e}")
+        logger.error("Error in agent deployment dry run: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to perform dry run: {str(e)}",
@@ -287,7 +287,7 @@ async def agent_deploy_to_git(
         with open(full_file_path, "w", encoding="utf-8") as f:
             f.write(render_result.rendered_content)
 
-        logger.info(f"Wrote rendered template to {full_file_path}")
+        logger.info("Wrote rendered template to %s", full_file_path)
 
         # Get agent name (agent was already found earlier)
         agent_name = agent.get("name", request.agentId)
@@ -322,7 +322,7 @@ async def agent_deploy_to_git(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in agent git deployment: {e}", exc_info=True)
+        logger.error("Error in agent git deployment: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to deploy to git: {str(e)}",

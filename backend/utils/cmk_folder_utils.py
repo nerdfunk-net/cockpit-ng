@@ -25,19 +25,19 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
     Returns:
         Processed folder path with variables replaced
     """
-    logger.debug(f"parse_folder_value: Starting with template='{folder_template}'")
-    logger.debug(f"parse_folder_value: Device data keys: {list(device_data.keys())}")
+    logger.debug("parse_folder_value: Starting with template='%s'", folder_template)
+    logger.debug("parse_folder_value: Device data keys: %s", list(device_data.keys()))
 
     folder_path = folder_template
     custom_field_data = device_data.get("_custom_field_data", {})
-    logger.debug(f"parse_folder_value: Custom field data: {custom_field_data}")
+    logger.debug("parse_folder_value: Custom field data: %s", custom_field_data)
 
     # Find all template variables in the format {key} or {_custom_field_data.key}
     template_vars = re.findall(r"\{([^}]+)\}", folder_path)
-    logger.debug(f"parse_folder_value: Found template variables: {template_vars}")
+    logger.debug("parse_folder_value: Found template variables: %s", template_vars)
 
     for var in template_vars:
-        logger.debug(f"parse_folder_value: Processing variable '{var}'")
+        logger.debug("parse_folder_value: Processing variable '%s'", var)
         actual_value = ""
 
         if var.startswith("_custom_field_data."):
@@ -45,7 +45,7 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
             custom_field_key = var.replace("_custom_field_data.", "")
             actual_value = custom_field_data.get(custom_field_key, "")
             logger.debug(
-                f"parse_folder_value: Custom field '{custom_field_key}' = '{actual_value}'"
+                "parse_folder_value: Custom field '%s' = '%s'", custom_field_key, actual_value
             )
         else:
             # Handle regular device data with dot notation: {location.name}
@@ -58,24 +58,24 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
                     if isinstance(current_value, dict) and part in current_value:
                         current_value = current_value[part]
                         logger.debug(
-                            f"parse_folder_value: Traversing '{part}', current value: {current_value}"
+                            "parse_folder_value: Traversing '%s', current value: %s", part, current_value
                         )
                     else:
                         logger.debug(
-                            f"parse_folder_value: Path part '{part}' not found or not a dict"
+                            "parse_folder_value: Path part '%s' not found or not a dict", part
                         )
                         current_value = ""
                         break
 
                 actual_value = current_value if current_value != device_data else ""
                 logger.debug(
-                    f"parse_folder_value: Nested attribute '{var}' = '{actual_value}'"
+                    "parse_folder_value: Nested attribute '%s' = '%s'", var, actual_value
                 )
             else:
                 # Simple direct attribute: {name}
                 actual_value = device_data.get(var, "")
                 logger.debug(
-                    f"parse_folder_value: Direct attribute '{var}' = '{actual_value}'"
+                    "parse_folder_value: Direct attribute '%s' = '%s'", var, actual_value
                 )
 
         # Replace the variable in the folder path
@@ -83,10 +83,10 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
 
         if not actual_value:
             logger.debug(
-                f"parse_folder_value: Variable '{var}' resolved to empty value"
+                "parse_folder_value: Variable '%s' resolved to empty value", var
             )
 
-    logger.debug(f"parse_folder_value: Final folder path: '{folder_path}'")
+    logger.debug("parse_folder_value: Final folder path: '%s'", folder_path)
     return folder_path
 
 
@@ -99,14 +99,14 @@ def normalize_folder_path(folder_path: str) -> str:
     Returns:
         Normalized folder path
     """
-    logger.debug(f"normalize_folder_path: Input path: '{folder_path}'")
+    logger.debug("normalize_folder_path: Input path: '%s'", folder_path)
 
     if not folder_path or folder_path == "/":
         logger.debug("normalize_folder_path: Path is empty or root, returning '/'")
         return "/"
 
     normalized = folder_path.rstrip("/")
-    logger.debug(f"normalize_folder_path: Normalized path: '{normalized}'")
+    logger.debug("normalize_folder_path: Normalized path: '%s'", normalized)
     return normalized
 
 
@@ -119,14 +119,14 @@ def build_checkmk_folder_path(path_parts: list[str]) -> str:
     Returns:
         CheckMK folder path with ~ separators
     """
-    logger.debug(f"build_checkmk_folder_path: Input parts: {path_parts}")
+    logger.debug("build_checkmk_folder_path: Input parts: %s", path_parts)
 
     if not path_parts:
         logger.debug("build_checkmk_folder_path: No parts provided, returning '/'")
         return "/"
 
     result = "~" + "~".join(path_parts)
-    logger.debug(f"build_checkmk_folder_path: Built path: '{result}'")
+    logger.debug("build_checkmk_folder_path: Built path: '%s'", result)
     return result
 
 
@@ -139,7 +139,7 @@ def split_checkmk_folder_path(folder_path: str) -> list[str]:
     Returns:
         List of path components
     """
-    logger.debug(f"split_checkmk_folder_path: Input path: '{folder_path}'")
+    logger.debug("split_checkmk_folder_path: Input path: '%s'", folder_path)
 
     if not folder_path or folder_path in ["/", "~"]:
         logger.debug(
@@ -150,11 +150,11 @@ def split_checkmk_folder_path(folder_path: str) -> list[str]:
     # Remove leading ~ if present and split by ~
     if folder_path.startswith("~"):
         path_parts = folder_path.lstrip("~").split("~")
-        logger.debug(f"split_checkmk_folder_path: Splitting by '~': {path_parts}")
+        logger.debug("split_checkmk_folder_path: Splitting by '~': %s", path_parts)
     else:
         path_parts = folder_path.lstrip("/").split("/")
-        logger.debug(f"split_checkmk_folder_path: Splitting by '/': {path_parts}")
+        logger.debug("split_checkmk_folder_path: Splitting by '/': %s", path_parts)
 
     result = [part for part in path_parts if part]  # Remove empty parts
-    logger.debug(f"split_checkmk_folder_path: Final parts (empty removed): {result}")
+    logger.debug("split_checkmk_folder_path: Final parts (empty removed): %s", result)
     return result

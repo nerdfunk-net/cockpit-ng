@@ -60,7 +60,7 @@ async def resolve_inventory_to_device_ids(
 
         if not inventory:
             logger.warning(
-                f"Inventory '{inventory_name}' not found in database for user '{username}'"
+                "Inventory '%s' not found in database for user '%s'", inventory_name, username
             )
             return None
 
@@ -69,7 +69,7 @@ async def resolve_inventory_to_device_ids(
         operations = convert_saved_inventory_to_operations(inventory["conditions"])
 
         if not operations:
-            logger.warning(f"No valid operations for inventory '{inventory_name}'")
+            logger.warning("No valid operations for inventory '%s'", inventory_name)
             return None
 
         # Preview inventory to get matching devices
@@ -79,13 +79,13 @@ async def resolve_inventory_to_device_ids(
         device_ids = [device.id for device in devices]
 
         logger.info(
-            f"Resolved {len(device_ids)} devices from inventory '{inventory_name}'"
+            "Resolved %s devices from inventory '%s'", len(device_ids), inventory_name
         )
         return device_ids
 
     except Exception as e:
         logger.error(
-            f"Error resolving inventory '{inventory_name}': {e}", exc_info=True
+            "Error resolving inventory '%s': %s", inventory_name, e, exc_info=True
         )
         return None
 

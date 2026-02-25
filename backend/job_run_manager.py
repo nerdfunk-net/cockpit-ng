@@ -38,7 +38,7 @@ def create_job_run(
     )
 
     logger.info(
-        f"Created job run: {job_name} (ID: {job_run_data.get('id')}, triggered_by: {triggered_by})"
+        "Created job run: %s (ID: %s, triggered_by: %s)", job_name, job_run_data.get('id'), triggered_by
     )
     return _model_to_dict(job_run_data)
 
@@ -122,7 +122,7 @@ def mark_started(run_id: int, celery_task_id: str) -> Optional[Dict[str, Any]]:
     """Mark a job run as started"""
     job_run = repo.mark_started(run_id, celery_task_id)
     if job_run:
-        logger.info(f"Job run {run_id} started (task: {celery_task_id})")
+        logger.info("Job run %s started (task: %s)", run_id, celery_task_id)
         return _model_to_dict(job_run)
     return None
 
@@ -134,7 +134,7 @@ def mark_completed(
     result_json = json.dumps(result) if result else None
     job_run = repo.mark_completed(run_id, result=result_json)
     if job_run:
-        logger.info(f"Job run {run_id} completed")
+        logger.info("Job run %s completed", run_id)
         return _model_to_dict(job_run)
     return None
 
@@ -143,7 +143,7 @@ def mark_failed(run_id: int, error_message: str) -> Optional[Dict[str, Any]]:
     """Mark a job run as failed"""
     job_run = repo.mark_failed(run_id, error_message)
     if job_run:
-        logger.warning(f"Job run {run_id} failed: {error_message}")
+        logger.warning("Job run %s failed: %s", run_id, error_message)
         return _model_to_dict(job_run)
     return None
 
@@ -152,7 +152,7 @@ def mark_cancelled(run_id: int) -> Optional[Dict[str, Any]]:
     """Mark a job run as cancelled"""
     job_run = repo.mark_cancelled(run_id)
     if job_run:
-        logger.info(f"Job run {run_id} cancelled")
+        logger.info("Job run %s cancelled", run_id)
         return _model_to_dict(job_run)
     return None
 
@@ -246,7 +246,7 @@ def get_dashboard_stats() -> Dict[str, Any]:
 def cleanup_old_runs(days: int = 30) -> int:
     """Delete job runs older than specified days"""
     count = repo.cleanup_old_runs(days)
-    logger.info(f"Cleaned up {count} old job runs (older than {days} days)")
+    logger.info("Cleaned up %s old job runs (older than %s days)", count, days)
     return count
 
 
@@ -255,14 +255,14 @@ def cleanup_old_runs_hours(hours: int = 24) -> int:
     # Convert hours to days (fractional)
     hours / 24.0
     count = repo.cleanup_old_runs_hours(hours)
-    logger.info(f"Cleaned up {count} old job runs (older than {hours} hours)")
+    logger.info("Cleaned up %s old job runs (older than %s hours)", count, hours)
     return count
 
 
 def clear_all_runs() -> int:
     """Delete all job runs"""
     count = repo.clear_all()
-    logger.info(f"Cleared all job runs ({count} deleted)")
+    logger.info("Cleared all job runs (%s deleted)", count)
     return count
 
 
@@ -289,7 +289,7 @@ def clear_filtered_runs(
     if template_id:
         filters.append(f"template_id={','.join(map(str, template_id))}")
     filter_desc = ", ".join(filters) if filters else "all"
-    logger.info(f"Cleared {count} job runs (filter: {filter_desc})")
+    logger.info("Cleared %s job runs (filter: %s)", count, filter_desc)
     return count
 
 
@@ -302,7 +302,7 @@ def delete_job_run(run_id: int) -> bool:
     """Delete a single job run by ID"""
     deleted = repo.delete(run_id)
     if deleted:
-        logger.info(f"Deleted job run {run_id}")
+        logger.info("Deleted job run %s", run_id)
     return deleted
 
 

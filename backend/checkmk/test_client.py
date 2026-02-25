@@ -43,16 +43,16 @@ def test_client():
         logger.info("2. Getting CheckMK version...")
         try:
             version = client.get_version()
-            logger.info(f"   ✓ Version: {version}")
+            logger.info("   ✓ Version: %s", version)
         except CheckMKAPIError as e:
-            logger.warning(f"   ⚠ Version check failed: {e}")
+            logger.warning("   ⚠ Version check failed: %s", e)
 
         # Test 3: Get all host configurations
         logger.info("3. Getting all host configurations...")
         try:
             hosts = client.get_all_hosts()
             host_count = len(hosts.get("value", []))
-            logger.info(f"   ✓ Found {host_count} configured hosts")
+            logger.info("   ✓ Found %s configured hosts", host_count)
 
             if host_count > 0:
                 # Show first few hosts
@@ -64,10 +64,10 @@ def test_client():
                     ip_address = attributes.get("ipaddress", "N/A")
                     alias = attributes.get("alias", "N/A")
                     logger.info(
-                        f"     {i + 1}. {host_id} - IP: {ip_address}, Alias: {alias}"
+                        "     %s. %s - IP: %s, Alias: %s", i + 1, host_id, ip_address, alias
                     )
         except CheckMKAPIError as e:
-            logger.error(f"   ✗ Host configurations failed: {e}")
+            logger.error("   ✗ Host configurations failed: %s", e)
 
         # Test 4: Get all monitored hosts (with status)
         logger.info("4. Getting monitored hosts with status...")
@@ -76,7 +76,7 @@ def test_client():
                 columns=["name", "state", "address", "alias", "last_check"]
             )
             monitored_count = len(monitored.get("value", []))
-            logger.info(f"   ✓ Found {monitored_count} monitored hosts")
+            logger.info("   ✓ Found %s monitored hosts", monitored_count)
 
             if monitored_count > 0:
                 logger.info("   Host status overview:")
@@ -92,10 +92,10 @@ def test_client():
                         state, f"State {state}"
                     )
                     logger.info(
-                        f"     {i + 1}. {name} - {state_text} ({address}) - Last check: {last_check}"
+                        "     %s. %s - %s (%s) - Last check: %s", i + 1, name, state_text, address, last_check
                     )
         except CheckMKAPIError as e:
-            logger.warning(f"   ⚠ Monitored hosts failed: {e}")
+            logger.warning("   ⚠ Monitored hosts failed: %s", e)
 
         # Test 5: Test services for first host
         logger.info("5. Testing service queries...")
@@ -103,13 +103,13 @@ def test_client():
             if monitored_count > 0:
                 first_host_data = monitored["value"][0]["extensions"]
                 first_host = first_host_data.get("name")
-                logger.info(f"   Getting services for host: {first_host}")
+                logger.info("   Getting services for host: %s", first_host)
 
                 services = client.get_host_services(
                     first_host, columns=["description", "state", "plugin_output"]
                 )
                 service_count = len(services.get("value", []))
-                logger.info(f"   ✓ Found {service_count} services for {first_host}")
+                logger.info("   ✓ Found %s services for %s", service_count, first_host)
 
                 if service_count > 0:
                     logger.info("   Service status overview:")
@@ -126,35 +126,35 @@ def test_client():
                             2: "CRITICAL",
                             3: "UNKNOWN",
                         }.get(state, f"State {state}")
-                        logger.info(f"     {i + 1}. {description} - {state_text}")
+                        logger.info("     %s. %s - %s", i + 1, description, state_text)
                         if output and len(output) < 100:
-                            logger.info(f"        Output: {output}")
+                            logger.info("        Output: %s", output)
             else:
                 logger.info("   No monitored hosts available for service testing")
         except CheckMKAPIError as e:
-            logger.warning(f"   ⚠ Service queries failed: {e}")
+            logger.warning("   ⚠ Service queries failed: %s", e)
 
         # Test 6: Check pending changes
         logger.info("6. Checking pending changes...")
         try:
             pending = client.get_pending_changes()
             change_count = len(pending.get("value", []))
-            logger.info(f"   ✓ Found {change_count} pending changes")
+            logger.info("   ✓ Found %s pending changes", change_count)
 
             if change_count > 0:
                 logger.info("   Pending changes:")
                 for i, change in enumerate(pending.get("value", [])[:3]):
                     change_id = change.get("id", "Unknown")
-                    logger.info(f"     {i + 1}. Change ID: {change_id}")
+                    logger.info("     %s. Change ID: %s", i + 1, change_id)
         except CheckMKAPIError as e:
-            logger.warning(f"   ⚠ Pending changes check failed: {e}")
+            logger.warning("   ⚠ Pending changes check failed: %s", e)
 
         # Test 7: Test host groups
         logger.info("7. Testing host groups...")
         try:
             groups = client.get_host_groups()
             group_count = len(groups.get("value", []))
-            logger.info(f"   ✓ Found {group_count} host groups")
+            logger.info("   ✓ Found %s host groups", group_count)
 
             if group_count > 0:
                 logger.info("   Host groups:")
@@ -162,9 +162,9 @@ def test_client():
                     group_id = group.get("id", "Unknown")
                     extensions = group.get("extensions", {})
                     alias = extensions.get("alias", "No alias")
-                    logger.info(f"     {i + 1}. {group_id} - {alias}")
+                    logger.info("     %s. %s - %s", i + 1, group_id, alias)
         except CheckMKAPIError as e:
-            logger.warning(f"   ⚠ Host groups failed: {e}")
+            logger.warning("   ⚠ Host groups failed: %s", e)
 
         # Test 8: Try service discovery (if we have hosts)
         if monitored_count > 0:
@@ -172,19 +172,19 @@ def test_client():
             try:
                 first_host = monitored["value"][0]["extensions"]["name"]
                 discovery_status = client.get_service_discovery(first_host)
-                logger.info(f"   ✓ Service discovery status retrieved for {first_host}")
+                logger.info("   ✓ Service discovery status retrieved for %s", first_host)
 
                 # Check discovery status
                 extensions = discovery_status.get("extensions", {})
-                logger.info(f"   Discovery phase: {extensions.get('phase', 'Unknown')}")
+                logger.info("   Discovery phase: %s", extensions.get('phase', 'Unknown'))
             except CheckMKAPIError as e:
-                logger.info(f"   ⚠ Service discovery not available: {e}")
+                logger.info("   ⚠ Service discovery not available: %s", e)
 
         logger.info("\n✓ API client tests completed successfully!")
         return True
 
     except Exception as e:
-        logger.error(f"\n✗ Unexpected error during testing: {e}")
+        logger.error("\n✗ Unexpected error during testing: %s", e)
         import traceback
 
         traceback.print_exc()
@@ -208,21 +208,21 @@ def test_specific_host():
     test_hostname = "server-001"
 
     try:
-        logger.info(f"Testing operations on host: {test_hostname}")
+        logger.info("Testing operations on host: %s", test_hostname)
 
         # Try to get specific host
         try:
             host_info = client.get_host(test_hostname)
-            logger.info(f"✓ Retrieved host config for {test_hostname}")
+            logger.info("✓ Retrieved host config for %s", test_hostname)
 
             # Show some host details
             extensions = host_info.get("extensions", {})
             attributes = extensions.get("attributes", {})
-            logger.info(f"   IP Address: {attributes.get('ipaddress', 'N/A')}")
-            logger.info(f"   Alias: {attributes.get('alias', 'N/A')}")
+            logger.info("   IP Address: %s", attributes.get('ipaddress', 'N/A'))
+            logger.info("   Alias: %s", attributes.get('alias', 'N/A'))
 
         except CheckMKAPIError as e:
-            logger.info(f"⚠ Host {test_hostname} not found or not accessible: {e}")
+            logger.info("⚠ Host %s not found or not accessible: %s", test_hostname, e)
             return
 
         # Try to get monitored status
@@ -230,7 +230,7 @@ def test_specific_host():
             monitored_info = client.get_monitored_host(
                 test_hostname, columns=["name", "state", "last_check", "plugin_output"]
             )
-            logger.info(f"✓ Retrieved monitoring status for {test_hostname}")
+            logger.info("✓ Retrieved monitoring status for %s", test_hostname)
 
             extensions = monitored_info.get("extensions", {})
             state = extensions.get("state", "Unknown")
@@ -239,11 +239,11 @@ def test_specific_host():
             state_text = {0: "UP", 1: "DOWN", 2: "UNREACHABLE"}.get(
                 state, f"State {state}"
             )
-            logger.info(f"   Status: {state_text}")
-            logger.info(f"   Last Check: {last_check}")
+            logger.info("   Status: %s", state_text)
+            logger.info("   Last Check: %s", last_check)
 
         except CheckMKAPIError as e:
-            logger.info(f"⚠ Monitoring status not available: {e}")
+            logger.info("⚠ Monitoring status not available: %s", e)
 
         # Try to get services
         try:
@@ -251,7 +251,7 @@ def test_specific_host():
                 test_hostname, columns=["description", "state", "plugin_output"]
             )
             service_count = len(services.get("value", []))
-            logger.info(f"✓ Found {service_count} services for {test_hostname}")
+            logger.info("✓ Found %s services for %s", service_count, test_hostname)
 
             # Show problematic services (non-OK)
             problem_services = []
@@ -262,7 +262,7 @@ def test_specific_host():
                     problem_services.append(service)
 
             if problem_services:
-                logger.info(f"   Found {len(problem_services)} non-OK services:")
+                logger.info("   Found %s non-OK services:", len(problem_services))
                 for service in problem_services[:3]:
                     extensions = service.get("extensions", {})
                     description = extensions.get("description", "Unknown")
@@ -273,15 +273,15 @@ def test_specific_host():
                         2: "CRITICAL",
                         3: "UNKNOWN",
                     }.get(state, f"State {state}")
-                    logger.info(f"     - {description}: {state_text}")
+                    logger.info("     - %s: %s", description, state_text)
             else:
                 logger.info("   All services are OK!")
 
         except CheckMKAPIError as e:
-            logger.info(f"⚠ Service information not available: {e}")
+            logger.info("⚠ Service information not available: %s", e)
 
     except Exception as e:
-        logger.error(f"✗ Error testing specific host: {e}")
+        logger.error("✗ Error testing specific host: %s", e)
 
 
 def main():

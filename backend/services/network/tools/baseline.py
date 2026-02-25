@@ -62,7 +62,7 @@ class TestBaselineService:
 
         baseline_data = []
         for yaml_file in yaml_files:
-            logger.info(f"Loading baseline file: {yaml_file}")
+            logger.info("Loading baseline file: %s", yaml_file)
             with open(yaml_file, "r") as f:
                 data = yaml.safe_load(f)
                 if data:
@@ -100,7 +100,7 @@ class TestBaselineService:
 
                 # Debug: log available statuses
                 available_statuses = [s["name"] for s in response["results"]]
-                logger.info(f"Available statuses: {available_statuses}")
+                logger.info("Available statuses: %s", available_statuses)
 
             # Try exact match first, then case-insensitive
             status_uuid = self.status_cache.get(status_name)
@@ -110,7 +110,7 @@ class TestBaselineService:
             return status_uuid
 
         except Exception as e:
-            logger.error(f"Error fetching statuses from Nautobot: {e}")
+            logger.error("Error fetching statuses from Nautobot: %s", e)
             return None
 
     async def create_location_types(
@@ -134,7 +134,7 @@ class TestBaselineService:
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
                     created[lt["name"]] = existing["id"]
-                    logger.info(f"Location type '{lt['name']}' already exists")
+                    logger.info("Location type '%s' already exists", lt['name'])
                     continue
 
                 # Create new location type
@@ -158,7 +158,7 @@ class TestBaselineService:
                         payload["parent"] = {"id": parent_type_id}
                     else:
                         logger.warning(
-                            f"Parent location type '{parent_type_name}' not found for '{lt['name']}'"
+                            "Parent location type '%s' not found for '%s'", parent_type_name, lt['name']
                         )
 
                 result = await self.nautobot.rest_request(
@@ -166,10 +166,10 @@ class TestBaselineService:
                 )
 
                 created[lt["name"]] = result["id"]
-                logger.info(f"Created location type: {lt['name']}")
+                logger.info("Created location type: %s", lt['name'])
 
             except Exception as e:
-                logger.error(f"Error creating location type '{lt['name']}': {e}")
+                logger.error("Error creating location type '%s': %s", lt['name'], e)
                 raise
 
         return created
@@ -188,7 +188,7 @@ class TestBaselineService:
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
                     created[location["name"]] = existing["id"]
-                    logger.info(f"Location '{location['name']}' already exists")
+                    logger.info("Location '%s' already exists", location['name'])
                     continue
 
                 # Prepare payload
@@ -206,7 +206,7 @@ class TestBaselineService:
                     payload["status"] = {"id": status_uuid}
                 else:
                     logger.warning(
-                        f"Status '{status_name}' not found, location '{location['name']}' may not be created correctly"
+                        "Status '%s' not found, location '%s' may not be created correctly", status_name, location['name']
                     )
 
                 # Resolve location type
@@ -229,10 +229,10 @@ class TestBaselineService:
                 )
 
                 created[location["name"]] = result["id"]
-                logger.info(f"Created location: {location['name']}")
+                logger.info("Created location: %s", location['name'])
 
             except Exception as e:
-                logger.error(f"Error creating location '{location['name']}': {e}")
+                logger.error("Error creating location '%s': %s", location['name'], e)
                 raise
 
         return created
@@ -251,7 +251,7 @@ class TestBaselineService:
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
                     created[role["name"]] = existing["id"]
-                    logger.info(f"Role '{role['name']}' already exists")
+                    logger.info("Role '%s' already exists", role['name'])
                     continue
 
                 # Create new role
@@ -266,10 +266,10 @@ class TestBaselineService:
                 )
 
                 created[role["name"]] = result["id"]
-                logger.info(f"Created role: {role['name']}")
+                logger.info("Created role: %s", role['name'])
 
             except Exception as e:
-                logger.error(f"Error creating role '{role['name']}': {e}")
+                logger.error("Error creating role '%s': %s", role['name'], e)
                 raise
 
         return created
@@ -300,7 +300,7 @@ class TestBaselineService:
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
                     created[tag["name"]] = existing["id"]
-                    logger.info(f"Tag '{tag['name']}' already exists")
+                    logger.info("Tag '%s' already exists", tag['name'])
                     continue
 
                 # Create new tag
@@ -323,10 +323,10 @@ class TestBaselineService:
                 )
 
                 created[tag["name"]] = result["id"]
-                logger.info(f"Created tag: {tag['name']}")
+                logger.info("Created tag: %s", tag['name'])
 
             except Exception as e:
-                logger.error(f"Error creating tag '{tag['name']}': {e}")
+                logger.error("Error creating tag '%s': %s", tag['name'], e)
                 raise
 
         return created
@@ -347,7 +347,7 @@ class TestBaselineService:
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
                     created[manufacturer["name"]] = existing["id"]
-                    logger.info(f"Manufacturer '{manufacturer['name']}' already exists")
+                    logger.info("Manufacturer '%s' already exists", manufacturer['name'])
                     continue
 
                 # Create new manufacturer
@@ -363,11 +363,11 @@ class TestBaselineService:
                 )
 
                 created[manufacturer["name"]] = result["id"]
-                logger.info(f"Created manufacturer: {manufacturer['name']}")
+                logger.info("Created manufacturer: %s", manufacturer['name'])
 
             except Exception as e:
                 logger.error(
-                    f"Error creating manufacturer '{manufacturer['name']}': {e}"
+                    "Error creating manufacturer '%s': %s", manufacturer['name'], e
                 )
                 raise
 
@@ -387,7 +387,7 @@ class TestBaselineService:
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
                     created[platform["name"]] = existing["id"]
-                    logger.info(f"Platform '{platform['name']}' already exists")
+                    logger.info("Platform '%s' already exists", platform['name'])
                     continue
 
                 # Create new platform
@@ -414,10 +414,10 @@ class TestBaselineService:
                 )
 
                 created[platform["name"]] = result["id"]
-                logger.info(f"Created platform: {platform['name']}")
+                logger.info("Created platform: %s", platform['name'])
 
             except Exception as e:
-                logger.error(f"Error creating platform '{platform['name']}': {e}")
+                logger.error("Error creating platform '%s': %s", platform['name'], e)
                 raise
 
         return created
@@ -438,7 +438,7 @@ class TestBaselineService:
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
                     created[device_type["model"]] = existing["id"]
-                    logger.info(f"Device type '{device_type['model']}' already exists")
+                    logger.info("Device type '%s' already exists", device_type['model'])
                     continue
 
                 # Resolve manufacturer
@@ -447,7 +447,7 @@ class TestBaselineService:
                 )
                 if not mfr_id:
                     logger.error(
-                        f"Manufacturer '{device_type['manufacturer']}' not found for device type '{device_type['model']}'"
+                        "Manufacturer '%s' not found for device type '%s'", device_type['manufacturer'], device_type['model']
                     )
                     continue
 
@@ -465,11 +465,11 @@ class TestBaselineService:
                 )
 
                 created[device_type["model"]] = result["id"]
-                logger.info(f"Created device type: {device_type['model']}")
+                logger.info("Created device type: %s", device_type['model'])
 
             except Exception as e:
                 logger.error(
-                    f"Error creating device type '{device_type.get('model', 'unknown')}': {e}"
+                    "Error creating device type '%s': %s", device_type.get('model', 'unknown'), e
                 )
                 raise
 
@@ -482,7 +482,7 @@ class TestBaselineService:
         for prefix in prefixes:
             try:
                 prefix_cidr = prefix.get("prefix")
-                logger.info(f"Processing prefix: {prefix_cidr}")
+                logger.info("Processing prefix: %s", prefix_cidr)
 
                 # Use DeviceCommonService to ensure prefix exists
                 prefix_id = await self.common.ensure_prefix_exists(
@@ -502,11 +502,11 @@ class TestBaselineService:
                 )
 
                 created[prefix_cidr] = prefix_id
-                logger.info(f"Prefix '{prefix_cidr}' ensured with ID: {prefix_id}")
+                logger.info("Prefix '%s' ensured with ID: %s", prefix_cidr, prefix_id)
 
             except Exception as e:
                 logger.error(
-                    f"Error creating prefix '{prefix.get('prefix', 'unknown')}': {e}"
+                    "Error creating prefix '%s': %s", prefix.get('prefix', 'unknown'), e
                 )
                 raise
 
@@ -529,7 +529,7 @@ class TestBaselineService:
         for field_key, field_configs in custom_fields_data.items():
             # In YAML, each custom field is defined as a list with one element
             if not field_configs or not isinstance(field_configs, list):
-                logger.warning(f"Custom field '{field_key}' has invalid configuration")
+                logger.warning("Custom field '%s' has invalid configuration", field_key)
                 continue
 
             field_config = field_configs[0]  # Get the first (and should be only) config
@@ -555,7 +555,7 @@ class TestBaselineService:
                 if existing:
                     created[field_key] = existing["id"]
                     self.custom_field_cache[key] = existing["id"]
-                    logger.info(f"Custom field '{key}' already exists")
+                    logger.info("Custom field '%s' already exists", key)
                     continue
 
                 # Prepare payload for custom field creation
@@ -607,11 +607,11 @@ class TestBaselineService:
                 created[field_key] = result["id"]
                 self.custom_field_cache[key] = result["id"]
                 logger.info(
-                    f"Created custom field: {key} (type: {field_config['type']})"
+                    "Created custom field: %s (type: %s)", key, field_config['type']
                 )
 
             except Exception as e:
-                logger.error(f"Error creating custom field '{field_key}': {e}")
+                logger.error("Error creating custom field '%s': %s", field_key, e)
                 raise
 
         return created
@@ -633,7 +633,7 @@ class TestBaselineService:
         for field_key, choices in choices_data.items():
             if not choices or not isinstance(choices, list):
                 logger.warning(
-                    f"Custom field choices for '{field_key}' has invalid configuration"
+                    "Custom field choices for '%s' has invalid configuration", field_key
                 )
                 continue
 
@@ -646,7 +646,7 @@ class TestBaselineService:
 
             if not custom_field_id:
                 logger.error(
-                    f"Custom field '{field_key}' not found. Cannot create choices."
+                    "Custom field '%s' not found. Cannot create choices.", field_key
                 )
                 continue
 
@@ -658,7 +658,7 @@ class TestBaselineService:
 
                     if not value:
                         logger.warning(
-                            f"Choice for custom field '{field_key}' missing 'value' field"
+                            "Choice for custom field '%s' missing 'value' field", field_key
                         )
                         continue
 
@@ -670,7 +670,7 @@ class TestBaselineService:
 
                     if response.get("count", 0) > 0:
                         logger.info(
-                            f"Custom field choice '{value}' for field '{field_key}' already exists"
+                            "Custom field choice '%s' for field '%s' already exists", value, field_key
                         )
                         created_count += 1
                         continue
@@ -696,19 +696,19 @@ class TestBaselineService:
 
                     created_count += 1
                     logger.info(
-                        f"Created custom field choice: {value} for field '{field_key}'"
+                        "Created custom field choice: %s for field '%s'", value, field_key
                     )
 
                 except Exception as e:
                     logger.error(
-                        f"Error creating custom field choice '{choice.get('value', 'unknown')}' for field '{field_key}': {e}"
+                        "Error creating custom field choice '%s' for field '%s': %s", choice.get('value', 'unknown'), field_key, e
                     )
                     # Continue with next choice instead of raising
                     continue
 
             created_counts[field_key] = created_count
             logger.info(
-                f"Created {created_count} choices for custom field '{field_key}'"
+                "Created %s choices for custom field '%s'", created_count, field_key
             )
 
         return created_counts
@@ -721,7 +721,7 @@ class TestBaselineService:
         for device in devices:
             try:
                 device_name = device.get("name")
-                logger.info(f"Processing device: {device_name}")
+                logger.info("Processing device: %s", device_name)
 
                 # Prepare device data for import service
                 device_data = {
@@ -749,7 +749,7 @@ class TestBaselineService:
                 elif "role" in device:
                     device_data["role"] = device["role"]
                 else:
-                    logger.error(f"No role specified for device '{device_name}'")
+                    logger.error("No role specified for device '%s'", device_name)
                     continue
 
                 # Handle tags
@@ -817,13 +817,13 @@ class TestBaselineService:
                 # If we got here, the import succeeded
                 created[device_name] = result["device_id"]
                 if result["created"]:
-                    logger.info(f"Created device: {device_name}")
+                    logger.info("Created device: %s", device_name)
                 else:
-                    logger.info(f"Device '{device_name}' already exists, skipped")
+                    logger.info("Device '%s' already exists, skipped", device_name)
 
             except Exception as e:
                 logger.error(
-                    f"Error creating device '{device.get('name', 'unknown')}': {e}"
+                    "Error creating device '%s': %s", device.get('name', 'unknown'), e
                 )
                 raise
 
@@ -965,11 +965,11 @@ class TestBaselineService:
                 )
                 summary["created"]["devices"] = len(self.created_resources["devices"])
 
-            logger.info(f"Baseline creation complete: {summary}")
+            logger.info("Baseline creation complete: %s", summary)
             return summary
 
         except Exception as e:
-            logger.error(f"Error creating baseline: {e}", exc_info=True)
+            logger.error("Error creating baseline: %s", e, exc_info=True)
             return {
                 "success": False,
                 "message": f"Failed to create baseline: {str(e)}",

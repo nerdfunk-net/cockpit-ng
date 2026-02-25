@@ -521,10 +521,10 @@ def delete_user_with_rbac(user_id: int) -> bool:
 
             deleted_count = credentials_manager.delete_credentials_by_owner(username)
             logger.info(
-                f"Deleted {deleted_count} private credentials for user {username}"
+                "Deleted %s private credentials for user %s", deleted_count, username
             )
         except Exception as e:
-            logger.warning(f"Failed to delete credentials for user {username}: {e}")
+            logger.warning("Failed to delete credentials for user %s: %s", username, e)
 
     # Delete user profile
     if username:
@@ -532,9 +532,9 @@ def delete_user_with_rbac(user_id: int) -> bool:
             import profile_manager
 
             profile_manager.delete_user_profile(username)
-            logger.info(f"Deleted profile for user {username}")
+            logger.info("Deleted profile for user %s", username)
         except Exception as e:
-            logger.warning(f"Failed to delete profile for user {username}: {e}")
+            logger.warning("Failed to delete profile for user %s: %s", username, e)
 
     # Delete user from users.db
     return user_db.hard_delete_user(user_id)

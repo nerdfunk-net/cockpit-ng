@@ -49,7 +49,7 @@ async def compare_files(
             if file1_path.exists():
                 file1_content = file1_path.read_text()
         except Exception as e:
-            logger.error(f"Error reading left file: {e}")
+            logger.error("Error reading left file: %s", e)
 
         # Get file content from right file
         try:
@@ -57,7 +57,7 @@ async def compare_files(
             if file2_path.exists():
                 file2_content = file2_path.read_text()
         except Exception as e:
-            logger.error(f"Error reading right file: {e}")
+            logger.error("Error reading right file: %s", e)
 
         # Create a proper side-by-side diff with line-by-line comparison
         left_lines = []
@@ -179,7 +179,7 @@ async def compare_files(
         return result
 
     except Exception as e:
-        logger.error(f"Error comparing files: {str(e)}")
+        logger.error("Error comparing files: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to compare files: {str(e)}",

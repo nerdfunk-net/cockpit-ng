@@ -53,18 +53,18 @@ def get_target_devices(
 
             if device_ids is None:
                 logger.warning(
-                    f"Inventory '{inventory_name}' returned no devices for user '{username}'"
+                    "Inventory '%s' returned no devices for user '%s'", inventory_name, username
                 )
                 return None
 
             logger.info(
-                f"Loaded {len(device_ids)} devices from inventory '{inventory_name}'"
+                "Loaded %s devices from inventory '%s'", len(device_ids), inventory_name
             )
             return device_ids
 
         except Exception as e:
             logger.error(
-                f"Error loading inventory '{inventory_name}': {e}", exc_info=True
+                "Error loading inventory '%s': %s", inventory_name, e, exc_info=True
             )
             return None
 

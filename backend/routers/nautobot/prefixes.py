@@ -66,11 +66,11 @@ async def get_ipam_prefixes(
 
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
-        logger.info(f"Retrieved {result.get('count', 0)} prefixes from Nautobot IPAM")
+        logger.info("Retrieved %s prefixes from Nautobot IPAM", result.get('count', 0))
         return result
 
     except Exception as e:
-        logger.error(f"Failed to get IPAM prefixes: {str(e)}")
+        logger.error("Failed to get IPAM prefixes: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve IPAM prefixes: {str(e)}",
@@ -92,11 +92,11 @@ async def get_ipam_prefix(
         endpoint = f"ipam/prefixes/{prefix_id}/"
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
-        logger.info(f"Retrieved prefix {prefix_id} from Nautobot IPAM")
+        logger.info("Retrieved prefix %s from Nautobot IPAM", prefix_id)
         return result
 
     except Exception as e:
-        logger.error(f"Failed to get IPAM prefix {prefix_id}: {str(e)}")
+        logger.error("Failed to get IPAM prefix %s: %s", prefix_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND
             if "404" in str(e)
@@ -149,13 +149,13 @@ async def create_ipam_prefix(
             endpoint, method="POST", data=prefix_data
         )
 
-        logger.info(f"Created prefix {prefix_data.get('prefix')} in Nautobot IPAM")
+        logger.info("Created prefix %s in Nautobot IPAM", prefix_data.get('prefix'))
         return result
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to create IPAM prefix: {str(e)}")
+        logger.error("Failed to create IPAM prefix: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create IPAM prefix: {str(e)}",
@@ -195,11 +195,11 @@ async def update_ipam_prefix(
             data=prefix_data,
         )
 
-        logger.info(f"Updated prefix {prefix_id} in Nautobot IPAM")
+        logger.info("Updated prefix %s in Nautobot IPAM", prefix_id)
         return result
 
     except Exception as e:
-        logger.error(f"Failed to update IPAM prefix {prefix_id}: {str(e)}")
+        logger.error("Failed to update IPAM prefix %s: %s", prefix_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND
             if "404" in str(e)
@@ -223,11 +223,11 @@ async def delete_ipam_prefix(
         endpoint = f"ipam/prefixes/{prefix_id}/"
         result = await nautobot_service.rest_request(endpoint, method="DELETE")
 
-        logger.info(f"Deleted prefix {prefix_id} from Nautobot IPAM")
+        logger.info("Deleted prefix %s from Nautobot IPAM", prefix_id)
         return result
 
     except Exception as e:
-        logger.error(f"Failed to delete IPAM prefix {prefix_id}: {str(e)}")
+        logger.error("Failed to delete IPAM prefix %s: %s", prefix_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND
             if "404" in str(e)

@@ -298,11 +298,11 @@ def _delete_ssh_key_file(
     try:
         if os.path.exists(key_filename):
             os.remove(key_filename)
-            logger.info(f"Deleted SSH key file: {key_filename}")
+            logger.info("Deleted SSH key file: %s", key_filename)
             return True
         return False
     except Exception as e:
-        logger.error(f"Failed to delete SSH key file '{key_filename}': {e}")
+        logger.error("Failed to delete SSH key file '%s': %s", key_filename, e)
         return False
 
 
@@ -497,11 +497,11 @@ def export_single_ssh_key(cred_id: int) -> Optional[str]:
 
     cred = _creds_repo.get_by_id(cred_id)
     if not cred:
-        logger.warning(f"Credential with ID {cred_id} not found")
+        logger.warning("Credential with ID %s not found", cred_id)
         return None
 
     if cred.type != "ssh_key" or not cred.ssh_key_encrypted:
-        logger.debug(f"Credential '{cred.name}' is not an SSH key or has no key data")
+        logger.debug("Credential '%s' is not an SSH key or has no key data", cred.name)
         return None
 
     output_dir = _get_ssh_keys_directory()
@@ -526,11 +526,11 @@ def export_single_ssh_key(cred_id: int) -> Optional[str]:
         # Set proper permissions (read/write for owner only)
         os.chmod(key_filename, 0o600)
 
-        logger.info(f"Exported SSH key '{cred.name}' to {key_filename}")
+        logger.info("Exported SSH key '%s' to %s", cred.name, key_filename)
         return key_filename
 
     except Exception as e:
-        logger.error(f"Failed to export SSH key '{cred.name}': {e}")
+        logger.error("Failed to export SSH key '%s': %s", cred.name, e)
         return None
 
 
@@ -564,7 +564,7 @@ def export_ssh_keys_to_filesystem(output_dir: Optional[str] = None) -> List[str]
     for cred in ssh_key_creds:
         if not cred.ssh_key_encrypted:
             logger.warning(
-                f"SSH key credential '{cred.name}' has no key data, skipping"
+                "SSH key credential '%s' has no key data, skipping", cred.name
             )
             continue
 
@@ -589,9 +589,9 @@ def export_ssh_keys_to_filesystem(output_dir: Optional[str] = None) -> List[str]
             os.chmod(key_filename, 0o600)
 
             exported_files.append(key_filename)
-            logger.info(f"Exported SSH key '{cred.name}' to {key_filename}")
+            logger.info("Exported SSH key '%s' to %s", cred.name, key_filename)
 
         except Exception as e:
-            logger.error(f"Failed to export SSH key '{cred.name}': {e}")
+            logger.error("Failed to export SSH key '%s': %s", cred.name, e)
 
     return exported_files

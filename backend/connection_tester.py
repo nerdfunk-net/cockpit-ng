@@ -202,7 +202,7 @@ class ConnectionTester:
         except requests.exceptions.Timeout:
             return False, f"Connection timed out after {timeout} seconds"
         except Exception as e:
-            logger.error(f"Nautobot connection test error: {e}")
+            logger.error("Nautobot connection test error: %s", e)
             return False, f"Unexpected error: {str(e)}"
 
     @staticmethod
@@ -313,7 +313,7 @@ class ConnectionTester:
                 )
 
         except Exception as e:
-            logger.error(f"Git connection test error: {e}")
+            logger.error("Git connection test error: %s", e)
             return False, f"Unexpected error: {str(e)}"
 
         finally:
@@ -322,7 +322,7 @@ class ConnectionTester:
                 try:
                     shutil.rmtree(temp_dir)
                 except Exception as e:
-                    logger.warning(f"Failed to clean up temp directory {temp_dir}: {e}")
+                    logger.warning("Failed to clean up temp directory %s: %s", temp_dir, e)
 
     @staticmethod
     async def test_all_connections(

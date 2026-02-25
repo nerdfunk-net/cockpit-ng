@@ -37,7 +37,7 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
         Dictionary with task results (success, message, device details)
     """
     try:
-        logger.info(f"Starting add_device_to_checkmk task for device: {device_id}")
+        logger.info("Starting add_device_to_checkmk task for device: %s", device_id)
 
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
@@ -70,7 +70,7 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
                 loop.close()
 
         logger.info(
-            f"Successfully added device {device_id} ({result.hostname}) to CheckMK"
+            "Successfully added device %s (%s) to CheckMK", device_id, result.hostname
         )
 
         return {
@@ -87,7 +87,7 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
     except Exception as e:
         error_msg = str(e)
         logger.error(
-            f"Task {self.request.id} failed to add device {device_id}: {error_msg}",
+            "Task %s failed to add device %s: %s", self.request.id, device_id, error_msg,
             exc_info=True,
         )
 
@@ -129,7 +129,7 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
         Dictionary with task results (success, message, device details)
     """
     try:
-        logger.info(f"Starting update_device_in_checkmk task for device: {device_id}")
+        logger.info("Starting update_device_in_checkmk task for device: %s", device_id)
 
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
@@ -162,7 +162,7 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
                 loop.close()
 
         logger.info(
-            f"Successfully updated device {device_id} ({result.hostname}) in CheckMK"
+            "Successfully updated device %s (%s) in CheckMK", device_id, result.hostname
         )
 
         return {
@@ -180,7 +180,7 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
     except Exception as e:
         error_msg = str(e)
         logger.error(
-            f"Task {self.request.id} failed to update device {device_id}: {error_msg}",
+            "Task %s failed to update device %s: %s", self.request.id, device_id, error_msg,
             exc_info=True,
         )
 
@@ -225,7 +225,7 @@ def sync_devices_to_checkmk_task(
 
     try:
         logger.info(
-            f"Starting sync_devices_to_checkmk task for {len(device_ids)} devices"
+            "Starting sync_devices_to_checkmk task for %s devices", len(device_ids)
         )
 
         # Force reload configuration files to ensure we use the latest SNMP mapping
@@ -264,7 +264,7 @@ def sync_devices_to_checkmk_task(
             job_run_manager.mark_started(job_run_id, self.request.id)
 
         logger.info(
-            f"Created sync job {job_id} (run_id: {job_run_id}) for {total_devices} devices"
+            "Created sync job %s (run_id: %s) for %s devices", job_id, job_run_id, total_devices
         )
 
         for i, device_id in enumerate(device_ids):
@@ -331,7 +331,7 @@ def sync_devices_to_checkmk_task(
                         or "not found" in str(update_error).lower()
                     ):
                         logger.info(
-                            f"Device {device_id} not in CheckMK, attempting to add..."
+                            "Device %s not in CheckMK, attempting to add...", device_id
                         )
                         result = asyncio.run(
                             nb2cmk_service.add_device_to_checkmk(device_id)
@@ -372,16 +372,16 @@ def sync_devices_to_checkmk_task(
 
             except Exception as e:
                 failed_count += 1
-                logger.error(f"Failed to sync device {device_id}: {e}")
+                logger.error("Failed to sync device %s: %s", device_id, e)
 
                 # Debug: Log the exception type and attributes
-                logger.info(f"Exception type: {type(e).__name__}")
+                logger.info("Exception type: %s", type(e).__name__)
                 if isinstance(e, HTTPException):
-                    logger.info(f"HTTPException status_code: {e.status_code}")
-                    logger.info(f"HTTPException detail type: {type(e.detail)}")
-                    logger.info(f"HTTPException detail: {e.detail}")
+                    logger.info("HTTPException status_code: %s", e.status_code)
+                    logger.info("HTTPException detail type: %s", type(e.detail))
+                    logger.info("HTTPException detail: %s", e.detail)
                 if isinstance(e, CheckMKAPIError):
-                    logger.info(f"CheckMKAPIError response_data: {e.response_data}")
+                    logger.info("CheckMKAPIError response_data: %s", e.response_data)
 
                 # Try to get device name even when error occurs
                 device_name = device_id  # Default fallback to UUID
@@ -396,7 +396,7 @@ def sync_devices_to_checkmk_task(
                         device_name = hostname
                 except Exception as name_error:
                     logger.warning(
-                        f"Could not fetch device name for {device_id}: {name_error}"
+                        "Could not fetch device name for %s: %s", device_id, name_error
                     )
 
                 # Extract detailed error information if available
@@ -485,7 +485,7 @@ def sync_devices_to_checkmk_task(
                 )
 
         logger.info(
-            f"Sync task completed: {success_count} succeeded, {failed_count} failed"
+            "Sync task completed: %s succeeded, %s failed", success_count, failed_count
         )
 
         # Activate CheckMK changes if requested and at least one device was synced successfully
@@ -518,10 +518,10 @@ def sync_devices_to_checkmk_task(
                     logger.info("CheckMK changes activated successfully")
                 else:
                     logger.warning(
-                        f"CheckMK activation completed with issues: {activation_result.get('message')}"
+                        "CheckMK activation completed with issues: %s", activation_result.get('message')
                     )
             except Exception as activation_error:
-                logger.error(f"Failed to activate CheckMK changes: {activation_error}")
+                logger.error("Failed to activate CheckMK changes: %s", activation_error)
                 activation_result = {
                     "success": False,
                     "error": str(activation_error),
@@ -574,7 +574,7 @@ def sync_devices_to_checkmk_task(
         }
 
     except Exception as e:
-        logger.error(f"Sync task failed: {e}", exc_info=True)
+        logger.error("Sync task failed: %s", e, exc_info=True)
 
         # Mark job as failed in NB2CMK database
         try:
@@ -582,7 +582,7 @@ def sync_devices_to_checkmk_task(
                 job_id, NB2CMKJobStatus.FAILED, error_message=str(e)
             )
         except Exception as db_error:
-            logger.error(f"Failed to update job status in database: {db_error}")
+            logger.error("Failed to update job status in database: %s", db_error)
 
         # Also mark job run as failed for Jobs/Views app
         if job_run_id:
@@ -591,7 +591,7 @@ def sync_devices_to_checkmk_task(
 
                 job_run_manager.mark_failed(job_run_id, str(e))
             except Exception as run_error:
-                logger.error(f"Failed to update job run status: {run_error}")
+                logger.error("Failed to update job run status: %s", run_error)
 
         return {
             "status": "failed",

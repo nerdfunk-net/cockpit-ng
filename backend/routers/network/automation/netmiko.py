@@ -174,9 +174,8 @@ async def execute_commands(
     """
     try:
         logger.info(
-            f"Execute commands request from user: {current_user}, "
-            f"devices: {len(request.devices)}, commands: {len(request.commands)}, "
-            f"use_textfsm: {request.use_textfsm}"
+            "Execute commands request from user: %s, devices: %s, commands: %s, use_textfsm: %s",
+            current_user, len(request.devices), len(request.commands), request.use_textfsm,
         )
 
         # Validate inputs
@@ -203,7 +202,7 @@ async def execute_commands(
 
         if request.credential_id is not None:
             # Use stored credential
-            logger.info(f"Using stored credential ID: {request.credential_id}")
+            logger.info("Using stored credential ID: %s", request.credential_id)
             import credentials_manager as cred_mgr
 
             try:
@@ -250,7 +249,7 @@ async def execute_commands(
             except HTTPException:
                 raise
             except Exception as e:
-                logger.error(f"Error loading stored credential: {e}")
+                logger.error("Error loading stored credential: %s", e)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"Failed to load stored credential: {str(e)}",
@@ -293,8 +292,8 @@ async def execute_commands(
         failed = len(results) - successful - cancelled
 
         logger.info(
-            f"Command execution completed for user {current_user}. "
-            f"Total: {len(results)}, Successful: {successful}, Failed: {failed}, Cancelled: {cancelled}"
+            "Command execution completed for user %s. Total: %s, Successful: %s, Failed: %s, Cancelled: %s",
+            current_user, len(results), successful, failed, cancelled,
         )
 
         return CommandExecutionResponse(
@@ -309,7 +308,7 @@ async def execute_commands(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error executing commands: {e}", exc_info=True)
+        logger.error("Error executing commands: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to execute commands: {str(e)}",
@@ -348,7 +347,7 @@ async def get_supported_platforms(
         return {"platforms": platforms, "total": len(platforms)}
 
     except Exception as e:
-        logger.error(f"Error getting supported platforms: {e}")
+        logger.error("Error getting supported platforms: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get supported platforms: {str(e)}",
@@ -374,7 +373,7 @@ async def cancel_execution(
         Cancellation confirmation
     """
     try:
-        logger.info(f"Cancel request from user {current_user} for session {session_id}")
+        logger.info("Cancel request from user %s for session %s", current_user, session_id)
         netmiko_service.cancel_session(session_id)
         return {
             "success": True,
@@ -382,7 +381,7 @@ async def cancel_execution(
             "session_id": session_id,
         }
     except Exception as e:
-        logger.error(f"Error cancelling session {session_id}: {e}")
+        logger.error("Error cancelling session %s: %s", session_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cancel session: {str(e)}",
@@ -418,8 +417,8 @@ async def execute_template(
 
     try:
         logger.info(
-            f"Execute template request from user: {current_user}, "
-            f"devices: {len(request.device_ids)}, dry_run: {request.dry_run}"
+            "Execute template request from user: %s, devices: %s, dry_run: %s",
+            current_user, len(request.device_ids), request.dry_run,
         )
 
         # Validate inputs
@@ -469,7 +468,7 @@ async def execute_template(
             password = request.password
 
             if request.credential_id is not None:
-                logger.info(f"Using stored credential ID: {request.credential_id}")
+                logger.info("Using stored credential ID: %s", request.credential_id)
                 import credentials_manager as cred_mgr
 
                 try:
@@ -542,7 +541,7 @@ async def execute_template(
         for device_id in request.device_ids:
             # Check for cancellation
             if netmiko_service.is_session_cancelled(session_id):
-                logger.info(f"Session {session_id} cancelled, stopping execution")
+                logger.info("Session %s cancelled, stopping execution", session_id)
                 cancelled_count += 1
                 results.append(
                     TemplateExecutionResult(
@@ -643,7 +642,7 @@ async def execute_template(
                             context["devices"] = devices
 
                             logger.info(
-                                f"Fetched Nautobot context for device {device_id}"
+                                "Fetched Nautobot context for device %s", device_id
                             )
                         except Exception as e:
                             error_msg = (
@@ -692,7 +691,7 @@ async def execute_template(
                                 )
 
                             logger.info(
-                                f"Pre-run command executed. Raw length: {len(pre_run_output)}, Parsed records: {len(pre_run_parsed)}"
+                                "Pre-run command executed. Raw length: %s, Parsed records: %s", len(pre_run_output), len(pre_run_parsed)
                             )
                         except Exception as e:
                             error_msg = f"Failed to execute pre-run command: {str(e)}"
@@ -706,7 +705,7 @@ async def execute_template(
 
                     if warnings:
                         logger.warning(
-                            f"Template rendering warnings for {device_name}: {warnings}"
+                            "Template rendering warnings for %s: %s", device_name, warnings
                         )
 
                 except UndefinedError as e:
@@ -765,7 +764,7 @@ async def execute_template(
                     # Check for cancellation before execution
                     if netmiko_service.is_session_cancelled(session_id):
                         logger.info(
-                            f"Session {session_id} cancelled before executing on {device_name}"
+                            "Session %s cancelled before executing on %s", session_id, device_name
                         )
                         cancelled_count += 1
                         results.append(
@@ -882,7 +881,7 @@ async def execute_template(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error executing template: {e}")
+        logger.error("Error executing template: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Template execution failed: {str(e)}",

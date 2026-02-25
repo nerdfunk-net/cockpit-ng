@@ -32,7 +32,7 @@ class RedisCacheService:
         if not self._redis.exists(self._start_time_key):
             self._redis.set(self._start_time_key, str(time.time()))
 
-        logger.info(f"Initialized Redis cache service with prefix '{key_prefix}'")
+        logger.info("Initialized Redis cache service with prefix '%s'", key_prefix)
 
     def _make_key(self, key: str) -> str:
         """Generate full Redis key with prefix."""
@@ -61,7 +61,7 @@ class RedisCacheService:
                 try:
                     return json.loads(value)
                 except json.JSONDecodeError:
-                    logger.error(f"Failed to deserialize cache key: {key}")
+                    logger.error("Failed to deserialize cache key: %s", key)
                     self._redis.delete(redis_key)
                     return None
             else:
@@ -69,7 +69,7 @@ class RedisCacheService:
                 return None
 
         except Exception as e:
-            logger.error(f"Cache get error for key '{key}': {e}")
+            logger.error("Cache get error for key '%s': %s", key, e)
             self._incr_stat("misses")
             return None
 
@@ -90,9 +90,9 @@ class RedisCacheService:
             self._incr_stat("created")
 
         except (TypeError, ValueError) as e:
-            logger.error(f"Failed to serialize cache data for key '{key}': {e}")
+            logger.error("Failed to serialize cache data for key '%s': %s", key, e)
         except Exception as e:
-            logger.error(f"Cache set error for key '{key}': {e}")
+            logger.error("Cache set error for key '%s': %s", key, e)
 
     def delete(self, key: str) -> bool:
         """Delete a specific cache entry by key.
@@ -112,7 +112,7 @@ class RedisCacheService:
             return False
 
         except Exception as e:
-            logger.error(f"Cache delete error for key '{key}': {e}")
+            logger.error("Cache delete error for key '%s': %s", key, e)
             return False
 
     def clear_namespace(self, namespace: str) -> int:
@@ -132,12 +132,12 @@ class RedisCacheService:
             if keys:
                 count = self._redis.delete(*keys)
                 self._incr_stat("cleared", count)
-                logger.info(f"Cleared {count} keys from namespace '{namespace}'")
+                logger.info("Cleared %s keys from namespace '%s'", count, namespace)
                 return count
             return 0
 
         except Exception as e:
-            logger.error(f"Cache clear_namespace error for '{namespace}': {e}")
+            logger.error("Cache clear_namespace error for '%s': %s", namespace, e)
             return 0
 
     def clear_all(self) -> int:
@@ -158,12 +158,12 @@ class RedisCacheService:
             if keys:
                 count = self._redis.delete(*keys)
                 self._incr_stat("cleared", count)
-                logger.info(f"Cleared all cache: {count} keys deleted")
+                logger.info("Cleared all cache: %s keys deleted", count)
                 return count
             return 0
 
         except Exception as e:
-            logger.error(f"Cache clear_all error: {e}")
+            logger.error("Cache clear_all error: %s", e)
             return 0
 
     def stats(self) -> Dict[str, Any]:
@@ -257,7 +257,7 @@ class RedisCacheService:
             }
 
         except Exception as e:
-            logger.error(f"Error getting cache stats: {e}")
+            logger.error("Error getting cache stats: %s", e)
             return {
                 "overview": {"total_items": 0, "error": str(e)},
                 "performance": {},
@@ -325,7 +325,7 @@ class RedisCacheService:
             return entries
 
         except Exception as e:
-            logger.error(f"Error getting cache entries: {e}")
+            logger.error("Error getting cache entries: %s", e)
             return []
 
     def get_namespace_info(self, namespace: str) -> Dict[str, Any]:
@@ -389,7 +389,7 @@ class RedisCacheService:
             }
 
         except Exception as e:
-            logger.error(f"Error getting namespace info for '{namespace}': {e}")
+            logger.error("Error getting namespace info for '%s': %s", namespace, e)
             return {
                 "namespace": namespace,
                 "total_entries": 0,
@@ -443,7 +443,7 @@ class RedisCacheService:
             }
 
         except Exception as e:
-            logger.error(f"Error getting performance metrics: {e}")
+            logger.error("Error getting performance metrics: %s", e)
             return {
                 "uptime_seconds": 0,
                 "total_requests": 0,
@@ -476,5 +476,5 @@ try:
     )
     logger.info("Initialized Redis-based cache service")
 except Exception as e:
-    logger.error(f"Failed to initialize Redis cache service: {e}")
+    logger.error("Failed to initialize Redis cache service: %s", e)
     raise

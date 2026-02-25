@@ -48,13 +48,13 @@ class GitRepositoryManager:
             )
 
             logger.info(
-                f"Created git repository: {repo_data['name']} (ID: {new_repo.id})"
+                "Created git repository: %s (ID: %s)", repo_data['name'], new_repo.id
             )
             return new_repo.id
         except ValueError:
             raise
         except Exception as e:
-            logger.error(f"Error creating git repository: {e}")
+            logger.error("Error creating git repository: %s", e)
             raise
 
     def get_repository(self, repo_id: int) -> Optional[Dict[str, Any]]:
@@ -65,7 +65,7 @@ class GitRepositoryManager:
                 return self._model_to_dict(repo)
             return None
         except Exception as e:
-            logger.error(f"Error getting git repository {repo_id}: {e}")
+            logger.error("Error getting git repository %s: %s", repo_id, e)
             raise
 
     def get_repositories(
@@ -82,7 +82,7 @@ class GitRepositoryManager:
 
             return [self._model_to_dict(r) for r in repos]
         except Exception as e:
-            logger.error(f"Error getting git repositories: {e}")
+            logger.error("Error getting git repositories: %s", e)
             raise
 
     def update_repository(self, repo_id: int, repo_data: Dict[str, Any]) -> bool:
@@ -121,12 +121,12 @@ class GitRepositoryManager:
             update_kwargs["updated_at"] = datetime.utcnow()
             self.repo.update(repo_id, **update_kwargs)
 
-            logger.info(f"Updated git repository ID: {repo_id}")
+            logger.info("Updated git repository ID: %s", repo_id)
             return True
         except ValueError:
             raise
         except Exception as e:
-            logger.error(f"Error updating git repository {repo_id}: {e}")
+            logger.error("Error updating git repository %s: %s", repo_id, e)
             raise
 
     def delete_repository(self, repo_id: int, hard_delete: bool = True) -> bool:
@@ -139,10 +139,10 @@ class GitRepositoryManager:
                 self.repo.update(repo_id, is_active=False, updated_at=datetime.utcnow())
                 action = "Deactivated"
 
-            logger.info(f"{action} git repository ID: {repo_id}")
+            logger.info("%s git repository ID: %s", action, repo_id)
             return True
         except Exception as e:
-            logger.error(f"Error deleting git repository {repo_id}: {e}")
+            logger.error("Error deleting git repository %s: %s", repo_id, e)
             raise
 
     def update_sync_status(
@@ -161,7 +161,7 @@ class GitRepositoryManager:
             )
             return True
         except Exception as e:
-            logger.error(f"Error updating sync status for repository {repo_id}: {e}")
+            logger.error("Error updating sync status for repository %s: %s", repo_id, e)
             raise
 
     def get_repositories_by_category(self, category: str) -> List[Dict[str, Any]]:
@@ -210,5 +210,5 @@ class GitRepositoryManager:
                 "database": "PostgreSQL",
             }
         except Exception as e:
-            logger.error(f"Health check failed: {e}")
+            logger.error("Health check failed: %s", e)
             return {"status": "error", "error": str(e), "database": "PostgreSQL"}

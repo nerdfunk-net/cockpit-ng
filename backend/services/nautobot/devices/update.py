@@ -440,7 +440,7 @@ class DeviceUpdateService:
                         validated[field] = device_type_id
                     else:
                         logger.warning(
-                            f"Device type '{value}' not found, will be omitted"
+                            "Device type '%s' not found, will be omitted", value
                         )
                 else:
                     validated[field] = value
@@ -596,7 +596,7 @@ class DeviceUpdateService:
                 raise ValueError(error_msg)
 
             logger.info(
-                f"✓ Successfully verified device {device_id} primary_ip4 is set to {expected_ip_id}"
+                "✓ Successfully verified device %s primary_ip4 is set to %s", device_id, expected_ip_id
             )
 
         logger.info("Successfully updated device %s", device_id)

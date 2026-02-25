@@ -40,7 +40,7 @@ class GitCacheService:
 
             return settings_manager.get_cache_settings()
         except Exception as e:
-            logger.warning(f"Failed to get cache settings: {e}")
+            logger.warning("Failed to get cache settings: %s", e)
             return {
                 "enabled": self._cache_enabled,
                 "max_commits": self._max_commits,
@@ -90,7 +90,7 @@ class GitCacheService:
             cached_commits = cache_service.get(cache_key)
             if cached_commits is not None:
                 logger.debug(
-                    f"Cache hit for commits: repo {repo_id}, branch {branch_name}"
+                    "Cache hit for commits: repo %s, branch %s", repo_id, branch_name
                 )
                 limited_commits = cached_commits[:limit]
                 if use_models:
@@ -98,7 +98,7 @@ class GitCacheService:
                 return limited_commits
 
         # Cache miss - fetch from repository
-        logger.debug(f"Cache miss for commits: repo {repo_id}, branch {branch_name}")
+        logger.debug("Cache miss for commits: repo %s, branch %s", repo_id, branch_name)
         commits = self._fetch_commits_from_repo(
             repo_id, repo_path, branch_name, limit, cache_cfg
         )
@@ -148,7 +148,7 @@ class GitCacheService:
                     cache_key = self._build_cache_key(repo_id, "commits", branch_name)
                     cache_service.set(cache_key, full_commits, ttl)
                     logger.debug(
-                        f"Cached {len(full_commits)} commits for repo {repo_id}, branch {branch_name}"
+                        "Cached %s commits for repo %s, branch %s", len(full_commits), repo_id, branch_name
                     )
 
             return commits
@@ -156,7 +156,7 @@ class GitCacheService:
         except Exception as git_error:
             # Fallback to subprocess if GitPython fails
             logger.warning(
-                f"GitPython failed for repo {repo_id}, falling back to subprocess: {git_error}"
+                "GitPython failed for repo %s, falling back to subprocess: %s", repo_id, git_error
             )
             return self._fetch_commits_subprocess(repo_path, branch_name, limit)
 
@@ -212,7 +212,7 @@ class GitCacheService:
             return commits
 
         except Exception as e:
-            logger.error(f"Subprocess git log failed: {e}")
+            logger.error("Subprocess git log failed: %s", e)
             return []
 
     def get_file_history(
@@ -248,12 +248,12 @@ class GitCacheService:
             cached_history = cache_service.get(cache_key)
             if cached_history is not None:
                 logger.debug(
-                    f"Cache hit for file history: repo {repo_id}, file {file_path}"
+                    "Cache hit for file history: repo %s, file %s", repo_id, file_path
                 )
                 return cached_history
 
         # Cache miss - fetch from repository
-        logger.debug(f"Cache miss for file history: repo {repo_id}, file {file_path}")
+        logger.debug("Cache miss for file history: repo %s, file %s", repo_id, file_path)
 
         try:
             repo = Repo(repo_path)
@@ -286,13 +286,13 @@ class GitCacheService:
                 ttl = int(cache_cfg.get("ttl_seconds", 600))
                 cache_service.set(cache_key, history_commits, ttl)
                 logger.debug(
-                    f"Cached {len(history_commits)} commits for file {file_path} in repo {repo_id}"
+                    "Cached %s commits for file %s in repo %s", len(history_commits), file_path, repo_id
                 )
 
             return history_commits
 
         except Exception as e:
-            logger.error(f"Failed to get file history for {file_path}: {e}")
+            logger.error("Failed to get file history for %s: %s", file_path, e)
             return []
 
     def get_commit_details(
@@ -315,7 +315,7 @@ class GitCacheService:
         if cache_cfg.get("enabled", True):
             cached_commit = cache_service.get(cache_key)
             if cached_commit is not None:
-                logger.debug(f"Cache hit for commit details: {commit_hash}")
+                logger.debug("Cache hit for commit details: %s", commit_hash)
                 return cached_commit
 
         # Cache miss - fetch from repository
@@ -342,7 +342,7 @@ class GitCacheService:
             return commit_dict
 
         except Exception as e:
-            logger.error(f"Failed to get commit details for {commit_hash}: {e}")
+            logger.error("Failed to get commit details for %s: %s", commit_hash, e)
             return None
 
     def invalidate_repo(self, repo_id: int) -> None:
@@ -361,7 +361,7 @@ class GitCacheService:
             # Try to delete matching keys
             # Note: This depends on cache_service supporting pattern deletion
             # If not supported, we'd need to track keys or accept stale cache until TTL
-            logger.info(f"Invalidating cache for repo {repo_id}")
+            logger.info("Invalidating cache for repo %s", repo_id)
 
             # If cache service supports pattern deletion:
             if hasattr(cache_service, "delete_pattern"):
@@ -369,12 +369,12 @@ class GitCacheService:
             else:
                 # Fallback: just log that we can't invalidate
                 logger.warning(
-                    f"Cache service doesn't support pattern deletion. "
-                    f"Cache for repo {repo_id} will expire based on TTL."
+                    "Cache service doesn't support pattern deletion. Cache for repo %s will expire based on TTL.",
+                    repo_id,
                 )
 
         except Exception as e:
-            logger.error(f"Failed to invalidate cache for repo {repo_id}: {e}")
+            logger.error("Failed to invalidate cache for repo %s: %s", repo_id, e)
 
     def invalidate_all(self) -> None:
         """Invalidate all git-related cached data.
@@ -395,7 +395,7 @@ class GitCacheService:
                 logger.warning("Cache service doesn't support bulk deletion")
 
         except Exception as e:
-            logger.error(f"Failed to invalidate all caches: {e}")
+            logger.error("Failed to invalidate all caches: %s", e)
 
 
 # Singleton instance for use across the application

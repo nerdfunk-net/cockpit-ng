@@ -93,7 +93,7 @@ class SnapshotExecutionService:
             # Get repository metadata
             repo_data = self.git_manager.get_repository(git_repo_id)
             if not repo_data:
-                logger.error(f"Git repository {git_repo_id} not found")
+                logger.error("Git repository %s not found", git_repo_id)
                 return None
 
             # Open or clone the repository
@@ -112,7 +112,7 @@ class SnapshotExecutionService:
 
             # Write content to file
             full_path.write_text(content, encoding="utf-8")
-            logger.info(f"Wrote snapshot to {full_path}")
+            logger.info("Wrote snapshot to %s", full_path)
 
             # Commit and push the file
             result = git_service.commit_and_push(
@@ -123,14 +123,14 @@ class SnapshotExecutionService:
             )
 
             if result.success and result.commit_sha:
-                logger.info(f"Committed snapshot to Git: {result.commit_sha}")
+                logger.info("Committed snapshot to Git: %s", result.commit_sha)
                 return result.commit_sha
             else:
-                logger.warning(f"Git commit/push failed: {result.message}")
+                logger.warning("Git commit/push failed: %s", result.message)
                 return None
 
         except Exception as e:
-            logger.error(f"Failed to save to Git: {e}", exc_info=True)
+            logger.error("Failed to save to Git: %s", e, exc_info=True)
             return None
 
     async def execute_snapshot(
@@ -162,7 +162,7 @@ class SnapshotExecutionService:
 
         # Get credentials
         if request.credential_id is not None:
-            logger.info(f"Using stored credential ID: {request.credential_id}")
+            logger.info("Using stored credential ID: %s", request.credential_id)
             try:
                 # Get credential details - include both general and private credentials
                 general_creds = cred_mgr.list_credentials(
@@ -196,7 +196,7 @@ class SnapshotExecutionService:
                     raise ValueError("Failed to decrypt credential password")
 
             except Exception as e:
-                logger.error(f"Error loading stored credential: {e}")
+                logger.error("Error loading stored credential: %s", e)
                 raise ValueError(f"Failed to load stored credential: {str(e)}")
         else:
             # Use manual credentials
@@ -298,7 +298,7 @@ class SnapshotExecutionService:
 
         # Execute commands on all devices using netmiko service
         logger.info(
-            f"Executing snapshot on {len(netmiko_devices)} devices with {len(command_list)} commands"
+            "Executing snapshot on %s devices with %s commands", len(netmiko_devices), len(command_list)
         )
 
         try:
@@ -312,7 +312,7 @@ class SnapshotExecutionService:
                 use_textfsm=use_textfsm,
             )
 
-            logger.info(f"Snapshot execution session {session_id} completed")
+            logger.info("Snapshot execution session %s completed", session_id)
 
             # Process results and save to Git
             for idx, result in enumerate(results):
@@ -371,7 +371,7 @@ class SnapshotExecutionService:
                     self.snapshot_repo.increment_failed_count(snapshot.id)
 
         except Exception as e:
-            logger.error(f"Snapshot execution failed: {e}", exc_info=True)
+            logger.error("Snapshot execution failed: %s", e, exc_info=True)
             # Mark all results as failed
             for dev_result in device_results:
                 self.snapshot_repo.update_result(
@@ -453,7 +453,7 @@ class SnapshotExecutionService:
         results = snapshot.results
         if not results:
             logger.warning(
-                f"Snapshot {snapshot_id} has no results, deleting from DB only"
+                "Snapshot %s has no results, deleting from DB only", snapshot_id
             )
             return self.snapshot_repo.delete_snapshot(snapshot_id)
 
@@ -478,7 +478,7 @@ class SnapshotExecutionService:
                 full_path = local_repo_path / file_path
                 if full_path.exists():
                     files_to_delete.append(str(file_path))
-                    logger.info(f"Marking file for deletion: {file_path}")
+                    logger.info("Marking file for deletion: %s", file_path)
 
         # Delete files from Git repository
         if files_to_delete:
@@ -488,14 +488,14 @@ class SnapshotExecutionService:
                     full_path = local_repo_path / file_path
                     if full_path.exists():
                         full_path.unlink()
-                        logger.info(f"Deleted file: {file_path}")
+                        logger.info("Deleted file: %s", file_path)
 
                     # Stage the deletion in git
                     try:
                         repo.index.remove([str(file_path)])
                     except Exception as e:
                         logger.warning(
-                            f"Could not remove {file_path} from git index: {e}"
+                            "Could not remove %s from git index: %s", file_path, e
                         )
 
                 # Commit and push (use add_all to catch any remaining changes)
@@ -509,12 +509,12 @@ class SnapshotExecutionService:
                     repo=repo,
                     add_all=True,  # Use add_all to stage deletions
                 )
-                logger.info(f"Committed deletion of {len(files_to_delete)} files")
+                logger.info("Committed deletion of %s files", len(files_to_delete))
             except Exception as e:
-                logger.error(f"Failed to delete files from Git: {e}", exc_info=True)
+                logger.error("Failed to delete files from Git: %s", e, exc_info=True)
                 raise Exception(f"Failed to delete files from Git repository: {str(e)}")
         else:
-            logger.warning(f"No files found to delete for snapshot {snapshot_id}")
+            logger.warning("No files found to delete for snapshot %s", snapshot_id)
 
         # Delete from database
         return self.snapshot_repo.delete_snapshot(snapshot_id)

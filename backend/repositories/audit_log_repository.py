@@ -51,7 +51,7 @@ class AuditLogRepository:
             db.refresh(log_entry)
             return log_entry
         except Exception as e:
-            logger.error(f"Failed to create audit log: {e}")
+            logger.error("Failed to create audit log: %s", e)
             if db:
                 db.rollback()
             raise

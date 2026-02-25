@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Create database engine
 DATABASE_URL = settings.database_url
 logger.info(
-    f"Connecting to database: postgresql://{settings.database_username}:***@{settings.database_host}:{settings.database_port}/{settings.database_name}"
+    "Connecting to database: postgresql://%s:***@%s:%s/%s", settings.database_username, settings.database_host, settings.database_port, settings.database_name
 )
 
 engine = create_engine(
@@ -105,7 +105,7 @@ def init_db():
         # This is required for the migration system to work correctly
         from core import models  # noqa: F401
 
-        logger.info(f"Loaded {len(Base.metadata.tables)} model definitions")
+        logger.info("Loaded %s model definitions", len(Base.metadata.tables))
 
         # Run automatic migrations using the migration runner
         from migrations.runner import MigrationRunner
@@ -122,19 +122,17 @@ def init_db():
 
         if total_changes > 0:
             logger.info(
-                f"Database migration completed: "
-                f"{migration_results['tables_created']} tables created, "
-                f"{migration_results['columns_added']} columns added, "
-                f"{migration_results['indexes_created']} indexes created"
+                "Database migration completed: %s tables created, %s columns added, %s indexes created",
+                migration_results['tables_created'], migration_results['columns_added'], migration_results['indexes_created'],
             )
         else:
             logger.info("Database schema is up to date - no migrations needed")
 
         logger.info(
-            f"Database initialized successfully ({len(Base.metadata.tables)} tables)"
+            "Database initialized successfully (%s tables)", len(Base.metadata.tables)
         )
     except Exception as e:
-        logger.error(f"Error initializing database: {e}")
+        logger.error("Error initializing database: %s", e)
         raise
 
 
@@ -161,5 +159,5 @@ def check_connection():
         logger.info("Database connection successful")
         return True
     except Exception as e:
-        logger.error(f"Database connection failed: {e}")
+        logger.error("Database connection failed: %s", e)
         return False

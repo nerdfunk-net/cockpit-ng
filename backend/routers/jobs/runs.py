@@ -69,7 +69,7 @@ async def list_job_runs(
         )
         return result
     except Exception as e:
-        logger.error(f"Error listing job runs: {e}", exc_info=True)
+        logger.error("Error listing job runs: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -84,7 +84,7 @@ async def get_distinct_templates(
         templates = job_run_manager.get_distinct_templates()
         return {"templates": templates}
     except Exception as e:
-        logger.error(f"Error getting templates: {e}", exc_info=True)
+        logger.error("Error getting templates: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -104,7 +104,7 @@ async def get_recent_runs(
         )
         return runs
     except Exception as e:
-        logger.error(f"Error getting recent runs: {e}", exc_info=True)
+        logger.error("Error getting recent runs: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -121,7 +121,7 @@ async def get_job_stats(
         stats = job_run_manager.get_queue_stats()
         return stats
     except Exception as e:
-        logger.error(f"Error getting job stats: {e}", exc_info=True)
+        logger.error("Error getting job stats: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -140,7 +140,7 @@ async def get_dashboard_stats(
         stats = job_run_manager.get_dashboard_stats()
         return stats
     except Exception as e:
-        logger.error(f"Error getting dashboard stats: {e}", exc_info=True)
+        logger.error("Error getting dashboard stats: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -190,7 +190,7 @@ async def get_latest_compare_devices_result(
             "message": result.get("message", ""),
         }
     except Exception as e:
-        logger.error(f"Error getting compare devices stats: {e}", exc_info=True)
+        logger.error("Error getting compare devices stats: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -376,7 +376,7 @@ async def get_latest_scan_prefix_result(
             "was_split": "sub_task_ids" in result,
         }
     except Exception as e:
-        logger.error(f"Error getting scan prefix stats: {e}", exc_info=True)
+        logger.error("Error getting scan prefix stats: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -395,7 +395,7 @@ async def get_job_run(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting job run {run_id}: {e}", exc_info=True)
+        logger.error("Error getting job run %s: %s", run_id, e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -459,7 +459,7 @@ async def get_job_progress(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting progress for job run {run_id}: {e}", exc_info=True)
+        logger.error("Error getting progress for job run %s: %s", run_id, e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -477,7 +477,7 @@ async def get_schedule_runs(
         return runs
     except Exception as e:
         logger.error(
-            f"Error getting runs for schedule {schedule_id}: {e}", exc_info=True
+            "Error getting runs for schedule %s: %s", schedule_id, e, exc_info=True
         )
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -509,7 +509,7 @@ async def cancel_job_run(
 
                 celery_app.control.revoke(run["celery_task_id"], terminate=True)
             except Exception as e:
-                logger.warning(f"Could not revoke Celery task: {e}")
+                logger.warning("Could not revoke Celery task: %s", e)
 
         updated = job_run_manager.mark_cancelled(run_id)
         if updated:
@@ -520,7 +520,7 @@ async def cancel_job_run(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error cancelling job run {run_id}: {e}", exc_info=True)
+        logger.error("Error cancelling job run %s: %s", run_id, e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -538,7 +538,7 @@ async def cleanup_old_runs(
         count = job_run_manager.cleanup_old_runs(days=days)
         return {"message": f"Cleaned up {count} old job runs", "deleted_count": count}
     except Exception as e:
-        logger.error(f"Error cleaning up job runs: {e}", exc_info=True)
+        logger.error("Error cleaning up job runs: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -553,7 +553,7 @@ async def clear_all_runs(
         count = job_run_manager.clear_all_runs()
         return {"message": f"Cleared {count} job runs", "deleted_count": count}
     except Exception as e:
-        logger.error(f"Error clearing job runs: {e}", exc_info=True)
+        logger.error("Error clearing job runs: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -616,7 +616,7 @@ async def clear_filtered_runs(
             },
         }
     except Exception as e:
-        logger.error(f"Error clearing filtered job runs: {e}", exc_info=True)
+        logger.error("Error clearing filtered job runs: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -648,7 +648,7 @@ async def delete_job_run(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting job run {run_id}: {e}", exc_info=True)
+        logger.error("Error deleting job run %s: %s", run_id, e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -665,31 +665,31 @@ async def execute_job_manually(
         from tasks import dispatch_job
 
         # Get the schedule
-        logger.info(f"Executing schedule {schedule_id} manually")
+        logger.info("Executing schedule %s manually", schedule_id)
         schedule = jobs_manager.get_job_schedule(schedule_id)
         if not schedule:
-            logger.error(f"Schedule {schedule_id} not found")
+            logger.error("Schedule %s not found", schedule_id)
             raise HTTPException(
                 status_code=404, detail=f"Schedule {schedule_id} not found"
             )
 
-        logger.info(f"Schedule found: {schedule.get('job_identifier')}")
+        logger.info("Schedule found: %s", schedule.get('job_identifier'))
 
         # Get the template
         template_id = schedule.get("job_template_id")
         if not template_id:
             logger.error(
-                f"Schedule {schedule_id} has no associated template. Schedule data: {schedule}"
+                "Schedule %s has no associated template. Schedule data: %s", schedule_id, schedule
             )
             raise HTTPException(
                 status_code=400,
                 detail="Schedule has no associated template. Please edit the schedule and select a job template.",
             )
 
-        logger.info(f"Template ID: {template_id}")
+        logger.info("Template ID: %s", template_id)
         template = job_template_manager.get_job_template(template_id)
         if not template:
-            logger.error(f"Template {template_id} not found in database")
+            logger.error("Template %s not found in database", template_id)
             raise HTTPException(
                 status_code=404, detail=f"Template {template_id} not found"
             )
@@ -717,5 +717,5 @@ async def execute_job_manually(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error executing job manually: {e}", exc_info=True)
+        logger.error("Error executing job manually: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

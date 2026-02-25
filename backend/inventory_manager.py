@@ -56,14 +56,14 @@ class InventoryManager:
             )
 
             logger.info(
-                f"Inventory '{inventory_data['name']}' created with ID {inventory.id} by {inventory_data['created_by']}"
+                "Inventory '%s' created with ID %s by %s", inventory_data['name'], inventory.id, inventory_data['created_by']
             )
             return inventory.id
 
         except ValueError as e:
             raise e
         except Exception as e:
-            logger.error(f"Error creating inventory: {e}")
+            logger.error("Error creating inventory: %s", e)
             raise e
 
     def get_inventory(self, inventory_id: int) -> Optional[Dict[str, Any]]:
@@ -77,7 +77,7 @@ class InventoryManager:
             return None
 
         except Exception as e:
-            logger.error(f"Error getting inventory {inventory_id}: {e}")
+            logger.error("Error getting inventory %s: %s", inventory_id, e)
             return None
 
     def get_inventory_by_name(
@@ -93,7 +93,7 @@ class InventoryManager:
             return None
 
         except Exception as e:
-            logger.error(f"Error getting inventory by name '{name}': {e}")
+            logger.error("Error getting inventory by name '%s': %s", name, e)
             return None
 
     def list_inventories(
@@ -118,13 +118,13 @@ class InventoryManager:
 
             results = [self._model_to_dict(inv) for inv in inventories]
             logger.info(
-                f"Listed {len(results)} inventories for user {username} (scope={scope})"
+                "Listed %s inventories for user %s (scope=%s)", len(results), username, scope
             )
 
             return results
 
         except Exception as e:
-            logger.error(f"Error listing inventories: {e}")
+            logger.error("Error listing inventories: %s", e)
             return []
 
     def update_inventory(
@@ -172,11 +172,11 @@ class InventoryManager:
 
             repo.update(inventory_id, **update_kwargs)
 
-            logger.info(f"Inventory {inventory_id} updated by {username}")
+            logger.info("Inventory %s updated by %s", inventory_id, username)
             return True
 
         except Exception as e:
-            logger.error(f"Error updating inventory {inventory_id}: {e}")
+            logger.error("Error updating inventory %s: %s", inventory_id, e)
             raise e
 
     def delete_inventory(
@@ -203,12 +203,12 @@ class InventoryManager:
                 repo.update(inventory_id, is_active=False)
 
             logger.info(
-                f"Inventory {inventory_id} {'deleted' if hard_delete else 'deactivated'} by {username}"
+                "Inventory %s %s by %s", inventory_id, 'deleted' if hard_delete else 'deactivated', username
             )
             return True
 
         except Exception as e:
-            logger.error(f"Error deleting inventory {inventory_id}: {e}")
+            logger.error("Error deleting inventory %s: %s", inventory_id, e)
             raise e
 
     def delete_inventory_by_name(
@@ -225,7 +225,7 @@ class InventoryManager:
             return self.delete_inventory(inventory.id, username, hard_delete)
 
         except Exception as e:
-            logger.error(f"Error deleting inventory by name '{name}': {e}")
+            logger.error("Error deleting inventory by name '%s': %s", name, e)
             raise e
 
     def search_inventories(
@@ -238,7 +238,7 @@ class InventoryManager:
             return [self._model_to_dict(inv) for inv in inventories]
 
         except Exception as e:
-            logger.error(f"Error searching inventories: {e}")
+            logger.error("Error searching inventories: %s", e)
             return []
 
     def _model_to_dict(self, inventory: Inventory) -> Dict[str, Any]:
@@ -265,7 +265,7 @@ class InventoryManager:
             try:
                 result["conditions"] = json.loads(inventory.conditions)
             except json.JSONDecodeError:
-                logger.error(f"Failed to parse conditions for inventory {inventory.id}")
+                logger.error("Failed to parse conditions for inventory %s", inventory.id)
                 result["conditions"] = []
         else:
             result["conditions"] = []
@@ -288,7 +288,7 @@ class InventoryManager:
             }
 
         except Exception as e:
-            logger.error(f"Inventory database health check failed: {e}")
+            logger.error("Inventory database health check failed: %s", e)
             return {"status": "unhealthy", "error": str(e)}
 
 

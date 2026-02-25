@@ -74,7 +74,7 @@ async def test_checkmk_connection(
             connection_source="manual_test",
         )
     except Exception as e:
-        logger.error(f"Error testing CheckMK connection: {str(e)}")
+        logger.error("Error testing CheckMK connection: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to test CheckMK connection: {str(e)}",
@@ -119,7 +119,7 @@ async def test_current_checkmk_connection(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error testing CheckMK connection: {str(e)}")
+        logger.error("Error testing CheckMK connection: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to test CheckMK connection: {str(e)}",
@@ -190,7 +190,7 @@ async def get_checkmk_stats(
         hosts_data = client.get_all_hosts()
         host_count = len(hosts_data.get("value", []))
 
-        logger.info(f"Retrieved {host_count} hosts from CheckMK")
+        logger.info("Retrieved %s hosts from CheckMK", host_count)
 
         stats = {
             "total_hosts": host_count,
@@ -204,7 +204,7 @@ async def get_checkmk_stats(
         return stats
 
     except CheckMKAPIError as e:
-        logger.error(f"CheckMK API error: {str(e)}")
+        logger.error("CheckMK API error: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"CheckMK API error: {str(e)}",
@@ -212,7 +212,7 @@ async def get_checkmk_stats(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching CheckMK stats: {str(e)}")
+        logger.error("Error fetching CheckMK stats: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch CheckMK statistics: {str(e)}",
@@ -239,7 +239,7 @@ async def get_version(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting CheckMK version: {str(e)}")
+        logger.error("Error getting CheckMK version: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get CheckMK version: {str(e)}",
@@ -284,7 +284,7 @@ async def get_all_hosts(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting hosts: {str(e)}")
+        logger.error("Error getting hosts: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get hosts: {str(e)}",
@@ -312,20 +312,20 @@ async def get_host(
             success=True, message=f"Host {hostname} retrieved successfully", data=result
         )
     except CheckMKClientError as e:
-        logger.error(f"CheckMK client configuration error: {str(e)}")
+        logger.error("CheckMK client configuration error: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
     except HostNotFoundError as e:
-        logger.info(f"Host {hostname} not found in CheckMK")
+        logger.info("Host %s not found in CheckMK", hostname)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
     except CheckMKAPIError as e:
         logger.error(
-            f"CheckMK API error getting host {hostname}: {str(e)} (status: {e.status_code})"
+            "CheckMK API error getting host %s: %s (status: %s)", hostname, str(e), e.status_code
         )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -334,7 +334,7 @@ async def get_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting host {hostname}: {str(e)}")
+        logger.error("Error getting host %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get host {hostname}: {str(e)}",
@@ -384,7 +384,7 @@ async def get_host_inventory(
         auth = (db_settings["username"], db_settings["password"])
         verify_ssl = db_settings.get("verify_ssl", True)
 
-        logger.info(f"Fetching inventory for host {hostname} from {inventory_url}")
+        logger.info("Fetching inventory for host %s from %s", hostname, inventory_url)
 
         response = requests.get(
             inventory_url, params=params, auth=auth, verify=verify_ssl, timeout=30
@@ -392,14 +392,14 @@ async def get_host_inventory(
 
         # Check response status
         if response.status_code == 404:
-            logger.info(f"Inventory not found for host {hostname}")
+            logger.info("Inventory not found for host %s", hostname)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Inventory data not found for host '{hostname}'",
             )
         elif response.status_code != 200:
             logger.error(
-                f"CheckMK inventory API error: {response.status_code} - {response.text}"
+                "CheckMK inventory API error: %s - %s", response.status_code, response.text
             )
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -418,13 +418,13 @@ async def get_host_inventory(
     except HTTPException:
         raise
     except requests.RequestException as e:
-        logger.error(f"Request error getting inventory for {hostname}: {str(e)}")
+        logger.error("Request error getting inventory for %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to connect to CheckMK inventory API: {str(e)}",
         )
     except Exception as e:
-        logger.error(f"Error getting inventory for {hostname}: {str(e)}")
+        logger.error("Error getting inventory for %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get inventory for {hostname}: {str(e)}",
@@ -452,7 +452,7 @@ async def create_host(
         if request.start_discovery:
             try:
                 logger.info(
-                    f"Starting service discovery ({request.discovery_mode}) for host {request.host_name}"
+                    "Starting service discovery (%s) for host %s", request.discovery_mode, request.host_name
                 )
                 discovery_result = client.start_service_discovery(
                     request.host_name, mode=request.discovery_mode
@@ -462,10 +462,10 @@ async def create_host(
                     "mode": request.discovery_mode,
                     "result": discovery_result,
                 }
-                logger.info(f"Service discovery started for host {request.host_name}")
+                logger.info("Service discovery started for host %s", request.host_name)
             except Exception as discovery_error:
                 logger.warning(
-                    f"Failed to start service discovery for host {request.host_name}: {discovery_error}"
+                    "Failed to start service discovery for host %s: %s", request.host_name, discovery_error
                 )
                 response_data["discovery"] = {
                     "started": False,
@@ -480,7 +480,7 @@ async def create_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating host {request.host_name}: {str(e)}")
+        logger.error("Error creating host %s: %s", request.host_name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create host {request.host_name}: {str(e)}",
@@ -513,7 +513,7 @@ async def create_host_v2(
         if request.start_discovery:
             try:
                 logger.info(
-                    f"Starting service discovery ({request.discovery_mode}) for host {request.host_name}"
+                    "Starting service discovery (%s) for host %s", request.discovery_mode, request.host_name
                 )
                 discovery_result = client.start_service_discovery(
                     request.host_name, mode=request.discovery_mode
@@ -523,10 +523,10 @@ async def create_host_v2(
                     "mode": request.discovery_mode,
                     "result": discovery_result,
                 }
-                logger.info(f"Service discovery started for host {request.host_name}")
+                logger.info("Service discovery started for host %s", request.host_name)
             except Exception as discovery_error:
                 logger.warning(
-                    f"Failed to start service discovery for host {request.host_name}: {discovery_error}"
+                    "Failed to start service discovery for host %s: %s", request.host_name, discovery_error
                 )
                 response_data["discovery"] = {
                     "started": False,
@@ -541,7 +541,7 @@ async def create_host_v2(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating host {request.host_name}: {str(e)}")
+        logger.error("Error creating host %s: %s", request.host_name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create host {request.host_name}: {str(e)}",
@@ -565,7 +565,7 @@ async def update_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating host {hostname}: {str(e)}")
+        logger.error("Error updating host %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update host {hostname}: {str(e)}",
@@ -645,7 +645,7 @@ async def move_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error moving host {hostname}: {str(e)}")
+        logger.error("Error moving host %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to move host {hostname}: {str(e)}",
@@ -671,7 +671,7 @@ async def rename_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error renaming host {hostname}: {str(e)}")
+        logger.error("Error renaming host %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to rename host {hostname}: {str(e)}",
@@ -711,7 +711,7 @@ async def bulk_create_hosts(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error bulk creating hosts: {str(e)}")
+        logger.error("Error bulk creating hosts: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to bulk create hosts: {str(e)}",
@@ -742,7 +742,7 @@ async def bulk_update_hosts(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error bulk updating hosts: {str(e)}")
+        logger.error("Error bulk updating hosts: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to bulk update hosts: {str(e)}",
@@ -767,7 +767,7 @@ async def bulk_delete_hosts(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error bulk deleting hosts: {str(e)}")
+        logger.error("Error bulk deleting hosts: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to bulk delete hosts: {str(e)}",
@@ -797,7 +797,7 @@ async def get_all_monitored_hosts(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting monitored hosts: {str(e)}")
+        logger.error("Error getting monitored hosts: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get monitored hosts: {str(e)}",
@@ -825,7 +825,7 @@ async def get_monitored_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting monitored host {hostname}: {str(e)}")
+        logger.error("Error getting monitored host %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get monitored host {hostname}: {str(e)}",
@@ -855,7 +855,7 @@ async def get_host_services(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting services for host {hostname}: {str(e)}")
+        logger.error("Error getting services for host %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get services for host {hostname}: {str(e)}",
@@ -886,7 +886,7 @@ async def show_service(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error showing service {service} for host {hostname}: {str(e)}")
+        logger.error("Error showing service %s for host %s: %s", service, hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to show service {service} for host {hostname}: {str(e)}",
@@ -916,7 +916,7 @@ async def get_service_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting service discovery for host {hostname}: {str(e)}")
+        logger.error("Error getting service discovery for host %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get service discovery for host {hostname}: {str(e)}",
@@ -944,7 +944,7 @@ async def start_service_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error starting service discovery for host {hostname}: {str(e)}")
+        logger.error("Error starting service discovery for host %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start service discovery for host {hostname}: {str(e)}",
@@ -972,7 +972,7 @@ async def wait_for_service_discovery(
         raise
     except Exception as e:
         logger.error(
-            f"Error waiting for service discovery for host {hostname}: {str(e)}"
+            "Error waiting for service discovery for host %s: %s", hostname, str(e)
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -1007,7 +1007,7 @@ async def update_discovery_phase(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating discovery phase for host {hostname}: {str(e)}")
+        logger.error("Error updating discovery phase for host %s: %s", hostname, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update discovery phase for host {hostname}: {str(e)}",
@@ -1049,7 +1049,7 @@ async def start_bulk_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error starting bulk discovery: {str(e)}")
+        logger.error("Error starting bulk discovery: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start bulk discovery: {str(e)}",
@@ -1084,7 +1084,7 @@ async def acknowledge_host_problem(
         raise
     except Exception as e:
         logger.error(
-            f"Error acknowledging problem for host {request.host_name}: {str(e)}"
+            "Error acknowledging problem for host %s: %s", request.host_name, str(e)
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -1117,7 +1117,7 @@ async def acknowledge_service_problem(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error acknowledging service problem: {str(e)}")
+        logger.error("Error acknowledging service problem: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to acknowledge service problem: {str(e)}",
@@ -1140,7 +1140,7 @@ async def delete_acknowledgment(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting acknowledgment {ack_id}: {str(e)}")
+        logger.error("Error deleting acknowledgment %s: %s", ack_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete acknowledgment {ack_id}: {str(e)}",
@@ -1171,7 +1171,7 @@ async def create_host_downtime(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating downtime for host {request.host_name}: {str(e)}")
+        logger.error("Error creating downtime for host %s: %s", request.host_name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create downtime for host {request.host_name}: {str(e)}",
@@ -1200,7 +1200,7 @@ async def add_host_comment(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error adding comment to host {request.host_name}: {str(e)}")
+        logger.error("Error adding comment to host %s: %s", request.host_name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add comment to host {request.host_name}: {str(e)}",
@@ -1230,7 +1230,7 @@ async def add_service_comment(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error adding comment to service: {str(e)}")
+        logger.error("Error adding comment to service: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add comment to service: {str(e)}",
@@ -1256,7 +1256,7 @@ async def get_pending_changes(
 
         if response.status_code == 200:
             etag = response.headers.get("ETag", "*")
-            logger.debug(f"ETag for pending changes: {etag}")
+            logger.debug("ETag for pending changes: %s", etag)
 
         # Parse the response
         result = client._handle_response(response)
@@ -1268,7 +1268,7 @@ async def get_pending_changes(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting pending changes: {str(e)}")
+        logger.error("Error getting pending changes: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get pending changes: {str(e)}",
@@ -1299,7 +1299,7 @@ async def activate_changes(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error activating changes: {str(e)}")
+        logger.error("Error activating changes: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to activate changes: {str(e)}",
@@ -1314,7 +1314,7 @@ async def activate_changes_with_etag(
 ):
     """Activate pending configuration changes using specific ETag"""
     try:
-        logger.debug(f"Activating changes with specific ETag: {etag}")
+        logger.debug("Activating changes with specific ETag: %s", etag)
         client = _get_checkmk_client()
         result = client.activate_changes(
             sites=request.sites,
@@ -1331,7 +1331,7 @@ async def activate_changes_with_etag(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error activating changes with ETag {etag}: {str(e)}")
+        logger.error("Error activating changes with ETag %s: %s", etag, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to activate changes with ETag {etag}: {str(e)}",
@@ -1356,7 +1356,7 @@ async def get_activation_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting activation status for {activation_id}: {str(e)}")
+        logger.error("Error getting activation status for %s: %s", activation_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get activation status for {activation_id}: {str(e)}",
@@ -1383,7 +1383,7 @@ async def wait_for_activation_completion(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error waiting for activation {activation_id}: {str(e)}")
+        logger.error("Error waiting for activation %s: %s", activation_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to wait for activation {activation_id}: {str(e)}",
@@ -1407,7 +1407,7 @@ async def get_running_activations(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting running activations: {str(e)}")
+        logger.error("Error getting running activations: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get running activations: {str(e)}",
@@ -1432,7 +1432,7 @@ async def get_host_groups(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting host groups: {str(e)}")
+        logger.error("Error getting host groups: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get host groups: {str(e)}",
@@ -1457,7 +1457,7 @@ async def get_host_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting host group {group_name}: {str(e)}")
+        logger.error("Error getting host group %s: %s", group_name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get host group {group_name}: {str(e)}",
@@ -1482,7 +1482,7 @@ async def create_host_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating host group {request.name}: {str(e)}")
+        logger.error("Error creating host group %s: %s", request.name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create host group {request.name}: {str(e)}",
@@ -1506,7 +1506,7 @@ async def update_host_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating host group {name}: {str(e)}")
+        logger.error("Error updating host group %s: %s", name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update host group {name}: {str(e)}",
@@ -1529,7 +1529,7 @@ async def delete_host_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting host group {name}: {str(e)}")
+        logger.error("Error deleting host group %s: %s", name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete host group {name}: {str(e)}",
@@ -1554,7 +1554,7 @@ async def bulk_update_host_groups(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error bulk updating host groups: {str(e)}")
+        logger.error("Error bulk updating host groups: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to bulk update host groups: {str(e)}",
@@ -1579,7 +1579,7 @@ async def bulk_delete_host_groups(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error bulk deleting host groups: {str(e)}")
+        logger.error("Error bulk deleting host groups: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to bulk delete host groups: {str(e)}",
@@ -1623,10 +1623,10 @@ async def get_all_folders(
     except CheckMKAPIError as e:
         # Log CheckMK API error for debugging
         logger.error(
-            f"CheckMK API error getting folders: status={e.status_code}, parent={parent}"
+            "CheckMK API error getting folders: status=%s, parent=%s", e.status_code, parent
         )
         if hasattr(e, "response_data") and e.response_data:
-            logger.error(f"CheckMK error details: {e.response_data}")
+            logger.error("CheckMK error details: %s", e.response_data)
 
         if e.status_code == 400:
             # Extract the specific CheckMK error message
@@ -1661,7 +1661,7 @@ async def get_all_folders(
             )
         else:
             logger.error(
-                f"CheckMK API error getting folders: {str(e)} (status: {e.status_code})"
+                "CheckMK API error getting folders: %s (status: %s)", str(e), e.status_code
             )
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -1670,7 +1670,7 @@ async def get_all_folders(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting folders: {str(e)}")
+        logger.error("Error getting folders: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get folders: {str(e)}",
@@ -1703,14 +1703,14 @@ async def get_folder(
         )
     except CheckMKAPIError as e:
         if e.status_code == 404:
-            logger.info(f"Folder {folder_path} not found in CheckMK")
+            logger.info("Folder %s not found in CheckMK", folder_path)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Folder '{folder_path}' not found in CheckMK",
             )
         else:
             logger.error(
-                f"CheckMK API error getting folder {folder_path}: {str(e)} (status: {e.status_code})"
+                "CheckMK API error getting folder %s: %s (status: %s)", folder_path, str(e), e.status_code
             )
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -1719,7 +1719,7 @@ async def get_folder(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting folder {folder_path}: {str(e)}")
+        logger.error("Error getting folder %s: %s", folder_path, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get folder {folder_path}: {str(e)}",
@@ -1789,7 +1789,7 @@ async def create_folder(
                 f"{checkmk_error_detail} - {'; '.join(validation_errors)}"
             )
 
-        logger.error(f"CheckMK folder creation failed: {checkmk_error_detail}")
+        logger.error("CheckMK folder creation failed: %s", checkmk_error_detail)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST
             if e.status_code == 400
@@ -1799,7 +1799,7 @@ async def create_folder(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating folder {request.name}: {str(e)}")
+        logger.error("Error creating folder %s: %s", request.name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create folder {request.name}: {str(e)}",
@@ -1836,7 +1836,7 @@ async def update_folder(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating folder {folder_path}: {str(e)}")
+        logger.error("Error updating folder %s: %s", folder_path, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update folder {folder_path}: {str(e)}",
@@ -1866,7 +1866,7 @@ async def delete_folder(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting folder {folder_path}: {str(e)}")
+        logger.error("Error deleting folder %s: %s", folder_path, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete folder {folder_path}: {str(e)}",
@@ -1904,7 +1904,7 @@ async def move_folder(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error moving folder {folder_path}: {str(e)}")
+        logger.error("Error moving folder %s: %s", folder_path, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to move folder {folder_path}: {str(e)}",
@@ -1929,7 +1929,7 @@ async def bulk_update_folders(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error bulk updating folders: {str(e)}")
+        logger.error("Error bulk updating folders: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to bulk update folders: {str(e)}",
@@ -1963,7 +1963,7 @@ async def get_hosts_in_folder(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting hosts in folder {folder_path}: {str(e)}")
+        logger.error("Error getting hosts in folder %s: %s", folder_path, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get hosts in folder {folder_path}: {str(e)}",
@@ -2001,7 +2001,7 @@ async def get_all_host_tag_groups(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting host tag groups: {str(e)}")
+        logger.error("Error getting host tag groups: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get host tag groups: {str(e)}",
@@ -2026,7 +2026,7 @@ async def get_host_tag_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting host tag group {name}: {str(e)}")
+        logger.error("Error getting host tag group %s: %s", name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get host tag group {name}: {str(e)}",
@@ -2061,7 +2061,7 @@ async def create_host_tag_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating host tag group {request.id}: {str(e)}")
+        logger.error("Error creating host tag group %s: %s", request.id, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create host tag group {request.id}: {str(e)}",
@@ -2100,7 +2100,7 @@ async def update_host_tag_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating host tag group {name}: {str(e)}")
+        logger.error("Error updating host tag group %s: %s", name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update host tag group {name}: {str(e)}",
@@ -2125,7 +2125,7 @@ async def delete_host_tag_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting host tag group {name}: {str(e)}")
+        logger.error("Error deleting host tag group %s: %s", name, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete host tag group {name}: {str(e)}",

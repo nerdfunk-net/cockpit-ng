@@ -146,7 +146,7 @@ def get_diff_between_nb_checkmk_task(self) -> Dict[str, Any]:
             finally:
                 loop.close()
 
-        logger.info(f"Fetched {len(nb_devices)} devices from Nautobot")
+        logger.info("Fetched %s devices from Nautobot", len(nb_devices))
 
         self.update_state(
             state="PROGRESS",
@@ -155,7 +155,7 @@ def get_diff_between_nb_checkmk_task(self) -> Dict[str, Any]:
 
         # Fetch CheckMK hosts (sync)
         cmk_hosts = _fetch_checkmk_hosts()
-        logger.info(f"Fetched {len(cmk_hosts)} hosts from CheckMK")
+        logger.info("Fetched %s hosts from CheckMK", len(cmk_hosts))
 
         self.update_state(
             state="PROGRESS",
@@ -217,10 +217,8 @@ def get_diff_between_nb_checkmk_task(self) -> Dict[str, Any]:
         total_both = len(all_devices) - len(nautobot_only) - len(checkmk_only)
 
         logger.info(
-            f"Diff complete: {len(all_devices)} total, "
-            f"{total_both} in both, "
-            f"{len(nautobot_only)} Nautobot-only, "
-            f"{len(checkmk_only)} CheckMK-only"
+            "Diff complete: %s total, %s in both, %s Nautobot-only, %s CheckMK-only",
+            len(all_devices), total_both, len(nautobot_only), len(checkmk_only),
         )
 
         return {
@@ -234,7 +232,7 @@ def get_diff_between_nb_checkmk_task(self) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"Diff task failed: {e}", exc_info=True)
+        logger.error("Diff task failed: %s", e, exc_info=True)
         return {
             "success": False,
             "error": str(e),

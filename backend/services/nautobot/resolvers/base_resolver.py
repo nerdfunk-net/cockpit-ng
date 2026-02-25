@@ -68,7 +68,7 @@ class BaseResolver:
 
             if "errors" in result:
                 logger.error(
-                    f"GraphQL error resolving {resource_type}: {result['errors']}"
+                    "GraphQL error resolving %s: %s", resource_type, result['errors']
                 )
                 return None
 

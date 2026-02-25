@@ -26,7 +26,7 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
         Dictionary with task results (status, cached count, failed count)
     """
     try:
-        logger.info(f"Starting cache_all_devices task: {self.request.id}")
+        logger.info("Starting cache_all_devices task: %s", self.request.id)
 
         # Import here to avoid circular dependencies
         from services.nautobot import nautobot_service
@@ -93,7 +93,7 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
         # Validate GraphQL result
         success, error_msg, data = safe_graphql_query(result)
         if not success:
-            logger.error(f"Task {self.request.id}: {error_msg}")
+            logger.error("Task %s: %s", self.request.id, error_msg)
             return {
                 "status": "failed",
                 "error": error_msg,
@@ -105,7 +105,7 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
         total_devices = len(devices)
 
         if total_devices == 0:
-            logger.warning(f"Task {self.request.id}: No devices found in Nautobot")
+            logger.warning("Task %s: No devices found in Nautobot", self.request.id)
             return {
                 "status": "completed",
                 "message": "No devices found to cache",
@@ -113,7 +113,7 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
                 "failed": 0,
             }
 
-        logger.info(f"Task {self.request.id}: Processing {total_devices} devices")
+        logger.info("Task %s: Processing %s devices", self.request.id, total_devices)
 
         # Cache configuration
         DEVICE_TTL = 3600  # 1 hour
@@ -131,7 +131,7 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
 
                 if not device_id:
                     logger.warning(
-                        f"Task {self.request.id}: Device {device_name} has no ID, skipping"
+                        "Task %s: Device %s has no ID, skipping", self.request.id, device_name
                     )
                     failed_count += 1
                     continue
@@ -159,12 +159,12 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
                             "status": progress_msg,
                         },
                     )
-                    logger.info(f"Task {self.request.id}: {progress_msg}")
+                    logger.info("Task %s: %s", self.request.id, progress_msg)
 
             except Exception as e:
                 failed_count += 1
                 logger.error(
-                    f"Task {self.request.id}: Failed to cache device {device.get('name', 'unknown')}: {e}"
+                    "Task %s: Failed to cache device %s: %s", self.request.id, device.get('name', 'unknown'), e
                 )
 
         # Cache bulk collection with lightweight device data
@@ -172,11 +172,11 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
             bulk_cache_key = "nautobot:devices:all"
             cache_service.set(bulk_cache_key, lightweight_devices, DEVICE_TTL)
             logger.info(
-                f"Task {self.request.id}: Cached bulk collection with {len(lightweight_devices)} devices"
+                "Task %s: Cached bulk collection with %s devices", self.request.id, len(lightweight_devices)
             )
         except Exception as e:
             logger.error(
-                f"Task {self.request.id}: Failed to cache bulk collection: {e}"
+                "Task %s: Failed to cache bulk collection: %s", self.request.id, e
             )
 
         # Determine final status
@@ -190,7 +190,7 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
             status = "completed_with_errors"
             message = f"Cached {cached_count} devices with {failed_count} failures"
 
-        logger.info(f"Task {self.request.id}: {message}")
+        logger.info("Task %s: %s", self.request.id, message)
 
         return {
             "status": status,
@@ -202,7 +202,7 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(
-            f"Task {self.request.id} failed with exception: {e}", exc_info=True
+            "Task %s failed with exception: %s", self.request.id, e, exc_info=True
         )
         return {
             "status": "failed",
@@ -224,7 +224,7 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
         Dictionary with task results
     """
     try:
-        logger.info(f"Starting cache_single_device task for device {device_id}")
+        logger.info("Starting cache_single_device task for device %s", device_id)
 
         from services.nautobot import nautobot_service
         from services.settings.cache import cache_service
@@ -290,7 +290,7 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
         cache_service.set(cache_key, device, 3600)  # 1 hour TTL
 
         logger.info(
-            f"Successfully cached device {device.get('name')} (ID: {device_id})"
+            "Successfully cached device %s (ID: %s)", device.get('name'), device_id
         )
 
         return {
@@ -301,5 +301,5 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"Failed to cache device {device_id}: {e}", exc_info=True)
+        logger.error("Failed to cache device %s: %s", device_id, e, exc_info=True)
         return {"status": "failed", "error": str(e)}

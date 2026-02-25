@@ -61,7 +61,7 @@ def set_git_author(repository: Dict, repo: Repo):
         config_writer.set_value("user", "email", author_email)
         config_writer.release()
 
-        logger.debug(f"Set git author: {author_name} <{author_email}>")
+        logger.debug("Set git author: %s <%s>", author_name, author_email)
 
         yield
     finally:

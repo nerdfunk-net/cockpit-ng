@@ -26,7 +26,7 @@ async def get_default_site(
         result = nb2cmk_service.get_default_site()
         return result.model_dump()
     except Exception as e:
-        logger.error(f"Error getting default site: {str(e)}")
+        logger.error("Error getting default site: %s", str(e))
         # Return default value even if config reading fails
         return {"default_site": "cmk"}
 
@@ -38,27 +38,27 @@ async def compare_device_config(
 ):
     """Compare normalized Nautobot device config with CheckMK host config."""
     try:
-        logger.info(f"[ROUTER] Compare request for device ID: {device_id}")
+        logger.info("[ROUTER] Compare request for device ID: %s", device_id)
         result = await nb2cmk_service.compare_device_config(device_id)
-        logger.info(f"[ROUTER] Compare successful for device ID: {device_id}")
+        logger.info("[ROUTER] Compare successful for device ID: %s", device_id)
         return result.model_dump()
     except HTTPException as http_exc:
         # Re-raise HTTP exceptions with additional logging
         logger.error(
-            f"[ROUTER] HTTP {http_exc.status_code} error comparing device {device_id}: {http_exc.detail}"
+            "[ROUTER] HTTP %s error comparing device %s: %s", http_exc.status_code, device_id, http_exc.detail
         )
         raise
     except ValueError as val_err:
         # Catch validation errors from normalization/comparison
         error_msg = f"Validation error for device {device_id}: {str(val_err)}"
-        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
+        logger.error("[ROUTER] %s", error_msg, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg,
         )
     except Exception as e:
         error_msg = f"Unexpected error comparing device {device_id}: {str(e)}"
-        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
+        logger.error("[ROUTER] %s", error_msg, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_msg,
@@ -72,25 +72,25 @@ async def add_device_to_checkmk(
 ):
     """Add a device from Nautobot to CheckMK using normalized config."""
     try:
-        logger.info(f"[ROUTER] Add device request for device ID: {device_id}")
+        logger.info("[ROUTER] Add device request for device ID: %s", device_id)
         result = await nb2cmk_service.add_device_to_checkmk(device_id)
-        logger.info(f"[ROUTER] Device {device_id} added successfully to CheckMK")
+        logger.info("[ROUTER] Device %s added successfully to CheckMK", device_id)
         return result.model_dump()
     except HTTPException as http_exc:
         logger.error(
-            f"[ROUTER] HTTP {http_exc.status_code} error adding device {device_id}: {http_exc.detail}"
+            "[ROUTER] HTTP %s error adding device %s: %s", http_exc.status_code, device_id, http_exc.detail
         )
         raise
     except ValueError as val_err:
         error_msg = f"Validation error adding device {device_id}: {str(val_err)}"
-        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
+        logger.error("[ROUTER] %s", error_msg, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg,
         )
     except Exception as e:
         error_msg = f"Unexpected error adding device {device_id} to CheckMK: {str(e)}"
-        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
+        logger.error("[ROUTER] %s", error_msg, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_msg,
@@ -104,25 +104,25 @@ async def update_device_in_checkmk(
 ):
     """Update/sync a device from Nautobot to CheckMK using normalized config."""
     try:
-        logger.info(f"[ROUTER] Update device request for device ID: {device_id}")
+        logger.info("[ROUTER] Update device request for device ID: %s", device_id)
         result = await nb2cmk_service.update_device_in_checkmk(device_id)
-        logger.info(f"[ROUTER] Device {device_id} updated successfully in CheckMK")
+        logger.info("[ROUTER] Device %s updated successfully in CheckMK", device_id)
         return result.model_dump()
     except HTTPException as http_exc:
         logger.error(
-            f"[ROUTER] HTTP {http_exc.status_code} error updating device {device_id}: {http_exc.detail}"
+            "[ROUTER] HTTP %s error updating device %s: %s", http_exc.status_code, device_id, http_exc.detail
         )
         raise
     except ValueError as val_err:
         error_msg = f"Validation error updating device {device_id}: {str(val_err)}"
-        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
+        logger.error("[ROUTER] %s", error_msg, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg,
         )
     except Exception as e:
         error_msg = f"Unexpected error updating device {device_id} in CheckMK: {str(e)}"
-        logger.error(f"[ROUTER] {error_msg}", exc_info=True)
+        logger.error("[ROUTER] %s", error_msg, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_msg,
@@ -177,7 +177,7 @@ async def list_comparison_jobs(
         return {"jobs": job_list, "total": len(job_list)}
 
     except Exception as e:
-        logger.error(f"Error listing comparison jobs: {str(e)}")
+        logger.error("Error listing comparison jobs: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list comparison jobs: {str(e)}",
@@ -249,7 +249,7 @@ async def get_comparison_job_details(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting comparison job {job_id}: {str(e)}")
+        logger.error("Error getting comparison job %s: %s", job_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get comparison job: {str(e)}",
@@ -298,7 +298,7 @@ async def delete_comparison_job(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting comparison job {job_id}: {str(e)}")
+        logger.error("Error deleting comparison job %s: %s", job_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete comparison job: {str(e)}",
@@ -343,7 +343,7 @@ async def clear_all_comparison_jobs(
         return {"message": message, "deleted": deleted_count, "skipped": skipped_count}
 
     except Exception as e:
-        logger.error(f"Error clearing comparison jobs: {str(e)}")
+        logger.error("Error clearing comparison jobs: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to clear comparison jobs: {str(e)}",

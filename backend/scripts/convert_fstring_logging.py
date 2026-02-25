@@ -6,7 +6,7 @@ PEP best practice: f-string logging eagerly evaluates the string even when the
 log level is suppressed.  Lazy % formatting defers evaluation until the handler
 actually produces output.
 
-  BEFORE: logger.info(f"Device {name} processed in {elapsed:.2f}s")
+  BEFORE: logger.info("Device %s processed in %.2fs", name, elapsed)
   AFTER:  logger.info("Device %s processed in %.2fs", name, elapsed)
 
 Usage

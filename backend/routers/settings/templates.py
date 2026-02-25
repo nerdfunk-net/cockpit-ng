@@ -46,20 +46,20 @@ async def list_templates(
     try:
         from template_manager import template_manager
 
-        logger.info(f"DEBUG: API list_templates - current_user dict: {current_user}")
+        logger.info("DEBUG: API list_templates - current_user dict: %s", current_user)
         username = current_user.get("username")  # Get username from current_user
-        logger.info(f"DEBUG: API list_templates - extracted username: {username}")
+        logger.info("DEBUG: API list_templates - extracted username: %s", username)
 
         if search:
             logger.info(
-                f"DEBUG: API list_templates - using search with username={username}"
+                "DEBUG: API list_templates - using search with username=%s", username
             )
             templates = template_manager.search_templates(
                 search, search_content=True, username=username
             )
         else:
             logger.info(
-                f"DEBUG: API list_templates - calling list_templates with username={username}"
+                "DEBUG: API list_templates - calling list_templates with username=%s", username
             )
             templates = template_manager.list_templates(
                 category=category,
@@ -70,24 +70,24 @@ async def list_templates(
 
         # Convert to response models
         logger.info(
-            f"DEBUG: API list_templates - received {len(templates)} templates from manager"
+            "DEBUG: API list_templates - received %s templates from manager", len(templates)
         )
         template_responses = []
         for template in templates:
             logger.info(
-                f"DEBUG: API list_templates - converting template id={template['id']}, name={template['name']}, scope={template.get('scope')}"
+                "DEBUG: API list_templates - converting template id=%s, name=%s, scope=%s", template['id'], template['name'], template.get('scope')
             )
             template_responses.append(TemplateResponse(**template))
 
         logger.info(
-            f"DEBUG: API list_templates - returning {len(template_responses)} templates to frontend"
+            "DEBUG: API list_templates - returning %s templates to frontend", len(template_responses)
         )
         return TemplateListResponse(
             templates=template_responses, total=len(template_responses)
         )
 
     except Exception as e:
-        logger.error(f"Error listing templates: {e}")
+        logger.error("Error listing templates: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list templates: {str(e)}",
@@ -105,7 +105,7 @@ async def get_template_categories(
         return template_manager.get_categories()
 
     except Exception as e:
-        logger.error(f"Error getting template categories: {e}")
+        logger.error("Error getting template categories: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get categories: {str(e)}",
@@ -178,7 +178,7 @@ async def scan_import_directory(
                     )
                     templates.append(template_info)
             except Exception as e:
-                logger.warning(f"Failed to parse {yaml_file}: {str(e)}")
+                logger.warning("Failed to parse %s: %s", yaml_file, str(e))
                 continue
 
         return TemplateScanImportResponse(
@@ -188,7 +188,7 @@ async def scan_import_directory(
         )
 
     except Exception as e:
-        logger.error(f"Failed to scan import directory: {str(e)}")
+        logger.error("Failed to scan import directory: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to scan import directory: {str(e)}",
@@ -224,7 +224,7 @@ async def create_template(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        logger.error(f"Error creating template: {e}")
+        logger.error("Error creating template: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create template: {str(e)}",
@@ -252,7 +252,7 @@ async def get_template(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting template {template_id}: {e}")
+        logger.error("Error getting template %s: %s", template_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get template: {str(e)}",
@@ -280,7 +280,7 @@ async def get_template_by_name(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting template by name '{template_name}': {e}")
+        logger.error("Error getting template by name '%s': %s", template_name, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get template: {str(e)}",
@@ -317,10 +317,10 @@ async def update_template(
 
         template_data = template_request.dict(exclude_unset=True)
         logger.info(
-            f"DEBUG: API update_template({template_id}) - received data: {template_data}"
+            "DEBUG: API update_template(%s) - received data: %s", template_id, template_data
         )
         logger.info(
-            f"DEBUG: API update_template({template_id}) - scope in data: {template_data.get('scope')}"
+            "DEBUG: API update_template(%s) - scope in data: %s", template_id, template_data.get('scope')
         )
         success = template_manager.update_template(template_id, template_data)
 
@@ -336,7 +336,7 @@ async def update_template(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        logger.error(f"Error updating template {template_id}: {e}")
+        logger.error("Error updating template %s: %s", template_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update template: {str(e)}",
@@ -366,7 +366,7 @@ async def delete_template(
             )
 
     except Exception as e:
-        logger.error(f"Error deleting template {template_id}: {e}")
+        logger.error("Error deleting template %s: %s", template_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete template: {str(e)}",
@@ -394,7 +394,7 @@ async def get_template_content(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting template content for {template_id}: {e}")
+        logger.error("Error getting template content for %s: %s", template_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get template content: {str(e)}",
@@ -414,7 +414,7 @@ async def get_template_versions(
         return versions
 
     except Exception as e:
-        logger.error(f"Error getting template versions for {template_id}: {e}")
+        logger.error("Error getting template versions for %s: %s", template_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get template versions: {str(e)}",
@@ -476,7 +476,7 @@ async def upload_template_file(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        logger.error(f"Error uploading template file: {e}")
+        logger.error("Error uploading template file: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to upload template file: {str(e)}",
@@ -500,7 +500,7 @@ async def test_git_connection(
         }
 
     except Exception as e:
-        logger.error(f"Error testing Git connection: {e}")
+        logger.error("Error testing Git connection: %s", e)
         return {
             "success": False,
             "message": f"Git connection test failed: {str(e)}",
@@ -542,7 +542,7 @@ async def sync_templates(
         )
 
     except Exception as e:
-        logger.error(f"Error syncing templates: {e}")
+        logger.error("Error syncing templates: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to sync templates: {str(e)}",
@@ -748,7 +748,7 @@ async def import_templates(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        logger.error(f"Error importing templates: {e}")
+        logger.error("Error importing templates: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to import templates: {str(e)}",
@@ -835,7 +835,7 @@ async def advanced_render_template(
                     context["devices"] = devices
 
                     logger.info(
-                        f"Fetched Nautobot context for device {render_request.device_id}"
+                        "Fetched Nautobot context for device %s", render_request.device_id
                     )
                 except Exception as e:
                     error_msg = f"Failed to fetch Nautobot device data: {str(e)}"
@@ -891,7 +891,7 @@ async def advanced_render_template(
                         )
 
                     logger.info(
-                        f"Pre-run command executed. Raw length: {len(pre_run_output)}, Parsed records: {len(pre_run_parsed)}"
+                        "Pre-run command executed. Raw length: %s, Parsed records: %s", len(pre_run_output), len(pre_run_parsed)
                     )
                 except Exception as e:
                     error_msg = f"Failed to execute pre-run command: {str(e)}"
@@ -923,7 +923,7 @@ async def advanced_render_template(
                     conditions = inventory.get("conditions", [])
                     if not conditions:
                         logger.warning(
-                            f"Inventory {render_request.inventory_id} has no conditions"
+                            "Inventory %s has no conditions", render_request.inventory_id
                         )
                         context["devices"] = []
                         context["device_details"] = {}
@@ -965,7 +965,7 @@ async def advanced_render_template(
 
                         context["device_details"] = device_details
                         logger.info(
-                            f"Fetched {len(device_list)} devices from inventory {render_request.inventory_id}"
+                            "Fetched %s devices from inventory %s", len(device_list), render_request.inventory_id
                         )
 
                 except Exception as e:
@@ -978,7 +978,7 @@ async def advanced_render_template(
                 try:
                     snmp_mapping = config_service.load_snmp_mapping()
                     context["snmp_mapping"] = snmp_mapping
-                    logger.info(f"Loaded SNMP mapping with {len(snmp_mapping)} entries")
+                    logger.info("Loaded SNMP mapping with %s entries", len(snmp_mapping))
                 except Exception as e:
                     error_msg = f"Failed to load SNMP mapping: {str(e)}"
                     logger.error(error_msg)
@@ -1026,7 +1026,7 @@ async def advanced_render_template(
             detail=str(e),
         )
     except Exception as e:
-        logger.error(f"Error in advanced template rendering: {e}")
+        logger.error("Error in advanced template rendering: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to render template: {str(e)}",
@@ -1044,7 +1044,7 @@ async def template_health_check(
         return template_manager.health_check()
 
     except Exception as e:
-        logger.error(f"Template health check failed: {e}")
+        logger.error("Template health check failed: %s", e)
         return {"status": "unhealthy", "error": str(e)}
 
 
@@ -1081,7 +1081,7 @@ async def execute_template_and_sync_to_nautobot(
         import job_run_manager
 
         logger.info(
-            f"Execute-and-sync request for template {request.template_id} on {len(request.device_ids)} device(s)"
+            "Execute-and-sync request for template %s on %s device(s)", request.template_id, len(request.device_ids)
         )
 
         # Get template
@@ -1108,7 +1108,7 @@ async def execute_template_and_sync_to_nautobot(
         # Render template for each device
         for device_id in request.device_ids:
             try:
-                logger.info(f"Rendering template for device {device_id}")
+                logger.info("Rendering template for device %s", device_id)
 
                 # Render template using the render_service (supports Nautobot context and pre-run commands)
                 from services.network.automation.render import render_service
@@ -1141,11 +1141,11 @@ async def execute_template_and_sync_to_nautobot(
                             if "id" not in parsed_data and "name" not in parsed_data:
                                 parsed_data["id"] = device_id
                             logger.info(
-                                f"Parsed JSON for device {device_id}: interfaces={parsed_data.get('interfaces', 'NOT_FOUND')}"
+                                "Parsed JSON for device %s: interfaces=%s", device_id, parsed_data.get('interfaces', 'NOT_FOUND')
                             )
                             if "interfaces" in parsed_data:
                                 logger.info(
-                                    f"  - Found {len(parsed_data['interfaces'])} interface(s) in parsed JSON"
+                                    "  - Found %s interface(s) in parsed JSON", len(parsed_data['interfaces'])
                                 )
                             parsed_updates.append(parsed_data)
                         else:
@@ -1199,7 +1199,7 @@ async def execute_template_and_sync_to_nautobot(
                 errors.append(
                     f"Device {device_id}: Template rendering failed: {str(e)}"
                 )
-                logger.error(f"Error rendering template for device {device_id}: {e}")
+                logger.error("Error rendering template for device %s: %s", device_id, e)
 
         # If dry_run or errors occurred, return without triggering update task
         if request.dry_run:
@@ -1233,7 +1233,7 @@ async def execute_template_and_sync_to_nautobot(
 
         # Trigger the update-devices Celery task
         logger.info(
-            f"Triggering update-devices task for {len(parsed_updates)} device(s)"
+            "Triggering update-devices task for %s device(s)", len(parsed_updates)
         )
         task = update_devices_task.delay(
             devices=parsed_updates,
@@ -1266,7 +1266,7 @@ async def execute_template_and_sync_to_nautobot(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in execute-and-sync: {e}")
+        logger.error("Error in execute-and-sync: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to execute template and sync: {str(e)}",

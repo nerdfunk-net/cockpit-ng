@@ -84,7 +84,7 @@ class ComplianceCheckService:
         except Exception as e:
             error_msg = str(e)
             logger.warning(
-                f"SSH login failed for {device_ip} with user {username}: {error_msg}"
+                "SSH login failed for %s with user %s: %s", device_ip, username, error_msg
             )
 
             return {
@@ -192,7 +192,7 @@ class ComplianceCheckService:
 
         except Exception as e:
             error_msg = str(e)
-            logger.warning(f"SNMP v{version} check failed for {device_ip}: {error_msg}")
+            logger.warning("SNMP v%s check failed for %s: %s", version, device_ip, error_msg)
 
             return {
                 "success": False,
@@ -265,12 +265,12 @@ class ComplianceCheckService:
             )
 
             # Debug logging
-            logger.debug(f"SNMPv3 check for {device_ip}")
-            logger.debug(f"  Username: {username}")
-            logger.debug(f"  Auth Protocol: {auth_protocol} (mapped to {auth_proto})")
-            logger.debug(f"  Auth Password: {'***set***' if auth_password else 'None'}")
-            logger.debug(f"  Priv Protocol: {priv_protocol} (mapped to {priv_proto})")
-            logger.debug(f"  Priv Password: {'***set***' if priv_password else 'None'}")
+            logger.debug("SNMPv3 check for %s", device_ip)
+            logger.debug("  Username: %s", username)
+            logger.debug("  Auth Protocol: %s (mapped to %s)", auth_protocol, auth_proto)
+            logger.debug("  Auth Password: %s", '***set***' if auth_password else 'None')
+            logger.debug("  Priv Protocol: %s (mapped to %s)", priv_protocol, priv_proto)
+            logger.debug("  Priv Password: %s", '***set***' if priv_password else 'None')
 
             # Create USM user data for SNMPv3
             # Only pass passwords if they exist and corresponding protocol is not noAuth/noPriv
@@ -282,10 +282,10 @@ class ComplianceCheckService:
                 privProtocol=priv_proto,
             )
 
-            logger.debug(f"  Created UsmUserData for user: {username}")
+            logger.debug("  Created UsmUserData for user: %s", username)
 
             # Create SNMP command using v7 API
-            logger.debug(f"  Sending SNMPv3 GET request to {device_ip}:161...")
+            logger.debug("  Sending SNMPv3 GET request to %s:161...", device_ip)
             error_indication, error_status, error_index, var_binds = await get_cmd(
                 SnmpEngine(),
                 usm_user,
@@ -299,7 +299,7 @@ class ComplianceCheckService:
             # Check for errors
             if error_indication:
                 logger.warning(
-                    f"  SNMPv3 query failed with error_indication: {error_indication}"
+                    "  SNMPv3 query failed with error_indication: %s", error_indication
                 )
                 return {
                     "success": False,
@@ -314,7 +314,7 @@ class ComplianceCheckService:
                 }
             elif error_status:
                 logger.warning(
-                    f"  SNMPv3 query failed with error_status: {error_status.prettyPrint()} at index {error_index}"
+                    "  SNMPv3 query failed with error_status: %s at index %s", error_status.prettyPrint(), error_index
                 )
                 return {
                     "success": False,
@@ -334,7 +334,7 @@ class ComplianceCheckService:
                     sys_descr = var_bind[1].prettyPrint()
 
                 logger.debug(
-                    f"  SNMPv3 query successful! sysDescr: {sys_descr[:50] if sys_descr else 'N/A'}..."
+                    "  SNMPv3 query successful! sysDescr: %s...", sys_descr[:50] if sys_descr else 'N/A'
                 )
 
                 return {
@@ -352,7 +352,7 @@ class ComplianceCheckService:
         except Exception as e:
             error_msg = str(e)
             logger.warning(
-                f"SNMP v3 check failed for {device_ip} with user {username}: {error_msg}"
+                "SNMP v3 check failed for %s with user %s: %s", device_ip, username, error_msg
             )
 
             return {
@@ -488,7 +488,7 @@ class ComplianceCheckService:
         except Exception as e:
             error_msg = str(e)
             logger.error(
-                f"Configuration pattern check failed for {device_ip}: {error_msg}"
+                "Configuration pattern check failed for %s: %s", device_ip, error_msg
             )
 
             return {

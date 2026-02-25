@@ -89,7 +89,7 @@ async def debug_read_test(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Debug read test failed for repo {repo_id}: {e}")
+        logger.error("Debug read test failed for repo %s: %s", repo_id, e)
         return {
             "success": False,
             "message": f"Debug test failed: {str(e)}",
@@ -199,7 +199,7 @@ async def debug_write_test(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Debug write test failed for repo {repo_id}: {e}")
+        logger.error("Debug write test failed for repo %s: %s", repo_id, e)
         return {
             "success": False,
             "message": f"Debug test failed: {str(e)}",
@@ -295,7 +295,7 @@ async def debug_delete_test(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Debug delete test failed for repo {repo_id}: {e}")
+        logger.error("Debug delete test failed for repo %s: %s", repo_id, e)
         return {
             "success": False,
             "message": f"Debug test failed: {str(e)}",
@@ -555,7 +555,7 @@ async def debug_push_test(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Debug push test failed for repo {repo_id}: {e}")
+        logger.error("Debug push test failed for repo %s: %s", repo_id, e)
         return {
             "success": False,
             "message": f"Debug test failed: {str(e)}",
@@ -738,5 +738,5 @@ async def debug_diagnostics(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Debug diagnostics failed for repo {repo_id}: {e}")
+        logger.error("Debug diagnostics failed for repo %s: %s", repo_id, e)
         return {"success": False, "error": str(e), "error_type": type(e).__name__}

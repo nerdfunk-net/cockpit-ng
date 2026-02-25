@@ -141,7 +141,7 @@ async def search_repository_files(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error searching repository files: {e}")
+        logger.error("Error searching repository files: %s", e)
         return {"success": False, "message": f"File search failed: {str(e)}"}
 
 
@@ -467,7 +467,7 @@ async def get_file_content(
             )
 
         logger.info(
-            f"User {current_user.get('username')} read file {path} from repository {repository['name']}"
+            "User %s read file %s from repository %s", current_user.get('username'), path, repository['name']
         )
 
         # Return plain text content
@@ -478,7 +478,7 @@ async def get_file_content(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error reading file content: {e}")
+        logger.error("Error reading file content: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error reading file content: {str(e)}",
@@ -642,7 +642,7 @@ async def get_directory_tree(
             try:
                 items = os.listdir(dir_path)
             except PermissionError:
-                logger.warning(f"Permission denied accessing directory: {dir_path}")
+                logger.warning("Permission denied accessing directory: %s", dir_path)
                 return None
 
             # Separate directories and files
@@ -699,7 +699,7 @@ async def get_directory_tree(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error building directory tree: {e}")
+        logger.error("Error building directory tree: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error building directory tree: {str(e)}",
@@ -823,7 +823,7 @@ async def get_directory_files(
                         "timestamp": 0,
                     }
             except Exception as e:
-                logger.warning(f"Failed to get commit info for {file_rel_path}: {e}")
+                logger.warning("Failed to get commit info for %s: %s", file_rel_path, e)
                 commit_info = {
                     "hash": "",
                     "short_hash": "",
@@ -854,7 +854,7 @@ async def get_directory_files(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error listing directory files: {e}")
+        logger.error("Error listing directory files: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error listing directory files: {str(e)}",

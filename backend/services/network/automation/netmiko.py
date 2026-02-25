@@ -31,7 +31,7 @@ class NetmikoService:
             session_id: The session ID to register
         """
         self.active_sessions.add(session_id)
-        logger.info(f"Session {session_id} registered")
+        logger.info("Session %s registered", session_id)
 
     def unregister_session(self, session_id: str) -> None:
         """
@@ -42,7 +42,7 @@ class NetmikoService:
         """
         self.active_sessions.discard(session_id)
         self.cancelled_sessions.discard(session_id)
-        logger.info(f"Session {session_id} unregistered")
+        logger.info("Session %s unregistered", session_id)
 
     def is_session_cancelled(self, session_id: str) -> bool:
         """
@@ -64,7 +64,7 @@ class NetmikoService:
             session_id: The session ID to cancel
         """
         self.cancelled_sessions.add(session_id)
-        logger.info(f"Session {session_id} marked for cancellation")
+        logger.info("Session %s marked for cancellation", session_id)
 
     def _connect_and_execute(
         self,
@@ -111,13 +111,13 @@ class NetmikoService:
 
         # Check if session has been cancelled before starting
         if session_id and session_id in self.cancelled_sessions:
-            logger.info(f"Skipping device {host_ip} - session {session_id} cancelled")
+            logger.info("Skipping device %s - session %s cancelled", host_ip, session_id)
             result["cancelled"] = True
             result["error"] = "Execution cancelled by user"
             return result
 
         try:
-            logger.info(f"Connecting to device {host_ip} (type: {device_type})")
+            logger.info("Connecting to device %s (type: %s)", host_ip, device_type)
 
             # Device connection parameters
             device = {
@@ -132,35 +132,35 @@ class NetmikoService:
 
             # Connect to the device
             with ConnectHandler(**device) as connection:
-                logger.info(f"Successfully connected to {host_ip}")
+                logger.info("Successfully connected to %s", host_ip)
 
                 if privileged:
                     try:
-                        logger.info(f"Entering privileged mode on {host_ip}")
+                        logger.info("Entering privileged mode on %s", host_ip)
                         connection.enable()
                         logger.info("Privileged mode enabled")
                     except Exception as e:
                         logger.warning(
-                            f"Failed to enter privileged mode on {host_ip}: {e}"
+                            "Failed to enter privileged mode on %s: %s", host_ip, e
                         )
 
                 command_outputs = {}
                 output = ""
 
                 if enable_mode:
-                    logger.info(f"Entering config mode on {host_ip}")
+                    logger.info("Entering config mode on %s", host_ip)
                     # send_config_set automatically:
                     # 1. Enters config mode (configure terminal)
                     # 2. Sends commands line by line
                     # 3. Exits config mode
                     # 4. Waits for prompt after each command
                     output = connection.send_config_set(commands)
-                    logger.info(f"Config commands executed on {host_ip}")
+                    logger.info("Config commands executed on %s", host_ip)
                 else:
                     # Execute commands in exec mode, line by line
                     for idx, command in enumerate(commands, 1):
                         logger.info(
-                            f"Executing command {idx}/{len(commands)} on {host_ip}: {command}"
+                            "Executing command %s/%s on %s: %s", idx, len(commands), host_ip, command
                         )
 
                         # Get raw output from device (execute once)
@@ -179,7 +179,7 @@ class NetmikoService:
                         # If TextFSM parsing is requested, parse the raw output we already have
                         if use_textfsm:
                             logger.info(
-                                f"Parsing command output with TextFSM for: {command}"
+                                "Parsing command output with TextFSM for: %s", command
                             )
                             try:
                                 # Use netmiko's textfsm parsing on the raw output
@@ -193,17 +193,17 @@ class NetmikoService:
                                 if parsed_output:
                                     command_outputs[command] = parsed_output
                                     logger.info(
-                                        f"Successfully parsed output for: {command}"
+                                        "Successfully parsed output for: %s", command
                                     )
                                 else:
                                     # No TextFSM template available, store raw output
                                     logger.info(
-                                        f"No TextFSM template available for: {command}"
+                                        "No TextFSM template available for: %s", command
                                     )
                                     command_outputs[command] = raw_output
                             except Exception as parse_error:
                                 logger.warning(
-                                    f"TextFSM parsing failed for command '{command}': {parse_error}"
+                                    "TextFSM parsing failed for command '%s': %s", command, parse_error
                                 )
                                 # Store raw output if parsing fails
                                 command_outputs[command] = raw_output
@@ -213,7 +213,7 @@ class NetmikoService:
 
                 # Save config if requested and execution was successful
                 if write_config:
-                    logger.info(f"Writing config to startup on {host_ip}")
+                    logger.info("Writing config to startup on %s", host_ip)
                     try:
                         save_output = connection.send_command(
                             "copy running-config startup-config",
@@ -226,29 +226,29 @@ class NetmikoService:
                         )
                         command_outputs["write_config"] = save_output
                         output += f"\n{save_output}"
-                        logger.info(f"Config saved to startup on {host_ip}")
+                        logger.info("Config saved to startup on %s", host_ip)
                     except Exception as save_error:
                         logger.warning(
-                            f"Failed to save config on {host_ip}: {save_error}"
+                            "Failed to save config on %s: %s", host_ip, save_error
                         )
                         command_outputs["write_config_error"] = str(save_error)
 
                 result["success"] = True
                 result["output"] = output
                 result["command_outputs"] = command_outputs
-                logger.info(f"Command execution successful on {host_ip}")
+                logger.info("Command execution successful on %s", host_ip)
 
         except NetmikoTimeoutException as e:
             error_msg = f"Connection timeout: {str(e)}"
-            logger.error(f"Timeout connecting to {host_ip}: {e}")
+            logger.error("Timeout connecting to %s: %s", host_ip, e)
             result["error"] = error_msg
         except NetmikoAuthenticationException as e:
             error_msg = f"Authentication failed: {str(e)}"
-            logger.error(f"Authentication failed for {host_ip}: {e}")
+            logger.error("Authentication failed for %s: %s", host_ip, e)
             result["error"] = error_msg
         except Exception as e:
             error_msg = f"Unexpected error: {str(e)}"
-            logger.error(f"Error executing commands on {host_ip}: {e}")
+            logger.error("Error executing commands on %s: %s", host_ip, e)
             result["error"] = error_msg
 
         return result
@@ -333,10 +333,8 @@ class NetmikoService:
             session_id = str(uuid.uuid4())
 
         logger.info(
-            f"Starting command execution on {len(devices)} devices "
-            f"(session: {session_id}). "
-            f"Commands: {len(commands)}, Enable mode: {enable_mode}, "
-            f"Write config: {write_config}, Use TextFSM: {use_textfsm}"
+            "Starting command execution on %s devices (session: %s). Commands: %s, Enable mode: %s, Write config: %s, Use TextFSM: %s",
+            len(devices), session_id, len(commands), enable_mode, write_config, use_textfsm,
         )
 
         # Create tasks for all devices
@@ -351,7 +349,7 @@ class NetmikoService:
 
             if not device_ip:
                 logger.warning(
-                    f"Skipping device without IP: {device.get('name', 'Unknown')}"
+                    "Skipping device without IP: %s", device.get('name', 'Unknown')
                 )
                 continue
 
@@ -378,7 +376,7 @@ class NetmikoService:
         processed_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                logger.error(f"Task failed with exception: {result}")
+                logger.error("Task failed with exception: %s", result)
                 processed_results.append(
                     {
                         "device": devices[i].get("ip")
@@ -395,15 +393,14 @@ class NetmikoService:
         success_count = sum(1 for r in processed_results if r["success"])
         cancelled_count = sum(1 for r in processed_results if r.get("cancelled", False))
         logger.info(
-            f"Command execution completed (session: {session_id}). "
-            f"Successful: {success_count}/{len(processed_results)}, "
-            f"Cancelled: {cancelled_count}"
+            "Command execution completed (session: %s). Successful: %s/%s, Cancelled: %s",
+            session_id, success_count, len(processed_results), cancelled_count,
         )
 
         # Clean up cancelled session from tracking
         if session_id in self.cancelled_sessions:
             self.cancelled_sessions.remove(session_id)
-            logger.info(f"Cleaned up cancelled session: {session_id}")
+            logger.info("Cleaned up cancelled session: %s", session_id)
 
         return session_id, processed_results
 
@@ -449,8 +446,8 @@ class NetmikoService:
 
         # Default to cisco_ios if no match found
         logger.warning(
-            f"Unknown platform '{platform}', defaulting to 'cisco_ios'. "
-            f"You may need to adjust this mapping."
+            "Unknown platform '%s', defaulting to 'cisco_ios'. You may need to adjust this mapping.",
+            platform,
         )
         return "cisco_ios"
 

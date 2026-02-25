@@ -176,7 +176,7 @@ async def get_nautobot_stats(
 
         return stats
     except Exception as e:
-        logger.error(f"Error fetching Nautobot stats: {str(e)}")
+        logger.error("Error fetching Nautobot stats: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch statistics: {str(e)}",
@@ -403,13 +403,13 @@ async def get_nautobot_secret_groups(
         result = await nautobot_service.graphql_query(query)
 
         if "errors" in result:
-            logger.warning(f"GraphQL errors fetching secret groups: {result['errors']}")
+            logger.warning("GraphQL errors fetching secret groups: %s", result['errors'])
             return []
 
         return result["data"]["secrets_groups"]
     except Exception as e:
         # Return empty list if secret groups don't exist
-        logger.warning(f"Secret groups endpoint not available: {str(e)}")
+        logger.warning("Secret groups endpoint not available: %s", str(e))
         return []
 
 
@@ -722,25 +722,25 @@ async def get_interface_types(
         )
 
         # Debug: log the full response structure
-        logger.info(f"OPTIONS response keys: {result.keys() if result else 'None'}")
+        logger.info("OPTIONS response keys: %s", result.keys() if result else 'None')
         if result and "actions" in result:
             actions = result.get("actions", {})
-            logger.info(f"actions keys: {actions.keys()}")
+            logger.info("actions keys: %s", actions.keys())
             post_actions = actions.get("POST", {})
             logger.info(
-                f"POST actions keys: {post_actions.keys() if post_actions else 'None'}"
+                "POST actions keys: %s", post_actions.keys() if post_actions else 'None'
             )
             if "type" in post_actions:
                 type_field = post_actions.get("type", {})
                 logger.info(
-                    f"type field keys: {type_field.keys() if isinstance(type_field, dict) else type(type_field)}"
+                    "type field keys: %s", type_field.keys() if isinstance(type_field, dict) else type(type_field)
                 )
                 choices = type_field.get("choices", [])
                 logger.info(
-                    f"choices type: {type(choices)}, length: {len(choices) if choices else 0}"
+                    "choices type: %s, length: %s", type(choices), len(choices) if choices else 0
                 )
                 if choices and len(choices) > 0:
-                    logger.info(f"first choice: {choices[0]}, type: {type(choices[0])}")
+                    logger.info("first choice: %s, type: %s", choices[0], type(choices[0]))
 
         # Extract type choices from the OPTIONS response
         interface_types = []
@@ -925,7 +925,7 @@ async def get_job_results(
                 detail=f"Job result not found: {job_id}",
             )
 
-        logger.error(f"Error fetching job result {job_id}: {error_msg}")
+        logger.error("Error fetching job result %s: %s", job_id, error_msg)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch job result: {error_msg}",
@@ -950,7 +950,7 @@ async def nautobot_health_check(
         }
     except Exception as e:
         # Log the full exception details for debugging
-        logger.error(f"Nautobot health check failed: {str(e)}", exc_info=True)
+        logger.error("Nautobot health check failed: %s", str(e), exc_info=True)
 
         error_msg = str(e)
         error_type = type(e).__name__
@@ -1013,7 +1013,7 @@ async def get_device_details(
             detail=str(e),
         )
     except Exception as e:
-        logger.error(f"Error fetching device details for {device_id}: {str(e)}")
+        logger.error("Error fetching device details for %s: %s", device_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch device details: {str(e)}",
@@ -1054,7 +1054,7 @@ async def delete_device(
         }
 
     except Exception as e:
-        logger.error(f"Error deleting device {device_id}: {str(e)}")
+        logger.error("Error deleting device %s: %s", device_id, str(e))
         if "404" in str(e) or "Not Found" in str(e):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

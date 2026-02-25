@@ -63,7 +63,7 @@ def tree_to_operations(tree_data: Dict[str, Any]) -> List[LogicalOperation]:
     internal_logic = tree_data.get("internalLogic", "AND")
 
     logger.info(
-        f"Converting tree with {len(items)} items, internal logic: {internal_logic}"
+        "Converting tree with %s items, internal logic: %s", len(items), internal_logic
     )
 
     # Convert all items
@@ -116,7 +116,7 @@ def tree_to_operations(tree_data: Dict[str, Any]) -> List[LogicalOperation]:
     # Add NOT operations
     operations.extend(not_items)
 
-    logger.info(f"Converted tree to {len(operations)} operations")
+    logger.info("Converted tree to %s operations", len(operations))
     return operations
 
 

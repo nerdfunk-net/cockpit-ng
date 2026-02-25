@@ -56,7 +56,7 @@ class BackupService:
             }
 
         except Exception as e:
-            logger.error(f"Error getting devices for backup: {e}", exc_info=True)
+            logger.error("Error getting devices for backup: %s", e, exc_info=True)
             raise
 
     async def trigger_device_backup(
@@ -90,7 +90,7 @@ class BackupService:
             return {"task_id": task.id, "status": "queued", "device_id": device_id}
 
         except Exception as e:
-            logger.error(f"Error triggering device backup: {e}", exc_info=True)
+            logger.error("Error triggering device backup: %s", e, exc_info=True)
             raise
 
     async def trigger_bulk_backup(
@@ -126,7 +126,7 @@ class BackupService:
             }
 
         except Exception as e:
-            logger.error(f"Error triggering bulk backup: {e}", exc_info=True)
+            logger.error("Error triggering bulk backup: %s", e, exc_info=True)
             raise
 
     async def get_backup_history(
@@ -146,7 +146,7 @@ class BackupService:
         try:
             return self.repository.get_backup_history(db, device_id, limit)
         except Exception as e:
-            logger.error(f"Error getting backup history: {e}", exc_info=True)
+            logger.error("Error getting backup history: %s", e, exc_info=True)
             return []
 
     async def download_backup(
@@ -187,7 +187,7 @@ class BackupService:
             raise ValueError(f"Backup not found for device {device_id}")
 
         except Exception as e:
-            logger.error(f"Error downloading backup: {e}", exc_info=True)
+            logger.error("Error downloading backup: %s", e, exc_info=True)
             raise
 
     async def restore_backup(
@@ -215,5 +215,5 @@ class BackupService:
             }
 
         except Exception as e:
-            logger.error(f"Error triggering restore: {e}", exc_info=True)
+            logger.error("Error triggering restore: %s", e, exc_info=True)
             raise

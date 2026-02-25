@@ -78,12 +78,12 @@ async def get_ipam_ip_addresses(
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
         logger.info(
-            f"Retrieved {result.get('count', 0)} IP addresses from Nautobot IPAM"
+            "Retrieved %s IP addresses from Nautobot IPAM", result.get('count', 0)
         )
         return result
 
     except Exception as e:
-        logger.error(f"Failed to get IPAM IP addresses: {str(e)}")
+        logger.error("Failed to get IPAM IP addresses: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve IPAM IP addresses: {str(e)}",
@@ -453,7 +453,7 @@ async def get_ipam_ip_addresses_detailed(
         result = await nautobot_service.graphql_query(query, variables)
 
         if "errors" in result:
-            logger.error(f"GraphQL errors: {result['errors']}")
+            logger.error("GraphQL errors: %s", result['errors'])
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"GraphQL query failed: {result['errors']}",
@@ -461,14 +461,14 @@ async def get_ipam_ip_addresses_detailed(
 
         ip_addresses = result.get("data", {}).get("ip_addresses", [])
 
-        logger.info(f"Retrieved detailed information for IP address: {address}")
+        logger.info("Retrieved detailed information for IP address: %s", address)
 
         return {"count": len(ip_addresses), "ip_addresses": ip_addresses}
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get detailed IP address information: {str(e)}")
+        logger.error("Failed to get detailed IP address information: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve detailed IP address information: {str(e)}",
@@ -490,11 +490,11 @@ async def get_ipam_ip_address(
         endpoint = f"ipam/ip-addresses/{ip_address_id}/"
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
-        logger.info(f"Retrieved IP address {ip_address_id} from Nautobot IPAM")
+        logger.info("Retrieved IP address %s from Nautobot IPAM", ip_address_id)
         return result
 
     except Exception as e:
-        logger.error(f"Failed to get IPAM IP address {ip_address_id}: {str(e)}")
+        logger.error("Failed to get IPAM IP address %s: %s", ip_address_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND
             if "404" in str(e)
@@ -545,14 +545,14 @@ async def create_ipam_ip_address(
         )
 
         logger.info(
-            f"Created IP address {ip_address_data.get('address')} in Nautobot IPAM"
+            "Created IP address %s in Nautobot IPAM", ip_address_data.get('address')
         )
         return result
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to create IPAM IP address: {str(e)}")
+        logger.error("Failed to create IPAM IP address: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create IPAM IP address: {str(e)}",
@@ -590,11 +590,11 @@ async def update_ipam_ip_address(
             endpoint, method="PATCH", data=ip_address_data
         )
 
-        logger.info(f"Updated IP address {ip_address_id} in Nautobot IPAM")
+        logger.info("Updated IP address %s in Nautobot IPAM", ip_address_id)
         return result
 
     except Exception as e:
-        logger.error(f"Failed to update IPAM IP address {ip_address_id}: {str(e)}")
+        logger.error("Failed to update IPAM IP address %s: %s", ip_address_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND
             if "404" in str(e)
@@ -618,11 +618,11 @@ async def delete_ipam_ip_address(
         endpoint = f"ipam/ip-addresses/{ip_address_id}/"
         result = await nautobot_service.rest_request(endpoint, method="DELETE")
 
-        logger.info(f"Deleted IP address {ip_address_id} from Nautobot IPAM")
+        logger.info("Deleted IP address %s from Nautobot IPAM", ip_address_id)
         return result
 
     except Exception as e:
-        logger.error(f"Failed to delete IPAM IP address {ip_address_id}: {str(e)}")
+        logger.error("Failed to delete IPAM IP address %s: %s", ip_address_id, str(e))
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND
             if "404" in str(e)

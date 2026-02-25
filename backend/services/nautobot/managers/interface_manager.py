@@ -170,7 +170,7 @@ class InterfaceManager:
         )
 
         logger.info(
-            f"Successfully ensured interface {interface_name} with IP {ip_address}"
+            "Successfully ensured interface %s with IP %s", interface_name, ip_address
         )
         return ip_id
 
@@ -213,7 +213,7 @@ class InterfaceManager:
         from ..resolvers.device_resolver import DeviceResolver
 
         logger.info(
-            f"Updating interface IP from {old_ip} to {new_ip} on device {device_name}"
+            "Updating interface IP from %s to %s on device %s", old_ip, new_ip, device_name
         )
 
         # Import device resolver to find interface with IP
@@ -228,11 +228,11 @@ class InterfaceManager:
             if interface_info:
                 interface_id, interface_name = interface_info
                 logger.info(
-                    f"Found interface '{interface_name}' (ID: {interface_id}) with IP {old_ip}"
+                    "Found interface '%s' (ID: %s) with IP %s", interface_name, interface_id, old_ip
                 )
             else:
                 logger.warning(
-                    f"Could not find interface with IP {old_ip}, creating new interface"
+                    "Could not find interface with IP %s, creating new interface", old_ip
                 )
                 # Fallback: create new interface
                 return await self.ensure_interface_with_ip(
@@ -279,7 +279,7 @@ class InterfaceManager:
         )
 
         logger.info(
-            f"✓ Successfully updated interface {interface_name} from {old_ip} to {new_ip}"
+            "✓ Successfully updated interface %s from %s to %s", interface_name, old_ip, new_ip
         )
 
         return new_ip_id

@@ -116,7 +116,7 @@ def create_job_template(
         created_by=created_by,
     )
 
-    logger.info(f"Created job template: {name} (ID: {template.id})")
+    logger.info("Created job template: %s (ID: %s)", name, template.id)
     return _model_to_dict(template)
 
 
@@ -298,7 +298,7 @@ def update_job_template(
 
     template = repo.update(template_id, **update_data)
     if template:
-        logger.info(f"Updated job template: {template.name} (ID: {template_id})")
+        logger.info("Updated job template: %s (ID: %s)", template.name, template_id)
         return _model_to_dict(template)
     return None
 
@@ -308,7 +308,7 @@ def delete_job_template(template_id: int) -> bool:
     template = repo.get_by_id(template_id)
     if template:
         repo.delete(template_id)
-        logger.info(f"Deleted job template: {template.name} (ID: {template_id})")
+        logger.info("Deleted job template: %s (ID: %s)", template.name, template_id)
         return True
     return False
 

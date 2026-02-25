@@ -377,7 +377,7 @@ async def assign_permission_to_user(
             user_id, assignment.permission_id, assignment.granted
         )
     except Exception as e:
-        logger.error(f"Error assigning permission to user: {str(e)}", exc_info=True)
+        logger.error("Error assigning permission to user: %s", str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to assign permission: {str(e)}",
@@ -514,7 +514,7 @@ async def create_user(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        logger.error(f"Error creating user: {str(e)}", exc_info=True)
+        logger.error("Error creating user: %s", str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create user: {str(e)}",
@@ -531,7 +531,7 @@ async def list_users(
         users = rbac.list_users_with_rbac(include_inactive)
         return UserListResponse(users=users, total=len(users))
     except Exception as e:
-        logger.error(f"Error listing users: {str(e)}", exc_info=True)
+        logger.error("Error listing users: %s", str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to list users",
@@ -551,7 +551,7 @@ async def get_user(user_id: int, current_user: dict = Depends(verify_token)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting user {user_id}: {str(e)}", exc_info=True)
+        logger.error("Error getting user %s: %s", user_id, str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get user",
@@ -592,7 +592,7 @@ async def update_user(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating user {user_id}: {str(e)}", exc_info=True)
+        logger.error("Error updating user %s: %s", user_id, str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update user",
@@ -613,7 +613,7 @@ async def delete_user(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting user {user_id}: {str(e)}", exc_info=True)
+        logger.error("Error deleting user %s: %s", user_id, str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete user",
@@ -639,7 +639,7 @@ async def toggle_user_activation(
         raise
     except Exception as e:
         logger.error(
-            f"Error toggling activation for user {user_id}: {str(e)}", exc_info=True
+            "Error toggling activation for user %s: %s", user_id, str(e), exc_info=True
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -666,7 +666,7 @@ async def toggle_user_debug(
         raise
     except Exception as e:
         logger.error(
-            f"Error toggling debug for user {user_id}: {str(e)}", exc_info=True
+            "Error toggling debug for user %s: %s", user_id, str(e), exc_info=True
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -687,7 +687,7 @@ async def bulk_delete_users(
             "message": f"Successfully deleted {success_count} user(s)",
         }
     except Exception as e:
-        logger.error(f"Error bulk deleting users: {str(e)}", exc_info=True)
+        logger.error("Error bulk deleting users: %s", str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to bulk delete users",

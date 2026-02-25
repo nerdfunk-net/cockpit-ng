@@ -102,13 +102,13 @@ async def scan_certificates(
         )
 
     except PermissionError as e:
-        logger.error(f"Permission error scanning certificates: {e}")
+        logger.error("Permission error scanning certificates: %s", e)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Permission denied accessing certificate directory: {e}",
         )
     except Exception as e:
-        logger.error(f"Error scanning certificates: {e}")
+        logger.error("Error scanning certificates: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to scan certificates: {e}",
@@ -166,7 +166,7 @@ async def upload_certificate(
         with open(dest_path, "wb") as f:
             f.write(content)
 
-        logger.info(f"Certificate uploaded: {safe_filename}")
+        logger.info("Certificate uploaded: %s", safe_filename)
 
         return {
             "success": True,
@@ -178,7 +178,7 @@ async def upload_certificate(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error uploading certificate: {e}")
+        logger.error("Error uploading certificate: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to upload certificate: {e}",
@@ -246,7 +246,7 @@ async def add_certificate_to_system(
             command_outputs.append(f"Return code: {result.returncode}")
 
             if result.returncode == 0:
-                logger.info(f"Certificate {filename} added to system CA store")
+                logger.info("Certificate %s added to system CA store", filename)
                 return AddCertificateResponse(
                     success=True,
                     message=f"Certificate '{filename}' added to system CA store successfully",
@@ -254,7 +254,7 @@ async def add_certificate_to_system(
                 )
             else:
                 logger.warning(
-                    f"update-ca-certificates returned non-zero: {result.returncode}"
+                    "update-ca-certificates returned non-zero: %s", result.returncode
                 )
                 return AddCertificateResponse(
                     success=False,
@@ -264,7 +264,7 @@ async def add_certificate_to_system(
                 )
 
         except PermissionError as e:
-            logger.error(f"Permission denied adding certificate to system: {e}")
+            logger.error("Permission denied adding certificate to system: %s", e)
             return AddCertificateResponse(
                 success=False,
                 message="Permission denied. This operation requires root/sudo privileges.",
@@ -279,7 +279,7 @@ async def add_certificate_to_system(
                 command_output="\n".join(command_outputs) if command_outputs else None,
             )
         except FileNotFoundError as e:
-            logger.error(f"update-ca-certificates not found: {e}")
+            logger.error("update-ca-certificates not found: %s", e)
             return AddCertificateResponse(
                 success=False,
                 message="update-ca-certificates command not found. Is ca-certificates package installed?",
@@ -287,7 +287,7 @@ async def add_certificate_to_system(
             )
 
     except Exception as e:
-        logger.error(f"Error adding certificate to system: {e}")
+        logger.error("Error adding certificate to system: %s", e)
         return AddCertificateResponse(
             success=False,
             message=f"Failed to add certificate to system: {e}",
@@ -325,7 +325,7 @@ async def delete_certificate(
 
         # Delete the file
         cert_path.unlink()
-        logger.info(f"Certificate deleted: {safe_filename}")
+        logger.info("Certificate deleted: %s", safe_filename)
 
         return {
             "success": True,
@@ -335,7 +335,7 @@ async def delete_certificate(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting certificate: {e}")
+        logger.error("Error deleting certificate: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete certificate: {e}",

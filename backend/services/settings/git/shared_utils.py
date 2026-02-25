@@ -37,7 +37,7 @@ def get_git_repo_by_id(repo_id: int):
             repo = git_service.open_or_clone(repository)
             return repo
         except Exception as e:
-            logger.error(f"Failed to prepare repository {repository['name']}: {e}")
+            logger.error("Failed to prepare repository %s: %s", repository['name'], e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to open/clone Git repository: {str(e)}",
@@ -46,7 +46,7 @@ def get_git_repo_by_id(repo_id: int):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting Git repository {repo_id}: {e}")
+        logger.error("Error getting Git repository %s: %s", repo_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Git repository error: {str(e)}",

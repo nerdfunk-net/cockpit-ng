@@ -29,14 +29,14 @@ async def login(request: Request, user_data: UserLogin):
         user = authenticate_user(user_data.username, user_data.password)
 
         if user:
-            logger.info(f"Authenticated user {user['username']} (id={user['id']})")
+            logger.info("Authenticated user %s (id=%s)", user['username'], user['id'])
 
             # Get user with RBAC roles
             user_with_roles = rbac.get_user_with_rbac(user["id"])
 
             if not user_with_roles:
                 logger.warning(
-                    f"get_user_with_rbac returned None for user_id={user['id']}, using base user"
+                    "get_user_with_rbac returned None for user_id=%s, using base user", user['id']
                 )
                 user_with_roles = user
                 user_with_roles["roles"] = []
@@ -111,7 +111,7 @@ async def login(request: Request, user_data: UserLogin):
             )
     except Exception as e:
         # Log the error but don't expose it to the user
-        logger.error(f"Authentication error for user {user_data.username}: {e}")
+        logger.error("Authentication error for user %s: %s", user_data.username, e)
 
     # No valid authentication found
     raise HTTPException(
@@ -191,7 +191,7 @@ async def refresh_token(request: Request):
 
         if not user_with_roles:
             logger.warning(
-                f"get_user_with_rbac returned None for user_id={user['id']}, using base user"
+                "get_user_with_rbac returned None for user_id=%s, using base user", user['id']
             )
             user_with_roles = user
             user_with_roles["roles"] = []
@@ -244,7 +244,7 @@ async def refresh_token(request: Request):
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error(f"Token refresh failed for user {username}: {exc}")
+        logger.error("Token refresh failed for user %s: %s", username, exc)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token refresh failed",
@@ -354,6 +354,6 @@ async def logout(request: Request):
                 )
     except Exception as e:
         # If we can't get user info, log generic logout
-        logger.warning(f"Logout called but could not extract user info: {e}")
+        logger.warning("Logout called but could not extract user info: %s", e)
 
     return {"success": True, "message": "Logged out successfully"}

@@ -77,7 +77,7 @@ async def get_profile(current_user: str = Depends(get_current_username)):
                         )
                     except Exception as e:
                         logger.warning(
-                            f"Failed to decrypt password for credential {cred['id']}: {e}"
+                            "Failed to decrypt password for credential %s: %s", cred['id'], e
                         )
                         password_token = ""
 
@@ -102,7 +102,7 @@ async def get_profile(current_user: str = Depends(get_current_username)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching profile for {current_user}: {e}")
+        logger.error("Error fetching profile for %s: %s", current_user, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch profile",
@@ -260,7 +260,7 @@ async def update_profile(
                 if str(cred["id"]) not in processed_ids:
                     credentials_manager.delete_credential(cred["id"])
 
-        logger.info(f"Profile updated for user: {current_user}")
+        logger.info("Profile updated for user: %s", current_user)
 
         # Get updated profile data including API key and personal credentials
         profile = profile_manager.get_user_profile(current_user)
@@ -299,7 +299,7 @@ async def update_profile(
                         )
                     except Exception as e:
                         logger.warning(
-                            f"Failed to decrypt password for credential {cred['id']}: {e}"
+                            "Failed to decrypt password for credential %s: %s", cred['id'], e
                         )
                         password_token = ""
 
@@ -325,7 +325,7 @@ async def update_profile(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating profile for {current_user}: {e}")
+        logger.error("Error updating profile for %s: %s", current_user, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update profile",

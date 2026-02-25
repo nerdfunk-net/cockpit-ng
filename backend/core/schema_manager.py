@@ -25,7 +25,7 @@ class SchemaManager:
 
         self.metadata = Base.metadata
         logger.info(
-            f"SchemaManager initialized with {len(self.metadata.tables)} model definitions"
+            "SchemaManager initialized with %s model definitions", len(self.metadata.tables)
         )
 
     def _check_migration_system_exists(self) -> bool:
@@ -61,7 +61,7 @@ class SchemaManager:
                     )
                 return migrations
         except Exception as e:
-            logger.error(f"Error fetching applied migrations: {e}")
+            logger.error("Error fetching applied migrations: %s", e)
             return []
 
     def get_schema_status(self) -> Dict[str, Any]:
@@ -171,7 +171,7 @@ class SchemaManager:
         try:
             # 1. Create missing tables
             if status["missing_tables"]:
-                logger.info(f"Creating missing tables: {status['missing_tables']}")
+                logger.info("Creating missing tables: %s", status['missing_tables'])
                 # Base.metadata.create_all only creates missing tables
                 Base.metadata.create_all(bind=self.engine)
                 for table in status["missing_tables"]:
@@ -215,7 +215,7 @@ class SchemaManager:
                                 if default_val is not None:
                                     sql += f" DEFAULT {default_val}"
 
-                            logger.info(f"Executing: {sql}")
+                            logger.info("Executing: %s", sql)
                             conn.execute(text(sql))
                             changes_applied.append(
                                 f"Added column: {table_name}.{column_name}"
@@ -239,7 +239,7 @@ class SchemaManager:
             }
 
         except Exception as e:
-            logger.error(f"Migration failed: {e}")
+            logger.error("Migration failed: %s", e)
             return {
                 "success": False,
                 "message": f"Critical migration error: {str(e)}",

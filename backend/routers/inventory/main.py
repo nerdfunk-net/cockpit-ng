@@ -149,7 +149,7 @@ async def create_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating inventory: {e}")
+        logger.error("Error creating inventory: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create inventory: {str(e)}",
@@ -193,7 +193,7 @@ async def list_inventories(
         )
 
     except Exception as e:
-        logger.error(f"Error listing inventories: {e}")
+        logger.error("Error listing inventories: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list inventories: {str(e)}",
@@ -231,7 +231,7 @@ async def get_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting inventory {inventory_id}: {e}")
+        logger.error("Error getting inventory %s: %s", inventory_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get inventory: {str(e)}",
@@ -272,7 +272,7 @@ async def get_inventory_by_name(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting inventory by name '{inventory_name}': {e}")
+        logger.error("Error getting inventory by name '%s': %s", inventory_name, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get inventory: {str(e)}",
@@ -345,7 +345,7 @@ async def update_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating inventory {inventory_id}: {e}")
+        logger.error("Error updating inventory %s: %s", inventory_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update inventory: {str(e)}",
@@ -400,7 +400,7 @@ async def delete_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting inventory {inventory_id}: {e}")
+        logger.error("Error deleting inventory %s: %s", inventory_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete inventory: {str(e)}",
@@ -436,7 +436,7 @@ async def search_inventories(
         )
 
     except Exception as e:
-        logger.error(f"Error searching inventories: {e}")
+        logger.error("Error searching inventories: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to search inventories: {str(e)}",
@@ -536,7 +536,7 @@ async def export_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error exporting inventory {inventory_id}: {e}")
+        logger.error("Error exporting inventory %s: %s", inventory_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to export inventory: {str(e)}",
@@ -636,7 +636,7 @@ async def import_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error importing inventory: {e}")
+        logger.error("Error importing inventory: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to import inventory: {str(e)}",

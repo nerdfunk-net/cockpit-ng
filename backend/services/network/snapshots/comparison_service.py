@@ -145,7 +145,7 @@ class SnapshotComparisonService:
             data1 = json.loads(result1.parsed_data) if result1.parsed_data else {}
             data2 = json.loads(result2.parsed_data) if result2.parsed_data else {}
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON for {device_name}: {e}")
+            logger.error("Failed to parse JSON for %s: %s", device_name, e)
             return DeviceComparisonResult(
                 device_name=device_name,
                 status="error",

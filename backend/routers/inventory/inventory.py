@@ -27,8 +27,8 @@ async def preview_inventory(
     Preview inventory by executing logical operations and returning matching devices.
     """
     try:
-        logger.debug(f"Preview inventory request received from user: {current_user}")
-        logger.debug(f"Request operations: {request.operations}")
+        logger.debug("Preview inventory request received from user: %s", current_user)
+        logger.debug("Request operations: %s", request.operations)
 
         if not request.operations:
             logger.debug("No operations provided, returning empty result")
@@ -39,14 +39,13 @@ async def preview_inventory(
         # Log each operation for debugging
         for i, operation in enumerate(request.operations):
             logger.debug(
-                f"Operation {i}: type={operation.operation_type}, "
-                f"conditions={len(operation.conditions)}, "
-                f"nested={len(operation.nested_operations)}"
+                "Operation %s: type=%s, conditions=%s, nested=%s",
+                i, operation.operation_type, len(operation.conditions), len(operation.nested_operations),
             )
             for j, condition in enumerate(operation.conditions):
                 logger.debug(
-                    f"  Condition {j}: field={condition.field}, "
-                    f"operator={condition.operator}, value='{condition.value}'"
+                    "  Condition %s: field=%s, operator=%s, value='%s'",
+                    j, condition.field, condition.operator, condition.value,
                 )
 
         devices, operations_count = await inventory_service.preview_inventory(
@@ -54,7 +53,7 @@ async def preview_inventory(
         )
 
         logger.debug(
-            f"Preview completed: {len(devices)} devices found, {operations_count} operations executed"
+            "Preview completed: %s devices found, %s operations executed", len(devices), operations_count
         )
 
         return InventoryPreviewResponse(
@@ -64,7 +63,7 @@ async def preview_inventory(
         )
 
     except Exception as e:
-        logger.error(f"Error previewing inventory: {e}")
+        logger.error("Error previewing inventory: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to preview inventory: {str(e)}",
@@ -106,7 +105,7 @@ async def get_field_options(
         }
 
     except Exception as e:
-        logger.error(f"Error getting field options: {e}")
+        logger.error("Error getting field options: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get field options: {str(e)}",
@@ -125,7 +124,7 @@ async def get_custom_fields(
         return {"custom_fields": custom_fields}
 
     except Exception as e:
-        logger.error(f"Error getting custom fields: {e}")
+        logger.error("Error getting custom fields: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get custom fields: {str(e)}",
@@ -149,7 +148,7 @@ async def get_field_values(
         }
 
     except Exception as e:
-        logger.error(f"Error getting field values for '{field_name}': {e}")
+        logger.error("Error getting field values for '%s': %s", field_name, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get field values: {str(e)}",
@@ -208,7 +207,7 @@ async def resolve_inventory_to_devices(
         from utils.inventory_converter import convert_saved_inventory_to_operations
         from services.inventory.inventory import inventory_service
 
-        logger.info(f"Resolving inventory ID {inventory_id} for user '{username}'")
+        logger.info("Resolving inventory ID %s for user '%s'", inventory_id, username)
 
         inventory = inventory_manager.get_inventory(inventory_id)
 
@@ -231,7 +230,7 @@ async def resolve_inventory_to_devices(
         # Convert stored conditions to LogicalOperations
         conditions = inventory.get("conditions", [])
         if not conditions:
-            logger.warning(f"Inventory {inventory_id} has no conditions")
+            logger.warning("Inventory %s has no conditions", inventory_id)
             return {
                 "device_ids": [],
                 "device_count": 0,
@@ -246,7 +245,7 @@ async def resolve_inventory_to_devices(
         device_ids = [device.id for device in devices]
 
         logger.info(
-            f"Resolved {len(device_ids)} devices from inventory ID {inventory_id}"
+            "Resolved %s devices from inventory ID %s", len(device_ids), inventory_id
         )
 
         return {
@@ -259,7 +258,7 @@ async def resolve_inventory_to_devices(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error resolving inventory '{inventory_id}': {e}", exc_info=True)
+        logger.error("Error resolving inventory '%s': %s", inventory_id, e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to resolve inventory: {str(e)}",
@@ -314,7 +313,7 @@ async def resolve_inventory_to_devices_detailed(
         from utils.inventory_converter import convert_saved_inventory_to_operations
 
         logger.info(
-            f"Resolving detailed inventory ID {inventory_id} for user '{username}'"
+            "Resolving detailed inventory ID %s for user '%s'", inventory_id, username
         )
 
         inventory = inventory_manager.get_inventory(inventory_id)
@@ -338,7 +337,7 @@ async def resolve_inventory_to_devices_detailed(
         # Convert stored conditions to LogicalOperations
         conditions = inventory.get("conditions", [])
         if not conditions:
-            logger.warning(f"Inventory {inventory_id} has no conditions")
+            logger.warning("Inventory %s has no conditions", inventory_id)
             return {
                 "devices": [],
                 "device_details": [],
@@ -363,7 +362,7 @@ async def resolve_inventory_to_devices_detailed(
                 device_details.append(detail)
             except Exception as e:
                 logger.error(
-                    f"Error fetching details for device {device.id} ({device.name}): {e}"
+                    "Error fetching details for device %s (%s): %s", device.id, device.name, e
                 )
                 # Continue with remaining devices even if one fails
                 continue
@@ -385,8 +384,8 @@ async def resolve_inventory_to_devices_detailed(
             device_list.append(device_entry)
 
         logger.info(
-            f"Resolved {len(device_list)} devices with {len(device_details)} "
-            f"detailed entries from inventory ID {inventory_id}"
+            "Resolved %s devices with %s detailed entries from inventory ID %s",
+            len(device_list), len(device_details), inventory_id,
         )
 
         return {
@@ -401,7 +400,7 @@ async def resolve_inventory_to_devices_detailed(
         raise
     except Exception as e:
         logger.error(
-            f"Error resolving detailed inventory {inventory_id}: {e}", exc_info=True
+            "Error resolving detailed inventory %s: %s", inventory_id, e, exc_info=True
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -465,7 +464,7 @@ async def analyze_inventory(
                 detail="Username not found in token",
             )
 
-        logger.info(f"Analyzing inventory ID {inventory_id} for user '{username}'")
+        logger.info("Analyzing inventory ID %s for user '%s'", inventory_id, username)
 
         # Call the inventory service to perform analysis
         result = await inventory_service.analyze_inventory(inventory_id, username)
@@ -493,7 +492,7 @@ async def analyze_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error analyzing inventory {inventory_id}: {e}", exc_info=True)
+        logger.error("Error analyzing inventory %s: %s", inventory_id, e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to analyze inventory: {str(e)}",

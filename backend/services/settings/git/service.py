@@ -299,7 +299,7 @@ class GitService:
                         commits_pulled = len(pull_info) if pull_info else 0
 
                         logger.info(
-                            f"Pulled {commits_pulled} commits from {repository.get('name')}"
+                            "Pulled %s commits from %s", commits_pulled, repository.get('name')
                         )
 
                         return PullResult(
@@ -317,14 +317,14 @@ class GitService:
                                 pass
 
         except GitCommandError as e:
-            logger.error(f"Git pull failed: {e}")
+            logger.error("Git pull failed: %s", e)
             return PullResult(
                 success=False,
                 message=f"Pull failed: {str(e)}",
                 branch=repository.get("branch", "main"),
             )
         except Exception as e:
-            logger.error(f"Unexpected error during pull: {e}")
+            logger.error("Unexpected error during pull: %s", e)
             return PullResult(
                 success=False,
                 message=f"Unexpected error: {str(e)}",
@@ -387,7 +387,7 @@ class GitService:
                                     )
 
                         logger.info(
-                            f"Successfully pushed to {repository.get('name')} branch {push_branch}"
+                            "Successfully pushed to %s branch %s", repository.get('name'), push_branch
                         )
 
                         return PushResult(
@@ -406,7 +406,7 @@ class GitService:
 
         except GitCommandError as e:
             err_str = str(e)
-            logger.error(f"Git push failed: {e}")
+            logger.error("Git push failed: %s", e)
 
             if "authentication" in err_str.lower():
                 message = "Authentication failed. Please check your Git credentials."
@@ -422,7 +422,7 @@ class GitService:
                 branch=branch or repository.get("branch", "main"),
             )
         except Exception as e:
-            logger.error(f"Unexpected error during push: {e}")
+            logger.error("Unexpected error during push: %s", e)
             return PushResult(
                 success=False,
                 message=f"Unexpected error: {str(e)}",
@@ -477,7 +477,7 @@ class GitService:
                 commit = repo.index.commit(message)
 
             logger.info(
-                f"Created commit {commit.hexsha[:8]} with {len(changed_files)} files"
+                "Created commit %s with %s files", commit.hexsha[:8], len(changed_files)
             )
 
             return CommitResult(
@@ -488,13 +488,13 @@ class GitService:
             )
 
         except GitCommandError as e:
-            logger.error(f"Git commit failed: {e}")
+            logger.error("Git commit failed: %s", e)
             return CommitResult(
                 success=False,
                 message=f"Commit failed: {str(e)}",
             )
         except Exception as e:
-            logger.error(f"Unexpected error during commit: {e}")
+            logger.error("Unexpected error during commit: %s", e)
             return CommitResult(
                 success=False,
                 message=f"Unexpected error: {str(e)}",
@@ -588,7 +588,7 @@ class GitService:
             )
 
         except Exception as e:
-            logger.error(f"Unexpected error in commit_and_push: {e}")
+            logger.error("Unexpected error in commit_and_push: %s", e)
             return CommitAndPushResult(
                 success=False,
                 message=f"Unexpected error: {str(e)}",
@@ -627,7 +627,7 @@ class GitService:
 
                         origin.fetch()
 
-                        logger.info(f"Fetched updates from {repository.get('name')}")
+                        logger.info("Fetched updates from %s", repository.get('name'))
                         return GitResult(
                             success=True,
                             message="Successfully fetched updates",
@@ -640,7 +640,7 @@ class GitService:
                                 pass
 
         except Exception as e:
-            logger.error(f"Fetch failed: {e}")
+            logger.error("Fetch failed: %s", e)
             return GitResult(
                 success=False,
                 message=f"Fetch failed: {str(e)}",
@@ -709,7 +709,7 @@ class GitService:
         except InvalidGitRepositoryError:
             status["is_git_repo"] = False
         except Exception as e:
-            logger.warning(f"Error getting repository status: {e}")
+            logger.warning("Error getting repository status: %s", e)
             status["error"] = str(e)
 
         return status

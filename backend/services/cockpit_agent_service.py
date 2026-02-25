@@ -68,7 +68,7 @@ class CockpitAgentService:
                 sent_by=sent_by,
             )
         except Exception as e:
-            logger.error(f"Failed to save command to database: {e}")
+            logger.error("Failed to save command to database: %s", e)
             raise
 
         # Publish to Redis
@@ -76,10 +76,10 @@ class CockpitAgentService:
             command_channel = f"cockpit-agent:{agent_id}"
             self.redis_client.publish(command_channel, json.dumps(command_message))
             logger.info(
-                f"Command sent to agent {agent_id}: {command} (ID: {command_id})"
+                "Command sent to agent %s: %s (ID: %s)", agent_id, command, command_id
             )
         except redis.RedisError as e:
-            logger.error(f"Failed to publish command to Redis: {e}")
+            logger.error("Failed to publish command to Redis: %s", e)
             # Update database status to error
             self.repository.update_command_result(
                 command_id=command_id,
@@ -133,7 +133,7 @@ class CockpitAgentService:
                         return response_data
 
                 except json.JSONDecodeError as e:
-                    logger.error(f"Failed to parse response JSON: {e}")
+                    logger.error("Failed to parse response JSON: %s", e)
                     continue
 
                 # Check timeout
@@ -159,7 +159,7 @@ class CockpitAgentService:
             }
 
         except redis.RedisError as e:
-            logger.error(f"Redis error while waiting for response: {e}")
+            logger.error("Redis error while waiting for response: %s", e)
             self.repository.update_command_result(
                 command_id=command_id, status="error", error=str(e)
             )
@@ -193,7 +193,7 @@ class CockpitAgentService:
             }
 
         except redis.RedisError as e:
-            logger.error(f"Failed to get agent status from Redis: {e}")
+            logger.error("Failed to get agent status from Redis: %s", e)
             raise
 
     def list_agents(self) -> List[Dict]:
@@ -215,7 +215,7 @@ class CockpitAgentService:
             return agents
 
         except redis.RedisError as e:
-            logger.error(f"Failed to list agents from Redis: {e}")
+            logger.error("Failed to list agents from Redis: %s", e)
             raise
 
     def check_agent_online(self, agent_id: str, max_age: int = 90) -> bool:

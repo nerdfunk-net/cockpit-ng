@@ -71,7 +71,7 @@ async def send_command(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to send command: {e}", exc_info=True)
+        logger.error("Failed to send command: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -111,7 +111,7 @@ async def git_pull(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Git pull failed: {e}", exc_info=True)
+        logger.error("Git pull failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -149,7 +149,7 @@ async def docker_restart(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Docker restart failed: {e}", exc_info=True)
+        logger.error("Docker restart failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -180,7 +180,7 @@ async def get_agent_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get agent status: {e}", exc_info=True)
+        logger.error("Failed to get agent status: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -202,7 +202,7 @@ async def list_agents(
         return {"agents": agents}
 
     except Exception as e:
-        logger.error(f"Failed to list agents: {e}", exc_info=True)
+        logger.error("Failed to list agents: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -230,7 +230,7 @@ async def get_command_history(
         }
 
     except Exception as e:
-        logger.error(f"Failed to get command history: {e}", exc_info=True)
+        logger.error("Failed to get command history: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -257,5 +257,5 @@ async def get_all_command_history(
         }
 
     except Exception as e:
-        logger.error(f"Failed to get command history: {e}", exc_info=True)
+        logger.error("Failed to get command history: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

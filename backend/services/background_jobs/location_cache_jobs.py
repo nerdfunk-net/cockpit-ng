@@ -25,7 +25,7 @@ def cache_all_locations_task(self) -> Dict[str, Any]:
         Dictionary with task results (status, cached count)
     """
     try:
-        logger.info(f"Starting cache_all_locations task: {self.request.id}")
+        logger.info("Starting cache_all_locations task: %s", self.request.id)
 
         # Import here to avoid circular dependencies
         from services.nautobot import nautobot_service
@@ -75,7 +75,7 @@ def cache_all_locations_task(self) -> Dict[str, Any]:
         # Validate GraphQL result
         success, error_msg, data = safe_graphql_query(result)
         if not success:
-            logger.error(f"Task {self.request.id}: {error_msg}")
+            logger.error("Task %s: %s", self.request.id, error_msg)
             return {
                 "status": "failed",
                 "error": error_msg,
@@ -86,14 +86,14 @@ def cache_all_locations_task(self) -> Dict[str, Any]:
         total_locations = len(locations)
 
         if total_locations == 0:
-            logger.warning(f"Task {self.request.id}: No locations found in Nautobot")
+            logger.warning("Task %s: No locations found in Nautobot", self.request.id)
             return {
                 "status": "completed",
                 "message": "No locations found to cache",
                 "cached": 0,
             }
 
-        logger.info(f"Task {self.request.id}: Processing {total_locations} locations")
+        logger.info("Task %s: Processing %s locations", self.request.id, total_locations)
 
         # Cache configuration - locations change less frequently, use 10 min TTL
         LOCATION_TTL = 600  # 10 minutes
@@ -113,7 +113,7 @@ def cache_all_locations_task(self) -> Dict[str, Any]:
         cache_service.set(cache_key, locations, LOCATION_TTL)
 
         logger.info(
-            f"Task {self.request.id}: Successfully cached {total_locations} locations"
+            "Task %s: Successfully cached %s locations", self.request.id, total_locations
         )
 
         return {
@@ -125,7 +125,7 @@ def cache_all_locations_task(self) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(
-            f"Task {self.request.id} failed with exception: {e}", exc_info=True
+            "Task %s failed with exception: %s", self.request.id, e, exc_info=True
         )
         return {
             "status": "failed",

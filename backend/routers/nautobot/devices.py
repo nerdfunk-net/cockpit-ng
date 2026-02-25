@@ -78,7 +78,7 @@ async def test_current_nautobot_connection(
             "connection_source": nautobot_config.get("_source", "unknown"),
         }
     except Exception as e:
-        logger.error(f"Error testing Nautobot connection: {str(e)}")
+        logger.error("Error testing Nautobot connection: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to test Nautobot connection: {str(e)}",
@@ -118,7 +118,7 @@ async def get_devices(
             reload=reload,
         )
     except Exception as e:
-        logger.error(f"Error fetching devices: {str(e)}")
+        logger.error("Error fetching devices: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch devices: {str(e)}",
@@ -138,10 +138,10 @@ async def get_device(
         # Check cache first
         cached_device = get_cached_device(device_id)
         if cached_device is not None:
-            logger.debug(f"Cache hit for device: {device_id}")
+            logger.debug("Cache hit for device: %s", device_id)
             return cached_device
 
-        logger.debug(f"Cache miss for device: {device_id}")
+        logger.debug("Cache miss for device: %s", device_id)
         query = """
         query getDevice($deviceId: ID!) {
           device(id: $deviceId) {
@@ -178,7 +178,7 @@ async def get_device(
 
         # Cache the device
         if device:
-            logger.debug(f"Caching device: {device_id}")
+            logger.debug("Caching device: %s", device_id)
             cache_device(device)
 
         return device
@@ -302,17 +302,17 @@ async def onboard_device(
 
         import requests
 
-        logger.info(f"Calling Nautobot job API: {job_url}")
-        logger.info(f"Job data: {job_data}")
+        logger.info("Calling Nautobot job API: %s", job_url)
+        logger.info("Job data: %s", job_data)
 
         response = requests.post(job_url, json=job_data, headers=headers, timeout=30)
-        logger.info(f"Nautobot API response status: {response.status_code}")
-        logger.info(f"Nautobot API response body: {response.text}")
+        logger.info("Nautobot API response status: %s", response.status_code)
+        logger.info("Nautobot API response body: %s", response.text)
 
         if response.status_code in [200, 201, 202]:
             result = response.json()
             job_id = result.get("job_result", {}).get("id") or result.get("id")
-            logger.info(f"Extracted job ID: {job_id}")
+            logger.info("Extracted job ID: %s", job_id)
             return {
                 "success": True,
                 "message": f"Device onboarding job started successfully for {request.ip_address}",
@@ -332,7 +332,7 @@ async def onboard_device(
             except (ValueError, KeyError, TypeError):
                 error_detail = response.text or f"HTTP {response.status_code}"
 
-            logger.error(f"Nautobot job API failed: {error_detail}")
+            logger.error("Nautobot job API failed: %s", error_detail)
             return {
                 "success": False,
                 "message": f"Failed to start onboarding job: {error_detail}",
@@ -341,7 +341,7 @@ async def onboard_device(
             }
 
     except Exception as e:
-        logger.error(f"Exception in onboard_device: {str(e)}", exc_info=True)
+        logger.error("Exception in onboard_device: %s", str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to onboard device: {str(e)}",
@@ -372,7 +372,7 @@ async def add_device(
         )
         return result
     except Exception as e:
-        logger.error(f"Failed to add device: {str(e)}", exc_info=True)
+        logger.error("Failed to add device: %s", str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add device: {str(e)}",
@@ -432,13 +432,13 @@ async def update_device(
         return result
 
     except ValueError as e:
-        logger.error(f"Validation error updating device: {str(e)}")
+        logger.error("Validation error updating device: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
     except Exception as e:
-        logger.error(f"Failed to update device: {str(e)}", exc_info=True)
+        logger.error("Failed to update device: %s", str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update device: {str(e)}",
