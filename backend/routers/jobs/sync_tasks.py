@@ -183,7 +183,7 @@ async def trigger_compare_nautobot_and_checkmk(
     Returns:
         TaskResponse with task_id for tracking progress
     """
-    from tasks.scheduling.job_dispatcher import dispatch_job
+    from tasks import dispatch_job
 
     task = dispatch_job.delay(
         job_name="Device Comparison (Manual)",

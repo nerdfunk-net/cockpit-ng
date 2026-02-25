@@ -77,27 +77,14 @@ class BackupService:
         """
         try:
             # Import here to avoid circular dependency
-            from tasks.job_tasks import get_task_for_job
-            import job_run_manager
+            from tasks import dispatch_job
 
-            # Get or create default backup job template
-            # For now, use a simple backup task
-            task_func = get_task_for_job("backup")
-
-            if not task_func:
-                raise ValueError("Backup task not found")
-
-            # Trigger the Celery task
-            task = task_func.apply_async(
-                kwargs={"device_ids": [device_id]}, queue="default"
-            )
-
-            # Record the job run
-            job_run_manager.create_job_run(
-                task_id=task.id,
+            task = dispatch_job.delay(
+                job_name=f"backup-device-{device_id}",
                 job_type="backup",
+                target_devices=[device_id],
                 triggered_by="manual",
-                user_id=user_id,
+                executed_by=str(user_id),
             )
 
             return {"task_id": task.id, "status": "queued", "device_id": device_id}
@@ -121,25 +108,15 @@ class BackupService:
             Dict with task_id, status, and device count
         """
         try:
-            from tasks.job_tasks import get_task_for_job
-            import job_run_manager
+            # Import here to avoid circular dependency
+            from tasks import dispatch_job
 
-            task_func = get_task_for_job("backup")
-
-            if not task_func:
-                raise ValueError("Backup task not found")
-
-            # Trigger the Celery task
-            task = task_func.apply_async(
-                kwargs={"device_ids": device_ids}, queue="default"
-            )
-
-            # Record the job run
-            job_run_manager.create_job_run(
-                task_id=task.id,
+            task = dispatch_job.delay(
+                job_name=f"backup-bulk-{len(device_ids)}-devices",
                 job_type="backup",
+                target_devices=device_ids,
                 triggered_by="manual",
-                user_id=user_id,
+                executed_by=str(user_id),
             )
 
             return {
