@@ -62,11 +62,11 @@ def update_ip_addresses_from_csv_task(
         logger.info("=" * 80)
         logger.info("UPDATE IP ADDRESSES FROM CSV TASK STARTED")
         logger.info("=" * 80)
-        logger.info("Dry run: %s", dry_run)
-        logger.info("Ignore UUID: %s", ignore_uuid)
-        logger.info("Tags mode: %s", tags_mode)
-        logger.info("Column mapping: %s", column_mapping)
-        logger.info("Selected columns for update: %s", selected_columns)
+        logger.info(f"Dry run: {dry_run}")
+        logger.info(f"Ignore UUID: {ignore_uuid}")
+        logger.info(f"Tags mode: {tags_mode}")
+        logger.info(f"Column mapping: {column_mapping}")
+        logger.info(f"Selected columns for update: {selected_columns}")
 
         self.update_state(
             state="PROGRESS",
@@ -94,9 +94,9 @@ def update_ip_addresses_from_csv_task(
                 quotechar=quotechar,
             )
             rows = list(csv_reader)
-            logger.info("Parsed %s rows from CSV", len(rows))
+            logger.info(f"Parsed {len(rows)} rows from CSV")
         except Exception as e:
-            logger.error("CSV parsing failed: %s", e)
+            logger.error(f"CSV parsing failed: {e}")
             return {
                 "success": False,
                 "error": f"Failed to parse CSV: {str(e)}",
@@ -110,8 +110,8 @@ def update_ip_addresses_from_csv_task(
 
         total_ip_addresses = len(rows)
         headers = list(rows[0].keys()) if rows else []
-        logger.info("Total IP addresses to process: %s", total_ip_addresses)
-        logger.info("CSV columns: %s", headers)
+        logger.info(f"Total IP addresses to process: {total_ip_addresses}")
+        logger.info(f"CSV columns: {headers}")
 
         # STEP 2: Apply column mapping and validate CSV structure
         logger.info("-" * 80)
@@ -128,12 +128,12 @@ def update_ip_addresses_from_csv_task(
         id_col = get_csv_column("id") if not ignore_uuid else None
 
         logger.info("Column name mapping:")
-        logger.info("  - Lookup field 'address' → CSV column '%s'", address_col)
+        logger.info(f"  - Lookup field 'address' → CSV column '{address_col}'")
         logger.info(
-            "  - Lookup field 'parent__namespace__name' → CSV column '%s'", namespace_col
+            f"  - Lookup field 'parent__namespace__name' → CSV column '{namespace_col}'"
         )
         if id_col:
-            logger.info("  - Lookup field 'id' → CSV column '%s'", id_col)
+            logger.info(f"  - Lookup field 'id' → CSV column '{id_col}'")
 
         # Check for required address column
         if address_col not in headers:
@@ -142,7 +142,7 @@ def update_ip_addresses_from_csv_task(
                 "error": f"CSV is missing required column '{address_col}' (mapped from 'address')",
             }
 
-        logger.info("✓ Required column '%s' found", address_col)
+        logger.info(f"✓ Required column '{address_col}' found")
 
         # STEP 3: Initialize Nautobot service
         logger.info("-" * 80)
@@ -153,10 +153,10 @@ def update_ip_addresses_from_csv_task(
 
         # STEP 4: Update IP addresses
         logger.info("-" * 80)
-        logger.info("STEP 4: UPDATING %s IP ADDRESSES", total_ip_addresses)
-        logger.info("Dry run mode: %s", dry_run)
+        logger.info(f"STEP 4: UPDATING {total_ip_addresses} IP ADDRESSES")
+        logger.info(f"Dry run mode: {dry_run}")
         logger.info(
-            "Lookup strategy: %s", 'address+namespace' if ignore_uuid else 'UUID from CSV'
+            f"Lookup strategy: {'address+namespace' if ignore_uuid else 'UUID from CSV'}"
         )
         logger.info("-" * 80)
 
@@ -180,7 +180,7 @@ def update_ip_addresses_from_csv_task(
 
             try:
                 logger.info(
-                    "Processing IP address %s/%s: %s", idx, total_ip_addresses, identifier
+                    f"Processing IP address {idx}/{total_ip_addresses}: {identifier}"
                 )
 
                 # Update progress
@@ -199,7 +199,7 @@ def update_ip_addresses_from_csv_task(
 
                 # Validate address value
                 if not address_value:
-                    logger.warning("Row %s: Empty address value, skipping", idx)
+                    logger.warning(f"Row {idx}: Empty address value, skipping")
                     skipped.append(
                         {
                             "row": idx,
@@ -217,7 +217,7 @@ def update_ip_addresses_from_csv_task(
                 if ignore_uuid or not csv_uuid:
                     # Use address + namespace lookup via GraphQL
                     logger.info(
-                        "Looking up IP address '%s' in namespace '%s'", address_value, namespace_value
+                        f"Looking up IP address '{address_value}' in namespace '{namespace_value}'"
                     )
 
                     ip_address_uuid, existing_ip_address = asyncio.run(
@@ -228,7 +228,7 @@ def update_ip_addresses_from_csv_task(
 
                     if not ip_address_uuid:
                         logger.warning(
-                            "IP address '%s' not found in namespace '%s'", address_value, namespace_value
+                            f"IP address '{address_value}' not found in namespace '{namespace_value}'"
                         )
                         failures.append(
                             {
@@ -240,10 +240,10 @@ def update_ip_addresses_from_csv_task(
                         )
                         continue
 
-                    logger.info("✓ Found IP address with UUID: %s", ip_address_uuid)
+                    logger.info(f"✓ Found IP address with UUID: {ip_address_uuid}")
                 else:
                     # Use UUID from CSV directly
-                    logger.info("Using UUID from CSV: %s", csv_uuid)
+                    logger.info(f"Using UUID from CSV: {csv_uuid}")
                     ip_address_uuid = csv_uuid
 
                     # Verify the IP address exists
@@ -253,7 +253,7 @@ def update_ip_addresses_from_csv_task(
                         )
                         if not existing_ip_address:
                             logger.warning(
-                                "IP address with UUID '%s' not found", ip_address_uuid
+                                f"IP address with UUID '{ip_address_uuid}' not found"
                             )
                             failures.append(
                                 {
@@ -264,9 +264,9 @@ def update_ip_addresses_from_csv_task(
                                 }
                             )
                             continue
-                        logger.info("✓ Verified IP address exists: %s", ip_address_uuid)
+                        logger.info(f"✓ Verified IP address exists: {ip_address_uuid}")
                     except Exception as e:
-                        logger.error("Failed to verify IP address UUID: %s", e)
+                        logger.error(f"Failed to verify IP address UUID: {e}")
                         failures.append(
                             {
                                 "row": idx,
@@ -283,7 +283,7 @@ def update_ip_addresses_from_csv_task(
                 )
 
                 if not update_data:
-                    logger.info("No update data for IP address %s, skipping", identifier)
+                    logger.info(f"No update data for IP address {identifier}, skipping")
                     skipped.append(
                         {
                             "row": idx,
@@ -295,14 +295,14 @@ def update_ip_addresses_from_csv_task(
                     )
                     continue
 
-                logger.info("Update data prepared for IP address %s:", identifier)
-                logger.info("  - Fields to update: %s", list(update_data.keys()))
-                logger.info("  - Complete update payload: %s", update_data)
+                logger.info(f"Update data prepared for IP address {identifier}:")
+                logger.info(f"  - Fields to update: {list(update_data.keys())}")
+                logger.info(f"  - Complete update payload: {update_data}")
 
                 # Step 3: Update the IP address
                 if dry_run:
-                    logger.info("[DRY RUN] Would update IP address %s", identifier)
-                    logger.info("  Update data: %s", update_data)
+                    logger.info(f"[DRY RUN] Would update IP address {identifier}")
+                    logger.info(f"  Update data: {update_data}")
 
                     successes.append(
                         {
@@ -315,10 +315,10 @@ def update_ip_addresses_from_csv_task(
                         }
                     )
                 else:
-                    logger.info("Updating IP address %s", identifier)
-                    logger.info("  - Endpoint: ipam/ip-addresses/%s/", ip_address_uuid)
+                    logger.info(f"Updating IP address {identifier}")
+                    logger.info(f"  - Endpoint: ipam/ip-addresses/{ip_address_uuid}/")
                     logger.info("  - Method: PATCH")
-                    logger.info("  - Payload: %s", update_data)
+                    logger.info(f"  - Payload: {update_data}")
 
                     result = asyncio.run(
                         _update_ip_address(
@@ -337,8 +337,8 @@ def update_ip_addresses_from_csv_task(
                             }
                         )
                         logger.info(
-                            "✓ Successfully updated IP address %s: %s fields",
-                            identifier, len(update_data),
+                            f"✓ Successfully updated IP address {identifier}: "
+                            f"{len(update_data)} fields"
                         )
                     else:
                         failures.append(
@@ -350,12 +350,12 @@ def update_ip_addresses_from_csv_task(
                                 "error": result["error"],
                             }
                         )
-                        logger.error("Failed to update IP address: %s", result['error'])
+                        logger.error(f"Failed to update IP address: {result['error']}")
 
             except Exception as e:
                 error_msg = str(e)
                 logger.error(
-                    "Failed to process IP address %s: %s", identifier, error_msg,
+                    f"Failed to process IP address {identifier}: {error_msg}",
                     exc_info=True,
                 )
                 failures.append(
@@ -386,9 +386,9 @@ def update_ip_addresses_from_csv_task(
         skipped_count = len(skipped)
 
         logger.info("Update complete:")
-        logger.info("  - Successful: %s", success_count)
-        logger.info("  - Failed: %s", failure_count)
-        logger.info("  - Skipped: %s", skipped_count)
+        logger.info(f"  - Successful: {success_count}")
+        logger.info(f"  - Failed: {failure_count}")
+        logger.info(f"  - Skipped: {skipped_count}")
         logger.info("=" * 80)
 
         result = {
@@ -413,9 +413,9 @@ def update_ip_addresses_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result)
-                logger.info("✓ Updated job run %s status to completed", job_run['id'])
+                logger.info(f"✓ Updated job run {job_run['id']} status to completed")
         except Exception as job_error:
-            logger.warning("Failed to update job run status: %s", job_error)
+            logger.warning(f"Failed to update job run status: {job_error}")
 
         return result
 
@@ -435,9 +435,9 @@ def update_ip_addresses_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], error_msg)
-                logger.info("✓ Updated job run %s status to failed", job_run['id'])
+                logger.info(f"✓ Updated job run {job_run['id']} status to failed")
         except Exception as job_error:
-            logger.warning("Failed to update job run status: %s", job_error)
+            logger.warning(f"Failed to update job run status: {job_error}")
 
         return error_result
 
@@ -452,7 +452,7 @@ async def _get_ip_address_by_uuid(
         return result
     except Exception as e:
         logger.error(
-            "Error getting IP address by UUID %s: %s", ip_address_uuid, e, exc_info=True
+            f"Error getting IP address by UUID {ip_address_uuid}: {e}", exc_info=True
         )
         return None
 
@@ -498,14 +498,14 @@ async def _find_ip_address_by_address_and_namespace_graphql(
             "namespace": [namespace],
         }
 
-        logger.debug("GraphQL query variables: %s", variables)
+        logger.debug(f"GraphQL query variables: {variables}")
 
         # Execute GraphQL query
         result = await nautobot_service.graphql_query(query, variables)
 
         if not result or "data" not in result:
             logger.warning(
-                "No data returned from GraphQL query for address: %s", address
+                f"No data returned from GraphQL query for address: {address}"
             )
             return None, None
 
@@ -513,26 +513,26 @@ async def _find_ip_address_by_address_and_namespace_graphql(
 
         if not ip_addresses:
             logger.warning(
-                "IP address '%s' not found in namespace '%s'", address, namespace
+                f"IP address '{address}' not found in namespace '{namespace}'"
             )
             return None, None
 
         if len(ip_addresses) > 1:
             logger.warning(
-                "Multiple IP addresses found for '%s' in namespace '%s', using first one",
-                address, namespace,
+                f"Multiple IP addresses found for '{address}' in namespace '{namespace}', "
+                f"using first one"
             )
 
         # Use the first result
         ip_address_data = ip_addresses[0]
         ip_address_uuid = ip_address_data.get("id")
 
-        logger.debug("Found IP address: %s", ip_address_data)
+        logger.debug(f"Found IP address: {ip_address_data}")
 
         return ip_address_uuid, ip_address_data
 
     except Exception as e:
-        logger.error("Error finding IP address via GraphQL: %s", e, exc_info=True)
+        logger.error(f"Error finding IP address via GraphQL: {e}", exc_info=True)
         return None, None
 
 
@@ -557,21 +557,21 @@ async def _update_ip_address(
         endpoint = f"ipam/ip-addresses/{ip_address_uuid}/"
 
         logger.info("[API CALL] Updating IP address via REST API")
-        logger.info("[API CALL]   - Endpoint: %s", endpoint)
+        logger.info(f"[API CALL]   - Endpoint: {endpoint}")
         logger.info("[API CALL]   - Method: PATCH")
-        logger.info("[API CALL]   - Data: %s", update_data)
+        logger.info(f"[API CALL]   - Data: {update_data}")
 
         await nautobot_service.rest_request(endpoint, method="PATCH", data=update_data)
 
-        logger.info("[API CALL] ✓ Update successful for IP address %s", ip_address_uuid)
+        logger.info(f"[API CALL] ✓ Update successful for IP address {ip_address_uuid}")
         return {"success": True}
 
     except Exception as e:
         error_msg = str(e)
         logger.error(
-            "[API CALL] ✗ Failed to update IP address %s: %s", ip_address_uuid, error_msg
+            f"[API CALL] ✗ Failed to update IP address {ip_address_uuid}: {error_msg}"
         )
-        logger.error("[API CALL]   - Update data that caused error: %s", update_data)
+        logger.error(f"[API CALL]   - Update data that caused error: {update_data}")
         return {"success": False, "error": error_msg}
 
 
@@ -645,7 +645,7 @@ def _prepare_ip_address_update_data(
     columns_to_process = selected_columns if selected_columns is not None else headers
 
     logger.info(
-        "[_prepare_ip_address_update_data] Columns to process: %s", columns_to_process
+        f"[_prepare_ip_address_update_data] Columns to process: {columns_to_process}"
     )
 
     for field in columns_to_process:
@@ -676,11 +676,11 @@ def _prepare_ip_address_update_data(
                 merged_tags = list(set(existing_tags + csv_tags))
                 update_data[field] = merged_tags
                 logger.debug(
-                    "Merging tags: existing=%s, csv=%s, merged=%s", existing_tags, csv_tags, merged_tags
+                    f"Merging tags: existing={existing_tags}, csv={csv_tags}, merged={merged_tags}"
                 )
             else:
                 update_data[field] = csv_tags
-                logger.debug("Replacing tags with: %s", csv_tags)
+                logger.debug(f"Replacing tags with: {csv_tags}")
 
             continue
 
@@ -715,7 +715,7 @@ def _prepare_ip_address_update_data(
         # These are lookup fields from CSV export and should not be sent to API
         if "__" in field:
             logger.debug(
-                "Skipping nested field '%s' - lookup fields not supported for updates", field
+                f"Skipping nested field '{field}' - lookup fields not supported for updates"
             )
             continue
 

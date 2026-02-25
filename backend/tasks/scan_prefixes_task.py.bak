@@ -42,7 +42,7 @@ def _fetch_prefixes_by_custom_field(
     """
 
     try:
-        logger.info("Fetching prefixes with %s=%s", custom_field_name, custom_field_value)
+        logger.info(f"Fetching prefixes with {custom_field_name}={custom_field_value}")
         result = nautobot_service._sync_graphql_query(query)
 
         if not result or "data" not in result:
@@ -54,11 +54,11 @@ def _fetch_prefixes_by_custom_field(
         # Extract prefix CIDR strings
         prefixes = [p.get("prefix") for p in prefixes_data if p.get("prefix")]
 
-        logger.info("Found %s prefixes to scan", len(prefixes))
+        logger.info(f"Found {len(prefixes)} prefixes to scan")
         return prefixes
 
     except Exception as e:
-        logger.error("Error fetching prefixes from Nautobot: %s", e, exc_info=True)
+        logger.error(f"Error fetching prefixes from Nautobot: {e}", exc_info=True)
         return []
 
 
@@ -138,7 +138,7 @@ def _update_ip_in_nautobot(
 
             if not response.ok:
                 logger.error(
-                    "Failed to update IP %s. Status: %s, Response: %s", ip_address, response.status_code, response.text
+                    f"Failed to update IP {ip_address}. Status: {response.status_code}, Response: {response.text}"
                 )
 
             response.raise_for_status()
@@ -165,7 +165,7 @@ def _update_ip_in_nautobot(
             prefixes = response.json().get("results", [])
 
             if not prefixes:
-                logger.error("No parent prefix found for IP %s in Nautobot", ip_address)
+                logger.error(f"No parent prefix found for IP {ip_address} in Nautobot")
                 return False
 
             # Nautobot usually returns sorted results, but to be sure, we pick the most specific one (longest prefix length)
@@ -225,19 +225,19 @@ def _update_ip_in_nautobot(
 
             if not response.ok:
                 logger.error(
-                    "Failed to create IP %s. Status: %s, Response: %s", ip_address, response.status_code, response.text
+                    f"Failed to create IP {ip_address}. Status: {response.status_code}, Response: {response.text}"
                 )
 
             response.raise_for_status()
 
             logger.info(
-                "Created IP %s - %s=%s, status=Active", ip_address, response_custom_field_name, current_date
+                f"Created IP {ip_address} - {response_custom_field_name}={current_date}, status=Active"
             )
             return True
 
     except Exception as e:
         logger.error(
-            "Error processing IP %s in Nautobot: %s", ip_address, e, exc_info=True
+            f"Error processing IP {ip_address} in Nautobot: {e}", exc_info=True
         )
         return False
 
@@ -282,7 +282,7 @@ def _update_prefix_last_scan(
         prefixes = response.json().get("results", [])
         if not prefixes:
             # Fallback for split subnets: find containing prefix
-            logger.debug("Prefix %s not found, searching by containment", prefix_cidr)
+            logger.debug(f"Prefix {prefix_cidr} not found, searching by containment")
             # Use the network address of the CIDR
             network_addr = prefix_cidr.split("/")[0]
             response = requests.get(
@@ -294,7 +294,7 @@ def _update_prefix_last_scan(
             prefixes = response.json().get("results", [])
 
             if not prefixes:
-                logger.warning("No parent prefix found for %s", prefix_cidr)
+                logger.warning(f"No parent prefix found for {prefix_cidr}")
                 return False
 
             # Pick most specific
@@ -309,7 +309,7 @@ def _update_prefix_last_scan(
         best_prefix = prefixes[0]
         prefix_id = best_prefix.get("id")
         logger.debug(
-            "Updating last_scan for prefix: %s (ID: %s)", best_prefix.get('prefix'), prefix_id
+            f"Updating last_scan for prefix: {best_prefix.get('prefix')} (ID: {prefix_id})"
         )
 
         # Update last_scan custom field
@@ -324,7 +324,7 @@ def _update_prefix_last_scan(
         return True
 
     except Exception as e:
-        logger.error("Error updating prefix %s: %s", prefix_cidr, e, exc_info=True)
+        logger.error(f"Error updating prefix {prefix_cidr}: {e}", exc_info=True)
         return False
 
 
@@ -395,14 +395,14 @@ def _execute_scan_prefixes(
             job_run_manager.mark_started(job_run_id, task_context.request.id)
 
         logger.info(
-            "Scan prefixes task started: custom_field=%s, value=%s, max_ips=%s", custom_field_name, custom_field_value, scan_max_ips
+            f"Scan prefixes task started: custom_field={custom_field_name}, value={custom_field_value}, max_ips={scan_max_ips}"
         )
 
         # Step 1: Determine prefixes
         cidrs = []
         if explicit_prefixes:
             cidrs = explicit_prefixes
-            logger.info("Using %s explicit prefixes provided", len(cidrs))
+            logger.info(f"Using {len(cidrs)} explicit prefixes provided")
         else:
             if task_context:
                 task_context.update_state(
@@ -500,14 +500,14 @@ def _execute_scan_prefixes(
                             # Safety break
                             if len(current_subnets) > 1000:
                                 logger.warning(
-                                    "Prefix splitting generated too many subnets for %s, stopping split.", cidr
+                                    f"Prefix splitting generated too many subnets for {cidr}, stopping split."
                                 )
                                 break
 
                         final_cidrs.extend([str(sn) for sn in current_subnets])
 
                     except (ValueError, TypeError) as e:
-                        logger.error("Failed to split large prefix %s: %s", cidr, e)
+                        logger.error(f"Failed to split large prefix {cidr}: {e}")
                         final_cidrs.append(cidr)
                 else:
                     final_cidrs.append(cidr)
@@ -526,7 +526,7 @@ def _execute_scan_prefixes(
                     prefix_ip_counts[cidr] = 0
 
             logger.info(
-                "Total IPs (%s) exceeds max (%s). Splitting job.", total_ips_count, scan_max_ips
+                f"Total IPs ({total_ips_count}) exceeds max ({scan_max_ips}). Splitting job."
             )
 
             if task_context:
@@ -559,7 +559,7 @@ def _execute_scan_prefixes(
             if current_batch:
                 batches.append(current_batch)
 
-            logger.info("Split %s prefixes into %s sub-tasks", len(cidrs), len(batches))
+            logger.info(f"Split {len(cidrs)} prefixes into {len(batches)} sub-tasks")
 
             # Spawn sub-tasks
             sub_task_ids = []
@@ -579,7 +579,7 @@ def _execute_scan_prefixes(
                 )
                 sub_task_ids.append(sub_task.id)
                 logger.info(
-                    "Spawned sub-task %s for batch %s/%s", sub_task.id, i + 1, len(batches)
+                    f"Spawned sub-task {sub_task.id} for batch {i + 1}/{len(batches)}"
                 )
 
             result = {
@@ -613,13 +613,13 @@ def _execute_scan_prefixes(
 
         for idx, cidr in enumerate(cidrs):
             try:
-                logger.info("Scanning network: %s", cidr)
+                logger.info(f"Scanning network: {cidr}")
                 cidr_ips = _expand_cidr_to_ips(cidr)
                 all_ips.extend(cidr_ips)
                 prefix_ips[cidr] = cidr_ips
-                logger.debug("Expanded %s to %s IPs", cidr, len(cidr_ips))
+                logger.debug(f"Expanded {cidr} to {len(cidr_ips)} IPs")
             except Exception as e:
-                logger.error("Failed to expand prefix %s: %s", cidr, e)
+                logger.error(f"Failed to expand prefix {cidr}: {e}")
                 prefix_ips[cidr] = []
 
         # Step 4: Ping
@@ -641,7 +641,7 @@ def _execute_scan_prefixes(
             interval=interval_ms,
         )
         logger.info(
-            "fping found %s alive hosts out of %s targets", len(alive_ips), len(all_ips)
+            f"fping found {len(alive_ips)} alive hosts out of {len(all_ips)} targets"
         )
 
         # Step 5: Process results
@@ -684,7 +684,7 @@ def _execute_scan_prefixes(
                                 set_active=set_reachable_ip_active,
                             )
                         except Exception as e:
-                            logger.error("Failed to update IP %s in Nautobot: %s", ip, e)
+                            logger.error(f"Failed to update IP {ip} in Nautobot: {e}")
                 else:
                     unreachable.append(ip)
 
@@ -696,7 +696,7 @@ def _execute_scan_prefixes(
                 try:
                     _update_prefix_last_scan(cidr)
                 except Exception as e:
-                    logger.error("Failed to update prefix %s last_scan: %s", cidr, e)
+                    logger.error(f"Failed to update prefix {cidr} last_scan: {e}")
 
             prefix_results.append(
                 {
@@ -726,12 +726,12 @@ def _execute_scan_prefixes(
             job_run_manager.mark_completed(job_run_id, result=result)
 
         logger.info(
-            "Scan prefixes task completed: %s/%s reachable", len(alive_ips), len(all_ips)
+            f"Scan prefixes task completed: {len(alive_ips)}/{len(all_ips)} reachable"
         )
         return result
 
     except Exception as e:
-        logger.error("Scan prefixes task failed: %s", e, exc_info=True)
+        logger.error(f"Scan prefixes task failed: {e}", exc_info=True)
 
         if created_job_run and job_run_id:
             job_run_manager.mark_failed(job_run_id, error_message=str(e))

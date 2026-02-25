@@ -59,14 +59,14 @@ def check_job_schedules_task() -> Dict[str, Any]:
                 template_id = schedule.get("job_template_id")
                 if not template_id:
                     logger.warning(
-                        "Schedule %s has no template_id, skipping", schedule['id']
+                        f"Schedule {schedule['id']} has no template_id, skipping"
                     )
                     continue
 
                 template = job_template_manager.get_job_template(template_id)
                 if not template:
                     logger.warning(
-                        "Template %s not found for schedule %s", template_id, schedule['id']
+                        f"Template {template_id} not found for schedule {schedule['id']}"
                     )
                     continue
 
@@ -101,7 +101,7 @@ def check_job_schedules_task() -> Dict[str, Any]:
 
         if dispatched:
             logger.info(
-                "Dispatched %s jobs: %s", len(dispatched), [d['job_name'] for d in dispatched]
+                f"Dispatched {len(dispatched)} jobs: {[d['job_name'] for d in dispatched]}"
             )
 
         return {
@@ -113,5 +113,5 @@ def check_job_schedules_task() -> Dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error("check_job_schedules task failed: %s", e, exc_info=True)
+        logger.error(f"check_job_schedules task failed: {e}", exc_info=True)
         return {"success": False, "error": str(e)}

@@ -77,7 +77,7 @@ def execute_sync_devices(
                 )
                 if devices_result and hasattr(devices_result, "devices"):
                     device_ids = [device.get("id") for device in devices_result.devices]
-                    logger.info("Fetched %s devices from Nautobot", len(device_ids))
+                    logger.info(f"Fetched {len(device_ids)} devices from Nautobot")
                 else:
                     logger.warning("No devices found in Nautobot")
                     device_ids = []
@@ -98,7 +98,7 @@ def execute_sync_devices(
         failed_count = 0
         results = []
 
-        logger.info("Starting sync of %s devices to CheckMK", total_devices)
+        logger.info(f"Starting sync of {total_devices} devices to CheckMK")
 
         # Process each device
         for i, device_id in enumerate(device_ids):
@@ -145,7 +145,7 @@ def execute_sync_devices(
                             or "not found" in str(update_error).lower()
                         ):
                             logger.info(
-                                "Device %s not in CheckMK, attempting to add...", device_id
+                                f"Device {device_id} not in CheckMK, attempting to add..."
                             )
                             result = loop.run_until_complete(
                                 nb2cmk_service.add_device_to_checkmk(device_id)
@@ -172,7 +172,7 @@ def execute_sync_devices(
             except Exception as e:
                 failed_count += 1
                 error_msg = str(e)
-                logger.error("Error syncing device %s: %s", device_id, error_msg)
+                logger.error(f"Error syncing device {device_id}: {error_msg}")
                 results.append(
                     {
                         "device_id": device_id,
@@ -189,8 +189,8 @@ def execute_sync_devices(
         )
 
         logger.info(
-            "Sync completed: %s/%s devices synced, %s failed",
-            success_count, total_devices, failed_count,
+            f"Sync completed: {success_count}/{total_devices} devices synced, "
+            f"{failed_count} failed"
         )
 
         # Activate CheckMK changes if configured and at least one device synced successfully
@@ -199,23 +199,23 @@ def execute_sync_devices(
         activate_changes = True
 
         # Log template details for debugging
-        logger.info("[ACTIVATION DEBUG] Template provided: %s", template is not None)
+        logger.info(f"[ACTIVATION DEBUG] Template provided: {template is not None}")
         if template:
-            logger.info("[ACTIVATION DEBUG] Template keys: %s", list(template.keys()))
+            logger.info(f"[ACTIVATION DEBUG] Template keys: {list(template.keys())}")
             logger.info(
-                "[ACTIVATION DEBUG] activate_changes_after_sync in template: %s", 'activate_changes_after_sync' in template
+                f"[ACTIVATION DEBUG] activate_changes_after_sync in template: {'activate_changes_after_sync' in template}"
             )
             activate_changes = template.get("activate_changes_after_sync", True)
             logger.info(
-                "[ACTIVATION DEBUG] activate_changes_after_sync value from template: %s", template.get('activate_changes_after_sync')
+                f"[ACTIVATION DEBUG] activate_changes_after_sync value from template: {template.get('activate_changes_after_sync')}"
             )
 
         logger.info(
-            "[ACTIVATION DEBUG] Final activate_changes value: %s", activate_changes
+            f"[ACTIVATION DEBUG] Final activate_changes value: {activate_changes}"
         )
-        logger.info("[ACTIVATION DEBUG] success_count: %s", success_count)
+        logger.info(f"[ACTIVATION DEBUG] success_count: {success_count}")
         logger.info(
-            "[ACTIVATION DEBUG] Will activate changes: %s", activate_changes and success_count > 0
+            f"[ACTIVATION DEBUG] Will activate changes: {activate_changes and success_count > 0}"
         )
 
         if activate_changes and success_count > 0:
@@ -234,10 +234,10 @@ def execute_sync_devices(
                     logger.info("CheckMK changes activated successfully")
                 else:
                     logger.warning(
-                        "CheckMK activation completed with issues: %s", activation_result.get('message')
+                        f"CheckMK activation completed with issues: {activation_result.get('message')}"
                     )
             except Exception as activation_error:
-                logger.error("Failed to activate CheckMK changes: %s", activation_error)
+                logger.error(f"Failed to activate CheckMK changes: {activation_error}")
                 activation_result = {
                     "success": False,
                     "error": str(activation_error),
@@ -271,7 +271,7 @@ def execute_sync_devices(
 
     except Exception as e:
         error_msg = str(e)
-        logger.error("Sync devices job failed: %s", error_msg, exc_info=True)
+        logger.error(f"Sync devices job failed: {error_msg}", exc_info=True)
         return {"success": False, "error": error_msg}
 
 
@@ -294,7 +294,7 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
     ):
         logger.warning("[ACTIVATION] CheckMK settings not configured or incomplete")
         logger.warning(
-            "[ACTIVATION] db_settings keys: %s", list(db_settings.keys()) if db_settings else 'None'
+            f"[ACTIVATION] db_settings keys: {list(db_settings.keys()) if db_settings else 'None'}"
         )
         return {
             "success": False,
@@ -302,7 +302,7 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
         }
 
     logger.info(
-        "[ACTIVATION] CheckMK settings loaded - URL: %s, Site: %s", db_settings.get('url'), db_settings.get('site')
+        f"[ACTIVATION] CheckMK settings loaded - URL: {db_settings.get('url')}, Site: {db_settings.get('site')}"
     )
 
     # Parse URL
@@ -317,7 +317,7 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
 
     effective_site = db_settings["site"]
     logger.info(
-        "[ACTIVATION] Connecting to CheckMK - Host: %s, Protocol: %s, Site: %s", host, protocol, effective_site
+        f"[ACTIVATION] Connecting to CheckMK - Host: {host}, Protocol: {protocol}, Site: {effective_site}"
     )
 
     # Create client
@@ -332,7 +332,7 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
 
     # Activate changes
     logger.info(
-        "[ACTIVATION] Calling client.activate_changes(sites=[%s], force_foreign_changes=True, redirect=False)", effective_site
+        f"[ACTIVATION] Calling client.activate_changes(sites=[{effective_site}], force_foreign_changes=True, redirect=False)"
     )
     try:
         result = client.activate_changes(
@@ -340,10 +340,10 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
             force_foreign_changes=True,
             redirect=False,
         )
-        logger.info("[ACTIVATION] activate_changes returned: %s", result)
+        logger.info(f"[ACTIVATION] activate_changes returned: {result}")
     except Exception as e:
         logger.error(
-            "[ACTIVATION] activate_changes raised exception: %s", e, exc_info=True
+            f"[ACTIVATION] activate_changes raised exception: {e}", exc_info=True
         )
         return {
             "success": False,

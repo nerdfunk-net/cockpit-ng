@@ -99,5 +99,5 @@ def execute_cache_devices(
             loop.close()
 
     except Exception as e:
-        logger.error("Cache devices job failed: %s", e, exc_info=True)
+        logger.error(f"Cache devices job failed: {e}", exc_info=True)
         return {"success": False, "error": str(e)}

@@ -78,9 +78,9 @@ def onboard_device_task(
         is_multi_device = device_count > 1
 
         logger.info(
-            "Starting device onboarding for %s IP(s): %s", device_count, ', '.join(ip_list)
+            f"Starting device onboarding for {device_count} IP(s): {', '.join(ip_list)}"
         )
-        logger.info("Audit logging info: username=%s, user_id=%s", username, user_id)
+        logger.info(f"Audit logging info: username={username}, user_id={user_id}")
 
         # Initialize progress updater
         updater = ProgressUpdater(self)
@@ -109,7 +109,7 @@ def onboard_device_task(
             timeout=timeout,
         )
 
-        logger.info("Nautobot onboarding job started: %s", job_id)
+        logger.info(f"Nautobot onboarding job started: {job_id}")
         updater.update(
             "waiting",
             f"Waiting for onboarding job to complete ({device_count} devices)",
@@ -137,7 +137,7 @@ def onboard_device_task(
                 "device_count": device_count,
             }
 
-        logger.info("Onboarding job completed successfully: %s", job_id)
+        logger.info(f"Onboarding job completed successfully: {job_id}")
 
         # Step 3: Process each device individually
         device_results = []
@@ -269,7 +269,7 @@ def _process_single_device(
     """
     try:
         logger.info(
-            "Processing device %s/%s: looking up %s", device_num, device_count, ip_address
+            f"Processing device {device_num}/{device_count}: looking up {ip_address}"
         )
 
         # Get device UUID from IP address
@@ -298,20 +298,20 @@ def _process_single_device(
             }
 
         logger.info(
-            "Found device %s/%s: %s (ID: %s)", device_num, device_count, device_name, device_id
+            f"Found device {device_num}/{device_count}: {device_name} (ID: {device_id})"
         )
 
         # Update device with tags and custom fields
         update_results = []
 
         if tags and len(tags) > 0:
-            logger.info("Updating device %s with %s tags", device_name, len(tags))
+            logger.info(f"Updating device {device_name} with {len(tags)} tags")
             tag_result = _update_device_tags(device_id, tags)
             update_results.append(tag_result)
 
         if custom_fields and len(custom_fields) > 0:
             logger.info(
-                "Updating device %s with %s custom fields", device_name, len(custom_fields)
+                f"Updating device {device_name} with {len(custom_fields)} custom fields"
             )
             cf_result = _update_device_custom_fields(device_id, custom_fields)
             update_results.append(cf_result)
@@ -321,10 +321,10 @@ def _process_single_device(
 
         if update_results and not all_updates_success:
             failed_updates = [r for r in update_results if not r.get("success", False)]
-            logger.warning("Some updates failed for %s: %s", device_name, failed_updates)
+            logger.warning(f"Some updates failed for {device_name}: {failed_updates}")
 
         # Sync network data from device
-        logger.info("Starting network data sync for device %s", device_name)
+        logger.info(f"Starting network data sync for device {device_name}")
         sync_result = _sync_network_data(
             device_id=device_id,
             namespace_id=namespace_id,
@@ -334,11 +334,11 @@ def _process_single_device(
             sync_options=sync_options,
         )
 
-        logger.info("Device %s (%s) processing complete", device_name, ip_address)
+        logger.info(f"Device {device_name} ({ip_address}) processing complete")
 
         # Log successful device onboarding
         logger.info(
-            "Attempting to log audit entry: username=%s, device_name=%s", username, device_name
+            f"Attempting to log audit entry: username={username}, device_name={device_name}"
         )
         if username:
             log_device_onboarding(
@@ -348,10 +348,10 @@ def _process_single_device(
                 user_id=user_id,
                 success=True,
             )
-            logger.info("Audit log created for device %s", device_name)
+            logger.info(f"Audit log created for device {device_name}")
         else:
             logger.warning(
-                "No username provided, skipping audit log for device %s", device_name
+                f"No username provided, skipping audit log for device {device_name}"
             )
 
         return {
@@ -482,7 +482,7 @@ def _wait_for_job_completion(task_instance, job_id: str, max_wait: int = 90) -> 
             elapsed = int(time.time() - start_time)
 
             logger.info(
-                "Job %s status check #%s (after %ss): %s", job_id, check_count, elapsed, status
+                f"Job {job_id} status check #{check_count} (after {elapsed}s): {status}"
             )
 
             # Update task progress with detailed status
@@ -502,17 +502,17 @@ def _wait_for_job_completion(task_instance, job_id: str, max_wait: int = 90) -> 
             # Check for completion (case-insensitive)
             status_lower = status.lower()
             if status_lower in ["completed", "success"]:
-                logger.info("Job %s completed successfully", job_id)
+                logger.info(f"Job {job_id} completed successfully")
                 return True, "Job completed successfully"
             elif status_lower in ["failed", "errored", "failure"]:
-                logger.error("Job %s failed with status: %s", job_id, status)
+                logger.error(f"Job {job_id} failed with status: {status}")
                 return False, f"Job failed with status: {status}"
 
             # Job still running, wait 2 seconds and check again
             time.sleep(2)
 
         except Exception as e:
-            logger.warning("Error checking job status (attempt %s): %s", check_count, e)
+            logger.warning(f"Error checking job status (attempt {check_count}): {e}")
             check_count += 1
             elapsed = int(time.time() - start_time)
 
@@ -582,20 +582,20 @@ async def _async_get_device_id(ip_address: str) -> tuple:
     result = await nautobot_service.graphql_query(query, variables)
 
     if "errors" in result:
-        logger.error("GraphQL errors: %s", result['errors'])
+        logger.error(f"GraphQL errors: {result['errors']}")
         return None, None
 
     ip_addresses = result.get("data", {}).get("ip_addresses", [])
 
     if not ip_addresses:
-        logger.error("No IP address found for %s", ip_address)
+        logger.error(f"No IP address found for {ip_address}")
         return None, None
 
     ip_data = ip_addresses[0]
     primary_devices = ip_data.get("primary_ip4_for", [])
 
     if not primary_devices:
-        logger.error("IP %s is not a primary IP for any device", ip_address)
+        logger.error(f"IP {ip_address} is not a primary IP for any device")
         return None, None
 
     device = primary_devices[0]
@@ -628,7 +628,7 @@ def _update_device_tags(device_id: str, tag_ids: List[str]) -> dict:
         }
 
     except Exception as e:
-        logger.error("Failed to update device tags: %s", e)
+        logger.error(f"Failed to update device tags: {e}")
         return {"success": False, "type": "tags", "error": str(e)}
 
 
@@ -658,7 +658,7 @@ def _update_device_custom_fields(device_id: str, custom_fields: Dict[str, str]) 
         }
 
     except Exception as e:
-        logger.error("Failed to update device custom fields: %s", e)
+        logger.error(f"Failed to update device custom fields: {e}")
         return {"success": False, "type": "custom_fields", "error": str(e)}
 
 
@@ -715,13 +715,13 @@ def _sync_network_data(
         job_url = f"{nautobot_url}/api/extras/jobs/Sync%20Network%20Data%20From%20Network/run/"
         headers = get_nautobot_headers(nautobot_token)
 
-        logger.info("Triggering network data sync job for device %s", device_id)
+        logger.info(f"Triggering network data sync job for device {device_id}")
         response = requests.post(job_url, json=job_data, headers=headers, timeout=30)
 
         if response.status_code in [200, 201, 202]:
             result = response.json()
             sync_job_id = result.get("job_result", {}).get("id") or result.get("id")
-            logger.info("Network data sync job started: %s", sync_job_id)
+            logger.info(f"Network data sync job started: {sync_job_id}")
 
             return {
                 "success": True,
@@ -745,7 +745,7 @@ def _sync_network_data(
             except (ValueError, KeyError, TypeError):
                 error_detail = response.text or f"HTTP {response.status_code}"
 
-            logger.error("Failed to start sync job: %s", error_detail)
+            logger.error(f"Failed to start sync job: {error_detail}")
             return {
                 "success": False,
                 "message": f"Failed to start sync job: {error_detail}",
@@ -753,7 +753,7 @@ def _sync_network_data(
             }
 
     except Exception as e:
-        logger.error("Failed to sync network data: %s", e)
+        logger.error(f"Failed to sync network data: {e}")
         return {
             "success": False,
             "error": str(e),

@@ -79,7 +79,7 @@ def _fping_networks(
                 temp_file.write(f"{ip}\n")
 
         logger.debug(
-            "Created temporary file %s with %s IP addresses", temp_file_path, len(ip_list)
+            f"Created temporary file {temp_file_path} with {len(ip_list)} IP addresses"
         )
 
         # Build fping command with options
@@ -95,7 +95,7 @@ def _fping_networks(
             str(interval),  # Interval between packets in ms
         ]
 
-        logger.debug("Running fping command: %s < %s", ' '.join(cmd), temp_file_path)
+        logger.debug(f"Running fping command: {' '.join(cmd)} < {temp_file_path}")
 
         # Build full command with input redirection
         full_cmd = f"{' '.join(cmd)} < {temp_file_path}"
@@ -111,12 +111,12 @@ def _fping_networks(
         )
 
         # Log raw fping output for debugging
-        logger.debug("fping return code: %s", result.returncode)
+        logger.debug(f"fping return code: {result.returncode}")
         logger.debug(
-            "fping stdout length: %s bytes", len(result.stdout) if result.stdout else 0
+            f"fping stdout length: {len(result.stdout) if result.stdout else 0} bytes"
         )
         logger.debug(
-            "fping stderr length: %s bytes", len(result.stderr) if result.stderr else 0
+            f"fping stderr length: {len(result.stderr) if result.stderr else 0} bytes"
         )
 
         # Parse fping output
@@ -133,11 +133,11 @@ def _fping_networks(
         if result.stderr:
             all_output += result.stderr
 
-        logger.debug("Combined output length: %s bytes", len(all_output))
+        logger.debug(f"Combined output length: {len(all_output)} bytes")
 
         if all_output:
             lines = all_output.strip().split("\n")
-            logger.debug("Parsing %s total lines from fping output", len(lines))
+            logger.debug(f"Parsing {len(lines)} total lines from fping output")
 
             # Count lines with statistics format
             stats_lines = 0
@@ -167,21 +167,21 @@ def _fping_networks(
                                 if rcv_count > 0:
                                     alive_ips.add(ip)
                                     logger.debug(
-                                        "Found alive IP: %s (rcv=%s)", ip, rcv_count
+                                        f"Found alive IP: {ip} (rcv={rcv_count})"
                                     )
                             except (IndexError, ValueError) as e:
                                 logger.warning(
-                                    "Failed to parse statistics line: %s - %s", line, e
+                                    f"Failed to parse statistics line: {line} - {e}"
                                 )
 
-            logger.debug("Processed %s statistics lines", stats_lines)
+            logger.debug(f"Processed {stats_lines} statistics lines")
 
         logger.info(
-            "fping discovered %s alive hosts out of %s targets", len(alive_ips), len(ip_list)
+            f"fping discovered {len(alive_ips)} alive hosts out of {len(ip_list)} targets"
         )
         if alive_ips:
             logger.info(
-                "Alive IPs: %s", sorted(list(alive_ips))[:50]
+                f"Alive IPs: {sorted(list(alive_ips))[:50]}"
             )  # Log first 50 alive IPs
 
     except subprocess.TimeoutExpired:
@@ -189,16 +189,16 @@ def _fping_networks(
     except FileNotFoundError:
         logger.error("fping command not found. Please install fping")
     except Exception as e:
-        logger.error("fping command failed: %s", e)
+        logger.error(f"fping command failed: {e}")
     finally:
         # Clean up temporary file
         if temp_file_path and os.path.exists(temp_file_path):
             try:
                 os.unlink(temp_file_path)
-                logger.debug("Cleaned up temporary file %s", temp_file_path)
+                logger.debug(f"Cleaned up temporary file {temp_file_path}")
             except Exception as e:
                 logger.warning(
-                    "Failed to clean up temporary file %s: %s", temp_file_path, e
+                    f"Failed to clean up temporary file {temp_file_path}: {e}"
                 )
 
     return alive_ips
@@ -212,7 +212,7 @@ def _resolve_dns(ip: str) -> str:
     except (socket.herror, socket.gaierror, socket.timeout):
         return ""
     except Exception as e:
-        logger.debug("DNS resolution failed for %s: %s", ip, e)
+        logger.debug(f"DNS resolution failed for {ip}: {e}")
         return ""
 
 
@@ -318,7 +318,7 @@ def ping_network_task(
         job_run_manager.mark_started(job_run_id, self.request.id)
 
         logger.info(
-            "Ping network task started: %s networks, resolve_dns=%s", len(cidrs), resolve_dns
+            f"Ping network task started: {len(cidrs)} networks, resolve_dns={resolve_dns}"
         )
 
         # Expand all CIDRs to IP lists
@@ -340,9 +340,9 @@ def ping_network_task(
                 cidr_ips = _expand_cidr_to_ips(cidr)
                 all_ips.extend(cidr_ips)
                 network_ips[cidr] = cidr_ips
-                logger.debug("Expanded %s to %s IPs", cidr, len(cidr_ips))
+                logger.debug(f"Expanded {cidr} to {len(cidr_ips)} IPs")
             except Exception as e:
-                logger.error("Failed to expand CIDR %s: %s", cidr, e)
+                logger.error(f"Failed to expand CIDR {cidr}: {e}")
                 network_ips[cidr] = []
 
         # Ping all IPs using fping
@@ -358,7 +358,7 @@ def ping_network_task(
 
         alive_ips = _fping_networks(all_ips, count, timeout, retry, interval)
         logger.info(
-            "fping found %s alive hosts out of %s targets", len(alive_ips), len(all_ips)
+            f"fping found {len(alive_ips)} alive hosts out of {len(all_ips)} targets"
         )
 
         # Process results per network
@@ -417,12 +417,12 @@ def ping_network_task(
         job_run_manager.mark_completed(job_run_id, result=result)
 
         logger.info(
-            "Ping network task completed: %s/%s reachable", len(alive_ips), len(all_ips)
+            f"Ping network task completed: {len(alive_ips)}/{len(all_ips)} reachable"
         )
         return result
 
     except Exception as e:
-        logger.error("Ping network task failed: %s", e, exc_info=True)
+        logger.error(f"Ping network task failed: {e}", exc_info=True)
 
         # Mark job as failed
         if job_run_id:

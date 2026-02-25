@@ -35,7 +35,7 @@ def worker_health_check() -> dict:
 
         active_workers = len(stats) if stats else 0
 
-        logger.info("Health check: %s workers active", active_workers)
+        logger.info(f"Health check: {active_workers} workers active")
 
         return {
             "success": True,
@@ -44,7 +44,7 @@ def worker_health_check() -> dict:
         }
 
     except Exception as e:
-        logger.error("Health check failed: %s", e)
+        logger.error(f"Health check failed: {e}")
         return {"success": False, "error": str(e)}
 
 
@@ -88,7 +88,7 @@ def load_cache_schedules_task() -> dict:
                 _last_cache_runs["devices"] = now
                 dispatched.append("devices")
                 logger.info(
-                    "Dispatched devices cache task (interval: %sm)", devices_interval
+                    f"Dispatched devices cache task (interval: {devices_interval}m)"
                 )
 
         # Check locations cache
@@ -106,7 +106,7 @@ def load_cache_schedules_task() -> dict:
                 _last_cache_runs["locations"] = now
                 dispatched.append("locations")
                 logger.info(
-                    "Dispatched locations cache task (interval: %sm)", locations_interval
+                    f"Dispatched locations cache task (interval: {locations_interval}m)"
                 )
 
         # Check git commits cache (placeholder for future implementation)
@@ -125,7 +125,7 @@ def load_cache_schedules_task() -> dict:
                 _last_cache_runs["git_commits"] = now
                 # dispatched.append('git_commits')
                 logger.debug(
-                    "Git commits cache task not yet implemented (interval: %sm)", git_interval
+                    f"Git commits cache task not yet implemented (interval: {git_interval}m)"
                 )
 
         return {
@@ -140,7 +140,7 @@ def load_cache_schedules_task() -> dict:
         }
 
     except Exception as e:
-        logger.error("Error in load_cache_schedules: %s", e, exc_info=True)
+        logger.error(f"Error in load_cache_schedules: {e}", exc_info=True)
         return {"success": False, "error": str(e)}
 
 
@@ -214,7 +214,7 @@ def dispatch_cache_task(self, cache_type: str, task_name: str) -> dict:
             raise
 
     except Exception as e:
-        logger.error("Error dispatching cache task %s: %s", cache_type, e, exc_info=True)
+        logger.error(f"Error dispatching cache task {cache_type}: {e}", exc_info=True)
         return {"success": False, "error": str(e)}
 
 
@@ -253,7 +253,7 @@ def cleanup_celery_data_task() -> dict:
         cutoff_time = datetime.now(timezone.utc) - timedelta(hours=cleanup_age_hours)
 
         logger.info(
-            "Starting Celery cleanup: removing data older than %s hours", cleanup_age_hours
+            f"Starting Celery cleanup: removing data older than {cleanup_age_hours} hours"
         )
 
         # Connect to Redis
@@ -281,7 +281,7 @@ def cleanup_celery_data_task() -> dict:
                                 r.delete(key)
                                 removed_results += 1
             except Exception as e:
-                logger.debug("Error processing key %s: %s", key, e)
+                logger.debug(f"Error processing key {key}: {e}")
                 continue
 
         # Remove old job runs from database
@@ -292,10 +292,10 @@ def cleanup_celery_data_task() -> dict:
             # Use the hours-based cleanup function
             removed_job_runs = job_run_manager.cleanup_old_runs_hours(cleanup_age_hours)
         except Exception as e:
-            logger.warning("Error cleaning up job runs: %s", e)
+            logger.warning(f"Error cleaning up job runs: {e}")
 
         logger.info(
-            "Cleanup completed: %s results, %s job runs removed", removed_results, removed_job_runs
+            f"Cleanup completed: {removed_results} results, {removed_job_runs} job runs removed"
         )
 
         return {
@@ -308,7 +308,7 @@ def cleanup_celery_data_task() -> dict:
         }
 
     except Exception as e:
-        logger.error("Cleanup task failed: %s", e)
+        logger.error(f"Cleanup task failed: {e}")
         return {"success": False, "error": str(e)}
 
 
@@ -376,7 +376,7 @@ def check_stale_jobs_task() -> dict:
                         }
                     )
                     logger.warning(
-                        "Marked stale job %s (%s) as failed - running for %s minutes", job['id'], job['job_name'], int(running_duration / 60)
+                        f"Marked stale job {job['id']} ({job['job_name']}) as failed - running for {int(running_duration / 60)} minutes"
                     )
 
         # Check pending jobs
@@ -404,12 +404,12 @@ def check_stale_jobs_task() -> dict:
                     }
                 )
                 logger.warning(
-                    "Marked pending job %s (%s) as failed - pending for %s minutes", job['id'], job['job_name'], int(pending_duration / 60)
+                    f"Marked pending job {job['id']} ({job['job_name']}) as failed - pending for {int(pending_duration / 60)} minutes"
                 )
 
         if marked_failed:
             logger.info(
-                "Stale job check: marked %s job(s) as failed", len(marked_failed)
+                f"Stale job check: marked {len(marked_failed)} job(s) as failed"
             )
 
         return {
@@ -419,5 +419,5 @@ def check_stale_jobs_task() -> dict:
         }
 
     except Exception as e:
-        logger.error("Error checking stale jobs: %s", e, exc_info=True)
+        logger.error(f"Error checking stale jobs: {e}", exc_info=True)
         return {"success": False, "error": str(e)}

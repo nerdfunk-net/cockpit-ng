@@ -69,7 +69,7 @@ def bulk_onboard_devices_task(
             "stage": "validation_failed",
         }
 
-    logger.info("Starting bulk onboarding for %s devices", device_count)
+    logger.info(f"Starting bulk onboarding for {device_count} devices")
 
     # Initialize tracking
     self.update_state(
@@ -167,7 +167,7 @@ def bulk_onboard_devices_task(
                 )
 
             # Call onboarding directly using helper functions
-            logger.info("Processing device %s/%s: %s", device_num, device_count, ip_address)
+            logger.info(f"Processing device {device_num}/{device_count}: {ip_address}")
 
             # Step 1: Trigger Nautobot onboarding job for this single device
             self.update_state(
@@ -200,7 +200,7 @@ def bulk_onboard_devices_task(
                 timeout=merged_config["timeout"],
             )
 
-            logger.info("Nautobot onboarding job started for %s: %s", ip_address, job_id)
+            logger.info(f"Nautobot onboarding job started for {ip_address}: {job_id}")
 
             # Step 2: Wait for job completion (pass self for progress updates)
             self.update_state(
@@ -226,7 +226,7 @@ def bulk_onboard_devices_task(
 
             if not job_success:
                 error_msg = f"Onboarding job failed or timed out: {job_result}"
-                logger.error("Device %s: %s", ip_address, error_msg)
+                logger.error(f"Device {ip_address}: {error_msg}")
                 failed_count += 1
                 device_results.append(
                     {
@@ -301,7 +301,7 @@ def bulk_onboard_devices_task(
             failed_count += 1
             error_msg = str(e)
             logger.error(
-                "Error processing device %s: %s", ip_address, error_msg, exc_info=True
+                f"Error processing device {ip_address}: {error_msg}", exc_info=True
             )
             device_results.append(
                 {
@@ -326,7 +326,7 @@ def bulk_onboard_devices_task(
         message = f"All {device_count} devices failed to onboard"
         stage = "all_failed"
 
-    logger.info("Bulk onboarding completed: %s", message)
+    logger.info(f"Bulk onboarding completed: {message}")
 
     # Final state update
     self.update_state(
@@ -360,12 +360,12 @@ def bulk_onboard_devices_task(
 
             if all_success or partial_success:
                 job_run_manager.mark_completed(run_id, result=result_data)
-                logger.info("Marked job run %s as completed", run_id)
+                logger.info(f"Marked job run {run_id} as completed")
             else:
                 job_run_manager.mark_failed(run_id, message)
-                logger.info("Marked job run %s as failed", run_id)
+                logger.info(f"Marked job run {run_id} as failed")
     except Exception as e:
-        logger.warning("Failed to update job run status: %s", e)
+        logger.warning(f"Failed to update job run status: {e}")
 
     return {
         "success": all_success,

@@ -181,11 +181,11 @@ def normalize_interface_type(interface_type: str) -> str:
     # Check if any valid interface type is a substring of the normalized input
     for valid_type in VALID_INTERFACE_TYPES:
         if valid_type in normalized_input:
-            logger.debug("Normalized interface type: %s -> %s", interface_type, valid_type)
+            logger.debug(f"Normalized interface type: {interface_type} -> {valid_type}")
             return valid_type
 
     # No match found, return "other"
-    logger.warning("Unknown interface type '%s', defaulting to 'other'", interface_type)
+    logger.warning(f"Unknown interface type '{interface_type}', defaulting to 'other'")
     return "other"
 
 
@@ -226,10 +226,10 @@ def export_devices_task(
         logger.info("=" * 80)
         logger.info("EXPORT DEVICES TASK STARTED")
         logger.info("=" * 80)
-        logger.info("Device IDs: %s devices", len(device_ids))
-        logger.info("Properties: %s", properties)
-        logger.info("Format: %s", export_format)
-        logger.info("CSV Options: %s", csv_options)
+        logger.info(f"Device IDs: {len(device_ids)} devices")
+        logger.info(f"Properties: {properties}")
+        logger.info(f"Format: {export_format}")
+        logger.info(f"CSV Options: {csv_options}")
 
         self.update_state(
             state="PROGRESS",
@@ -254,7 +254,7 @@ def export_devices_task(
 
         # STEP 1: Fetch device data from Nautobot
         logger.info("-" * 80)
-        logger.info("STEP 1: FETCHING %s DEVICES FROM NAUTOBOT", len(device_ids))
+        logger.info(f"STEP 1: FETCHING {len(device_ids)} DEVICES FROM NAUTOBOT")
         logger.info("-" * 80)
 
         self.update_state(
@@ -268,7 +268,7 @@ def export_devices_task(
 
         # Create GraphQL query with requested properties
         query = _build_graphql_query(properties)
-        logger.info("GraphQL query built with %s properties", len(properties))
+        logger.info(f"GraphQL query built with {len(properties)} properties")
 
         nautobot_service = NautobotService()
 
@@ -289,7 +289,7 @@ def export_devices_task(
                 batch_device_ids = device_ids[start_idx:end_idx]
 
                 logger.info(
-                    "Fetching batch %s/%s (%s devices)...", batch_idx + 1, total_batches, len(batch_device_ids)
+                    f"Fetching batch {batch_idx + 1}/{total_batches} ({len(batch_device_ids)} devices)..."
                 )
 
                 progress = 10 + int((batch_idx / total_batches) * 40)
@@ -308,13 +308,13 @@ def export_devices_task(
                 result = nautobot_service._sync_graphql_query(query, variables)
 
                 if not result or "data" not in result:
-                    logger.error("Failed to fetch batch %s", batch_idx + 1)
+                    logger.error(f"Failed to fetch batch {batch_idx + 1}")
                     continue
 
                 devices = result.get("data", {}).get("devices", [])
                 all_devices.extend(devices)
                 logger.info(
-                    "✓ Fetched %s devices from batch %s", len(devices), batch_idx + 1
+                    f"✓ Fetched {len(devices)} devices from batch {batch_idx + 1}"
                 )
 
         finally:
@@ -327,7 +327,7 @@ def export_devices_task(
                 "requested_count": len(device_ids),
             }
 
-        logger.info("✓ Total devices fetched: %s", len(all_devices))
+        logger.info(f"✓ Total devices fetched: {len(all_devices)}")
 
         # STEP 2: Filter devices by required properties
         logger.info("-" * 80)
@@ -345,9 +345,9 @@ def export_devices_task(
             devices_excluded = devices_before - len(all_devices)
             if devices_excluded > 0:
                 logger.info(
-                    "✓ Excluded %s devices without primary_ip4", devices_excluded
+                    f"✓ Excluded {devices_excluded} devices without primary_ip4"
                 )
-            logger.info("✓ %s devices remaining after filtering", len(all_devices))
+            logger.info(f"✓ {len(all_devices)} devices remaining after filtering")
 
         # STEP 3: Filter properties
         logger.info("-" * 80)
@@ -365,12 +365,12 @@ def export_devices_task(
 
         filtered_devices = _filter_device_properties(all_devices, properties)
         logger.info(
-            "✓ Filtered %s devices to %s properties", len(filtered_devices), len(properties)
+            f"✓ Filtered {len(filtered_devices)} devices to {len(properties)} properties"
         )
 
         # STEP 4: Export to format
         logger.info("-" * 80)
-        logger.info("STEP 4: EXPORTING TO %s", export_format.upper())
+        logger.info(f"STEP 4: EXPORTING TO {export_format.upper()}")
         logger.info("-" * 80)
 
         self.update_state(
@@ -398,7 +398,7 @@ def export_devices_task(
             }
 
         logger.info(
-            "✓ Generated %s content (%s bytes)", export_format.upper(), len(export_content)
+            f"✓ Generated {export_format.upper()} content ({len(export_content)} bytes)"
         )
 
         # STEP 4: Save file
@@ -424,7 +424,7 @@ def export_devices_task(
         os.makedirs(export_dir, exist_ok=True)
 
         logger.info(
-            "Export directory: %s (absolute: %s)", export_dir, os.path.abspath(export_dir)
+            f"Export directory: {export_dir} (absolute: {os.path.abspath(export_dir)})"
         )
 
         # Generate filename with timestamp
@@ -436,7 +436,7 @@ def export_devices_task(
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(export_content)
 
-        logger.info("✓ File saved: %s", file_path)
+        logger.info(f"✓ File saved: {file_path}")
 
         # STEP 5: Complete
         self.update_state(
@@ -471,9 +471,9 @@ def export_devices_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result)
-                logger.info("✓ Updated job run %s status to completed", job_run['id'])
+                logger.info(f"✓ Updated job run {job_run['id']} status to completed")
         except Exception as job_error:
-            logger.warning("Failed to update job run status: %s", job_error)
+            logger.warning(f"Failed to update job run status: {job_error}")
 
         return result
 
@@ -481,7 +481,7 @@ def export_devices_task(
         logger.error("=" * 80)
         logger.error("EXPORT DEVICES TASK FAILED")
         logger.error("=" * 80)
-        logger.error("Exception: %s", e, exc_info=True)
+        logger.error(f"Exception: {e}", exc_info=True)
 
         error_result = {
             "success": False,
@@ -495,9 +495,9 @@ def export_devices_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], str(e))
-                logger.info("✓ Updated job run %s status to failed", job_run['id'])
+                logger.info(f"✓ Updated job run {job_run['id']} status to failed")
         except Exception as job_error:
-            logger.warning("Failed to update job run status: %s", job_error)
+            logger.warning(f"Failed to update job run status: {job_error}")
 
         return error_result
 

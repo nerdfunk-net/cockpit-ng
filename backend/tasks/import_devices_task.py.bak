@@ -54,8 +54,8 @@ def import_devices_from_csv_task(
         logger.info("=" * 80)
         logger.info("IMPORT DEVICES FROM CSV TASK STARTED")
         logger.info("=" * 80)
-        logger.info("CSV Options: %s", csv_options)
-        logger.info("Import Options: %s", import_options)
+        logger.info(f"CSV Options: {csv_options}")
+        logger.info(f"Import Options: {import_options}")
 
         self.update_state(
             state="PROGRESS",
@@ -87,9 +87,9 @@ def import_devices_from_csv_task(
                 quotechar=quotechar,
             )
             rows = list(csv_reader)
-            logger.info("Parsed %s rows from CSV", len(rows))
+            logger.info(f"Parsed {len(rows)} rows from CSV")
         except Exception as e:
-            logger.error("CSV parsing failed: %s", e)
+            logger.error(f"CSV parsing failed: {e}")
             return {
                 "success": False,
                 "error": f"Failed to parse CSV: {str(e)}",
@@ -102,11 +102,11 @@ def import_devices_from_csv_task(
             }
 
         total_devices = len(rows)
-        logger.info("Total devices to import: %s", total_devices)
+        logger.info(f"Total devices to import: {total_devices}")
 
         # Get CSV headers
         headers = list(rows[0].keys()) if rows else []
-        logger.info("CSV columns: %s", headers)
+        logger.info(f"CSV columns: {headers}")
 
         # STEP 2: Validate CSV structure
         logger.info("-" * 80)
@@ -135,9 +135,9 @@ def import_devices_from_csv_task(
 
         # STEP 4: Import devices
         logger.info("-" * 80)
-        logger.info("STEP 4: IMPORTING %s DEVICES", total_devices)
-        logger.info("Skip duplicates: %s", skip_duplicates)
-        logger.info("Create interfaces: %s", create_interfaces)
+        logger.info(f"STEP 4: IMPORTING {total_devices} DEVICES")
+        logger.info(f"Skip duplicates: {skip_duplicates}")
+        logger.info(f"Create interfaces: {create_interfaces}")
         logger.info("-" * 80)
 
         successes = []
@@ -148,7 +148,7 @@ def import_devices_from_csv_task(
             device_name = row.get("name", f"row-{idx}")
 
             try:
-                logger.info("Processing device %s/%s: %s", idx, total_devices, device_name)
+                logger.info(f"Processing device {idx}/{total_devices}: {device_name}")
 
                 # Update progress
                 progress = 10 + int((idx / total_devices) * 80)
@@ -170,11 +170,11 @@ def import_devices_from_csv_task(
                 )
 
                 # Import device using service
-                logger.info("Importing device %s", device_name)
-                logger.debug("Device data: %s", device_data)
+                logger.info(f"Importing device {device_name}")
+                logger.debug(f"Device data: {device_data}")
                 if interface_config:
                     logger.debug(
-                        "Interface config: %s interface(s)", len(interface_config)
+                        f"Interface config: {len(interface_config)} interface(s)"
                     )
 
                 # Service now raises exceptions on failure instead of returning error dict
@@ -199,8 +199,8 @@ def import_devices_from_csv_task(
                         }
                     )
                     logger.info(
-                        "Successfully imported device %s: %s interface(s)",
-                        result['device_name'], len(result['details']['interfaces']),
+                        f"Successfully imported device {result['device_name']}: "
+                        f"{len(result['details']['interfaces'])} interface(s)"
                     )
                 else:
                     # Device already existed and was skipped
@@ -212,13 +212,13 @@ def import_devices_from_csv_task(
                         }
                     )
                     logger.info(
-                        "Device %s already exists, skipped", result['device_name']
+                        f"Device {result['device_name']} already exists, skipped"
                     )
 
             except Exception as e:
                 error_msg = str(e)
                 logger.error(
-                    "Failed to import device %s: %s", device_name, error_msg, exc_info=True
+                    f"Failed to import device {device_name}: {error_msg}", exc_info=True
                 )
                 failures.append(
                     {
@@ -246,9 +246,9 @@ def import_devices_from_csv_task(
         skipped_count = len(skipped)
 
         logger.info("Import complete:")
-        logger.info("  - Successful: %s", success_count)
-        logger.info("  - Failed: %s", failure_count)
-        logger.info("  - Skipped: %s", skipped_count)
+        logger.info(f"  - Successful: {success_count}")
+        logger.info(f"  - Failed: {failure_count}")
+        logger.info(f"  - Skipped: {skipped_count}")
         logger.info("=" * 80)
 
         result = {
@@ -272,9 +272,9 @@ def import_devices_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result)
-                logger.info("✓ Updated job run %s status to completed", job_run['id'])
+                logger.info(f"✓ Updated job run {job_run['id']} status to completed")
         except Exception as job_error:
-            logger.warning("Failed to update job run status: %s", job_error)
+            logger.warning(f"Failed to update job run status: {job_error}")
 
         return result
 
@@ -294,9 +294,9 @@ def import_devices_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], error_msg)
-                logger.info("✓ Updated job run %s status to failed", job_run['id'])
+                logger.info(f"✓ Updated job run {job_run['id']} status to failed")
         except Exception as job_error:
-            logger.warning("Failed to update job run status: %s", job_error)
+            logger.warning(f"Failed to update job run status: {job_error}")
 
         return error_result
 

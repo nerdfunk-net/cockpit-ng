@@ -35,7 +35,7 @@ def check_ip_task(
         Dictionary with comparison results
     """
     logger.info(
-        "check_ip_task called with delimiter='%s', quote_char='%s'", delimiter, quote_char
+        f"check_ip_task called with delimiter='{delimiter}', quote_char='{quote_char}'"
     )
     try:
         # Use provided settings if they are valid (not None, not 'None', not empty)
@@ -51,7 +51,7 @@ def check_ip_task(
         if use_provided:
             # Use provided parameters
             logger.info(
-                "Using provided CSV settings - delimiter: '%s', quote_char: '%s'", delimiter, quote_char
+                f"Using provided CSV settings - delimiter: '{delimiter}', quote_char: '{quote_char}'"
             )
         else:
             # Get CSV settings from application settings
@@ -73,15 +73,15 @@ def check_ip_task(
                     defaults.get("csv_quote_char", '"') if defaults else '"'
                 )
                 logger.info(
-                    "Using defaults - delimiter: '%s', quote_char: '%s'", delimiter, quote_char
+                    f"Using defaults - delimiter: '{delimiter}', quote_char: '{quote_char}'"
                 )
 
-            logger.info("Raw settings from database: %s", settings)
+            logger.info(f"Raw settings from database: {settings}")
             logger.info(
-                "Using final CSV settings - delimiter: '%s', quote_char: '%s'", delimiter, quote_char
+                f"Using final CSV settings - delimiter: '{delimiter}', quote_char: '{quote_char}'"
             )
 
-        logger.info("CSV content preview (first 200 chars): %s", csv_content[:200])
+        logger.info(f"CSV content preview (first 200 chars): {csv_content[:200]}")
 
         # Parse CSV content with configured settings
         csv_reader = csv.DictReader(
@@ -94,7 +94,7 @@ def check_ip_task(
 
         for row in csv_reader:
             if not first_row_processed:
-                logger.info("Detected CSV columns: %s", list(row.keys()))
+                logger.info(f"Detected CSV columns: {list(row.keys())}")
                 logger.info("Looking for required columns: 'ip_address' and 'name'")
                 first_row_processed = True
 
@@ -106,7 +106,7 @@ def check_ip_task(
                     }
                 )
             else:
-                logger.warning("Row missing required columns: %s", row)
+                logger.warning(f"Row missing required columns: {row}")
 
         if not csv_devices:
             return {
@@ -172,7 +172,7 @@ def check_ip_task(
                             )
 
                 total_loaded += len(devices_batch)
-                logger.info("Loaded %s devices from device_query_service", total_loaded)
+                logger.info(f"Loaded {total_loaded} devices from device_query_service")
 
                 # Update progress
                 self.update_state(
@@ -192,7 +192,7 @@ def check_ip_task(
 
             except Exception as e:
                 logger.error(
-                    "Error loading devices from device_query_service at offset %s: %s", offset, str(e)
+                    f"Error loading devices from device_query_service at offset {offset}: {str(e)}"
                 )
                 return {
                     "success": False,
@@ -200,12 +200,12 @@ def check_ip_task(
                 }
 
         logger.info(
-            "Total devices loaded from device_query_service: %s", len(nautobot_devices)
+            f"Total devices loaded from device_query_service: {len(nautobot_devices)}"
         )
 
         # Log first few Nautobot devices for debugging
         if nautobot_devices:
-            logger.info("Sample Nautobot devices: %s", nautobot_devices[:3])
+            logger.info(f"Sample Nautobot devices: {nautobot_devices[:3]}")
 
         # Create lookup dictionary for efficient comparison
         # Key: IP address, Value: device name
@@ -216,7 +216,7 @@ def check_ip_task(
                 nautobot_lookup[ip] = device["name"]
 
         logger.info(
-            "Nautobot IP lookup keys: %s", list(nautobot_lookup.keys())[:10]
+            f"Nautobot IP lookup keys: {list(nautobot_lookup.keys())[:10]}"
         )  # First 10 IPs
 
         # Compare CSV devices with Nautobot devices
@@ -242,7 +242,7 @@ def check_ip_task(
                 csv_ip_clean = csv_ip
 
             logger.info(
-                "Comparing CSV device: %s with IP %s (cleaned: %s)", csv_name, csv_ip, csv_ip_clean
+                f"Comparing CSV device: {csv_name} with IP {csv_ip} (cleaned: {csv_ip_clean})"
             )
 
             try:
@@ -271,7 +271,7 @@ def check_ip_task(
                         )
                 else:
                     # IP not found in Nautobot
-                    logger.info("IP %s not found in Nautobot lookup", csv_ip_clean)
+                    logger.info(f"IP {csv_ip_clean} not found in Nautobot lookup")
                     results.append(
                         {
                             "ip_address": csv_ip_clean,  # Use cleaned IP in results
@@ -281,7 +281,7 @@ def check_ip_task(
                     )
 
             except Exception as e:
-                logger.error("Error comparing device %s (%s): %s", csv_name, csv_ip, str(e))
+                logger.error(f"Error comparing device {csv_name} ({csv_ip}): {str(e)}")
                 results.append(
                     {
                         "ip_address": csv_ip,
@@ -316,14 +316,14 @@ def check_ip_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result_data)
-                logger.info("Job run %s marked as completed", job_run['id'])
+                logger.info(f"Job run {job_run['id']} marked as completed")
         except Exception as e:
-            logger.error("Error updating job run: %s", str(e))
+            logger.error(f"Error updating job run: {str(e)}")
 
         return result_data
 
     except Exception as e:
-        logger.error("Error in check_ip_task: %s", str(e))
+        logger.error(f"Error in check_ip_task: {str(e)}")
         error_result = {"success": False, "error": f"Task failed: {str(e)}"}
 
         # Update job run with failure status
@@ -332,6 +332,6 @@ def check_ip_task(
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], error_message=str(e))
         except Exception as update_error:
-            logger.error("Error updating job run on failure: %s", str(update_error))
+            logger.error(f"Error updating job run on failure: {str(update_error)}")
 
         return error_result
