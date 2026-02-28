@@ -2,6 +2,7 @@
 User repository for user-specific database operations.
 """
 
+from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy import or_
 from repositories.base import BaseRepository
@@ -150,6 +151,27 @@ class UserRepository(BaseRepository[User]):
             user = db.query(User).filter(User.id == user_id).first()
             if user:
                 user.is_active = is_active
+                db.commit()
+                return True
+            return False
+        finally:
+            db.close()
+
+    def update_last_login(self, user_id: int) -> bool:
+        """
+        Update the last_login timestamp for a user.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            True if updated, False if user not found
+        """
+        db = get_db_session()
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if user:
+                user.last_login = datetime.now(timezone.utc)
                 db.commit()
                 return True
             return False

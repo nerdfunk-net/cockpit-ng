@@ -85,6 +85,10 @@ async def login(request: Request, user_data: UserLogin):
                 "debug": user_with_roles.get("debug", False),
             }
 
+            # Update last_login timestamp
+            from repositories.auth.user_repository import UserRepository
+            UserRepository().update_last_login(user["id"])
+
             # Log successful login to audit log
             from repositories.audit_log_repository import audit_log_repo
 

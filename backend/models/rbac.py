@@ -243,6 +243,7 @@ class UserResponse(UserBase):
     """Full user model with ID and metadata."""
 
     id: int
+    last_login: Optional[str] = Field(None, description="Timestamp of most recent login")
     created_at: str
     updated_at: str
     roles: List[Role] = Field(default_factory=list, description="User's assigned roles")

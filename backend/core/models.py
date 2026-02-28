@@ -37,6 +37,7 @@ class User(Base):
     permissions = Column(Integer, nullable=False, default=1)
     debug = Column(Boolean, nullable=False, default=False)
     is_active = Column(Boolean, nullable=False, default=True)
+    last_login = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

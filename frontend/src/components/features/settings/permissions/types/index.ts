@@ -5,6 +5,7 @@ export interface User {
   email: string
   roles?: Role[]
   is_active: boolean
+  last_login?: string | null
   created_at: string
   updated_at?: string
 }

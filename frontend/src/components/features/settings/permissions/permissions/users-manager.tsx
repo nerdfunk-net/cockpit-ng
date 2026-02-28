@@ -112,6 +112,16 @@ export function UsersManager() {
             )
           },
           {
+            header: 'Last Login',
+            accessor: (user) => (
+              <span className="text-sm text-muted-foreground">
+                {user.last_login
+                  ? new Date(user.last_login).toLocaleString()
+                  : 'Never'}
+              </span>
+            )
+          },
+          {
             header: 'Status',
             accessor: (user) => (
               <Badge variant={user.is_active ? 'default' : 'secondary'} className="text-xs">

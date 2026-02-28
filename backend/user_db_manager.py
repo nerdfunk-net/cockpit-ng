@@ -45,6 +45,7 @@ def _user_to_dict(user: User) -> Dict[str, Any]:
         "permissions": user.permissions,
         "debug": user.debug,
         "is_active": user.is_active,
+        "last_login": user.last_login.isoformat() if user.last_login else None,
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "updated_at": user.updated_at.isoformat() if user.updated_at else None,
     }
