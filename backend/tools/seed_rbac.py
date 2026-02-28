@@ -367,6 +367,8 @@ def seed_permissions(verbose: bool = True):
         # Cockpit Agent permissions
         ("cockpit_agents", "read", "View Cockpit agents and their status"),
         ("cockpit_agents", "execute", "Execute commands on Cockpit agents"),
+        # General logs permissions
+        ("general.logs", "read", "View audit logs"),
     ]
 
     created_count = 0

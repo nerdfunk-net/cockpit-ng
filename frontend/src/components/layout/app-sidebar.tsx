@@ -46,6 +46,7 @@ import {
   ArrowLeftRight,
   Monitor,
   Activity,
+  ScrollText,
 } from 'lucide-react'
 
 interface NavItem {
@@ -67,6 +68,7 @@ const navigationSections: NavSection[] = [
     items: [
       { label: 'Home', href: '/', icon: Home },
       { label: 'Inventory', href: '/inventory', icon: List },
+      { label: 'Logs', href: '/logs', icon: ScrollText },
     ],
   },
   {

@@ -302,6 +302,25 @@ export const queryKeys = {
       [...queryKeys.complianceSettings.all, 'snmpMappings'] as const,
   },
 
+  // General
+  general: {
+    all: ['general'] as const,
+    eventTypes: () => [...queryKeys.general.all, 'event-types'] as const,
+    logs: (filters?: {
+      page?: number
+      page_size?: number
+      severity?: string
+      event_type?: string
+      username?: string
+      start_date?: string
+      end_date?: string
+      search?: string
+    }) =>
+      filters
+        ? ([...queryKeys.general.all, 'logs', filters] as const)
+        : ([...queryKeys.general.all, 'logs'] as const),
+  },
+
   // Templates
   templates: {
     all: ['templates'] as const,

@@ -83,6 +83,9 @@ from routers.jobs import (
 # certificates_router now imported from inventory package above
 from health import router as health_router
 
+# General routers
+from routers.general import logs_router
+
 # Cockpit Agent router
 from routers.cockpit_agent import router as cockpit_agent_router
 
@@ -184,6 +187,7 @@ app.include_router(certificates_router)
 app.include_router(tools_router)
 app.include_router(cockpit_agent_router)
 app.include_router(agents_deploy_router)
+app.include_router(logs_router)
 app.include_router(health_router)
 
 
