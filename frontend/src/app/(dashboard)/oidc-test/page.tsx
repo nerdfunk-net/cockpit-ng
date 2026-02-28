@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useApi } from '@/hooks/use-api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -65,6 +66,7 @@ interface DebugLog {
 }
 
 export default function OIDCTestPage() {
+  const { apiCall } = useApi()
   const [debugInfo, setDebugInfo] = useState<DebugResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [logs, setLogs] = useState<DebugLog[]>([])
@@ -79,7 +81,7 @@ export default function OIDCTestPage() {
   const [customResponseType, setCustomResponseType] = useState('')
   const [customClientId, setCustomClientId] = useState('')
 
-  const addLog = (level: DebugLog['level'], message: string, details?: Record<string, unknown>) => {
+  const addLog = useCallback((level: DebugLog['level'], message: string, details?: Record<string, unknown>) => {
     const log: DebugLog = {
       timestamp: new Date().toISOString(),
       level,
@@ -87,25 +89,14 @@ export default function OIDCTestPage() {
       details
     }
     setLogs(prev => [log, ...prev])
-  }
-
-  useEffect(() => {
-    fetchDebugInfo()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const fetchDebugInfo = async () => {
+  const fetchDebugInfo = useCallback(async () => {
     setLoading(true)
     addLog('info', 'Fetching OIDC configuration and debug information...')
 
     try {
-      const response = await fetch('/api/proxy/auth/oidc/debug')
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
-
-      const data: DebugResponse = await response.json()
+      const data = await apiCall<DebugResponse>('auth/oidc/debug')
       setDebugInfo(data)
 
       addLog('success', 'Successfully loaded OIDC configuration', {
@@ -123,7 +114,11 @@ export default function OIDCTestPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiCall, addLog])
+
+  useEffect(() => {
+    fetchDebugInfo()
+  }, [fetchDebugInfo])
 
   const handleTestLogin = async (
     providerId: string,

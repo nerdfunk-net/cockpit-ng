@@ -1,0 +1,9 @@
+# Certificate configuration file
+# Each certificate entry defines a client certificate that can be used for NiFi authentication
+
+certificates:
+  - name: "Default Client Certificate"
+    ca_cert_file: "ca_cert.pem"
+    cert_file: "client_cert.pem"
+    key_file: "client_key.pem"
+    password: "password"
