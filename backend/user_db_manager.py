@@ -318,7 +318,7 @@ def _ensure_admin_role_assigned(user_id: Optional[int] = None) -> None:
         if not admin_role:
             # Run seed script to create roles and permissions (silently)
             try:
-                import seed_rbac
+                from tools import seed_rbac
 
                 seed_rbac.main(verbose=False)
                 admin_role = rbac.get_role_by_name("admin")
