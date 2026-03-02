@@ -58,14 +58,13 @@ from routers.network.snapshots import (
     snapshots_router,
 )
 
-# Tools router kept in old location (depends on nautobot_service, now fixed)
-from routers.tools import router as tools_router
+# Tools routers package (schema management, RBAC seeding, baseline, certificates)
+from routers.tools import tools_router, certificates_router
 
 # Inventory routers now use feature-based structure (Phase 3.7 migration)
 from routers.inventory import (
     general_inventory_router,
     inventory_router,
-    certificates_router,
 )
 
 # git_repositories_router is included via git_router - no need to import separately
@@ -80,7 +79,7 @@ from routers.jobs import (
     network_tasks_router,
 )
 
-# certificates_router now imported from inventory package above
+# certificates_router is now part of routers.tools package
 from health import router as health_router
 
 # General routers

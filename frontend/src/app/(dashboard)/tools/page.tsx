@@ -82,13 +82,13 @@ export default function ToolsPage() {
     {
       title: 'OIDC Test Dashboard',
       description: 'Debug and test OpenID Connect authentication flows. View provider configurations, test login flows, and troubleshoot OIDC issues.',
-      href: '/oidc-test',
+      href: '/tools/oidc-test',
       icon: <Shield className="w-6 h-6" />,
     },
     {
       title: 'Add Certificate',
       description: 'Upload or scan for CA certificates and add them to the system trust store. Manage SSL/TLS certificates for secure connections.',
-      href: '/add-certificate',
+      href: '/tools/add-certificate',
       icon: <KeyRound className="w-6 h-6" />,
     },
     {

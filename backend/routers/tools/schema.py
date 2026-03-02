@@ -1,9 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException
+"""
+Tools router for schema management, RBAC seeding, and test baseline operations.
+"""
+
+from __future__ import annotations
+import logging
+import sys
+from io import StringIO
 from typing import Dict, Any
+
+from fastapi import APIRouter, Depends, HTTPException
+
 from core.auth import verify_token
 from core.schema_manager import SchemaManager
 from services.network.tools.baseline import TestBaselineService
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +71,7 @@ async def seed_rbac(remove_existing: bool = False) -> Dict[str, Any]:
                         WARNING: This removes all roles, permissions, and assignments!
     """
     try:
-        from tools import seed_rbac
-        from io import StringIO
-        import sys
+        from tools import seed_rbac  # type: ignore[import]
 
         # Capture stdout to return to frontend
         captured_output = StringIO()
@@ -72,21 +79,19 @@ async def seed_rbac(remove_existing: bool = False) -> Dict[str, Any]:
         sys.stdout = captured_output
 
         try:
-            # Run the seed script with verbose output
             seed_rbac.main(verbose=True, remove_existing=remove_existing)
-
-            # Get the captured output
             output = captured_output.getvalue()
 
             return {
                 "success": True,
-                "message": "RBAC system seeded successfully"
-                if not remove_existing
-                else "RBAC system cleaned and reseeded successfully",
+                "message": (
+                    "RBAC system seeded successfully"
+                    if not remove_existing
+                    else "RBAC system cleaned and reseeded successfully"
+                ),
                 "output": output,
             }
         finally:
-            # Restore stdout
             sys.stdout = old_stdout
 
     except Exception as e:

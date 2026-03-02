@@ -255,7 +255,7 @@ function OIDCTestCallbackContent() {
               Inspect callback parameters and token exchange details
             </p>
           </div>
-          <Link href="/oidc-test">
+          <Link href="/tools/oidc-test">
             <Button variant="outline" className="gap-2">
               <ArrowLeft className="w-4 h-4" />
               Back to Test Dashboard

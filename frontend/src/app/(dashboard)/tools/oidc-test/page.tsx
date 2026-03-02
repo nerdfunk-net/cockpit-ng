@@ -21,8 +21,10 @@ import {
   LogIn,
   RefreshCw,
   FileText,
-  ExternalLink
+  ExternalLink,
+  ArrowLeft
 } from 'lucide-react'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
 
@@ -232,14 +234,21 @@ export default function OIDCTestPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Shield className="w-8 h-8 text-blue-500" />
-              OIDC Testing Dashboard
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Debug and test OpenID Connect authentication flows
-            </p>
+          <div className="flex items-center gap-4">
+            <Link href="/tools">
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            </Link>
+            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-500 text-white shadow-lg">
+              <Shield className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">OIDC Testing Dashboard</h1>
+              <p className="text-gray-600 mt-1">
+                Debug and test OpenID Connect authentication flows
+              </p>
+            </div>
           </div>
           <Button onClick={fetchDebugInfo} variant="outline" className="gap-2">
             <RefreshCw className="w-4 h-4" />
@@ -682,9 +691,9 @@ export default function OIDCTestPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {logs.map((log) => (
+              {logs.map((log, index) => (
                 <div
-                  key={`${log.timestamp}-${log.message}-${log.level}`}
+                  key={`${index}-${log.timestamp}-${log.level}`}
                   className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
                 >
                   {getLevelIcon(log.level)}
