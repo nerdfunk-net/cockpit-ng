@@ -286,6 +286,10 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
             "[OIDC Debug] User '%s' authenticated successfully via OIDC provider '%s'", user['username'], provider_id
         )
 
+        # Update last_login timestamp
+        from repositories.auth.user_repository import UserRepository
+        UserRepository().update_last_login(user["id"])
+
         # Log successful OIDC login to audit log
         from repositories.audit_log_repository import audit_log_repo
 
