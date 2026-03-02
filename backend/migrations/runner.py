@@ -252,10 +252,11 @@ class MigrationRunner:
 
                 logger.info(
                     "✓ %s: Completed in %sms (tables: %s, columns: %s, indexes: %s)",
-                    migration.name, execution_time_ms,
-                    results.get('tables_created', 0),
-                    results.get('columns_added', 0),
-                    results.get('indexes_created', 0),
+                    migration.name,
+                    execution_time_ms,
+                    results.get("tables_created", 0),
+                    results.get("columns_added", 0),
+                    results.get("indexes_created", 0),
                 )
 
             except Exception as e:
@@ -267,8 +268,10 @@ class MigrationRunner:
         if total_results["migrations_applied"] > 0:
             logger.info(
                 "Migration summary: %s migration(s) applied, %s table(s) created, %s column(s) added, %s index(es) created",
-                total_results['migrations_applied'], total_results['tables_created'],
-                total_results['columns_added'], total_results['indexes_created'],
+                total_results["migrations_applied"],
+                total_results["tables_created"],
+                total_results["columns_added"],
+                total_results["indexes_created"],
             )
         else:
             logger.info("Database schema is up to date - no migrations needed")

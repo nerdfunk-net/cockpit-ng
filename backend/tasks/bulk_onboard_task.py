@@ -167,7 +167,9 @@ def bulk_onboard_devices_task(
                 )
 
             # Call onboarding directly using helper functions
-            logger.info("Processing device %s/%s: %s", device_num, device_count, ip_address)
+            logger.info(
+                "Processing device %s/%s: %s", device_num, device_count, ip_address
+            )
 
             # Step 1: Trigger Nautobot onboarding job for this single device
             self.update_state(
@@ -200,7 +202,9 @@ def bulk_onboard_devices_task(
                 timeout=merged_config["timeout"],
             )
 
-            logger.info("Nautobot onboarding job started for %s: %s", ip_address, job_id)
+            logger.info(
+                "Nautobot onboarding job started for %s: %s", ip_address, job_id
+            )
 
             # Step 2: Wait for job completion (pass self for progress updates)
             self.update_state(

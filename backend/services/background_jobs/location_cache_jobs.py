@@ -93,7 +93,9 @@ def cache_all_locations_task(self) -> Dict[str, Any]:
                 "cached": 0,
             }
 
-        logger.info("Task %s: Processing %s locations", self.request.id, total_locations)
+        logger.info(
+            "Task %s: Processing %s locations", self.request.id, total_locations
+        )
 
         # Cache configuration - locations change less frequently, use 10 min TTL
         LOCATION_TTL = 600  # 10 minutes
@@ -113,7 +115,9 @@ def cache_all_locations_task(self) -> Dict[str, Any]:
         cache_service.set(cache_key, locations, LOCATION_TTL)
 
         logger.info(
-            "Task %s: Successfully cached %s locations", self.request.id, total_locations
+            "Task %s: Successfully cached %s locations",
+            self.request.id,
+            total_locations,
         )
 
         return {

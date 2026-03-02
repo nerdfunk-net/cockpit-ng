@@ -186,7 +186,9 @@ class ScanService:
                         if content:
                             parser_templates.append((tid, content))
                             logger.info(
-                                "Loaded parser template %s: %s", tid, t.get('name', 'Unknown')
+                                "Loaded parser template %s: %s",
+                                tid,
+                                t.get("name", "Unknown"),
                             )
                 except Exception as e:
                     logger.warning("Failed to preload parser template %s: %s", tid, e)
@@ -212,7 +214,9 @@ class ScanService:
 
             alive_ips = await asyncio.to_thread(self._fping_networks, all_ips)
             logger.info(
-                "fping found %s alive hosts out of %s targets", len(alive_ips), len(targets)
+                "fping found %s alive hosts out of %s targets",
+                len(alive_ips),
+                len(targets),
             )
         else:
             # Use individual ping operations (original behavior)
@@ -232,7 +236,11 @@ class ScanService:
         finally:
             job.state = "finished"
             logger.info(
-                "Scan job %s completed: %s authenticated, %s unreachable, %s auth failed", job.job_id, job.authenticated, job.unreachable, job.auth_failed
+                "Scan job %s completed: %s authenticated, %s unreachable, %s auth failed",
+                job.job_id,
+                job.authenticated,
+                job.unreachable,
+                job.auth_failed,
             )
 
     async def _process_ip(
@@ -260,7 +268,9 @@ class ScanService:
                         alive = True
                         break
                 except Exception as e:
-                    logger.debug("Ping attempt %s failed for %s: %s", attempt + 1, ip, e)
+                    logger.debug(
+                        "Ping attempt %s failed for %s: %s", attempt + 1, ip, e
+                    )
 
         if not alive:
             job.unreachable += 1
@@ -330,7 +340,10 @@ class ScanService:
                 job.authenticated += 1
                 job.scanned += 1
                 logger.info(
-                    "Device detected: %s (type: %s, platform: %s)", ip, result['device_type'], result.get('platform', 'unknown')
+                    "Device detected: %s (type: %s, platform: %s)",
+                    ip,
+                    result["device_type"],
+                    result.get("platform", "unknown"),
                 )
                 return
 
@@ -467,7 +480,10 @@ class ScanService:
                                     break
                             except Exception as e:
                                 logger.debug(
-                                    "TextFSM parse failed for template %s on %s: %s", tid, ip, e
+                                    "TextFSM parse failed for template %s on %s: %s",
+                                    tid,
+                                    ip,
+                                    e,
                                 )
                     # Fallback heuristic if no hostname yet
                     if not hostname:
@@ -514,15 +530,23 @@ class ScanService:
                     )
 
                     logger.info(
-                        "Hostname command on %s - exit_status: %s, stdout: '%s', stderr: '%s'", ip, exit_status, hostname_output, stderr_output
+                        "Hostname command on %s - exit_status: %s, stdout: '%s', stderr: '%s'",
+                        ip,
+                        exit_status,
+                        hostname_output,
+                        stderr_output,
                     )
 
                     if hostname_output and exit_status == 0:
                         hostname = hostname_output
-                        logger.info("Hostname command succeeded on %s: %s", ip, hostname)
+                        logger.info(
+                            "Hostname command succeeded on %s: %s", ip, hostname
+                        )
                     else:
                         logger.info(
-                            "Hostname command failed on %s - exit_status: %s", ip, exit_status
+                            "Hostname command failed on %s - exit_status: %s",
+                            ip,
+                            exit_status,
                         )
 
                 except Exception as e:
@@ -543,15 +567,23 @@ class ScanService:
                     )
 
                     logger.info(
-                        "uname command on %s - exit_status: %s, stdout: '%s', stderr: '%s'", ip, exit_status, uname_output, stderr_output
+                        "uname command on %s - exit_status: %s, stdout: '%s', stderr: '%s'",
+                        ip,
+                        exit_status,
+                        uname_output,
+                        stderr_output,
                     )
 
                     if uname_output and exit_status == 0:
                         platform = uname_output
-                        logger.info("uname -a command succeeded on %s: %s", ip, platform)
+                        logger.info(
+                            "uname -a command succeeded on %s: %s", ip, platform
+                        )
                     else:
                         logger.info(
-                            "uname -a command failed on %s - exit_status: %s", ip, exit_status
+                            "uname -a command failed on %s - exit_status: %s",
+                            ip,
+                            exit_status,
                         )
 
                 except Exception as e:
@@ -561,7 +593,10 @@ class ScanService:
                 # (uname might fail on some restricted systems but hostname usually works)
                 if hostname:
                     logger.info(
-                        "Detected Linux device on %s - hostname: %s, platform: %s", ip, hostname, platform or 'unknown'
+                        "Detected Linux device on %s - hostname: %s, platform: %s",
+                        ip,
+                        hostname,
+                        platform or "unknown",
                     )
                     client.close()
                     return {
@@ -631,13 +666,15 @@ class ScanService:
                     temp_file.write(f"{ip}\n")
 
             logger.info(
-                "Created temporary file %s with %s IP addresses", temp_file_path, len(ip_list)
+                "Created temporary file %s with %s IP addresses",
+                temp_file_path,
+                len(ip_list),
             )
 
             # Run fping command reading from the temporary file
             cmd = ["fping"]
 
-            logger.info("Running fping command: %s < %s", ' '.join(cmd), temp_file_path)
+            logger.info("Running fping command: %s < %s", " ".join(cmd), temp_file_path)
 
             # Use shell=True to support input redirection
             result = subprocess.run(
@@ -683,7 +720,9 @@ class ScanService:
                             # We ignore "is unreachable" and other statuses (like duplicates)
 
             logger.info(
-                "fping discovered %s alive hosts out of %s targets", len(alive_ips), len(ip_list)
+                "fping discovered %s alive hosts out of %s targets",
+                len(alive_ips),
+                len(ip_list),
             )
 
         except subprocess.TimeoutExpired:
@@ -871,7 +910,9 @@ class ScanService:
                 }
 
                 logger.debug(
-                    "Trying netmiko connection to %s with device_type: %s", ip, device_type
+                    "Trying netmiko connection to %s with device_type: %s",
+                    ip,
+                    device_type,
                 )
 
                 # Establish connection using netmiko
@@ -943,7 +984,9 @@ class ScanService:
                                             else "Not a dict"
                                         )
                                     logger.info(
-                                        "Netmiko TextFSM parsing successful for %s, hostname: %s", ip, hostname
+                                        "Netmiko TextFSM parsing successful for %s, hostname: %s",
+                                        ip,
+                                        hostname,
                                     )
 
                             # Fallback: try raw show version if structured parsing failed
@@ -971,7 +1014,10 @@ class ScanService:
 
                         except Exception as e:
                             logger.debug(
-                                "Show version failed for %s with %s: %s", ip, device_type, e
+                                "Show version failed for %s with %s: %s",
+                                ip,
+                                device_type,
+                                e,
                             )
                             if debug_data:
                                 debug_data["error"] = str(e)

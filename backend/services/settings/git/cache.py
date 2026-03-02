@@ -148,7 +148,10 @@ class GitCacheService:
                     cache_key = self._build_cache_key(repo_id, "commits", branch_name)
                     cache_service.set(cache_key, full_commits, ttl)
                     logger.debug(
-                        "Cached %s commits for repo %s, branch %s", len(full_commits), repo_id, branch_name
+                        "Cached %s commits for repo %s, branch %s",
+                        len(full_commits),
+                        repo_id,
+                        branch_name,
                     )
 
             return commits
@@ -156,7 +159,9 @@ class GitCacheService:
         except Exception as git_error:
             # Fallback to subprocess if GitPython fails
             logger.warning(
-                "GitPython failed for repo %s, falling back to subprocess: %s", repo_id, git_error
+                "GitPython failed for repo %s, falling back to subprocess: %s",
+                repo_id,
+                git_error,
             )
             return self._fetch_commits_subprocess(repo_path, branch_name, limit)
 
@@ -253,7 +258,9 @@ class GitCacheService:
                 return cached_history
 
         # Cache miss - fetch from repository
-        logger.debug("Cache miss for file history: repo %s, file %s", repo_id, file_path)
+        logger.debug(
+            "Cache miss for file history: repo %s, file %s", repo_id, file_path
+        )
 
         try:
             repo = Repo(repo_path)
@@ -286,7 +293,10 @@ class GitCacheService:
                 ttl = int(cache_cfg.get("ttl_seconds", 600))
                 cache_service.set(cache_key, history_commits, ttl)
                 logger.debug(
-                    "Cached %s commits for file %s in repo %s", len(history_commits), file_path, repo_id
+                    "Cached %s commits for file %s in repo %s",
+                    len(history_commits),
+                    file_path,
+                    repo_id,
                 )
 
             return history_commits

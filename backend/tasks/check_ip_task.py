@@ -35,7 +35,9 @@ def check_ip_task(
         Dictionary with comparison results
     """
     logger.info(
-        "check_ip_task called with delimiter='%s', quote_char='%s'", delimiter, quote_char
+        "check_ip_task called with delimiter='%s', quote_char='%s'",
+        delimiter,
+        quote_char,
     )
     try:
         # Use provided settings if they are valid (not None, not 'None', not empty)
@@ -51,7 +53,9 @@ def check_ip_task(
         if use_provided:
             # Use provided parameters
             logger.info(
-                "Using provided CSV settings - delimiter: '%s', quote_char: '%s'", delimiter, quote_char
+                "Using provided CSV settings - delimiter: '%s', quote_char: '%s'",
+                delimiter,
+                quote_char,
             )
         else:
             # Get CSV settings from application settings
@@ -73,12 +77,16 @@ def check_ip_task(
                     defaults.get("csv_quote_char", '"') if defaults else '"'
                 )
                 logger.info(
-                    "Using defaults - delimiter: '%s', quote_char: '%s'", delimiter, quote_char
+                    "Using defaults - delimiter: '%s', quote_char: '%s'",
+                    delimiter,
+                    quote_char,
                 )
 
             logger.info("Raw settings from database: %s", settings)
             logger.info(
-                "Using final CSV settings - delimiter: '%s', quote_char: '%s'", delimiter, quote_char
+                "Using final CSV settings - delimiter: '%s', quote_char: '%s'",
+                delimiter,
+                quote_char,
             )
 
         logger.info("CSV content preview (first 200 chars): %s", csv_content[:200])
@@ -192,7 +200,9 @@ def check_ip_task(
 
             except Exception as e:
                 logger.error(
-                    "Error loading devices from device_query_service at offset %s: %s", offset, str(e)
+                    "Error loading devices from device_query_service at offset %s: %s",
+                    offset,
+                    str(e),
                 )
                 return {
                     "success": False,
@@ -242,7 +252,10 @@ def check_ip_task(
                 csv_ip_clean = csv_ip
 
             logger.info(
-                "Comparing CSV device: %s with IP %s (cleaned: %s)", csv_name, csv_ip, csv_ip_clean
+                "Comparing CSV device: %s with IP %s (cleaned: %s)",
+                csv_name,
+                csv_ip,
+                csv_ip_clean,
             )
 
             try:
@@ -281,7 +294,9 @@ def check_ip_task(
                     )
 
             except Exception as e:
-                logger.error("Error comparing device %s (%s): %s", csv_name, csv_ip, str(e))
+                logger.error(
+                    "Error comparing device %s (%s): %s", csv_name, csv_ip, str(e)
+                )
                 results.append(
                     {
                         "ip_address": csv_ip,
@@ -316,7 +331,7 @@ def check_ip_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result_data)
-                logger.info("Job run %s marked as completed", job_run['id'])
+                logger.info("Job run %s marked as completed", job_run["id"])
         except Exception as e:
             logger.error("Error updating job run: %s", str(e))
 

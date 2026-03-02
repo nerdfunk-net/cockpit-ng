@@ -87,9 +87,11 @@ async def sync_repository(
         # Compute repo path (uses configured 'path' or fallback to 'name')
         repo_path = str(git_repo_path(repository))
 
-        logger.info("Syncing repository '%s' to path: %s", repository['name'], repo_path)
-        logger.info("Repository URL: %s", repository['url'])
-        logger.info("Repository branch: %s", repository['branch'])
+        logger.info(
+            "Syncing repository '%s' to path: %s", repository["name"], repo_path
+        )
+        logger.info("Repository URL: %s", repository["url"])
+        logger.info("Repository branch: %s", repository["branch"])
 
         os.makedirs(os.path.dirname(repo_path), exist_ok=True)
 
@@ -129,7 +131,7 @@ async def sync_repository(
                         )
                     with set_ssl_env(repository):
                         logger.info(
-                            "Cloning branch %s into %s", repository['branch'], repo_path
+                            "Cloning branch %s into %s", repository["branch"], repo_path
                         )
                         Repo.clone_from(
                             clone_url, repo_path, branch=repository["branch"]
@@ -167,7 +169,8 @@ async def sync_repository(
                         ):
                             shutil.rmtree(repo_path)
                             logger.info(
-                                "Removed empty directory after failed clone: %s", repo_path
+                                "Removed empty directory after failed clone: %s",
+                                repo_path,
                             )
                     except Exception as ce:
                         logger.warning("Cleanup after failed clone skipped: %s", ce)
@@ -231,7 +234,7 @@ async def remove_and_sync_repository(
         repo_path = str(git_repo_path(repository))
 
         logger.info(
-            "Remove and sync repository '%s' at path: %s", repository['name'], repo_path
+            "Remove and sync repository '%s' at path: %s", repository["name"], repo_path
         )
 
         # Remove existing directory if it exists
@@ -275,7 +278,9 @@ async def remove_and_sync_repository(
 
                 with set_ssl_env(repository):
                     logger.info(
-                        "Cloning fresh copy of branch %s into %s", repository['branch'], repo_path
+                        "Cloning fresh copy of branch %s into %s",
+                        repository["branch"],
+                        repo_path,
                     )
                     Repo.clone_from(clone_url, repo_path, branch=repository["branch"])
 

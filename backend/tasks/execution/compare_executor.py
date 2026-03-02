@@ -116,7 +116,9 @@ def execute_compare_devices(
             job_id, 0, total_devices, "Starting comparison..."
         )
 
-        logger.info("Starting comparison of %s devices, job_id: %s", total_devices, job_id)
+        logger.info(
+            "Starting comparison of %s devices, job_id: %s", total_devices, job_id
+        )
 
         # Process each device
         for i, device_id in enumerate(device_ids):
@@ -252,7 +254,10 @@ def execute_compare_devices(
 
         logger.info(
             "Comparison completed: %s/%s devices compared, %s differences found, %s failed",
-            completed_count, total_devices, differences_found, failed_count,
+            completed_count,
+            total_devices,
+            differences_found,
+            failed_count,
         )
 
         return {

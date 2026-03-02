@@ -145,7 +145,8 @@ def execute_sync_devices(
                             or "not found" in str(update_error).lower()
                         ):
                             logger.info(
-                                "Device %s not in CheckMK, attempting to add...", device_id
+                                "Device %s not in CheckMK, attempting to add...",
+                                device_id,
                             )
                             result = loop.run_until_complete(
                                 nb2cmk_service.add_device_to_checkmk(device_id)
@@ -190,7 +191,9 @@ def execute_sync_devices(
 
         logger.info(
             "Sync completed: %s/%s devices synced, %s failed",
-            success_count, total_devices, failed_count,
+            success_count,
+            total_devices,
+            failed_count,
         )
 
         # Activate CheckMK changes if configured and at least one device synced successfully
@@ -203,11 +206,13 @@ def execute_sync_devices(
         if template:
             logger.info("[ACTIVATION DEBUG] Template keys: %s", list(template.keys()))
             logger.info(
-                "[ACTIVATION DEBUG] activate_changes_after_sync in template: %s", 'activate_changes_after_sync' in template
+                "[ACTIVATION DEBUG] activate_changes_after_sync in template: %s",
+                "activate_changes_after_sync" in template,
             )
             activate_changes = template.get("activate_changes_after_sync", True)
             logger.info(
-                "[ACTIVATION DEBUG] activate_changes_after_sync value from template: %s", template.get('activate_changes_after_sync')
+                "[ACTIVATION DEBUG] activate_changes_after_sync value from template: %s",
+                template.get("activate_changes_after_sync"),
             )
 
         logger.info(
@@ -215,7 +220,8 @@ def execute_sync_devices(
         )
         logger.info("[ACTIVATION DEBUG] success_count: %s", success_count)
         logger.info(
-            "[ACTIVATION DEBUG] Will activate changes: %s", activate_changes and success_count > 0
+            "[ACTIVATION DEBUG] Will activate changes: %s",
+            activate_changes and success_count > 0,
         )
 
         if activate_changes and success_count > 0:
@@ -234,7 +240,8 @@ def execute_sync_devices(
                     logger.info("CheckMK changes activated successfully")
                 else:
                     logger.warning(
-                        "CheckMK activation completed with issues: %s", activation_result.get('message')
+                        "CheckMK activation completed with issues: %s",
+                        activation_result.get("message"),
                     )
             except Exception as activation_error:
                 logger.error("Failed to activate CheckMK changes: %s", activation_error)
@@ -294,7 +301,8 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
     ):
         logger.warning("[ACTIVATION] CheckMK settings not configured or incomplete")
         logger.warning(
-            "[ACTIVATION] db_settings keys: %s", list(db_settings.keys()) if db_settings else 'None'
+            "[ACTIVATION] db_settings keys: %s",
+            list(db_settings.keys()) if db_settings else "None",
         )
         return {
             "success": False,
@@ -302,7 +310,9 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
         }
 
     logger.info(
-        "[ACTIVATION] CheckMK settings loaded - URL: %s, Site: %s", db_settings.get('url'), db_settings.get('site')
+        "[ACTIVATION] CheckMK settings loaded - URL: %s, Site: %s",
+        db_settings.get("url"),
+        db_settings.get("site"),
     )
 
     # Parse URL
@@ -317,7 +327,10 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
 
     effective_site = db_settings["site"]
     logger.info(
-        "[ACTIVATION] Connecting to CheckMK - Host: %s, Protocol: %s, Site: %s", host, protocol, effective_site
+        "[ACTIVATION] Connecting to CheckMK - Host: %s, Protocol: %s, Site: %s",
+        host,
+        protocol,
+        effective_site,
     )
 
     # Create client
@@ -332,7 +345,8 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
 
     # Activate changes
     logger.info(
-        "[ACTIVATION] Calling client.activate_changes(sites=[%s], force_foreign_changes=True, redirect=False)", effective_site
+        "[ACTIVATION] Calling client.activate_changes(sites=[%s], force_foreign_changes=True, redirect=False)",
+        effective_site,
     )
     try:
         result = client.activate_changes(

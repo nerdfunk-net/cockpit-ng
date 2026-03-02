@@ -676,7 +676,8 @@ async def get_telegraf_config(
             content = f.read()
 
         logger.info(
-            "Successfully read Telegraf config for user: %s", current_user.get('username')
+            "Successfully read Telegraf config for user: %s",
+            current_user.get("username"),
         )
         return {
             "success": True,
@@ -722,7 +723,8 @@ async def save_telegraf_config(
             f.write(content)
 
         logger.info(
-            "Successfully saved Telegraf config by user: %s", current_user.get('username')
+            "Successfully saved Telegraf config by user: %s",
+            current_user.get("username"),
         )
         return {"success": True, "message": "Telegraf configuration saved successfully"}
 

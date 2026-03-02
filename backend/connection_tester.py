@@ -322,7 +322,9 @@ class ConnectionTester:
                 try:
                     shutil.rmtree(temp_dir)
                 except Exception as e:
-                    logger.warning("Failed to clean up temp directory %s: %s", temp_dir, e)
+                    logger.warning(
+                        "Failed to clean up temp directory %s: %s", temp_dir, e
+                    )
 
     @staticmethod
     async def test_all_connections(

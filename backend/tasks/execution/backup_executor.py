@@ -119,19 +119,24 @@ def execute_backup(
                         )
                         parallel_tasks = template.get("parallel_tasks", 1)
                         logger.info(
-                            "Config repository ID from template: %s", config_repository_id
+                            "Config repository ID from template: %s",
+                            config_repository_id,
                         )
                         logger.info(
-                            "Running config path template: %s", backup_running_config_path
+                            "Running config path template: %s",
+                            backup_running_config_path,
                         )
                         logger.info(
-                            "Startup config path template: %s", backup_startup_config_path
+                            "Startup config path template: %s",
+                            backup_startup_config_path,
                         )
                         logger.info(
-                            "Write timestamp to custom field: %s", write_timestamp_to_custom_field
+                            "Write timestamp to custom field: %s",
+                            write_timestamp_to_custom_field,
                         )
                         logger.info(
-                            "Timestamp custom field name: %s", timestamp_custom_field_name
+                            "Timestamp custom field name: %s",
+                            timestamp_custom_field_name,
                         )
 
         if not config_repository_id:
@@ -214,9 +219,9 @@ def execute_backup(
                 "credential_info": credential_info,
             }
 
-        logger.info("✓ Repository found: %s", repository.get('name'))
-        logger.info("  - URL: %s", repository.get('url'))
-        logger.info("  - Branch: %s", repository.get('branch') or 'main')
+        logger.info("✓ Repository found: %s", repository.get("name"))
+        logger.info("  - URL: %s", repository.get("url"))
+        logger.info("  - Branch: %s", repository.get("branch") or "main")
 
         git_status["repository_url"] = repository.get("url")
         git_status["branch"] = repository.get("branch") or "main"
@@ -250,7 +255,7 @@ def execute_backup(
 
         logger.info("✓ Credential found: %s", credential_name)
         logger.info("  - Username: %s", username)
-        logger.info("  - Password: %s", '*' * len(password) if password else 'NOT SET')
+        logger.info("  - Password: %s", "*" * len(password) if password else "NOT SET")
 
         credential_info["credential_name"] = credential_name
         credential_info["username"] = username
@@ -288,10 +293,10 @@ def execute_backup(
         git_username, git_token, git_ssh_key_path = (
             git_auth_service.resolve_credentials(dict(repository))
         )
-        logger.info("  - Git username: %s", git_username or 'none')
-        logger.info("  - Git token: %s", '*' * 10 if git_token else 'none')
-        logger.info("  - SSH key: %s", 'configured' if git_ssh_key_path else 'none')
-        logger.info("  - Auth type: %s", repository.get('auth_type', 'token'))
+        logger.info("  - Git username: %s", git_username or "none")
+        logger.info("  - Git token: %s", "*" * 10 if git_token else "none")
+        logger.info("  - SSH key: %s", "configured" if git_ssh_key_path else "none")
+        logger.info("  - Auth type: %s", repository.get("auth_type", "token"))
 
         # Use central git_service for repository operations (supports SSH keys and tokens)
         try:
@@ -307,7 +312,7 @@ def execute_backup(
             logger.info("  - Latest commit: %s", git_repo.head.commit.hexsha[:8])
 
             # Pull latest changes using git_service
-            logger.info("Pulling latest changes from %s...", repository.get('url'))
+            logger.info("Pulling latest changes from %s...", repository.get("url"))
             pull_result = git_service.pull(dict(repository), repo=git_repo)
 
             if pull_result.success:
@@ -357,7 +362,8 @@ def execute_backup(
         # Use chord pattern for parallel execution
         if parallel_tasks > 1:
             logger.info(
-                "Using parallel execution with %s workers (chord pattern)", parallel_tasks
+                "Using parallel execution with %s workers (chord pattern)",
+                parallel_tasks,
             )
 
             from tasks.backup_tasks import (
@@ -432,9 +438,9 @@ def execute_backup(
             }
 
             try:
-                logger.info("\n%s", '=' * 60)
+                logger.info("\n%s", "=" * 60)
                 logger.info("Device %s/%s: %s", idx, total_devices, device_id)
-                logger.info("%s", '=' * 60)
+                logger.info("%s", "=" * 60)
 
                 progress = 20 + int((idx / total_devices) * 70)
                 task_context.update_state(
@@ -571,7 +577,9 @@ def execute_backup(
                     device_type = network_driver
                     platform = network_driver
                     logger.info(
-                        "[%s] Using network_driver from Nautobot: %s", idx, network_driver
+                        "[%s] Using network_driver from Nautobot: %s",
+                        idx,
+                        network_driver,
                     )
                 else:
                     # Fallback: map platform name to Netmiko device type (best guess)
@@ -580,7 +588,10 @@ def execute_backup(
 
                     device_type = map_platform_to_netmiko(platform)
                     logger.info(
-                        "[%s] No network_driver, mapped platform '%s' to: %s", idx, platform, device_type
+                        "[%s] No network_driver, mapped platform '%s' to: %s",
+                        idx,
+                        platform,
+                        device_type,
                     )
 
                 device_backup_info["device_name"] = device_name
@@ -590,11 +601,13 @@ def execute_backup(
 
                 logger.info("[%s] ✓ Device data fetched", idx)
                 logger.info("[%s]   - Name: %s", idx, device_name)
-                logger.info("[%s]   - IP: %s", idx, primary_ip or 'NOT SET')
+                logger.info("[%s]   - IP: %s", idx, primary_ip or "NOT SET")
                 logger.info("[%s]   - Platform: %s", idx, platform)
                 logger.info("[%s]   - Netmiko device type: %s", idx, device_type)
                 logger.info(
-                    "[%s]   - Custom field data: %s", idx, device.get('custom_field_data')
+                    "[%s]   - Custom field data: %s",
+                    idx,
+                    device.get("custom_field_data"),
                 )
 
                 if not primary_ip:
@@ -615,7 +628,7 @@ def execute_backup(
                 )
 
                 if not result["success"]:
-                    logger.error("[%s] ✗ SSH failed: %s", idx, result.get('error'))
+                    logger.error("[%s] ✗ SSH failed: %s", idx, result.get("error"))
                     device_backup_info["error"] = result.get(
                         "error", "SSH connection failed"
                     )
@@ -632,14 +645,18 @@ def execute_backup(
                 command_outputs = result.get("command_outputs", {})
                 logger.info("[%s] Parsing configuration output...", idx)
                 logger.debug(
-                    "[%s] Available command outputs keys: %s", idx, list(command_outputs.keys())
+                    "[%s] Available command outputs keys: %s",
+                    idx,
+                    list(command_outputs.keys()),
                 )
 
                 running_config = command_outputs.get("show running-config", "").strip()
                 startup_config = command_outputs.get("show startup-config", "").strip()
 
                 logger.debug(
-                    "[%s] Raw startup config from command_outputs: '%s'", idx, command_outputs.get('show startup-config')
+                    "[%s] Raw startup config from command_outputs: '%s'",
+                    idx,
+                    command_outputs.get("show startup-config"),
                 )
                 logger.debug("[%s] Cleaned startup config: '%s'", idx, startup_config)
 
@@ -647,7 +664,9 @@ def execute_backup(
                 logger.debug("[%s] Startup config length: %s", idx, len(startup_config))
                 if not startup_config:
                     logger.debug(
-                        "[%s] Startup config content (first 100 chars): '%s'", idx, command_outputs.get('show startup-config', '')[:100]
+                        "[%s] Startup config content (first 100 chars): '%s'",
+                        idx,
+                        command_outputs.get("show startup-config", "")[:100],
                     )
 
                 # Fallback to general output if structured data is missing (backward compatibility)
@@ -690,7 +709,9 @@ def execute_backup(
                     # Strip leading slash to ensure path is relative to repo_dir
                     running_path = running_path.lstrip("/")
                     logger.info(
-                        "[%s] Using templated running config path: %s", idx, running_path
+                        "[%s] Using templated running config path: %s",
+                        idx,
+                        running_path,
                     )
                 else:
                     running_path = (
@@ -707,7 +728,9 @@ def execute_backup(
                     # Strip leading slash to ensure path is relative to repo_dir
                     startup_path = startup_path.lstrip("/")
                     logger.info(
-                        "[%s] Using templated startup config path: %s", idx, startup_path
+                        "[%s] Using templated startup config path: %s",
+                        idx,
+                        startup_path,
                     )
                 else:
                     startup_path = (
@@ -731,7 +754,9 @@ def execute_backup(
 
                 if startup_config:
                     startup_file.write_text(startup_config)
-                    logger.info("[%s] Wrote: %s", idx, startup_file.relative_to(repo_dir))
+                    logger.info(
+                        "[%s] Wrote: %s", idx, startup_file.relative_to(repo_dir)
+                    )
 
                 logger.info("[%s] ✓ Backup complete", idx)
 
@@ -787,7 +812,7 @@ def execute_backup(
             if backed_up_devices:
                 commit_message = f"Backup config {current_date}"
                 logger.info("Committing and pushing with message: '%s'", commit_message)
-                logger.info("  - Auth type: %s", repository.get('auth_type', 'token'))
+                logger.info("  - Auth type: %s", repository.get("auth_type", "token"))
 
                 # Use git_service for commit and push (supports SSH keys and tokens)
                 result = git_service.commit_and_push(
@@ -869,7 +894,9 @@ def execute_backup(
 
                 try:
                     logger.info(
-                        "Updating custom field for device: %s (%s)", device_name, device_id
+                        "Updating custom field for device: %s (%s)",
+                        device_name,
+                        device_id,
                     )
 
                     # Update the device's custom field via Nautobot REST API
@@ -895,7 +922,9 @@ def execute_backup(
                     timestamp_update_status["errors"].append(error_msg)
 
             logger.info(
-                "Custom field updates: %s successful, %s failed", timestamp_update_status['updated_count'], timestamp_update_status['failed_count']
+                "Custom field updates: %s successful, %s failed",
+                timestamp_update_status["updated_count"],
+                timestamp_update_status["failed_count"],
             )
 
         logger.info("=" * 80)

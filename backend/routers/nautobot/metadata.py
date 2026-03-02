@@ -403,7 +403,9 @@ async def get_nautobot_secret_groups(
         result = await nautobot_service.graphql_query(query)
 
         if "errors" in result:
-            logger.warning("GraphQL errors fetching secret groups: %s", result['errors'])
+            logger.warning(
+                "GraphQL errors fetching secret groups: %s", result["errors"]
+            )
             return []
 
         return result["data"]["secrets_groups"]
@@ -722,25 +724,32 @@ async def get_interface_types(
         )
 
         # Debug: log the full response structure
-        logger.info("OPTIONS response keys: %s", result.keys() if result else 'None')
+        logger.info("OPTIONS response keys: %s", result.keys() if result else "None")
         if result and "actions" in result:
             actions = result.get("actions", {})
             logger.info("actions keys: %s", actions.keys())
             post_actions = actions.get("POST", {})
             logger.info(
-                "POST actions keys: %s", post_actions.keys() if post_actions else 'None'
+                "POST actions keys: %s", post_actions.keys() if post_actions else "None"
             )
             if "type" in post_actions:
                 type_field = post_actions.get("type", {})
                 logger.info(
-                    "type field keys: %s", type_field.keys() if isinstance(type_field, dict) else type(type_field)
+                    "type field keys: %s",
+                    type_field.keys()
+                    if isinstance(type_field, dict)
+                    else type(type_field),
                 )
                 choices = type_field.get("choices", [])
                 logger.info(
-                    "choices type: %s, length: %s", type(choices), len(choices) if choices else 0
+                    "choices type: %s, length: %s",
+                    type(choices),
+                    len(choices) if choices else 0,
                 )
                 if choices and len(choices) > 0:
-                    logger.info("first choice: %s, type: %s", choices[0], type(choices[0]))
+                    logger.info(
+                        "first choice: %s, type: %s", choices[0], type(choices[0])
+                    )
 
         # Extract type choices from the OPTIONS response
         interface_types = []

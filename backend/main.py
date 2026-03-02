@@ -347,7 +347,7 @@ async def _startup_services():
         result = jobs_manager.initialize_schedule_next_runs()
         if result["initialized_count"] > 0:
             logger.info(
-                "Initialized next_run for %s job schedules", result['initialized_count']
+                "Initialized next_run for %s job schedules", result["initialized_count"]
             )
     except Exception as e:
         logger.error("Failed to initialize job schedule next_runs: %s", e)
@@ -422,7 +422,10 @@ async def _startup_services():
                 cache_key = f"{repo_scope}:commits:{branch_name}"
                 cache_service.set(cache_key, commits, ttl)
                 logger.debug(
-                    "Startup cache: Prefetched %s commits for branch '%s' (ttl=%ss)", len(commits), branch_name, ttl
+                    "Startup cache: Prefetched %s commits for branch '%s' (ttl=%ss)",
+                    len(commits),
+                    branch_name,
+                    ttl,
                 )
             except Exception as e:
                 logger.warning("Startup cache: commits prefetch failed: %s", e)
@@ -460,7 +463,9 @@ async def _startup_services():
                 ttl = int(cache_cfg.get("ttl_seconds", 600))
                 cache_service.set("nautobot:locations:list", locations, ttl)
                 logger.debug(
-                    "Startup cache: Prefetched locations (%s items) (ttl=%ss)", len(locations), ttl
+                    "Startup cache: Prefetched locations (%s items) (ttl=%ss)",
+                    len(locations),
+                    ttl,
                 )
             except Exception as e:
                 logger.warning("Startup cache: locations prefetch failed: %s", e)
@@ -475,7 +480,8 @@ async def _startup_services():
                 task = cache_all_devices_task.delay()
 
                 logger.debug(
-                    "Startup cache: Device prefetch job started with task ID %s", task.id
+                    "Startup cache: Device prefetch job started with task ID %s",
+                    task.id,
                 )
 
             except Exception as e:
@@ -498,7 +504,8 @@ async def _startup_services():
             for key, enabled in prefetch_items.items():
                 if enabled and key in prefetch_map:
                     logger.debug(
-                        "Startup cache: prefetch enabled for '%s' — scheduling task", key
+                        "Startup cache: prefetch enabled for '%s' — scheduling task",
+                        key,
                     )
                     asyncio.create_task(prefetch_map[key]())
                 elif not enabled:

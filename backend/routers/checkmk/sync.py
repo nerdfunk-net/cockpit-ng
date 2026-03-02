@@ -45,7 +45,10 @@ async def compare_device_config(
     except HTTPException as http_exc:
         # Re-raise HTTP exceptions with additional logging
         logger.error(
-            "[ROUTER] HTTP %s error comparing device %s: %s", http_exc.status_code, device_id, http_exc.detail
+            "[ROUTER] HTTP %s error comparing device %s: %s",
+            http_exc.status_code,
+            device_id,
+            http_exc.detail,
         )
         raise
     except ValueError as val_err:
@@ -78,7 +81,10 @@ async def add_device_to_checkmk(
         return result.model_dump()
     except HTTPException as http_exc:
         logger.error(
-            "[ROUTER] HTTP %s error adding device %s: %s", http_exc.status_code, device_id, http_exc.detail
+            "[ROUTER] HTTP %s error adding device %s: %s",
+            http_exc.status_code,
+            device_id,
+            http_exc.detail,
         )
         raise
     except ValueError as val_err:
@@ -110,7 +116,10 @@ async def update_device_in_checkmk(
         return result.model_dump()
     except HTTPException as http_exc:
         logger.error(
-            "[ROUTER] HTTP %s error updating device %s: %s", http_exc.status_code, device_id, http_exc.detail
+            "[ROUTER] HTTP %s error updating device %s: %s",
+            http_exc.status_code,
+            device_id,
+            http_exc.detail,
         )
         raise
     except ValueError as val_err:

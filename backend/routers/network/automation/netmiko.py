@@ -175,7 +175,10 @@ async def execute_commands(
     try:
         logger.info(
             "Execute commands request from user: %s, devices: %s, commands: %s, use_textfsm: %s",
-            current_user, len(request.devices), len(request.commands), request.use_textfsm,
+            current_user,
+            len(request.devices),
+            len(request.commands),
+            request.use_textfsm,
         )
 
         # Validate inputs
@@ -293,7 +296,11 @@ async def execute_commands(
 
         logger.info(
             "Command execution completed for user %s. Total: %s, Successful: %s, Failed: %s, Cancelled: %s",
-            current_user, len(results), successful, failed, cancelled,
+            current_user,
+            len(results),
+            successful,
+            failed,
+            cancelled,
         )
 
         return CommandExecutionResponse(
@@ -373,7 +380,9 @@ async def cancel_execution(
         Cancellation confirmation
     """
     try:
-        logger.info("Cancel request from user %s for session %s", current_user, session_id)
+        logger.info(
+            "Cancel request from user %s for session %s", current_user, session_id
+        )
         netmiko_service.cancel_session(session_id)
         return {
             "success": True,
@@ -418,7 +427,9 @@ async def execute_template(
     try:
         logger.info(
             "Execute template request from user: %s, devices: %s, dry_run: %s",
-            current_user, len(request.device_ids), request.dry_run,
+            current_user,
+            len(request.device_ids),
+            request.dry_run,
         )
 
         # Validate inputs
@@ -691,7 +702,9 @@ async def execute_template(
                                 )
 
                             logger.info(
-                                "Pre-run command executed. Raw length: %s, Parsed records: %s", len(pre_run_output), len(pre_run_parsed)
+                                "Pre-run command executed. Raw length: %s, Parsed records: %s",
+                                len(pre_run_output),
+                                len(pre_run_parsed),
                             )
                         except Exception as e:
                             error_msg = f"Failed to execute pre-run command: {str(e)}"
@@ -705,7 +718,9 @@ async def execute_template(
 
                     if warnings:
                         logger.warning(
-                            "Template rendering warnings for %s: %s", device_name, warnings
+                            "Template rendering warnings for %s: %s",
+                            device_name,
+                            warnings,
                         )
 
                 except UndefinedError as e:
@@ -764,7 +779,9 @@ async def execute_template(
                     # Check for cancellation before execution
                     if netmiko_service.is_session_cancelled(session_id):
                         logger.info(
-                            "Session %s cancelled before executing on %s", session_id, device_name
+                            "Session %s cancelled before executing on %s",
+                            session_id,
+                            device_name,
                         )
                         cancelled_count += 1
                         results.append(

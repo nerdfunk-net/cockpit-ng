@@ -52,7 +52,9 @@ class TagNormalizer:
                 if isinstance(additional_attrs, dict):
                     extensions.attributes.update(additional_attrs)
                     logger.info(
-                        "Added additional attributes for device '%s': %s", device_name, list(additional_attrs.keys())
+                        "Added additional attributes for device '%s': %s",
+                        device_name,
+                        list(additional_attrs.keys()),
                     )
 
             # 2. Check by_ip (second priority, can add more attributes)

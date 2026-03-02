@@ -167,7 +167,7 @@ def execute_run_commands(
 
         logger.info("✓ Credential found: %s", credential_name)
         logger.info("  - Username: %s", username)
-        logger.info("  - Password: %s", '*' * len(password) if password else 'NOT SET')
+        logger.info("  - Password: %s", "*" * len(password) if password else "NOT SET")
 
         credential_info["credential_name"] = credential_name
         credential_info["username"] = username
@@ -186,7 +186,9 @@ def execute_run_commands(
             command_template_name
         )
         if not command_template_obj:
-            logger.error("ERROR: Command template '%s' not found", command_template_name)
+            logger.error(
+                "ERROR: Command template '%s' not found", command_template_name
+            )
             return {
                 "success": False,
                 "error": f"Command template '{command_template_name}' not found",
@@ -198,7 +200,8 @@ def execute_run_commands(
         )
         if not template_content:
             logger.error(
-                "ERROR: Command template content not found for '%s'", command_template_name
+                "ERROR: Command template content not found for '%s'",
+                command_template_name,
             )
             return {
                 "success": False,
@@ -207,7 +210,7 @@ def execute_run_commands(
             }
 
         logger.info("✓ Command template found: %s", command_template_name)
-        logger.info("  - Template ID: %s", command_template_obj['id'])
+        logger.info("  - Template ID: %s", command_template_obj["id"])
         logger.info("  - Content length: %s chars", len(template_content))
 
         logger.info("✓ All inputs validated successfully")
@@ -252,9 +255,9 @@ def execute_run_commands(
                 }
 
                 try:
-                    logger.info("\n%s", '=' * 60)
+                    logger.info("\n%s", "=" * 60)
                     logger.info("Device %s/%s: %s", idx, total_devices, device_id)
-                    logger.info("%s", '=' * 60)
+                    logger.info("%s", "=" * 60)
 
                     progress = 10 + int((idx / total_devices) * 80)
                     task_context.update_state(
@@ -376,7 +379,9 @@ def execute_run_commands(
                         device_type = network_driver
                         platform = network_driver
                         logger.info(
-                            "[%s] Using network_driver from Nautobot: %s", idx, network_driver
+                            "[%s] Using network_driver from Nautobot: %s",
+                            idx,
+                            network_driver,
                         )
                     else:
                         # Fallback: map platform name to Netmiko device type (best guess)
@@ -387,7 +392,10 @@ def execute_run_commands(
 
                         device_type = map_platform_to_netmiko(platform)
                         logger.info(
-                            "[%s] No network_driver, mapped platform '%s' to: %s", idx, platform, device_type
+                            "[%s] No network_driver, mapped platform '%s' to: %s",
+                            idx,
+                            platform,
+                            device_type,
                         )
 
                     device_result["device_name"] = device_name
@@ -396,7 +404,7 @@ def execute_run_commands(
 
                     logger.info("[%s] ✓ Device data fetched", idx)
                     logger.info("[%s]   - Name: %s", idx, device_name)
-                    logger.info("[%s]   - IP: %s", idx, primary_ip or 'NOT SET')
+                    logger.info("[%s]   - IP: %s", idx, primary_ip or "NOT SET")
                     logger.info("[%s]   - Platform: %s", idx, platform)
                     logger.info("[%s]   - Netmiko device type: %s", idx, device_type)
 
@@ -440,7 +448,8 @@ def execute_run_commands(
 
                     if not commands:
                         logger.error(
-                            "[%s] ✗ No commands to execute after template rendering", idx
+                            "[%s] ✗ No commands to execute after template rendering",
+                            idx,
                         )
                         device_result["error"] = (
                             "No commands to execute after template rendering"
@@ -457,7 +466,9 @@ def execute_run_commands(
                     logger.info("[%s] Netmiko device type: %s", idx, device_type)
 
                     # Execute commands using Netmiko
-                    logger.info("[%s] Connecting via SSH and executing commands...", idx)
+                    logger.info(
+                        "[%s] Connecting via SSH and executing commands...", idx
+                    )
                     result = netmiko_service._connect_and_execute(
                         device_ip=primary_ip,
                         device_type=device_type,
@@ -472,7 +483,9 @@ def execute_run_commands(
                         device_result["output"] = result["output"]
                         logger.info("[%s] ✓ Commands executed successfully", idx)
                         logger.info(
-                            "[%s]   - Output length: %s chars", idx, len(result['output'])
+                            "[%s]   - Output length: %s chars",
+                            idx,
+                            len(result["output"]),
                         )
                         successful_devices.append(device_result)
                     else:
@@ -480,7 +493,9 @@ def execute_run_commands(
                             "error", "Command execution failed"
                         )
                         logger.error(
-                            "[%s] ✗ Command execution failed: %s", idx, result.get('error')
+                            "[%s] ✗ Command execution failed: %s",
+                            idx,
+                            result.get("error"),
                         )
                         failed_devices.append(device_result)
 

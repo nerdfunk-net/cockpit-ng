@@ -78,7 +78,9 @@ def onboard_device_task(
         is_multi_device = device_count > 1
 
         logger.info(
-            "Starting device onboarding for %s IP(s): %s", device_count, ', '.join(ip_list)
+            "Starting device onboarding for %s IP(s): %s",
+            device_count,
+            ", ".join(ip_list),
         )
         logger.info("Audit logging info: username=%s, user_id=%s", username, user_id)
 
@@ -269,7 +271,10 @@ def _process_single_device(
     """
     try:
         logger.info(
-            "Processing device %s/%s: looking up %s", device_num, device_count, ip_address
+            "Processing device %s/%s: looking up %s",
+            device_num,
+            device_count,
+            ip_address,
         )
 
         # Get device UUID from IP address
@@ -298,7 +303,11 @@ def _process_single_device(
             }
 
         logger.info(
-            "Found device %s/%s: %s (ID: %s)", device_num, device_count, device_name, device_id
+            "Found device %s/%s: %s (ID: %s)",
+            device_num,
+            device_count,
+            device_name,
+            device_id,
         )
 
         # Update device with tags and custom fields
@@ -311,7 +320,9 @@ def _process_single_device(
 
         if custom_fields and len(custom_fields) > 0:
             logger.info(
-                "Updating device %s with %s custom fields", device_name, len(custom_fields)
+                "Updating device %s with %s custom fields",
+                device_name,
+                len(custom_fields),
             )
             cf_result = _update_device_custom_fields(device_id, custom_fields)
             update_results.append(cf_result)
@@ -321,7 +332,9 @@ def _process_single_device(
 
         if update_results and not all_updates_success:
             failed_updates = [r for r in update_results if not r.get("success", False)]
-            logger.warning("Some updates failed for %s: %s", device_name, failed_updates)
+            logger.warning(
+                "Some updates failed for %s: %s", device_name, failed_updates
+            )
 
         # Sync network data from device
         logger.info("Starting network data sync for device %s", device_name)
@@ -338,7 +351,9 @@ def _process_single_device(
 
         # Log successful device onboarding
         logger.info(
-            "Attempting to log audit entry: username=%s, device_name=%s", username, device_name
+            "Attempting to log audit entry: username=%s, device_name=%s",
+            username,
+            device_name,
         )
         if username:
             log_device_onboarding(
@@ -482,7 +497,11 @@ def _wait_for_job_completion(task_instance, job_id: str, max_wait: int = 90) -> 
             elapsed = int(time.time() - start_time)
 
             logger.info(
-                "Job %s status check #%s (after %ss): %s", job_id, check_count, elapsed, status
+                "Job %s status check #%s (after %ss): %s",
+                job_id,
+                check_count,
+                elapsed,
+                status,
             )
 
             # Update task progress with detailed status
@@ -582,7 +601,7 @@ async def _async_get_device_id(ip_address: str) -> tuple:
     result = await nautobot_service.graphql_query(query, variables)
 
     if "errors" in result:
-        logger.error("GraphQL errors: %s", result['errors'])
+        logger.error("GraphQL errors: %s", result["errors"])
         return None, None
 
     ip_addresses = result.get("data", {}).get("ip_addresses", [])

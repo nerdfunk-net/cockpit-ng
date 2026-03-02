@@ -81,7 +81,9 @@ async def get_dcim_interfaces(
 
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
-        logger.info("Retrieved %s interfaces from Nautobot DCIM", result.get('count', 0))
+        logger.info(
+            "Retrieved %s interfaces from Nautobot DCIM", result.get("count", 0)
+        )
         return result
 
     except Exception as e:
@@ -175,7 +177,9 @@ async def create_dcim_interface(
         )
 
         logger.info(
-            "Created interface %s on device %s in Nautobot DCIM", interface_data.get('name'), interface_data.get('device')
+            "Created interface %s on device %s in Nautobot DCIM",
+            interface_data.get("name"),
+            interface_data.get("device"),
         )
         return result
 

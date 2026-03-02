@@ -106,7 +106,8 @@ def load_cache_schedules_task() -> dict:
                 _last_cache_runs["locations"] = now
                 dispatched.append("locations")
                 logger.info(
-                    "Dispatched locations cache task (interval: %sm)", locations_interval
+                    "Dispatched locations cache task (interval: %sm)",
+                    locations_interval,
                 )
 
         # Check git commits cache (placeholder for future implementation)
@@ -125,7 +126,8 @@ def load_cache_schedules_task() -> dict:
                 _last_cache_runs["git_commits"] = now
                 # dispatched.append('git_commits')
                 logger.debug(
-                    "Git commits cache task not yet implemented (interval: %sm)", git_interval
+                    "Git commits cache task not yet implemented (interval: %sm)",
+                    git_interval,
                 )
 
         return {
@@ -214,7 +216,9 @@ def dispatch_cache_task(self, cache_type: str, task_name: str) -> dict:
             raise
 
     except Exception as e:
-        logger.error("Error dispatching cache task %s: %s", cache_type, e, exc_info=True)
+        logger.error(
+            "Error dispatching cache task %s: %s", cache_type, e, exc_info=True
+        )
         return {"success": False, "error": str(e)}
 
 
@@ -253,7 +257,8 @@ def cleanup_celery_data_task() -> dict:
         cutoff_time = datetime.now(timezone.utc) - timedelta(hours=cleanup_age_hours)
 
         logger.info(
-            "Starting Celery cleanup: removing data older than %s hours", cleanup_age_hours
+            "Starting Celery cleanup: removing data older than %s hours",
+            cleanup_age_hours,
         )
 
         # Connect to Redis
@@ -295,7 +300,9 @@ def cleanup_celery_data_task() -> dict:
             logger.warning("Error cleaning up job runs: %s", e)
 
         logger.info(
-            "Cleanup completed: %s results, %s job runs removed", removed_results, removed_job_runs
+            "Cleanup completed: %s results, %s job runs removed",
+            removed_results,
+            removed_job_runs,
         )
 
         return {
@@ -376,7 +383,10 @@ def check_stale_jobs_task() -> dict:
                         }
                     )
                     logger.warning(
-                        "Marked stale job %s (%s) as failed - running for %s minutes", job['id'], job['job_name'], int(running_duration / 60)
+                        "Marked stale job %s (%s) as failed - running for %s minutes",
+                        job["id"],
+                        job["job_name"],
+                        int(running_duration / 60),
                     )
 
         # Check pending jobs
@@ -404,7 +414,10 @@ def check_stale_jobs_task() -> dict:
                     }
                 )
                 logger.warning(
-                    "Marked pending job %s (%s) as failed - pending for %s minutes", job['id'], job['job_name'], int(pending_duration / 60)
+                    "Marked pending job %s (%s) as failed - pending for %s minutes",
+                    job["id"],
+                    job["job_name"],
+                    int(pending_duration / 60),
                 )
 
         if marked_failed:
@@ -420,4 +433,62 @@ def check_stale_jobs_task() -> dict:
 
     except Exception as e:
         logger.error("Error checking stale jobs: %s", e, exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@shared_task(name="tasks.cleanup_audit_logs")
+def cleanup_audit_logs_task() -> dict:
+    """
+    Cleanup old audit log entries based on the PURGE_LOGS environment variable.
+
+    Runs once per day (configured in beat_schedule.py).
+    Deletes all audit_logs rows older than PURGE_LOGS days.
+    Set PURGE_LOGS=0 (default) to disable cleanup.
+
+    Returns:
+        dict: Result with number of deleted rows
+    """
+    try:
+        from config import settings
+        from datetime import datetime, timezone, timedelta
+        from core.database import db_transaction
+        from core.models import AuditLog
+
+        purge_days = settings.purge_logs_days
+
+        if purge_days <= 0:
+            logger.info("Audit log cleanup disabled (PURGE_LOGS not set or 0)")
+            return {
+                "success": True,
+                "message": "Audit log cleanup disabled",
+                "deleted": 0,
+            }
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=purge_days)
+
+        logger.info(
+            "Starting audit log cleanup: removing entries older than %s days (before %s)",
+            purge_days,
+            cutoff.isoformat(),
+        )
+
+        with db_transaction() as db:
+            deleted = (
+                db.query(AuditLog)
+                .filter(AuditLog.created_at < cutoff)
+                .delete(synchronize_session=False)
+            )
+
+        logger.info("Audit log cleanup completed: %s entries deleted", deleted)
+
+        return {
+            "success": True,
+            "message": f"Deleted {deleted} audit log entries older than {purge_days} days",
+            "purge_days": purge_days,
+            "cutoff_time": cutoff.isoformat(),
+            "deleted": deleted,
+        }
+
+    except Exception as e:
+        logger.error("Audit log cleanup task failed: %s", e)
         return {"success": False, "error": str(e)}

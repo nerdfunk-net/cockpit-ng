@@ -51,7 +51,9 @@ def load_queue_configuration():
                 "routing_key": queue_name,
             }
             logger.info(
-                "Loaded queue from database: %s - %s", queue_name, queue.get('description', '')
+                "Loaded queue from database: %s - %s",
+                queue_name,
+                queue.get("description", ""),
             )
 
         logger.info("Loaded %s queue(s) from database configuration", len(task_queues))

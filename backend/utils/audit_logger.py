@@ -47,7 +47,10 @@ def log_device_onboarding(
         message += f" - Error: {error_message}"
 
     logger.info(
-        "Creating audit log: username=%s, device=%s, device_id=%s", username, device_name, device_id
+        "Creating audit log: username=%s, device=%s, device_id=%s",
+        username,
+        device_name,
+        device_id,
     )
 
     try:

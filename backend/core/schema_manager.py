@@ -25,7 +25,8 @@ class SchemaManager:
 
         self.metadata = Base.metadata
         logger.info(
-            "SchemaManager initialized with %s model definitions", len(self.metadata.tables)
+            "SchemaManager initialized with %s model definitions",
+            len(self.metadata.tables),
         )
 
     def _check_migration_system_exists(self) -> bool:
@@ -171,7 +172,7 @@ class SchemaManager:
         try:
             # 1. Create missing tables
             if status["missing_tables"]:
-                logger.info("Creating missing tables: %s", status['missing_tables'])
+                logger.info("Creating missing tables: %s", status["missing_tables"])
                 # Base.metadata.create_all only creates missing tables
                 Base.metadata.create_all(bind=self.engine)
                 for table in status["missing_tables"]:

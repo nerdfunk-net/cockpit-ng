@@ -148,7 +148,9 @@ def import_devices_from_csv_task(
             device_name = row.get("name", f"row-{idx}")
 
             try:
-                logger.info("Processing device %s/%s: %s", idx, total_devices, device_name)
+                logger.info(
+                    "Processing device %s/%s: %s", idx, total_devices, device_name
+                )
 
                 # Update progress
                 progress = 10 + int((idx / total_devices) * 80)
@@ -200,7 +202,8 @@ def import_devices_from_csv_task(
                     )
                     logger.info(
                         "Successfully imported device %s: %s interface(s)",
-                        result['device_name'], len(result['details']['interfaces']),
+                        result["device_name"],
+                        len(result["details"]["interfaces"]),
                     )
                 else:
                     # Device already existed and was skipped
@@ -212,13 +215,16 @@ def import_devices_from_csv_task(
                         }
                     )
                     logger.info(
-                        "Device %s already exists, skipped", result['device_name']
+                        "Device %s already exists, skipped", result["device_name"]
                     )
 
             except Exception as e:
                 error_msg = str(e)
                 logger.error(
-                    "Failed to import device %s: %s", device_name, error_msg, exc_info=True
+                    "Failed to import device %s: %s",
+                    device_name,
+                    error_msg,
+                    exc_info=True,
                 )
                 failures.append(
                     {
@@ -272,7 +278,7 @@ def import_devices_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result)
-                logger.info("✓ Updated job run %s status to completed", job_run['id'])
+                logger.info("✓ Updated job run %s status to completed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 
@@ -294,7 +300,7 @@ def import_devices_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], error_msg)
-                logger.info("✓ Updated job run %s status to failed", job_run['id'])
+                logger.info("✓ Updated job run %s status to failed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 

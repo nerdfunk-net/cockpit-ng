@@ -77,7 +77,9 @@ async def get_profile(current_user: str = Depends(get_current_username)):
                         )
                     except Exception as e:
                         logger.warning(
-                            "Failed to decrypt password for credential %s: %s", cred['id'], e
+                            "Failed to decrypt password for credential %s: %s",
+                            cred["id"],
+                            e,
                         )
                         password_token = ""
 
@@ -299,7 +301,9 @@ async def update_profile(
                         )
                     except Exception as e:
                         logger.warning(
-                            "Failed to decrypt password for credential %s: %s", cred['id'], e
+                            "Failed to decrypt password for credential %s: %s",
+                            cred["id"],
+                            e,
                         )
                         password_token = ""
 

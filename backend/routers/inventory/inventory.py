@@ -40,12 +40,18 @@ async def preview_inventory(
         for i, operation in enumerate(request.operations):
             logger.debug(
                 "Operation %s: type=%s, conditions=%s, nested=%s",
-                i, operation.operation_type, len(operation.conditions), len(operation.nested_operations),
+                i,
+                operation.operation_type,
+                len(operation.conditions),
+                len(operation.nested_operations),
             )
             for j, condition in enumerate(operation.conditions):
                 logger.debug(
                     "  Condition %s: field=%s, operator=%s, value='%s'",
-                    j, condition.field, condition.operator, condition.value,
+                    j,
+                    condition.field,
+                    condition.operator,
+                    condition.value,
                 )
 
         devices, operations_count = await inventory_service.preview_inventory(
@@ -53,7 +59,9 @@ async def preview_inventory(
         )
 
         logger.debug(
-            "Preview completed: %s devices found, %s operations executed", len(devices), operations_count
+            "Preview completed: %s devices found, %s operations executed",
+            len(devices),
+            operations_count,
         )
 
         return InventoryPreviewResponse(
@@ -258,7 +266,9 @@ async def resolve_inventory_to_devices(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error resolving inventory '%s': %s", inventory_id, e, exc_info=True)
+        logger.error(
+            "Error resolving inventory '%s': %s", inventory_id, e, exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to resolve inventory: {str(e)}",
@@ -362,7 +372,10 @@ async def resolve_inventory_to_devices_detailed(
                 device_details.append(detail)
             except Exception as e:
                 logger.error(
-                    "Error fetching details for device %s (%s): %s", device.id, device.name, e
+                    "Error fetching details for device %s (%s): %s",
+                    device.id,
+                    device.name,
+                    e,
                 )
                 # Continue with remaining devices even if one fails
                 continue
@@ -385,7 +398,9 @@ async def resolve_inventory_to_devices_detailed(
 
         logger.info(
             "Resolved %s devices with %s detailed entries from inventory ID %s",
-            len(device_list), len(device_details), inventory_id,
+            len(device_list),
+            len(device_details),
+            inventory_id,
         )
 
         return {

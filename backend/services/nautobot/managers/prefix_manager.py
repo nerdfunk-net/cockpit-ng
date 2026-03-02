@@ -123,7 +123,8 @@ class PrefixManager:
                     prefix_data["location"] = location_id
                 else:
                     logger.warning(
-                        "Location '%s' not found, prefix will be created without location", location
+                        "Location '%s' not found, prefix will be created without location",
+                        location,
                     )
 
         # Add optional fields from kwargs

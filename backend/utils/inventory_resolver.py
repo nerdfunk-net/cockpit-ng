@@ -60,7 +60,9 @@ async def resolve_inventory_to_device_ids(
 
         if not inventory:
             logger.warning(
-                "Inventory '%s' not found in database for user '%s'", inventory_name, username
+                "Inventory '%s' not found in database for user '%s'",
+                inventory_name,
+                username,
             )
             return None
 

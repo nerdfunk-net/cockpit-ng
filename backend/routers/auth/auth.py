@@ -29,14 +29,15 @@ async def login(request: Request, user_data: UserLogin):
         user = authenticate_user(user_data.username, user_data.password)
 
         if user:
-            logger.info("Authenticated user %s (id=%s)", user['username'], user['id'])
+            logger.info("Authenticated user %s (id=%s)", user["username"], user["id"])
 
             # Get user with RBAC roles
             user_with_roles = rbac.get_user_with_rbac(user["id"])
 
             if not user_with_roles:
                 logger.warning(
-                    "get_user_with_rbac returned None for user_id=%s, using base user", user['id']
+                    "get_user_with_rbac returned None for user_id=%s, using base user",
+                    user["id"],
                 )
                 user_with_roles = user
                 user_with_roles["roles"] = []
@@ -87,6 +88,7 @@ async def login(request: Request, user_data: UserLogin):
 
             # Update last_login timestamp
             from repositories.auth.user_repository import UserRepository
+
             UserRepository().update_last_login(user["id"])
 
             # Log successful login to audit log
@@ -195,7 +197,8 @@ async def refresh_token(request: Request):
 
         if not user_with_roles:
             logger.warning(
-                "get_user_with_rbac returned None for user_id=%s, using base user", user['id']
+                "get_user_with_rbac returned None for user_id=%s, using base user",
+                user["id"],
             )
             user_with_roles = user
             user_with_roles["roles"] = []

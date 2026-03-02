@@ -58,19 +58,25 @@ def dispatch_job(
 
     try:
         logger.info(
-            "Dispatching job: %s (type: %s, triggered_by: %s)", job_name, job_type, triggered_by
+            "Dispatching job: %s (type: %s, triggered_by: %s)",
+            job_name,
+            job_type,
+            triggered_by,
         )
 
         # Get template details if needed
         if template_id:
             template = job_template_manager.get_job_template(template_id)
             logger.info(
-                "[DISPATCH] Template ID %s loaded: %s", template_id, template is not None
+                "[DISPATCH] Template ID %s loaded: %s",
+                template_id,
+                template is not None,
             )
             if template:
-                logger.info("[DISPATCH] Template name: %s", template.get('name'))
+                logger.info("[DISPATCH] Template name: %s", template.get("name"))
                 logger.info(
-                    "[DISPATCH] Template activate_changes_after_sync: %s", template.get('activate_changes_after_sync')
+                    "[DISPATCH] Template activate_changes_after_sync: %s",
+                    template.get("activate_changes_after_sync"),
                 )
                 if not target_devices:
                     # Get target devices based on inventory_source
@@ -110,7 +116,8 @@ def dispatch_job(
         result_status = result.get("status")
         if result_status == "running":
             logger.info(
-                "Job %s is running asynchronously - callback will handle completion", job_name
+                "Job %s is running asynchronously - callback will handle completion",
+                job_name,
             )
         elif result.get("success") or result_status == "completed":
             job_run_manager.mark_completed(job_run_id, result=result)
@@ -124,7 +131,9 @@ def dispatch_job(
 
     except Exception as e:
         error_msg = str(e)
-        logger.error("Job dispatch failed for %s: %s", job_name, error_msg, exc_info=True)
+        logger.error(
+            "Job dispatch failed for %s: %s", job_name, error_msg, exc_info=True
+        )
 
         # Update job run if we created one
         if job_run:

@@ -210,7 +210,9 @@ async def list_config_files(
                 )
 
         logger.info(
-            "Successfully listed %s config files for user: %s", len(yaml_files), current_user
+            "Successfully listed %s config files for user: %s",
+            len(yaml_files),
+            current_user,
         )
         return {
             "success": True,

@@ -129,7 +129,7 @@ def update_devices_task(
         logger.info("-" * 80)
         logger.info("STEP 3: UPDATING %s DEVICES", total_devices)
         logger.info("Dry run mode: %s", dry_run)
-        logger.info("First device data received: %s", devices[0] if devices else 'NONE')
+        logger.info("First device data received: %s", devices[0] if devices else "NONE")
         logger.info("-" * 80)
 
         successes = []
@@ -156,7 +156,9 @@ def update_devices_task(
             identifier = device_id or device_name or ip_address or f"device-{idx}"
 
             try:
-                logger.info("Processing device %s/%s: %s", idx, total_devices, identifier)
+                logger.info(
+                    "Processing device %s/%s: %s", idx, total_devices, identifier
+                )
 
                 # Update progress
                 progress = 10 + int((idx / total_devices) * 80)
@@ -178,17 +180,23 @@ def update_devices_task(
                     _prepare_device_data(device_data)
                 )
                 logger.info(
-                    "After prepare - interfaces (%s total):", len(interfaces) if interfaces else 0
+                    "After prepare - interfaces (%s total):",
+                    len(interfaces) if interfaces else 0,
                 )
                 if interfaces:
                     for idx, iface in enumerate(interfaces):
                         logger.info(
-                            "  Interface %s: name=%s, ip=%s, role=%s", idx + 1, iface.get('name'), iface.get('ip_address'), iface.get('ip_role', 'NOT SET')
+                            "  Interface %s: name=%s, ip=%s, role=%s",
+                            idx + 1,
+                            iface.get("name"),
+                            iface.get("ip_address"),
+                            iface.get("ip_role", "NOT SET"),
                         )
 
                 if not update_data and not interfaces:
                     logger.info(
-                        "No update data or interfaces for device %s, skipping", identifier
+                        "No update data or interfaces for device %s, skipping",
+                        identifier,
                     )
                     skipped.append(
                         {
@@ -201,7 +209,9 @@ def update_devices_task(
                 # Dry run - just validate without updating
                 if dry_run:
                     logger.info(
-                        "[DRY RUN] Would update device %s with: %s", identifier, update_data
+                        "[DRY RUN] Would update device %s with: %s",
+                        identifier,
+                        update_data,
                     )
                     if interface_config:
                         logger.info("[DRY RUN] Interface config: %s", interface_config)
@@ -248,7 +258,8 @@ def update_devices_task(
                     )
                     logger.info(
                         "Successfully updated device %s: %s fields",
-                        result['device_name'], len(result['updated_fields']),
+                        result["device_name"],
+                        len(result["updated_fields"]),
                     )
 
                     # Log device update to audit log
@@ -280,12 +291,17 @@ def update_devices_task(
                                 extra_data=extra_data,
                             )
                         except Exception as audit_error:
-                            logger.warning("Failed to create audit log: %s", audit_error)
+                            logger.warning(
+                                "Failed to create audit log: %s", audit_error
+                            )
 
             except Exception as e:
                 error_msg = str(e)
                 logger.error(
-                    "Failed to update device %s: %s", identifier, error_msg, exc_info=True
+                    "Failed to update device %s: %s",
+                    identifier,
+                    error_msg,
+                    exc_info=True,
                 )
                 failures.append(
                     {
@@ -344,7 +360,7 @@ def update_devices_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result_summary)
-                logger.info("✓ Updated job run %s status to completed", job_run['id'])
+                logger.info("✓ Updated job run %s status to completed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 
@@ -360,7 +376,7 @@ def update_devices_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], str(e))
-                logger.info("✓ Updated job run %s status to failed", job_run['id'])
+                logger.info("✓ Updated job run %s status to failed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 

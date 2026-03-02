@@ -57,7 +57,9 @@ async def assign_ip_address_to_interface(
         )
 
         logger.info(
-            "Assigned IP address %s to interface %s", assignment_data.get('ip_address'), assignment_data.get('interface')
+            "Assigned IP address %s to interface %s",
+            assignment_data.get("ip_address"),
+            assignment_data.get("interface"),
         )
         return result
 

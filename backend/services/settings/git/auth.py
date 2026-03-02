@@ -41,7 +41,9 @@ class GitAuthenticationService:
         credential_name = repository.get("credential_name")
 
         logger.debug(
-            "Resolving credentials: credential_name='%s', auth_type='%s'", credential_name, auth_type
+            "Resolving credentials: credential_name='%s', auth_type='%s'",
+            credential_name,
+            auth_type,
         )
 
         if not credential_name:
@@ -53,7 +55,10 @@ class GitAuthenticationService:
 
             creds = cred_mgr.list_credentials(include_expired=False)
             logger.debug(
-                "Found %s active credentials, searching for '%s' with type '%s'", len(creds), credential_name, auth_type
+                "Found %s active credentials, searching for '%s' with type '%s'",
+                len(creds),
+                credential_name,
+                auth_type,
             )
 
             if auth_type == "ssh_key":
@@ -68,7 +73,9 @@ class GitAuthenticationService:
                 )
                 if match:
                     logger.debug(
-                        "Found SSH key credential: id=%s, username=%s", match['id'], match.get('username')
+                        "Found SSH key credential: id=%s, username=%s",
+                        match["id"],
+                        match.get("username"),
                     )
                     # Get the SSH key file path
                     ssh_key_path = cred_mgr.get_ssh_key_path(match["id"])
@@ -77,12 +84,15 @@ class GitAuthenticationService:
                         return match.get("username"), None, ssh_key_path
                     else:
                         logger.error(
-                            "SSH key file not found for credential '%s'", credential_name
+                            "SSH key file not found for credential '%s'",
+                            credential_name,
                         )
                         return None, None, None
                 else:
                     logger.warning(
-                        "SSH key credential '%s' not found in %s credentials", credential_name, len(creds)
+                        "SSH key credential '%s' not found in %s credentials",
+                        credential_name,
+                        len(creds),
                     )
                     return None, None, None
             elif auth_type == "generic":
@@ -98,7 +108,9 @@ class GitAuthenticationService:
                 if match:
                     username = match.get("username")
                     logger.debug(
-                        "Found generic credential: id=%s, username=%s", match['id'], username
+                        "Found generic credential: id=%s, username=%s",
+                        match["id"],
+                        username,
                     )
                     try:
                         password = cred_mgr.get_decrypted_password(match["id"])
@@ -108,16 +120,21 @@ class GitAuthenticationService:
                         return username, password, None
                     except Exception as de:
                         logger.error(
-                            "Failed to decrypt credential '%s': %s", credential_name, de,
+                            "Failed to decrypt credential '%s': %s",
+                            credential_name,
+                            de,
                             exc_info=True,
                         )
                         return None, None, None
                 else:
                     logger.warning(
-                        "Generic credential '%s' not found in %s credentials", credential_name, len(creds)
+                        "Generic credential '%s' not found in %s credentials",
+                        credential_name,
+                        len(creds),
                     )
                     logger.debug(
-                        "Available generic credentials: %s", [c['name'] for c in creds if c['type'] == 'generic']
+                        "Available generic credentials: %s",
+                        [c["name"] for c in creds if c["type"] == "generic"],
                     )
                     return None, None, None
             else:
@@ -133,7 +150,9 @@ class GitAuthenticationService:
                 if match:
                     username = match.get("username")
                     logger.debug(
-                        "Found token credential: id=%s, username=%s", match['id'], username
+                        "Found token credential: id=%s, username=%s",
+                        match["id"],
+                        username,
                     )
                     try:
                         token = cred_mgr.get_decrypted_password(match["id"])
@@ -143,16 +162,21 @@ class GitAuthenticationService:
                         return username, token, None
                     except Exception as de:
                         logger.error(
-                            "Failed to decrypt credential '%s': %s", credential_name, de,
+                            "Failed to decrypt credential '%s': %s",
+                            credential_name,
+                            de,
                             exc_info=True,
                         )
                         return None, None, None
                 else:
                     logger.warning(
-                        "Token credential '%s' not found in %s credentials", credential_name, len(creds)
+                        "Token credential '%s' not found in %s credentials",
+                        credential_name,
+                        len(creds),
                     )
                     logger.debug(
-                        "Available token credentials: %s", [c['name'] for c in creds if c['type'] == 'token']
+                        "Available token credentials: %s",
+                        [c["name"] for c in creds if c["type"] == "token"],
                     )
                     return None, None, None
         except Exception as ce:
@@ -287,7 +311,8 @@ class GitAuthenticationService:
                     f"ssh -i {ssh_key_path} -o StrictHostKeyChecking=no -o IdentitiesOnly=yes"
                 )
                 logger.info(
-                    "Using SSH key authentication for repository '%s'", repository.get('name')
+                    "Using SSH key authentication for repository '%s'",
+                    repository.get("name"),
                 )
                 # For SSH, return original URL
                 yield original_url, username, token, ssh_key_path
@@ -298,11 +323,13 @@ class GitAuthenticationService:
                 if parsed and parsed.scheme in ["http", "https"] and token:
                     clone_url = self.build_auth_url(original_url, username, token)
                     logger.info(
-                        "Using token authentication for repository '%s'", repository.get('name')
+                        "Using token authentication for repository '%s'",
+                        repository.get("name"),
                     )
                 else:
                     logger.info(
-                        "Using no authentication for repository '%s'", repository.get('name')
+                        "Using no authentication for repository '%s'",
+                        repository.get("name"),
                     )
                 # For token auth, return authenticated URL
                 yield clone_url, username, token, ssh_key_path

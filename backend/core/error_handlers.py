@@ -82,7 +82,9 @@ def handle_errors(
                 except Exception as e:
                     # Log error with full context
                     logger.error(
-                        "Failed to %s: %s", operation, e,
+                        "Failed to %s: %s",
+                        operation,
+                        e,
                         exc_info=True,
                         extra={
                             "operation": operation,
@@ -113,7 +115,9 @@ def handle_errors(
                 except Exception as e:
                     # Log error with full context
                     logger.error(
-                        "Failed to %s: %s", operation, e,
+                        "Failed to %s: %s",
+                        operation,
+                        e,
                         exc_info=True,
                         extra={
                             "operation": operation,
@@ -170,7 +174,10 @@ def handle_not_found(operation: str, resource_name: str = "Resource"):
                 except (ValueError, KeyError, LookupError) as e:
                     # Common "not found" exceptions
                     logger.warning(
-                        "%s not found during %s: %s", resource_name, operation, e,
+                        "%s not found during %s: %s",
+                        resource_name,
+                        operation,
+                        e,
                         extra={
                             "operation": operation,
                             "resource": resource_name,
@@ -183,7 +190,9 @@ def handle_not_found(operation: str, resource_name: str = "Resource"):
                     )
                 except Exception as e:
                     logger.error(
-                        "Failed to %s: %s", operation, e,
+                        "Failed to %s: %s",
+                        operation,
+                        e,
                         exc_info=True,
                         extra={"operation": operation, "function": func.__name__},
                     )
@@ -203,7 +212,10 @@ def handle_not_found(operation: str, resource_name: str = "Resource"):
                     raise
                 except (ValueError, KeyError, LookupError) as e:
                     logger.warning(
-                        "%s not found during %s: %s", resource_name, operation, e,
+                        "%s not found during %s: %s",
+                        resource_name,
+                        operation,
+                        e,
                         extra={
                             "operation": operation,
                             "resource": resource_name,
@@ -216,7 +228,9 @@ def handle_not_found(operation: str, resource_name: str = "Resource"):
                     )
                 except Exception as e:
                     logger.error(
-                        "Failed to %s: %s", operation, e,
+                        "Failed to %s: %s",
+                        operation,
+                        e,
                         exc_info=True,
                         extra={"operation": operation, "function": func.__name__},
                     )
@@ -263,7 +277,9 @@ def handle_validation_errors(operation: str):
                 except (ValueError, TypeError, AssertionError) as e:
                     # Common validation exceptions
                     logger.warning(
-                        "Validation error during %s: %s", operation, e,
+                        "Validation error during %s: %s",
+                        operation,
+                        e,
                         extra={
                             "operation": operation,
                             "function": func.__name__,
@@ -276,7 +292,9 @@ def handle_validation_errors(operation: str):
                     )
                 except Exception as e:
                     logger.error(
-                        "Failed to %s: %s", operation, e,
+                        "Failed to %s: %s",
+                        operation,
+                        e,
                         exc_info=True,
                         extra={"operation": operation, "function": func.__name__},
                     )
@@ -296,7 +314,9 @@ def handle_validation_errors(operation: str):
                     raise
                 except (ValueError, TypeError, AssertionError) as e:
                     logger.warning(
-                        "Validation error during %s: %s", operation, e,
+                        "Validation error during %s: %s",
+                        operation,
+                        e,
                         extra={
                             "operation": operation,
                             "function": func.__name__,
@@ -309,7 +329,9 @@ def handle_validation_errors(operation: str):
                     )
                 except Exception as e:
                     logger.error(
-                        "Failed to %s: %s", operation, e,
+                        "Failed to %s: %s",
+                        operation,
+                        e,
                         exc_info=True,
                         extra={"operation": operation, "function": func.__name__},
                     )

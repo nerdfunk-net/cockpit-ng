@@ -154,7 +154,9 @@ def finalize_backup_task(
             job_run_manager.mark_completed(job_run_id, result=final_result)
             logger.info("✓ Updated job_run %s with detailed results", job_run_id)
         except Exception as e:
-            logger.error("Failed to update job_run %s: %s", job_run_id, e, exc_info=True)
+            logger.error(
+                "Failed to update job_run %s: %s", job_run_id, e, exc_info=True
+            )
 
     return final_result
 
@@ -206,7 +208,10 @@ def backup_single_device_task(
 
             progress_pct = int((completed / total_devices) * 100)
             logger.info(
-                "Progress: %s/%s devices backed up (%s%%)", completed, total_devices, progress_pct
+                "Progress: %s/%s devices backed up (%s%%)",
+                completed,
+                total_devices,
+                progress_pct,
             )
         except Exception as e:
             logger.warning("Failed to update progress counter: %s", e)
@@ -338,13 +343,13 @@ def backup_devices_task(
         git_username, git_token, git_ssh_key_path = (
             git_auth_service.resolve_credentials(dict(repository))
         )
-        logger.info("  - Git username: %s", git_username or 'none')
-        logger.info("  - Git token: %s", '*' * 10 if git_token else 'none')
-        logger.info("  - SSH key: %s", 'configured' if git_ssh_key_path else 'none')
+        logger.info("  - Git username: %s", git_username or "none")
+        logger.info("  - Git token: %s", "*" * 10 if git_token else "none")
+        logger.info("  - SSH key: %s", "configured" if git_ssh_key_path else "none")
 
         # Use central git_service for repository operations
         logger.info("Opening or cloning repository using git_service...")
-        logger.info("  - Auth type: %s", repository.auth_type or 'token')
+        logger.info("  - Auth type: %s", repository.auth_type or "token")
 
         try:
             git_repo = git_service.open_or_clone(dict(repository))
@@ -437,7 +442,9 @@ def backup_devices_task(
                     backed_up_devices.append(result)
 
             logger.info(
-                "Parallel backup completed: %s succeeded, %s failed", len(backed_up_devices), len(failed_devices)
+                "Parallel backup completed: %s succeeded, %s failed",
+                len(backed_up_devices),
+                len(failed_devices),
             )
 
         else:
@@ -501,7 +508,7 @@ def backup_devices_task(
             if backed_up_devices:
                 commit_message = f"Backup config {current_date}"
                 logger.info("Committing and pushing with message: '%s'", commit_message)
-                logger.info("  - Auth type: %s", repository.auth_type or 'token')
+                logger.info("  - Auth type: %s", repository.auth_type or "token")
 
                 result = git_service.commit_and_push(
                     repository=dict(repository),

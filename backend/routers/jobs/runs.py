@@ -459,7 +459,9 @@ async def get_job_progress(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting progress for job run %s: %s", run_id, e, exc_info=True)
+        logger.error(
+            "Error getting progress for job run %s: %s", run_id, e, exc_info=True
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -673,13 +675,15 @@ async def execute_job_manually(
                 status_code=404, detail=f"Schedule {schedule_id} not found"
             )
 
-        logger.info("Schedule found: %s", schedule.get('job_identifier'))
+        logger.info("Schedule found: %s", schedule.get("job_identifier"))
 
         # Get the template
         template_id = schedule.get("job_template_id")
         if not template_id:
             logger.error(
-                "Schedule %s has no associated template. Schedule data: %s", schedule_id, schedule
+                "Schedule %s has no associated template. Schedule data: %s",
+                schedule_id,
+                schedule,
             )
             raise HTTPException(
                 status_code=400,

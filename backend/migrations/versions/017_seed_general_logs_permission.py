@@ -65,9 +65,7 @@ class Migration(BaseMigration):
             permission_id = result.fetchone()[0]
 
             # 3. Find admin role
-            result = conn.execute(
-                text("SELECT id FROM roles WHERE name = 'admin'")
-            )
+            result = conn.execute(text("SELECT id FROM roles WHERE name = 'admin'"))
             admin_role = result.fetchone()
 
             if admin_role is None:

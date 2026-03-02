@@ -107,6 +107,9 @@ class Settings:
 
     celery_max_workers: int = int(os.getenv("CELERY_MAX_WORKERS", "4"))
 
+    # Audit Log Cleanup (0 = disabled)
+    purge_logs_days: int = int(os.getenv("PURGE_LOGS", "0"))
+
     # PostgreSQL Database Configuration
     database_host: str = os.getenv("COCKPIT_DATABASE_HOST", "localhost")
     database_port: int = int(os.getenv("COCKPIT_DATABASE_PORT", "5432"))

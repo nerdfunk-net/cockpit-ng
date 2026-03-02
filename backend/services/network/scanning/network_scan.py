@@ -105,7 +105,10 @@ class NetworkScanService:
             self._active_scans[scan_id] = progress
 
         logger.info(
-            "Starting network scan of %s with %s targets using %s", cidr, len(targets), ping_mode
+            "Starting network scan of %s with %s targets using %s",
+            cidr,
+            len(targets),
+            ping_mode,
         )
 
         alive_hosts: Set[str] = set()
@@ -142,7 +145,9 @@ class NetworkScanService:
 
             logger.info(
                 "Network scan completed: %s alive, %s unreachable, %.2fs",
-                len(alive_hosts), len(unreachable_hosts), scan_duration,
+                len(alive_hosts),
+                len(unreachable_hosts),
+                scan_duration,
             )
 
             return result
@@ -212,7 +217,9 @@ class NetworkScanService:
                             alive = True
                             break
                     except Exception as e:
-                        logger.debug("Ping attempt %s failed for %s: %s", attempt + 1, ip, e)
+                        logger.debug(
+                            "Ping attempt %s failed for %s: %s", attempt + 1, ip, e
+                        )
 
                 # Update results and progress
                 if alive:
@@ -291,13 +298,15 @@ class NetworkScanService:
                     temp_file.write(f"{ip}\n")
 
             logger.info(
-                "Created temporary file %s with %s IP addresses", temp_file_path, len(ip_list)
+                "Created temporary file %s with %s IP addresses",
+                temp_file_path,
+                len(ip_list),
             )
 
             # Run fping command reading from the temporary file
             cmd = ["fping"]
 
-            logger.info("Running fping command: %s < %s", ' '.join(cmd), temp_file_path)
+            logger.info("Running fping command: %s < %s", " ".join(cmd), temp_file_path)
 
             # Use shell=True to support input redirection
             result = subprocess.run(
@@ -343,7 +352,9 @@ class NetworkScanService:
                             # We ignore "is unreachable" and other statuses (like duplicates)
 
             logger.info(
-                "fping discovered %s alive hosts out of %s targets", len(alive_ips), len(ip_list)
+                "fping discovered %s alive hosts out of %s targets",
+                len(alive_ips),
+                len(ip_list),
             )
 
         except subprocess.TimeoutExpired:

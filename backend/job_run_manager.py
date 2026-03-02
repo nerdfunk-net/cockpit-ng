@@ -38,7 +38,10 @@ def create_job_run(
     )
 
     logger.info(
-        "Created job run: %s (ID: %s, triggered_by: %s)", job_name, job_run_data.get('id'), triggered_by
+        "Created job run: %s (ID: %s, triggered_by: %s)",
+        job_name,
+        job_run_data.get("id"),
+        triggered_by,
     )
     return _model_to_dict(job_run_data)
 

@@ -66,7 +66,7 @@ async def get_ipam_prefixes(
 
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
-        logger.info("Retrieved %s prefixes from Nautobot IPAM", result.get('count', 0))
+        logger.info("Retrieved %s prefixes from Nautobot IPAM", result.get("count", 0))
         return result
 
     except Exception as e:
@@ -149,7 +149,7 @@ async def create_ipam_prefix(
             endpoint, method="POST", data=prefix_data
         )
 
-        logger.info("Created prefix %s in Nautobot IPAM", prefix_data.get('prefix'))
+        logger.info("Created prefix %s in Nautobot IPAM", prefix_data.get("prefix"))
         return result
 
     except HTTPException:

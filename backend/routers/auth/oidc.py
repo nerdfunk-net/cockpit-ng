@@ -107,7 +107,9 @@ async def oidc_login(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("OIDC login initiation failed for provider '%s': %s", provider_id, e)
+        logger.error(
+            "OIDC login initiation failed for provider '%s': %s", provider_id, e
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to initiate OIDC login with provider '{provider_id}'",
@@ -228,7 +230,9 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
         # Check if user is inactive (new users awaiting approval)
         if not user.get("is_active", True):
             logger.info(
-                "[OIDC Debug] User '%s' created but awaiting admin approval from provider '%s'", user['username'], provider_id
+                "[OIDC Debug] User '%s' created but awaiting admin approval from provider '%s'",
+                user["username"],
+                provider_id,
             )
             return ApprovalPendingResponse(
                 status="approval_pending",
@@ -246,7 +250,8 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
 
         if not user_with_roles:
             logger.warning(
-                "get_user_with_rbac returned None for user_id=%s, using base user", user['id']
+                "get_user_with_rbac returned None for user_id=%s, using base user",
+                user["id"],
             )
             user_with_roles = user
             user_with_roles["roles"] = []
@@ -283,11 +288,14 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
         )
 
         logger.info(
-            "[OIDC Debug] User '%s' authenticated successfully via OIDC provider '%s'", user['username'], provider_id
+            "[OIDC Debug] User '%s' authenticated successfully via OIDC provider '%s'",
+            user["username"],
+            provider_id,
         )
 
         # Update last_login timestamp
         from repositories.auth.user_repository import UserRepository
+
         UserRepository().update_last_login(user["id"])
 
         # Log successful OIDC login to audit log
@@ -480,7 +488,9 @@ async def get_oidc_debug_info():
 
                 except Exception as e:
                     logger.error(
-                        "Failed to load configuration for provider '%s': %s", provider_id, e
+                        "Failed to load configuration for provider '%s': %s",
+                        provider_id,
+                        e,
                     )
                     providers_debug.append(
                         {

@@ -87,7 +87,10 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
     except Exception as e:
         error_msg = str(e)
         logger.error(
-            "Task %s failed to add device %s: %s", self.request.id, device_id, error_msg,
+            "Task %s failed to add device %s: %s",
+            self.request.id,
+            device_id,
+            error_msg,
             exc_info=True,
         )
 
@@ -180,7 +183,10 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
     except Exception as e:
         error_msg = str(e)
         logger.error(
-            "Task %s failed to update device %s: %s", self.request.id, device_id, error_msg,
+            "Task %s failed to update device %s: %s",
+            self.request.id,
+            device_id,
+            error_msg,
             exc_info=True,
         )
 
@@ -264,7 +270,10 @@ def sync_devices_to_checkmk_task(
             job_run_manager.mark_started(job_run_id, self.request.id)
 
         logger.info(
-            "Created sync job %s (run_id: %s) for %s devices", job_id, job_run_id, total_devices
+            "Created sync job %s (run_id: %s) for %s devices",
+            job_id,
+            job_run_id,
+            total_devices,
         )
 
         for i, device_id in enumerate(device_ids):
@@ -518,7 +527,8 @@ def sync_devices_to_checkmk_task(
                     logger.info("CheckMK changes activated successfully")
                 else:
                     logger.warning(
-                        "CheckMK activation completed with issues: %s", activation_result.get('message')
+                        "CheckMK activation completed with issues: %s",
+                        activation_result.get("message"),
                     )
             except Exception as activation_error:
                 logger.error("Failed to activate CheckMK changes: %s", activation_error)

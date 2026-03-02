@@ -58,7 +58,9 @@ class OIDCService:
 
         if not ca_cert_file.exists():
             logger.warning(
-                "CA certificate not found for provider '%s': %s", provider_id, ca_cert_file
+                "CA certificate not found for provider '%s': %s",
+                provider_id,
+                ca_cert_file,
             )
             return None
 
@@ -69,7 +71,9 @@ class OIDCService:
 
             self._ssl_contexts[provider_id] = ssl_context
             logger.info(
-                "Loaded custom CA certificate for provider '%s': %s", provider_id, ca_cert_file
+                "Loaded custom CA certificate for provider '%s': %s",
+                provider_id,
+                ca_cert_file,
             )
             return ssl_context
         except Exception as e:
@@ -150,18 +154,24 @@ class OIDCService:
             config = OIDCConfig(**config_data)
             self._configs[provider_id] = config
             logger.info(
-                "Loaded OIDC config for provider '%s' from %s", provider_id, discovery_url
+                "Loaded OIDC config for provider '%s' from %s",
+                provider_id,
+                discovery_url,
             )
             return config
 
         except httpx.HTTPError as e:
-            logger.error("Failed to fetch OIDC configuration for '%s': %s", provider_id, e)
+            logger.error(
+                "Failed to fetch OIDC configuration for '%s': %s", provider_id, e
+            )
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Unable to connect to OIDC provider '{provider_id}'",
             )
         except Exception as e:
-            logger.error("Error parsing OIDC configuration for '%s': %s", provider_id, e)
+            logger.error(
+                "Error parsing OIDC configuration for '%s': %s", provider_id, e
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Invalid OIDC provider configuration for '{provider_id}'",
@@ -223,13 +233,16 @@ class OIDCService:
         # Log overrides for debugging
         if any([client_id_override, scopes_override, response_type_override]):
             logger.info(
-                "[OIDC Test] Generating authorization URL with overrides for '%s'", provider_id
+                "[OIDC Test] Generating authorization URL with overrides for '%s'",
+                provider_id,
             )
             if client_id_override:
-                logger.info("[OIDC Test] - client_id overridden: %s", client_id_override)
+                logger.info(
+                    "[OIDC Test] - client_id overridden: %s", client_id_override
+                )
             if scopes_override:
                 logger.info(
-                    "[OIDC Test] - scopes overridden: %s", ', '.join(scopes_override)
+                    "[OIDC Test] - scopes overridden: %s", ", ".join(scopes_override)
                 )
             if response_type_override:
                 logger.info(
@@ -305,7 +318,9 @@ class OIDCService:
             sanitized_request["code"] = (
                 f"{sanitized_request['code'][:10]}...{sanitized_request['code'][-10:]}"
             )
-        logger.debug("Token request to provider '%s': %s", provider_id, sanitized_request)
+        logger.debug(
+            "Token request to provider '%s': %s", provider_id, sanitized_request
+        )
         logger.debug("Token endpoint URL: %s", config.token_endpoint)
 
         try:
@@ -326,10 +341,14 @@ class OIDCService:
 
                 # Debug logging: Log response status and headers
                 logger.debug(
-                    "Token endpoint response status from provider '%s': %s", provider_id, response.status_code
+                    "Token endpoint response status from provider '%s': %s",
+                    provider_id,
+                    response.status_code,
                 )
                 logger.debug(
-                    "Token endpoint response headers from provider '%s': %s", provider_id, dict(response.headers)
+                    "Token endpoint response headers from provider '%s': %s",
+                    provider_id,
+                    dict(response.headers),
                 )
 
                 response.raise_for_status()
@@ -337,7 +356,9 @@ class OIDCService:
 
                 # Debug logging: Log the token response (sanitized)
                 logger.debug(
-                    "Token response from provider '%s': %s", provider_id, self._sanitize_token_response(token_response)
+                    "Token response from provider '%s': %s",
+                    provider_id,
+                    self._sanitize_token_response(token_response),
                 )
 
                 return token_response
@@ -456,9 +477,9 @@ class OIDCService:
 
             logger.debug("[OIDC Debug] ID token verified successfully")
             logger.debug("[OIDC Debug] Token claims: %s", list(claims.keys()))
-            logger.debug("[OIDC Debug] Subject (sub): %s", claims.get('sub'))
-            logger.debug("[OIDC Debug] Issued at (iat): %s", claims.get('iat'))
-            logger.debug("[OIDC Debug] Expires at (exp): %s", claims.get('exp'))
+            logger.debug("[OIDC Debug] Subject (sub): %s", claims.get("sub"))
+            logger.debug("[OIDC Debug] Issued at (iat): %s", claims.get("iat"))
+            logger.debug("[OIDC Debug] Expires at (exp): %s", claims.get("exp"))
 
             return claims
 
@@ -508,7 +529,8 @@ class OIDCService:
     ) -> Dict[str, Any]:
         """Extract user data from OIDC claims using provider-specific claim mappings."""
         logger.debug(
-            "[OIDC Debug] Extracting user data from claims for provider '%s'", provider_id
+            "[OIDC Debug] Extracting user data from claims for provider '%s'",
+            provider_id,
         )
 
         # Get provider configuration for claim mappings
@@ -526,10 +548,15 @@ class OIDCService:
 
         # Log available claims for debugging
         logger.debug(
-            "[OIDC Debug] Available claims in ID token from '%s': %s", provider_id, list(claims.keys())
+            "[OIDC Debug] Available claims in ID token from '%s': %s",
+            provider_id,
+            list(claims.keys()),
         )
         logger.debug(
-            "[OIDC Debug] Claim mappings - username: %s, email: %s, name: %s", username_claim, email_claim, name_claim
+            "[OIDC Debug] Claim mappings - username: %s, email: %s, name: %s",
+            username_claim,
+            email_claim,
+            name_claim,
         )
 
         username = claims.get(username_claim)
@@ -542,7 +569,9 @@ class OIDCService:
 
         if not username:
             logger.error(
-                "Username claim '%s' not found in token from provider '%s'", username_claim, provider_id
+                "Username claim '%s' not found in token from provider '%s'",
+                username_claim,
+                provider_id,
             )
             logger.error("Available claims: %s", claims)
             raise HTTPException(
@@ -551,7 +580,11 @@ class OIDCService:
             )
 
         logger.info(
-            "Extracted user data from provider '%s': username=%s, email=%s, name=%s", provider_id, username, email, name
+            "Extracted user data from provider '%s': username=%s, email=%s, name=%s",
+            provider_id,
+            username,
+            email,
+            name,
         )
 
         return {
@@ -571,11 +604,12 @@ class OIDCService:
             tuple: (user_dict, is_new_user)
         """
         logger.debug(
-            "[OIDC Debug] Provisioning or retrieving user from provider '%s'", provider_id
+            "[OIDC Debug] Provisioning or retrieving user from provider '%s'",
+            provider_id,
         )
-        logger.debug("[OIDC Debug] Username: %s", user_data.get('username'))
-        logger.debug("[OIDC Debug] Email: %s", user_data.get('email'))
-        logger.debug("[OIDC Debug] Subject (sub): %s", user_data.get('sub'))
+        logger.debug("[OIDC Debug] Username: %s", user_data.get("username"))
+        logger.debug("[OIDC Debug] Email: %s", user_data.get("email"))
+        logger.debug("[OIDC Debug] Subject (sub): %s", user_data.get("sub"))
 
         # Get provider configuration
         provider_config = settings_manager.get_oidc_provider(provider_id)
@@ -617,15 +651,22 @@ class OIDCService:
             if updates:
                 user = update_user(user["id"], **updates)
                 logger.info(
-                    "[OIDC Debug] Updated user '%s' information from provider '%s'", username, provider_id
+                    "[OIDC Debug] Updated user '%s' information from provider '%s'",
+                    username,
+                    provider_id,
                 )
             else:
                 logger.info(
-                    "[OIDC Debug] Existing user '%s' logged in via OIDC provider '%s'", username, provider_id
+                    "[OIDC Debug] Existing user '%s' logged in via OIDC provider '%s'",
+                    username,
+                    provider_id,
                 )
 
             logger.debug(
-                "[OIDC Debug] User ID: %s, is_active: %s, role: %s", user['id'], user.get('is_active', True), user.get('role', 'unknown')
+                "[OIDC Debug] User ID: %s, is_active: %s, role: %s",
+                user["id"],
+                user.get("is_active", True),
+                user.get("role", "unknown"),
             )
 
             return user, False
@@ -659,7 +700,9 @@ class OIDCService:
             )
 
             logger.info(
-                "Auto-provisioned new INACTIVE OIDC user '%s' from provider '%s' - requires admin approval", username, provider_id
+                "Auto-provisioned new INACTIVE OIDC user '%s' from provider '%s' - requires admin approval",
+                username,
+                provider_id,
             )
             return user, True  # Return True to indicate new user
 

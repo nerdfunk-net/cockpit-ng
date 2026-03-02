@@ -218,7 +218,10 @@ def get_diff_between_nb_checkmk_task(self) -> Dict[str, Any]:
 
         logger.info(
             "Diff complete: %s total, %s in both, %s Nautobot-only, %s CheckMK-only",
-            len(all_devices), total_both, len(nautobot_only), len(checkmk_only),
+            len(all_devices),
+            total_both,
+            len(nautobot_only),
+            len(checkmk_only),
         )
 
         return {

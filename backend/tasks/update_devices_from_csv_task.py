@@ -126,7 +126,8 @@ def update_devices_from_csv_task(
             }
 
         logger.info(
-            "Identifier fields found: %s", [f for f in identifier_fields if f in headers]
+            "Identifier fields found: %s",
+            [f for f in identifier_fields if f in headers],
         )
 
         # STEP 3: Initialize service
@@ -156,7 +157,9 @@ def update_devices_from_csv_task(
             identifier = device_id or device_name or ip_address or f"row-{idx}"
 
             try:
-                logger.info("Processing device %s/%s: %s", idx, total_devices, identifier)
+                logger.info(
+                    "Processing device %s/%s: %s", idx, total_devices, identifier
+                )
 
                 # Update progress
                 progress = 10 + int((idx / total_devices) * 80)
@@ -190,7 +193,9 @@ def update_devices_from_csv_task(
                 # Dry run - just validate without updating
                 if dry_run:
                     logger.info(
-                        "[DRY RUN] Would update device %s with: %s", identifier, update_data
+                        "[DRY RUN] Would update device %s with: %s",
+                        identifier,
+                        update_data,
                     )
                     if interface_config:
                         logger.info("[DRY RUN] Interface config: %s", interface_config)
@@ -229,13 +234,17 @@ def update_devices_from_csv_task(
                     )
                     logger.info(
                         "Successfully updated device %s: %s fields",
-                        result['device_name'], len(result['updated_fields']),
+                        result["device_name"],
+                        len(result["updated_fields"]),
                     )
 
             except Exception as e:
                 error_msg = str(e)
                 logger.error(
-                    "Failed to update device %s: %s", identifier, error_msg, exc_info=True
+                    "Failed to update device %s: %s",
+                    identifier,
+                    error_msg,
+                    exc_info=True,
                 )
                 failures.append(
                     {
@@ -290,7 +299,7 @@ def update_devices_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result)
-                logger.info("✓ Updated job run %s status to completed", job_run['id'])
+                logger.info("✓ Updated job run %s status to completed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 
@@ -312,7 +321,7 @@ def update_devices_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], error_msg)
-                logger.info("✓ Updated job run %s status to failed", job_run['id'])
+                logger.info("✓ Updated job run %s status to failed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 

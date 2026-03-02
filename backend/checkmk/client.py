@@ -244,7 +244,8 @@ class CheckMKClient:
         logger.debug("[CHECKMK API] get_host(%s) full response:", hostname)
         logger.debug("[CHECKMK API] Response type: %s", type(result))
         logger.debug(
-            "[CHECKMK API] Response keys: %s", list(result.keys()) if isinstance(result, dict) else 'N/A'
+            "[CHECKMK API] Response keys: %s",
+            list(result.keys()) if isinstance(result, dict) else "N/A",
         )
         logger.debug("[CHECKMK API] Full response data: %s", result)
 

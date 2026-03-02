@@ -307,7 +307,9 @@ async def execute_job(
         celery_task = dispatch_job.delay(
             schedule_id=execution_request.job_schedule_id,
             template_id=template_id,
-            job_name=job.get("job_identifier", f"manual-{execution_request.job_schedule_id}"),
+            job_name=job.get(
+                "job_identifier", f"manual-{execution_request.job_schedule_id}"
+            ),
             job_type=template.get("job_type"),
             credential_id=job.get("credential_id"),
             job_parameters=job_parameters if job_parameters else None,

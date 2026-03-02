@@ -50,6 +50,7 @@ from .periodic_tasks import (
     dispatch_cache_task,
     cleanup_celery_data_task,
     check_stale_jobs_task,
+    cleanup_audit_logs_task,
 )
 
 # Import backup tasks
@@ -102,4 +103,5 @@ __all__ = [
     "dispatch_cache_task",
     "cleanup_celery_data_task",
     "check_stale_jobs_task",
+    "cleanup_audit_logs_task",
 ]

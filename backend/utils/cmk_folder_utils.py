@@ -45,7 +45,9 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
             custom_field_key = var.replace("_custom_field_data.", "")
             actual_value = custom_field_data.get(custom_field_key, "")
             logger.debug(
-                "parse_folder_value: Custom field '%s' = '%s'", custom_field_key, actual_value
+                "parse_folder_value: Custom field '%s' = '%s'",
+                custom_field_key,
+                actual_value,
             )
         else:
             # Handle regular device data with dot notation: {location.name}
@@ -58,24 +60,31 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
                     if isinstance(current_value, dict) and part in current_value:
                         current_value = current_value[part]
                         logger.debug(
-                            "parse_folder_value: Traversing '%s', current value: %s", part, current_value
+                            "parse_folder_value: Traversing '%s', current value: %s",
+                            part,
+                            current_value,
                         )
                     else:
                         logger.debug(
-                            "parse_folder_value: Path part '%s' not found or not a dict", part
+                            "parse_folder_value: Path part '%s' not found or not a dict",
+                            part,
                         )
                         current_value = ""
                         break
 
                 actual_value = current_value if current_value != device_data else ""
                 logger.debug(
-                    "parse_folder_value: Nested attribute '%s' = '%s'", var, actual_value
+                    "parse_folder_value: Nested attribute '%s' = '%s'",
+                    var,
+                    actual_value,
                 )
             else:
                 # Simple direct attribute: {name}
                 actual_value = device_data.get(var, "")
                 logger.debug(
-                    "parse_folder_value: Direct attribute '%s' = '%s'", var, actual_value
+                    "parse_folder_value: Direct attribute '%s' = '%s'",
+                    var,
+                    actual_value,
                 )
 
         # Replace the variable in the folder path

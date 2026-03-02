@@ -130,7 +130,8 @@ def update_ip_addresses_from_csv_task(
         logger.info("Column name mapping:")
         logger.info("  - Lookup field 'address' → CSV column '%s'", address_col)
         logger.info(
-            "  - Lookup field 'parent__namespace__name' → CSV column '%s'", namespace_col
+            "  - Lookup field 'parent__namespace__name' → CSV column '%s'",
+            namespace_col,
         )
         if id_col:
             logger.info("  - Lookup field 'id' → CSV column '%s'", id_col)
@@ -156,7 +157,8 @@ def update_ip_addresses_from_csv_task(
         logger.info("STEP 4: UPDATING %s IP ADDRESSES", total_ip_addresses)
         logger.info("Dry run mode: %s", dry_run)
         logger.info(
-            "Lookup strategy: %s", 'address+namespace' if ignore_uuid else 'UUID from CSV'
+            "Lookup strategy: %s",
+            "address+namespace" if ignore_uuid else "UUID from CSV",
         )
         logger.info("-" * 80)
 
@@ -180,7 +182,10 @@ def update_ip_addresses_from_csv_task(
 
             try:
                 logger.info(
-                    "Processing IP address %s/%s: %s", idx, total_ip_addresses, identifier
+                    "Processing IP address %s/%s: %s",
+                    idx,
+                    total_ip_addresses,
+                    identifier,
                 )
 
                 # Update progress
@@ -217,7 +222,9 @@ def update_ip_addresses_from_csv_task(
                 if ignore_uuid or not csv_uuid:
                     # Use address + namespace lookup via GraphQL
                     logger.info(
-                        "Looking up IP address '%s' in namespace '%s'", address_value, namespace_value
+                        "Looking up IP address '%s' in namespace '%s'",
+                        address_value,
+                        namespace_value,
                     )
 
                     ip_address_uuid, existing_ip_address = asyncio.run(
@@ -228,7 +235,9 @@ def update_ip_addresses_from_csv_task(
 
                     if not ip_address_uuid:
                         logger.warning(
-                            "IP address '%s' not found in namespace '%s'", address_value, namespace_value
+                            "IP address '%s' not found in namespace '%s'",
+                            address_value,
+                            namespace_value,
                         )
                         failures.append(
                             {
@@ -283,7 +292,9 @@ def update_ip_addresses_from_csv_task(
                 )
 
                 if not update_data:
-                    logger.info("No update data for IP address %s, skipping", identifier)
+                    logger.info(
+                        "No update data for IP address %s, skipping", identifier
+                    )
                     skipped.append(
                         {
                             "row": idx,
@@ -338,7 +349,8 @@ def update_ip_addresses_from_csv_task(
                         )
                         logger.info(
                             "✓ Successfully updated IP address %s: %s fields",
-                            identifier, len(update_data),
+                            identifier,
+                            len(update_data),
                         )
                     else:
                         failures.append(
@@ -350,12 +362,14 @@ def update_ip_addresses_from_csv_task(
                                 "error": result["error"],
                             }
                         )
-                        logger.error("Failed to update IP address: %s", result['error'])
+                        logger.error("Failed to update IP address: %s", result["error"])
 
             except Exception as e:
                 error_msg = str(e)
                 logger.error(
-                    "Failed to process IP address %s: %s", identifier, error_msg,
+                    "Failed to process IP address %s: %s",
+                    identifier,
+                    error_msg,
                     exc_info=True,
                 )
                 failures.append(
@@ -413,7 +427,7 @@ def update_ip_addresses_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result)
-                logger.info("✓ Updated job run %s status to completed", job_run['id'])
+                logger.info("✓ Updated job run %s status to completed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 
@@ -435,7 +449,7 @@ def update_ip_addresses_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], error_msg)
-                logger.info("✓ Updated job run %s status to failed", job_run['id'])
+                logger.info("✓ Updated job run %s status to failed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 
@@ -520,7 +534,8 @@ async def _find_ip_address_by_address_and_namespace_graphql(
         if len(ip_addresses) > 1:
             logger.warning(
                 "Multiple IP addresses found for '%s' in namespace '%s', using first one",
-                address, namespace,
+                address,
+                namespace,
             )
 
         # Use the first result
@@ -569,7 +584,9 @@ async def _update_ip_address(
     except Exception as e:
         error_msg = str(e)
         logger.error(
-            "[API CALL] ✗ Failed to update IP address %s: %s", ip_address_uuid, error_msg
+            "[API CALL] ✗ Failed to update IP address %s: %s",
+            ip_address_uuid,
+            error_msg,
         )
         logger.error("[API CALL]   - Update data that caused error: %s", update_data)
         return {"success": False, "error": error_msg}
@@ -676,7 +693,10 @@ def _prepare_ip_address_update_data(
                 merged_tags = list(set(existing_tags + csv_tags))
                 update_data[field] = merged_tags
                 logger.debug(
-                    "Merging tags: existing=%s, csv=%s, merged=%s", existing_tags, csv_tags, merged_tags
+                    "Merging tags: existing=%s, csv=%s, merged=%s",
+                    existing_tags,
+                    csv_tags,
+                    merged_tags,
                 )
             else:
                 update_data[field] = csv_tags
@@ -715,7 +735,8 @@ def _prepare_ip_address_update_data(
         # These are lookup fields from CSV export and should not be sent to API
         if "__" in field:
             logger.debug(
-                "Skipping nested field '%s' - lookup fields not supported for updates", field
+                "Skipping nested field '%s' - lookup fields not supported for updates",
+                field,
             )
             continue
 

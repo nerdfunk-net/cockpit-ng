@@ -78,7 +78,7 @@ async def get_ipam_ip_addresses(
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
         logger.info(
-            "Retrieved %s IP addresses from Nautobot IPAM", result.get('count', 0)
+            "Retrieved %s IP addresses from Nautobot IPAM", result.get("count", 0)
         )
         return result
 
@@ -453,7 +453,7 @@ async def get_ipam_ip_addresses_detailed(
         result = await nautobot_service.graphql_query(query, variables)
 
         if "errors" in result:
-            logger.error("GraphQL errors: %s", result['errors'])
+            logger.error("GraphQL errors: %s", result["errors"])
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"GraphQL query failed: {result['errors']}",
@@ -545,7 +545,7 @@ async def create_ipam_ip_address(
         )
 
         logger.info(
-            "Created IP address %s in Nautobot IPAM", ip_address_data.get('address')
+            "Created IP address %s in Nautobot IPAM", ip_address_data.get("address")
         )
         return result
 

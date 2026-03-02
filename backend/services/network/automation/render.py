@@ -145,7 +145,8 @@ class RenderService:
 
                 logger.info(
                     "Pre-run command executed successfully. Raw length: %s, Parsed records: %s",
-                    len(context['pre_run_output']), len(context['pre_run_parsed']),
+                    len(context["pre_run_output"]),
+                    len(context["pre_run_parsed"]),
                 )
             except Exception as e:
                 error_msg = f"Failed to execute pre-run command: {str(e)}"
@@ -312,7 +313,9 @@ class RenderService:
 
         logger.info(
             "Executing pre-run command on %s (%s): %s",
-            nautobot_device.get('name', device_id), primary_ip, command,
+            nautobot_device.get("name", device_id),
+            primary_ip,
+            command,
         )
 
         try:

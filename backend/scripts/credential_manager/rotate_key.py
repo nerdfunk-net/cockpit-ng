@@ -95,8 +95,7 @@ def _rotate_credentials(
         if row_changed:
             tag = "[DRY-RUN] " if dry_run else ""
             print(
-                f"  {tag}credentials id={row.id} name={row.name!r} "
-                f"owner={row.owner!r}"
+                f"  {tag}credentials id={row.id} name={row.name!r} owner={row.owner!r}"
             )
             processed += 1
         else:
@@ -127,10 +126,7 @@ def _rotate_login_credentials(
         try:
             plaintext = old_enc.decrypt(raw)
         except Exception as exc:
-            print(
-                f"  WARNING: login_credentials id={row.id}: "
-                f"{exc} — skipping row"
-            )
+            print(f"  WARNING: login_credentials id={row.id}: {exc} — skipping row")
             failed += 1
             continue
 
@@ -138,9 +134,7 @@ def _rotate_login_credentials(
             row.password_encrypted = new_enc.encrypt(plaintext)
 
         tag = "[DRY-RUN] " if dry_run else ""
-        print(
-            f"  {tag}login_credentials id={row.id} name={row.name!r}"
-        )
+        print(f"  {tag}login_credentials id={row.id} name={row.name!r}")
         processed += 1
 
     return {"processed": processed, "skipped": skipped, "failed": failed}
@@ -154,8 +148,7 @@ def _rotate_login_credentials(
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Re-encrypt stored network credentials from an old SECRET_KEY "
-            "to a new one."
+            "Re-encrypt stored network credentials from an old SECRET_KEY to a new one."
         )
     )
     parser.add_argument(
@@ -166,9 +159,7 @@ def main() -> None:
     parser.add_argument(
         "--new-key",
         default=None,
-        help=(
-            "New SECRET_KEY (defaults to the value in .env / SECRET_KEY env var)."
-        ),
+        help=("New SECRET_KEY (defaults to the value in .env / SECRET_KEY env var)."),
     )
     parser.add_argument(
         "--username",
@@ -211,7 +202,7 @@ def main() -> None:
     print("=" * 60)
     print("Credential Key Rotation")
     print("=" * 60)
-    print(f"  Tables:  credentials, login_credentials")
+    print("  Tables:  credentials, login_credentials")
     filter_desc = f"owner={args.username!r}" if args.username else "all rows"
     print(f"  Filter:  {filter_desc}")
     mode_desc = "DRY-RUN (no changes will be written)" if args.dry_run else "LIVE"

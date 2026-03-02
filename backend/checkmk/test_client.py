@@ -64,7 +64,11 @@ def test_client():
                     ip_address = attributes.get("ipaddress", "N/A")
                     alias = attributes.get("alias", "N/A")
                     logger.info(
-                        "     %s. %s - IP: %s, Alias: %s", i + 1, host_id, ip_address, alias
+                        "     %s. %s - IP: %s, Alias: %s",
+                        i + 1,
+                        host_id,
+                        ip_address,
+                        alias,
                     )
         except CheckMKAPIError as e:
             logger.error("   ✗ Host configurations failed: %s", e)
@@ -92,7 +96,12 @@ def test_client():
                         state, f"State {state}"
                     )
                     logger.info(
-                        "     %s. %s - %s (%s) - Last check: %s", i + 1, name, state_text, address, last_check
+                        "     %s. %s - %s (%s) - Last check: %s",
+                        i + 1,
+                        name,
+                        state_text,
+                        address,
+                        last_check,
                     )
         except CheckMKAPIError as e:
             logger.warning("   ⚠ Monitored hosts failed: %s", e)
@@ -172,11 +181,15 @@ def test_client():
             try:
                 first_host = monitored["value"][0]["extensions"]["name"]
                 discovery_status = client.get_service_discovery(first_host)
-                logger.info("   ✓ Service discovery status retrieved for %s", first_host)
+                logger.info(
+                    "   ✓ Service discovery status retrieved for %s", first_host
+                )
 
                 # Check discovery status
                 extensions = discovery_status.get("extensions", {})
-                logger.info("   Discovery phase: %s", extensions.get('phase', 'Unknown'))
+                logger.info(
+                    "   Discovery phase: %s", extensions.get("phase", "Unknown")
+                )
             except CheckMKAPIError as e:
                 logger.info("   ⚠ Service discovery not available: %s", e)
 
@@ -218,8 +231,8 @@ def test_specific_host():
             # Show some host details
             extensions = host_info.get("extensions", {})
             attributes = extensions.get("attributes", {})
-            logger.info("   IP Address: %s", attributes.get('ipaddress', 'N/A'))
-            logger.info("   Alias: %s", attributes.get('alias', 'N/A'))
+            logger.info("   IP Address: %s", attributes.get("ipaddress", "N/A"))
+            logger.info("   Alias: %s", attributes.get("alias", "N/A"))
 
         except CheckMKAPIError as e:
             logger.info("⚠ Host %s not found or not accessible: %s", test_hostname, e)

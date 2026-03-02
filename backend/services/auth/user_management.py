@@ -196,7 +196,7 @@ def toggle_user_status(user_id: int) -> Optional[Dict[str, Any]]:
         # Toggle the status
         new_status = not user["is_active"]
         logger.info(
-            "toggle_user_status: Toggling from %s to %s", user['is_active'], new_status
+            "toggle_user_status: Toggling from %s to %s", user["is_active"], new_status
         )
         result = update_user(user_id, is_active=new_status)
         logger.info("toggle_user_status: update_user returned: %s", result)

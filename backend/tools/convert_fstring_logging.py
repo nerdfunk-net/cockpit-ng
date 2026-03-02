@@ -463,7 +463,9 @@ def _extract_fstring(src: str, pos: int) -> Optional[tuple[str, str, int]]:
 # ---------------------------------------------------------------------------
 
 
-def _transform_log_call(src: str, call_start: int, open_paren: int) -> Optional[tuple[str, int]]:
+def _transform_log_call(
+    src: str, call_start: int, open_paren: int
+) -> Optional[tuple[str, int]]:
     """Try to transform the logging call that starts with '(' at *open_paren*.
 
     Returns (replacement_source_fragment, end_of_call_pos) on success,
@@ -501,7 +503,7 @@ def _transform_log_call(src: str, call_start: int, open_paren: int) -> Optional[
     # Check we're not dealing with implicit string concatenation:
     # f"a" "b"  or  f"a"\n    f"b"  etc.
     # Any string prefix char or a quote directly means another adjacent literal.
-    _STR_START = set('"\'') | set('fFrRbBuU')
+    _STR_START = set("\"'") | set("fFrRbBuU")
     if remainder_in_stripped and remainder_in_stripped[0] in _STR_START:
         return None  # Implicit concatenation – skip
 
@@ -513,12 +515,7 @@ def _transform_log_call(src: str, call_start: int, open_paren: int) -> Optional[
 
     # If no placeholders were found, the f-string is just a plain string.
     # Still convert (drop the 'f' prefix), as the f was pointless.
-    quote_char = prefix[-1]  # 'f' or 'F'
-    new_prefix = prefix[: -1] if len(prefix) > 1 else ""  # strip leading f/F
-
-    # Re-quote the template string with the detected quote style
-    fstr_full = prefix + stripped[len(prefix) : fstr_end_in_stripped]
-    fstr_prefix_raw = stripped[: len(prefix)]
+    new_prefix = prefix[:-1] if len(prefix) > 1 else ""  # strip leading f/F
 
     # Detect quote style from the original f-string
     q_pos = len(prefix)
@@ -540,7 +537,6 @@ def _transform_log_call(src: str, call_start: int, open_paren: int) -> Optional[
     rest_after_fstr = args_src[offset + fstr_end_in_stripped :]
 
     new_args_src = leading_ws + new_first_arg + rest_after_fstr
-    original_call = src[call_start:call_end]
     # Replace just the args part: from open_paren+1 to call_end-1
     call_prefix = src[call_start : open_paren + 1]
     new_call = call_prefix + new_args_src + ")"
@@ -578,10 +574,18 @@ def convert_source(src: str) -> tuple[str, int, int]:
         if transform is None:
             # Check whether there was actually an f-string here to skip
             paren_end = _find_balanced_paren_end(src, open_paren)
-            args_peek = src[open_paren + 1 : paren_end].lstrip() if paren_end != -1 else ""
+            args_peek = (
+                src[open_paren + 1 : paren_end].lstrip() if paren_end != -1 else ""
+            )
             if _FSTRING_PREFIX_RE.match(args_peek):
                 skipped += 1
-            result.append(src[call_start : paren_end if paren_end != -1 else call_start + len(m.group(0))])
+            result.append(
+                src[
+                    call_start : paren_end
+                    if paren_end != -1
+                    else call_start + len(m.group(0))
+                ]
+            )
             pos = paren_end if paren_end != -1 else call_start + len(m.group(0))
         else:
             new_call, call_end = transform
@@ -621,7 +625,9 @@ def process_file(
     new_src, conversions, skipped = convert_source(original)
 
     if skipped and verbose:
-        print(f"  ⚠  {path}: {skipped} complex f-string(s) skipped (manual review needed)")
+        print(
+            f"  ⚠  {path}: {skipped} complex f-string(s) skipped (manual review needed)"
+        )
 
     stats.skipped_complex += skipped
 
@@ -700,12 +706,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Do not write .bak files (backups are created by default).",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Show a diff for every changed file.",
     )
     parser.add_argument(
-        "--quiet", "-q",
+        "--quiet",
+        "-q",
         action="store_true",
         help="Print only the final summary.",
     )

@@ -91,7 +91,7 @@ class TemplateManager:
                 )
 
             logger.info(
-                "Template '%s' created with ID %s", template_data['name'], template_id
+                "Template '%s' created with ID %s", template_data["name"], template_id
             )
             return template_id
 
@@ -110,7 +110,10 @@ class TemplateManager:
             if template:
                 result = self._model_to_dict(template)
                 logger.info(
-                    "DEBUG: get_template(%s) - scope=%s, created_by=%s", template_id, result.get('scope'), result.get('created_by')
+                    "DEBUG: get_template(%s) - scope=%s, created_by=%s",
+                    template_id,
+                    result.get("scope"),
+                    result.get("created_by"),
                 )
                 return result
             return None
@@ -162,7 +165,11 @@ class TemplateManager:
             logger.info("DEBUG: list_templates - found %s templates", len(results))
             for template in results:
                 logger.info(
-                    "DEBUG: list_templates - template: id=%s, name=%s, scope=%s, created_by=%s", template['id'], template['name'], template.get('scope'), template.get('created_by')
+                    "DEBUG: list_templates - template: id=%s, name=%s, scope=%s, created_by=%s",
+                    template["id"],
+                    template["name"],
+                    template.get("scope"),
+                    template.get("created_by"),
                 )
 
             return results
@@ -185,7 +192,10 @@ class TemplateManager:
             current = self._model_to_dict(current_obj)
 
             logger.info(
-                "DEBUG: update_template(%s) - incoming scope=%s, current scope=%s", template_id, template_data.get('scope'), current.get('scope')
+                "DEBUG: update_template(%s) - incoming scope=%s, current scope=%s",
+                template_id,
+                template_data.get("scope"),
+                current.get("scope"),
             )
 
             # Prepare update data
@@ -203,7 +213,9 @@ class TemplateManager:
             # Get the scope to update
             new_scope = template_data.get("scope", current.get("scope", "global"))
             logger.info(
-                "DEBUG: update_template(%s) - will update scope to: %s", template_id, new_scope
+                "DEBUG: update_template(%s) - will update scope to: %s",
+                template_id,
+                new_scope,
             )
 
             # Prepare update kwargs
@@ -244,7 +256,9 @@ class TemplateManager:
             repo.update(template_id, **update_kwargs)
 
             logger.info(
-                "DEBUG: update_template(%s) - SQL UPDATE executed with scope=%s", template_id, new_scope
+                "DEBUG: update_template(%s) - SQL UPDATE executed with scope=%s",
+                template_id,
+                new_scope,
             )
 
             # Content is already saved to database in repo.update() above
@@ -281,7 +295,9 @@ class TemplateManager:
                 repo.update(template_id, is_active=False)
 
             logger.info(
-                "Template %s %s", template_id, 'deleted' if hard_delete else 'deactivated'
+                "Template %s %s",
+                template_id,
+                "deleted" if hard_delete else "deactivated",
             )
             return True
 
@@ -338,13 +354,18 @@ class TemplateManager:
             rendered = jinja_template.render(**data)
 
             logger.info(
-                "Successfully rendered template '%s' from category '%s'", template_name, category
+                "Successfully rendered template '%s' from category '%s'",
+                template_name,
+                category,
             )
             return rendered
 
         except Exception as e:
             logger.error(
-                "Error rendering template '%s' in category '%s': %s", template_name, category, e
+                "Error rendering template '%s' in category '%s': %s",
+                template_name,
+                category,
+                e,
             )
             raise e
 

@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 # Create database engine
 DATABASE_URL = settings.database_url
 logger.info(
-    "Connecting to database: postgresql://%s:***@%s:%s/%s", settings.database_username, settings.database_host, settings.database_port, settings.database_name
+    "Connecting to database: postgresql://%s:***@%s:%s/%s",
+    settings.database_username,
+    settings.database_host,
+    settings.database_port,
+    settings.database_name,
 )
 
 engine = create_engine(
@@ -123,7 +127,9 @@ def init_db():
         if total_changes > 0:
             logger.info(
                 "Database migration completed: %s tables created, %s columns added, %s indexes created",
-                migration_results['tables_created'], migration_results['columns_added'], migration_results['indexes_created'],
+                migration_results["tables_created"],
+                migration_results["columns_added"],
+                migration_results["indexes_created"],
             )
         else:
             logger.info("Database schema is up to date - no migrations needed")

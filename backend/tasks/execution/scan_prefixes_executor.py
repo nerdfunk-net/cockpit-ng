@@ -41,7 +41,7 @@ def execute_scan_prefixes(
         logger.info("SCAN PREFIXES EXECUTOR STARTED")
         logger.info("=" * 80)
         logger.info("Schedule ID: %s", schedule_id)
-        logger.info("Template: %s", template.get('name') if template else 'None')
+        logger.info("Template: %s", template.get("name") if template else "None")
 
         task_context.update_state(
             state="PROGRESS",
@@ -77,10 +77,17 @@ def execute_scan_prefixes(
         interval_ms = template.get("scan_interval_ms") or 10
         scan_max_ips = template.get("scan_max_ips")
 
-        logger.info("Scanning prefixes with %s=%s", custom_field_name, custom_field_value)
+        logger.info(
+            "Scanning prefixes with %s=%s", custom_field_name, custom_field_value
+        )
         logger.info(
             "Scan options: resolve_dns=%s, ping_count=%s, timeout=%sms, retries=%s, interval=%sms, max_ips=%s",
-            resolve_dns, ping_count, timeout_ms, retries, interval_ms, scan_max_ips,
+            resolve_dns,
+            ping_count,
+            timeout_ms,
+            retries,
+            interval_ms,
+            scan_max_ips,
         )
 
         # Execute the scan logic directly (the job_run is already created by dispatcher)

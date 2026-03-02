@@ -42,7 +42,9 @@ class GitOperationsService:
             Exception: If sync operation fails
         """
         repo_path = str(get_repo_path(repository))
-        logger.info("Syncing repository '%s' to path: %s", repository['name'], repo_path)
+        logger.info(
+            "Syncing repository '%s' to path: %s", repository["name"], repo_path
+        )
 
         os.makedirs(os.path.dirname(repo_path), exist_ok=True)
 
@@ -82,7 +84,7 @@ class GitOperationsService:
                         )
                     with set_ssl_env(repository):
                         logger.info(
-                            "Cloning branch %s into %s", repository['branch'], repo_path
+                            "Cloning branch %s into %s", repository["branch"], repo_path
                         )
                         Repo.clone_from(
                             clone_url, repo_path, branch=repository["branch"]
@@ -120,7 +122,8 @@ class GitOperationsService:
                         ):
                             shutil.rmtree(repo_path)
                             logger.info(
-                                "Removed empty directory after failed clone: %s", repo_path
+                                "Removed empty directory after failed clone: %s",
+                                repo_path,
                             )
                     except Exception as ce:
                         logger.warning("Cleanup after failed clone skipped: %s", ce)
@@ -167,7 +170,9 @@ class GitOperationsService:
         """
         repo_path = str(get_repo_path(repository))
         logger.info(
-            "Removing and re-syncing repository '%s' at %s", repository['name'], repo_path
+            "Removing and re-syncing repository '%s' at %s",
+            repository["name"],
+            repo_path,
         )
 
         # Remove existing repository if present
@@ -199,7 +204,9 @@ class GitOperationsService:
 
                 with set_ssl_env(repository):
                     logger.info(
-                        "Cloning fresh copy of branch %s into %s", repository['branch'], repo_path
+                        "Cloning fresh copy of branch %s into %s",
+                        repository["branch"],
+                        repo_path,
                     )
                     Repo.clone_from(clone_url, repo_path, branch=repository["branch"])
 
@@ -262,7 +269,7 @@ class GitOperationsService:
             CloneResult with success status and path
         """
         repo_path = target_path or str(get_repo_path(repository))
-        logger.info("Cloning repository '%s' to %s", repository['name'], repo_path)
+        logger.info("Cloning repository '%s' to %s", repository["name"], repo_path)
 
         success = False
         message = ""

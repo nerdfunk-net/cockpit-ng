@@ -181,7 +181,9 @@ def normalize_interface_type(interface_type: str) -> str:
     # Check if any valid interface type is a substring of the normalized input
     for valid_type in VALID_INTERFACE_TYPES:
         if valid_type in normalized_input:
-            logger.debug("Normalized interface type: %s -> %s", interface_type, valid_type)
+            logger.debug(
+                "Normalized interface type: %s -> %s", interface_type, valid_type
+            )
             return valid_type
 
     # No match found, return "other"
@@ -289,7 +291,10 @@ def export_devices_task(
                 batch_device_ids = device_ids[start_idx:end_idx]
 
                 logger.info(
-                    "Fetching batch %s/%s (%s devices)...", batch_idx + 1, total_batches, len(batch_device_ids)
+                    "Fetching batch %s/%s (%s devices)...",
+                    batch_idx + 1,
+                    total_batches,
+                    len(batch_device_ids),
                 )
 
                 progress = 10 + int((batch_idx / total_batches) * 40)
@@ -365,7 +370,9 @@ def export_devices_task(
 
         filtered_devices = _filter_device_properties(all_devices, properties)
         logger.info(
-            "✓ Filtered %s devices to %s properties", len(filtered_devices), len(properties)
+            "✓ Filtered %s devices to %s properties",
+            len(filtered_devices),
+            len(properties),
         )
 
         # STEP 4: Export to format
@@ -398,7 +405,9 @@ def export_devices_task(
             }
 
         logger.info(
-            "✓ Generated %s content (%s bytes)", export_format.upper(), len(export_content)
+            "✓ Generated %s content (%s bytes)",
+            export_format.upper(),
+            len(export_content),
         )
 
         # STEP 4: Save file
@@ -424,7 +433,9 @@ def export_devices_task(
         os.makedirs(export_dir, exist_ok=True)
 
         logger.info(
-            "Export directory: %s (absolute: %s)", export_dir, os.path.abspath(export_dir)
+            "Export directory: %s (absolute: %s)",
+            export_dir,
+            os.path.abspath(export_dir),
         )
 
         # Generate filename with timestamp
@@ -471,7 +482,7 @@ def export_devices_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result)
-                logger.info("✓ Updated job run %s status to completed", job_run['id'])
+                logger.info("✓ Updated job run %s status to completed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 
@@ -495,7 +506,7 @@ def export_devices_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], str(e))
-                logger.info("✓ Updated job run %s status to failed", job_run['id'])
+                logger.info("✓ Updated job run %s status to failed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 

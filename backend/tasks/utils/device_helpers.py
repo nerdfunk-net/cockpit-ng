@@ -53,7 +53,9 @@ def get_target_devices(
 
             if device_ids is None:
                 logger.warning(
-                    "Inventory '%s' returned no devices for user '%s'", inventory_name, username
+                    "Inventory '%s' returned no devices for user '%s'",
+                    inventory_name,
+                    username,
                 )
                 return None
 

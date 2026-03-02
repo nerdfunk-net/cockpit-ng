@@ -79,7 +79,9 @@ def _fping_networks(
                 temp_file.write(f"{ip}\n")
 
         logger.debug(
-            "Created temporary file %s with %s IP addresses", temp_file_path, len(ip_list)
+            "Created temporary file %s with %s IP addresses",
+            temp_file_path,
+            len(ip_list),
         )
 
         # Build fping command with options
@@ -95,7 +97,7 @@ def _fping_networks(
             str(interval),  # Interval between packets in ms
         ]
 
-        logger.debug("Running fping command: %s < %s", ' '.join(cmd), temp_file_path)
+        logger.debug("Running fping command: %s < %s", " ".join(cmd), temp_file_path)
 
         # Build full command with input redirection
         full_cmd = f"{' '.join(cmd)} < {temp_file_path}"
@@ -177,7 +179,9 @@ def _fping_networks(
             logger.debug("Processed %s statistics lines", stats_lines)
 
         logger.info(
-            "fping discovered %s alive hosts out of %s targets", len(alive_ips), len(ip_list)
+            "fping discovered %s alive hosts out of %s targets",
+            len(alive_ips),
+            len(ip_list),
         )
         if alive_ips:
             logger.info(
@@ -318,7 +322,9 @@ def ping_network_task(
         job_run_manager.mark_started(job_run_id, self.request.id)
 
         logger.info(
-            "Ping network task started: %s networks, resolve_dns=%s", len(cidrs), resolve_dns
+            "Ping network task started: %s networks, resolve_dns=%s",
+            len(cidrs),
+            resolve_dns,
         )
 
         # Expand all CIDRs to IP lists

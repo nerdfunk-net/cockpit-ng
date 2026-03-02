@@ -185,7 +185,8 @@ def update_ip_prefixes_from_csv_task(
         logger.info("STEP 4: UPDATING %s IP PREFIXES", total_prefixes)
         logger.info("Dry run mode: %s", dry_run)
         logger.info(
-            "Lookup strategy: %s", 'prefix+namespace' if ignore_uuid else 'UUID from CSV'
+            "Lookup strategy: %s",
+            "prefix+namespace" if ignore_uuid else "UUID from CSV",
         )
         logger.info("-" * 80)
 
@@ -204,7 +205,9 @@ def update_ip_prefixes_from_csv_task(
             # Validate namespace value
             if not namespace_value:
                 logger.warning(
-                    "Row %s: Empty namespace value for prefix '%s', skipping", idx, prefix_value
+                    "Row %s: Empty namespace value for prefix '%s', skipping",
+                    idx,
+                    prefix_value,
                 )
                 skipped.append(
                     {
@@ -223,7 +226,9 @@ def update_ip_prefixes_from_csv_task(
                 identifier = f"{prefix_value} (UUID: {csv_uuid})"
 
             try:
-                logger.info("Processing prefix %s/%s: %s", idx, total_prefixes, identifier)
+                logger.info(
+                    "Processing prefix %s/%s: %s", idx, total_prefixes, identifier
+                )
 
                 # Update progress
                 progress = 10 + int((idx / total_prefixes) * 80)
@@ -259,7 +264,9 @@ def update_ip_prefixes_from_csv_task(
                 if ignore_uuid or not csv_uuid:
                     # Use prefix + namespace lookup via GraphQL
                     logger.info(
-                        "Looking up prefix '%s' in namespace '%s'", prefix_value, namespace_value
+                        "Looking up prefix '%s' in namespace '%s'",
+                        prefix_value,
+                        namespace_value,
                     )
 
                     prefix_uuid, existing_prefix = asyncio.run(
@@ -270,7 +277,9 @@ def update_ip_prefixes_from_csv_task(
 
                     if not prefix_uuid:
                         logger.warning(
-                            "Prefix '%s' not found in namespace '%s'", prefix_value, namespace_value
+                            "Prefix '%s' not found in namespace '%s'",
+                            prefix_value,
+                            namespace_value,
                         )
                         failures.append(
                             {
@@ -347,7 +356,8 @@ def update_ip_prefixes_from_csv_task(
                     custom_field_count = len(update_data["custom_fields"])
                     logger.info(
                         "  - Custom fields to update: %s (%s)",
-                        custom_field_count, list(update_data['custom_fields'].keys()),
+                        custom_field_count,
+                        list(update_data["custom_fields"].keys()),
                     )
 
                 # Step 3: Update the prefix
@@ -371,29 +381,29 @@ def update_ip_prefixes_from_csv_task(
                             logger.info("    • %s:", field)
                             for cf_key, cf_diff in diff.items():
                                 logger.info("        %s:", cf_key)
-                                logger.info("          Current: %s", cf_diff['current'])
-                                logger.info("          New:     %s", cf_diff['new'])
+                                logger.info("          Current: %s", cf_diff["current"])
+                                logger.info("          New:     %s", cf_diff["new"])
                         elif field == "tags":
                             # Tags have special structure with added/removed
                             logger.info("    • %s:", field)
-                            logger.info("        Current: %s", diff.get('current', []))
-                            logger.info("        New:     %s", diff.get('new', []))
+                            logger.info("        Current: %s", diff.get("current", []))
+                            logger.info("        New:     %s", diff.get("new", []))
                             if "added" in diff and diff["added"]:
-                                logger.info("        Added:   %s", diff['added'])
+                                logger.info("        Added:   %s", diff["added"])
                             if "removed" in diff and diff["removed"]:
-                                logger.info("        Removed: %s", diff['removed'])
+                                logger.info("        Removed: %s", diff["removed"])
                         else:
                             # Regular fields
                             logger.info("    • %s:", field)
-                            logger.info("        Current: %s", diff.get('current'))
-                            logger.info("        New:     %s", diff.get('new'))
+                            logger.info("        Current: %s", diff.get("current"))
+                            logger.info("        New:     %s", diff.get("new"))
 
                     if comparison["unchanged"]:
                         logger.info(
-                            "  Unchanged fields: %s", ', '.join(comparison['unchanged'])
+                            "  Unchanged fields: %s", ", ".join(comparison["unchanged"])
                         )
 
-                    logger.info("  Summary: %s", comparison['summary'])
+                    logger.info("  Summary: %s", comparison["summary"])
 
                     successes.append(
                         {
@@ -429,7 +439,8 @@ def update_ip_prefixes_from_csv_task(
                         )
                         logger.info(
                             "✓ Successfully updated prefix %s: %s fields",
-                            identifier, len(update_data),
+                            identifier,
+                            len(update_data),
                         )
                     else:
                         failures.append(
@@ -441,12 +452,15 @@ def update_ip_prefixes_from_csv_task(
                                 "error": result["error"],
                             }
                         )
-                        logger.error("Failed to update prefix: %s", result['error'])
+                        logger.error("Failed to update prefix: %s", result["error"])
 
             except Exception as e:
                 error_msg = str(e)
                 logger.error(
-                    "Failed to process prefix %s: %s", identifier, error_msg, exc_info=True
+                    "Failed to process prefix %s: %s",
+                    identifier,
+                    error_msg,
+                    exc_info=True,
                 )
                 failures.append(
                     {
@@ -503,7 +517,7 @@ def update_ip_prefixes_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result)
-                logger.info("✓ Updated job run %s status to completed", job_run['id'])
+                logger.info("✓ Updated job run %s status to completed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 
@@ -525,7 +539,7 @@ def update_ip_prefixes_from_csv_task(
             job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], error_msg)
-                logger.info("✓ Updated job run %s status to failed", job_run['id'])
+                logger.info("✓ Updated job run %s status to failed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
 
@@ -550,7 +564,9 @@ async def _get_prefix_by_uuid(
         result = await nautobot_service.rest_request(endpoint, method="GET")
         return result
     except Exception as e:
-        logger.error("Error getting prefix by UUID %s: %s", prefix_uuid, e, exc_info=True)
+        logger.error(
+            "Error getting prefix by UUID %s: %s", prefix_uuid, e, exc_info=True
+        )
         return None
 
 
@@ -610,7 +626,8 @@ async def _find_prefix_by_prefix_and_namespace_graphql(
         if len(prefixes) > 1:
             logger.warning(
                 "Multiple prefixes found for '%s' in namespace '%s', using first one",
-                prefix, namespace,
+                prefix,
+                namespace,
             )
 
         # Use the first result
@@ -655,7 +672,9 @@ async def _update_prefix(
 
     except Exception as e:
         error_msg = str(e)
-        logger.error("[API CALL] ✗ Failed to update prefix %s: %s", prefix_uuid, error_msg)
+        logger.error(
+            "[API CALL] ✗ Failed to update prefix %s: %s", prefix_uuid, error_msg
+        )
         logger.error("[API CALL]   - Update data that caused error: %s", update_data)
         return {"success": False, "error": error_msg}
 
@@ -733,7 +752,8 @@ def _prepare_prefix_update_data(
     columns_to_process = selected_columns if selected_columns is not None else headers
 
     logger.info(
-        "[_prepare_prefix_update_data] Columns to process for update: %s", columns_to_process
+        "[_prepare_prefix_update_data] Columns to process for update: %s",
+        columns_to_process,
     )
 
     for field in columns_to_process:
@@ -771,7 +791,10 @@ def _prepare_prefix_update_data(
                 merged_tags = list(set(existing_tags + csv_tags))
                 update_data[field] = merged_tags
                 logger.debug(
-                    "Merging tags: existing=%s, csv=%s, merged=%s", existing_tags, csv_tags, merged_tags
+                    "Merging tags: existing=%s, csv=%s, merged=%s",
+                    existing_tags,
+                    csv_tags,
+                    merged_tags,
                 )
             else:
                 # Replace mode: use only CSV tags

@@ -214,7 +214,11 @@ class DeviceCreationService:
             for j, ip_data in enumerate(iface.ip_addresses):
                 logger.info(
                     "    IP %s: address=%s, namespace=%s, role=%s, is_primary=%s",
-                    j + 1, ip_data.address, ip_data.namespace, ip_data.ip_role, ip_data.is_primary,
+                    j + 1,
+                    ip_data.address,
+                    ip_data.namespace,
+                    ip_data.ip_role,
+                    ip_data.is_primary,
                 )
 
     async def _step1_create_device(
@@ -373,7 +377,8 @@ class DeviceCreationService:
                 continue
 
         logger.info(
-            "Completed prefix creation step. Created/verified %s unique prefix(es)", len(prefixes_created)
+            "Completed prefix creation step. Created/verified %s unique prefix(es)",
+            len(prefixes_created),
         )
 
     def _convert_interfaces_to_dict_format(

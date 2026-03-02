@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -24,12 +24,7 @@ async def get_event_types(
     current_user: dict = Depends(require_permission("general.logs", "read")),
 ) -> EventTypesResponse:
     """Return the distinct event_type values present in the audit_logs table."""
-    rows = (
-        db.query(AuditLog.event_type)
-        .distinct()
-        .order_by(AuditLog.event_type)
-        .all()
-    )
+    rows = db.query(AuditLog.event_type).distinct().order_by(AuditLog.event_type).all()
     return EventTypesResponse(event_types=[r[0] for r in rows])
 
 
@@ -37,11 +32,17 @@ async def get_event_types(
 async def get_audit_logs(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=200, description="Items per page"),
-    severity: Optional[str] = Query(None, description="Filter by severity (info/warning/error/critical)"),
+    severity: Optional[str] = Query(
+        None, description="Filter by severity (info/warning/error/critical)"
+    ),
     event_type: Optional[str] = Query(None, description="Filter by event type"),
     username: Optional[str] = Query(None, description="Filter by username"),
-    start_date: Optional[datetime] = Query(None, description="Filter by start date (ISO format)"),
-    end_date: Optional[datetime] = Query(None, description="Filter by end date (ISO format)"),
+    start_date: Optional[datetime] = Query(
+        None, description="Filter by start date (ISO format)"
+    ),
+    end_date: Optional[datetime] = Query(
+        None, description="Filter by end date (ISO format)"
+    ),
     search: Optional[str] = Query(None, description="Search in message field"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("general.logs", "read")),

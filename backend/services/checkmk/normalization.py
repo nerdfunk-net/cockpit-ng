@@ -376,7 +376,9 @@ class DeviceNormalizationService:
                 if isinstance(additional_attrs, dict):
                     extensions.attributes.update(additional_attrs)
                     logger.info(
-                        "Added additional attributes for device '%s': %s", device_name, list(additional_attrs.keys())
+                        "Added additional attributes for device '%s': %s",
+                        device_name,
+                        list(additional_attrs.keys()),
                     )
 
             # 2. Check by_ip (second priority, can add more attributes)
@@ -424,15 +426,21 @@ class DeviceNormalizationService:
                                 if isinstance(additional_attrs, dict):
                                     extensions.attributes.update(additional_attrs)
                                     logger.info(
-                                        "Added additional attributes for device IP '%s' matching '%s': %s", device_ip, ip_or_cidr, list(additional_attrs.keys())
+                                        "Added additional attributes for device IP '%s' matching '%s': %s",
+                                        device_ip,
+                                        ip_or_cidr,
+                                        list(additional_attrs.keys()),
                                     )
                         except ipaddress.AddressValueError:
                             logger.warning(
-                                "Invalid IP address or CIDR in additional_attributes config: %s", ip_or_cidr
+                                "Invalid IP address or CIDR in additional_attributes config: %s",
+                                ip_or_cidr,
                             )
                 except Exception as e:
                     logger.warning(
-                        "Error processing additional_attributes IP rule '%s': %s", ip_or_cidr, e
+                        "Error processing additional_attributes IP rule '%s': %s",
+                        ip_or_cidr,
+                        e,
                     )
                     continue
 

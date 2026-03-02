@@ -111,7 +111,9 @@ class NetmikoService:
 
         # Check if session has been cancelled before starting
         if session_id and session_id in self.cancelled_sessions:
-            logger.info("Skipping device %s - session %s cancelled", host_ip, session_id)
+            logger.info(
+                "Skipping device %s - session %s cancelled", host_ip, session_id
+            )
             result["cancelled"] = True
             result["error"] = "Execution cancelled by user"
             return result
@@ -160,7 +162,11 @@ class NetmikoService:
                     # Execute commands in exec mode, line by line
                     for idx, command in enumerate(commands, 1):
                         logger.info(
-                            "Executing command %s/%s on %s: %s", idx, len(commands), host_ip, command
+                            "Executing command %s/%s on %s: %s",
+                            idx,
+                            len(commands),
+                            host_ip,
+                            command,
                         )
 
                         # Get raw output from device (execute once)
@@ -203,7 +209,9 @@ class NetmikoService:
                                     command_outputs[command] = raw_output
                             except Exception as parse_error:
                                 logger.warning(
-                                    "TextFSM parsing failed for command '%s': %s", command, parse_error
+                                    "TextFSM parsing failed for command '%s': %s",
+                                    command,
+                                    parse_error,
                                 )
                                 # Store raw output if parsing fails
                                 command_outputs[command] = raw_output
@@ -334,7 +342,12 @@ class NetmikoService:
 
         logger.info(
             "Starting command execution on %s devices (session: %s). Commands: %s, Enable mode: %s, Write config: %s, Use TextFSM: %s",
-            len(devices), session_id, len(commands), enable_mode, write_config, use_textfsm,
+            len(devices),
+            session_id,
+            len(commands),
+            enable_mode,
+            write_config,
+            use_textfsm,
         )
 
         # Create tasks for all devices
@@ -349,7 +362,7 @@ class NetmikoService:
 
             if not device_ip:
                 logger.warning(
-                    "Skipping device without IP: %s", device.get('name', 'Unknown')
+                    "Skipping device without IP: %s", device.get("name", "Unknown")
                 )
                 continue
 
@@ -394,7 +407,10 @@ class NetmikoService:
         cancelled_count = sum(1 for r in processed_results if r.get("cancelled", False))
         logger.info(
             "Command execution completed (session: %s). Successful: %s/%s, Cancelled: %s",
-            session_id, success_count, len(processed_results), cancelled_count,
+            session_id,
+            success_count,
+            len(processed_results),
+            cancelled_count,
         )
 
         # Clean up cancelled session from tracking

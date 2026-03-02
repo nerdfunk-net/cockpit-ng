@@ -362,7 +362,8 @@ class DeviceImportService:
             if self.common.is_duplicate_error(e):
                 if skip_if_exists:
                     logger.info(
-                        "Device '%s' already exists, looking up existing device", device_name
+                        "Device '%s' already exists, looking up existing device",
+                        device_name,
                     )
 
                     # Look up existing device by name
@@ -407,7 +408,9 @@ class DeviceImportService:
             - primary_ipv4_id: UUID of primary IPv4 address (if any)
         """
         logger.info(
-            "Creating %s interface(s) for device '%s'", len(interface_config), device_name
+            "Creating %s interface(s) for device '%s'",
+            len(interface_config),
+            device_name,
         )
 
         # Normalize interface config for InterfaceManagerService
@@ -450,7 +453,8 @@ class DeviceImportService:
 
         logger.info(
             "Interface creation complete: %s succeeded, %s failed",
-            result.interfaces_created + result.interfaces_updated, result.interfaces_failed,
+            result.interfaces_created + result.interfaces_updated,
+            result.interfaces_failed,
         )
 
         return created_interfaces, result.primary_ip4_id

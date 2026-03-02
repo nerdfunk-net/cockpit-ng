@@ -82,7 +82,10 @@ def init_worker_process(**kwargs):
     # Create new engine with fresh connection pool for this worker process
     logger.info(
         "[Worker Init] Creating new database engine: postgresql://%s@%s:%s/%s",
-        settings.database_username, settings.database_host, settings.database_port, settings.database_name,
+        settings.database_username,
+        settings.database_host,
+        settings.database_port,
+        settings.database_name,
     )
 
     try:
@@ -137,7 +140,8 @@ def shutdown_worker_process(**kwargs):
     from core import database
 
     logger.info(
-        "[Worker Shutdown] Cleaning up database connections for worker %s", kwargs.get('sender')
+        "[Worker Shutdown] Cleaning up database connections for worker %s",
+        kwargs.get("sender"),
     )
 
     if hasattr(database, "engine") and database.engine:

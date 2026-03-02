@@ -298,7 +298,9 @@ class SnapshotExecutionService:
 
         # Execute commands on all devices using netmiko service
         logger.info(
-            "Executing snapshot on %s devices with %s commands", len(netmiko_devices), len(command_list)
+            "Executing snapshot on %s devices with %s commands",
+            len(netmiko_devices),
+            len(command_list),
         )
 
         try:

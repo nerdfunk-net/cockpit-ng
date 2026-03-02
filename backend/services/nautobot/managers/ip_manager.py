@@ -168,7 +168,9 @@ class IPManager:
 
                 except Exception as lookup_error:
                     logger.error(
-                        "Failed to find existing IP for %s: %s", ip_address, lookup_error
+                        "Failed to find existing IP for %s: %s",
+                        ip_address,
+                        lookup_error,
                     )
                     raise NautobotAPIError(
                         f"Failed to create IP {ip_address} and could not find existing IP: {lookup_error}"
@@ -209,7 +211,8 @@ class IPManager:
                         )
 
                         logger.info(
-                            "Successfully created prefix %s, retrying IP creation...", network_prefix
+                            "Successfully created prefix %s, retrying IP creation...",
+                            network_prefix,
                         )
 
                         # Retry IP creation
@@ -227,7 +230,9 @@ class IPManager:
 
                     except Exception as prefix_error:
                         logger.error(
-                            "Failed to auto-create prefix for %s: %s", ip_address, prefix_error
+                            "Failed to auto-create prefix for %s: %s",
+                            ip_address,
+                            prefix_error,
                         )
                         raise NautobotAPIError(
                             f"Failed to create IP {ip_address} and could not auto-create prefix: {prefix_error}"
@@ -236,7 +241,8 @@ class IPManager:
                     # User has disabled automatic prefix creation - stop and raise clear error
                     logger.error(
                         "IP creation failed: No suitable parent prefix exists for %s. Automatic prefix creation is disabled. Error: %s",
-                        ip_address, error_message,
+                        ip_address,
+                        error_message,
                     )
                     raise NautobotAPIError(
                         f"Cannot create IP address {ip_address}: No suitable parent prefix exists. "

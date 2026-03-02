@@ -131,7 +131,9 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
 
                 if not device_id:
                     logger.warning(
-                        "Task %s: Device %s has no ID, skipping", self.request.id, device_name
+                        "Task %s: Device %s has no ID, skipping",
+                        self.request.id,
+                        device_name,
                     )
                     failed_count += 1
                     continue
@@ -164,7 +166,10 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
             except Exception as e:
                 failed_count += 1
                 logger.error(
-                    "Task %s: Failed to cache device %s: %s", self.request.id, device.get('name', 'unknown'), e
+                    "Task %s: Failed to cache device %s: %s",
+                    self.request.id,
+                    device.get("name", "unknown"),
+                    e,
                 )
 
         # Cache bulk collection with lightweight device data
@@ -172,7 +177,9 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
             bulk_cache_key = "nautobot:devices:all"
             cache_service.set(bulk_cache_key, lightweight_devices, DEVICE_TTL)
             logger.info(
-                "Task %s: Cached bulk collection with %s devices", self.request.id, len(lightweight_devices)
+                "Task %s: Cached bulk collection with %s devices",
+                self.request.id,
+                len(lightweight_devices),
             )
         except Exception as e:
             logger.error(
@@ -290,7 +297,7 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
         cache_service.set(cache_key, device, 3600)  # 1 hour TTL
 
         logger.info(
-            "Successfully cached device %s (ID: %s)", device.get('name'), device_id
+            "Successfully cached device %s (ID: %s)", device.get("name"), device_id
         )
 
         return {

@@ -64,7 +64,10 @@ def create_job_schedule(
     )
 
     logger.info(
-        "Created job schedule: %s (ID: %s, next_run: %s)", job_identifier, schedule.id, initial_next_run
+        "Created job schedule: %s (ID: %s, next_run: %s)",
+        job_identifier,
+        schedule.id,
+        initial_next_run,
     )
     return _model_to_dict(schedule)
 
@@ -232,7 +235,9 @@ def initialize_schedule_next_runs() -> Dict[str, Any]:
             if next_run:
                 update_job_run_times(schedule["id"], next_run=next_run)
                 logger.info(
-                    "Initialized next_run for schedule %s: %s", schedule['id'], next_run.isoformat()
+                    "Initialized next_run for schedule %s: %s",
+                    schedule["id"],
+                    next_run.isoformat(),
                 )
                 initialized += 1
 
@@ -304,7 +309,9 @@ def calculate_next_run(
             cron = croniter(schedule["cron_expression"], base_time)
             return cron.get_next(datetime)
         except (ValueError, KeyError) as e:
-            logger.error("Invalid cron expression: %s: %s", schedule['cron_expression'], e)
+            logger.error(
+                "Invalid cron expression: %s: %s", schedule["cron_expression"], e
+            )
             return None
 
     elif schedule_type == "interval":
@@ -400,7 +407,10 @@ def calculate_and_update_next_run(job_id: int) -> Optional[Dict[str, Any]]:
     update_job_run_times(job_id, last_run=now, next_run=next_run)
 
     logger.debug(
-        "Updated schedule %s: last_run=%s, next_run=%s", job_id, now.isoformat(), next_run.isoformat() if next_run else None
+        "Updated schedule %s: last_run=%s, next_run=%s",
+        job_id,
+        now.isoformat(),
+        next_run.isoformat() if next_run else None,
     )
 
     return get_job_schedule(job_id)

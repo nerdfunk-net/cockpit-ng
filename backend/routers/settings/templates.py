@@ -59,7 +59,8 @@ async def list_templates(
             )
         else:
             logger.info(
-                "DEBUG: API list_templates - calling list_templates with username=%s", username
+                "DEBUG: API list_templates - calling list_templates with username=%s",
+                username,
             )
             templates = template_manager.list_templates(
                 category=category,
@@ -70,17 +71,22 @@ async def list_templates(
 
         # Convert to response models
         logger.info(
-            "DEBUG: API list_templates - received %s templates from manager", len(templates)
+            "DEBUG: API list_templates - received %s templates from manager",
+            len(templates),
         )
         template_responses = []
         for template in templates:
             logger.info(
-                "DEBUG: API list_templates - converting template id=%s, name=%s, scope=%s", template['id'], template['name'], template.get('scope')
+                "DEBUG: API list_templates - converting template id=%s, name=%s, scope=%s",
+                template["id"],
+                template["name"],
+                template.get("scope"),
             )
             template_responses.append(TemplateResponse(**template))
 
         logger.info(
-            "DEBUG: API list_templates - returning %s templates to frontend", len(template_responses)
+            "DEBUG: API list_templates - returning %s templates to frontend",
+            len(template_responses),
         )
         return TemplateListResponse(
             templates=template_responses, total=len(template_responses)
@@ -317,10 +323,14 @@ async def update_template(
 
         template_data = template_request.dict(exclude_unset=True)
         logger.info(
-            "DEBUG: API update_template(%s) - received data: %s", template_id, template_data
+            "DEBUG: API update_template(%s) - received data: %s",
+            template_id,
+            template_data,
         )
         logger.info(
-            "DEBUG: API update_template(%s) - scope in data: %s", template_id, template_data.get('scope')
+            "DEBUG: API update_template(%s) - scope in data: %s",
+            template_id,
+            template_data.get("scope"),
         )
         success = template_manager.update_template(template_id, template_data)
 
@@ -835,7 +845,8 @@ async def advanced_render_template(
                     context["devices"] = devices
 
                     logger.info(
-                        "Fetched Nautobot context for device %s", render_request.device_id
+                        "Fetched Nautobot context for device %s",
+                        render_request.device_id,
                     )
                 except Exception as e:
                     error_msg = f"Failed to fetch Nautobot device data: {str(e)}"
@@ -891,7 +902,9 @@ async def advanced_render_template(
                         )
 
                     logger.info(
-                        "Pre-run command executed. Raw length: %s, Parsed records: %s", len(pre_run_output), len(pre_run_parsed)
+                        "Pre-run command executed. Raw length: %s, Parsed records: %s",
+                        len(pre_run_output),
+                        len(pre_run_parsed),
                     )
                 except Exception as e:
                     error_msg = f"Failed to execute pre-run command: {str(e)}"
@@ -923,7 +936,8 @@ async def advanced_render_template(
                     conditions = inventory.get("conditions", [])
                     if not conditions:
                         logger.warning(
-                            "Inventory %s has no conditions", render_request.inventory_id
+                            "Inventory %s has no conditions",
+                            render_request.inventory_id,
                         )
                         context["devices"] = []
                         context["device_details"] = {}
@@ -965,7 +979,9 @@ async def advanced_render_template(
 
                         context["device_details"] = device_details
                         logger.info(
-                            "Fetched %s devices from inventory %s", len(device_list), render_request.inventory_id
+                            "Fetched %s devices from inventory %s",
+                            len(device_list),
+                            render_request.inventory_id,
                         )
 
                 except Exception as e:
@@ -978,7 +994,9 @@ async def advanced_render_template(
                 try:
                     snmp_mapping = config_service.load_snmp_mapping()
                     context["snmp_mapping"] = snmp_mapping
-                    logger.info("Loaded SNMP mapping with %s entries", len(snmp_mapping))
+                    logger.info(
+                        "Loaded SNMP mapping with %s entries", len(snmp_mapping)
+                    )
                 except Exception as e:
                     error_msg = f"Failed to load SNMP mapping: {str(e)}"
                     logger.error(error_msg)
@@ -1081,7 +1099,9 @@ async def execute_template_and_sync_to_nautobot(
         import job_run_manager
 
         logger.info(
-            "Execute-and-sync request for template %s on %s device(s)", request.template_id, len(request.device_ids)
+            "Execute-and-sync request for template %s on %s device(s)",
+            request.template_id,
+            len(request.device_ids),
         )
 
         # Get template
@@ -1141,11 +1161,14 @@ async def execute_template_and_sync_to_nautobot(
                             if "id" not in parsed_data and "name" not in parsed_data:
                                 parsed_data["id"] = device_id
                             logger.info(
-                                "Parsed JSON for device %s: interfaces=%s", device_id, parsed_data.get('interfaces', 'NOT_FOUND')
+                                "Parsed JSON for device %s: interfaces=%s",
+                                device_id,
+                                parsed_data.get("interfaces", "NOT_FOUND"),
                             )
                             if "interfaces" in parsed_data:
                                 logger.info(
-                                    "  - Found %s interface(s) in parsed JSON", len(parsed_data['interfaces'])
+                                    "  - Found %s interface(s) in parsed JSON",
+                                    len(parsed_data["interfaces"]),
                                 )
                             parsed_updates.append(parsed_data)
                         else:

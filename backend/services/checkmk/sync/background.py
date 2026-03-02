@@ -206,7 +206,10 @@ class NB2CMKBackgroundService:
                         continue
 
                     logger.debug(
-                        "Job %s: Processing device %s (%s)", job_id, device_name, device_id
+                        "Job %s: Processing device %s (%s)",
+                        job_id,
+                        device_name,
+                        device_id,
                     )
 
                     # Build device info
@@ -228,7 +231,10 @@ class NB2CMKBackgroundService:
                     # Try to get comparison for this device
                     try:
                         logger.debug(
-                            "[BACKGROUND JOB %s] Starting comparison for device %s (%s)", job_id, device_name, device_id
+                            "[BACKGROUND JOB %s] Starting comparison for device %s (%s)",
+                            job_id,
+                            device_name,
+                            device_id,
                         )
                         comparison_result = await nb2cmk_service.compare_device_config(
                             device_id
@@ -241,20 +247,27 @@ class NB2CMKBackgroundService:
                         device_info["checkmk_config"] = comparison_result.checkmk_config
 
                         logger.debug(
-                            "[BACKGROUND JOB %s] Device %s comparison result: %s", job_id, device_name, comparison_result.result
+                            "[BACKGROUND JOB %s] Device %s comparison result: %s",
+                            job_id,
+                            device_name,
+                            comparison_result.result,
                         )
 
                         # Map host_not_found to missing for frontend consistency
                         if device_info["checkmk_status"] == "host_not_found":
                             device_info["checkmk_status"] = "missing"
                             logger.debug(
-                                "[BACKGROUND JOB %s] Mapped host_not_found to missing for %s", job_id, device_name
+                                "[BACKGROUND JOB %s] Mapped host_not_found to missing for %s",
+                                job_id,
+                                device_name,
                             )
 
                     except HTTPException as http_exc:
                         if http_exc.status_code == 404:
                             logger.info(
-                                "[BACKGROUND JOB %s] Device %s not found in CheckMK (404)", job_id, device_name
+                                "[BACKGROUND JOB %s] Device %s not found in CheckMK (404)",
+                                job_id,
+                                device_name,
                             )
                             device_info["checkmk_status"] = "missing"
                             device_info["diff"] = (
@@ -265,7 +278,11 @@ class NB2CMKBackgroundService:
                         else:
                             error_detail = getattr(http_exc, "detail", str(http_exc))
                             logger.error(
-                                "[BACKGROUND JOB %s] HTTP %s error comparing device %s: %s", job_id, http_exc.status_code, device_name, error_detail
+                                "[BACKGROUND JOB %s] HTTP %s error comparing device %s: %s",
+                                job_id,
+                                http_exc.status_code,
+                                device_name,
+                                error_detail,
                             )
                             device_info["checkmk_status"] = "error"
                             device_info["diff"] = (
@@ -277,7 +294,10 @@ class NB2CMKBackgroundService:
                     except ValueError as val_err:
                         # Catch normalization/comparison errors with detailed messages
                         logger.error(
-                            "[BACKGROUND JOB %s] Validation error for device %s: %s", job_id, device_name, str(val_err),
+                            "[BACKGROUND JOB %s] Validation error for device %s: %s",
+                            job_id,
+                            device_name,
+                            str(val_err),
                             exc_info=True,
                         )
                         device_info["checkmk_status"] = "error"
@@ -287,7 +307,10 @@ class NB2CMKBackgroundService:
 
                     except Exception as e:
                         logger.error(
-                            "[BACKGROUND JOB %s] Unexpected error comparing device %s: %s", job_id, device_name, str(e),
+                            "[BACKGROUND JOB %s] Unexpected error comparing device %s: %s",
+                            job_id,
+                            device_name,
+                            str(e),
                             exc_info=True,
                         )
                         device_info["checkmk_status"] = "error"
@@ -329,7 +352,10 @@ class NB2CMKBackgroundService:
 
                 except Exception as e:
                     logger.error(
-                        "Job %s: Error processing device %s: %s", job_id, device.get('name', 'unknown'), e
+                        "Job %s: Error processing device %s: %s",
+                        job_id,
+                        device.get("name", "unknown"),
+                        e,
                     )
                     processed_count += 1
                     # Update progress even on errors to show we're still working

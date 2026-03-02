@@ -296,7 +296,10 @@ async def create_virtual_machine(
             for idx, interface_data in enumerate(vm_request.interfaces):
                 try:
                     logger.info(
-                        "\n--- Interface %s/%s: %s ---", idx + 1, len(vm_request.interfaces), interface_data.name
+                        "\n--- Interface %s/%s: %s ---",
+                        idx + 1,
+                        len(vm_request.interfaces),
+                        interface_data.name,
                     )
 
                     # Create the virtual interface with all properties
@@ -328,7 +331,9 @@ async def create_virtual_machine(
                         )
 
                     logger.info(
-                        "✓ Interface '%s' created with ID: %s", interface_data.name, interface_id
+                        "✓ Interface '%s' created with ID: %s",
+                        interface_data.name,
+                        interface_id,
                     )
                     response_data["interfaces"].append(
                         {
@@ -345,7 +350,9 @@ async def create_virtual_machine(
                     ):
                         logger.info("")
                         logger.info(
-                            "📍 Processing %s IP address(es) for interface '%s'", len(interface_data.ip_addresses), interface_data.name
+                            "📍 Processing %s IP address(es) for interface '%s'",
+                            len(interface_data.ip_addresses),
+                            interface_data.name,
                         )
 
                         for ip_idx, ip_data in enumerate(interface_data.ip_addresses):
@@ -353,12 +360,15 @@ async def create_virtual_machine(
                                 logger.info("")
                                 logger.info("=" * 60)
                                 logger.info(
-                                    "======== IP ADDRESS %s/%s: %s ========", ip_idx + 1, len(interface_data.ip_addresses), ip_data.address
+                                    "======== IP ADDRESS %s/%s: %s ========",
+                                    ip_idx + 1,
+                                    len(interface_data.ip_addresses),
+                                    ip_data.address,
                                 )
                                 logger.info("=" * 60)
                                 logger.info("  Interface: %s", interface_data.name)
                                 logger.info("  Namespace: %s", ip_data.namespace)
-                                logger.info("  IP Role: %s", ip_data.ip_role or 'None')
+                                logger.info("  IP Role: %s", ip_data.ip_role or "None")
                                 logger.info(
                                     "  Is Primary: %s", ip_data.is_primary or False
                                 )
@@ -392,7 +402,8 @@ async def create_virtual_machine(
 
                                 # Assign IP to virtual interface
                                 logger.info(
-                                    "  → Step 2: Assigning IP to interface '%s'...", interface_data.name
+                                    "  → Step 2: Assigning IP to interface '%s'...",
+                                    interface_data.name,
                                 )
                                 await vm_manager.assign_ip_to_virtual_interface(
                                     ip_address_id=ip_id,
@@ -421,7 +432,8 @@ async def create_virtual_machine(
 
                                 logger.info("=" * 60)
                                 logger.info(
-                                    "✅ IP ADDRESS %s PROCESSED SUCCESSFULLY", ip_data.address
+                                    "✅ IP ADDRESS %s PROCESSED SUCCESSFULLY",
+                                    ip_data.address,
                                 )
                                 logger.info("=" * 60)
 
@@ -440,7 +452,9 @@ async def create_virtual_machine(
 
                 except Exception as iface_error:
                     logger.error(
-                        "✗ Failed to create interface '%s': %s", interface_data.name, iface_error,
+                        "✗ Failed to create interface '%s': %s",
+                        interface_data.name,
+                        iface_error,
                         exc_info=True,
                     )
                     response_data["warnings"].append(
@@ -449,7 +463,8 @@ async def create_virtual_machine(
 
             logger.info("")
             logger.info(
-                "✓ PHASE 2 COMPLETE: Created %s interfaces", len(response_data['interfaces'])
+                "✓ PHASE 2 COMPLETE: Created %s interfaces",
+                len(response_data["interfaces"]),
             )
 
         elif use_legacy_format:
@@ -492,7 +507,8 @@ async def create_virtual_machine(
                         logger.info("=" * 60)
                         logger.info("  Interface: %s", vm_request.interfaceName)
                         logger.info(
-                            "  Namespace: %s", vm_request.namespace or 'Global (default)'
+                            "  Namespace: %s",
+                            vm_request.namespace or "Global (default)",
                         )
                         logger.info("  Is Primary: True")
                         logger.info("")
@@ -525,7 +541,8 @@ async def create_virtual_machine(
 
                         # Assign IP to virtual interface
                         logger.info(
-                            "  → Step 2: Assigning IP to interface '%s'...", vm_request.interfaceName
+                            "  → Step 2: Assigning IP to interface '%s'...",
+                            vm_request.interfaceName,
                         )
                         await vm_manager.assign_ip_to_virtual_interface(
                             ip_address_id=ip_id,
@@ -536,7 +553,8 @@ async def create_virtual_machine(
                         logger.info("")
                         logger.info("=" * 60)
                         logger.info(
-                            "✅ IP ADDRESS %s PROCESSED SUCCESSFULLY", vm_request.primaryIpv4
+                            "✅ IP ADDRESS %s PROCESSED SUCCESSFULLY",
+                            vm_request.primaryIpv4,
                         )
                         logger.info("=" * 60)
 
@@ -619,10 +637,10 @@ async def create_virtual_machine(
         logger.info("======= ALL PHASES COMPLETE =======")
         logger.info("=" * 80)
         logger.info("VM ID: %s", vm_id)
-        logger.info("Interfaces created: %s", len(response_data['interfaces']))
-        logger.info("IP addresses created: %s", len(response_data['ip_addresses']))
+        logger.info("Interfaces created: %s", len(response_data["interfaces"]))
+        logger.info("IP addresses created: %s", len(response_data["ip_addresses"]))
         logger.info("Primary IP: %s", primary_ip_id)
-        logger.info("Warnings: %s", len(response_data['warnings']))
+        logger.info("Warnings: %s", len(response_data["warnings"]))
 
         return response_data
 
@@ -677,7 +695,8 @@ async def create_virtual_interface(
     try:
         logger.info(
             "Creating virtual interface '%s' for VM %s",
-            interface_request.name, interface_request.virtual_machine,
+            interface_request.name,
+            interface_request.virtual_machine,
         )
 
         # Initialize the VM manager
@@ -700,7 +719,8 @@ async def create_virtual_interface(
 
         logger.info(
             "Successfully created interface '%s' with ID: %s",
-            interface_request.name, result.get('id'),
+            interface_request.name,
+            result.get("id"),
         )
         return result
 

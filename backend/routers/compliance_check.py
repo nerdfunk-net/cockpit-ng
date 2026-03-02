@@ -246,7 +246,9 @@ async def check_compliance(
 
         logger.info(
             "Compliance check completed: %s passed, %s failed, %s skipped",
-            summary['devices_passed'], summary['devices_failed'], summary['devices_skipped'],
+            summary["devices_passed"],
+            summary["devices_failed"],
+            summary["devices_skipped"],
         )
 
         return {

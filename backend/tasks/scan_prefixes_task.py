@@ -42,7 +42,9 @@ def _fetch_prefixes_by_custom_field(
     """
 
     try:
-        logger.info("Fetching prefixes with %s=%s", custom_field_name, custom_field_value)
+        logger.info(
+            "Fetching prefixes with %s=%s", custom_field_name, custom_field_value
+        )
         result = nautobot_service._sync_graphql_query(query)
 
         if not result or "data" not in result:
@@ -138,7 +140,10 @@ def _update_ip_in_nautobot(
 
             if not response.ok:
                 logger.error(
-                    "Failed to update IP %s. Status: %s, Response: %s", ip_address, response.status_code, response.text
+                    "Failed to update IP %s. Status: %s, Response: %s",
+                    ip_address,
+                    response.status_code,
+                    response.text,
                 )
 
             response.raise_for_status()
@@ -225,13 +230,19 @@ def _update_ip_in_nautobot(
 
             if not response.ok:
                 logger.error(
-                    "Failed to create IP %s. Status: %s, Response: %s", ip_address, response.status_code, response.text
+                    "Failed to create IP %s. Status: %s, Response: %s",
+                    ip_address,
+                    response.status_code,
+                    response.text,
                 )
 
             response.raise_for_status()
 
             logger.info(
-                "Created IP %s - %s=%s, status=Active", ip_address, response_custom_field_name, current_date
+                "Created IP %s - %s=%s, status=Active",
+                ip_address,
+                response_custom_field_name,
+                current_date,
             )
             return True
 
@@ -309,7 +320,9 @@ def _update_prefix_last_scan(
         best_prefix = prefixes[0]
         prefix_id = best_prefix.get("id")
         logger.debug(
-            "Updating last_scan for prefix: %s (ID: %s)", best_prefix.get('prefix'), prefix_id
+            "Updating last_scan for prefix: %s (ID: %s)",
+            best_prefix.get("prefix"),
+            prefix_id,
         )
 
         # Update last_scan custom field
@@ -395,7 +408,10 @@ def _execute_scan_prefixes(
             job_run_manager.mark_started(job_run_id, task_context.request.id)
 
         logger.info(
-            "Scan prefixes task started: custom_field=%s, value=%s, max_ips=%s", custom_field_name, custom_field_value, scan_max_ips
+            "Scan prefixes task started: custom_field=%s, value=%s, max_ips=%s",
+            custom_field_name,
+            custom_field_value,
+            scan_max_ips,
         )
 
         # Step 1: Determine prefixes
@@ -500,7 +516,8 @@ def _execute_scan_prefixes(
                             # Safety break
                             if len(current_subnets) > 1000:
                                 logger.warning(
-                                    "Prefix splitting generated too many subnets for %s, stopping split.", cidr
+                                    "Prefix splitting generated too many subnets for %s, stopping split.",
+                                    cidr,
                                 )
                                 break
 
@@ -526,7 +543,9 @@ def _execute_scan_prefixes(
                     prefix_ip_counts[cidr] = 0
 
             logger.info(
-                "Total IPs (%s) exceeds max (%s). Splitting job.", total_ips_count, scan_max_ips
+                "Total IPs (%s) exceeds max (%s). Splitting job.",
+                total_ips_count,
+                scan_max_ips,
             )
 
             if task_context:
@@ -579,7 +598,10 @@ def _execute_scan_prefixes(
                 )
                 sub_task_ids.append(sub_task.id)
                 logger.info(
-                    "Spawned sub-task %s for batch %s/%s", sub_task.id, i + 1, len(batches)
+                    "Spawned sub-task %s for batch %s/%s",
+                    sub_task.id,
+                    i + 1,
+                    len(batches),
                 )
 
             result = {
@@ -684,7 +706,9 @@ def _execute_scan_prefixes(
                                 set_active=set_reachable_ip_active,
                             )
                         except Exception as e:
-                            logger.error("Failed to update IP %s in Nautobot: %s", ip, e)
+                            logger.error(
+                                "Failed to update IP %s in Nautobot: %s", ip, e
+                            )
                 else:
                     unreachable.append(ip)
 
@@ -726,7 +750,9 @@ def _execute_scan_prefixes(
             job_run_manager.mark_completed(job_run_id, result=result)
 
         logger.info(
-            "Scan prefixes task completed: %s/%s reachable", len(alive_ips), len(all_ips)
+            "Scan prefixes task completed: %s/%s reachable",
+            len(alive_ips),
+            len(all_ips),
         )
         return result
 

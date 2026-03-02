@@ -596,7 +596,9 @@ class DeviceUpdateService:
                 raise ValueError(error_msg)
 
             logger.info(
-                "✓ Successfully verified device %s primary_ip4 is set to %s", device_id, expected_ip_id
+                "✓ Successfully verified device %s primary_ip4 is set to %s",
+                device_id,
+                expected_ip_id,
             )
 
         logger.info("Successfully updated device %s", device_id)

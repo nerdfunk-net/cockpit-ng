@@ -206,16 +206,23 @@ async def test_git_connection(
     The service handles credential resolution, authentication setup, and shallow clone testing.
     """
     logger.info(
-        "Received test connection request from user: %s", current_user.get('username', 'unknown')
+        "Received test connection request from user: %s",
+        current_user.get("username", "unknown"),
     )
     logger.debug(
-        "Test request details: url=%s, branch=%s, auth_type=%s, credential_name=%s", test_request.url, test_request.branch, test_request.auth_type, test_request.credential_name
+        "Test request details: url=%s, branch=%s, auth_type=%s, credential_name=%s",
+        test_request.url,
+        test_request.branch,
+        test_request.auth_type,
+        test_request.credential_name,
     )
 
     try:
         result = git_connection_service.test_connection(test_request)
         logger.info(
-            "Test connection result: success=%s, message=%s", result.success, result.message
+            "Test connection result: success=%s, message=%s",
+            result.success,
+            result.message,
         )
         return result
     except Exception as e:

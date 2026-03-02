@@ -199,7 +199,9 @@ class DeviceManager:
                             )
                             logger.warning(
                                 "Custom field '%s' mismatch: expected '%s', got '%s'",
-                                cf_name, cf_expected, cf_actual,
+                                cf_name,
+                                cf_expected,
+                                cf_actual,
                             )
                 continue
 
@@ -221,7 +223,9 @@ class DeviceManager:
                 )
                 logger.warning(
                     "Field '%s' mismatch: expected '%s', got '%s'",
-                    field, expected_value, actual_value,
+                    field,
+                    expected_value,
+                    actual_value,
                 )
 
         if mismatches:

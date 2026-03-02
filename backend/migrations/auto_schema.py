@@ -186,7 +186,9 @@ class AutoSchemaMigration:
                     logger.info("✓ Added column: %s.%s", table_name, col_name)
 
                 except Exception as e:
-                    logger.error("✗ Failed to add column %s.%s: %s", table_name, col_name, e)
+                    logger.error(
+                        "✗ Failed to add column %s.%s: %s", table_name, col_name, e
+                    )
 
         return added_count
 

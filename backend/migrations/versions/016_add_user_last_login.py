@@ -17,7 +17,9 @@ class Migration(BaseMigration):
 
     @property
     def description(self) -> str:
-        return "Add last_login column to users table to track most recent login timestamp"
+        return (
+            "Add last_login column to users table to track most recent login timestamp"
+        )
 
     def upgrade(self) -> dict:
         """Add last_login column to users table."""
@@ -78,9 +80,7 @@ class Migration(BaseMigration):
                 )
 
                 if result.fetchone() is not None:
-                    conn.execute(
-                        text("ALTER TABLE users DROP COLUMN last_login")
-                    )
+                    conn.execute(text("ALTER TABLE users DROP COLUMN last_login"))
                     conn.commit()
                     self.log_info("✓ last_login column removed successfully")
                 else:

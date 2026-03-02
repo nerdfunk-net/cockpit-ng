@@ -130,7 +130,13 @@ async def start_scan(
         credential_ids = request.credential_ids or []
 
         logger.info(
-            "Starting scan job with CIDRs: %s, credentials: %s, mode: %s, ping_mode: %s, template id: %s, debug: %s", request.cidrs, credential_ids, request.discovery_mode, request.ping_mode, request.parser_template_ids, debug_enabled
+            "Starting scan job with CIDRs: %s, credentials: %s, mode: %s, ping_mode: %s, template id: %s, debug: %s",
+            request.cidrs,
+            credential_ids,
+            request.discovery_mode,
+            request.ping_mode,
+            request.parser_template_ids,
+            debug_enabled,
         )
         job = await scan_service.start_job(
             request.cidrs,

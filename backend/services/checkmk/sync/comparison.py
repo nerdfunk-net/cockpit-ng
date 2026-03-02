@@ -106,7 +106,8 @@ class DeviceComparisonService:
                 except HTTPException as http_exc:
                     if http_exc.status_code == 404:
                         logger.info(
-                            "Device %s not found in CheckMK", device.get('name', 'unknown')
+                            "Device %s not found in CheckMK",
+                            device.get("name", "unknown"),
                         )
                         device_info["checkmk_status"] = "missing"
                         device_info["diff"] = (
@@ -116,12 +117,16 @@ class DeviceComparisonService:
                         device_info["checkmk_config"] = None
                     else:
                         logger.warning(
-                            "HTTP error comparing device %s: %s", device.get('name', 'unknown'), http_exc
+                            "HTTP error comparing device %s: %s",
+                            device.get("name", "unknown"),
+                            http_exc,
                         )
                         device_info["checkmk_status"] = "error"
                 except Exception as e:
                     logger.warning(
-                        "Error comparing device %s: %s", device.get('name', 'unknown'), e
+                        "Error comparing device %s: %s",
+                        device.get("name", "unknown"),
+                        e,
                     )
                     device_info["checkmk_status"] = "error"
 
@@ -163,7 +168,8 @@ class DeviceComparisonService:
                     device_id
                 )
                 logger.debug(
-                    "[COMPARE] Successfully retrieved normalized config for device %s", device_id
+                    "[COMPARE] Successfully retrieved normalized config for device %s",
+                    device_id,
                 )
             except Exception as norm_error:
                 error_msg = f"Failed to normalize device config for device {device_id}: {str(norm_error)}"
@@ -210,7 +216,8 @@ class DeviceComparisonService:
                     )
                 except HostNotFoundError:
                     logger.info(
-                        "[COMPARE] Host '%s' not found in CheckMK during comparison", hostname
+                        "[COMPARE] Host '%s' not found in CheckMK during comparison",
+                        hostname,
                     )
                     return DeviceComparison(
                         result="host_not_found",
@@ -240,14 +247,17 @@ class DeviceComparisonService:
             try:
                 checkmk_extensions = checkmk_data.get("extensions", {})
                 logger.debug(
-                    "[COMPARE] CheckMK extensions keys for %s: %s", hostname, list(checkmk_extensions.keys())
+                    "[COMPARE] CheckMK extensions keys for %s: %s",
+                    hostname,
+                    list(checkmk_extensions.keys()),
                 )
 
                 # Remove meta_data key from CheckMK config before comparison
                 if "meta_data" in checkmk_extensions.get("attributes", {}):
                     del checkmk_extensions["attributes"]["meta_data"]
                     logger.debug(
-                        "[COMPARE] Removed meta_data from CheckMK attributes for %s", hostname
+                        "[COMPARE] Removed meta_data from CheckMK attributes for %s",
+                        hostname,
                     )
 
                 # Create clean copies for comparison (remove internal dicts)
@@ -259,10 +269,14 @@ class DeviceComparisonService:
                 }
 
                 logger.debug(
-                    "[COMPARE] Nautobot config keys for %s: %s", hostname, list(nb_config_for_comparison.keys())
+                    "[COMPARE] Nautobot config keys for %s: %s",
+                    hostname,
+                    list(nb_config_for_comparison.keys()),
                 )
                 logger.debug(
-                    "[COMPARE] CheckMK config keys for %s: %s", hostname, list(cmk_config_for_comparison.keys())
+                    "[COMPARE] CheckMK config keys for %s: %s",
+                    hostname,
+                    list(cmk_config_for_comparison.keys()),
                 )
 
                 # Compare the configurations
@@ -273,7 +287,9 @@ class DeviceComparisonService:
                     nb_config_for_comparison, cmk_config_for_comparison
                 )
                 logger.info(
-                    "[COMPARE] Found %s difference(s) for %s", len(differences), hostname
+                    "[COMPARE] Found %s difference(s) for %s",
+                    len(differences),
+                    hostname,
                 )
 
             except Exception as e:
@@ -347,10 +363,12 @@ class DeviceComparisonService:
                     cmk_attributes = cmk_config.get("attributes", {})
 
                     logger.debug(
-                        "[COMPARE] Nautobot attributes before filtering: %s", list(nb_attributes.keys())
+                        "[COMPARE] Nautobot attributes before filtering: %s",
+                        list(nb_attributes.keys()),
                     )
                     logger.debug(
-                        "[COMPARE] CheckMK attributes before filtering: %s", list(cmk_attributes.keys())
+                        "[COMPARE] CheckMK attributes before filtering: %s",
+                        list(cmk_attributes.keys()),
                     )
 
                     # Validate that attributes are dictionaries
@@ -377,10 +395,12 @@ class DeviceComparisonService:
                             if k not in ignore_attributes
                         }
                         logger.debug(
-                            "[COMPARE] Nautobot attributes after filtering: %s", list(nb_attributes_filtered.keys())
+                            "[COMPARE] Nautobot attributes after filtering: %s",
+                            list(nb_attributes_filtered.keys()),
                         )
                         logger.debug(
-                            "[COMPARE] CheckMK attributes after filtering: %s", list(cmk_attributes_filtered.keys())
+                            "[COMPARE] CheckMK attributes after filtering: %s",
+                            list(cmk_attributes_filtered.keys()),
                         )
                     except Exception as filter_error:
                         error_msg = f"Error filtering attributes: {str(filter_error)}"
@@ -399,11 +419,13 @@ class DeviceComparisonService:
 
                     if nb_filtered_out:
                         logger.debug(
-                            "[COMPARE] Nautobot attributes filtered out: %s", nb_filtered_out
+                            "[COMPARE] Nautobot attributes filtered out: %s",
+                            nb_filtered_out,
                         )
                     if cmk_filtered_out:
                         logger.debug(
-                            "[COMPARE] CheckMK attributes filtered out: %s", cmk_filtered_out
+                            "[COMPARE] CheckMK attributes filtered out: %s",
+                            cmk_filtered_out,
                         )
 
                     # Compare attributes (only non-ignored ones)
@@ -413,14 +435,18 @@ class DeviceComparisonService:
                                 cmk_value = cmk_attributes_filtered[key]
                                 if nb_value != cmk_value:
                                     logger.debug(
-                                        "[COMPARE] Attribute '%s' differs: Nautobot='%s' vs CheckMK='%s'", key, nb_value, cmk_value
+                                        "[COMPARE] Attribute '%s' differs: Nautobot='%s' vs CheckMK='%s'",
+                                        key,
+                                        nb_value,
+                                        cmk_value,
                                     )
                                     differences.append(
                                         f"attributes.'{key}': Nautobot='{nb_value}' vs CheckMK='{cmk_value}'"
                                     )
                             else:
                                 logger.debug(
-                                    "[COMPARE] Attribute '%s' present in Nautobot but missing in CheckMK", key
+                                    "[COMPARE] Attribute '%s' present in Nautobot but missing in CheckMK",
+                                    key,
                                 )
                                 differences.append(
                                     f"attributes.'{key}': Present in Nautobot ('{nb_value}') but missing in CheckMK"
@@ -430,7 +456,8 @@ class DeviceComparisonService:
                         for key, cmk_value in cmk_attributes_filtered.items():
                             if key not in nb_attributes_filtered:
                                 logger.debug(
-                                    "[COMPARE] Attribute '%s' present in CheckMK but missing in Nautobot", key
+                                    "[COMPARE] Attribute '%s' present in CheckMK but missing in Nautobot",
+                                    key,
                                 )
                                 differences.append(
                                     f"attributes.'{key}': Present in CheckMK ('{cmk_value}') but missing in Nautobot"
@@ -450,7 +477,10 @@ class DeviceComparisonService:
 
                         if nb_value != cmk_value:
                             logger.debug(
-                                "[COMPARE] Key '%s' differs: Nautobot='%s' vs CheckMK='%s'", compare_key, nb_value, cmk_value
+                                "[COMPARE] Key '%s' differs: Nautobot='%s' vs CheckMK='%s'",
+                                compare_key,
+                                nb_value,
+                                cmk_value,
                             )
                             differences.append(
                                 f"'{compare_key}': Nautobot='{nb_value}' vs CheckMK='{cmk_value}'"

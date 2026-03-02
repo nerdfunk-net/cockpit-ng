@@ -56,7 +56,10 @@ class InventoryManager:
             )
 
             logger.info(
-                "Inventory '%s' created with ID %s by %s", inventory_data['name'], inventory.id, inventory_data['created_by']
+                "Inventory '%s' created with ID %s by %s",
+                inventory_data["name"],
+                inventory.id,
+                inventory_data["created_by"],
             )
             return inventory.id
 
@@ -118,7 +121,10 @@ class InventoryManager:
 
             results = [self._model_to_dict(inv) for inv in inventories]
             logger.info(
-                "Listed %s inventories for user %s (scope=%s)", len(results), username, scope
+                "Listed %s inventories for user %s (scope=%s)",
+                len(results),
+                username,
+                scope,
             )
 
             return results
@@ -203,7 +209,10 @@ class InventoryManager:
                 repo.update(inventory_id, is_active=False)
 
             logger.info(
-                "Inventory %s %s by %s", inventory_id, 'deleted' if hard_delete else 'deactivated', username
+                "Inventory %s %s by %s",
+                inventory_id,
+                "deleted" if hard_delete else "deactivated",
+                username,
             )
             return True
 
@@ -265,7 +274,9 @@ class InventoryManager:
             try:
                 result["conditions"] = json.loads(inventory.conditions)
             except json.JSONDecodeError:
-                logger.error("Failed to parse conditions for inventory %s", inventory.id)
+                logger.error(
+                    "Failed to parse conditions for inventory %s", inventory.id
+                )
                 result["conditions"] = []
         else:
             result["conditions"] = []

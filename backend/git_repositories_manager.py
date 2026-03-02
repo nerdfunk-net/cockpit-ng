@@ -48,7 +48,7 @@ class GitRepositoryManager:
             )
 
             logger.info(
-                "Created git repository: %s (ID: %s)", repo_data['name'], new_repo.id
+                "Created git repository: %s (ID: %s)", repo_data["name"], new_repo.id
             )
             return new_repo.id
         except ValueError:

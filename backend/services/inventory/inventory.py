@@ -111,7 +111,10 @@ class InventoryService:
             for i, operation in enumerate(operations):
                 logger.info(
                     "Processing operation %s: type=%s, conditions=%s, nested=%s",
-                    i, operation.operation_type, len(operation.conditions), len(operation.nested_operations),
+                    i,
+                    operation.operation_type,
+                    len(operation.conditions),
+                    len(operation.nested_operations),
                 )
 
                 (
@@ -123,7 +126,10 @@ class InventoryService:
                 all_devices_data.update(devices_data)
 
                 logger.info(
-                    "Operation %s result: %s devices, %s queries", i, len(operation_result), op_count
+                    "Operation %s result: %s devices, %s queries",
+                    i,
+                    len(operation_result),
+                    op_count,
                 )
 
                 # Apply the operation result to our main result set
@@ -136,7 +142,8 @@ class InventoryService:
                     else:
                         result_devices = operation_result
                         logger.info(
-                            "First operation set result devices to %s devices", len(result_devices)
+                            "First operation set result devices to %s devices",
+                            len(result_devices),
                         )
                 else:
                     # Handle different operation types
@@ -145,14 +152,20 @@ class InventoryService:
                         old_count = len(result_devices)
                         result_devices = result_devices.difference(operation_result)
                         logger.info(
-                            "Applied NOT: %s - %s = %s devices", old_count, len(operation_result), len(result_devices)
+                            "Applied NOT: %s - %s = %s devices",
+                            old_count,
+                            len(operation_result),
+                            len(result_devices),
                         )
                     else:
                         # For AND/OR operations, combine with intersection (AND behavior)
                         old_count = len(result_devices)
                         result_devices = result_devices.intersection(operation_result)
                         logger.info(
-                            "Combined with AND: %s ∩ %s = %s devices", old_count, len(operation_result), len(result_devices)
+                            "Combined with AND: %s ∩ %s = %s devices",
+                            old_count,
+                            len(operation_result),
+                            len(result_devices),
                         )
 
             # Convert result to list of DeviceInfo objects
@@ -163,7 +176,9 @@ class InventoryService:
             ]
 
             logger.info(
-                "Preview completed: %s devices found, %s operations executed", len(result_list), operations_count
+                "Preview completed: %s devices found, %s operations executed",
+                len(result_list),
+                operations_count,
             )
 
             return result_list, operations_count
@@ -186,7 +201,9 @@ class InventoryService:
         """
         logger.info(
             "Executing operation: type=%s, conditions=%s, nested=%s",
-            operation.operation_type, len(operation.conditions), len(operation.nested_operations),
+            operation.operation_type,
+            len(operation.conditions),
+            len(operation.nested_operations),
         )
 
         operations_count = 0
@@ -198,7 +215,11 @@ class InventoryService:
 
         for i, condition in enumerate(operation.conditions):
             logger.info(
-                "  Executing condition %s: %s %s '%s'", i, condition.field, condition.operator, condition.value
+                "  Executing condition %s: %s %s '%s'",
+                i,
+                condition.field,
+                condition.operator,
+                condition.value,
             )
             devices, op_count, devices_data = await self._execute_condition(condition)
             condition_results.append(devices)
@@ -217,7 +238,10 @@ class InventoryService:
             operations_count += nested_count
             all_devices_data.update(nested_data)
             logger.info(
-                "  Nested operation %s result: %s devices, type=%s", i, len(nested_result), nested_op.operation_type
+                "  Nested operation %s result: %s devices, type=%s",
+                i,
+                len(nested_result),
+                nested_op.operation_type,
             )
 
             # Separate NOT operations from regular operations
@@ -238,7 +262,11 @@ class InventoryService:
                 old_count = len(result)
                 result = result.difference(not_set)
                 logger.info(
-                    "  Subtracted NOT operation %s: %s - %s = %s devices", i, old_count, len(not_set), len(result)
+                    "  Subtracted NOT operation %s: %s - %s = %s devices",
+                    i,
+                    old_count,
+                    len(not_set),
+                    len(result),
                 )
 
             logger.info("  AND operation final result: %s devices", len(result))
@@ -251,7 +279,11 @@ class InventoryService:
                 old_count = len(result)
                 result = result.difference(not_set)
                 logger.info(
-                    "  Subtracted NOT operation %s: %s - %s = %s devices", i, old_count, len(not_set), len(result)
+                    "  Subtracted NOT operation %s: %s - %s = %s devices",
+                    i,
+                    old_count,
+                    len(not_set),
+                    len(result),
                 )
 
             logger.info("  OR operation final result: %s devices", len(result))
@@ -270,7 +302,9 @@ class InventoryService:
             result = set()
 
         logger.info(
-            "Operation completed: %s devices, %s total queries", len(result), operations_count
+            "Operation completed: %s devices, %s total queries",
+            len(result),
+            operations_count,
         )
         return result, operations_count, all_devices_data
 
@@ -290,7 +324,9 @@ class InventoryService:
             # Validate condition values - prevent None/empty values from causing issues
             if not condition.field or condition.value is None or condition.value == "":
                 logger.warning(
-                    "Skipping condition with empty field or value: field=%s, value=%s", condition.field, condition.value
+                    "Skipping condition with empty field or value: field=%s, value=%s",
+                    condition.field,
+                    condition.value,
                 )
                 return set(), 0, {}
 
@@ -332,7 +368,11 @@ class InventoryService:
                 device_ids = {device.id for device in devices_data}
                 devices_dict = {device.id: device for device in devices_data}
                 logger.info(
-                    "Condition %s %s '%s' returned %s devices (using GraphQL location__n)", condition.field, condition.operator, condition.value, len(devices_data)
+                    "Condition %s %s '%s' returned %s devices (using GraphQL location__n)",
+                    condition.field,
+                    condition.operator,
+                    condition.value,
+                    len(devices_data),
                 )
                 return device_ids, len(devices_data), devices_dict
 
@@ -345,7 +385,8 @@ class InventoryService:
                 # Other fields only support exact matching
                 if use_contains:
                     logger.warning(
-                        "Field %s does not support 'contains' operator, using exact match", condition.field
+                        "Field %s does not support 'contains' operator, using exact match",
+                        condition.field,
                     )
                 devices_data = await query_func(condition.value)
 
@@ -359,21 +400,32 @@ class InventoryService:
                 devices_data = [d for d in all_devices if d.id not in matched_ids]
 
                 logger.info(
-                    "Negated condition %s %s '%s' returned %s devices", condition.field, condition.operator, condition.value, len(devices_data)
+                    "Negated condition %s %s '%s' returned %s devices",
+                    condition.field,
+                    condition.operator,
+                    condition.value,
+                    len(devices_data),
                 )
 
             device_ids = {device.id for device in devices_data}
             devices_dict = {device.id: device for device in devices_data}
 
             logger.info(
-                "Condition %s %s '%s' returned %s devices", condition.field, condition.operator, condition.value, len(devices_data)
+                "Condition %s %s '%s' returned %s devices",
+                condition.field,
+                condition.operator,
+                condition.value,
+                len(devices_data),
             )
 
             return device_ids, 1, devices_dict
 
         except Exception as e:
             logger.error(
-                "Error executing condition %s=%s: %s", condition.field, condition.value, e
+                "Error executing condition %s=%s: %s",
+                condition.field,
+                condition.value,
+                e,
             )
             return set(), 0, {}
 
@@ -671,7 +723,9 @@ class InventoryService:
         result = await nautobot_service.graphql_query(query, variables)
 
         logger.info(
-            "GraphQL result for location query '%s': Found %s devices", location_filter, len(result.get('data', {}).get('devices', []))
+            "GraphQL result for location query '%s': Found %s devices",
+            location_filter,
+            len(result.get("data", {}).get("devices", [])),
         )
 
         # Extract devices directly from the devices query
@@ -1169,7 +1223,11 @@ class InventoryService:
                 graphql_var_type = "String"
 
             logger.info(
-                "Custom field '%s' type='%s', use_contains=%s, GraphQL type='%s'", cf_key, cf_type, use_contains, graphql_var_type
+                "Custom field '%s' type='%s', use_contains=%s, GraphQL type='%s'",
+                cf_key,
+                cf_type,
+                use_contains,
+                graphql_var_type,
             )
 
             # Use the custom field name directly (it should already have cf_ prefix)
@@ -1255,14 +1313,18 @@ class InventoryService:
             logger.debug("Custom field '%s' GraphQL query:\n%s", cf_key, query)
             logger.debug("Custom field '%s' variables: %s", cf_key, variables)
             logger.info(
-                "Custom field '%s' filter: %s, type: %s, graphql_var_type: %s", cf_key, filter_field, cf_type, graphql_var_type
+                "Custom field '%s' filter: %s, type: %s, graphql_var_type: %s",
+                cf_key,
+                filter_field,
+                cf_type,
+                graphql_var_type,
             )
 
             result = await nautobot_service.graphql_query(query, variables)
 
             if "errors" in result:
                 logger.error(
-                    "GraphQL errors in custom field query: %s", result['errors']
+                    "GraphQL errors in custom field query: %s", result["errors"]
                 )
                 return []
 
@@ -1452,18 +1514,24 @@ class InventoryService:
                             # Sort safely - handle None or empty labels
                             values.sort(key=lambda x: (x.get("label") or "").lower())
                             logger.info(
-                                "Retrieved %s choices for custom field '%s'", len(values), cf_key
+                                "Retrieved %s choices for custom field '%s'",
+                                len(values),
+                                cf_key,
                             )
                             return values
                     except Exception as e:
                         logger.error(
-                            "Error fetching choices for custom field '%s': %s", cf_key, e
+                            "Error fetching choices for custom field '%s': %s",
+                            cf_key,
+                            e,
                         )
                         return []
 
                 # For non-select custom fields (text, date, integer, etc.), return empty list for text input
                 logger.info(
-                    "Custom field '%s' is type '%s' - using text input", field_name, cf_info.get('type') if cf_info else 'unknown'
+                    "Custom field '%s' is type '%s' - using text input",
+                    field_name,
+                    cf_info.get("type") if cf_info else "unknown",
                 )
                 return []
 
@@ -1613,8 +1681,8 @@ class InventoryService:
                     )
 
             # Open or clone repository using git_service
-            logger.info("Opening/cloning Git repository: %s", repository['name'])
-            logger.info("  - Auth type: %s", repository.get('auth_type', 'token'))
+            logger.info("Opening/cloning Git repository: %s", repository["name"])
+            logger.info("  - Auth type: %s", repository.get("auth_type", "token"))
             repo = git_service.open_or_clone(repository)
 
             # Create inventories directory if it doesn't exist
@@ -1725,7 +1793,7 @@ class InventoryService:
                     )
 
             # Open or clone repository using git_service
-            logger.info("Opening/cloning Git repository: %s", repository['name'])
+            logger.info("Opening/cloning Git repository: %s", repository["name"])
             repo = git_service.open_or_clone(repository)
 
             # Pull latest changes using git_service
@@ -1787,7 +1855,9 @@ class InventoryService:
         from models.inventory import SavedInventory, SavedInventoryCondition
 
         try:
-            logger.info("Loading inventory '%s' from repository %s", name, repository_id)
+            logger.info(
+                "Loading inventory '%s' from repository %s", name, repository_id
+            )
 
             # Get repository information
             git_manager = GitRepositoryManager()
@@ -1809,7 +1879,7 @@ class InventoryService:
                     )
 
             # Open or clone repository using git_service
-            logger.info("Opening/cloning Git repository: %s", repository['name'])
+            logger.info("Opening/cloning Git repository: %s", repository["name"])
             repo = git_service.open_or_clone(repository)
 
             # Pull latest changes using git_service
@@ -1855,7 +1925,9 @@ class InventoryService:
             ValueError: If inventory not found or access denied
         """
         try:
-            logger.info("Analyzing inventory ID %s for user '%s'", inventory_id, username)
+            logger.info(
+                "Analyzing inventory ID %s for user '%s'", inventory_id, username
+            )
 
             # Load inventory by ID
             from inventory_manager import inventory_manager
@@ -1916,7 +1988,11 @@ class InventoryService:
             for i, device in enumerate(devices):
                 try:
                     logger.debug(
-                        "Analyzing device %s/%s: %s (%s)", i + 1, len(devices), device.name, device.id
+                        "Analyzing device %s/%s: %s (%s)",
+                        i + 1,
+                        len(devices),
+                        device.name,
+                        device.id,
                     )
 
                     # Get detailed device information
@@ -1989,7 +2065,11 @@ class InventoryService:
 
             logger.info(
                 "Analysis complete: %s locations, %s tags, %s custom field types, %s statuses, %s roles",
-                len(locations_set), len(tags_set), len(custom_fields_dict), len(statuses_set), len(roles_set),
+                len(locations_set),
+                len(tags_set),
+                len(custom_fields_dict),
+                len(statuses_set),
+                len(roles_set),
             )
 
             return response

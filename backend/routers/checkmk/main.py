@@ -325,7 +325,10 @@ async def get_host(
         )
     except CheckMKAPIError as e:
         logger.error(
-            "CheckMK API error getting host %s: %s (status: %s)", hostname, str(e), e.status_code
+            "CheckMK API error getting host %s: %s (status: %s)",
+            hostname,
+            str(e),
+            e.status_code,
         )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -399,7 +402,9 @@ async def get_host_inventory(
             )
         elif response.status_code != 200:
             logger.error(
-                "CheckMK inventory API error: %s - %s", response.status_code, response.text
+                "CheckMK inventory API error: %s - %s",
+                response.status_code,
+                response.text,
             )
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -452,7 +457,9 @@ async def create_host(
         if request.start_discovery:
             try:
                 logger.info(
-                    "Starting service discovery (%s) for host %s", request.discovery_mode, request.host_name
+                    "Starting service discovery (%s) for host %s",
+                    request.discovery_mode,
+                    request.host_name,
                 )
                 discovery_result = client.start_service_discovery(
                     request.host_name, mode=request.discovery_mode
@@ -465,7 +472,9 @@ async def create_host(
                 logger.info("Service discovery started for host %s", request.host_name)
             except Exception as discovery_error:
                 logger.warning(
-                    "Failed to start service discovery for host %s: %s", request.host_name, discovery_error
+                    "Failed to start service discovery for host %s: %s",
+                    request.host_name,
+                    discovery_error,
                 )
                 response_data["discovery"] = {
                     "started": False,
@@ -513,7 +522,9 @@ async def create_host_v2(
         if request.start_discovery:
             try:
                 logger.info(
-                    "Starting service discovery (%s) for host %s", request.discovery_mode, request.host_name
+                    "Starting service discovery (%s) for host %s",
+                    request.discovery_mode,
+                    request.host_name,
                 )
                 discovery_result = client.start_service_discovery(
                     request.host_name, mode=request.discovery_mode
@@ -526,7 +537,9 @@ async def create_host_v2(
                 logger.info("Service discovery started for host %s", request.host_name)
             except Exception as discovery_error:
                 logger.warning(
-                    "Failed to start service discovery for host %s: %s", request.host_name, discovery_error
+                    "Failed to start service discovery for host %s: %s",
+                    request.host_name,
+                    discovery_error,
                 )
                 response_data["discovery"] = {
                     "started": False,
@@ -886,7 +899,9 @@ async def show_service(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error showing service %s for host %s: %s", service, hostname, str(e))
+        logger.error(
+            "Error showing service %s for host %s: %s", service, hostname, str(e)
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to show service {service} for host {hostname}: {str(e)}",
@@ -916,7 +931,9 @@ async def get_service_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting service discovery for host %s: %s", hostname, str(e))
+        logger.error(
+            "Error getting service discovery for host %s: %s", hostname, str(e)
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get service discovery for host {hostname}: {str(e)}",
@@ -944,7 +961,9 @@ async def start_service_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error starting service discovery for host %s: %s", hostname, str(e))
+        logger.error(
+            "Error starting service discovery for host %s: %s", hostname, str(e)
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start service discovery for host {hostname}: {str(e)}",
@@ -1171,7 +1190,9 @@ async def create_host_downtime(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error creating downtime for host %s: %s", request.host_name, str(e))
+        logger.error(
+            "Error creating downtime for host %s: %s", request.host_name, str(e)
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create downtime for host {request.host_name}: {str(e)}",
@@ -1356,7 +1377,9 @@ async def get_activation_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting activation status for %s: %s", activation_id, str(e))
+        logger.error(
+            "Error getting activation status for %s: %s", activation_id, str(e)
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get activation status for {activation_id}: {str(e)}",
@@ -1623,7 +1646,9 @@ async def get_all_folders(
     except CheckMKAPIError as e:
         # Log CheckMK API error for debugging
         logger.error(
-            "CheckMK API error getting folders: status=%s, parent=%s", e.status_code, parent
+            "CheckMK API error getting folders: status=%s, parent=%s",
+            e.status_code,
+            parent,
         )
         if hasattr(e, "response_data") and e.response_data:
             logger.error("CheckMK error details: %s", e.response_data)
@@ -1661,7 +1686,9 @@ async def get_all_folders(
             )
         else:
             logger.error(
-                "CheckMK API error getting folders: %s (status: %s)", str(e), e.status_code
+                "CheckMK API error getting folders: %s (status: %s)",
+                str(e),
+                e.status_code,
             )
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -1710,7 +1737,10 @@ async def get_folder(
             )
         else:
             logger.error(
-                "CheckMK API error getting folder %s: %s (status: %s)", folder_path, str(e), e.status_code
+                "CheckMK API error getting folder %s: %s (status: %s)",
+                folder_path,
+                str(e),
+                e.status_code,
             )
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,

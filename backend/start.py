@@ -72,7 +72,7 @@ def main():
 
     # Log current log level for verification
     logger.debug("DEBUG: Logging configured at %s level", settings.log_level)
-    logger.debug("DEBUG: Environment LOG_LEVEL = %s", os.getenv('LOG_LEVEL', 'not set'))
+    logger.debug("DEBUG: Environment LOG_LEVEL = %s", os.getenv("LOG_LEVEL", "not set"))
 
     # Initialize database settings
     initialize_database_settings()

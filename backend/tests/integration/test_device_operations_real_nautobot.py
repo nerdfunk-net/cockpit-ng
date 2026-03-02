@@ -532,7 +532,8 @@ class TestAddDevice:
             existing_devices = cleanup_result.get("data", {}).get("devices", [])
             for device in existing_devices:
                 logger.info(
-                    "Cleaning up existing device %s from previous test run", device['id']
+                    "Cleaning up existing device %s from previous test run",
+                    device["id"],
                 )
                 await real_nautobot_service.rest_request(
                     endpoint=f"dcim/devices/{device['id']}/", method="DELETE"
@@ -611,7 +612,8 @@ class TestAddDevice:
                 device_id = devices[0]["id"]
                 test_device_ids.append(device_id)  # Track for cleanup
                 logger.info(
-                    "Device %s was created before IP failure, will be cleaned up", device_id
+                    "Device %s was created before IP failure, will be cleaned up",
+                    device_id,
                 )
         except Exception as e:
             logger.warning("Could not check for orphaned device: %s", e)
@@ -957,7 +959,7 @@ class TestBulkEdit:
 
         # Step 2: Update device to use this existing unassigned IP
         logger.info(
-            "Updating device %s to use existing unassigned IP", device_info['name']
+            "Updating device %s to use existing unassigned IP", device_info["name"]
         )
         result = await device_update_service.update_device(
             device_identifier={"id": device_info["id"]},
@@ -1172,7 +1174,7 @@ class TestAddDeviceWithTagsAndCustomFields:
                 f"Tag {tag_id} should be assigned to device"
             )
 
-        logger.info("✓ Device created with %s tags", len(device['tags']))
+        logger.info("✓ Device created with %s tags", len(device["tags"]))
 
     @pytest.mark.asyncio
     async def test_add_device_with_custom_fields(

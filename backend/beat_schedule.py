@@ -53,6 +53,15 @@ CELERY_BEAT_SCHEDULE = {
             "expires": 540,  # Task expires after 9 minutes if not picked up
         },
     },
+    # Audit log cleanup - runs once per day
+    # Controlled by PURGE_LOGS env var (0 = disabled)
+    "cleanup-audit-logs": {
+        "task": "tasks.cleanup_audit_logs",
+        "schedule": crontab(hour=2, minute=0),  # Daily at 02:00 UTC
+        "options": {
+            "expires": 3600,  # Task expires after 1 hour if not picked up
+        },
+    },
 }
 
 # Schedule examples using different patterns:
