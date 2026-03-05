@@ -29,6 +29,7 @@ export const REPOSITORY_CATEGORIES = [
   { value: 'cockpit_configs', label: 'Cockpit Configs' },
   { value: 'templates', label: 'Templates' },
   { value: 'agent', label: 'Agents' },
+  { value: 'csv_imports', label: 'CSV Imports' },
 ] as const
 
 // Authentication types
