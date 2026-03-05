@@ -49,6 +49,16 @@ export interface JobTemplate {
   ip_mark_description?: string
   // Remove action options
   ip_remove_skip_assigned?: boolean
+  // CSV Import (csv_import type)
+  csv_import_repo_id?: number
+  csv_import_file_path?: string
+  csv_import_type?: string
+  csv_import_primary_key?: string
+  csv_import_update_existing?: boolean
+  csv_import_delimiter?: string
+  csv_import_quote_char?: string
+  csv_import_column_mapping?: Record<string, string | null>
+  csv_import_file_filter?: string
   is_global: boolean
   user_id?: number
   created_by?: string
@@ -93,6 +103,18 @@ export interface IpAddressTag {
   id: string
   name: string
   slug: string
+}
+
+export interface CsvRepoFile {
+  name: string
+  path: string
+  directory: string
+  size: number
+}
+
+export interface NautobotDefaults {
+  csv_delimiter: string
+  csv_quote_char: string
 }
 
 export interface CustomField {

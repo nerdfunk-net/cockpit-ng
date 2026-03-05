@@ -466,6 +466,16 @@ class JobTemplate(Base):
     ip_mark_status = Column(String(255), nullable=True)  # Nautobot status UUID
     ip_mark_tag = Column(String(255), nullable=True)  # Nautobot tag UUID
     ip_mark_description = Column(Text, nullable=True)  # Description to write
+    # CSV Import (csv_import type)
+    csv_import_repo_id = Column(Integer, nullable=True)
+    csv_import_file_path = Column(String(500), nullable=True)
+    csv_import_type = Column(String(50), nullable=True)  # "devices" | "ip-prefixes" | "ip-addresses"
+    csv_import_primary_key = Column(String(255), nullable=True)
+    csv_import_update_existing = Column(Boolean, nullable=False, default=True)
+    csv_import_delimiter = Column(String(10), nullable=True)
+    csv_import_quote_char = Column(String(10), nullable=True)
+    csv_import_column_mapping = Column(Text, nullable=True)  # JSON: {"csv_col": "nautobot_field" | null}
+    csv_import_file_filter = Column(String(255), nullable=True)  # glob pattern like "*.csv"
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

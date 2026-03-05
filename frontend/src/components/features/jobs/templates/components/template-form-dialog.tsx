@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Plus, Edit } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useTemplateMutations } from '../hooks/use-template-mutations'
-import { useIpAddressStatuses, useIpAddressTags } from '../hooks/use-template-queries'
-import { EMPTY_IP_STATUSES, EMPTY_IP_TAGS } from '../utils/constants'
+import { useIpAddressStatuses, useIpAddressTags, useCsvImportRepos, useCsvFiles, useCsvHeaders, useNautobotDefaults } from '../hooks/use-template-queries'
+import { EMPTY_IP_STATUSES, EMPTY_IP_TAGS, EMPTY_REPOS, EMPTY_CSV_FILES, EMPTY_HEADERS } from '../utils/constants'
 import { JobTemplateCommonFields } from '../../components/JobTemplateCommonFields'
 import { JobTemplateConfigRepoSection } from '../../components/JobTemplateConfigRepoSection'
 import { JobTemplateInventorySection } from '../../components/JobTemplateInventorySection'
@@ -18,6 +18,8 @@ import { CompareDevicesJobTemplate } from '../../components/template-types/Compa
 import { ScanPrefixesJobTemplate } from '../../components/template-types/ScanPrefixesJobTemplate'
 import { DeployAgentJobTemplate, generateEntryKey } from '../../components/template-types/DeployAgentJobTemplate'
 import { MaintainIPAddressesJobTemplate } from '../../components/template-types/MaintainIPAddressesJobTemplate'
+import { CsvImportJobTemplate } from '../../components/template-types/CsvImportJobTemplate'
+import { CsvImportMappingDialog } from '../../components/template-types/CsvImportMappingDialog'
 import type { DeployTemplateEntryData } from '../../components/template-types/DeployTemplateEntry'
 import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField } from '../types'
 import { JOB_TYPE_COLORS } from '../utils/constants'
@@ -91,6 +93,18 @@ export function TemplateFormDialog({
   const [formIpMarkDescription, setFormIpMarkDescription] = useState("")
   // Remove action options
   const [formIpRemoveSkipAssigned, setFormIpRemoveSkipAssigned] = useState(true)
+  // CSV Import
+  const [formCsvImportRepoId, setFormCsvImportRepoId] = useState<number | null>(null)
+  const [formCsvImportFilePath, setFormCsvImportFilePath] = useState("")
+  const [formCsvImportType, setFormCsvImportType] = useState("")
+  const [formCsvImportPrimaryKey, setFormCsvImportPrimaryKey] = useState("")
+  const [formCsvImportUpdateExisting, setFormCsvImportUpdateExisting] = useState(true)
+  const [formCsvImportDelimiter, setFormCsvImportDelimiter] = useState(",")
+  const [formCsvImportQuoteChar, setFormCsvImportQuoteChar] = useState('"')
+  const [formCsvImportColumnMapping, setFormCsvImportColumnMapping] = useState<Record<string, string | null>>({})
+  const [formCsvMappingDialogOpen, setFormCsvMappingDialogOpen] = useState(false)
+  const [csvFileQuery, setCsvFileQuery] = useState("")
+  const [formCsvImportFileFilter, setFormCsvImportFileFilter] = useState("")
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
@@ -100,6 +114,41 @@ export function TemplateFormDialog({
   const { data: ipTags = EMPTY_IP_TAGS, isLoading: loadingIpTags } = useIpAddressTags({
     enabled: formJobType === "ip_addresses",
   })
+
+  // CSV Import data (only fetched when job type is csv_import)
+  const isCsvImport = formJobType === "csv_import"
+  const { data: csvImportRepos = EMPTY_REPOS } = useCsvImportRepos({ enabled: isCsvImport })
+  const { data: csvFiles = EMPTY_CSV_FILES, isLoading: csvFilesLoading } = useCsvFiles({
+    repoId: formCsvImportRepoId,
+    query: csvFileQuery,
+    enabled: isCsvImport,
+  })
+  const { data: csvHeaders = EMPTY_HEADERS, isLoading: csvHeadersLoading } = useCsvHeaders({
+    repoId: formCsvImportRepoId,
+    filePath: formCsvImportFilePath || null,
+    delimiter: formCsvImportDelimiter,
+    quoteChar: formCsvImportQuoteChar,
+    enabled: isCsvImport,
+  })
+  const { data: nautobotDefaults } = useNautobotDefaults({ enabled: isCsvImport })
+
+  // Pre-fill delimiter/quoteChar from Nautobot defaults when entering csv_import mode
+  useEffect(() => {
+    if (isCsvImport && nautobotDefaults) {
+      if (!formCsvImportDelimiter || formCsvImportDelimiter === ",") {
+        setFormCsvImportDelimiter(nautobotDefaults.csv_delimiter || ",")
+      }
+      if (!formCsvImportQuoteChar || formCsvImportQuoteChar === '"') {
+        setFormCsvImportQuoteChar(nautobotDefaults.csv_quote_char || '"')
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCsvImport, nautobotDefaults])
+
+  const mappedColumnCount = useMemo(
+    () => Object.values(formCsvImportColumnMapping).filter((v) => v !== null).length,
+    [formCsvImportColumnMapping]
+  )
 
   const resetForm = useCallback(() => {
     setFormName("")
@@ -139,6 +188,16 @@ export function TemplateFormDialog({
     setFormIpMarkTag("")
     setFormIpMarkDescription("")
     setFormIpRemoveSkipAssigned(true)
+    setFormCsvImportRepoId(null)
+    setFormCsvImportFilePath("")
+    setFormCsvImportType("")
+    setFormCsvImportPrimaryKey("")
+    setFormCsvImportUpdateExisting(true)
+    setFormCsvImportDelimiter(",")
+    setFormCsvImportQuoteChar('"')
+    setFormCsvImportColumnMapping({})
+    setCsvFileQuery("")
+    setFormCsvImportFileFilter("")
     setFormIsGlobal(false)
   }, [])
 
@@ -202,6 +261,15 @@ export function TemplateFormDialog({
       setFormIpMarkTag(editingTemplate.ip_mark_tag || "")
       setFormIpMarkDescription(editingTemplate.ip_mark_description || "")
       setFormIpRemoveSkipAssigned(editingTemplate.ip_remove_skip_assigned ?? true)
+      setFormCsvImportRepoId(editingTemplate.csv_import_repo_id || null)
+      setFormCsvImportFilePath(editingTemplate.csv_import_file_path || "")
+      setFormCsvImportType(editingTemplate.csv_import_type || "")
+      setFormCsvImportPrimaryKey(editingTemplate.csv_import_primary_key || "")
+      setFormCsvImportUpdateExisting(editingTemplate.csv_import_update_existing ?? true)
+      setFormCsvImportDelimiter(editingTemplate.csv_import_delimiter || ",")
+      setFormCsvImportQuoteChar(editingTemplate.csv_import_quote_char || '"')
+      setFormCsvImportColumnMapping(editingTemplate.csv_import_column_mapping || {})
+      setFormCsvImportFileFilter(editingTemplate.csv_import_file_filter ?? "")
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
@@ -222,8 +290,11 @@ export function TemplateFormDialog({
     if (formJobType === "ip_addresses") {
       if (!formIpFilterField.trim() || !formIpFilterValue.trim()) return false
     }
+    if (formJobType === "csv_import") {
+      if (!formCsvImportRepoId || !formCsvImportFilePath || !formCsvImportType || !formCsvImportPrimaryKey) return false
+    }
     return true
-  }, [formName, formJobType, formWriteTimestampToCustomField, formTimestampCustomFieldName, formBackupStartupConfigPath, formBackupRunningConfigPath, formInventorySource, formInventoryName, formCommandTemplate, formDeployAgentId, formDeployTemplateEntries, formIpFilterField, formIpFilterValue])
+  }, [formName, formJobType, formWriteTimestampToCustomField, formTimestampCustomFieldName, formBackupStartupConfigPath, formBackupRunningConfigPath, formInventorySource, formInventoryName, formCommandTemplate, formDeployAgentId, formDeployTemplateEntries, formIpFilterField, formIpFilterValue, formCsvImportRepoId, formCsvImportFilePath, formCsvImportType, formCsvImportPrimaryKey])
 
   const handleSubmit = async () => {
     const payload = {
@@ -276,6 +347,18 @@ export function TemplateFormDialog({
       ip_mark_tag: formJobType === "ip_addresses" && formIpAction === "mark" ? formIpMarkTag || undefined : undefined,
       ip_mark_description: formJobType === "ip_addresses" && formIpAction === "mark" ? formIpMarkDescription || undefined : undefined,
       ip_remove_skip_assigned: formJobType === "ip_addresses" && formIpAction === "remove" ? formIpRemoveSkipAssigned : undefined,
+      // CSV Import fields
+      csv_import_repo_id: formJobType === "csv_import" ? formCsvImportRepoId || undefined : undefined,
+      csv_import_file_path: formJobType === "csv_import" ? formCsvImportFilePath || undefined : undefined,
+      csv_import_type: formJobType === "csv_import" ? formCsvImportType || undefined : undefined,
+      csv_import_primary_key: formJobType === "csv_import" ? formCsvImportPrimaryKey || undefined : undefined,
+      csv_import_update_existing: formJobType === "csv_import" ? formCsvImportUpdateExisting : undefined,
+      csv_import_delimiter: formJobType === "csv_import" ? formCsvImportDelimiter || undefined : undefined,
+      csv_import_quote_char: formJobType === "csv_import" ? formCsvImportQuoteChar || undefined : undefined,
+      csv_import_column_mapping: formJobType === "csv_import"
+        ? Object.fromEntries(Object.entries(formCsvImportColumnMapping).filter(([, v]) => v !== null))
+        : undefined,
+      csv_import_file_filter: formJobType === "csv_import" ? formCsvImportFileFilter || undefined : undefined,
       is_global: formIsGlobal
     }
 
@@ -336,8 +419,8 @@ export function TemplateFormDialog({
             />
           )}
 
-          {/* Inventory - Not for scan_prefixes, deploy_agent, or ip_addresses */}
-          {formJobType !== "scan_prefixes" && formJobType !== "deploy_agent" && formJobType !== "ip_addresses" && (
+          {/* Inventory - Not for scan_prefixes, deploy_agent, ip_addresses, or csv_import */}
+          {formJobType !== "scan_prefixes" && formJobType !== "deploy_agent" && formJobType !== "ip_addresses" && formJobType !== "csv_import" && (
             <JobTemplateInventorySection
               formInventorySource={formInventorySource}
               setFormInventorySource={setFormInventorySource}
@@ -446,6 +529,47 @@ export function TemplateFormDialog({
               savedInventories={savedInventories}
               loadingInventories={loadingInventories}
             />
+          )}
+
+          {formJobType === "csv_import" && (
+            <>
+              <CsvImportJobTemplate
+                formCsvImportRepoId={formCsvImportRepoId}
+                setFormCsvImportRepoId={setFormCsvImportRepoId}
+                formCsvImportFilePath={formCsvImportFilePath}
+                setFormCsvImportFilePath={setFormCsvImportFilePath}
+                formCsvImportType={formCsvImportType}
+                setFormCsvImportType={setFormCsvImportType}
+                formCsvImportPrimaryKey={formCsvImportPrimaryKey}
+                setFormCsvImportPrimaryKey={setFormCsvImportPrimaryKey}
+                formCsvImportUpdateExisting={formCsvImportUpdateExisting}
+                setFormCsvImportUpdateExisting={setFormCsvImportUpdateExisting}
+                formCsvImportDelimiter={formCsvImportDelimiter}
+                setFormCsvImportDelimiter={setFormCsvImportDelimiter}
+                formCsvImportQuoteChar={formCsvImportQuoteChar}
+                setFormCsvImportQuoteChar={setFormCsvImportQuoteChar}
+                formCsvImportColumnMapping={formCsvImportColumnMapping}
+                formCsvImportFileFilter={formCsvImportFileFilter}
+                setFormCsvImportFileFilter={setFormCsvImportFileFilter}
+                csvImportRepos={csvImportRepos}
+                csvFiles={csvFiles}
+                csvHeaders={csvHeaders}
+                csvFilesLoading={csvFilesLoading}
+                csvHeadersLoading={csvHeadersLoading}
+                mappedColumnCount={mappedColumnCount}
+                onOpenMappingDialog={() => setFormCsvMappingDialogOpen(true)}
+                fileQuery={csvFileQuery}
+                setFileQuery={setCsvFileQuery}
+              />
+              <CsvImportMappingDialog
+                open={formCsvMappingDialogOpen}
+                onOpenChange={setFormCsvMappingDialogOpen}
+                csvHeaders={csvHeaders}
+                importType={formCsvImportType}
+                columnMapping={formCsvImportColumnMapping}
+                onMappingChange={setFormCsvImportColumnMapping}
+              />
+            </>
           )}
         </div>
 

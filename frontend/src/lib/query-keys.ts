@@ -77,6 +77,13 @@ export const queryKeys = {
         ? ([...queryKeys.jobs.all, 'custom-fields', contentType] as const)
         : ([...queryKeys.jobs.all, 'custom-fields'] as const),
 
+    // CSV Import dependencies
+    csvImportRepos: () => [...queryKeys.jobs.all, 'csv-import-repos'] as const,
+    csvFiles: (repoId: number | null, query?: string) =>
+      [...queryKeys.jobs.all, 'csv-files', repoId, query] as const,
+    csvHeaders: (repoId: number | null, filePath: string | null, delimiter?: string) =>
+      [...queryKeys.jobs.all, 'csv-headers', repoId, filePath, delimiter] as const,
+
     // Schedules
     schedules: () => [...queryKeys.jobs.all, 'schedules'] as const,
     schedule: (id: number) => [...queryKeys.jobs.schedules(), id] as const,

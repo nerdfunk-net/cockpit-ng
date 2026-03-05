@@ -1,14 +1,30 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField, IpAddressStatus, IpAddressTag } from '../types'
-import { STALE_TIME, EMPTY_TEMPLATES, EMPTY_TYPES, EMPTY_REPOS, EMPTY_INVENTORIES, EMPTY_CMD_TEMPLATES, EMPTY_CUSTOM_FIELDS, EMPTY_IP_STATUSES, EMPTY_IP_TAGS } from '../utils/constants'
+import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField, IpAddressStatus, IpAddressTag, CsvRepoFile, NautobotDefaults } from '../types'
+import { STALE_TIME, EMPTY_TEMPLATES, EMPTY_TYPES, EMPTY_REPOS, EMPTY_INVENTORIES, EMPTY_CMD_TEMPLATES, EMPTY_CUSTOM_FIELDS, EMPTY_IP_STATUSES, EMPTY_IP_TAGS, EMPTY_CSV_FILES, EMPTY_HEADERS } from '../utils/constants'
 
 interface UseQueryOptions {
   enabled?: boolean
 }
 
+interface UseCsvFilesOptions {
+  repoId: number | null
+  query?: string
+  enabled?: boolean
+}
+
+interface UseCsvHeadersOptions {
+  repoId: number | null
+  filePath: string | null
+  delimiter?: string
+  quoteChar?: string
+  enabled?: boolean
+}
+
 const DEFAULT_OPTIONS: UseQueryOptions = { enabled: true }
+const DEFAULT_CSV_FILES_OPTIONS: UseCsvFilesOptions = { repoId: null }
+const DEFAULT_CSV_HEADERS_OPTIONS: UseCsvHeadersOptions = { repoId: null, filePath: null }
 
 /**
  * Fetch all job templates
@@ -170,5 +186,99 @@ export function useIpAddressTags(options: UseQueryOptions = DEFAULT_OPTIONS) {
     },
     enabled,
     staleTime: STALE_TIME.IP_OPTIONS,
+  })
+}
+
+/**
+ * Fetch Git repositories with category=csv_imports
+ * Used in CSV Import job template
+ */
+export function useCsvImportRepos(options: UseQueryOptions = DEFAULT_OPTIONS) {
+  const { apiCall } = useApi()
+  const { enabled = true } = options
+
+  return useQuery({
+    queryKey: queryKeys.jobs.csvImportRepos(),
+    queryFn: async () => {
+      const response = await apiCall<{ repositories: GitRepository[] }>(
+        '/api/git-repositories?category=csv_imports',
+        { method: 'GET' }
+      )
+      return response?.repositories || EMPTY_REPOS
+    },
+    enabled,
+    staleTime: STALE_TIME.CSV_REPOS,
+  })
+}
+
+/**
+ * Fetch CSV files from a Git repository
+ * Used in CSV Import job template
+ */
+export function useCsvFiles(options: UseCsvFilesOptions = DEFAULT_CSV_FILES_OPTIONS) {
+  const { apiCall } = useApi()
+  const { repoId, query = '', enabled = true } = options
+
+  return useQuery({
+    queryKey: queryKeys.jobs.csvFiles(repoId, query),
+    queryFn: async () => {
+      const params = query ? `?query=${encodeURIComponent(query)}` : ''
+      const response = await apiCall<{ success: boolean; data: { files: CsvRepoFile[] } }>(
+        `/api/git/${repoId}/csv-files${params}`,
+        { method: 'GET' }
+      )
+      return response?.data?.files || EMPTY_CSV_FILES
+    },
+    enabled: enabled && !!repoId,
+    staleTime: STALE_TIME.CSV_FILES,
+  })
+}
+
+/**
+ * Fetch CSV column headers from a file in a Git repository
+ * Used in CSV Import job template
+ */
+export function useCsvHeaders(options: UseCsvHeadersOptions = DEFAULT_CSV_HEADERS_OPTIONS) {
+  const { apiCall } = useApi()
+  const { repoId, filePath, delimiter = ',', quoteChar = '"', enabled = true } = options
+
+  return useQuery({
+    queryKey: queryKeys.jobs.csvHeaders(repoId, filePath, delimiter),
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        path: filePath!,
+        delimiter,
+        quote_char: quoteChar,
+      })
+      const response = await apiCall<{ success: boolean; headers: string[] }>(
+        `/api/git/${repoId}/csv-headers?${params.toString()}`,
+        { method: 'GET' }
+      )
+      return response?.headers || EMPTY_HEADERS
+    },
+    enabled: enabled && !!repoId && !!filePath,
+    staleTime: STALE_TIME.CSV_HEADERS,
+  })
+}
+
+/**
+ * Fetch Nautobot default settings (csv_delimiter, csv_quote_char)
+ * Used in CSV Import job template
+ */
+export function useNautobotDefaults(options: UseQueryOptions = DEFAULT_OPTIONS) {
+  const { apiCall } = useApi()
+  const { enabled = true } = options
+
+  return useQuery({
+    queryKey: queryKeys.nautobotSettings.defaults(),
+    queryFn: async () => {
+      const response = await apiCall<{ success: boolean; data: NautobotDefaults }>(
+        '/api/settings/nautobot/defaults',
+        { method: 'GET' }
+      )
+      return response?.data || null
+    },
+    enabled,
+    staleTime: STALE_TIME.NAUTOBOT_DEFAULTS,
   })
 }

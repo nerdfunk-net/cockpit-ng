@@ -16,6 +16,7 @@ JobTemplateType = Literal[
     "scan_prefixes",
     "deploy_agent",
     "ip_addresses",
+    "csv_import",
 ]
 
 # Inventory source options
@@ -216,6 +217,34 @@ class JobTemplateBase(BaseModel):
         None,
         description="Description text to write to matching IPs (only applies when ip_action='mark')",
     )
+    # CSV Import (csv_import type)
+    csv_import_repo_id: Optional[int] = Field(
+        None, description="Git repository ID for the CSV source (type=csv_imports)"
+    )
+    csv_import_file_path: Optional[str] = Field(
+        None, max_length=500, description="Relative path of the CSV file in the repository"
+    )
+    csv_import_type: Optional[str] = Field(
+        None, max_length=50, description="Object type to import: 'devices', 'ip-prefixes', 'ip-addresses'"
+    )
+    csv_import_primary_key: Optional[str] = Field(
+        None, max_length=255, description="CSV column name used as the lookup key"
+    )
+    csv_import_update_existing: bool = Field(
+        True, description="When True, update existing objects; when False, skip them"
+    )
+    csv_import_delimiter: Optional[str] = Field(
+        None, max_length=10, description="CSV field delimiter (default from Nautobot settings)"
+    )
+    csv_import_quote_char: Optional[str] = Field(
+        None, max_length=10, description="CSV quote character (default from Nautobot settings)"
+    )
+    csv_import_column_mapping: Optional[Dict[str, Optional[str]]] = Field(
+        None, description="Mapping from CSV column names to Nautobot field names (null = Not Used)"
+    )
+    csv_import_file_filter: Optional[str] = Field(
+        None, max_length=255, description="Glob pattern to select CSV files at runtime (e.g. '*.csv')"
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -268,6 +297,16 @@ class JobTemplateUpdate(BaseModel):
     ip_mark_status: Optional[str] = Field(None, max_length=255)
     ip_mark_tag: Optional[str] = Field(None, max_length=255)
     ip_mark_description: Optional[str] = None
+    # CSV Import
+    csv_import_repo_id: Optional[int] = None
+    csv_import_file_path: Optional[str] = Field(None, max_length=500)
+    csv_import_type: Optional[str] = Field(None, max_length=50)
+    csv_import_primary_key: Optional[str] = Field(None, max_length=255)
+    csv_import_update_existing: Optional[bool] = None
+    csv_import_delimiter: Optional[str] = Field(None, max_length=10)
+    csv_import_quote_char: Optional[str] = Field(None, max_length=10)
+    csv_import_column_mapping: Optional[Dict[str, Optional[str]]] = None
+    csv_import_file_filter: Optional[str] = Field(None, max_length=255)
     is_global: Optional[bool] = None
 
 

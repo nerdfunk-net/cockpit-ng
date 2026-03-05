@@ -316,3 +316,19 @@ class IPAddressesTaskRequest(BaseModel):
     include_null: bool = (
         False  # When True, also include IPs where filter_field is null (never set)
     )
+
+
+class CsvImportRequest(BaseModel):
+    """Request model for importing/updating Nautobot objects from a CSV file in a Git repo."""
+
+    repo_id: int
+    file_path: str
+    import_type: str  # "devices", "ip-prefixes", "ip-addresses"
+    primary_key: str  # CSV column name used as the lookup key
+    update_existing: bool = True
+    delimiter: str = ","
+    quote_char: str = '"'
+    column_mapping: Optional[Dict[str, Optional[str]]] = None
+    template_id: Optional[int] = None
+    dry_run: bool = False
+    file_filter: Optional[str] = None  # glob pattern; if set, process all matching files instead of file_path

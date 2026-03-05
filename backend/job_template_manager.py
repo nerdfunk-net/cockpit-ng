@@ -56,6 +56,15 @@ def create_job_template(
     ip_mark_status: Optional[str] = None,
     ip_mark_tag: Optional[str] = None,
     ip_mark_description: Optional[str] = None,
+    csv_import_repo_id: Optional[int] = None,
+    csv_import_file_path: Optional[str] = None,
+    csv_import_type: Optional[str] = None,
+    csv_import_primary_key: Optional[str] = None,
+    csv_import_update_existing: bool = True,
+    csv_import_delimiter: Optional[str] = None,
+    csv_import_quote_char: Optional[str] = None,
+    csv_import_column_mapping: Optional[Dict[str, Any]] = None,
+    csv_import_file_filter: Optional[str] = None,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -71,6 +80,11 @@ def create_job_template(
 
     # Serialize deploy_templates to JSON string for storage
     deploy_templates_json = json.dumps(deploy_templates) if deploy_templates else None
+
+    # Serialize csv_import_column_mapping to JSON string for storage
+    csv_import_column_mapping_json = (
+        json.dumps(csv_import_column_mapping) if csv_import_column_mapping is not None else None
+    )
 
     template = repo.create(
         name=name,
@@ -111,6 +125,15 @@ def create_job_template(
         ip_mark_status=ip_mark_status,
         ip_mark_tag=ip_mark_tag,
         ip_mark_description=ip_mark_description,
+        csv_import_repo_id=csv_import_repo_id,
+        csv_import_file_path=csv_import_file_path,
+        csv_import_type=csv_import_type,
+        csv_import_primary_key=csv_import_primary_key,
+        csv_import_update_existing=csv_import_update_existing,
+        csv_import_delimiter=csv_import_delimiter,
+        csv_import_quote_char=csv_import_quote_char,
+        csv_import_column_mapping=csv_import_column_mapping_json,
+        csv_import_file_filter=csv_import_file_filter,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -197,6 +220,15 @@ def update_job_template(
     ip_mark_status: Optional[str] = None,
     ip_mark_tag: Optional[str] = None,
     ip_mark_description: Optional[str] = None,
+    csv_import_repo_id: Optional[int] = None,
+    csv_import_file_path: Optional[str] = None,
+    csv_import_type: Optional[str] = None,
+    csv_import_primary_key: Optional[str] = None,
+    csv_import_update_existing: Optional[bool] = None,
+    csv_import_delimiter: Optional[str] = None,
+    csv_import_quote_char: Optional[str] = None,
+    csv_import_column_mapping: Optional[Dict[str, Any]] = None,
+    csv_import_file_filter: Optional[str] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -285,6 +317,24 @@ def update_job_template(
         update_data["ip_mark_tag"] = ip_mark_tag
     if ip_mark_description is not None:
         update_data["ip_mark_description"] = ip_mark_description
+    if csv_import_repo_id is not None:
+        update_data["csv_import_repo_id"] = csv_import_repo_id
+    if csv_import_file_path is not None:
+        update_data["csv_import_file_path"] = csv_import_file_path
+    if csv_import_type is not None:
+        update_data["csv_import_type"] = csv_import_type
+    if csv_import_primary_key is not None:
+        update_data["csv_import_primary_key"] = csv_import_primary_key
+    if csv_import_update_existing is not None:
+        update_data["csv_import_update_existing"] = csv_import_update_existing
+    if csv_import_delimiter is not None:
+        update_data["csv_import_delimiter"] = csv_import_delimiter
+    if csv_import_quote_char is not None:
+        update_data["csv_import_quote_char"] = csv_import_quote_char
+    if csv_import_column_mapping is not None:
+        update_data["csv_import_column_mapping"] = json.dumps(csv_import_column_mapping)
+    if csv_import_file_filter is not None:
+        update_data["csv_import_file_filter"] = csv_import_file_filter
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -351,6 +401,11 @@ def get_job_types() -> List[Dict[str, str]]:
             "label": "Maintain IP-Addresses",
             "description": "List, mark, or remove Nautobot IP addresses filtered by a field",
         },
+        {
+            "value": "csv_import",
+            "label": "CSV Import",
+            "description": "Import or update Nautobot objects from a CSV file in a Git repository",
+        },
     ]
 
 
@@ -402,6 +457,19 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "ip_mark_status": template.ip_mark_status,
         "ip_mark_tag": template.ip_mark_tag,
         "ip_mark_description": template.ip_mark_description,
+        "csv_import_repo_id": template.csv_import_repo_id,
+        "csv_import_file_path": template.csv_import_file_path,
+        "csv_import_type": template.csv_import_type,
+        "csv_import_primary_key": template.csv_import_primary_key,
+        "csv_import_update_existing": template.csv_import_update_existing,
+        "csv_import_delimiter": template.csv_import_delimiter,
+        "csv_import_quote_char": template.csv_import_quote_char,
+        "csv_import_column_mapping": (
+            json.loads(template.csv_import_column_mapping)
+            if template.csv_import_column_mapping
+            else None
+        ),
+        "csv_import_file_filter": template.csv_import_file_filter,
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

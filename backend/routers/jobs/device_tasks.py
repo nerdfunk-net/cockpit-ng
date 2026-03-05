@@ -25,6 +25,7 @@ from models.celery import (
     BackupCheckResponse,
     BackupDevicesRequest,
     BulkOnboardDevicesRequest,
+    CsvImportRequest,
     DeployAgentRequest,
     ExportDevicesRequest,
     ImportDevicesRequest,
@@ -978,6 +979,78 @@ async def trigger_import_devices_from_csv(
         job_id=str(job_run["id"]),
         status="queued",
         message=f"Import devices task queued{' (skip duplicates mode)' if skip_duplicates else ''}: {task.id}",
+    )
+
+
+# ============================================================================
+# CSV Import/Update from Git repository
+# ============================================================================
+
+
+@router.post("/tasks/import-or-update-from-csv", response_model=TaskWithJobResponse)
+@handle_celery_errors("import or update from CSV")
+async def trigger_import_or_update_from_csv(
+    request: CsvImportRequest,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+):
+    """
+    Import or update Nautobot objects from a CSV file stored in a Git repository.
+
+    For each row the task looks up the object by primary_key. If not found it creates
+    the object; if found and update_existing=True it updates the object; otherwise skips.
+
+    Request Body:
+        repo_id: Git repository ID (category: csv_imports)
+        file_path: Relative path to the CSV file within the repository
+        import_type: "devices", "ip-prefixes", or "ip-addresses"
+        primary_key: CSV column name used as the lookup key
+        update_existing: Whether to update found objects (default: True)
+        delimiter: CSV field delimiter (default: ",")
+        quote_char: CSV quote character (default: '"')
+        column_mapping: Maps CSV column names to Nautobot field names (null = skip)
+        template_id: Optional job template ID for tracking
+        dry_run: If True, validate without writing to Nautobot (default: False)
+
+    Returns:
+        TaskWithJobResponse with task_id and job_id
+    """
+    from tasks.import_or_update_from_csv_task import import_or_update_from_csv_task
+
+    task = import_or_update_from_csv_task.delay(
+        repo_id=request.repo_id,
+        file_path=request.file_path,
+        import_type=request.import_type,
+        primary_key=request.primary_key,
+        update_existing=request.update_existing,
+        delimiter=request.delimiter,
+        quote_char=request.quote_char,
+        column_mapping=request.column_mapping,
+        dry_run=request.dry_run,
+        template_id=request.template_id,
+        file_filter=request.file_filter,
+    )
+
+    job_name = (
+        f"CSV Import ({request.import_type})"
+        f"{' (DRY RUN)' if request.dry_run else ''}"
+    )
+    job_run = job_run_manager.create_job_run(
+        job_name=job_name,
+        job_type="csv_import",
+        triggered_by="manual",
+        executed_by=current_user.get("username"),
+        job_template_id=request.template_id,
+    )
+    job_run_manager.mark_started(job_run["id"], task.id)
+
+    return TaskWithJobResponse(
+        task_id=task.id,
+        job_id=str(job_run["id"]),
+        status="queued",
+        message=(
+            f"CSV import task queued for {request.import_type}"
+            f"{' (dry run mode)' if request.dry_run else ''}: {task.id}"
+        ),
     )
 
 
