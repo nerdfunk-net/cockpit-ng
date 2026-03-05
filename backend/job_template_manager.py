@@ -342,6 +342,26 @@ def update_job_template(
         elif user_id is not None:
             update_data["user_id"] = user_id
 
+    # DEBUG: log csv_import fields being written to the database
+    logger.debug(
+        "[CSV_DEBUG][STORE] template_id=%s incoming CSV args: "
+        "repo_id=%r file_path=%r type=%r primary_key=%r "
+        "delimiter=%r quote_char=%r update_existing=%r file_filter=%r",
+        template_id,
+        csv_import_repo_id,
+        csv_import_file_path,
+        csv_import_type,
+        csv_import_primary_key,
+        csv_import_delimiter,
+        csv_import_quote_char,
+        csv_import_update_existing,
+        csv_import_file_filter,
+    )
+    logger.debug(
+        "[CSV_DEBUG][STORE] CSV keys in update_data going to repo.update: %s",
+        {k: v for k, v in update_data.items() if k.startswith("csv_")},
+    )
+
     if not update_data:
         # Nothing to update, return current state
         return get_job_template(template_id)
@@ -411,6 +431,17 @@ def get_job_types() -> List[Dict[str, str]]:
 
 def _model_to_dict(template) -> Dict[str, Any]:
     """Convert SQLAlchemy model to dictionary"""
+    # DEBUG: log csv_import fields as read back from the database
+    logger.debug(
+        "[CSV_DEBUG][LOAD] template id=%s name=%r "
+        "delimiter=%r quote_char=%r primary_key=%r "
+        "repo_id=%r file_path=%r type=%r file_filter=%r",
+        template.id, template.name,
+        template.csv_import_delimiter, template.csv_import_quote_char,
+        template.csv_import_primary_key, template.csv_import_repo_id,
+        template.csv_import_file_path, template.csv_import_type,
+        template.csv_import_file_filter,
+    )
     return {
         "id": template.id,
         "name": template.name,

@@ -47,6 +47,7 @@ def execute_job_type(
     from .scan_prefixes_executor import execute_scan_prefixes
     from .deploy_agent_executor import execute_deploy_agent
     from .ip_addresses_executor import execute_ip_addresses
+    from .csv_import_executor import execute_csv_import
 
     # Map job_type to execution function
     job_executors = {
@@ -58,6 +59,7 @@ def execute_job_type(
         "scan_prefixes": execute_scan_prefixes,
         "deploy_agent": execute_deploy_agent,
         "ip_addresses": execute_ip_addresses,
+        "csv_import": execute_csv_import,
     }
 
     executor = job_executors.get(job_type)

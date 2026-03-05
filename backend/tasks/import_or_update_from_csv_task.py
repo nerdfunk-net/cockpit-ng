@@ -70,6 +70,37 @@ def import_or_update_from_csv_task(
     template_id: Optional[int] = None,
     file_filter: Optional[str] = None,
 ) -> dict:
+    """Celery task wrapper — delegates to _run_csv_import."""
+    return _run_csv_import(
+        task_context=self,
+        repo_id=repo_id,
+        file_path=file_path,
+        import_type=import_type,
+        primary_key=primary_key,
+        update_existing=update_existing,
+        delimiter=delimiter,
+        quote_char=quote_char,
+        column_mapping=column_mapping,
+        dry_run=dry_run,
+        template_id=template_id,
+        file_filter=file_filter,
+    )
+
+
+def _run_csv_import(
+    task_context,
+    repo_id: int,
+    file_path: str,
+    import_type: str,
+    primary_key: str,
+    update_existing: bool = True,
+    delimiter: str = ",",
+    quote_char: str = '"',
+    column_mapping: Optional[Dict[str, Optional[str]]] = None,
+    dry_run: bool = False,
+    template_id: Optional[int] = None,
+    file_filter: Optional[str] = None,
+) -> dict:
     """
     Task: Import or update Nautobot objects from a CSV file in a Git repository.
 
@@ -102,7 +133,7 @@ def import_or_update_from_csv_task(
         logger.info("Dry run: %s", dry_run)
         logger.info("Column mapping: %s", column_mapping)
 
-        self.update_state(
+        task_context.update_state(
             state="PROGRESS",
             meta={"current": 0, "total": 100, "status": "Resolving repository..."},
         )
@@ -176,7 +207,7 @@ def import_or_update_from_csv_task(
                 failures.append({"file": fp, "error": f"CSV file not found: {fp}"})
                 continue
 
-            self.update_state(
+            task_context.update_state(
                 state="PROGRESS",
                 meta={
                     "current": int((file_idx - 1) / total_files * 90),
@@ -228,7 +259,7 @@ def import_or_update_from_csv_task(
 
                 try:
                     progress = int((file_idx - 1) / total_files * 90) + int((idx / total_rows) * (90 / total_files))
-                    self.update_state(
+                    task_context.update_state(
                         state="PROGRESS",
                         meta={
                             "current": progress,
@@ -286,7 +317,7 @@ def import_or_update_from_csv_task(
                     failures.append({"file": fp, "row": idx, "identifier": identifier, "error": error_msg})
 
         # STEP 5: Finalize
-        self.update_state(
+        task_context.update_state(
             state="PROGRESS",
             meta={"current": 95, "total": 100, "status": "Finalizing results..."},
         )
@@ -319,7 +350,7 @@ def import_or_update_from_csv_task(
         try:
             import job_run_manager
 
-            job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
+            job_run = job_run_manager.get_job_run_by_celery_id(task_context.request.id)
             if job_run:
                 job_run_manager.mark_completed(job_run["id"], result=result)
         except Exception as job_error:
@@ -336,7 +367,7 @@ def import_or_update_from_csv_task(
         try:
             import job_run_manager
 
-            job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
+            job_run = job_run_manager.get_job_run_by_celery_id(task_context.request.id)
             if job_run:
                 job_run_manager.mark_failed(job_run["id"], error_msg)
         except Exception as job_error:

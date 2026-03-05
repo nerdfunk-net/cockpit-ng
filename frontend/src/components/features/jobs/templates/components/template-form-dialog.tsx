@@ -132,9 +132,10 @@ export function TemplateFormDialog({
   })
   const { data: nautobotDefaults } = useNautobotDefaults({ enabled: isCsvImport })
 
-  // Pre-fill delimiter/quoteChar from Nautobot defaults when entering csv_import mode
+  // Pre-fill delimiter/quoteChar from Nautobot defaults when entering csv_import mode.
+  // Only applies when creating a new template — never overwrite values loaded from an existing template.
   useEffect(() => {
-    if (isCsvImport && nautobotDefaults) {
+    if (isCsvImport && nautobotDefaults && !editingTemplate) {
       if (!formCsvImportDelimiter || formCsvImportDelimiter === ",") {
         setFormCsvImportDelimiter(nautobotDefaults.csv_delimiter || ",")
       }
@@ -262,6 +263,18 @@ export function TemplateFormDialog({
       setFormIpMarkDescription(editingTemplate.ip_mark_description || "")
       setFormIpRemoveSkipAssigned(editingTemplate.ip_remove_skip_assigned ?? true)
       setFormCsvImportRepoId(editingTemplate.csv_import_repo_id || null)
+      // DEBUG: log raw CSV fields from the API response
+      console.debug('[CSV_DEBUG][RENDER] editingTemplate raw CSV fields:', {
+        csv_import_delimiter: editingTemplate.csv_import_delimiter,
+        csv_import_quote_char: editingTemplate.csv_import_quote_char,
+        csv_import_primary_key: editingTemplate.csv_import_primary_key,
+        csv_import_repo_id: editingTemplate.csv_import_repo_id,
+        csv_import_file_path: editingTemplate.csv_import_file_path,
+        csv_import_type: editingTemplate.csv_import_type,
+        csv_import_update_existing: editingTemplate.csv_import_update_existing,
+        csv_import_file_filter: editingTemplate.csv_import_file_filter,
+        csv_import_column_mapping: editingTemplate.csv_import_column_mapping,
+      })
       setFormCsvImportFilePath(editingTemplate.csv_import_file_path || "")
       setFormCsvImportType(editingTemplate.csv_import_type || "")
       setFormCsvImportPrimaryKey(editingTemplate.csv_import_primary_key || "")
@@ -270,6 +283,11 @@ export function TemplateFormDialog({
       setFormCsvImportQuoteChar(editingTemplate.csv_import_quote_char || '"')
       setFormCsvImportColumnMapping(editingTemplate.csv_import_column_mapping || {})
       setFormCsvImportFileFilter(editingTemplate.csv_import_file_filter ?? "")
+      console.debug('[CSV_DEBUG][RENDER] form state after loading CSV fields:', {
+        formCsvImportDelimiter: editingTemplate.csv_import_delimiter || ',',
+        formCsvImportQuoteChar: editingTemplate.csv_import_quote_char || '"',
+        formCsvImportPrimaryKey: editingTemplate.csv_import_primary_key || '',
+      })
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
@@ -360,6 +378,21 @@ export function TemplateFormDialog({
         : undefined,
       csv_import_file_filter: formJobType === "csv_import" ? formCsvImportFileFilter || undefined : undefined,
       is_global: formIsGlobal
+    }
+
+    // DEBUG: log CSV fields being submitted to the API
+    if (formJobType === "csv_import") {
+      console.debug('[CSV_DEBUG][SUBMIT] CSV payload fields:', {
+        csv_import_delimiter: payload.csv_import_delimiter,
+        csv_import_quote_char: payload.csv_import_quote_char,
+        csv_import_primary_key: payload.csv_import_primary_key,
+        csv_import_repo_id: payload.csv_import_repo_id,
+        csv_import_file_path: payload.csv_import_file_path,
+        csv_import_type: payload.csv_import_type,
+        csv_import_update_existing: payload.csv_import_update_existing,
+        csv_import_file_filter: payload.csv_import_file_filter,
+        csv_import_column_mapping: payload.csv_import_column_mapping,
+      })
     }
 
     if (editingTemplate) {

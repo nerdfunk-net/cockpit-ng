@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 
 // TanStack Query Hooks
 import { useNautobotDropdownsQuery, useDeviceMutations } from './hooks/queries'
+import { useApi } from '@/hooks/use-api'
 
 // Custom Hooks
 import { useDeviceForm } from './hooks/use-device-form'
@@ -40,7 +41,7 @@ import {
   EMPTY_SOFTWARE_VERSIONS,
   EMPTY_PLATFORMS,
 } from './constants'
-import type { StatusMessage, LocationItem, DeviceType, SoftwareVersion, ParsedDevice } from './types'
+import type { StatusMessage, LocationItem, DeviceType, SoftwareVersion, ParsedDevice, DeviceSubmissionData, InterfaceData, DeviceImportResult } from './types'
 import type { DeviceFormValues } from './validation'
 
 export function AddDevicePage() {
@@ -101,6 +102,7 @@ export function AddDevicePage() {
 
   // Device mutation
   const { createDevice } = useDeviceMutations()
+  const { apiCall } = useApi()
 
   // Searchable dropdowns with memoized predicates
   const locationFilterPredicate = useCallback(
@@ -152,17 +154,83 @@ export function AddDevicePage() {
   const customFieldsManager = useCustomFieldsManager()
   const propertiesModal = usePropertiesModal()
 
+  // Convert a parsed CSV device into the format the backend expects and submit it
+  const handleImportDevice = useCallback(async (device: ParsedDevice): Promise<DeviceImportResult> => {
+    try {
+      const interfaces: InterfaceData[] = device.interfaces.map((iface) => ({
+        id: crypto.randomUUID(),
+        name: iface.name,
+        type: iface.type || '',
+        status: iface.status || '',
+        enabled: iface.enabled,
+        mgmt_only: iface.mgmt_only,
+        description: iface.description,
+        mac_address: iface.mac_address,
+        mtu: iface.mtu,
+        mode: iface.mode,
+        untagged_vlan: iface.untagged_vlan,
+        tagged_vlans: iface.tagged_vlans,
+        parent_interface: iface.parent_interface,
+        bridge: iface.bridge,
+        lag: iface.lag,
+        tags: iface.tags,
+        ip_addresses: iface.ip_address
+          ? [
+              {
+                id: crypto.randomUUID(),
+                address: iface.ip_address,
+                namespace: iface.namespace || '',
+                ip_role: '',
+                is_primary: iface.is_primary_ipv4,
+              },
+            ]
+          : [],
+      }))
+
+      const submissionData: DeviceSubmissionData = {
+        name: device.name,
+        serial: device.serial,
+        role: device.role || '',
+        status: device.status || '',
+        location: device.location || '',
+        device_type: device.device_type || '',
+        platform: device.platform,
+        software_version: device.software_version,
+        tags: device.tags,
+        custom_fields: device.custom_fields,
+        interfaces,
+        add_prefix: false,
+        default_prefix_length: '',
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response = await apiCall<any>('nautobot/add-device', {
+        method: 'POST',
+        body: JSON.stringify(submissionData),
+      })
+
+      const success = response.workflow_status?.create_device === 'SUCCESS'
+      return {
+        deviceName: device.name,
+        status: success ? 'success' : 'error',
+        message: success
+          ? `Device "${device.name}" created successfully`
+          : `Failed to create device "${device.name}": ${response.error ?? response.detail ?? 'Unknown error'}`,
+        deviceId: response.device_id,
+      }
+    } catch (error) {
+      return {
+        deviceName: device.name,
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  }, [apiCall])
+
   // CSV Upload
   const csvUpload = useCSVUpload({
     nautobotDefaults: dropdownData.nautobotDefaults,
-    onImportDevice: async (device: ParsedDevice) => {
-      // Implementation placeholder - would need proper device import logic
-      return {
-        deviceName: device.name,
-        status: 'success' as const,
-        message: 'Device imported successfully',
-      }
-    },
+    onImportDevice: handleImportDevice,
   })
 
   // Handle form validation errors
