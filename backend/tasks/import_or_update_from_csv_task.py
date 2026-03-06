@@ -403,6 +403,9 @@ def _run_csv_import(
                 "skipped": len(skipped),
                 "failed": len(failures),
             },
+            "created": created,
+            "updated": updated,
+            "skipped": skipped,
             "failures": failures,
             "timestamp": datetime.utcnow().isoformat(),
         }

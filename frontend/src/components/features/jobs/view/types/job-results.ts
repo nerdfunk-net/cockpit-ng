@@ -550,6 +550,50 @@ export function isScanPrefixJobResult(result: Record<string, unknown>): result i
   )
 }
 
+// ============================================================================
+// CSV Import Job Result Types
+// ============================================================================
+
+export interface CsvImportFailure {
+  file?: string
+  row?: number
+  identifier?: string
+  error: string
+  reason?: string
+}
+
+export interface CsvImportItem {
+  file?: string
+  row?: number
+  identifier?: string
+  id?: string
+  dry_run?: boolean
+  updated_fields?: string[]
+  reason?: string
+}
+
+export interface CsvImportJobResult {
+  success: boolean
+  dry_run: boolean
+  import_type: string
+  summary: {
+    files_processed: number
+    total: number
+    created: number
+    updated: number
+    skipped: number
+    failed: number
+  }
+  created?: CsvImportItem[]
+  updated?: CsvImportItem[]
+  skipped?: CsvImportItem[]
+  failures: CsvImportFailure[]
+  timestamp?: string
+  error?: string
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
+}
+
 /**
  * Check if result is an ip_addresses job result.
  * Has action ('list' or 'delete'), filter_field, and filter_value fields.
@@ -578,4 +622,19 @@ export function formatBytes(bytes: number): string {
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
+/**
+ * Check if result is a csv_import job result.
+ * Has import_type field and summary with files_processed + created/updated counters.
+ */
+export function isCsvImportJobResult(result: Record<string, unknown>): result is CsvImportJobResult {
+  return (
+    'import_type' in result &&
+    'summary' in result &&
+    typeof result.summary === 'object' &&
+    result.summary !== null &&
+    'files_processed' in result.summary &&
+    'created' in result.summary
+  )
 }

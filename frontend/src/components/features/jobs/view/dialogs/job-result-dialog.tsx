@@ -24,6 +24,7 @@ import {
   isScanPrefixJobResult,
   isDeployAgentJobResult,
   isIPAddressesJobResult,
+  isCsvImportJobResult,
   GenericJobResult,
 } from "../types/job-results"
 import { BackupJobResultView } from "../results/backup-job-result"
@@ -36,6 +37,7 @@ import { CheckIPResultView } from "../results/check-ip-result"
 import { ScanPrefixResultView } from "../results/scan-prefix-result"
 import { DeployAgentResultView } from "../results/deploy-agent-result"
 import { IPAddressesResultView } from "../results/ip-addresses-result"
+import { CsvImportResultView } from "../results/csv-import-result"
 import { GenericJobResultView } from "../results/generic-job-result"
 
 interface JobResultDialogProps {
@@ -94,6 +96,11 @@ function renderJobResult(result: Record<string, any>, taskId?: string): React.Re
 
   if (isUpdateDevicesJobResult(result)) {
     return <UpdateDevicesResultView result={result} />
+  }
+
+  // CSV import/update from file
+  if (isCsvImportJobResult(result)) {
+    return <CsvImportResultView result={result} />
   }
 
   // Fallback to generic view
