@@ -153,20 +153,6 @@ class NautobotDefaultsRequest(BaseModel):
     csv_quote_char: Optional[str] = '"'
 
 
-class DeviceOffboardingRequest(BaseModel):
-    """Device offboarding settings request model."""
-
-    remove_all_custom_fields: bool = False
-    clear_device_name: bool = False
-    keep_serial: bool = False
-    location_id: Optional[str] = None
-    status_id: Optional[str] = None
-    role_id: Optional[str] = None
-    custom_field_settings: Optional[Dict[str, str]] = (
-        None  # custom_field_name -> value or "clear"
-    )
-
-
 # ============================================================================
 # Compliance Settings Models
 # ============================================================================

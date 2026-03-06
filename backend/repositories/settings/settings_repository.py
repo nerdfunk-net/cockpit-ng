@@ -11,7 +11,6 @@ from core.models import (
     CacheSetting,
     CelerySetting,
     NautobotDefault,
-    DeviceOffboardingSetting,
     SettingsMetadata,
 )
 from core.database import get_db_session
@@ -122,21 +121,6 @@ class NautobotDefaultRepository(BaseRepository[NautobotDefault]):
         session = get_db_session()
         try:
             return session.query(NautobotDefault).first()
-        finally:
-            session.close()
-
-
-class DeviceOffboardingSettingRepository(BaseRepository[DeviceOffboardingSetting]):
-    """Repository for Device Offboarding settings."""
-
-    def __init__(self):
-        super().__init__(DeviceOffboardingSetting)
-
-    def get_settings(self) -> Optional[DeviceOffboardingSetting]:
-        """Get the first (and should be only) Offboarding settings record."""
-        session = get_db_session()
-        try:
-            return session.query(DeviceOffboardingSetting).first()
         finally:
             session.close()
 

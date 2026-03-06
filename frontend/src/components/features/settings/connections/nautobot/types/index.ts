@@ -61,15 +61,6 @@ export interface CustomFieldChoice {
   }
 }
 
-export interface DeviceOffboardingSettings {
-  remove_all_custom_fields: boolean
-  clear_device_name: boolean
-  keep_serial: boolean
-  location_id: string
-  status_id: string
-  role_id: string
-  custom_field_settings: { [key: string]: string }
-}
 
 export interface NautobotOptionsData {
   deviceStatuses: NautobotOption[]

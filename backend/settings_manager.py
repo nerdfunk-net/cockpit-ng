@@ -16,7 +16,6 @@ from repositories.settings.settings_repository import (
     CacheSettingRepository,
     CelerySettingRepository,
     NautobotDefaultRepository,
-    DeviceOffboardingSettingRepository,
     SettingsMetadataRepository,
 )
 
@@ -148,20 +147,6 @@ class NautobotDefaults:
     csv_quote_char: str = '"'
 
 
-@dataclass
-class DeviceOffboardingSettings:
-    """Device offboarding settings"""
-
-    remove_all_custom_fields: bool = False
-    clear_device_name: bool = False
-    keep_serial: bool = False
-    location_id: Optional[str] = None
-    status_id: Optional[str] = None
-    role_id: Optional[str] = None
-    custom_field_settings: Dict[str, str] = field(default_factory=dict)
-
-
-@dataclass
 @dataclass
 class AgentsSettings:
     """Agents deployment settings"""
@@ -899,92 +884,6 @@ class SettingsManager:
 
         except Exception as e:
             logger.error("Error updating Nautobot defaults: %s", e)
-            return False
-
-    def get_device_offboarding_settings(self) -> Dict[str, Any]:
-        """Get device offboarding settings"""
-        try:
-            repo = DeviceOffboardingSettingRepository()
-            settings = repo.get_settings()
-
-            if settings:
-                custom_field_settings = settings.custom_field_settings
-                if isinstance(custom_field_settings, str):
-                    try:
-                        custom_field_settings = (
-                            json.loads(custom_field_settings)
-                            if custom_field_settings
-                            else {}
-                        )
-                    except json.JSONDecodeError:
-                        custom_field_settings = {}
-                elif custom_field_settings is None:
-                    custom_field_settings = {}
-
-                return {
-                    "remove_all_custom_fields": bool(settings.remove_all_custom_fields),
-                    "clear_device_name": bool(settings.clear_device_name),
-                    "keep_serial": bool(settings.keep_serial),
-                    "location_id": settings.location_id,
-                    "status_id": settings.status_id,
-                    "role_id": settings.role_id,
-                    "custom_field_settings": custom_field_settings,
-                }
-            else:
-                return {
-                    "remove_all_custom_fields": False,
-                    "clear_device_name": False,
-                    "keep_serial": False,
-                    "location_id": None,
-                    "status_id": None,
-                    "role_id": None,
-                    "custom_field_settings": {},
-                }
-
-        except Exception as e:
-            logger.error("Error getting device offboarding settings: %s", e)
-            return {
-                "remove_all_custom_fields": False,
-                "clear_device_name": False,
-                "keep_serial": False,
-                "location_id": None,
-                "status_id": None,
-                "role_id": None,
-                "custom_field_settings": {},
-            }
-
-    def update_device_offboarding_settings(self, settings: Dict[str, Any]) -> bool:
-        """Update device offboarding settings"""
-        try:
-            repo = DeviceOffboardingSettingRepository()
-            existing = repo.get_settings()
-
-            custom_field_settings_json = json.dumps(
-                settings.get("custom_field_settings", {})
-            )
-
-            update_data = {
-                "remove_all_custom_fields": settings.get(
-                    "remove_all_custom_fields", False
-                ),
-                "clear_device_name": settings.get("clear_device_name", False),
-                "keep_serial": settings.get("keep_serial", False),
-                "location_id": settings.get("location_id"),
-                "status_id": settings.get("status_id"),
-                "role_id": settings.get("role_id"),
-                "custom_field_settings": custom_field_settings_json,
-            }
-
-            if existing:
-                repo.update(existing.id, **update_data)
-            else:
-                repo.create(**update_data)
-
-            logger.info("Device offboarding settings updated successfully")
-            return True
-
-        except Exception as e:
-            logger.error("Error updating device offboarding settings: %s", e)
             return False
 
     # OIDC Provider Management

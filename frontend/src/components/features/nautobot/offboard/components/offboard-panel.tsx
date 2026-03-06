@@ -1,17 +1,14 @@
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Minus } from 'lucide-react'
-import type { OffboardProperties, NautobotIntegrationMode } from '@/types/features/nautobot/offboard'
+import type { OffboardProperties } from '@/types/features/nautobot/offboard'
 
 interface OffboardPanelProps {
   selectedCount: number
   isSubmitting: boolean
   offboardProperties: OffboardProperties
-  nautobotIntegrationMode: NautobotIntegrationMode
   onOffboardPropertiesChange: (props: Partial<OffboardProperties>) => void
-  onNautobotIntegrationModeChange: (mode: NautobotIntegrationMode) => void
   onOffboard: () => void
   isFormValid: boolean
 }
@@ -20,9 +17,7 @@ export function OffboardPanel({
   selectedCount,
   isSubmitting,
   offboardProperties,
-  nautobotIntegrationMode,
   onOffboardPropertiesChange,
-  onNautobotIntegrationModeChange,
   onOffboard,
   isFormValid
 }: OffboardPanelProps) {
@@ -38,20 +33,6 @@ export function OffboardPanel({
         </div>
       </div>
       <div className="p-4 bg-white space-y-3">
-        {/* Nautobot Integration */}
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold text-gray-700">Nautobot Integration</Label>
-          <Select value={nautobotIntegrationMode} onValueChange={onNautobotIntegrationModeChange}>
-            <SelectTrigger className="h-9 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="remove">Remove from Nautobot</SelectItem>
-              <SelectItem value="set-offboarding">Set Offboarding Values</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* IP Removal Options */}
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-gray-700">IP Address Removal</Label>

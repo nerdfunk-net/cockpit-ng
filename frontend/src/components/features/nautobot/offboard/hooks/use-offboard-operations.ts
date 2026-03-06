@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react'
 import { useApi } from '@/hooks/use-api'
 import type {
   OffboardProperties,
-  NautobotIntegrationMode,
   OffboardResult,
   OffboardSummary,
   Device
@@ -20,8 +19,6 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
     removeInterfaceIps: true,
     removeFromCheckMK: true
   })
-  const [nautobotIntegrationMode, setNautobotIntegrationMode] = useState<NautobotIntegrationMode>('remove')
-
   const handleOffboardDevices = useCallback(async (
     deviceIds: string[],
     devices: Device[]
@@ -55,7 +52,6 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
                 remove_primary_ip: offboardProperties.removePrimaryIp,
                 remove_interface_ips: offboardProperties.removeInterfaceIps,
                 remove_from_checkmk: offboardProperties.removeFromCheckMK,
-                nautobot_integration_mode: nautobotIntegrationMode
               }
             }
           )
@@ -131,14 +127,12 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
     } finally {
       setIsSubmitting(false)
     }
-  }, [apiCall, offboardProperties, nautobotIntegrationMode, showMessage])
+  }, [apiCall, offboardProperties, showMessage])
 
   return {
     isSubmitting,
     offboardProperties,
-    nautobotIntegrationMode,
     setOffboardProperties,
-    setNautobotIntegrationMode,
     handleOffboardDevices
   }
 }

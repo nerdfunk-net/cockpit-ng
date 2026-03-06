@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,54 +11,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Server, Settings, RotateCcw, Database } from 'lucide-react'
 import { useNautobotSettingsQuery } from './hooks/use-nautobot-settings-query'
 import { useNautobotDefaultsQuery } from './hooks/use-nautobot-defaults-query'
-import { useNautobotOffboardingQuery } from './hooks/use-nautobot-offboarding-query'
 import { useNautobotOptionsQuery } from './hooks/use-nautobot-options-query'
-import { useCustomFieldsQuery, useCustomFieldChoicesQueries } from './hooks/use-nautobot-custom-fields-queries'
 import { useNautobotMutations } from './hooks/use-nautobot-mutations'
 import { LocationSearchDropdown } from './components/location-search-dropdown'
-import { CustomFieldsTable } from './components/custom-fields-table'
 import { DEFAULT_NAUTOBOT_SETTINGS, DEFAULT_NAUTOBOT_DEFAULTS, EMPTY_ARRAY } from './utils/constants'
-import type { NautobotSettings, NautobotDefaults, DeviceOffboardingSettings, CustomFieldChoice, NautobotOption, LocationItem } from './types'
-
-const DEFAULT_OFFBOARDING: DeviceOffboardingSettings = {
-  remove_all_custom_fields: false,
-  clear_device_name: false,
-  keep_serial: false,
-  location_id: '',
-  status_id: '',
-  role_id: '',
-  custom_field_settings: {},
-}
+import type { NautobotSettings, NautobotDefaults, NautobotOption, LocationItem } from './types'
 
 export default function NautobotSettingsForm() {
   // Query hooks
   const { data: settings, isLoading: settingsLoading } = useNautobotSettingsQuery()
   const { data: defaults, isLoading: defaultsLoading } = useNautobotDefaultsQuery()
-  const { data: offboardingSettings, isLoading: offboardingLoading } = useNautobotOffboardingQuery()
   const { data: options, isLoading: optionsLoading } = useNautobotOptionsQuery()
-  const { data: customFields = EMPTY_ARRAY } = useCustomFieldsQuery()
-
-  // Custom field choices queries
-  const customFieldChoicesResults = useCustomFieldChoicesQueries(customFields)
-
-  // Build custom field choices map
-  const customFieldChoices = useMemo(() => {
-    const choicesMap: { [key: string]: CustomFieldChoice[] } = {}
-    customFieldChoicesResults.forEach((result) => {
-      if (result.data) {
-        choicesMap[result.data.fieldName] = result.data.choices
-      }
-    })
-    return choicesMap
-  }, [customFieldChoicesResults])
-
   // Mutation hooks
-  const { saveSettings, testConnection, saveDefaults, saveOffboarding } = useNautobotMutations()
+  const { saveSettings, testConnection, saveDefaults } = useNautobotMutations()
 
   // Local state for form editing
   const [localSettings, setLocalSettings] = useState<NautobotSettings>(DEFAULT_NAUTOBOT_SETTINGS)
   const [localDefaults, setLocalDefaults] = useState<NautobotDefaults>(DEFAULT_NAUTOBOT_DEFAULTS)
-  const [localOffboarding, setLocalOffboarding] = useState<DeviceOffboardingSettings>(DEFAULT_OFFBOARDING)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
 
   // Sync server data to local state (same pattern as CheckMK settings)
@@ -73,12 +42,6 @@ export default function NautobotSettingsForm() {
       setLocalDefaults(defaults)
     }
   }, [defaults])
-
-  useEffect(() => {
-    if (offboardingSettings) {
-      setLocalOffboarding(offboardingSettings)
-    }
-  }, [offboardingSettings])
 
   // Update handlers
   const updateSetting = useCallback((key: keyof NautobotSettings, value: string | number | boolean) => {
@@ -99,7 +62,7 @@ export default function NautobotSettingsForm() {
   }, [])
 
   // Loading state
-  const isLoading = settingsLoading || defaultsLoading || optionsLoading || offboardingLoading
+  const isLoading = settingsLoading || defaultsLoading || optionsLoading
 
   if (isLoading) {
     return (
@@ -139,7 +102,7 @@ export default function NautobotSettingsForm() {
 
       {/* Main Tabs */}
       <Tabs defaultValue="connection" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="connection" className="flex items-center space-x-2">
             <Server className="h-4 w-4" />
             <span>Connection</span>
@@ -147,10 +110,6 @@ export default function NautobotSettingsForm() {
           <TabsTrigger value="defaults" className="flex items-center space-x-2">
             <Database className="h-4 w-4" />
             <span>Defaults</span>
-          </TabsTrigger>
-          <TabsTrigger value="offboarding" className="flex items-center space-x-2">
-            <RotateCcw className="h-4 w-4" />
-            <span>Offboarding</span>
           </TabsTrigger>
         </TabsList>
 
@@ -640,173 +599,6 @@ export default function NautobotSettingsForm() {
           </div>
         </TabsContent>
 
-        {/* Offboarding Tab */}
-        <TabsContent value="offboarding" className="space-y-6">
-          <Card className="shadow-lg border-0 overflow-hidden p-0">
-            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
-              <CardTitle className="text-sm font-medium">Device Offboarding Settings</CardTitle>
-              <CardDescription className="text-blue-100 text-xs">
-                Configure settings for device offboarding operations
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 space-y-4">
-              {/* Location, Status and Role Selection */}
-              <div className="bg-blue-50 rounded-lg p-3">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {/* Location Filter */}
-                  <div className="space-y-1">
-                    <Label htmlFor="offboard_location_search" className="text-xs font-medium text-blue-800">
-                      Location
-                    </Label>
-                    <LocationSearchDropdown
-                      locations={locations}
-                      value={localOffboarding.location_id}
-                      onChange={(locationId) =>
-                        setLocalOffboarding(prev => ({ ...prev, location_id: locationId }))
-                      }
-                      placeholder="Search locations..."
-                    />
-                  </div>
-
-                  {/* Status Filter */}
-                  <div className="space-y-1">
-                    <Label htmlFor="offboard_status" className="text-xs font-medium text-blue-800">
-                      Status
-                    </Label>
-                    <Select value={localOffboarding.status_id ?? ''} onValueChange={(value) =>
-                      setLocalOffboarding(prev => ({ ...prev, status_id: value }))
-                    }>
-                      <SelectTrigger className="w-full h-8 text-xs bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                        <SelectValue placeholder="Select status..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {deviceStatuses.map((status) => (
-                          <SelectItem key={status.id} value={status.id}>
-                            <div className="flex items-center space-x-2">
-                              {status.color && (
-                                <div className={`w-2 h-2 rounded-full`} style={{ backgroundColor: `#${status.color}` }} />
-                              )}
-                              <span className="text-xs">{status.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Role Filter */}
-                  <div className="space-y-1">
-                    <Label htmlFor="offboard_role" className="text-xs font-medium text-blue-800">
-                      Role
-                    </Label>
-                    <Select value={localOffboarding.role_id ?? ''} onValueChange={(value) =>
-                      setLocalOffboarding(prev => ({ ...prev, role_id: value }))
-                    }>
-                      <SelectTrigger className="w-full h-8 text-xs bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
-                        <SelectValue placeholder="Select role..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {deviceRoles.map((role) => (
-                          <SelectItem key={role.id} value={role.id}>
-                            <div className="flex items-center space-x-2">
-                              {role.color && (
-                                <div className={`w-2 h-2 rounded-full`} style={{ backgroundColor: `#${role.color}` }} />
-                              )}
-                              <span className="text-xs">{role.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Settings Panel */}
-              <div className="bg-gray-50 rounded-lg p-3 space-y-3">
-                <h3 className="text-sm font-medium text-gray-900">General Settings</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="flex items-center space-x-1">
-                    <Checkbox
-                      id="remove-all-custom-fields"
-                      checked={localOffboarding.remove_all_custom_fields}
-                      onCheckedChange={(checked) =>
-                        setLocalOffboarding(prev => ({
-                          ...prev,
-                          remove_all_custom_fields: checked === true
-                        }))
-                      }
-                    />
-                    <Label htmlFor="remove-all-custom-fields" className="text-xs font-medium">
-                      Remove all custom fields
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Checkbox
-                      id="clear-device-name"
-                      checked={localOffboarding.clear_device_name}
-                      onCheckedChange={(checked) =>
-                        setLocalOffboarding(prev => ({
-                          ...prev,
-                          clear_device_name: checked === true
-                        }))
-                      }
-                    />
-                    <Label htmlFor="clear-device-name" className="text-xs font-medium">
-                      Clear device name
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Checkbox
-                      id="keep-serial"
-                      checked={localOffboarding.keep_serial}
-                      onCheckedChange={(checked) =>
-                        setLocalOffboarding(prev => ({
-                          ...prev,
-                          keep_serial: checked === true
-                        }))
-                      }
-                    />
-                    <Label htmlFor="keep-serial" className="text-xs font-medium">
-                      Keep serial
-                    </Label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Custom Fields Table */}
-              {!localOffboarding.remove_all_custom_fields && (
-                <CustomFieldsTable
-                  customFields={customFields}
-                  customFieldChoices={customFieldChoices}
-                  values={localOffboarding.custom_field_settings}
-                  onChange={(fieldName, value) =>
-                    setLocalOffboarding(prev => ({
-                      ...prev,
-                      custom_field_settings: {
-                        ...prev.custom_field_settings,
-                        [fieldName]: value
-                      }
-                    }))
-                  }
-                />
-              )}
-
-              {/* Save Button */}
-              <div className="flex justify-end pt-2">
-                <Button
-                  type="button"
-                  onClick={() => saveOffboarding.mutate(localOffboarding)}
-                  disabled={saveOffboarding.isPending}
-                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 text-sm font-medium"
-                >
-                  {saveOffboarding.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-                  <span>{saveOffboarding.isPending ? 'Saving...' : 'Save Offboarding Settings'}</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   )

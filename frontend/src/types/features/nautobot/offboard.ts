@@ -26,7 +26,6 @@ export interface OffboardProperties {
   removeFromCheckMK: boolean
 }
 
-export type NautobotIntegrationMode = 'remove' | 'set-offboarding'
 
 export interface OffboardResult {
   success: boolean

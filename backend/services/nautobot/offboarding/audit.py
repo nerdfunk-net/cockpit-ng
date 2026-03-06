@@ -16,7 +16,6 @@ def log_offboarding_event(
     device_details: Dict[str, Any],
     request: OffboardDeviceRequest,
     current_user: Dict[str, Any],
-    integration_mode: str,
 ) -> None:
     """Write an audit log entry for the offboarding operation."""
     username = current_user.get("username")
@@ -33,7 +32,6 @@ def log_offboarding_event(
     error_count = len(results["errors"])
 
     extra_data = {
-        "integration_mode": integration_mode,
         "removed_items_count": removed_count,
         "errors_count": error_count,
     }

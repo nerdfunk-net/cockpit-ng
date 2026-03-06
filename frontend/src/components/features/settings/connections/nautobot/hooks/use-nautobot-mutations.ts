@@ -5,7 +5,6 @@ import { useToast } from '@/hooks/use-toast'
 import type {
   NautobotSettings,
   NautobotDefaults,
-  DeviceOffboardingSettings,
   ApiResponse,
   TestConnectionResponse,
 } from '../types'
@@ -111,46 +110,13 @@ export function useNautobotMutations() {
     },
   })
 
-  /**
-   * Save device offboarding settings
-   */
-  const saveOffboarding = useMutation({
-    mutationFn: async (settings: DeviceOffboardingSettings) => {
-      const response = await apiCall<ApiResponse<DeviceOffboardingSettings>>('settings/offboarding', {
-        method: 'POST',
-        body: JSON.stringify(settings),
-      })
-
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to save offboarding settings')
-      }
-
-      return response
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.nautobotSettings.offboarding() })
-      toast({
-        title: 'Success',
-        description: 'Device offboarding settings saved successfully!',
-      })
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
-  })
-
   // Memoize return object to prevent re-renders
   return useMemo(
     () => ({
       saveSettings,
       testConnection,
       saveDefaults,
-      saveOffboarding,
     }),
-    [saveSettings, testConnection, saveDefaults, saveOffboarding]
+    [saveSettings, testConnection, saveDefaults]
   )
 }

@@ -1098,30 +1098,6 @@ class CelerySetting(Base):
     )
 
 
-class DeviceOffboardingSetting(Base):
-    """Device offboarding settings."""
-
-    __tablename__ = "device_offboarding_settings"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    remove_all_custom_fields = Column(Boolean, nullable=False, default=False)
-    clear_device_name = Column(Boolean, nullable=False, default=False)
-    keep_serial = Column(Boolean, nullable=False, default=False)
-    location_id = Column(String(255))
-    status_id = Column(String(255))
-    role_id = Column(String(255))
-    custom_field_settings = Column(Text)  # JSON string
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-
-
 class SettingsMetadata(Base):
     """Settings metadata for versioning and status."""
 

@@ -20,7 +20,6 @@ from models.settings import (
     GitTestRequest,
     CacheSettingsRequest,
     NautobotDefaultsRequest,
-    DeviceOffboardingRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -870,53 +869,3 @@ async def update_nautobot_defaults(
         }
 
 
-@router.get("/offboarding")
-async def get_device_offboarding_settings(
-    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
-):
-    """Get device offboarding settings."""
-    try:
-        from settings_manager import settings_manager
-
-        offboarding_settings = settings_manager.get_device_offboarding_settings()
-        return {"success": True, "data": offboarding_settings}
-
-    except Exception as e:
-        logger.error("Error getting device offboarding settings: %s", e)
-        return {
-            "success": False,
-            "message": f"Failed to retrieve device offboarding settings: {str(e)}",
-        }
-
-
-@router.post("/offboarding")
-async def update_device_offboarding_settings(
-    offboarding_request: DeviceOffboardingRequest,
-    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
-):
-    """Update device offboarding settings."""
-    try:
-        from settings_manager import settings_manager
-
-        success = settings_manager.update_device_offboarding_settings(
-            offboarding_request.dict()
-        )
-
-        if success:
-            return {
-                "success": True,
-                "message": "Device offboarding settings updated successfully",
-                "data": settings_manager.get_device_offboarding_settings(),
-            }
-        else:
-            return {
-                "success": False,
-                "message": "Failed to update device offboarding settings",
-            }
-
-    except Exception as e:
-        logger.error("Error updating device offboarding settings: %s", e)
-        return {
-            "success": False,
-            "message": f"Failed to update device offboarding settings: {str(e)}",
-        }

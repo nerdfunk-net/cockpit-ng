@@ -10,14 +10,8 @@ from fastapi import HTTPException, status
 from models.nautobot import OffboardDeviceRequest
 from services.nautobot.offboarding.audit import log_offboarding_event
 from services.nautobot.offboarding.checkmk_cleanup import CheckMKCleanupManager
-from services.nautobot.offboarding.custom_fields import CustomFieldManager
 from services.nautobot.offboarding.device_cleanup import DeviceCleanupManager
 from services.nautobot.offboarding.ip_cleanup import IPCleanupManager
-from services.nautobot.offboarding.settings import (
-    get_offboarding_settings,
-    normalize_integration_mode,
-    validate_offboarding_settings,
-)
 from services.nautobot.offboarding.types import OffboardingResult, make_result
 
 logger = logging.getLogger(__name__)
@@ -29,7 +23,6 @@ class OffboardingService:
     def __init__(self) -> None:
         self._device_cleanup = DeviceCleanupManager()
         self._ip_cleanup = IPCleanupManager()
-        self._custom_fields = CustomFieldManager(self._device_cleanup)
         self._checkmk_cleanup = CheckMKCleanupManager()
 
     async def offboard_device(
@@ -45,103 +38,11 @@ class OffboardingService:
         device_details = await self._fetch_device_details(device_id)
         results["device_name"] = device_details.get("name", device_id)
 
-        # 2. Determine integration mode
-        offboarding_settings = get_offboarding_settings()
-        logger.debug(
-            "Retrieved offboarding settings: %s",
-            offboarding_settings is not None,
-        )
+        # 2. Remove device from Nautobot
+        logger.info("Removing device %s from Nautobot", device_id)
+        await self._device_cleanup.handle_device_removal(device_id, results)
 
-        integration_mode = normalize_integration_mode(
-            request.nautobot_integration_mode or "remove"
-        )
-
-        logger.info(
-            "Offboarding device %s - raw_mode='%s', normalized_mode='%s'",
-            device_id,
-            request.nautobot_integration_mode or "remove",
-            integration_mode,
-        )
-
-        # 3. Execute mode-specific path
-        if integration_mode == "remove":
-            logger.debug("Taking REMOVAL path for device %s", device_id)
-            await self._device_cleanup.handle_device_removal(device_id, results)
-        else:
-            logger.debug("Taking SET_OFFBOARDING path for device %s", device_id)
-            # Validate settings before proceeding
-            if not validate_offboarding_settings(offboarding_settings, results):
-                logger.debug(
-                    "Offboarding settings validation failed for device %s",
-                    device_id,
-                )
-                return results
-
-            # Handle device name clearing (independent of custom fields)
-            if offboarding_settings.get("clear_device_name", False):
-                logger.debug(
-                    "clear_device_name is True - clearing device name for %s",
-                    device_id,
-                )
-                try:
-                    await self._device_cleanup.clear_device_name(device_id)
-                    results["removed_items"].append("Device name cleared")
-                    logger.info("Successfully cleared device name for %s", device_id)
-                except HTTPException as exc:
-                    results["errors"].append(
-                        f"Failed to clear device name: {exc.detail}"
-                    )
-                    results["success"] = False
-                    logger.error(
-                        "Failed to clear device name for %s: %s", device_id, exc.detail
-                    )
-                except Exception as exc:
-                    error_msg = (
-                        f"Failed to clear device name for {device_id}: {str(exc)}"
-                    )
-                    results["errors"].append(error_msg)
-                    results["success"] = False
-                    logger.error(error_msg)
-
-            # Handle serial number clearing (if keep_serial is False)
-            if not offboarding_settings.get("keep_serial", False):
-                logger.debug(
-                    "keep_serial is False - clearing device serial number for %s",
-                    device_id,
-                )
-                try:
-                    await self._device_cleanup.clear_device_serial(device_id)
-                    results["removed_items"].append("Device serial number cleared")
-                    logger.info(
-                        "Successfully cleared device serial number for %s", device_id
-                    )
-                except HTTPException as exc:
-                    results["errors"].append(
-                        f"Failed to clear device serial number: {exc.detail}"
-                    )
-                    results["success"] = False
-                    logger.error(
-                        "Failed to clear device serial number for %s: %s",
-                        device_id,
-                        exc.detail,
-                    )
-                except Exception as exc:
-                    error_msg = f"Failed to clear device serial number for {device_id}: {str(exc)}"
-                    results["errors"].append(error_msg)
-                    results["success"] = False
-                    logger.error(error_msg)
-
-            # Handle custom fields processing
-            await self._custom_fields.apply_offboarding_values(
-                device_id, results, offboarding_settings, device_details
-            )
-
-            # Handle location, status, and role updates
-            await self._device_cleanup.update_device_attributes(
-                device_id, results, offboarding_settings
-            )
-
-        # 4. IP cleanup
+        # 3. IP cleanup
         interface_ips_removed = []
         if request.remove_interface_ips:
             interface_ips_removed = await self._ip_cleanup.remove_interface_ips(
@@ -151,12 +52,12 @@ class OffboardingService:
             results["skipped_items"].append("Interface IP removal was not requested")
             logger.info("Interface IP removal skipped (not requested)")
 
-        # 5. Primary IP
+        # 4. Primary IP
         await self._ip_cleanup.remove_primary_ip(
             device_id, device_details, interface_ips_removed, request, results
         )
 
-        # 6. CheckMK
+        # 5. CheckMK
         if request.remove_from_checkmk:
             await self._checkmk_cleanup.remove_host(
                 device_details, current_user, results
@@ -165,12 +66,12 @@ class OffboardingService:
             results["skipped_items"].append("CheckMK removal was not requested")
             logger.info("CheckMK removal skipped (not requested)")
 
-        # 7. Summary
+        # 6. Summary
         self._build_summary(results)
 
-        # 8. Audit
+        # 7. Audit
         log_offboarding_event(
-            results, device_details, request, current_user, integration_mode
+            results, device_details, request, current_user
         )
 
         return results

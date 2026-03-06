@@ -65,9 +65,7 @@ export function OffboardDevicePage() {
   const {
     isSubmitting,
     offboardProperties,
-    nautobotIntegrationMode,
     setOffboardProperties,
-    setNautobotIntegrationMode,
     handleOffboardDevices
   } = useOffboardOperations({ showMessage })
 
@@ -172,9 +170,7 @@ export function OffboardDevicePage() {
             selectedCount={selectedDevices.size}
             isSubmitting={isSubmitting}
             offboardProperties={offboardProperties}
-            nautobotIntegrationMode={nautobotIntegrationMode}
             onOffboardPropertiesChange={(props) => setOffboardProperties(prev => ({ ...prev, ...props }))}
-            onNautobotIntegrationModeChange={setNautobotIntegrationMode}
             onOffboard={confirmOffboard}
             isFormValid={selectedDevices.size > 0}
           />
