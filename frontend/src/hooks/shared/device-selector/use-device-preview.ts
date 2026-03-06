@@ -73,7 +73,7 @@ export function useDevicePreview(
     // Update local state when mutation succeeds
     useEffect(() => {
         if (previewData) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setPreviewDevices(previewData.devices)
             setTotalDevices(previewData.total_count)
             setOperationsExecuted(previewData.operations_executed)
@@ -97,7 +97,7 @@ export function useDevicePreview(
     // Sync with initial props
     useEffect(() => {
         if (initialDevices.length > 0) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setPreviewDevices(initialDevices)
             setTotalDevices(initialDevices.length)
             setShowPreviewResults(true)
@@ -105,7 +105,7 @@ export function useDevicePreview(
     }, [initialDevices])
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setSelectedIds(new Set(selectedDeviceIds))
     }, [selectedDeviceIds])
 

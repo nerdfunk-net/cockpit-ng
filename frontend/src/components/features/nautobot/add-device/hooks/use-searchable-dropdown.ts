@@ -125,7 +125,7 @@ export function useSearchableDropdown<T extends { id: string }>(
       displayValue,
     }),
     // Intentionally excluding containerRef from deps - refs don't change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [searchQuery, filteredItems, showDropdown, selectItem, selectedItem, displayValue]
   )
 }

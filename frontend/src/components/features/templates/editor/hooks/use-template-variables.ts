@@ -326,7 +326,7 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       let hasChanges = false
       const updated = prev.map((v) => {
         if (v.type === 'inventory' && v.name in updates) {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+           
           const freshValue: string = updates[v.name]!
           if (v.value !== freshValue) {
             hasChanges = true
