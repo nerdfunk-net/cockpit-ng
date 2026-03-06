@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { AlertCircle, ChevronDown, ChevronRight, Filter, Loader2, Settings2, Upload } from "lucide-react"
-import type { CsvRepoFile, GitRepository } from "../../templates/types"
-import { CSV_IMPORT_TYPE_LABELS } from "../../templates/utils/constants"
+import type { CsvRepoFile, GitRepository } from "../../types"
+import { CSV_IMPORT_TYPE_LABELS } from "../../utils/constants"
 
 interface CsvImportJobTemplateProps {
   formCsvImportRepoId: number | null

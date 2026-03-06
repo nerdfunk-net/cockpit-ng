@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { IPAddressesJobResult, IPAddressEntry, IPRemovedEntry, IPSkippedEntry, IPFailedEntry } from "../../types/job-results"
+import { IPAddressesJobResult, IPAddressEntry, IPRemovedEntry, IPSkippedEntry, IPFailedEntry } from "../types/job-results"
 import {
   CheckCircle2,
   XCircle,

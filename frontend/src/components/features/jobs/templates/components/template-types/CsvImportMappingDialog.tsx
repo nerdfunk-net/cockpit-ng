@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { CSV_IMPORT_NAUTOBOT_FIELDS } from "../../templates/utils/constants"
+import { CSV_IMPORT_NAUTOBOT_FIELDS } from "../../utils/constants"
 
 const NOT_USED = "__not_used__"
 

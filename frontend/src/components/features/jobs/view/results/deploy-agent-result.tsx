@@ -12,7 +12,7 @@ import {
   RefreshCw,
   Layers,
 } from "lucide-react"
-import { DeployAgentJobResult } from "../../types/job-results"
+import { DeployAgentJobResult } from "../types/job-results"
 
 interface DeployAgentResultViewProps {
   result: DeployAgentJobResult

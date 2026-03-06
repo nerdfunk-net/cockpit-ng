@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Network, AlertTriangle, List, Trash2, Tag, Loader2, ShieldCheck } from "lucide-react"
-import type { IpAddressStatus, IpAddressTag } from "../../templates/types"
+import type { IpAddressStatus, IpAddressTag } from "../../types"
 
 interface MaintainIPAddressesJobTemplateProps {
   formIpAction: string
