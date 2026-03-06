@@ -6,4 +6,5 @@
  */
 
 // Export empty config - Tailwind v4 uses CSS-based configuration
+// eslint-disable-next-line import/no-anonymous-default-export
 export default {};
