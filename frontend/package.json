@@ -72,6 +72,7 @@
     "@typescript-eslint/eslint-plugin": "^8.42.0",
     "@vitejs/plugin-react": "^5.1.2",
     "@vitest/coverage-v8": "^4.0.16",
+    "baseline-browser-mapping": "^2.10.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.7",
     "eslint-plugin-react-hooks": "^7.0.1",

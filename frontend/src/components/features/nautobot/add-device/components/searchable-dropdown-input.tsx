@@ -19,6 +19,7 @@ interface SearchableDropdownInputProps<T> {
   placeholder: string
   required?: boolean
   disabled?: boolean
+  inputClassName?: string
   dropdownState: SearchableDropdownState<T>
   renderItem: (item: T) => React.ReactNode
   getItemKey: (item: T) => string
@@ -30,6 +31,7 @@ export function SearchableDropdownInput<T>({
   placeholder,
   required = false,
   disabled = false,
+  inputClassName,
   dropdownState,
   renderItem,
   getItemKey,
@@ -44,6 +46,7 @@ export function SearchableDropdownInput<T>({
           id={id}
           placeholder={placeholder}
           value={dropdownState.displayValue}
+          className={inputClassName}
           onChange={(e) => {
             dropdownState.setSearchQuery(e.target.value)
             dropdownState.setShowDropdown(true)

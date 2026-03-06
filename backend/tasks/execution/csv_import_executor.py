@@ -40,6 +40,7 @@ def execute_csv_import(
     quote_char = template.get("csv_import_quote_char") or '"'
     column_mapping = template.get("csv_import_column_mapping") or {}
     file_filter = template.get("csv_import_file_filter") or None
+    csv_import_defaults = template.get("csv_import_defaults") or None
     template_id = template.get("id")
 
     if not repo_id:
@@ -53,9 +54,10 @@ def execute_csv_import(
 
     logger.info(
         "Executing csv_import job: repo_id=%s, file_path=%s, file_filter=%s, "
-        "import_type=%s, primary_key=%s, update_existing=%s, delimiter=%r, quote_char=%r",
+        "import_type=%s, primary_key=%s, update_existing=%s, delimiter=%r, quote_char=%r, "
+        "defaults=%s",
         repo_id, file_path, file_filter, import_type, primary_key,
-        update_existing, delimiter, quote_char,
+        update_existing, delimiter, quote_char, csv_import_defaults,
     )
 
     # Call the extracted implementation function directly, passing task_context as
@@ -73,4 +75,5 @@ def execute_csv_import(
         dry_run=False,
         template_id=template_id,
         file_filter=file_filter,
+        defaults=csv_import_defaults,
     )

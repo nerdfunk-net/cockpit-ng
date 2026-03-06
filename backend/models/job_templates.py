@@ -245,6 +245,9 @@ class JobTemplateBase(BaseModel):
     csv_import_file_filter: Optional[str] = Field(
         None, max_length=255, description="Glob pattern to select CSV files at runtime (e.g. '*.csv')"
     )
+    csv_import_defaults: Optional[Dict[str, str]] = Field(
+        None, description="Default values for mandatory fields when CSV rows are missing them (e.g. {'location': 'Amsterdam'})"
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -307,6 +310,7 @@ class JobTemplateUpdate(BaseModel):
     csv_import_quote_char: Optional[str] = Field(None, max_length=10)
     csv_import_column_mapping: Optional[Dict[str, Optional[str]]] = None
     csv_import_file_filter: Optional[str] = Field(None, max_length=255)
+    csv_import_defaults: Optional[Dict[str, str]] = None
     is_global: Optional[bool] = None
 
 

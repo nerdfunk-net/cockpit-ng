@@ -96,6 +96,7 @@ async def create_job_template(
             csv_import_quote_char=template_data.csv_import_quote_char,
             csv_import_column_mapping=template_data.csv_import_column_mapping,
             csv_import_file_filter=template_data.csv_import_file_filter,
+            csv_import_defaults=template_data.csv_import_defaults,
             is_global=template_data.is_global,
         )
 
@@ -264,6 +265,7 @@ async def update_job_template(
             csv_import_quote_char=update_data.csv_import_quote_char,
             csv_import_column_mapping=update_data.csv_import_column_mapping,
             csv_import_file_filter=update_data.csv_import_file_filter,
+            csv_import_defaults=update_data.csv_import_defaults,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

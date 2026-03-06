@@ -235,6 +235,23 @@ async def get_nautobot_vm_roles(
         )
 
 
+@router.get("/roles/prefix", summary="🔶 REST: List Prefix Roles")
+async def get_nautobot_prefix_roles(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+):
+    """Get Nautobot roles specifically for ipam.prefix content type."""
+    try:
+        result = await nautobot_service.rest_request(
+            "extras/roles/?content_types=ipam.prefix&limit=0"
+        )
+        return result.get("results", [])
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch prefix roles: {str(e)}",
+        )
+
+
 @router.get("/roles/ipaddress", summary="🔶 REST: List IP Address Roles")
 async def get_nautobot_ipaddress_roles(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),

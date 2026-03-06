@@ -46,6 +46,10 @@ export const CSV_IMPORT_NAUTOBOT_FIELDS: Record<string, string[]> = {
   devices: [
     'name', 'status', 'role', 'device_type', 'location', 'rack', 'platform',
     'serial', 'asset_tag', 'position', 'face', 'comments',
+    // Interface fields — mapped columns are extracted and used to create
+    // one interface (and optionally assign a primary IP) on the device.
+    'interface_name', 'interface_type', 'interface_status',
+    'interface_ip_address', 'interface_namespace', 'interface_description',
     'cf_last_scan', 'cf_net', 'cf_vlan_id',
   ],
   'ip-prefixes': [

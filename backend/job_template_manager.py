@@ -65,6 +65,7 @@ def create_job_template(
     csv_import_quote_char: Optional[str] = None,
     csv_import_column_mapping: Optional[Dict[str, Any]] = None,
     csv_import_file_filter: Optional[str] = None,
+    csv_import_defaults: Optional[Dict[str, Any]] = None,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -84,6 +85,11 @@ def create_job_template(
     # Serialize csv_import_column_mapping to JSON string for storage
     csv_import_column_mapping_json = (
         json.dumps(csv_import_column_mapping) if csv_import_column_mapping is not None else None
+    )
+
+    # Serialize csv_import_defaults to JSON string for storage
+    csv_import_defaults_json = (
+        json.dumps(csv_import_defaults) if csv_import_defaults is not None else None
     )
 
     template = repo.create(
@@ -134,6 +140,7 @@ def create_job_template(
         csv_import_quote_char=csv_import_quote_char,
         csv_import_column_mapping=csv_import_column_mapping_json,
         csv_import_file_filter=csv_import_file_filter,
+        csv_import_defaults=csv_import_defaults_json,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -229,6 +236,7 @@ def update_job_template(
     csv_import_quote_char: Optional[str] = None,
     csv_import_column_mapping: Optional[Dict[str, Any]] = None,
     csv_import_file_filter: Optional[str] = None,
+    csv_import_defaults: Optional[Dict[str, Any]] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -335,6 +343,8 @@ def update_job_template(
         update_data["csv_import_column_mapping"] = json.dumps(csv_import_column_mapping)
     if csv_import_file_filter is not None:
         update_data["csv_import_file_filter"] = csv_import_file_filter
+    if csv_import_defaults is not None:
+        update_data["csv_import_defaults"] = json.dumps(csv_import_defaults)
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -501,6 +511,11 @@ def _model_to_dict(template) -> Dict[str, Any]:
             else None
         ),
         "csv_import_file_filter": template.csv_import_file_filter,
+        "csv_import_defaults": (
+            json.loads(template.csv_import_defaults)
+            if template.csv_import_defaults
+            else None
+        ),
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

@@ -476,6 +476,7 @@ class JobTemplate(Base):
     csv_import_quote_char = Column(String(10), nullable=True)
     csv_import_column_mapping = Column(Text, nullable=True)  # JSON: {"csv_col": "nautobot_field" | null}
     csv_import_file_filter = Column(String(255), nullable=True)  # glob pattern like "*.csv"
+    csv_import_defaults = Column(Text, nullable=True)  # JSON: {"location": "Amsterdam", ...}
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

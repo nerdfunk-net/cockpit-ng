@@ -59,6 +59,7 @@ export interface JobTemplate {
   csv_import_quote_char?: string
   csv_import_column_mapping?: Record<string, string | null>
   csv_import_file_filter?: string
+  csv_import_defaults?: Record<string, string>
   is_global: boolean
   user_id?: number
   created_by?: string

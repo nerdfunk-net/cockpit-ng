@@ -7,6 +7,7 @@ import { Plus, Edit } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useTemplateMutations } from '../hooks/use-template-mutations'
 import { useIpAddressStatuses, useIpAddressTags, useCsvImportRepos, useCsvFiles, useCsvHeaders, useNautobotDefaults } from '../hooks/use-template-queries'
+import { useCsvImportNautobotQuery, EMPTY_CSV_IMPORT_NAUTOBOT_DATA } from '../hooks/use-csv-import-nautobot-query'
 import { EMPTY_IP_STATUSES, EMPTY_IP_TAGS, EMPTY_REPOS, EMPTY_CSV_FILES, EMPTY_HEADERS } from '../utils/constants'
 import { JobTemplateCommonFields } from '../../components/JobTemplateCommonFields'
 import { JobTemplateConfigRepoSection } from '../../components/JobTemplateConfigRepoSection'
@@ -20,6 +21,7 @@ import { DeployAgentJobTemplate, generateEntryKey } from '../../components/templ
 import { MaintainIPAddressesJobTemplate } from '../../components/template-types/MaintainIPAddressesJobTemplate'
 import { CsvImportJobTemplate } from '../../components/template-types/CsvImportJobTemplate'
 import { CsvImportMappingDialog } from '../../components/template-types/CsvImportMappingDialog'
+import { CsvImportDefaultsPanel } from './csv-import-defaults-panel'
 import type { DeployTemplateEntryData } from '../../components/template-types/DeployTemplateEntry'
 import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField } from '../types'
 import { JOB_TYPE_COLORS } from '../utils/constants'
@@ -105,6 +107,7 @@ export function TemplateFormDialog({
   const [formCsvMappingDialogOpen, setFormCsvMappingDialogOpen] = useState(false)
   const [csvFileQuery, setCsvFileQuery] = useState("")
   const [formCsvImportFileFilter, setFormCsvImportFileFilter] = useState("")
+  const [formCsvImportDefaults, setFormCsvImportDefaults] = useState<Record<string, string>>({})
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
@@ -131,6 +134,7 @@ export function TemplateFormDialog({
     enabled: isCsvImport,
   })
   const { data: nautobotDefaults } = useNautobotDefaults({ enabled: isCsvImport })
+  const { data: csvImportNautobotData = EMPTY_CSV_IMPORT_NAUTOBOT_DATA, isLoading: csvImportNautobotLoading } = useCsvImportNautobotQuery({ enabled: isCsvImport })
 
   // Pre-fill delimiter/quoteChar from Nautobot defaults when entering csv_import mode.
   // Only applies when creating a new template — never overwrite values loaded from an existing template.
@@ -199,6 +203,7 @@ export function TemplateFormDialog({
     setFormCsvImportColumnMapping({})
     setCsvFileQuery("")
     setFormCsvImportFileFilter("")
+    setFormCsvImportDefaults({})
     setFormIsGlobal(false)
   }, [])
 
@@ -283,6 +288,7 @@ export function TemplateFormDialog({
       setFormCsvImportQuoteChar(editingTemplate.csv_import_quote_char || '"')
       setFormCsvImportColumnMapping(editingTemplate.csv_import_column_mapping || {})
       setFormCsvImportFileFilter(editingTemplate.csv_import_file_filter ?? "")
+      setFormCsvImportDefaults(editingTemplate.csv_import_defaults ?? {})
       console.debug('[CSV_DEBUG][RENDER] form state after loading CSV fields:', {
         formCsvImportDelimiter: editingTemplate.csv_import_delimiter || ',',
         formCsvImportQuoteChar: editingTemplate.csv_import_quote_char || '"',
@@ -377,6 +383,7 @@ export function TemplateFormDialog({
         ? Object.fromEntries(Object.entries(formCsvImportColumnMapping).filter(([, v]) => v !== null))
         : undefined,
       csv_import_file_filter: formJobType === "csv_import" ? formCsvImportFileFilter || undefined : undefined,
+      csv_import_defaults: formJobType === "csv_import" && Object.keys(formCsvImportDefaults).length > 0 ? formCsvImportDefaults : undefined,
       is_global: formIsGlobal
     }
 
@@ -601,6 +608,13 @@ export function TemplateFormDialog({
                 importType={formCsvImportType}
                 columnMapping={formCsvImportColumnMapping}
                 onMappingChange={setFormCsvImportColumnMapping}
+              />
+              <CsvImportDefaultsPanel
+                importType={formCsvImportType}
+                defaults={formCsvImportDefaults}
+                onDefaultsChange={setFormCsvImportDefaults}
+                nautobotData={csvImportNautobotData}
+                isLoading={csvImportNautobotLoading}
               />
             </>
           )}
