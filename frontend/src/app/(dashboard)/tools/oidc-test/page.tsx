@@ -691,9 +691,9 @@ export default function OIDCTestPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {logs.map((log, index) => (
+              {logs.map((log) => (
                 <div
-                  key={`${index}-${log.timestamp}-${log.level}`}
+                  key={`${log.timestamp}-${log.level}-${log.message}`}
                   className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
                 >
                   {getLevelIcon(log.level)}
