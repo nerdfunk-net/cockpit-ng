@@ -54,6 +54,7 @@ class DeviceImportService:
         device_data: Dict[str, Any],
         interface_config: Optional[List[Dict[str, Any]]] = None,
         skip_if_exists: bool = False,
+        add_prefixes_automatically: bool = False,
     ) -> Dict[str, Any]:
         """
         Import a single device with optional interface configuration.
@@ -153,7 +154,8 @@ class DeviceImportService:
                     created_interfaces,
                     primary_ipv4_id,
                 ) = await self._create_device_interfaces(
-                    device_id, interface_config, validated_data["name"]
+                    device_id, interface_config, validated_data["name"],
+                    add_prefixes_automatically=add_prefixes_automatically,
                 )
                 details["interfaces"] = created_interfaces
 
@@ -393,6 +395,7 @@ class DeviceImportService:
         device_id: str,
         interface_config: List[Dict[str, Any]],
         device_name: str,
+        add_prefixes_automatically: bool = False,
     ) -> tuple[List[Dict[str, Any]], Optional[str]]:
         """
         Create interfaces and IP addresses for device using InterfaceManagerService.
@@ -421,6 +424,7 @@ class DeviceImportService:
         result = await self.interface_manager.update_device_interfaces(
             device_id=device_id,
             interfaces=normalized_interfaces,
+            add_prefixes_automatically=add_prefixes_automatically,
         )
 
         # Convert InterfaceUpdateResult to the format expected by callers

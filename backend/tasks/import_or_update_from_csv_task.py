@@ -72,6 +72,9 @@ def import_or_update_from_csv_task(
     template_id: Optional[int] = None,
     file_filter: Optional[str] = None,
     defaults: Optional[Dict[str, str]] = None,
+    import_format: str = "generic",
+    add_prefixes: bool = False,
+    default_prefix_length: Optional[str] = None,
 ) -> dict:
     """Celery task wrapper — delegates to _run_csv_import."""
     return _run_csv_import(
@@ -88,6 +91,9 @@ def import_or_update_from_csv_task(
         template_id=template_id,
         file_filter=file_filter,
         defaults=defaults,
+        import_format=import_format,
+        add_prefixes=add_prefixes,
+        default_prefix_length=default_prefix_length,
     )
 
 
@@ -105,6 +111,9 @@ def _run_csv_import(
     template_id: Optional[int] = None,
     file_filter: Optional[str] = None,
     defaults: Optional[Dict[str, str]] = None,
+    import_format: str = "generic",
+    add_prefixes: bool = False,
+    default_prefix_length: Optional[str] = None,
 ) -> dict:
     """
     Task: Import or update Nautobot objects from a CSV file in a Git repository.
@@ -133,6 +142,7 @@ def _run_csv_import(
         logger.info("File path: %s", file_path)
         logger.info("File filter: %s", file_filter)
         logger.info("Import type: %s", import_type)
+        logger.info("Import format: %s", import_format)
         logger.info("Primary key: %s", primary_key)
         logger.info("Update existing: %s", update_existing)
         logger.info("Dry run: %s", dry_run)
@@ -180,6 +190,10 @@ def _run_csv_import(
                          f"Must be one of: {list(_ENDPOINT_MAP.keys())}",
             }
 
+        # Strip BOM and surrounding whitespace from primary_key (can appear when
+        # the value is copy-pasted from an editor that saves with UTF-8 BOM).
+        primary_key = primary_key.strip().lstrip("\ufeff").strip()
+
         col_map = column_mapping or {}
 
         # Build inverse mapping: nautobot_field -> csv_col
@@ -188,6 +202,7 @@ def _run_csv_import(
             if nb_field is not None:
                 inverse_map[nb_field] = csv_col
         pk_csv_col = inverse_map.get(primary_key, primary_key)
+        logger.info("Primary key '%s' resolved to CSV column '%s' (inverse_map=%s)", primary_key, pk_csv_col, inverse_map)
 
         # STEP 2–4: Process each file
         nautobot_service = NautobotService()
@@ -225,7 +240,8 @@ def _run_csv_import(
             )
 
             try:
-                with open(abs_file_resolved, "r", encoding="utf-8") as f:
+                # utf-8-sig automatically strips a UTF-8 BOM if present
+                with open(abs_file_resolved, "r", encoding="utf-8-sig") as f:
                     content = f.read()
             except UnicodeDecodeError:
                 failures.append({"file": fp, "error": f"File is not a valid UTF-8 text file: {fp}"})
@@ -248,7 +264,7 @@ def _run_csv_import(
                 continue
 
             csv_headers = list(rows[0].keys())
-            logger.info("File %s: headers=%s rows=%s", fp, csv_headers, len(rows))
+            logger.info("File %s: headers=%s rows=%s format=%s", fp, csv_headers, len(rows), import_format)
 
             if pk_csv_col not in csv_headers:
                 failures.append({
@@ -260,122 +276,96 @@ def _run_csv_import(
                 })
                 continue
 
-            total_rows = len(rows)
-            for idx, raw_row in enumerate(rows, 1):
-                pk_value = raw_row.get(pk_csv_col, "").strip()
-                identifier = pk_value or f"row-{idx}"
+            # Dispatch by import format
+            if import_format == "cockpit":
+                _process_cockpit_rows(
+                    rows=rows,
+                    pk_csv_col=pk_csv_col,
+                    col_map=col_map,
+                    defaults=defaults,
+                    import_type=import_type,
+                    primary_key=primary_key,
+                    update_existing=update_existing,
+                    dry_run=dry_run,
+                    fp=fp,
+                    file_idx=file_idx,
+                    total_files=total_files,
+                    nautobot_service=nautobot_service,
+                    device_import_service=device_import_service,
+                    device_update_service=device_update_service,
+                    created=created,
+                    updated=updated,
+                    skipped=skipped,
+                    failures=failures,
+                    task_context=task_context,
+                    add_prefixes=add_prefixes,
+                    default_prefix_length=default_prefix_length,
+                )
+            else:
+                # "nautobot" or "generic": single-row-per-object processing
+                total_rows = len(rows)
+                for idx, raw_row in enumerate(rows, 1):
+                    if import_format == "nautobot":
+                        raw_row = _filter_nautobot_nulls(raw_row)
 
-                try:
-                    progress = int((file_idx - 1) / total_files * 90) + int((idx / total_rows) * (90 / total_files))
-                    task_context.update_state(
-                        state="PROGRESS",
-                        meta={
-                            "current": progress,
-                            "total": 100,
-                            "status": f"File {file_idx}/{total_files}: row {idx}/{total_rows}: {identifier}",
-                            "created": len(created),
-                            "updated": len(updated),
-                            "skipped": len(skipped),
-                            "failures": len(failures),
-                        },
-                    )
+                    pk_value = raw_row.get(pk_csv_col, "").strip()
+                    identifier = pk_value or f"row-{idx}"
 
-                    if not pk_value:
-                        logger.warning("File %s row %s: empty primary key value, skipping", fp, idx)
-                        skipped.append({"file": fp, "row": idx, "reason": "Empty primary key value"})
-                        continue
+                    try:
+                        progress = int((file_idx - 1) / total_files * 90) + int((idx / total_rows) * (90 / total_files))
+                        task_context.update_state(
+                            state="PROGRESS",
+                            meta={
+                                "current": progress,
+                                "total": 100,
+                                "status": f"File {file_idx}/{total_files}: row {idx}/{total_rows}: {identifier}",
+                                "created": len(created),
+                                "updated": len(updated),
+                                "skipped": len(skipped),
+                                "failures": len(failures),
+                            },
+                        )
 
-                    csv_data = _apply_column_mapping(raw_row, col_map)
-                    # Merge: defaults as base layer, CSV values always take priority
-                    if defaults:
-                        base = {k: v for k, v in defaults.items() if v}
-                        nautobot_data = {**base, **csv_data}
-                    else:
-                        nautobot_data = csv_data
+                        if not pk_value:
+                            logger.warning("File %s row %s: empty primary key value, skipping", fp, idx)
+                            skipped.append({"file": fp, "row": idx, "reason": "Empty primary key value"})
+                            continue
 
-                    existing_id = asyncio.run(
-                        _lookup_object(nautobot_service, import_type, primary_key, pk_value, raw_row, col_map)
-                    )
-
-                    if import_type == "devices":
-                        # Route through DeviceImportService / DeviceUpdateService so that
-                        # human-readable names (device_type, location, role, status, tags, …)
-                        # are resolved to UUIDs before the REST call.
-                        #
-                        # interface_* fields (interface_name, interface_type,
-                        # interface_ip_address, …) are extracted and passed as a
-                        # separate interface_config so the service can create the
-                        # interface and assign the IP correctly.
-                        device_only_data, iface_config = _extract_interface_config(nautobot_data)
-
-                        if existing_id:
-                            if not update_existing:
-                                logger.info("File %s row %s: %s already exists, skipping", fp, idx, identifier)
-                                skipped.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "reason": "Already exists"})
-                                continue
-
-                            if dry_run:
-                                logger.info("[DRY RUN] Would update device %s", identifier)
-                                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "dry_run": True})
-                            else:
-                                asyncio.run(
-                                    device_update_service.update_device(
-                                        device_identifier={"id": existing_id},
-                                        update_data=device_only_data,
-                                        interfaces=iface_config,
-                                    )
-                                )
-                                logger.info("Updated device %s", identifier)
-                                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "updated_fields": list(device_only_data.keys())})
+                        csv_data = _apply_column_mapping(raw_row, col_map)
+                        # Merge: defaults as base layer, CSV values always take priority
+                        if defaults:
+                            base = {k: v for k, v in defaults.items() if v}
+                            nautobot_data = {**base, **csv_data}
                         else:
-                            if dry_run:
-                                logger.info("[DRY RUN] Would create device %s", identifier)
-                                created.append({"file": fp, "row": idx, "identifier": identifier, "dry_run": True})
-                            else:
-                                result = asyncio.run(
-                                    device_import_service.import_device(
-                                        device_only_data,
-                                        interface_config=iface_config,
-                                    )
-                                )
-                                new_id = result.get("device_id")
-                                logger.info("Created device %s (id=%s)", identifier, new_id)
-                                created.append({"file": fp, "row": idx, "identifier": identifier, "id": new_id})
-                    else:
-                        # For ip-prefixes and ip-addresses use direct REST (no complex
-                        # name resolution needed for these types).
-                        if existing_id:
-                            if not update_existing:
-                                logger.info("File %s row %s: %s already exists, skipping", fp, idx, identifier)
-                                skipped.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "reason": "Already exists"})
-                                continue
+                            nautobot_data = csv_data
 
-                            if dry_run:
-                                logger.info("[DRY RUN] Would update %s %s", import_type, identifier)
-                                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "dry_run": True})
-                            else:
-                                endpoint = f"{_ENDPOINT_MAP[import_type]}{existing_id}/"
-                                asyncio.run(
-                                    nautobot_service.rest_request(endpoint, method="PATCH", data=nautobot_data)
-                                )
-                                logger.info("Updated %s %s", import_type, identifier)
-                                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "updated_fields": list(nautobot_data.keys())})
-                        else:
-                            if dry_run:
-                                logger.info("[DRY RUN] Would create %s %s", import_type, identifier)
-                                created.append({"file": fp, "row": idx, "identifier": identifier, "dry_run": True})
-                            else:
-                                result = asyncio.run(
-                                    nautobot_service.rest_request(_ENDPOINT_MAP[import_type], method="POST", data=nautobot_data)
-                                )
-                                new_id = result.get("id") if isinstance(result, dict) else None
-                                logger.info("Created %s %s (id=%s)", import_type, identifier, new_id)
-                                created.append({"file": fp, "row": idx, "identifier": identifier, "id": new_id})
+                        existing_id = asyncio.run(
+                            _lookup_object(nautobot_service, import_type, primary_key, pk_value, raw_row, col_map)
+                        )
 
-                except Exception as e:
-                    error_msg = str(e)
-                    logger.error("File %s row %s (%s) failed: %s", fp, idx, identifier, error_msg, exc_info=True)
-                    failures.append({"file": fp, "row": idx, "identifier": identifier, "error": error_msg})
+                        _process_single_object(
+                            nautobot_data=nautobot_data,
+                            existing_id=existing_id,
+                            import_type=import_type,
+                            update_existing=update_existing,
+                            dry_run=dry_run,
+                            fp=fp,
+                            idx=idx,
+                            identifier=identifier,
+                            nautobot_service=nautobot_service,
+                            device_import_service=device_import_service,
+                            device_update_service=device_update_service,
+                            created=created,
+                            updated=updated,
+                            skipped=skipped,
+                            add_prefixes=add_prefixes,
+                            default_prefix_length=default_prefix_length,
+                        )
+
+                    except Exception as e:
+                        error_msg = str(e)
+                        logger.error("File %s row %s (%s) failed: %s", fp, idx, identifier, error_msg, exc_info=True)
+                        failures.append({"file": fp, "row": idx, "identifier": identifier, "error": error_msg})
 
         # STEP 5: Finalize
         task_context.update_state(
@@ -438,6 +428,256 @@ def _run_csv_import(
             logger.warning("Failed to update job run status: %s", job_error)
 
         return error_result
+
+
+_NAUTOBOT_NULL_SENTINELS = {"NULL", "NoObject", "null", ""}
+
+
+def _filter_nautobot_nulls(row: Dict[str, str]) -> Dict[str, str]:
+    """Remove Nautobot export sentinel values (NULL, NoObject) from a CSV row."""
+    return {k: v for k, v in row.items() if v not in _NAUTOBOT_NULL_SENTINELS}
+
+
+def _apply_default_prefix_length(
+    iface_config: Optional[List[Dict[str, Any]]],
+    default_prefix_length: Optional[str],
+) -> Optional[List[Dict[str, Any]]]:
+    """
+    Append default_prefix_length to interface IP addresses that have no CIDR mask.
+
+    E.g. "192.168.1.1" + "24" → "192.168.1.1/24"
+    Addresses that already contain "/" are left unchanged.
+    """
+    if not iface_config or not default_prefix_length:
+        return iface_config
+
+    suffix = f"/{default_prefix_length.lstrip('/')}"
+    patched = []
+    for iface in iface_config:
+        iface = iface.copy()
+        # ip_addresses array format (used after normalization)
+        if "ip_addresses" in iface:
+            iface["ip_addresses"] = [
+                {**ip, "address": ip["address"] + suffix}
+                if ip.get("address") and "/" not in ip["address"]
+                else ip
+                for ip in iface["ip_addresses"]
+            ]
+        # ip_address string format (pre-normalization)
+        elif "ip_address" in iface and iface["ip_address"] and "/" not in iface["ip_address"]:
+            iface["ip_address"] = iface["ip_address"] + suffix
+        patched.append(iface)
+    return patched
+
+
+def _process_single_object(
+    nautobot_data: Dict[str, Any],
+    existing_id: Optional[str],
+    import_type: str,
+    update_existing: bool,
+    dry_run: bool,
+    fp: str,
+    idx: int,
+    identifier: str,
+    nautobot_service,
+    device_import_service,
+    device_update_service,
+    created: List[Dict],
+    updated: List[Dict],
+    skipped: List[Dict],
+    iface_config: Optional[List[Dict]] = None,
+    add_prefixes: bool = False,
+    default_prefix_length: Optional[str] = None,
+) -> None:
+    """Create or update a single Nautobot object based on whether it already exists."""
+    if import_type == "devices":
+        # Route through DeviceImportService / DeviceUpdateService so that
+        # human-readable names (device_type, location, role, status, tags, …)
+        # are resolved to UUIDs before the REST call.
+        if iface_config is None:
+            nautobot_data, iface_config = _extract_interface_config(nautobot_data)
+
+        # Apply default prefix length to IPs that have no CIDR mask
+        if add_prefixes and default_prefix_length:
+            iface_config = _apply_default_prefix_length(iface_config, default_prefix_length)
+
+        if existing_id:
+            if not update_existing:
+                logger.info("File %s row %s: %s already exists, skipping", fp, idx, identifier)
+                skipped.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "reason": "Already exists"})
+                return
+
+            if dry_run:
+                logger.info("[DRY RUN] Would update device %s", identifier)
+                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "dry_run": True})
+            else:
+                asyncio.run(
+                    device_update_service.update_device(
+                        device_identifier={"id": existing_id},
+                        update_data=nautobot_data,
+                        interfaces=iface_config,
+                        add_prefix=add_prefixes,
+                    )
+                )
+                logger.info("Updated device %s", identifier)
+                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "updated_fields": list(nautobot_data.keys())})
+        else:
+            if dry_run:
+                logger.info("[DRY RUN] Would create device %s", identifier)
+                created.append({"file": fp, "row": idx, "identifier": identifier, "dry_run": True})
+            else:
+                result = asyncio.run(
+                    device_import_service.import_device(
+                        nautobot_data,
+                        interface_config=iface_config,
+                        add_prefixes_automatically=add_prefixes,
+                    )
+                )
+                new_id = result.get("device_id")
+                logger.info("Created device %s (id=%s)", identifier, new_id)
+                created.append({"file": fp, "row": idx, "identifier": identifier, "id": new_id})
+    else:
+        # For ip-prefixes and ip-addresses use direct REST (no complex
+        # name resolution needed for these types).
+        if existing_id:
+            if not update_existing:
+                logger.info("File %s row %s: %s already exists, skipping", fp, idx, identifier)
+                skipped.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "reason": "Already exists"})
+                return
+
+            if dry_run:
+                logger.info("[DRY RUN] Would update %s %s", import_type, identifier)
+                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "dry_run": True})
+            else:
+                endpoint = f"{_ENDPOINT_MAP[import_type]}{existing_id}/"
+                asyncio.run(
+                    nautobot_service.rest_request(endpoint, method="PATCH", data=nautobot_data)
+                )
+                logger.info("Updated %s %s", import_type, identifier)
+                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "updated_fields": list(nautobot_data.keys())})
+        else:
+            if dry_run:
+                logger.info("[DRY RUN] Would create %s %s", import_type, identifier)
+                created.append({"file": fp, "row": idx, "identifier": identifier, "dry_run": True})
+            else:
+                result = asyncio.run(
+                    nautobot_service.rest_request(_ENDPOINT_MAP[import_type], method="POST", data=nautobot_data)
+                )
+                new_id = result.get("id") if isinstance(result, dict) else None
+                logger.info("Created %s %s (id=%s)", import_type, identifier, new_id)
+                created.append({"file": fp, "row": idx, "identifier": identifier, "id": new_id})
+
+
+def _process_cockpit_rows(
+    rows: List[Dict[str, str]],
+    pk_csv_col: str,
+    col_map: Dict[str, Optional[str]],
+    defaults: Optional[Dict[str, str]],
+    import_type: str,
+    primary_key: str,
+    update_existing: bool,
+    dry_run: bool,
+    fp: str,
+    file_idx: int,
+    total_files: int,
+    nautobot_service,
+    device_import_service,
+    device_update_service,
+    created: List[Dict],
+    updated: List[Dict],
+    skipped: List[Dict],
+    failures: List[Dict],
+    task_context,
+    add_prefixes: bool = False,
+    default_prefix_length: Optional[str] = None,
+) -> None:
+    """
+    Process Cockpit-format CSV rows where multiple rows represent one device
+    (one row per interface). Groups rows by primary key, collects all interface
+    rows, and respects the set_primary_ipv4 column.
+    """
+    from collections import OrderedDict
+
+    # Group rows by pk value, preserving insertion order
+    groups: "OrderedDict[str, List[Dict[str, str]]]" = OrderedDict()
+    for row in rows:
+        pk_val = row.get(pk_csv_col, "").strip()
+        if pk_val:
+            groups.setdefault(pk_val, []).append(row)
+
+    total_devices = len(groups)
+    for dev_idx, (pk_value, device_rows) in enumerate(groups.items(), 1):
+        identifier = pk_value
+        try:
+            progress = int((file_idx - 1) / total_files * 90) + int((dev_idx / max(total_devices, 1)) * (90 / total_files))
+            task_context.update_state(
+                state="PROGRESS",
+                meta={
+                    "current": progress,
+                    "total": 100,
+                    "status": f"File {file_idx}/{total_files}: device {dev_idx}/{total_devices}: {identifier}",
+                    "created": len(created),
+                    "updated": len(updated),
+                    "skipped": len(skipped),
+                    "failures": len(failures),
+                },
+            )
+
+            # Device-level fields from the first row
+            first_row = device_rows[0]
+            csv_data = _apply_column_mapping(first_row, col_map)
+            if defaults:
+                base = {k: v for k, v in defaults.items() if v}
+                device_data_merged = {**base, **csv_data}
+            else:
+                device_data_merged = csv_data
+
+            # Strip interface_ fields from device data; collect interfaces from all rows
+            device_only_data, _ = _extract_interface_config(device_data_merged)
+
+            iface_list: List[Dict[str, Any]] = []
+            for row in device_rows:
+                row_data = _apply_column_mapping(row, col_map)
+                _, iface = _extract_interface_config(row_data)
+                if iface:
+                    iface_entry = iface[0].copy()
+                    # set_primary_ipv4 column overrides the default is_primary_ipv4=True
+                    # that _extract_interface_config sets when an IP is present.
+                    set_primary = row.get("set_primary_ipv4", "").strip().lower()
+                    if "ip_address" in iface_entry:
+                        iface_entry["is_primary_ipv4"] = set_primary == "true"
+                    iface_list.append(iface_entry)
+
+            iface_config = iface_list if iface_list else None
+
+            existing_id = asyncio.run(
+                _lookup_object(nautobot_service, import_type, primary_key, pk_value, first_row, col_map)
+            )
+
+            _process_single_object(
+                nautobot_data=device_only_data,
+                existing_id=existing_id,
+                import_type=import_type,
+                update_existing=update_existing,
+                dry_run=dry_run,
+                fp=fp,
+                idx=dev_idx,
+                identifier=identifier,
+                nautobot_service=nautobot_service,
+                device_import_service=device_import_service,
+                device_update_service=device_update_service,
+                created=created,
+                updated=updated,
+                skipped=skipped,
+                iface_config=iface_config,
+                add_prefixes=add_prefixes,
+                default_prefix_length=default_prefix_length,
+            )
+
+        except Exception as e:
+            error_msg = str(e)
+            logger.error("File %s device %s (%s) failed: %s", fp, dev_idx, identifier, error_msg, exc_info=True)
+            failures.append({"file": fp, "row": dev_idx, "identifier": identifier, "error": error_msg})
 
 
 # Maps the canonical interface_* field names used in column mappings/defaults

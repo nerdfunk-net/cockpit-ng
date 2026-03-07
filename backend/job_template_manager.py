@@ -66,6 +66,9 @@ def create_job_template(
     csv_import_column_mapping: Optional[Dict[str, Any]] = None,
     csv_import_file_filter: Optional[str] = None,
     csv_import_defaults: Optional[Dict[str, Any]] = None,
+    csv_import_format: Optional[str] = None,
+    csv_import_add_prefixes: bool = False,
+    csv_import_default_prefix_length: Optional[str] = None,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -141,6 +144,9 @@ def create_job_template(
         csv_import_column_mapping=csv_import_column_mapping_json,
         csv_import_file_filter=csv_import_file_filter,
         csv_import_defaults=csv_import_defaults_json,
+        csv_import_format=csv_import_format,
+        csv_import_add_prefixes=csv_import_add_prefixes,
+        csv_import_default_prefix_length=csv_import_default_prefix_length,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -237,6 +243,9 @@ def update_job_template(
     csv_import_column_mapping: Optional[Dict[str, Any]] = None,
     csv_import_file_filter: Optional[str] = None,
     csv_import_defaults: Optional[Dict[str, Any]] = None,
+    csv_import_format: Optional[str] = None,
+    csv_import_add_prefixes: Optional[bool] = None,
+    csv_import_default_prefix_length: Optional[str] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -345,6 +354,12 @@ def update_job_template(
         update_data["csv_import_file_filter"] = csv_import_file_filter
     if csv_import_defaults is not None:
         update_data["csv_import_defaults"] = json.dumps(csv_import_defaults)
+    if csv_import_format is not None:
+        update_data["csv_import_format"] = csv_import_format
+    if csv_import_add_prefixes is not None:
+        update_data["csv_import_add_prefixes"] = csv_import_add_prefixes
+    if csv_import_default_prefix_length is not None:
+        update_data["csv_import_default_prefix_length"] = csv_import_default_prefix_length
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -356,7 +371,8 @@ def update_job_template(
     logger.debug(
         "[CSV_DEBUG][STORE] template_id=%s incoming CSV args: "
         "repo_id=%r file_path=%r type=%r primary_key=%r "
-        "delimiter=%r quote_char=%r update_existing=%r file_filter=%r",
+        "delimiter=%r quote_char=%r update_existing=%r file_filter=%r "
+        "column_mapping=%r defaults=%r",
         template_id,
         csv_import_repo_id,
         csv_import_file_path,
@@ -366,6 +382,8 @@ def update_job_template(
         csv_import_quote_char,
         csv_import_update_existing,
         csv_import_file_filter,
+        csv_import_column_mapping,
+        csv_import_defaults,
     )
     logger.debug(
         "[CSV_DEBUG][STORE] CSV keys in update_data going to repo.update: %s",
@@ -445,12 +463,15 @@ def _model_to_dict(template) -> Dict[str, Any]:
     logger.debug(
         "[CSV_DEBUG][LOAD] template id=%s name=%r "
         "delimiter=%r quote_char=%r primary_key=%r "
-        "repo_id=%r file_path=%r type=%r file_filter=%r",
+        "repo_id=%r file_path=%r type=%r file_filter=%r "
+        "column_mapping=%r defaults=%r",
         template.id, template.name,
         template.csv_import_delimiter, template.csv_import_quote_char,
         template.csv_import_primary_key, template.csv_import_repo_id,
         template.csv_import_file_path, template.csv_import_type,
         template.csv_import_file_filter,
+        template.csv_import_column_mapping,
+        template.csv_import_defaults,
     )
     return {
         "id": template.id,
@@ -516,6 +537,9 @@ def _model_to_dict(template) -> Dict[str, Any]:
             if template.csv_import_defaults
             else None
         ),
+        "csv_import_format": template.csv_import_format,
+        "csv_import_add_prefixes": template.csv_import_add_prefixes,
+        "csv_import_default_prefix_length": template.csv_import_default_prefix_length,
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

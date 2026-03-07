@@ -248,6 +248,18 @@ class JobTemplateBase(BaseModel):
     csv_import_defaults: Optional[Dict[str, str]] = Field(
         None, description="Default values for mandatory fields when CSV rows are missing them (e.g. {'location': 'Amsterdam'})"
     )
+    csv_import_format: Optional[str] = Field(
+        None, max_length=50,
+        description="CSV format: 'cockpit' (multi-row per device), 'nautobot' (single-row, NULL filtering), 'generic' (single-row)"
+    )
+    csv_import_add_prefixes: bool = Field(
+        False,
+        description="Automatically create missing parent IP prefixes during import"
+    )
+    csv_import_default_prefix_length: Optional[str] = Field(
+        None, max_length=10,
+        description="Default CIDR prefix length (e.g. '24') applied when an interface IP has no mask"
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -311,6 +323,9 @@ class JobTemplateUpdate(BaseModel):
     csv_import_column_mapping: Optional[Dict[str, Optional[str]]] = None
     csv_import_file_filter: Optional[str] = Field(None, max_length=255)
     csv_import_defaults: Optional[Dict[str, str]] = None
+    csv_import_format: Optional[str] = Field(None, max_length=50)
+    csv_import_add_prefixes: Optional[bool] = None
+    csv_import_default_prefix_length: Optional[str] = Field(None, max_length=10)
     is_global: Optional[bool] = None
 
 

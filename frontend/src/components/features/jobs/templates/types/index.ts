@@ -60,6 +60,9 @@ export interface JobTemplate {
   csv_import_column_mapping?: Record<string, string | null>
   csv_import_file_filter?: string
   csv_import_defaults?: Record<string, string>
+  csv_import_format?: string
+  csv_import_add_prefixes?: boolean
+  csv_import_default_prefix_length?: string
   is_global: boolean
   user_id?: number
   created_by?: string

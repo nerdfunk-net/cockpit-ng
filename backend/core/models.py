@@ -477,6 +477,9 @@ class JobTemplate(Base):
     csv_import_column_mapping = Column(Text, nullable=True)  # JSON: {"csv_col": "nautobot_field" | null}
     csv_import_file_filter = Column(String(255), nullable=True)  # glob pattern like "*.csv"
     csv_import_defaults = Column(Text, nullable=True)  # JSON: {"location": "Amsterdam", ...}
+    csv_import_format = Column(String(50), nullable=True)  # "cockpit", "nautobot", "generic"
+    csv_import_add_prefixes = Column(Boolean, nullable=True, default=False)  # auto-create missing prefixes
+    csv_import_default_prefix_length = Column(String(10), nullable=True)  # e.g. "24" applied when IP has no mask
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

@@ -108,6 +108,9 @@ export function TemplateFormDialog({
   const [csvFileQuery, setCsvFileQuery] = useState("")
   const [formCsvImportFileFilter, setFormCsvImportFileFilter] = useState("")
   const [formCsvImportDefaults, setFormCsvImportDefaults] = useState<Record<string, string>>({})
+  const [formCsvImportFormat, setFormCsvImportFormat] = useState("generic")
+  const [formCsvImportAddPrefixes, setFormCsvImportAddPrefixes] = useState(false)
+  const [formCsvImportDefaultPrefixLength, setFormCsvImportDefaultPrefixLength] = useState("")
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
@@ -204,6 +207,9 @@ export function TemplateFormDialog({
     setCsvFileQuery("")
     setFormCsvImportFileFilter("")
     setFormCsvImportDefaults({})
+    setFormCsvImportFormat("generic")
+    setFormCsvImportAddPrefixes(false)
+    setFormCsvImportDefaultPrefixLength("")
     setFormIsGlobal(false)
   }, [])
 
@@ -289,6 +295,9 @@ export function TemplateFormDialog({
       setFormCsvImportColumnMapping(editingTemplate.csv_import_column_mapping || {})
       setFormCsvImportFileFilter(editingTemplate.csv_import_file_filter ?? "")
       setFormCsvImportDefaults(editingTemplate.csv_import_defaults ?? {})
+      setFormCsvImportFormat(editingTemplate.csv_import_format || "generic")
+      setFormCsvImportAddPrefixes(editingTemplate.csv_import_add_prefixes ?? false)
+      setFormCsvImportDefaultPrefixLength(editingTemplate.csv_import_default_prefix_length || "")
       console.debug('[CSV_DEBUG][RENDER] form state after loading CSV fields:', {
         formCsvImportDelimiter: editingTemplate.csv_import_delimiter || ',',
         formCsvImportQuoteChar: editingTemplate.csv_import_quote_char || '"',
@@ -380,10 +389,13 @@ export function TemplateFormDialog({
       csv_import_delimiter: formJobType === "csv_import" ? formCsvImportDelimiter || undefined : undefined,
       csv_import_quote_char: formJobType === "csv_import" ? formCsvImportQuoteChar || undefined : undefined,
       csv_import_column_mapping: formJobType === "csv_import"
-        ? Object.fromEntries(Object.entries(formCsvImportColumnMapping).filter(([, v]) => v !== null))
+        ? formCsvImportColumnMapping
         : undefined,
       csv_import_file_filter: formJobType === "csv_import" ? formCsvImportFileFilter || undefined : undefined,
       csv_import_defaults: formJobType === "csv_import" && Object.keys(formCsvImportDefaults).length > 0 ? formCsvImportDefaults : undefined,
+      csv_import_format: formJobType === "csv_import" ? formCsvImportFormat || undefined : undefined,
+      csv_import_add_prefixes: formJobType === "csv_import" ? formCsvImportAddPrefixes : undefined,
+      csv_import_default_prefix_length: formJobType === "csv_import" && formCsvImportAddPrefixes ? formCsvImportDefaultPrefixLength || undefined : undefined,
       is_global: formIsGlobal
     }
 
@@ -591,6 +603,12 @@ export function TemplateFormDialog({
                 formCsvImportColumnMapping={formCsvImportColumnMapping}
                 formCsvImportFileFilter={formCsvImportFileFilter}
                 setFormCsvImportFileFilter={setFormCsvImportFileFilter}
+                formCsvImportFormat={formCsvImportFormat}
+                setFormCsvImportFormat={setFormCsvImportFormat}
+                formCsvImportAddPrefixes={formCsvImportAddPrefixes}
+                setFormCsvImportAddPrefixes={setFormCsvImportAddPrefixes}
+                formCsvImportDefaultPrefixLength={formCsvImportDefaultPrefixLength}
+                setFormCsvImportDefaultPrefixLength={setFormCsvImportDefaultPrefixLength}
                 csvImportRepos={csvImportRepos}
                 csvFiles={csvFiles}
                 csvHeaders={csvHeaders}

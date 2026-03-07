@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { AlertCircle, ChevronDown, ChevronRight, Filter, Loader2, Settings2, Upload } from "lucide-react"
 import type { CsvRepoFile, GitRepository } from "../../types"
-import { CSV_IMPORT_TYPE_LABELS } from "../../utils/constants"
+import { CSV_IMPORT_FORMAT_LABELS, CSV_IMPORT_TYPE_LABELS } from "../../utils/constants"
 
 interface CsvImportJobTemplateProps {
   formCsvImportRepoId: number | null
@@ -31,6 +31,12 @@ interface CsvImportJobTemplateProps {
   formCsvImportColumnMapping: Record<string, string | null>
   formCsvImportFileFilter: string
   setFormCsvImportFileFilter: (value: string) => void
+  formCsvImportFormat: string
+  setFormCsvImportFormat: (value: string) => void
+  formCsvImportAddPrefixes: boolean
+  setFormCsvImportAddPrefixes: (value: boolean) => void
+  formCsvImportDefaultPrefixLength: string
+  setFormCsvImportDefaultPrefixLength: (value: string) => void
   csvImportRepos: GitRepository[]
   csvFiles: CsvRepoFile[]
   csvHeaders: string[]
@@ -59,6 +65,12 @@ export function CsvImportJobTemplate({
   setFormCsvImportQuoteChar,
   formCsvImportFileFilter,
   setFormCsvImportFileFilter,
+  formCsvImportFormat,
+  setFormCsvImportFormat,
+  formCsvImportAddPrefixes,
+  setFormCsvImportAddPrefixes,
+  formCsvImportDefaultPrefixLength,
+  setFormCsvImportDefaultPrefixLength,
   csvImportRepos,
   csvFiles,
   csvHeaders,
@@ -299,6 +311,50 @@ export function CsvImportJobTemplate({
           </CollapsibleTrigger>
           <CollapsibleContent>
           <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-gray-600">Import Format</Label>
+              <Select value={formCsvImportFormat} onValueChange={setFormCsvImportFormat}>
+                <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                  <SelectValue placeholder="Select import format..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(CSV_IMPORT_FORMAT_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                Cockpit: multi-row per device (one row per interface). Nautobot: single-row export with NULL filtering. Generic: plain CSV.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-xs font-medium text-gray-600">Add Missing IP Prefixes</Label>
+                  <p className="text-xs text-gray-500">Automatically create parent prefixes when an IP address has no matching prefix in Nautobot</p>
+                </div>
+                <Switch
+                  checked={formCsvImportAddPrefixes}
+                  onCheckedChange={setFormCsvImportAddPrefixes}
+                />
+              </div>
+              {formCsvImportAddPrefixes && (
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-gray-600">Default Prefix Length</Label>
+                  <Input
+                    className="h-8 text-sm bg-white border-gray-300 shadow-sm w-32"
+                    value={formCsvImportDefaultPrefixLength}
+                    onChange={(e) => setFormCsvImportDefaultPrefixLength(e.target.value)}
+                    placeholder="e.g. 24"
+                    maxLength={3}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Applied when an IP in the CSV has no CIDR mask (e.g. <code>192.168.1.1</code> → <code>192.168.1.1/24</code>).
+                    IPs that already include a mask (e.g. <code>192.168.1.1/24</code>) are used as-is.
+                  </p>
+                </div>
+              )}
+            </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium text-gray-600">File Filter</Label>
               <Input

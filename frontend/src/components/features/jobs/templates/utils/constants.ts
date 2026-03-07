@@ -36,6 +36,12 @@ export const JOB_TYPE_COLORS: Record<string, string> = {
   csv_import: 'bg-yellow-500',
 } as const
 
+export const CSV_IMPORT_FORMAT_LABELS: Record<string, string> = {
+  generic: 'Generic',
+  nautobot: 'Nautobot Export',
+  cockpit: 'Cockpit Export',
+} as const
+
 export const CSV_IMPORT_TYPE_LABELS: Record<string, string> = {
   devices: 'Devices',
   'ip-prefixes': 'IP Prefixes',
