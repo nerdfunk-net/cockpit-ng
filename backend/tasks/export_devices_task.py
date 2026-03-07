@@ -221,8 +221,7 @@ def export_devices_task(
     Returns:
         dict: Export results including file path
     """
-    import asyncio
-    from services.nautobot import NautobotService
+    from services.nautobot.sync_client import NautobotSyncClient
 
     try:
         logger.info("=" * 80)
@@ -272,58 +271,50 @@ def export_devices_task(
         query = _build_graphql_query(properties)
         logger.info("GraphQL query built with %s properties", len(properties))
 
-        nautobot_service = NautobotService()
-
-        # Create event loop for async operations
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        nautobot_client = NautobotSyncClient()
 
         all_devices = []
 
-        try:
-            # Fetch devices in batches (GraphQL can handle large queries, but we'll batch for safety)
-            batch_size = 100
-            total_batches = (len(device_ids) + batch_size - 1) // batch_size
+        # Fetch devices in batches (GraphQL can handle large queries, but we'll batch for safety)
+        batch_size = 100
+        total_batches = (len(device_ids) + batch_size - 1) // batch_size
 
-            for batch_idx in range(total_batches):
-                start_idx = batch_idx * batch_size
-                end_idx = min(start_idx + batch_size, len(device_ids))
-                batch_device_ids = device_ids[start_idx:end_idx]
+        for batch_idx in range(total_batches):
+            start_idx = batch_idx * batch_size
+            end_idx = min(start_idx + batch_size, len(device_ids))
+            batch_device_ids = device_ids[start_idx:end_idx]
 
-                logger.info(
-                    "Fetching batch %s/%s (%s devices)...",
-                    batch_idx + 1,
-                    total_batches,
-                    len(batch_device_ids),
-                )
+            logger.info(
+                "Fetching batch %s/%s (%s devices)...",
+                batch_idx + 1,
+                total_batches,
+                len(batch_device_ids),
+            )
 
-                progress = 10 + int((batch_idx / total_batches) * 40)
-                self.update_state(
-                    state="PROGRESS",
-                    meta={
-                        "current": progress,
-                        "total": 100,
-                        "status": f"Fetching devices batch {batch_idx + 1}/{total_batches}...",
-                    },
-                )
+            progress = 10 + int((batch_idx / total_batches) * 40)
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "current": progress,
+                    "total": 100,
+                    "status": f"Fetching devices batch {batch_idx + 1}/{total_batches}...",
+                },
+            )
 
-                # Execute GraphQL query for this batch
-                # Note: device_ids are UUIDs, so we filter by id, not name
-                variables = {"id_filter": batch_device_ids}
-                result = nautobot_service._sync_graphql_query(query, variables)
+            # Execute GraphQL query for this batch
+            # Note: device_ids are UUIDs, so we filter by id, not name
+            variables = {"id_filter": batch_device_ids}
+            result = nautobot_client.graphql_query(query, variables)
 
-                if not result or "data" not in result:
-                    logger.error("Failed to fetch batch %s", batch_idx + 1)
-                    continue
+            if not result or "data" not in result:
+                logger.error("Failed to fetch batch %s", batch_idx + 1)
+                continue
 
-                devices = result.get("data", {}).get("devices", [])
-                all_devices.extend(devices)
-                logger.info(
-                    "✓ Fetched %s devices from batch %s", len(devices), batch_idx + 1
-                )
-
-        finally:
-            loop.close()
+            devices = result.get("data", {}).get("devices", [])
+            all_devices.extend(devices)
+            logger.info(
+                "✓ Fetched %s devices from batch %s", len(devices), batch_idx + 1
+            )
 
         if not all_devices:
             return {

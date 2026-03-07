@@ -19,7 +19,7 @@ from models.backup_models import (
     BackupResult,
 )
 from services.nautobot.configs.config import DeviceConfigService
-from services.nautobot import NautobotService
+from services.nautobot.sync_client import NautobotSyncClient
 from utils.netmiko_platform_mapper import NetmikoPlatformMapper
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class DeviceBackupService:
     - Preparing final results
     """
 
-    def __init__(self, nautobot_service: NautobotService):
+    def __init__(self, nautobot_service: NautobotSyncClient):
         """
         Initialize service with dependencies.
 
@@ -278,7 +278,7 @@ class DeviceBackupService:
 
                 update_data = {"custom_fields": {custom_field_name: backup_date}}
 
-                self.nautobot_service._sync_rest_request(
+                self.nautobot_service.rest_request(
                     endpoint="dcim/devices/%s/" % device_id,
                     method="PATCH",
                     data=update_data,

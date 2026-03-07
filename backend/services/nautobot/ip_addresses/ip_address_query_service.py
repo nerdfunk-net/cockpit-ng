@@ -10,7 +10,7 @@ import re
 from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
-from services.nautobot import NautobotService
+from services.nautobot.sync_client import NautobotSyncClient
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class IPAddressQueryService:
     """Service for querying and managing IP addresses in Nautobot."""
 
     def __init__(self):
-        self.nautobot = NautobotService()
+        self.nautobot = NautobotSyncClient()
 
     def _build_filter_key(self, filter_field: str, filter_type: Optional[str]) -> str:
         """Construct GraphQL filter argument key.
@@ -58,7 +58,7 @@ class IPAddressQueryService:
     def _run_graphql(self, query: str, description: str) -> List[Dict[str, Any]]:
         """Execute a GraphQL query and return the ip_addresses list."""
         try:
-            result = self.nautobot._sync_graphql_query(query)
+            result = self.nautobot.graphql_query(query)
         except Exception as e:
             logger.error("Error during '%s': %s", description, e, exc_info=True)
             return []
@@ -226,7 +226,7 @@ class IPAddressQueryService:
             return True  # nothing to do, not an error
 
         try:
-            self.nautobot._sync_rest_request(
+            self.nautobot.rest_request(
                 endpoint=f"ipam/ip-addresses/{ip_id}/",
                 method="PATCH",
                 data=patch,
@@ -247,7 +247,7 @@ class IPAddressQueryService:
             True if deletion was successful, False otherwise
         """
         try:
-            self.nautobot._sync_rest_request(
+            self.nautobot.rest_request(
                 endpoint=f"ipam/ip-addresses/{ip_id}/",
                 method="DELETE",
             )

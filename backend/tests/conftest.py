@@ -59,7 +59,6 @@ def mock_nautobot_service():
     service.rest_request = AsyncMock()
     # For sync methods (legacy)
     service.execute_graphql_query = Mock()
-    service._sync_rest_request = Mock()
     return service
 
 

@@ -11,8 +11,9 @@ from models.inventory import (
     InventoryPreviewRequest,
     InventoryPreviewResponse,
 )
-from services.inventory.inventory import inventory_service
-from services.nautobot.devices.query import device_query_service
+from dependencies import get_inventory_service, get_device_query_service
+from services.inventory.inventory import InventoryService
+from services.nautobot.devices.query import DeviceQueryService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/inventory", tags=["inventory"])
@@ -22,6 +23,7 @@ router = APIRouter(prefix="/api/inventory", tags=["inventory"])
 async def preview_inventory(
     request: InventoryPreviewRequest,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ) -> InventoryPreviewResponse:
     """
     Preview inventory by executing logical operations and returning matching devices.
@@ -123,6 +125,7 @@ async def get_field_options(
 @router.get("/custom-fields")
 async def get_custom_fields(
     current_user: dict = Depends(require_permission("general.inventory", "read")),
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ) -> dict:
     """
     Get available custom fields for building logical operations.
@@ -143,6 +146,7 @@ async def get_custom_fields(
 async def get_field_values(
     field_name: str,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ) -> dict:
     """
     Get available values for a specific field for dropdown population.
@@ -167,6 +171,7 @@ async def get_field_values(
 async def resolve_inventory_to_devices(
     inventory_id: int,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ) -> dict:
     """
     Resolve a saved inventory to a list of device IDs by inventory ID.
@@ -213,7 +218,6 @@ async def resolve_inventory_to_devices(
         # Load inventory by ID
         from inventory_manager import inventory_manager
         from utils.inventory_converter import convert_saved_inventory_to_operations
-        from services.inventory.inventory import inventory_service
 
         logger.info("Resolving inventory ID %s for user '%s'", inventory_id, username)
 
@@ -279,6 +283,8 @@ async def resolve_inventory_to_devices(
 async def resolve_inventory_to_devices_detailed(
     inventory_id: int,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
+    inventory_service: InventoryService = Depends(get_inventory_service),
+    device_query_service: DeviceQueryService = Depends(get_device_query_service),
 ) -> dict:
     """
     Resolve a saved inventory to detailed device information by inventory ID.
@@ -427,6 +433,7 @@ async def resolve_inventory_to_devices_detailed(
 async def analyze_inventory(
     inventory_id: int,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ) -> dict:
     """
     Analyze inventory to extract distinct values from all devices.

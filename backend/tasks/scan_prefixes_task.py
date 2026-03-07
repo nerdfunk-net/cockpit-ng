@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 import job_run_manager
-from services.nautobot import NautobotService
+from services.nautobot.sync_client import NautobotSyncClient
 from tasks.ping_network_task import _fping_networks, _resolve_dns, _condense_ip_ranges
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def _fetch_prefixes_by_custom_field(
     Returns:
         List of CIDR prefixes (e.g., ['192.168.1.0/24', '10.0.0.0/24'])
     """
-    nautobot_service = NautobotService()
+    nautobot_service = NautobotSyncClient()
 
     # Build GraphQL query with custom field filter
     # The custom field name in GraphQL uses 'cf_' prefix
@@ -45,7 +45,7 @@ def _fetch_prefixes_by_custom_field(
         logger.info(
             "Fetching prefixes with %s=%s", custom_field_name, custom_field_value
         )
-        result = nautobot_service._sync_graphql_query(query)
+        result = nautobot_service.graphql_query(query)
 
         if not result or "data" not in result:
             logger.error("Failed to fetch prefixes from Nautobot")

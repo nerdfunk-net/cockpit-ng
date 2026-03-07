@@ -9,6 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from core.auth import require_permission
+from dependencies import get_nautobot_service, get_device_query_service
+from services.nautobot.client import NautobotService
+from services.nautobot.devices.query import DeviceQueryService
 from services.network.automation.netmiko import netmiko_service
 
 logger = logging.getLogger(__name__)
@@ -401,6 +404,8 @@ async def cancel_execution(
 async def execute_template(
     request: TemplateExecutionRequest,
     current_user: dict = Depends(require_permission("network.netmiko", "execute")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+    device_query_service: DeviceQueryService = Depends(get_device_query_service),
 ) -> TemplateExecutionResponse:
     """
     Execute a template on multiple network devices.
@@ -419,8 +424,6 @@ async def execute_template(
         HTTPException: If validation fails or execution errors occur
     """
     import uuid
-    from services.nautobot import nautobot_service
-    from services.nautobot.devices import device_query_service
     from template_manager import template_manager
     from jinja2 import Template, TemplateError, UndefinedError
 

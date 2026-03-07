@@ -15,9 +15,10 @@ from models.nautobot import (
     AddDeviceRequest,
     UpdateDeviceRequest,
 )
-from services.nautobot import nautobot_service
+from dependencies import get_nautobot_service, get_device_query_service
+from services.nautobot.client import NautobotService
 from services.nautobot.devices.creation import device_creation_service
-from services.nautobot.devices.query import device_query_service
+from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.devices.update import DeviceUpdateService
 from services.nautobot_helpers.cache_helpers import (
     cache_device,
@@ -33,6 +34,7 @@ router = APIRouter(
 @router.get("/test")
 async def test_current_nautobot_connection(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """Test current Nautobot connection."""
     try:
@@ -93,6 +95,7 @@ async def get_devices(
     filter_value: Optional[str] = None,
     reload: bool = False,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    device_query_service: DeviceQueryService = Depends(get_device_query_service),
 ):
     """Get list of devices from Nautobot with optional filtering and pagination.
 
@@ -129,6 +132,7 @@ async def get_devices(
 async def get_device(
     device_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """Get device details from Nautobot by device ID.
 
@@ -193,6 +197,7 @@ async def get_device(
 async def check_ip(
     request: CheckIPRequest,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """Check if an IP address exists in Nautobot.
 
@@ -384,6 +389,7 @@ async def update_device(
     device_id: str,
     request: UpdateDeviceRequest,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Update an existing device in Nautobot.

@@ -19,6 +19,8 @@ from fastapi.responses import FileResponse
 import job_run_manager
 from celery_app import celery_app
 from core.auth import require_permission
+from dependencies import get_nautobot_service
+from services.nautobot.client import NautobotService
 from core.celery_error_handler import handle_celery_errors
 from config import settings
 from models.celery import (
@@ -378,6 +380,7 @@ async def trigger_deploy_agent(
 async def preview_export_devices(
     request: PreviewExportRequest,
     current_user: dict = Depends(require_permission("nautobot.export", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Preview export data by fetching full device information from Nautobot.
@@ -393,7 +396,6 @@ async def preview_export_devices(
     Returns:
         PreviewExportResponse with full device data for preview
     """
-    from services.nautobot import NautobotService
     from tasks.export_devices_task import (
         _build_graphql_query,
         _export_to_csv,
@@ -417,9 +419,8 @@ async def preview_export_devices(
         preview_device_ids = request.device_ids[: request.max_devices]
         query = _build_graphql_query(request.properties)
 
-        nautobot_service = NautobotService()
         variables = {"id_filter": preview_device_ids}
-        result = nautobot_service._sync_graphql_query(query, variables)
+        result = await nautobot_service.graphql_query(query, variables)
 
         if not result or "data" not in result:
             raise HTTPException(

@@ -1,9 +1,11 @@
 """
-Nautobot service for handling GraphQL queries and REST API calls.
+NautobotSyncClient: Synchronous Nautobot HTTP client.
+
+Migration aid. Will be deleted when all callers migrate to async (see Phase 6 of
+the backend services refactoring plan at doc/refactoring/REFACTORING_SERVICES.md).
 """
 
-from __future__ import annotations
-import httpx
+import requests
 import logging
 from typing import Dict, Any, Optional
 
@@ -12,27 +14,11 @@ from .common.exceptions import NautobotValidationError, NautobotAPIError
 logger = logging.getLogger(__name__)
 
 
-class NautobotService:
-    """Pure-async Nautobot API client. App-scoped, lifespan-managed.
+class NautobotSyncClient:
+    """Synchronous Nautobot HTTP client for use in Celery tasks and sync service helpers.
 
-    Use this in FastAPI async routes and async services.
-    For Celery tasks and sync callers, use NautobotSyncClient instead.
+    Stateless. Construct per call site. No lifecycle management.
     """
-
-    def __init__(self):
-        self._client: Optional[httpx.AsyncClient] = None
-
-    async def startup(self) -> None:
-        """Initialize the async HTTP client. Called by FastAPI lifespan on startup."""
-        self._client = httpx.AsyncClient()
-        logger.info("NautobotService started — httpx.AsyncClient initialized")
-
-    async def shutdown(self) -> None:
-        """Close the async HTTP client. Called by FastAPI lifespan on shutdown."""
-        if self._client is not None:
-            await self._client.aclose()
-            self._client = None
-            logger.info("NautobotService shut down — httpx.AsyncClient closed")
 
     def _get_config(self) -> Dict[str, Any]:
         """Get Nautobot configuration from database with fallback to environment variables."""
@@ -41,14 +27,12 @@ class NautobotService:
 
             db_settings = settings_manager.get_nautobot_settings()
             if db_settings and db_settings.get("url") and db_settings.get("token"):
-                config = {
+                return {
                     "url": db_settings["url"],
                     "token": db_settings["token"],
                     "timeout": db_settings.get("timeout", 30),
                     "verify_ssl": db_settings.get("verify_ssl", True),
                 }
-                logger.debug("Using database settings for Nautobot: %s", config["url"])
-                return config
         except Exception as e:
             logger.warning(
                 "Failed to get database settings, falling back to environment: %s", e
@@ -56,16 +40,14 @@ class NautobotService:
 
         from config import settings
 
-        config = {
+        return {
             "url": settings.nautobot_url,
             "token": settings.nautobot_token,
             "timeout": settings.nautobot_timeout,
             "verify_ssl": True,
         }
-        logger.debug("Using environment settings for Nautobot: %s", config["url"])
-        return config
 
-    async def graphql_query(
+    def graphql_query(
         self, query: str, variables: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Execute a GraphQL query against Nautobot."""
@@ -82,24 +64,28 @@ class NautobotService:
         payload = {"query": query, "variables": variables or {}}
 
         try:
-            response = await self._do_post(graphql_url, payload, headers, config["timeout"])
+            response = requests.post(
+                graphql_url,
+                json=payload,
+                headers=headers,
+                timeout=config["timeout"],
+                verify=config["verify_ssl"],
+            )
             if response.status_code == 200:
                 return response.json()
             else:
                 raise NautobotAPIError(
                     f"GraphQL request failed with status {response.status_code}: {response.text}"
                 )
-        except httpx.TimeoutException:
+        except requests.exceptions.Timeout:
             raise NautobotAPIError(
                 f"GraphQL request timed out after {config['timeout']} seconds"
             )
-        except NautobotAPIError:
-            raise
         except Exception as e:
             logger.error("GraphQL query failed: %s", str(e))
             raise
 
-    async def rest_request(
+    def rest_request(
         self, endpoint: str, method: str = "GET", data: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Execute a REST API request against Nautobot."""
@@ -115,7 +101,14 @@ class NautobotService:
         }
 
         try:
-            response = await self._do_request(method, api_url, data, headers, config["timeout"])
+            response = requests.request(
+                method,
+                api_url,
+                json=data,
+                headers=headers,
+                timeout=config["timeout"],
+                verify=config["verify_ssl"],
+            )
             if response.status_code in [200, 201, 204]:
                 if response.status_code == 204:
                     return {"status": "success", "message": "Resource deleted successfully"}
@@ -124,44 +117,15 @@ class NautobotService:
                 raise NautobotAPIError(
                     f"REST request failed with status {response.status_code}: {response.text}"
                 )
-        except httpx.TimeoutException:
+        except requests.exceptions.Timeout:
             raise NautobotAPIError(
                 f"REST request timed out after {config['timeout']} seconds"
             )
-        except NautobotAPIError:
-            raise
         except Exception as e:
             logger.error("REST request failed: %s", str(e))
             raise
 
-    async def _do_post(
-        self,
-        url: str,
-        payload: dict,
-        headers: dict,
-        timeout: int,
-    ) -> httpx.Response:
-        """Send a POST request using the persistent client or a one-shot client."""
-        if self._client is not None:
-            return await self._client.post(url, json=payload, headers=headers, timeout=timeout)
-        async with httpx.AsyncClient() as client:
-            return await client.post(url, json=payload, headers=headers, timeout=timeout)
-
-    async def _do_request(
-        self,
-        method: str,
-        url: str,
-        data: Optional[dict],
-        headers: dict,
-        timeout: int,
-    ) -> httpx.Response:
-        """Send a request using the persistent client or a one-shot client."""
-        if self._client is not None:
-            return await self._client.request(method, url, json=data, headers=headers, timeout=timeout)
-        async with httpx.AsyncClient() as client:
-            return await client.request(method, url, json=data, headers=headers, timeout=timeout)
-
-    async def test_connection(
+    def test_connection(
         self, url: str, token: str, timeout: int = 30, verify_ssl: bool = True
     ) -> tuple[bool, str]:
         """Test connection to a Nautobot instance."""
@@ -181,13 +145,13 @@ class NautobotService:
         payload = {"query": test_query, "variables": {}}
 
         try:
-            async with httpx.AsyncClient(verify=verify_ssl) as client:
-                response = await client.post(
-                    graphql_url,
-                    json=payload,
-                    headers=headers,
-                    timeout=timeout,
-                )
+            response = requests.post(
+                graphql_url,
+                json=payload,
+                headers=headers,
+                timeout=timeout,
+                verify=verify_ssl,
+            )
             if response.status_code == 200:
                 result = response.json()
                 if "errors" not in result:
@@ -196,12 +160,7 @@ class NautobotService:
                     return False, f"GraphQL errors: {result['errors']}"
             else:
                 return False, f"HTTP {response.status_code}: {response.text}"
-        except httpx.TimeoutException:
+        except requests.exceptions.Timeout:
             return False, f"Connection timed out after {timeout} seconds"
         except Exception as e:
             return False, f"Connection failed: {str(e)}"
-
-
-# Module-level singleton — kept for backward compatibility while callers migrate to DI.
-# Will be removed in Phase 2 (see REFACTORING_SERVICES.md).
-nautobot_service = NautobotService()

@@ -73,7 +73,7 @@ def execute_backup(
         from services.settings.git.shared_utils import git_repo_manager
         from services.settings.git.service import git_service
         from services.settings.git.auth import git_auth_service
-        from services.nautobot import NautobotService
+        from services.nautobot.sync_client import NautobotSyncClient
         from services.network.automation.netmiko import NetmikoService
         import credentials_manager
         import jobs_manager
@@ -419,7 +419,7 @@ def execute_backup(
 
         # Sequential execution (fallback for parallel_tasks = 1)
         logger.info("Using sequential execution")
-        nautobot_service = NautobotService()
+        nautobot_service = NautobotSyncClient()
         netmiko_service = NetmikoService()
 
         for idx, device_id in enumerate(device_ids, 1):
@@ -542,7 +542,7 @@ def execute_backup(
                 }
                 """
                 variables = {"deviceId": device_id}
-                device_data = nautobot_service._sync_graphql_query(query, variables)
+                device_data = nautobot_service.graphql_query(query, variables)
 
                 if (
                     not device_data
@@ -904,7 +904,7 @@ def execute_backup(
                         "custom_fields": {timestamp_custom_field_name: backup_date}
                     }
 
-                    result = nautobot_service._sync_rest_request(
+                    result = nautobot_service.rest_request(
                         endpoint=f"dcim/devices/{device_id}/",
                         method="PATCH",
                         data=update_data,

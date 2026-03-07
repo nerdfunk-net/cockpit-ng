@@ -8,7 +8,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from services.nautobot import nautobot_service
+from dependencies import get_nautobot_service
+from services.nautobot.client import NautobotService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/dcim/interfaces", tags=["nautobot-dcim-interfaces"])
@@ -31,6 +32,7 @@ async def get_dcim_interfaces(
     limit: Optional[int] = None,
     offset: Optional[int] = None,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Get device interfaces from Nautobot DCIM.
@@ -98,6 +100,7 @@ async def get_dcim_interfaces(
 async def get_dcim_interface(
     interface_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Get a specific interface by ID from Nautobot DCIM.
@@ -126,6 +129,7 @@ async def get_dcim_interface(
 async def create_dcim_interface(
     interface_data: dict,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Create a new interface in Nautobot DCIM.
@@ -199,6 +203,7 @@ async def update_dcim_interface(
     interface_id: str,
     interface_data: dict,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Update an existing interface in Nautobot DCIM.
@@ -249,6 +254,7 @@ async def update_dcim_interface(
 async def delete_dcim_interface(
     interface_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Delete an interface from Nautobot DCIM.

@@ -10,6 +10,7 @@ This package contains services for:
 """
 
 from .client import nautobot_service, NautobotService
+from .sync_client import NautobotSyncClient
 from .offboarding import offboarding_service
 from .metadata_service import NautobotMetadataService
 
@@ -19,6 +20,7 @@ nautobot_metadata_service = NautobotMetadataService(nautobot_service)
 __all__ = [
     "nautobot_service",
     "NautobotService",
+    "NautobotSyncClient",
     "offboarding_service",
     "nautobot_metadata_service",
     "NautobotMetadataService",

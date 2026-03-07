@@ -101,8 +101,16 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan – replaces deprecated @app.on_event handlers."""
+    import service_factory
+
+    nautobot_service = service_factory.build_nautobot_service()
+    await nautobot_service.startup()
+    app.state.nautobot_service = nautobot_service
+
     await _startup_services()
     yield
+
+    await nautobot_service.shutdown()
     _shutdown_event()
 
 
@@ -236,14 +244,18 @@ async def health_check():
 
 
 @app.post("/api/nautobot/graphql")
-async def nautobot_graphql_endpoint(query_data: dict):
+async def nautobot_graphql_endpoint(
+    query_data: dict,
+    request: Request,
+):
     """
     Execute GraphQL query against Nautobot - compatibility endpoint.
 
     This endpoint maintains backward compatibility with existing frontend code.
     """
-    from services.nautobot import nautobot_service
     from fastapi import HTTPException, status
+
+    nautobot_service = request.app.state.nautobot_service
 
     try:
         query = query_data.get("query")

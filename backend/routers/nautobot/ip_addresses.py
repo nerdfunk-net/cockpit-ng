@@ -8,7 +8,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from services.nautobot import nautobot_service
+from dependencies import get_nautobot_service
+from services.nautobot.client import NautobotService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ipam/ip-addresses", tags=["nautobot-ipam-addresses"])
@@ -30,6 +31,7 @@ async def get_ipam_ip_addresses(
     limit: Optional[int] = None,
     offset: Optional[int] = None,
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Get IP addresses from Nautobot IPAM.
@@ -120,6 +122,7 @@ async def get_ipam_ip_addresses_detailed(
     get_tenant: bool = False,
     get_type: bool = False,
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Get detailed IP address information from Nautobot using GraphQL.
@@ -479,6 +482,7 @@ async def get_ipam_ip_addresses_detailed(
 async def get_ipam_ip_address(
     ip_address_id: str,
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Get a specific IP address by ID from Nautobot IPAM.
@@ -507,6 +511,7 @@ async def get_ipam_ip_address(
 async def create_ipam_ip_address(
     ip_address_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Create a new IP address in Nautobot IPAM.
@@ -565,6 +570,7 @@ async def update_ipam_ip_address(
     ip_address_id: str,
     ip_address_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Update an existing IP address in Nautobot IPAM.
@@ -607,6 +613,7 @@ async def update_ipam_ip_address(
 async def delete_ipam_ip_address(
     ip_address_id: str,
     current_user: dict = Depends(require_permission("nautobot.locations", "delete")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Delete an IP address from Nautobot IPAM.

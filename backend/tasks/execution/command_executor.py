@@ -38,7 +38,7 @@ def execute_run_commands(
     Returns:
         dict: Command execution results with detailed per-device output
     """
-    from services.nautobot import NautobotService
+    from services.nautobot.sync_client import NautobotSyncClient
     from services.network.automation.netmiko import NetmikoService
     from services.network.automation.render import RenderService
     import credentials_manager
@@ -229,7 +229,7 @@ def execute_run_commands(
         logger.info("STEP 2: EXECUTING COMMANDS ON %s DEVICES", len(device_ids))
         logger.info("-" * 80)
 
-        nautobot_service = NautobotService()
+        nautobot_service = NautobotSyncClient()
         netmiko_service = NetmikoService()
         render_service = RenderService()
 
@@ -338,7 +338,7 @@ def execute_run_commands(
                     }
                     """
                     variables = {"deviceId": device_id}
-                    device_data = nautobot_service._sync_graphql_query(query, variables)
+                    device_data = nautobot_service.graphql_query(query, variables)
 
                     if (
                         not device_data

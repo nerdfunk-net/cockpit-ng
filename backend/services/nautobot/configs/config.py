@@ -9,7 +9,7 @@ import logging
 from typing import Optional
 from pathlib import Path
 
-from services.nautobot import NautobotService
+from services.nautobot.sync_client import NautobotSyncClient
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.network.automation.netmiko import NetmikoService
 from utils.netmiko_platform_mapper import NetmikoPlatformMapper
@@ -132,7 +132,7 @@ class DeviceConfigService:
     }
     """
 
-    def __init__(self, nautobot_service: NautobotService):
+    def __init__(self, nautobot_service: NautobotSyncClient):
         """
         Initialize the DeviceConfigService with required dependencies.
 
@@ -194,7 +194,7 @@ class DeviceConfigService:
         query = self.DEVICE_QUERY_FULL if full_details else self.DEVICE_QUERY_BASIC
         variables = {"deviceId": device_id}
 
-        device_data = self.nautobot_service._sync_graphql_query(query, variables)
+        device_data = self.nautobot_service.graphql_query(query, variables)
 
         if (
             not device_data

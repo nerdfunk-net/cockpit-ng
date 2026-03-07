@@ -8,7 +8,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from services.nautobot import nautobot_service
+from dependencies import get_nautobot_service
+from services.nautobot.client import NautobotService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ipam/prefixes", tags=["nautobot-ipam-prefixes"])
@@ -28,6 +29,7 @@ async def get_ipam_prefixes(
     limit: Optional[int] = None,
     offset: Optional[int] = None,
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Get IP prefixes from Nautobot IPAM.
@@ -81,6 +83,7 @@ async def get_ipam_prefixes(
 async def get_ipam_prefix(
     prefix_id: str,
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Get a specific IP prefix by ID from Nautobot IPAM.
@@ -109,6 +112,7 @@ async def get_ipam_prefix(
 async def create_ipam_prefix(
     prefix_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Create a new IP prefix in Nautobot IPAM.
@@ -168,6 +172,7 @@ async def update_ipam_prefix(
     prefix_id: str,
     prefix_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Update an existing IP prefix in Nautobot IPAM.
@@ -212,6 +217,7 @@ async def update_ipam_prefix(
 async def delete_ipam_prefix(
     prefix_id: str,
     current_user: dict = Depends(require_permission("nautobot.locations", "delete")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Delete an IP prefix from Nautobot IPAM.

@@ -7,7 +7,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from services.nautobot import nautobot_service
+from dependencies import get_nautobot_service
+from services.nautobot.client import NautobotService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ipam", tags=["nautobot-ipam-addresses"])
@@ -17,6 +18,7 @@ router = APIRouter(prefix="/ipam", tags=["nautobot-ipam-addresses"])
 async def assign_ip_address_to_interface(
     assignment_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Assign an IP address to an interface in Nautobot.

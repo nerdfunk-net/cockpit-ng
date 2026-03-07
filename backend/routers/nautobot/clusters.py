@@ -17,7 +17,8 @@ from models.nautobot import (
     AddVirtualMachineRequest,
     AddVirtualInterfaceRequest,
 )
-from services.nautobot import nautobot_service
+from dependencies import get_nautobot_service
+from services.nautobot.client import NautobotService
 from services.nautobot.resolvers import (
     ClusterResolver,
     NetworkResolver,
@@ -36,6 +37,7 @@ router = APIRouter(prefix="/virtualization", tags=["nautobot-virtualization"])
 async def get_clusters(
     group: str = None,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Get all virtualization clusters from Nautobot, optionally filtered by cluster group.
@@ -78,6 +80,7 @@ async def get_clusters(
 )
 async def get_cluster_groups(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Get all virtualization cluster groups from Nautobot.
@@ -113,6 +116,7 @@ async def get_cluster_groups(
 async def get_cluster_by_id(
     cluster_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Get details of a specific virtualization cluster from Nautobot.
@@ -168,6 +172,7 @@ async def get_cluster_by_id(
 async def create_virtual_machine(
     vm_request: AddVirtualMachineRequest,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Create a new virtual machine in Nautobot with interfaces and IP addresses.
@@ -664,6 +669,7 @@ async def create_virtual_machine(
 async def create_virtual_interface(
     interface_request: AddVirtualInterfaceRequest,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
     """
     Create a new virtual interface for a VM in Nautobot.

@@ -24,11 +24,10 @@ from celery_app import celery_app
 import logging
 import csv
 import io
-import asyncio
 from typing import Optional, Dict, Any, Tuple
 from datetime import datetime
 
-from services.nautobot import NautobotService
+from services.nautobot.sync_client import NautobotSyncClient
 
 logger = logging.getLogger(__name__)
 
@@ -173,12 +172,12 @@ def update_ip_prefixes_from_csv_task(
 
         logger.info("✓ Required column '%s' found", namespace_col)
 
-        # STEP 3: Initialize Nautobot service
+        # STEP 3: Initialize Nautobot client
         logger.info("-" * 80)
-        logger.info("STEP 3: INITIALIZING NAUTOBOT SERVICE")
+        logger.info("STEP 3: INITIALIZING NAUTOBOT CLIENT")
         logger.info("-" * 80)
 
-        nautobot_service = NautobotService()
+        nautobot_client = NautobotSyncClient()
 
         # STEP 4: Update IP prefixes
         logger.info("-" * 80)
@@ -269,10 +268,8 @@ def update_ip_prefixes_from_csv_task(
                         namespace_value,
                     )
 
-                    prefix_uuid, existing_prefix = asyncio.run(
-                        _find_prefix_by_prefix_and_namespace_graphql(
-                            nautobot_service, prefix_value, namespace_value
-                        )
+                    prefix_uuid, existing_prefix = _find_prefix_by_prefix_and_namespace_graphql(
+                        nautobot_client, prefix_value, namespace_value
                     )
 
                     if not prefix_uuid:
@@ -299,9 +296,7 @@ def update_ip_prefixes_from_csv_task(
 
                     # Optionally verify the prefix exists
                     try:
-                        existing_prefix = asyncio.run(
-                            _get_prefix_by_uuid(nautobot_service, prefix_uuid)
-                        )
+                        existing_prefix = _get_prefix_by_uuid(nautobot_client, prefix_uuid)
                         if not existing_prefix:
                             logger.warning(
                                 "Prefix with UUID '%s' not found", prefix_uuid
@@ -364,9 +359,7 @@ def update_ip_prefixes_from_csv_task(
                 if dry_run:
                     # Fetch current prefix data for detailed comparison
                     if not existing_prefix:
-                        existing_prefix = asyncio.run(
-                            _get_prefix_by_uuid(nautobot_service, prefix_uuid)
-                        )
+                        existing_prefix = _get_prefix_by_uuid(nautobot_client, prefix_uuid)
 
                     # Generate detailed comparison
                     comparison = _generate_field_comparison(
@@ -423,9 +416,7 @@ def update_ip_prefixes_from_csv_task(
                     logger.info("    Method: PATCH")
                     logger.info("    Payload: %s", update_data)
 
-                    result = asyncio.run(
-                        _update_prefix(nautobot_service, prefix_uuid, update_data)
-                    )
+                    result = _update_prefix(nautobot_client, prefix_uuid, update_data)
 
                     if result["success"]:
                         successes.append(
@@ -546,14 +537,14 @@ def update_ip_prefixes_from_csv_task(
         return error_result
 
 
-async def _get_prefix_by_uuid(
-    nautobot_service: NautobotService, prefix_uuid: str
+def _get_prefix_by_uuid(
+    nautobot_client: NautobotSyncClient, prefix_uuid: str
 ) -> Optional[Dict[str, Any]]:
     """
     Get a prefix from Nautobot by UUID.
 
     Args:
-        nautobot_service: NautobotService instance
+        nautobot_client: NautobotSyncClient instance
         prefix_uuid: UUID of the prefix
 
     Returns:
@@ -561,7 +552,7 @@ async def _get_prefix_by_uuid(
     """
     try:
         endpoint = f"ipam/prefixes/{prefix_uuid}/"
-        result = await nautobot_service.rest_request(endpoint, method="GET")
+        result = nautobot_client.rest_request(endpoint, method="GET")
         return result
     except Exception as e:
         logger.error(
@@ -570,14 +561,14 @@ async def _get_prefix_by_uuid(
         return None
 
 
-async def _find_prefix_by_prefix_and_namespace_graphql(
-    nautobot_service: NautobotService, prefix: str, namespace: str
+def _find_prefix_by_prefix_and_namespace_graphql(
+    nautobot_client: NautobotSyncClient, prefix: str, namespace: str
 ) -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
     """
     Find a prefix in Nautobot by prefix value and namespace using GraphQL.
 
     Args:
-        nautobot_service: NautobotService instance
+        nautobot_client: NautobotSyncClient instance
         prefix: Prefix value (e.g., "192.168.178.0/24")
         namespace: Namespace name or UUID (e.g., "Global" or UUID)
 
@@ -585,7 +576,6 @@ async def _find_prefix_by_prefix_and_namespace_graphql(
         Tuple of (prefix_uuid, prefix_data) or (None, None) if not found
     """
     try:
-        # GraphQL query to find prefix by prefix and namespace
         query = """
         query (
           $ip_prefix: [String],
@@ -610,8 +600,7 @@ async def _find_prefix_by_prefix_and_namespace_graphql(
 
         logger.debug("GraphQL query variables: %s", variables)
 
-        # Execute GraphQL query
-        result = await nautobot_service.graphql_query(query, variables)
+        result = nautobot_client.graphql_query(query, variables)
 
         if not result or "data" not in result:
             logger.warning("No data returned from GraphQL query for prefix: %s", prefix)
@@ -630,7 +619,6 @@ async def _find_prefix_by_prefix_and_namespace_graphql(
                 namespace,
             )
 
-        # Use the first result
         prefix_data = prefixes[0]
         prefix_uuid = prefix_data.get("id")
 
@@ -643,14 +631,14 @@ async def _find_prefix_by_prefix_and_namespace_graphql(
         return None, None
 
 
-async def _update_prefix(
-    nautobot_service: NautobotService, prefix_uuid: str, update_data: Dict[str, Any]
+def _update_prefix(
+    nautobot_client: NautobotSyncClient, prefix_uuid: str, update_data: Dict[str, Any]
 ) -> Dict[str, Any]:
     """
     Update a prefix in Nautobot.
 
     Args:
-        nautobot_service: NautobotService instance
+        nautobot_client: NautobotSyncClient instance
         prefix_uuid: UUID of the prefix to update
         update_data: Data to update
 
@@ -665,7 +653,7 @@ async def _update_prefix(
         logger.info("[API CALL]   - Method: PATCH")
         logger.info("[API CALL]   - Data: %s", update_data)
 
-        await nautobot_service.rest_request(endpoint, method="PATCH", data=update_data)
+        nautobot_client.rest_request(endpoint, method="PATCH", data=update_data)
 
         logger.info("[API CALL] ✓ Update successful for prefix %s", prefix_uuid)
         return {"success": True}
