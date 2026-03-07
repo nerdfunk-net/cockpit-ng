@@ -8,6 +8,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from dependencies import get_agent_template_render_service, get_git_service
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,7 @@ class DryRunResponse(BaseModel):
 async def agent_deploy_dry_run(
     request: DryRunRequest,
     current_user: dict = Depends(require_permission("network.templates", "read")),
+    agent_template_render_service=Depends(get_agent_template_render_service),
 ) -> DryRunResponse:
     """
     Perform a dry run of agent deployment by rendering the template.
@@ -73,9 +75,6 @@ async def agent_deploy_dry_run(
     """
     try:
         from template_manager import template_manager
-        from services.agents.template_render_service import (
-            agent_template_render_service,
-        )
 
         # Fetch the template
         template = template_manager.get_template(request.templateId)
@@ -159,6 +158,8 @@ class DeployToGitResponse(BaseModel):
 async def agent_deploy_to_git(
     request: DryRunRequest,
     current_user: dict = Depends(require_permission("network.templates", "write")),
+    agent_template_render_service=Depends(get_agent_template_render_service),
+    git_service=Depends(get_git_service),
 ) -> DeployToGitResponse:
     """
     Deploy agent configuration to git repository.
@@ -172,10 +173,6 @@ async def agent_deploy_to_git(
     """
     try:
         from template_manager import template_manager
-        from services.agents.template_render_service import (
-            agent_template_render_service,
-        )
-        from services.settings.git.service import git_service
         from repositories.settings.git_repository_repository import (
             GitRepositoryRepository,
         )

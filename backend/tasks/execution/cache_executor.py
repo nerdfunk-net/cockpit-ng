@@ -42,61 +42,55 @@ def execute_cache_devices(
             meta={"current": 0, "total": 100, "status": "Connecting to Nautobot..."},
         )
 
-        from services.nautobot import nautobot_service
-        from services.settings.cache import cache_service
+        import service_factory
+        nautobot_service = service_factory.build_nautobot_service()
+        cache_service = service_factory.build_cache_service()
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        task_context.update_state(
+            state="PROGRESS",
+            meta={"current": 30, "total": 100, "status": "Fetching devices..."},
+        )
 
-        try:
-            task_context.update_state(
-                state="PROGRESS",
-                meta={"current": 30, "total": 100, "status": "Fetching devices..."},
-            )
+        query = """
+        query getAllDevices {
+          devices {
+            id
+            name
+            role { name }
+            location { name }
+            primary_ip4 { address }
+            status { name }
+            device_type { model }
+          }
+        }
+        """
 
-            query = """
-            query getAllDevices {
-              devices {
-                id
-                name
-                role { name }
-                location { name }
-                primary_ip4 { address }
-                status { name }
-                device_type { model }
-              }
-            }
-            """
+        result = asyncio.run(nautobot_service.graphql_query(query))
 
-            result = loop.run_until_complete(nautobot_service.graphql_query(query))
-
-            if "errors" in result:
-                return {
-                    "success": False,
-                    "error": f"GraphQL errors: {result['errors']}",
-                }
-
-            devices = result.get("data", {}).get("devices", [])
-
-            task_context.update_state(
-                state="PROGRESS",
-                meta={"current": 70, "total": 100, "status": "Caching device data..."},
-            )
-
-            for device in devices:
-                device_id = device.get("id")
-                if device_id:
-                    cache_key = f"nautobot:devices:{device_id}"
-                    cache_service.set(cache_key, device, 30 * 60)
-
+        if "errors" in result:
             return {
-                "success": True,
-                "devices_cached": len(devices),
-                "message": f"Cached {len(devices)} devices from Nautobot",
+                "success": False,
+                "error": f"GraphQL errors: {result['errors']}",
             }
 
-        finally:
-            loop.close()
+        devices = result.get("data", {}).get("devices", [])
+
+        task_context.update_state(
+            state="PROGRESS",
+            meta={"current": 70, "total": 100, "status": "Caching device data..."},
+        )
+
+        for device in devices:
+            device_id = device.get("id")
+            if device_id:
+                cache_key = f"nautobot:devices:{device_id}"
+                cache_service.set(cache_key, device, 30 * 60)
+
+        return {
+            "success": True,
+            "devices_cached": len(devices),
+            "message": f"Cached {len(devices)} devices from Nautobot",
+        }
 
     except Exception as e:
         logger.error("Cache devices job failed: %s", e, exc_info=True)

@@ -5,7 +5,6 @@ Centralized service for deploying agent configurations to Git repositories.
 Used by both direct API calls (deploy_agent_task) and scheduled jobs (deploy_agent_executor).
 """
 
-import asyncio
 import logging
 import os
 from datetime import datetime
@@ -37,7 +36,7 @@ class AgentDeploymentService:
         self.git_repo_repository = GitRepositoryRepository()
         self.agents_repository = AgentsSettingRepository()
 
-    def deploy(
+    async def deploy(
         self,
         template_id: int,
         agent_id: str,
@@ -224,21 +223,15 @@ class AgentDeploymentService:
 
             # Render the template with stored variables
             try:
-                # Handle async call in sync context
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                render_result = loop.run_until_complete(
-                    self.agent_template_render_service.render_agent_template(
-                        template_content=template_content,
-                        inventory_id=effective_inventory_id,
-                        pass_snmp_mapping=template.get("pass_snmp_mapping", False),
-                        user_variables=custom_variables or {},
-                        path=path,
-                        stored_variables=template.get("variables"),
-                        username=username,
-                    )
+                render_result = await self.agent_template_render_service.render_agent_template(
+                    template_content=template_content,
+                    inventory_id=effective_inventory_id,
+                    pass_snmp_mapping=template.get("pass_snmp_mapping", False),
+                    user_variables=custom_variables or {},
+                    path=path,
+                    stored_variables=template.get("variables"),
+                    username=username,
                 )
-                loop.close()
 
                 logger.info("✓ Template rendered successfully")
                 logger.info(
@@ -403,7 +396,7 @@ class AgentDeploymentService:
                 "agent_id": agent_id,
             }
 
-    def deploy_multi(
+    async def deploy_multi(
         self,
         template_entries: List[Dict[str, Any]],
         agent_id: str,
@@ -542,146 +535,134 @@ class AgentDeploymentService:
             success_count = 0
             fail_count = 0
 
-            # Create a single event loop for all async renders
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            total_entries = len(template_entries)
+            for idx, entry in enumerate(template_entries):
+                entry_template_id = entry.get("template_id")
+                entry_inventory_id = entry.get("inventory_id")
+                entry_path = entry.get("path")
+                entry_custom_variables = entry.get("custom_variables") or {}
 
-            try:
-                total_entries = len(template_entries)
-                for idx, entry in enumerate(template_entries):
-                    entry_template_id = entry.get("template_id")
-                    entry_inventory_id = entry.get("inventory_id")
-                    entry_path = entry.get("path")
-                    entry_custom_variables = entry.get("custom_variables") or {}
+                progress = 30 + int((idx / total_entries) * 40)
+                self._update_progress(
+                    task_context,
+                    progress,
+                    f"Rendering template {idx + 1}/{total_entries}...",
+                )
 
-                    progress = 30 + int((idx / total_entries) * 40)
-                    self._update_progress(
-                        task_context,
-                        progress,
-                        f"Rendering template {idx + 1}/{total_entries}...",
+                logger.info("--- Template entry %s/%s ---", idx + 1, total_entries)
+                logger.info("  Template ID: %s", entry_template_id)
+
+                # Load template
+                template = self.template_manager.get_template(entry_template_id)
+                if not template:
+                    logger.error("Template ID %s not found", entry_template_id)
+                    template_results.append(
+                        {
+                            "template_id": entry_template_id,
+                            "template_name": None,
+                            "file_path": entry_path,
+                            "inventory_id": entry_inventory_id,
+                            "success": False,
+                            "error": f"Template with ID {entry_template_id} not found",
+                            "rendered_size": 0,
+                        }
                     )
+                    fail_count += 1
+                    continue
 
-                    logger.info("--- Template entry %s/%s ---", idx + 1, total_entries)
-                    logger.info("  Template ID: %s", entry_template_id)
-
-                    # Load template
-                    template = self.template_manager.get_template(entry_template_id)
-                    if not template:
-                        logger.error("Template ID %s not found", entry_template_id)
-                        template_results.append(
-                            {
-                                "template_id": entry_template_id,
-                                "template_name": None,
-                                "file_path": entry_path,
-                                "inventory_id": entry_inventory_id,
-                                "success": False,
-                                "error": f"Template with ID {entry_template_id} not found",
-                                "rendered_size": 0,
-                            }
-                        )
-                        fail_count += 1
-                        continue
-
-                    template_content = self.template_manager.get_template_content(
-                        entry_template_id
+                template_content = self.template_manager.get_template_content(
+                    entry_template_id
+                )
+                if not template_content:
+                    logger.error(
+                        "Template content for ID %s not found", entry_template_id
                     )
-                    if not template_content:
-                        logger.error(
-                            "Template content for ID %s not found", entry_template_id
-                        )
-                        template_results.append(
-                            {
-                                "template_id": entry_template_id,
-                                "template_name": template["name"],
-                                "file_path": entry_path,
-                                "inventory_id": entry_inventory_id,
-                                "success": False,
-                                "error": f"Template content for ID {entry_template_id} not found",
-                                "rendered_size": 0,
-                            }
-                        )
-                        fail_count += 1
-                        continue
-
-                    # Render template
-                    effective_inventory_id = entry_inventory_id or template.get(
-                        "inventory_id"
-                    )
-                    try:
-                        render_result = loop.run_until_complete(
-                            self.agent_template_render_service.render_agent_template(
-                                template_content=template_content,
-                                inventory_id=effective_inventory_id,
-                                pass_snmp_mapping=template.get(
-                                    "pass_snmp_mapping", False
-                                ),
-                                user_variables=entry_custom_variables,
-                                path=entry_path,
-                                stored_variables=template.get("variables"),
-                                username=username,
-                            )
-                        )
-                        logger.info(
-                            "  Rendered: %s chars", len(render_result.rendered_content)
-                        )
-                    except Exception as e:
-                        logger.error("  Render failed: %s", e, exc_info=True)
-                        template_results.append(
-                            {
-                                "template_id": entry_template_id,
-                                "template_name": template["name"],
-                                "file_path": entry_path,
-                                "inventory_id": entry_inventory_id,
-                                "success": False,
-                                "error": f"Failed to render template: {str(e)}",
-                                "rendered_size": 0,
-                            }
-                        )
-                        fail_count += 1
-                        continue
-
-                    # Determine file path
-                    file_path = entry_path or template.get("file_path")
-                    if not file_path:
-                        logger.error("  No file path for template %s", template["name"])
-                        template_results.append(
-                            {
-                                "template_id": entry_template_id,
-                                "template_name": template["name"],
-                                "file_path": None,
-                                "inventory_id": entry_inventory_id,
-                                "success": False,
-                                "error": "No file path provided and template has no default file_path",
-                                "rendered_size": 0,
-                            }
-                        )
-                        fail_count += 1
-                        continue
-
-                    # Write file
-                    full_file_path = os.path.join(repo_path, file_path.lstrip("/"))
-                    os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
-
-                    with open(full_file_path, "w", encoding="utf-8") as f:
-                        f.write(render_result.rendered_content)
-
-                    logger.info("  Written to: %s", file_path)
-
-                    all_file_paths.append(file_path.lstrip("/"))
                     template_results.append(
                         {
                             "template_id": entry_template_id,
                             "template_name": template["name"],
-                            "file_path": file_path,
+                            "file_path": entry_path,
                             "inventory_id": entry_inventory_id,
-                            "success": True,
-                            "rendered_size": len(render_result.rendered_content),
+                            "success": False,
+                            "error": f"Template content for ID {entry_template_id} not found",
+                            "rendered_size": 0,
                         }
                     )
-                    success_count += 1
+                    fail_count += 1
+                    continue
 
-            finally:
-                loop.close()
+                # Render template
+                effective_inventory_id = entry_inventory_id or template.get(
+                    "inventory_id"
+                )
+                try:
+                    render_result = await self.agent_template_render_service.render_agent_template(
+                        template_content=template_content,
+                        inventory_id=effective_inventory_id,
+                        pass_snmp_mapping=template.get("pass_snmp_mapping", False),
+                        user_variables=entry_custom_variables,
+                        path=entry_path,
+                        stored_variables=template.get("variables"),
+                        username=username,
+                    )
+                    logger.info(
+                        "  Rendered: %s chars", len(render_result.rendered_content)
+                    )
+                except Exception as e:
+                    logger.error("  Render failed: %s", e, exc_info=True)
+                    template_results.append(
+                        {
+                            "template_id": entry_template_id,
+                            "template_name": template["name"],
+                            "file_path": entry_path,
+                            "inventory_id": entry_inventory_id,
+                            "success": False,
+                            "error": f"Failed to render template: {str(e)}",
+                            "rendered_size": 0,
+                        }
+                    )
+                    fail_count += 1
+                    continue
+
+                # Determine file path
+                file_path = entry_path or template.get("file_path")
+                if not file_path:
+                    logger.error("  No file path for template %s", template["name"])
+                    template_results.append(
+                        {
+                            "template_id": entry_template_id,
+                            "template_name": template["name"],
+                            "file_path": None,
+                            "inventory_id": entry_inventory_id,
+                            "success": False,
+                            "error": "No file path provided and template has no default file_path",
+                            "rendered_size": 0,
+                        }
+                    )
+                    fail_count += 1
+                    continue
+
+                # Write file
+                full_file_path = os.path.join(repo_path, file_path.lstrip("/"))
+                os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
+
+                with open(full_file_path, "w", encoding="utf-8") as f:
+                    f.write(render_result.rendered_content)
+
+                logger.info("  Written to: %s", file_path)
+
+                all_file_paths.append(file_path.lstrip("/"))
+                template_results.append(
+                    {
+                        "template_id": entry_template_id,
+                        "template_name": template["name"],
+                        "file_path": file_path,
+                        "inventory_id": entry_inventory_id,
+                        "success": True,
+                        "rendered_size": len(render_result.rendered_content),
+                    }
+                )
+                success_count += 1
 
             # If ALL templates failed, return failure
             if success_count == 0:

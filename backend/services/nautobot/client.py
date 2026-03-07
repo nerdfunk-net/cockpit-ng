@@ -16,7 +16,7 @@ class NautobotService:
     """Pure-async Nautobot API client. App-scoped, lifespan-managed.
 
     Use this in FastAPI async routes and async services.
-    For Celery tasks and sync callers, use NautobotSyncClient instead.
+    In Celery tasks, use asyncio.run() to call async methods directly.
     """
 
     def __init__(self):

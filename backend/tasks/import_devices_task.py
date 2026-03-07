@@ -16,7 +16,7 @@ import asyncio
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
-from services.nautobot import NautobotService
+import service_factory
 from services.nautobot.devices.import_service import DeviceImportService
 
 logger = logging.getLogger(__name__)
@@ -130,7 +130,7 @@ def import_devices_from_csv_task(
         logger.info("STEP 3: INITIALIZING IMPORT SERVICE")
         logger.info("-" * 80)
 
-        nautobot_service = NautobotService()
+        nautobot_service = service_factory.build_nautobot_service()
         import_service = DeviceImportService(nautobot_service)
 
         # STEP 4: Import devices

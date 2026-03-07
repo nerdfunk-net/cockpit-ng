@@ -59,3 +59,118 @@ def get_nautobot_metadata_service() -> "NautobotMetadataService":
 def get_offboarding_service() -> "OffboardingService":
     """Provide a new OffboardingService instance."""
     return service_factory.build_offboarding_service()
+
+
+def get_agent_template_render_service():
+    """Provide a new AgentTemplateRenderService instance."""
+    return service_factory.build_agent_template_render_service()
+
+
+def get_agent_deployment_service():
+    """Provide a new AgentDeploymentService instance."""
+    return service_factory.build_agent_deployment_service()
+
+
+# ---------------------------------------------------------------------------
+# CheckMK
+# ---------------------------------------------------------------------------
+
+
+def get_checkmk_config_service():
+    """Provide the CheckMK ConfigService."""
+    return service_factory.build_checkmk_config_service()
+
+
+def get_nb2cmk_service():
+    """Provide the NautobotToCheckMKService."""
+    return service_factory.build_nb2cmk_service()
+
+
+def get_nb2cmk_db_service():
+    """Provide the NB2CMKDatabaseService."""
+    return service_factory.build_nb2cmk_db_service()
+
+
+# ---------------------------------------------------------------------------
+# Git
+# ---------------------------------------------------------------------------
+
+
+def get_git_service():
+    """Provide the GitService."""
+    return service_factory.build_git_service()
+
+
+def get_git_auth_service():
+    """Provide the GitAuthenticationService."""
+    return service_factory.build_git_auth_service()
+
+
+def get_git_cache_service():
+    """Provide the GitCacheService."""
+    return service_factory.build_git_cache_service()
+
+
+def get_git_operations_service():
+    """Provide the GitOperationsService."""
+    return service_factory.build_git_operations_service()
+
+
+def get_git_connection_service():
+    """Provide the GitConnectionService."""
+    return service_factory.build_git_connection_service()
+
+
+def get_git_diff_service():
+    """Provide the GitDiffService."""
+    return service_factory.build_git_diff_service()
+
+
+# ---------------------------------------------------------------------------
+# Cache
+# ---------------------------------------------------------------------------
+
+
+def get_cache_service():
+    """Provide the RedisCacheService."""
+    return service_factory.build_cache_service()
+
+
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
+
+
+def get_oidc_service():
+    """Provide the app-scoped OIDCService."""
+    return service_factory.build_oidc_service()
+
+
+# ---------------------------------------------------------------------------
+# Network
+# ---------------------------------------------------------------------------
+
+
+def get_scan_service():
+    """Provide the ScanService."""
+    return service_factory.build_scan_service()
+
+
+def get_netmiko_service():
+    """Provide the NetmikoService."""
+    return service_factory.build_netmiko_service()
+
+
+def get_render_service():
+    """Provide the RenderService."""
+    return service_factory.build_render_service()
+
+
+# ---------------------------------------------------------------------------
+# Nautobot device services
+# ---------------------------------------------------------------------------
+
+
+def get_device_creation_service():
+    """Provide the DeviceCreationService."""
+    return service_factory.build_device_creation_service()

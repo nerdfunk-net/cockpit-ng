@@ -45,7 +45,8 @@ def finalize_backup_task(
     Returns:
         dict: Final backup status
     """
-    from services.settings.git.service import git_service
+    import service_factory
+    git_service = service_factory.build_git_service()
     import job_run_manager
 
     logger.info("=" * 80)
@@ -120,9 +121,7 @@ def finalize_backup_task(
         and repo_config.get("timestamp_custom_field_name")
         and backed_up_devices
     ):
-        from services.nautobot.sync_client import NautobotSyncClient
-
-        backup_service = DeviceBackupService(NautobotSyncClient())
+        backup_service = DeviceBackupService()
         custom_field_name = repo_config["timestamp_custom_field_name"]
 
         timestamp_update_status = backup_service.update_nautobot_timestamps(
@@ -217,9 +216,7 @@ def backup_single_device_task(
             logger.warning("Failed to update progress counter: %s", e)
 
     # Delegate to service layer
-    from services.nautobot.sync_client import NautobotSyncClient
-
-    backup_service = DeviceBackupService(NautobotSyncClient())
+    backup_service = DeviceBackupService()
     result = backup_service.backup_single_device(
         device_id=device_id,
         device_index=device_index,
@@ -288,12 +285,11 @@ def backup_devices_task(
         )
 
         # Import services
-        from services.settings.git.service import git_service
-        from services.settings.git.auth import git_auth_service
-        from services.nautobot.sync_client import NautobotSyncClient
-
+        import service_factory
+        git_service = service_factory.build_git_service()
+        git_auth_service = service_factory.build_git_auth_service()
         # Step 1: Validate inputs (delegated to service)
-        backup_service = DeviceBackupService(NautobotSyncClient())
+        backup_service = DeviceBackupService()
 
         try:
             repository, credential = backup_service.validate_backup_inputs(

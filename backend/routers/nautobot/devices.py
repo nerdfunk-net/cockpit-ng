@@ -17,7 +17,7 @@ from models.nautobot import (
 )
 from dependencies import get_nautobot_service, get_device_query_service
 from services.nautobot.client import NautobotService
-from services.nautobot.devices.creation import device_creation_service
+from dependencies import get_device_creation_service
 from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.devices.update import DeviceUpdateService
 from services.nautobot_helpers.cache_helpers import (
@@ -357,6 +357,7 @@ async def onboard_device(
 async def add_device(
     request: AddDeviceRequest,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+    device_creation_service=Depends(get_device_creation_service),
 ):
     """
     Orchestrated endpoint to add a device with interfaces to Nautobot.

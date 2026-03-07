@@ -38,10 +38,10 @@ class CheckMKFolderService:
                 return True
 
             # Use site-aware CheckMK client
-            from services.checkmk.client_factory import get_checkmk_client
+            import service_factory
             from checkmk.client import CheckMKAPIError
 
-            client = get_checkmk_client()
+            client = service_factory.build_checkmk_client()
             logger.info(
                 "Creating folder path '%s' in site '%s'", folder_path, site_name
             )

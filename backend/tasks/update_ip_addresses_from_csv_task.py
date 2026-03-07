@@ -27,6 +27,7 @@ import asyncio
 from typing import Optional, Dict, Any, Tuple
 from datetime import datetime
 
+import service_factory
 from services.nautobot import NautobotService
 
 logger = logging.getLogger(__name__)
@@ -150,7 +151,7 @@ def update_ip_addresses_from_csv_task(
         logger.info("STEP 3: INITIALIZING NAUTOBOT SERVICE")
         logger.info("-" * 80)
 
-        nautobot_service = NautobotService()
+        nautobot_service = service_factory.build_nautobot_service()
 
         # STEP 4: Update IP addresses
         logger.info("-" * 80)

@@ -19,7 +19,7 @@ from models.git_repositories import (
     GitConnectionTestResponse,
 )
 from services.settings.git.shared_utils import git_repo_manager
-from services.settings.git.connection import git_connection_service
+from dependencies import get_git_connection_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git-repositories", tags=["git-repositories"])
@@ -199,6 +199,7 @@ async def delete_repository(
 async def test_git_connection(
     test_request: GitConnectionTestRequest,
     current_user: dict = Depends(require_permission("git.repositories", "write")),
+    git_connection_service=Depends(get_git_connection_service),
 ):
     """Test git repository connection.
 

@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from git import InvalidGitRepositoryError, GitCommandError
 
 from core.auth import require_permission
-from services.settings.cache import cache_service
+from dependencies import get_cache_service
 from services.settings.git.shared_utils import get_git_repo_by_id
 
 logger = logging.getLogger(__name__)
@@ -53,6 +53,7 @@ async def get_commits(
     repo_id: int,
     branch_name: str,
     current_user: dict = Depends(require_permission("git.repositories", "read")),
+    cache_service=Depends(get_cache_service),
 ):
     """Get commits for a specific branch."""
     try:

@@ -7,8 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from core.auth import require_permission
-from services.checkmk.sync.base import nb2cmk_service
-from services.checkmk.sync.database import nb2cmk_db_service
+from dependencies import get_nb2cmk_service, get_nb2cmk_db_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nb2cmk", tags=["nb2cmk"])
@@ -20,6 +19,7 @@ router = APIRouter(prefix="/api/nb2cmk", tags=["nb2cmk"])
 @router.get("/get_default_site")
 async def get_default_site(
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+    nb2cmk_service=Depends(get_nb2cmk_service),
 ):
     """Get the default site from CheckMK configuration."""
     try:
@@ -35,6 +35,7 @@ async def get_default_site(
 async def compare_device_config(
     device_id: str,
     current_user: dict = Depends(require_permission("checkmk.devices", "read")),
+    nb2cmk_service=Depends(get_nb2cmk_service),
 ):
     """Compare normalized Nautobot device config with CheckMK host config."""
     try:
@@ -72,6 +73,7 @@ async def compare_device_config(
 async def add_device_to_checkmk(
     device_id: str,
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+    nb2cmk_service=Depends(get_nb2cmk_service),
 ):
     """Add a device from Nautobot to CheckMK using normalized config."""
     try:
@@ -107,6 +109,7 @@ async def add_device_to_checkmk(
 async def update_device_in_checkmk(
     device_id: str,
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+    nb2cmk_service=Depends(get_nb2cmk_service),
 ):
     """Update/sync a device from Nautobot to CheckMK using normalized config."""
     try:
@@ -147,6 +150,7 @@ async def list_comparison_jobs(
         20, ge=1, le=100, description="Maximum number of jobs to return"
     ),
     current_user: dict = Depends(require_permission("checkmk.devices", "read")),
+    nb2cmk_db_service=Depends(get_nb2cmk_db_service),
 ):
     """
     List recent device comparison jobs from the NB2CMK database.
@@ -197,6 +201,7 @@ async def list_comparison_jobs(
 async def get_comparison_job_details(
     job_id: str,
     current_user: dict = Depends(require_permission("checkmk.devices", "read")),
+    nb2cmk_db_service=Depends(get_nb2cmk_db_service),
 ):
     """
     Get detailed information about a comparison job including device results.
@@ -269,6 +274,7 @@ async def get_comparison_job_details(
 async def delete_comparison_job(
     job_id: str,
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+    nb2cmk_db_service=Depends(get_nb2cmk_db_service),
 ):
     """
     Delete a comparison job and its results.
@@ -317,6 +323,7 @@ async def delete_comparison_job(
 @router.post("/jobs/clear")
 async def clear_all_comparison_jobs(
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+    nb2cmk_db_service=Depends(get_nb2cmk_db_service),
 ):
     """
     Delete all completed, failed, and cancelled comparison jobs.

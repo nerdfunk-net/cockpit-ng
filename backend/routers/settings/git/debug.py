@@ -14,7 +14,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import require_permission
-from services.settings.git.auth import git_auth_service
+from dependencies import get_git_auth_service
 from services.settings.git.env import set_ssl_env
 from services.settings.git.config import set_git_author
 from services.settings.git.shared_utils import get_git_repo_by_id, git_repo_manager
@@ -311,6 +311,7 @@ async def debug_delete_test(
 async def debug_push_test(
     repo_id: int,
     current_user: dict = Depends(require_permission("git.repositories", "write")),
+    git_auth_service=Depends(get_git_auth_service),
 ):
     """Debug operation: Test pushing changes to the remote repository."""
     try:
@@ -571,6 +572,7 @@ async def debug_push_test(
 async def debug_diagnostics(
     repo_id: int,
     current_user: dict = Depends(require_permission("git.repositories", "read")),
+    git_auth_service=Depends(get_git_auth_service),
 ):
     """Get comprehensive diagnostic information for the repository."""
     try:

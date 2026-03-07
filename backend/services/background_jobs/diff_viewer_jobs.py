@@ -45,7 +45,8 @@ def _get_checkmk_client():
 
 async def _fetch_nautobot_devices() -> List[Dict[str, Any]]:
     """Fetch all devices from Nautobot."""
-    from services.nautobot.devices.query import device_query_service
+    import service_factory
+    device_query_service = service_factory.build_device_query_service()
 
     result = await device_query_service.get_devices()
     return result.get("devices", [])
@@ -136,15 +137,7 @@ def get_diff_between_nb_checkmk_task(self) -> Dict[str, Any]:
         )
 
         # Fetch Nautobot devices (async)
-        try:
-            nb_devices = asyncio.run(_fetch_nautobot_devices())
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                nb_devices = loop.run_until_complete(_fetch_nautobot_devices())
-            finally:
-                loop.close()
+        nb_devices = asyncio.run(_fetch_nautobot_devices())
 
         logger.info("Fetched %s devices from Nautobot", len(nb_devices))
 

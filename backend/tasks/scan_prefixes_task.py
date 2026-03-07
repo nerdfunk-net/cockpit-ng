@@ -8,8 +8,9 @@ import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
+import asyncio
 import job_run_manager
-from services.nautobot.sync_client import NautobotSyncClient
+import service_factory
 from tasks.ping_network_task import _fping_networks, _resolve_dns, _condense_ip_ranges
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ def _fetch_prefixes_by_custom_field(
     Returns:
         List of CIDR prefixes (e.g., ['192.168.1.0/24', '10.0.0.0/24'])
     """
-    nautobot_service = NautobotSyncClient()
+    nautobot_service = service_factory.build_nautobot_service()
 
     # Build GraphQL query with custom field filter
     # The custom field name in GraphQL uses 'cf_' prefix
@@ -45,7 +46,7 @@ def _fetch_prefixes_by_custom_field(
         logger.info(
             "Fetching prefixes with %s=%s", custom_field_name, custom_field_value
         )
-        result = nautobot_service.graphql_query(query)
+        result = asyncio.run(nautobot_service.graphql_query(query))
 
         if not result or "data" not in result:
             logger.error("Failed to fetch prefixes from Nautobot")
@@ -85,7 +86,8 @@ def _update_ip_in_nautobot(
         bool: True if successful, False otherwise
     """
     import requests
-    from services.nautobot import nautobot_service
+    import service_factory
+    nautobot_service = service_factory.build_nautobot_service()
 
     current_date = datetime.now().strftime("%Y-%m-%d")
 
@@ -266,7 +268,8 @@ def _update_prefix_last_scan(
         bool: True if successful, False otherwise
     """
     import requests
-    from services.nautobot import nautobot_service
+    import service_factory
+    nautobot_service = service_factory.build_nautobot_service()
 
     current_date = datetime.now().strftime("%Y-%m-%d")
 

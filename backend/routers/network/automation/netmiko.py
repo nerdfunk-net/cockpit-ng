@@ -12,7 +12,7 @@ from core.auth import require_permission
 from dependencies import get_nautobot_service, get_device_query_service
 from services.nautobot.client import NautobotService
 from services.nautobot.devices.query import DeviceQueryService
-from services.network.automation.netmiko import netmiko_service
+from dependencies import get_netmiko_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/netmiko", tags=["netmiko"])
@@ -152,6 +152,7 @@ class TemplateExecutionResponse(BaseModel):
 async def execute_commands(
     request: DeviceCommand,
     current_user: dict = Depends(require_permission("network.netmiko", "execute")),
+    netmiko_service=Depends(get_netmiko_service),
 ) -> CommandExecutionResponse:
     """
     Execute commands on multiple network devices using Netmiko.
@@ -328,6 +329,7 @@ async def execute_commands(
 @router.get("/supported-platforms")
 async def get_supported_platforms(
     current_user: dict = Depends(require_permission("network.netmiko", "execute")),
+    netmiko_service=Depends(get_netmiko_service),
 ) -> Dict[str, List[str]]:
     """
     Get list of supported network device platforms.
@@ -368,6 +370,7 @@ async def get_supported_platforms(
 async def cancel_execution(
     session_id: str,
     current_user: dict = Depends(require_permission("network.netmiko", "execute")),
+    netmiko_service=Depends(get_netmiko_service),
 ) -> Dict[str, Any]:
     """
     Cancel an ongoing command execution session.
@@ -405,6 +408,7 @@ async def execute_template(
     request: TemplateExecutionRequest,
     current_user: dict = Depends(require_permission("network.netmiko", "execute")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    netmiko_service=Depends(get_netmiko_service),
     device_query_service: DeviceQueryService = Depends(get_device_query_service),
 ) -> TemplateExecutionResponse:
     """

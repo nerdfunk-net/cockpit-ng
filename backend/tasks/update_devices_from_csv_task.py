@@ -24,7 +24,7 @@ import asyncio
 from typing import Optional, Dict, Any
 from datetime import datetime
 
-from services.nautobot import NautobotService
+import service_factory
 from services.nautobot.devices.update import DeviceUpdateService
 
 logger = logging.getLogger(__name__)
@@ -135,7 +135,7 @@ def update_devices_from_csv_task(
         logger.info("STEP 3: INITIALIZING UPDATE SERVICE")
         logger.info("-" * 80)
 
-        nautobot_service = NautobotService()
+        nautobot_service = service_factory.build_nautobot_service()
         update_service = DeviceUpdateService(nautobot_service)
 
         # STEP 4: Update devices

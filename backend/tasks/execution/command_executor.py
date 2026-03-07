@@ -38,7 +38,6 @@ def execute_run_commands(
     Returns:
         dict: Command execution results with detailed per-device output
     """
-    from services.nautobot.sync_client import NautobotSyncClient
     from services.network.automation.netmiko import NetmikoService
     from services.network.automation.render import RenderService
     import credentials_manager
@@ -101,24 +100,18 @@ def execute_run_commands(
             )
 
             import asyncio
-            from services.nautobot.devices.query import device_query_service
+            import service_factory
+            device_query_service = service_factory.build_device_query_service()
 
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                devices_result = loop.run_until_complete(
-                    device_query_service.get_devices()
-                )
-                if devices_result and devices_result.get("devices"):
-                    device_ids = [
-                        device.get("id") for device in devices_result["devices"]
-                    ]
-                    logger.info("Fetched %s devices from Nautobot", len(device_ids))
-                else:
-                    logger.warning("No devices found in Nautobot")
-                    device_ids = []
-            finally:
-                loop.close()
+            devices_result = asyncio.run(device_query_service.get_devices())
+            if devices_result and devices_result.get("devices"):
+                device_ids = [
+                    device.get("id") for device in devices_result["devices"]
+                ]
+                logger.info("Fetched %s devices from Nautobot", len(device_ids))
+            else:
+                logger.warning("No devices found in Nautobot")
+                device_ids = []
 
         if not device_ids:
             logger.error("ERROR: No devices found to run commands on")
@@ -229,20 +222,15 @@ def execute_run_commands(
         logger.info("STEP 2: EXECUTING COMMANDS ON %s DEVICES", len(device_ids))
         logger.info("-" * 80)
 
-        nautobot_service = NautobotSyncClient()
+        nautobot_service = service_factory.build_nautobot_service()
         netmiko_service = NetmikoService()
         render_service = RenderService()
-
-        # Create event loop for async operations
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
 
         successful_devices = []
         failed_devices = []
         total_devices = len(device_ids)
 
-        try:
-            for idx, device_id in enumerate(device_ids, 1):
+        for idx, device_id in enumerate(device_ids, 1):
                 device_result = {
                     "device_id": device_id,
                     "device_name": None,
@@ -338,7 +326,9 @@ def execute_run_commands(
                     }
                     """
                     variables = {"deviceId": device_id}
-                    device_data = nautobot_service.graphql_query(query, variables)
+                    device_data = asyncio.run(
+                        nautobot_service.graphql_query(query, variables)
+                    )
 
                     if (
                         not device_data
@@ -417,7 +407,7 @@ def execute_run_commands(
                     # Render template for this device
                     logger.info("[%s] Rendering template...", idx)
                     try:
-                        render_result = loop.run_until_complete(
+                        render_result = asyncio.run(
                             render_service.render_template(
                                 template_content=template_content,
                                 category="netmiko",
@@ -503,9 +493,6 @@ def execute_run_commands(
                     logger.error("[%s] ✗ Exception: %s", idx, e, exc_info=True)
                     device_result["error"] = str(e)
                     failed_devices.append(device_result)
-
-        finally:
-            loop.close()
 
         logger.info("\n" + "=" * 80)
         logger.info("COMMAND EXECUTION SUMMARY")

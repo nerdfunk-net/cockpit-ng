@@ -71,9 +71,9 @@ def execute_backup(
 
         # Import services
         from services.settings.git.shared_utils import git_repo_manager
-        from services.settings.git.service import git_service
-        from services.settings.git.auth import git_auth_service
-        from services.nautobot.sync_client import NautobotSyncClient
+        import service_factory
+        git_service = service_factory.build_git_service()
+        git_auth_service = service_factory.build_git_auth_service()
         from services.network.automation.netmiko import NetmikoService
         import credentials_manager
         import jobs_manager
@@ -164,24 +164,18 @@ def execute_backup(
             )
 
             import asyncio
-            from services.nautobot.devices.query import device_query_service
+            import service_factory
+            device_query_service = service_factory.build_device_query_service()
 
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                devices_result = loop.run_until_complete(
-                    device_query_service.get_devices()
-                )
-                if devices_result and devices_result.get("devices"):
-                    device_ids = [
-                        device.get("id") for device in devices_result["devices"]
-                    ]
-                    logger.info("Fetched %s devices from Nautobot", len(device_ids))
-                else:
-                    logger.warning("No devices found in Nautobot")
-                    device_ids = []
-            finally:
-                loop.close()
+            devices_result = asyncio.run(device_query_service.get_devices())
+            if devices_result and devices_result.get("devices"):
+                device_ids = [
+                    device.get("id") for device in devices_result["devices"]
+                ]
+                logger.info("Fetched %s devices from Nautobot", len(device_ids))
+            else:
+                logger.warning("No devices found in Nautobot")
+                device_ids = []
 
         if not device_ids:
             logger.error("ERROR: No devices found to backup")
@@ -419,7 +413,7 @@ def execute_backup(
 
         # Sequential execution (fallback for parallel_tasks = 1)
         logger.info("Using sequential execution")
-        nautobot_service = NautobotSyncClient()
+        nautobot_service = service_factory.build_nautobot_service()
         netmiko_service = NetmikoService()
 
         for idx, device_id in enumerate(device_ids, 1):
@@ -542,7 +536,7 @@ def execute_backup(
                 }
                 """
                 variables = {"deviceId": device_id}
-                device_data = nautobot_service.graphql_query(query, variables)
+                device_data = asyncio.run(nautobot_service.graphql_query(query, variables))
 
                 if (
                     not device_data
@@ -904,11 +898,11 @@ def execute_backup(
                         "custom_fields": {timestamp_custom_field_name: backup_date}
                     }
 
-                    result = nautobot_service.rest_request(
+                    result = asyncio.run(nautobot_service.rest_request(
                         endpoint=f"dcim/devices/{device_id}/",
                         method="PATCH",
                         data=update_data,
-                    )
+                    ))
 
                     logger.info("✓ Updated custom field for %s", device_name)
                     timestamp_update_status["updated_count"] += 1

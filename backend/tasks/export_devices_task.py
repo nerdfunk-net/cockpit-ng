@@ -4,6 +4,7 @@ Results are stored as files and can be downloaded from the Jobs/View interface.
 """
 
 from celery_app import celery_app
+import asyncio
 import logging
 from typing import Optional, List, Dict, Any
 import yaml
@@ -221,8 +222,6 @@ def export_devices_task(
     Returns:
         dict: Export results including file path
     """
-    from services.nautobot.sync_client import NautobotSyncClient
-
     try:
         logger.info("=" * 80)
         logger.info("EXPORT DEVICES TASK STARTED")
@@ -271,7 +270,8 @@ def export_devices_task(
         query = _build_graphql_query(properties)
         logger.info("GraphQL query built with %s properties", len(properties))
 
-        nautobot_client = NautobotSyncClient()
+        import service_factory
+        nautobot_client = service_factory.build_nautobot_service()
 
         all_devices = []
 
@@ -304,7 +304,7 @@ def export_devices_task(
             # Execute GraphQL query for this batch
             # Note: device_ids are UUIDs, so we filter by id, not name
             variables = {"id_filter": batch_device_ids}
-            result = nautobot_client.graphql_query(query, variables)
+            result = asyncio.run(nautobot_client.graphql_query(query, variables))
 
             if not result or "data" not in result:
                 logger.error("Failed to fetch batch %s", batch_idx + 1)

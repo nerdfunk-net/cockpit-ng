@@ -563,19 +563,13 @@ def _get_device_id_from_ip(ip_address: str) -> tuple:
     Returns:
         tuple: (device_id: str, device_name: str)
     """
-    # Use asyncio to call the async service
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        result = loop.run_until_complete(_async_get_device_id(ip_address))
-        return result
-    finally:
-        loop.close()
+    return asyncio.run(_async_get_device_id(ip_address))
 
 
 async def _async_get_device_id(ip_address: str) -> tuple:
     """Async helper to get device ID from IP."""
-    from services.nautobot import nautobot_service
+    import service_factory
+    nautobot_service = service_factory.build_nautobot_service()
 
     # Build GraphQL query (same as detailed endpoint)
     query = """

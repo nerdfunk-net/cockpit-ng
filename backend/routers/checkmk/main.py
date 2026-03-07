@@ -43,10 +43,12 @@ from models.checkmk import (
     CheckMKVersionResponse,
     CheckMKOperationResponse,
 )
-from services.checkmk import checkmk_service
-from services.checkmk.client_factory import (
-    get_checkmk_client as _get_checkmk_client,
-)
+import service_factory
+from dependencies import get_checkmk_service, get_checkmk_host_service, get_cache_service
+from services.checkmk.exceptions import CheckMKClientError, HostNotFoundError
+
+def _get_checkmk_client(site_name=None):
+    return service_factory.build_checkmk_client(site_name)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/checkmk", tags=["checkmk"])
@@ -56,6 +58,7 @@ router = APIRouter(prefix="/api/checkmk", tags=["checkmk"])
 async def test_checkmk_connection(
     request: CheckMKTestConnectionRequest,
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+    checkmk_service=Depends(get_checkmk_service),
 ):
     """Test CheckMK connection with provided settings."""
     try:
@@ -84,6 +87,7 @@ async def test_checkmk_connection(
 @router.get("/test")
 async def test_current_checkmk_connection(
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+    checkmk_service=Depends(get_checkmk_service),
 ):
     """Test current CheckMK connection using saved settings."""
     try:
@@ -129,9 +133,10 @@ async def test_current_checkmk_connection(
 @router.get("/stats")
 async def get_checkmk_stats(
     current_user: dict = Depends(require_permission("checkmk.devices", "read")),
+    checkmk_service=Depends(get_checkmk_service),
+    cache_service=Depends(get_cache_service),
 ):
     """Get CheckMK statistics with 10-minute caching."""
-    from services.settings.cache import cache_service
 
     # Cache configuration - 10 minutes
     cache_key = "checkmk:stats"
@@ -299,14 +304,10 @@ async def get_host(
 ):
     """Get specific host configuration"""
     try:
-        from services.checkmk.client_factory import (
-            get_host_data,
-            HostNotFoundError,
-            CheckMKClientError,
-        )
         from checkmk.client import CheckMKAPIError
 
-        result = await get_host_data(hostname, effective_attributes)
+        client = service_factory.build_checkmk_client()
+        result = client.get_host(hostname, effective_attributes)
 
         return CheckMKOperationResponse(
             success=True, message=f"Host {hostname} retrieved successfully", data=result
@@ -589,11 +590,10 @@ async def update_host(
 async def delete_host(
     hostname: str,
     current_user: dict = Depends(require_permission("checkmk.devices", "delete")),
+    checkmk_host_service=Depends(get_checkmk_host_service),
 ):
     """Delete host from CheckMK"""
     try:
-        from services.checkmk import checkmk_host_service
-
         result = await checkmk_host_service.delete_host(hostname)
         return CheckMKOperationResponse(
             success=result["success"],

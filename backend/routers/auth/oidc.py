@@ -17,7 +17,7 @@ from models.auth import (
     OIDCTestLoginRequest,
 )
 from core.auth import create_access_token, require_role
-from services.auth.oidc import oidc_service
+from dependencies import get_oidc_service
 from settings_manager import settings_manager
 from config import settings
 
@@ -75,6 +75,7 @@ async def get_oidc_providers():
 async def oidc_login(
     provider_id: str,
     redirect_uri: str = Query(None, description="Optional redirect URI override"),
+    oidc_service=Depends(get_oidc_service),
 ):
     """
     Initiate OIDC authentication flow with specific provider.
@@ -117,7 +118,7 @@ async def oidc_login(
 
 
 @router.post("/{provider_id}/test-login")
-async def oidc_test_login(provider_id: str, test_params: OIDCTestLoginRequest):
+async def oidc_test_login(provider_id: str, test_params: OIDCTestLoginRequest, oidc_service=Depends(get_oidc_service)):
     """
     Initiate OIDC authentication flow with custom test parameters.
     This endpoint allows overriding default configuration for testing purposes.
@@ -179,7 +180,7 @@ async def oidc_test_login(provider_id: str, test_params: OIDCTestLoginRequest):
     "/{provider_id}/callback",
     response_model=Union[LoginResponse, ApprovalPendingResponse],
 )
-async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
+async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest, oidc_service=Depends(get_oidc_service)):
     """
     Handle OIDC callback with authorization code for specific provider.
     Exchange code for tokens and authenticate user.
@@ -351,7 +352,7 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest):
 
 
 @router.post("/{provider_id}/logout")
-async def oidc_logout(provider_id: str, id_token_hint: str = Query(None)):
+async def oidc_logout(provider_id: str, id_token_hint: str = Query(None), oidc_service=Depends(get_oidc_service)):
     """
     Handle OIDC logout for specific provider.
     Returns end session endpoint URL if available.
@@ -395,7 +396,7 @@ async def oidc_logout(provider_id: str, id_token_hint: str = Query(None)):
 
 
 @router.get("/debug", dependencies=[Depends(require_role("admin"))])
-async def get_oidc_debug_info():
+async def get_oidc_debug_info(oidc_service=Depends(get_oidc_service)):
     """
     Get detailed debug information about OIDC configuration.
     This endpoint provides comprehensive configuration details for testing and troubleshooting.

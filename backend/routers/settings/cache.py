@@ -9,7 +9,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 
 from core.auth import require_permission
-from services.settings.cache import cache_service
+from dependencies import get_cache_service
 
 router = APIRouter(prefix="/api/cache", tags=["cache"])
 
@@ -20,24 +20,21 @@ def _get_device_cache_key(device_id: str) -> str:
     return f"nautobot:devices:{device_id}"
 
 
-def _clear_device_cache(device_id: str = None) -> int:
+def _clear_device_cache(cache_service, device_id: str = None) -> int:
     """Clear device cache. If device_id is provided, clear only that device. Otherwise clear all device cache."""
     if device_id:
-        # Clear specific device
         cache_key = _get_device_cache_key(device_id)
         if cache_service.get(cache_key):
-            # Since we can't clear individual keys, we'll clear the namespace
-            # This will clear all device cache, but it's the best we can do
             return cache_service.clear_namespace("nautobot:devices")
         return 0
     else:
-        # Clear all device-related cache
         return cache_service.clear_namespace("nautobot:devices")
 
 
 @router.get("/stats")
 async def cache_stats(
     current_user: dict = Depends(require_permission("settings.cache", "write")),
+    cache_service=Depends(get_cache_service),
 ):
     """Return comprehensive cache statistics including performance metrics."""
     try:
@@ -53,6 +50,7 @@ async def cache_entries(
         False, description="Include expired entries in the response"
     ),
     current_user: dict = Depends(require_permission("settings.cache", "write")),
+    cache_service=Depends(get_cache_service),
 ):
     """Return detailed information about all cache entries."""
     try:
@@ -66,6 +64,7 @@ async def cache_entries(
 async def cache_namespace_info(
     namespace: str,
     current_user: dict = Depends(require_permission("settings.cache", "write")),
+    cache_service=Depends(get_cache_service),
 ):
     """Return detailed information about a specific cache namespace."""
     try:
@@ -78,6 +77,7 @@ async def cache_namespace_info(
 @router.get("/performance")
 async def cache_performance(
     current_user: dict = Depends(require_permission("settings.cache", "write")),
+    cache_service=Depends(get_cache_service),
 ):
     """Return detailed cache performance metrics."""
     try:
@@ -91,6 +91,7 @@ async def cache_performance(
 async def clear_cache(
     payload: dict = None,
     current_user: dict = Depends(require_permission("settings.cache", "write")),
+    cache_service=Depends(get_cache_service),
 ):
     """Clear cache entries. Accepts optional JSON { "namespace": "repo:123" }.
 
@@ -123,6 +124,7 @@ async def clear_cache(
 @router.post("/cleanup")
 async def cleanup_expired(
     current_user: dict = Depends(require_permission("settings.cache", "write")),
+    cache_service=Depends(get_cache_service),
 ):
     """Remove expired cache entries and return count of removed items."""
     try:
@@ -140,6 +142,7 @@ async def cleanup_expired(
 async def clear_devices_cache(
     payload: dict = None,
     current_user: dict = Depends(require_permission("settings.cache", "write")),
+    cache_service=Depends(get_cache_service),
 ):
     """Clear device cache. Accepts optional JSON { "device_id": "123" }.
 
@@ -151,7 +154,7 @@ async def clear_devices_cache(
         if payload and isinstance(payload, dict):
             device_id = payload.get("device_id")
 
-        cleared_count = _clear_device_cache(device_id)
+        cleared_count = _clear_device_cache(cache_service, device_id)
 
         if device_id:
             message = (
@@ -170,18 +173,17 @@ async def clear_devices_cache(
 @router.get("/devices/stats")
 async def get_devices_cache_stats(
     current_user: dict = Depends(require_permission("settings.cache", "write")),
+    cache_service=Depends(get_cache_service),
 ):
     """Get device cache statistics and information."""
     try:
-        # Get namespace stats for device cache
         namespace_info = cache_service.get_namespace_info("nautobot:devices")
-
         return {
             "success": True,
             "data": {
                 "namespace": "nautobot:devices",
                 "cache_info": namespace_info,
-                "cache_ttl_seconds": 1800,  # 30 minutes
+                "cache_ttl_seconds": 1800,
                 "cache_ttl_minutes": 30,
             },
         }

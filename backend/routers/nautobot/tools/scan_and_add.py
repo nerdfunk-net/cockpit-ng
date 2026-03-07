@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, validator
 
 from core.auth import require_permission
-from services.network.scanning.scan import scan_service
+from dependencies import get_scan_service
 
 """API router for network scanning operations."""
 
@@ -116,6 +116,7 @@ class ScanStatusResponse(BaseModel):
 async def start_scan(
     request: ScanStartRequest,
     current_user: dict = Depends(require_permission("scan", "execute")),
+    scan_service=Depends(get_scan_service),
 ):
     """Start a new network scan job."""
     try:
@@ -159,7 +160,7 @@ async def start_scan(
 
 
 @router.get("/{job_id}/status", response_model=ScanStatusResponse)
-async def get_scan_status(job_id: str):
+async def get_scan_status(job_id: str, scan_service=Depends(get_scan_service)):
     """Get status and results of a scan job."""
     job = await scan_service.get_job(job_id)
 
@@ -195,7 +196,7 @@ async def get_scan_status(job_id: str):
 
 
 @router.delete("/{job_id}")
-async def delete_scan_job(job_id: str):
+async def delete_scan_job(job_id: str, scan_service=Depends(get_scan_service)):
     """Delete a scan job (cleanup endpoint)."""
     job = await scan_service.get_job(job_id)
 
@@ -211,7 +212,7 @@ async def delete_scan_job(job_id: str):
 
 
 @router.get("/jobs")
-async def list_scan_jobs():
+async def list_scan_jobs(scan_service=Depends(get_scan_service)):
     """List all active scan jobs."""
     scan_service._purge_expired()
 

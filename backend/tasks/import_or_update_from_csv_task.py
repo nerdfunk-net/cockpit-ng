@@ -21,6 +21,7 @@ import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+import service_factory
 from celery_app import celery_app
 from services.nautobot import NautobotService
 from services.nautobot.devices.import_service import DeviceImportService
@@ -205,7 +206,7 @@ def _run_csv_import(
         logger.info("Primary key '%s' resolved to CSV column '%s' (inverse_map=%s)", primary_key, pk_csv_col, inverse_map)
 
         # STEP 2–4: Process each file
-        nautobot_service = NautobotService()
+        nautobot_service = service_factory.build_nautobot_service()
         device_import_service = DeviceImportService(nautobot_service)
         device_update_service = DeviceUpdateService(nautobot_service)
         created: List[Dict] = []

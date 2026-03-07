@@ -199,18 +199,16 @@ class DeviceComparisonService:
 
             # Get CheckMK host config using service layer
             try:
-                from services.checkmk.client_factory import (
-                    get_host_data,
-                    HostNotFoundError,
-                )
+                import service_factory
+                from services.checkmk.exceptions import HostNotFoundError
                 from checkmk.client import CheckMKAPIError
 
-                # Call service layer to get host data
                 try:
                     logger.debug(
                         "[COMPARE] Fetching CheckMK data for host: %s", hostname
                     )
-                    checkmk_data = await get_host_data(hostname, False)
+                    client = service_factory.build_checkmk_client()
+                    checkmk_data = client.get_host(hostname, False)
                     logger.debug(
                         "[COMPARE] Successfully retrieved CheckMK data for %s", hostname
                     )

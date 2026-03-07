@@ -29,8 +29,9 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
         logger.info("Starting cache_all_devices task: %s", self.request.id)
 
         # Import here to avoid circular dependencies
-        from services.nautobot import nautobot_service
-        from services.settings.cache import cache_service
+        import service_factory
+        nautobot_service = service_factory.build_nautobot_service()
+        cache_service = service_factory.build_cache_service()
         from services.background_jobs.base import (
             format_progress_message,
             extract_device_essentials,
@@ -76,19 +77,8 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
         }
         """
 
-        # Execute GraphQL query (need to run in event loop)
-        try:
-            result = asyncio.run(nautobot_service.graphql_query(query, {}))
-        except RuntimeError:
-            # If we're already in an event loop, create a new one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                result = loop.run_until_complete(
-                    nautobot_service.graphql_query(query, {})
-                )
-            finally:
-                loop.close()
+        # Execute GraphQL query
+        result = asyncio.run(nautobot_service.graphql_query(query, {}))
 
         # Validate GraphQL result
         success, error_msg, data = safe_graphql_query(result)
@@ -233,8 +223,9 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
     try:
         logger.info("Starting cache_single_device task for device %s", device_id)
 
-        from services.nautobot import nautobot_service
-        from services.settings.cache import cache_service
+        import service_factory
+        nautobot_service = service_factory.build_nautobot_service()
+        cache_service = service_factory.build_cache_service()
         from services.background_jobs.base import safe_graphql_query
 
         self.update_state(
@@ -266,17 +257,7 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
         variables = {"id": [device_id]}
 
         # Execute query
-        try:
-            result = asyncio.run(nautobot_service.graphql_query(query, variables))
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                result = loop.run_until_complete(
-                    nautobot_service.graphql_query(query, variables)
-                )
-            finally:
-                loop.close()
+        result = asyncio.run(nautobot_service.graphql_query(query, variables))
 
         # Validate result
         success, error_msg, data = safe_graphql_query(result)

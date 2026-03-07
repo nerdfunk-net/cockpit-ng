@@ -10,10 +10,7 @@ from typing import Dict, Any
 from celery import shared_task
 from fastapi import HTTPException
 
-from services.checkmk.sync.database import (
-    nb2cmk_db_service,
-    JobStatus as NB2CMKJobStatus,
-)
+from services.checkmk.sync.database import JobStatus as NB2CMKJobStatus
 from checkmk.client import CheckMKAPIError
 
 logger = logging.getLogger(__name__)
@@ -41,13 +38,12 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
 
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
-        from services.checkmk.config import config_service
-
+        import service_factory
+        config_service = service_factory.build_checkmk_config_service()
         config_service.reload_config()
         logger.info("Reloaded configuration files for add device task")
 
-        # Import here to avoid circular dependencies
-        from services.checkmk.sync.base import nb2cmk_service
+        nb2cmk_service = service_factory.build_nb2cmk_service()
 
         # Update task state
         self.update_state(
@@ -55,19 +51,8 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
             meta={"status": f"Adding device {device_id} to CheckMK..."},
         )
 
-        # Execute the add operation (need to run in event loop)
-        try:
-            result = asyncio.run(nb2cmk_service.add_device_to_checkmk(device_id))
-        except RuntimeError:
-            # If we're already in an event loop, create a new one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                result = loop.run_until_complete(
-                    nb2cmk_service.add_device_to_checkmk(device_id)
-                )
-            finally:
-                loop.close()
+        # Execute the add operation
+        result = asyncio.run(nb2cmk_service.add_device_to_checkmk(device_id))
 
         logger.info(
             "Successfully added device %s (%s) to CheckMK", device_id, result.hostname
@@ -136,13 +121,12 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
 
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
-        from services.checkmk.config import config_service
-
+        import service_factory
+        config_service = service_factory.build_checkmk_config_service()
         config_service.reload_config()
         logger.info("Reloaded configuration files for update device task")
 
-        # Import here to avoid circular dependencies
-        from services.checkmk.sync.base import nb2cmk_service
+        nb2cmk_service = service_factory.build_nb2cmk_service()
 
         # Update task state
         self.update_state(
@@ -150,19 +134,8 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
             meta={"status": f"Updating device {device_id} in CheckMK..."},
         )
 
-        # Execute the update operation (need to run in event loop)
-        try:
-            result = asyncio.run(nb2cmk_service.update_device_in_checkmk(device_id))
-        except RuntimeError:
-            # If we're already in an event loop, create a new one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                result = loop.run_until_complete(
-                    nb2cmk_service.update_device_in_checkmk(device_id)
-                )
-            finally:
-                loop.close()
+        # Execute the update operation
+        result = asyncio.run(nb2cmk_service.update_device_in_checkmk(device_id))
 
         logger.info(
             "Successfully updated device %s (%s) in CheckMK", device_id, result.hostname
@@ -236,13 +209,13 @@ def sync_devices_to_checkmk_task(
 
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
-        from services.checkmk.config import config_service
-
+        import service_factory
+        config_service = service_factory.build_checkmk_config_service()
         config_service.reload_config()
         logger.info("Reloaded configuration files for sync devices task")
 
-        # Import here to avoid circular dependencies
-        from services.checkmk.sync.base import nb2cmk_service
+        nb2cmk_service = service_factory.build_nb2cmk_service()
+        nb2cmk_db_service = service_factory.build_nb2cmk_db_service()
         import job_run_manager
 
         total_devices = len(device_ids)

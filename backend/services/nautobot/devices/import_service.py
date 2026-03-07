@@ -195,10 +195,21 @@ class DeviceImportService:
                 "details": details,
             }
 
+        except ValueError as e:
+            error_msg = f"Failed to import device '{device_data.get('name', 'unknown')}': {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return {
+                "success": False,
+                "device_id": None,
+                "device_name": device_data.get("name"),
+                "message": str(e),
+                "created": False,
+                "warnings": warnings,
+                "details": details,
+            }
         except Exception as e:
             error_msg = f"Failed to import device '{device_data.get('name', 'unknown')}': {str(e)}"
             logger.error(error_msg, exc_info=True)
-            # Re-raise exception - let caller handle error conversion
             raise
 
     async def validate_import_data(self, device_data: Dict[str, Any]) -> Dict[str, Any]:

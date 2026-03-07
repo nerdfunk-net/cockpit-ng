@@ -8,10 +8,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from models.nautobot import OffboardDeviceRequest
-from dependencies import get_nautobot_service, get_offboarding_service
+from dependencies import get_nautobot_service, get_offboarding_service, get_device_query_service
 from services.nautobot.client import NautobotService
+from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.offboarding.service import OffboardingService
-from services.settings.cache import cache_service
+from dependencies import get_cache_service, get_nautobot_metadata_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
@@ -26,6 +27,7 @@ DEVICE_CACHE_TTL = 30 * 60  # 30 minutes in seconds
 async def get_locations(
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    cache_service=Depends(get_cache_service),
 ):
     """Get list of locations from Nautobot with parent and children relationships.
 
@@ -33,7 +35,7 @@ async def get_locations(
     """
     try:
         # Try in-memory cache first
-        from services.settings.cache import cache_service
+
         from settings_manager import settings_manager
 
         cache_key = "nautobot:locations:list"
@@ -119,6 +121,7 @@ async def get_namespaces(
 async def get_nautobot_stats(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    cache_service=Depends(get_cache_service),
 ):
     """Get Nautobot statistics with 10-minute caching.
 
@@ -504,6 +507,7 @@ async def get_software_versions(
     platform: str = None,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    cache_service=Depends(get_cache_service),
 ):
     """Get list of software versions from Nautobot.
 
@@ -514,7 +518,7 @@ async def get_software_versions(
     """
     try:
         # Try in-memory cache first
-        from services.settings.cache import cache_service
+
         from settings_manager import settings_manager
 
         cache_key = f"nautobot:software_versions:list:{platform or 'all'}"
@@ -580,6 +584,7 @@ async def get_software_image_files(
     software_version: str = None,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    cache_service=Depends(get_cache_service),
 ):
     """Get list of software image files from Nautobot.
 
@@ -589,7 +594,7 @@ async def get_software_image_files(
         software_version: Optional software version string to filter image files
     """
     try:
-        from services.settings.cache import cache_service
+
         from settings_manager import settings_manager
 
         cache_key = f"nautobot:software_image_files:list:{software_version or 'all'}"
@@ -633,6 +638,7 @@ async def get_vlans(
     get_global_vlans: bool = False,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    cache_service=Depends(get_cache_service),
 ):
     """Get list of VLANs from Nautobot.
 
@@ -644,7 +650,7 @@ async def get_vlans(
     """
     try:
         # Try in-memory cache first
-        from services.settings.cache import cache_service
+
         from settings_manager import settings_manager
 
         cache_key = f"nautobot:vlans:list:{location or 'all'}:global_{get_global_vlans}"
@@ -744,6 +750,7 @@ async def get_vlans(
 async def get_interface_types(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    cache_service=Depends(get_cache_service),
 ):
     """Get list of interface type choices from Nautobot.
 
@@ -753,7 +760,7 @@ async def get_interface_types(
     """
     try:
         # Try in-memory cache first
-        from services.settings.cache import cache_service
+
         from settings_manager import settings_manager
 
         cache_key = "nautobot:interface_types:list"
@@ -891,11 +898,10 @@ async def get_nautobot_ip_address_tags(
 async def get_nautobot_device_custom_fields(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    nautobot_metadata_service=Depends(get_nautobot_metadata_service),
 ):
     """Get Nautobot custom fields specifically for dcim.device content type."""
     try:
-        from services.nautobot import nautobot_metadata_service
-
         return await nautobot_metadata_service.get_device_custom_fields()
     except Exception as e:
         raise HTTPException(
@@ -908,11 +914,10 @@ async def get_nautobot_device_custom_fields(
 async def get_nautobot_prefix_custom_fields(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    nautobot_metadata_service=Depends(get_nautobot_metadata_service),
 ):
     """Get Nautobot custom fields specifically for ipam.prefix content type."""
     try:
-        from services.nautobot import nautobot_metadata_service
-
         return await nautobot_metadata_service.get_prefix_custom_fields()
     except Exception as e:
         raise HTTPException(
@@ -925,11 +930,10 @@ async def get_nautobot_prefix_custom_fields(
 async def get_nautobot_vm_custom_fields(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    nautobot_metadata_service=Depends(get_nautobot_metadata_service),
 ):
     """Get Nautobot custom fields specifically for virtualization.virtualmachine content type."""
     try:
-        from services.nautobot import nautobot_metadata_service
-
         return await nautobot_metadata_service.get_vm_custom_fields()
     except Exception as e:
         raise HTTPException(
@@ -943,11 +947,10 @@ async def get_nautobot_custom_field_choices(
     custom_field_name: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    nautobot_metadata_service=Depends(get_nautobot_metadata_service),
 ):
     """Get Nautobot custom field choices for a specific custom field."""
     try:
-        from services.nautobot import nautobot_metadata_service
-
         return await nautobot_metadata_service.get_custom_field_choices(
             custom_field_name
         )
@@ -1047,14 +1050,13 @@ async def get_device_details(
     device_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    device_query_service: DeviceQueryService = Depends(get_device_query_service),
 ):
     """Get detailed device information using the comprehensive devices.md query.
 
     **🔷 This endpoint uses GraphQL** to fetch comprehensive device details.
     """
     try:
-        from services.nautobot.devices import device_query_service
-
         # Use shared device details service
         device = await device_query_service.get_device_details(
             device_id=device_id,
@@ -1087,6 +1089,7 @@ async def delete_device(
     device_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    cache_service=Depends(get_cache_service),
 ):
     """Delete a device from Nautobot."""
     try:

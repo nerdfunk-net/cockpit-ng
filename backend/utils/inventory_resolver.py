@@ -51,8 +51,9 @@ async def resolve_inventory_to_device_ids(
         - Backup operations
     """
     try:
+        import service_factory
         from inventory_manager import inventory_manager
-        from services.inventory.inventory import inventory_service
+        inventory_service = service_factory.build_inventory_service()
         from utils.inventory_converter import convert_saved_inventory_to_operations
 
         # Load inventory from database by name
@@ -118,13 +119,4 @@ def resolve_inventory_to_device_ids_sync(
         This creates a new event loop for the async operation. This is safe in
         Celery tasks which run in separate processes.
     """
-    # Create new event loop for async operations
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    try:
-        return loop.run_until_complete(
-            resolve_inventory_to_device_ids(inventory_name, username)
-        )
-    finally:
-        loop.close()
+    return asyncio.run(resolve_inventory_to_device_ids(inventory_name, username))

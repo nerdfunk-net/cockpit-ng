@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from git import InvalidGitRepositoryError, GitCommandError
 
 from core.auth import require_permission
-from services.settings.cache import cache_service
+from dependencies import get_cache_service
 from services.settings.git.paths import repo_path as git_repo_path
 from services.settings.git.shared_utils import get_git_repo_by_id, git_repo_manager
 
@@ -262,6 +262,7 @@ async def get_file_complete_history(
     file_path: str,
     from_commit: str = None,
     current_user: dict = Depends(require_permission("git.repositories", "read")),
+    cache_service=Depends(get_cache_service),
 ):
     """Get the complete history of a file from a specific commit backwards to its creation."""
     try:

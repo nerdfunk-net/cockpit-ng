@@ -42,8 +42,8 @@ def execute_sync_devices(
     try:
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
-        from services.checkmk.config import config_service
-
+        import service_factory
+        config_service = service_factory.build_checkmk_config_service()
         config_service.reload_config()
         logger.info("Reloaded configuration files for device sync task")
 
@@ -52,7 +52,7 @@ def execute_sync_devices(
             meta={"current": 0, "total": 100, "status": "Initializing CheckMK sync..."},
         )
 
-        from services.checkmk.sync.base import nb2cmk_service
+        nb2cmk_service = service_factory.build_nb2cmk_service()
 
         # If no target devices provided, fetch all from Nautobot
         device_ids = target_devices
@@ -69,20 +69,13 @@ def execute_sync_devices(
                 },
             )
 
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                devices_result = loop.run_until_complete(
-                    nb2cmk_service.get_devices_for_sync()
-                )
-                if devices_result and hasattr(devices_result, "devices"):
-                    device_ids = [device.get("id") for device in devices_result.devices]
-                    logger.info("Fetched %s devices from Nautobot", len(device_ids))
-                else:
-                    logger.warning("No devices found in Nautobot")
-                    device_ids = []
-            finally:
-                loop.close()
+            devices_result = asyncio.run(nb2cmk_service.get_devices_for_sync())
+            if devices_result and hasattr(devices_result, "devices"):
+                device_ids = [device.get("id") for device in devices_result.devices]
+                logger.info("Fetched %s devices from Nautobot", len(device_ids))
+            else:
+                logger.warning("No devices found in Nautobot")
+                device_ids = []
 
         if not device_ids:
             return {
@@ -117,12 +110,36 @@ def execute_sync_devices(
                 )
 
                 # Sync device - try update first, then add if not found
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
                 try:
-                    try:
-                        result = loop.run_until_complete(
-                            nb2cmk_service.update_device_in_checkmk(device_id)
+                    result = asyncio.run(
+                        nb2cmk_service.update_device_in_checkmk(device_id)
+                    )
+                    success_count += 1
+                    results.append(
+                        {
+                            "device_id": device_id,
+                            "hostname": result.hostname
+                            if hasattr(result, "hostname")
+                            else device_id,
+                            "operation": "update",
+                            "success": True,
+                            "message": result.message
+                            if hasattr(result, "message")
+                            else "Updated",
+                        }
+                    )
+                except Exception as update_error:
+                    # If device not found in CheckMK, try to add it
+                    if (
+                        "404" in str(update_error)
+                        or "not found" in str(update_error).lower()
+                    ):
+                        logger.info(
+                            "Device %s not in CheckMK, attempting to add...",
+                            device_id,
+                        )
+                        result = asyncio.run(
+                            nb2cmk_service.add_device_to_checkmk(device_id)
                         )
                         success_count += 1
                         results.append(
@@ -131,44 +148,15 @@ def execute_sync_devices(
                                 "hostname": result.hostname
                                 if hasattr(result, "hostname")
                                 else device_id,
-                                "operation": "update",
+                                "operation": "add",
                                 "success": True,
                                 "message": result.message
                                 if hasattr(result, "message")
-                                else "Updated",
+                                else "Added",
                             }
                         )
-                    except Exception as update_error:
-                        # If device not found in CheckMK, try to add it
-                        if (
-                            "404" in str(update_error)
-                            or "not found" in str(update_error).lower()
-                        ):
-                            logger.info(
-                                "Device %s not in CheckMK, attempting to add...",
-                                device_id,
-                            )
-                            result = loop.run_until_complete(
-                                nb2cmk_service.add_device_to_checkmk(device_id)
-                            )
-                            success_count += 1
-                            results.append(
-                                {
-                                    "device_id": device_id,
-                                    "hostname": result.hostname
-                                    if hasattr(result, "hostname")
-                                    else device_id,
-                                    "operation": "add",
-                                    "success": True,
-                                    "message": result.message
-                                    if hasattr(result, "message")
-                                    else "Added",
-                                }
-                            )
-                        else:
-                            raise
-                finally:
-                    loop.close()
+                    else:
+                        raise
 
             except Exception as e:
                 failed_count += 1

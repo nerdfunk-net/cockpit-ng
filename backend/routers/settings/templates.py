@@ -9,6 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 import os
 
 from core.auth import require_permission
+from dependencies import (
+    get_device_query_service,
+    get_checkmk_config_service,
+    get_render_service,
+    get_inventory_service,
+)
 from models.templates import (
     TemplateRequest,
     TemplateResponse,
@@ -769,6 +775,10 @@ async def import_templates(
 async def advanced_render_template(
     render_request: AdvancedTemplateRenderRequest,
     current_user: dict = Depends(require_permission("network.templates", "read")),
+    device_query_service=Depends(get_device_query_service),
+    checkmk_config_service=Depends(get_checkmk_config_service),
+    render_service=Depends(get_render_service),
+    inventory_service=Depends(get_inventory_service),
 ) -> AdvancedTemplateRenderResponse:
     """
     Advanced unified template rendering for both netmiko and agent templates.
@@ -783,8 +793,7 @@ async def advanced_render_template(
     as the backend will execute and parse commands dynamically.
     """
     try:
-        from services.nautobot.devices import device_query_service
-        from services.checkmk.config import config_service
+        config_service = checkmk_config_service
         from jinja2 import Template, TemplateError, UndefinedError
         import re
 
@@ -878,8 +887,6 @@ async def advanced_render_template(
 
                 try:
                     # Import the render service to use its pre-run execution method
-                    from services.network.automation.render import render_service
-
                     pre_run_result = await render_service._execute_pre_run_command(
                         device_id=render_request.device_id,
                         command=render_request.pre_run_command.strip(),
@@ -921,8 +928,6 @@ async def advanced_render_template(
                     from utils.inventory_converter import (
                         convert_saved_inventory_to_operations,
                     )
-                    from services.inventory.inventory import inventory_service
-
                     # Get inventory by ID
                     inventory = inventory_manager.get_inventory(
                         render_request.inventory_id
@@ -1131,8 +1136,6 @@ async def execute_template_and_sync_to_nautobot(
                 logger.info("Rendering template for device %s", device_id)
 
                 # Render template using the render_service (supports Nautobot context and pre-run commands)
-                from services.network.automation.render import render_service
-
                 result = await render_service.render_template(
                     template_content=template_content,
                     category=template["category"],

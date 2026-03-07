@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from dependencies import get_checkmk_service
 from models.settings import (
     NautobotSettingsRequest,
     GitSettingsRequest,
@@ -404,11 +405,10 @@ async def create_checkmk_settings(
 async def test_checkmk_connection(
     test_request: CheckMKTestRequest,
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
+    checkmk_service=Depends(get_checkmk_service),
 ):
     """Test CheckMK connection with provided settings."""
     try:
-        from services.checkmk import checkmk_service
-
         success, message = await checkmk_service.test_connection(
             test_request.url,
             test_request.site,

@@ -446,7 +446,7 @@ async def _startup_services():
             """Prefetch Nautobot locations list (GraphQL) and store in cache with endpoint-compatible shape."""
             try:
                 logger.debug("Startup cache: prefetch_locations_once() starting")
-                from services.nautobot import nautobot_service
+                nautobot_service = app.state.nautobot_service
 
                 # Use the same GraphQL query shape as /api/nautobot/locations endpoint
                 query = """

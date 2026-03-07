@@ -11,7 +11,7 @@ Tests inventory generation including:
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from services.inventory.inventory import InventoryService
 from models.inventory import LogicalOperation, LogicalCondition
 from tests.fixtures import create_devices_list
@@ -372,15 +372,19 @@ class TestCustomFieldHandling:
     async def test_get_custom_field_types(self, mock_nautobot_service):
         """Test fetching custom field types."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
-            custom_fields = [
-                {"key": "site_code", "type": {"value": "text"}},
-                {"key": "rack_unit", "type": {"value": "integer"}},
-            ]
-            mock_nautobot_service.get_custom_fields_for_devices = AsyncMock(
-                return_value=custom_fields
-            )
+        mock_metadata_service = MagicMock()
+        custom_fields = [
+            {"key": "site_code", "type": {"value": "text"}},
+            {"key": "rack_unit", "type": {"value": "integer"}},
+        ]
+        mock_metadata_service.get_device_custom_fields = AsyncMock(
+            return_value=custom_fields
+        )
 
+        # Reset cache so fresh fetch happens
+        self.service.query_service._custom_field_types_cache = None
+
+        with patch("services.nautobot.nautobot_metadata_service", mock_metadata_service):
             # Act
             field_types = await self.service._get_custom_field_types()
 
@@ -394,18 +398,22 @@ class TestCustomFieldHandling:
     async def test_caches_custom_field_types(self, mock_nautobot_service):
         """Test that custom field types are cached."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
-            custom_fields = [{"key": "test", "type": {"value": "text"}}]
-            mock_nautobot_service.get_custom_fields_for_devices = AsyncMock(
-                return_value=custom_fields
-            )
+        mock_metadata_service = MagicMock()
+        custom_fields = [{"key": "test", "type": {"value": "text"}}]
+        mock_metadata_service.get_device_custom_fields = AsyncMock(
+            return_value=custom_fields
+        )
 
+        # Reset cache so fresh fetch happens
+        self.service.query_service._custom_field_types_cache = None
+
+        with patch("services.nautobot.nautobot_metadata_service", mock_metadata_service):
             # Act: Call twice
             await self.service._get_custom_field_types()
             await self.service._get_custom_field_types()
 
             # Assert: API should only be called once due to caching
-            assert mock_nautobot_service.get_custom_fields_for_devices.call_count == 1
+            assert mock_metadata_service.get_device_custom_fields.call_count == 1
 
 
 # ==============================================================================

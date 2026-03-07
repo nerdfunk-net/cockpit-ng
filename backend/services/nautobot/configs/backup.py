@@ -18,8 +18,9 @@ from models.backup_models import (
     TimestampUpdateStatus,
     BackupResult,
 )
+import asyncio
+import service_factory
 from services.nautobot.configs.config import DeviceConfigService
-from services.nautobot.sync_client import NautobotSyncClient
 from utils.netmiko_platform_mapper import NetmikoPlatformMapper
 
 logger = logging.getLogger(__name__)
@@ -36,15 +37,15 @@ class DeviceBackupService:
     - Preparing final results
     """
 
-    def __init__(self, nautobot_service: NautobotSyncClient):
+    def __init__(self, nautobot_service=None):
         """
         Initialize service with dependencies.
 
         Args:
             nautobot_service: NautobotService instance for API operations
         """
-        self.nautobot_service = nautobot_service
-        self.config_service = DeviceConfigService(nautobot_service)
+        self.nautobot_service = nautobot_service or service_factory.build_nautobot_service()
+        self.config_service = DeviceConfigService(self.nautobot_service)
         self.platform_mapper = NetmikoPlatformMapper()
 
     def validate_backup_inputs(
@@ -278,11 +279,11 @@ class DeviceBackupService:
 
                 update_data = {"custom_fields": {custom_field_name: backup_date}}
 
-                self.nautobot_service.rest_request(
+                asyncio.run(self.nautobot_service.rest_request(
                     endpoint="dcim/devices/%s/" % device_id,
                     method="PATCH",
                     data=update_data,
-                )
+                ))
 
                 logger.info("✓ Updated custom field for %s", device_name)
                 status.updated_count += 1

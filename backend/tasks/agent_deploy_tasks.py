@@ -7,6 +7,8 @@ configurations by rendering templates and committing to Git repositories.
 Supports both single-template (legacy) and multi-template deployments.
 """
 
+import asyncio
+
 from celery import shared_task
 import logging
 from typing import Optional, Dict, Any, List
@@ -56,16 +58,16 @@ def deploy_agent_task(
     # Route to multi-template or single-template deployment
     if template_entries:
         logger.info("Multi-template deployment: %s entries", len(template_entries))
-        return deployment_service.deploy_multi(
+        return asyncio.run(deployment_service.deploy_multi(
             template_entries=template_entries,
             agent_id=agent_id,
             activate_after_deploy=activate_after_deploy,
             task_context=self,
             username="celery_task",
-        )
+        ))
     else:
         logger.info("Single-template deployment: template_id=%s", template_id)
-        return deployment_service.deploy(
+        return asyncio.run(deployment_service.deploy(
             template_id=template_id,
             agent_id=agent_id,
             custom_variables=custom_variables,
@@ -74,4 +76,4 @@ def deploy_agent_task(
             activate_after_deploy=activate_after_deploy,
             task_context=self,
             username="celery_task",
-        )
+        ))

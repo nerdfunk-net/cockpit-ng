@@ -10,7 +10,7 @@ from pydantic import BaseModel
 import yaml
 
 from core.auth import require_permission
-from services.checkmk.config import config_service
+from dependencies import get_checkmk_config_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/config", tags=["config"])
@@ -139,6 +139,7 @@ async def write_config_file(
     filename: str,
     file_content: ConfigFileContent,
     current_user: dict = Depends(require_permission("settings.common", "write")),
+    config_service=Depends(get_checkmk_config_service),
 ):
     """Write a configuration file."""
     try:

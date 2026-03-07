@@ -68,11 +68,11 @@ class DeviceSyncOperations:
             logger.info("Using site '%s' for device %s", device_site, hostname)
 
             # Create host in CheckMK using site-aware client
-            from services.checkmk.client_factory import get_checkmk_client
+            import service_factory
             from checkmk.client import CheckMKAPIError
 
             try:
-                client = get_checkmk_client()
+                client = service_factory.build_checkmk_client()
 
                 # Log detailed information for debugging
                 logger.info("Creating host with parameters:")
@@ -233,12 +233,12 @@ class DeviceSyncOperations:
             logger.info("Using site '%s' for device %s update", device_site, hostname)
 
             # Get current CheckMK host config to compare folder
-            from services.checkmk.client_factory import get_checkmk_client
+            import service_factory
             from checkmk.client import CheckMKAPIError
 
             try:
                 # Create CheckMK client with device-specific site
-                client = get_checkmk_client()
+                client = service_factory.build_checkmk_client()
 
                 # Get current host data
                 checkmk_data = client.get_host(hostname)

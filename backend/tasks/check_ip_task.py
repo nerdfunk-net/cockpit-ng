@@ -11,8 +11,8 @@ import io
 import logging
 import asyncio
 from typing import Dict, Any
+import service_factory
 from celery_app import celery_app
-from services.nautobot.devices.query import device_query_service
 from settings_manager import settings_manager
 import job_run_manager
 
@@ -131,6 +131,7 @@ def check_ip_task(
             },
         )
 
+        device_query_service = service_factory.build_device_query_service()
         # Load all Nautobot devices efficiently using device query service with pagination
         nautobot_devices = []
         limit = 100
@@ -141,14 +142,11 @@ def check_ip_task(
             try:
                 # Call the service directly (same as the /api/nautobot/devices endpoint)
                 # Handle async call in sync Celery task
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                response_data = loop.run_until_complete(
+                response_data = asyncio.run(
                     device_query_service.get_devices(
                         limit=limit, offset=offset, filter_type=None, filter_value=None
                     )
                 )
-                loop.close()
 
                 devices_batch = response_data.get("devices", [])
 

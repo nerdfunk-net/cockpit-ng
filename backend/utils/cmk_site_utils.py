@@ -7,7 +7,7 @@ import ipaddress
 import logging
 from typing import Dict, Any, Optional
 
-from services.checkmk.config import config_service
+import service_factory
 from utils.cmk_folder_utils import parse_folder_value
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ def get_monitored_site(
         CheckMK site name
     """
     try:
+        config_service = service_factory.build_checkmk_config_service()
         config = config_service.load_checkmk_config()
         site_config = config.get("monitored_site", {})
 
@@ -110,6 +111,7 @@ def get_device_site_from_normalized_data(normalized_data: Dict[str, Any]) -> str
         CheckMK site name
     """
     try:
+        config_service = service_factory.build_checkmk_config_service()
         # Check if site is in the attributes
         attributes = normalized_data.get("attributes", {})
         if "site" in attributes and attributes["site"]:
@@ -140,6 +142,7 @@ def get_device_folder(
     """
 
     try:
+        config_service = service_factory.build_checkmk_config_service()
         config = config_service.load_checkmk_config()
         folders_config = config.get("folders", {})
 
