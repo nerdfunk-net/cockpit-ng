@@ -1,201 +1,438 @@
-# Refactoring Plan: Backend Services
+# Refactoring plan: backend services
 
-This document details the comprehensive refactoring plan for the Cockpit-NG `backend/services` module to resolve architectural technical debt, Single Responsibility Principle violations, and Dependency Injection issues identified during code analysis.
+This plan updates the original service refactor based on the current codebase state as of 2026-03-07. It focuses on reducing risk while fixing the real architectural problems in `backend/services`, `backend/routers`, and the Celery task entry points.
 
-## 1. Goal & Objectives
-* Break down God Objects (e.g., `inventory.py`) into cohesive domains.
-* Replace file-level singletons with robust dependency injection via FastAPI `Depends()`.
-* Standardize on modern async clients (`httpx`) to remove unnecessary `ThreadPoolExecutor` usage.
-* Separate repository concerns (data fetching) from business logic evaluation.
-* Eliminate `asyncio.new_event_loop()` anti-pattern that causes macOS Celery SIGSEGV crashes.
+## 1. goals
 
----
+- Break large service modules into clear, testable responsibilities.
+- Replace import-time service singletons with explicitly factory-managed lifetimes.
+- Modernize Nautobot I O to use `httpx` without breaking synchronous task paths.
+- Remove local event-loop management from deployment and other async boundaries.
+- Keep the existing repository pattern intact for PostgreSQL-backed data.
+- Roll out changes in slices that keep routers, tasks, and tests working during the migration.
 
-## 2. Current State Assessment (Updated 2026-03-07)
+## 2. key findings from the current codebase
 
-### 2.1 Singleton Inventory
+### 2.1 Main findings
 
-The codebase has **25+ global singleton instances** defined at module level. The following are the primary targets for DI migration. Full list:
+1. `NautobotService` in `backend/services/nautobot/client.py` still uses `requests` and `ThreadPoolExecutor`.
+2. Many modules call private sync Nautobot methods directly, including task code and helper services. You cannot delete `_sync_graphql_query` and `_sync_rest_request` in the first pass.
+3. `AgentDeploymentService` in `backend/services/agents/deployment_service.py` still runs async rendering by creating event loops manually.
+4. The same `asyncio.new_event_loop()` pattern appears in many task and background-job modules, not only in agent deployment.
+5. `InventoryService` in `backend/services/inventory/inventory.py` mixes at least five concerns:
+    - Nautobot device querying.
+    - Logical evaluation.
+    - Nautobot metadata lookup.
+    - Git-backed inventory file persistence.
+    - Analysis of saved inventories.
+6. Inventory storage already has a PostgreSQL repository and manager layer in `backend/repositories/inventory/inventory_repository.py` and `backend/inventory_manager.py`.
+7. Several services depend on package-level exports from `services.*.__init__` modules, so router refactors alone do not remove singleton coupling.
+8. `OIDCService` already uses `httpx`, but it caches provider configuration, JWKS data, and SSL contexts. It must remain app-scoped, not request-scoped.
+9. The FastAPI app already has a lifespan hook in `backend/main.py`. That is the correct place to manage long-lived async clients.
 
-| File | Singleton variable |
-|---|---|
-| `services/nautobot/client.py` | `nautobot_service` |
-| `services/auth/oidc.py` | `oidc_service` |
-| `services/inventory/inventory.py` | `inventory_service` |
-| `services/checkmk/host_service.py` | `checkmk_host_service` |
-| `services/checkmk/client.py` | `checkmk_service` |
-| `services/checkmk/folder.py` | `checkmk_folder_service` |
-| `services/checkmk/config.py` | `config_service` |
-| `services/nautobot/devices/query.py` | `device_query_service` |
-| `services/nautobot/devices/creation.py` | `device_creation_service` |
-| `services/agents/template_render_service.py` | `agent_template_render_service` |
-| `services/settings/git/service.py` | `git_service` |
-| `services/settings/git/auth.py` | `git_auth_service` |
-| `services/settings/git/cache.py` | `git_cache_service` |
-| `services/settings/git/connection.py` | `git_connection_service` |
-| `services/settings/git/diff.py` | `git_diff_service` |
-| `services/settings/git/operations.py` | `git_operations_service` |
-| `services/settings/git/shared_utils.py` | `git_repo_manager` |
-| `services/network/scanning/network_scan.py` | `network_scan_service` |
-| `services/network/scanning/scan.py` | `scan_service` |
-| `services/network/automation/netmiko.py` | `netmiko_service` |
-| `services/network/automation/render.py` | `render_service` |
-| `services/checkmk/normalization.py` | `device_normalization_service` |
-| `services/nautobot/offboarding/service.py` | `offboarding_service` |
+### 2.2 Constraints
 
-### 2.2 Key Technical Debt Items
+- Do not break Celery workers while refactoring web routes.
+- Do not create a second repository abstraction inside `backend/services` for PostgreSQL-backed data.
+- Keep compatibility endpoints working until all internal callers migrate.
+- Preserve testability by moving construction into factories instead of importing collaborators inside methods.
 
-1. **`NautobotService` (client.py):** Uses `requests` (sync) wrapped in `ThreadPoolExecutor` — still present, unaddressed.
-2. **`AgentDeploymentService` (deployment_service.py):** `deploy()` and `deploy_multi()` are sync methods that call async render code via `asyncio.new_event_loop()` — this is the exact cause of macOS Celery SIGSEGV crashes.
-3. **`InventoryService` (inventory.py):** 2083-line God Object — still present, unaddressed.
-4. **`backend/dependencies.py`:** Does not exist yet. Router path is `backend/routers/`, not `backend/api/routers/`.
-5. **`OIDCService` (oidc.py):** Already uses `httpx.AsyncClient` — does NOT need the Phase 1 migration. Still has global singleton `oidc_service`.
+### 2.3 Non-goals for this plan
 
----
+- Do not rewrite all services in one pass.
+- Do not migrate every singleton in one release.
+- Do not merge dynamic Nautobot inventory resolution with saved inventory CRUD.
 
-## 3. Refactoring Phases
+## 3. service lifetime model
 
-### Phase 1: Nautobot Client Modernization (Fast/Low Risk)
-**File:** `backend/services/nautobot/client.py`
-**Overview:** `NautobotService` relies on synchronous `requests` and executes network I/O in a `ThreadPoolExecutor`. This adds overhead and complexity (manual shutdown logic). Replace with `httpx.AsyncClient`.
+This plan uses three lifetimes.
 
-> **Note:** `OIDCService` already uses `httpx` natively and does NOT need this migration.
+### 3.1 App-scoped services
 
-#### Implementation Details:
-1. **Client Replacement:** Replace `import requests` with `import httpx`. Remove `from concurrent.futures import ThreadPoolExecutor`.
-2. **Initialization:** Remove `self.executor = ThreadPoolExecutor(max_workers=4)` and `self._shutdown`. Instantiate `self._client = httpx.AsyncClient(verify=verify_ssl, timeout=timeout)` lazily or via `__aenter__`.
-3. **Migrate GraphQL Logic:** Delete `_sync_graphql_query`. Update `graphql_query` from thread-executor delegation to direct `await self._client.post(...)`. Handle errors via `httpx.HTTPStatusError`.
-4. **Migrate REST Logic:** Delete `_sync_rest_request`. Update `rest_request` to direct `await self._client.request(method, ...)`. Migrate `test_connection` / `_sync_test_connection` similarly.
-5. **Clean up Lifecycle Methods:** Remove `__del__`, `shutdown()`. Implement `__aenter__` / `__aexit__` to open/close the `httpx.AsyncClient` session.
-6. **Update Callers:** Search all usages of `nautobot_service.graphql_query` / `nautobot_service.rest_request`. They are already `await`ed — verify nothing calls them synchronously. Key callers: `inventory.py`, `devices/query.py`, `devices/creation.py`.
+Use one shared instance for the process lifetime.
 
----
+- `NautobotService` after it owns an `httpx.AsyncClient`.
+- `OIDCService` because it holds config, JWKS, and SSL caches.
+- Any service that owns expensive network clients or long-lived caches.
 
-### Phase 2: AgentDeploymentService Async & DI Fix (Medium Risk)
-**File:** `backend/services/agents/deployment_service.py`
-**Overview:** The original plan called for creating a `GitService` — this is already done (`backend/services/settings/git/service.py`). The remaining problems are:
-- `deploy()` and `deploy_multi()` are **synchronous** methods that call async render code using `asyncio.new_event_loop()` (lines 228–241 and 546–547). This is the same anti-pattern that causes macOS Celery SIGSEGV crashes.
-- The `__init__` method imports and stores global singletons (`template_manager`, `agent_template_render_service`, `git_service`) instead of receiving them as injected dependencies.
-- `_activate_agent` creates a raw `SessionLocal()` DB session internally, bypassing DI.
+### 3.2 Request-scoped services
 
-#### Implementation Details:
-1. **Convert to async:** Change `deploy()` and `deploy_multi()` from `def` to `async def`. Replace the `asyncio.new_event_loop()` / `loop.run_until_complete()` blocks with direct `await self.agent_template_render_service.render_agent_template(...)` calls. Remove the `loop.close()` cleanup.
-2. **Inject dependencies via constructor:** Update `__init__` to accept `template_manager`, `agent_template_render_service`, and `git_service` as explicit parameters instead of importing global singletons inside `__init__`. This enables mocking in tests.
-3. **Fix `_activate_agent`:** Change the method signature to accept a `db` session parameter, removing the internal `SessionLocal()` creation. The caller (router or task) becomes responsible for the DB session lifecycle.
-4. **Update Celery task callers:** The Celery background tasks calling `deploy()` / `deploy_multi()` must switch from `service.deploy(...)` to `asyncio.run(service.deploy(...))` or restructure the task as `async def` using an async-compatible Celery worker setup.
+Construct per request through FastAPI dependencies.
 
----
+- Thin orchestration services.
+- Services that only combine app-scoped clients and lightweight collaborators.
+- Services that depend on request-only context.
 
-### Phase 3: Inventory Service God Object Breakdown (High Risk)
-**File:** `backend/services/inventory/inventory.py` (2083 lines)
-**Overview:** This file handles GraphQL querying, Ansible logic tree building, AND/OR evaluation, string interpolation, REST API fetching for field values, and CRUD persistence. Splitting it allows independent testing of each concern.
+### 3.3 Factory-built task services
 
-#### Current method inventory:
-- **Query methods (Repository):** `_query_all_devices`, `_query_devices_by_name`, `_query_devices_by_location`, `_query_devices_by_role`, `_query_devices_by_status`, `_query_devices_by_tag`, `_query_devices_by_devicetype`, `_query_devices_by_manufacturer`, `_query_devices_by_platform`, `_query_devices_by_has_primary`, `_query_devices_by_custom_field`, `_parse_device_data`
-- **Evaluator (Logic):** `_execute_operation`, `_execute_condition`, `_intersect_sets`, `_union_sets`
-- **Metadata (REST lookups):** `get_custom_fields`, `get_field_values`, `_get_custom_field_types`
-- **Orchestration/CRUD:** `preview_inventory`, `generate_inventory`, `save_inventory`, `list_inventories`, `load_inventory`, `analyze_inventory`
+Construct through a shared factory for Celery tasks and non-FastAPI entry points.
 
-#### Implementation Details:
-1. **Extract Repository (`backend/services/inventory/repository.py`):**
-   * Create class `NautobotInventoryRepository(nautobot_client: NautobotService)`.
-   * Move all `_query_*` methods and `_parse_device_data` here.
-   * The repository interface returns raw `List[DeviceInfo]`.
-2. **Extract Evaluator (`backend/services/inventory/evaluator.py`):**
-   * Create class `InventoryEvaluator()`.
-   * Move `_intersect_sets`, `_union_sets`, `_execute_condition`, `_execute_operation` here.
-   * The evaluator receives the repository as a parameter to `execute(operations, repository)`.
-3. **Extract Metadata Service (`backend/services/inventory/metadata_service.py`):**
-   * Create class `InventoryMetadataService(nautobot_client: NautobotService)`.
-   * Move `get_custom_fields`, `get_field_values`, `_get_custom_field_types` here.
-   * This concern is currently missing from the original plan but represents significant standalone functionality (~500 lines).
-4. **Refactor `InventoryService` Orchestrator:**
-   * Keep `InventoryService` as a thin facade requiring `repository: NautobotInventoryRepository`, `evaluator: InventoryEvaluator`, and `metadata_service: InventoryMetadataService` in its constructor.
-   * Retain only `preview_inventory`, `generate_inventory`, `save_inventory`, `list_inventories`, `load_inventory`, `analyze_inventory`.
+- Task code cannot use `Depends()`.
+- Task services must be built through the same composition root as router services.
+
+## 4. revised refactoring phases
+
+### Phase 0: discovery and safety rails
+
+**Goal:** Build a complete migration map before changing behavior.
+
+#### Deliverables
+
+1. Inventory all import-time singleton exports under `backend/services`.
+2. Inventory all direct calls to `_sync_graphql_query` and `_sync_rest_request`.
+3. Inventory all `asyncio.new_event_loop()` and `run_until_complete()` call sites.
+4. Group findings by entry point:
+    - FastAPI routers.
+    - Celery tasks.
+    - Internal helper services.
+    - Compatibility endpoints in `backend/main.py`.
+5. Capture a migration matrix that marks each caller as migrated, transitional, or blocked.
+
+#### Exit criteria
+
+- Every sync Nautobot caller is known.
+- Every singleton import path is known.
+- Every manual event-loop call site is known.
 
 ---
 
-### Phase 4: Dependency Injection & Singleton Removal (Global Impact)
-**Goal:** Replace the 25+ global module-level singletons with proper FastAPI dependency injection.
+### Phase 1: Nautobot client modernization and lifecycle
 
-> **Note:** The target file is `backend/dependencies.py` (not `backend/api/dependencies.py`), since the router directory is `backend/routers/`, not `backend/api/routers/`.
+**Primary files:** `backend/services/nautobot/client.py`, new `backend/services/nautobot/sync_client.py`
 
-#### Implementation Details:
-1. **Prioritize by impact:** Focus Phase 4 on the services that are directly used in routers. The following singletons are imported in `backend/routers/`:
-   - `inventory_service` (from `routers/inventory/inventory.py`)
-   - `device_query_service` (from `routers/inventory/inventory.py`)
-   - `checkmk_host_service`, `oidc_service` (from auth routers)
+**Goal:** Split the Nautobot client into two classes with clear ownership, move async I/O to `httpx`, and manage the async client lifetime through the FastAPI lifespan.
 
-2. **Remove Singletons:** Delete global instantiations in target service files. Start with `inventory_service`, `nautobot_service`, `oidc_service`, `checkmk_host_service`, `device_query_service`.
+#### Design decision: split into two classes
 
-3. **Create DI Providers (`backend/dependencies.py`):**
-   ```python
-   from fastapi import Depends
-   from services.nautobot.client import NautobotService
-   from services.inventory.repository import NautobotInventoryRepository
-   from services.inventory.evaluator import InventoryEvaluator
-   from services.inventory.metadata_service import InventoryMetadataService
-   from services.inventory.inventory import InventoryService
+The current `NautobotService` mixes async methods (wrapping sync calls via `ThreadPoolExecutor`) with private sync methods that task code calls directly. This is replaced by two dedicated classes:
 
-   def get_nautobot_service() -> NautobotService:
-       return NautobotService()
+- **`NautobotService`** — pure async, owns an `httpx.AsyncClient`, app-scoped, lifespan-managed. Used by FastAPI routers and async services.
+- **`NautobotSyncClient`** — pure sync, owns an `httpx.Client` (or `requests`), no lifecycle management. Used by Celery tasks and sync service helpers.
 
-   def get_inventory_repository(
-       nautobot: NautobotService = Depends(get_nautobot_service)
-   ) -> NautobotInventoryRepository:
-       return NautobotInventoryRepository(nautobot)
+Each class has one HTTP client, one interface style, and one set of callers. Neither leaks into the other's domain. When Phase 6 converts tasks to async, `NautobotSyncClient` is deleted as a unit.
 
-   def get_inventory_evaluator() -> InventoryEvaluator:
-       return InventoryEvaluator()
+#### Implementation details
 
-   def get_inventory_metadata_service(
-       nautobot: NautobotService = Depends(get_nautobot_service)
-   ) -> InventoryMetadataService:
-       return InventoryMetadataService(nautobot)
+1. Rewrite `NautobotService` in `client.py` as pure async using `httpx.AsyncClient`.
+    - Replace `requests.post` / `requests.request` with `await self.client.post` / `await self.client.request`.
+    - Remove `ThreadPoolExecutor` and all `run_in_executor` calls.
+    - Remove the private `_sync_graphql_query`, `_sync_rest_request`, and `_sync_test_connection` methods.
+    - Public API: `async def graphql_query(...)`, `async def rest_request(...)`, `async def test_connection(...)`.
+2. Create `backend/services/nautobot/sync_client.py` with `NautobotSyncClient`.
+    - Contains the sync logic extracted from the removed private methods.
+    - Uses `httpx.Client` (preferred) or `requests` — no asyncio dependency.
+    - Stateless: constructed per task or per call site, no shared lifecycle.
+    - Public API mirrors `NautobotService` but without `async`: `def graphql_query(...)`, `def rest_request(...)`.
+3. Decide config lifecycle: `_get_config()` currently reads from the database on every call. For `NautobotService` as an app-scoped singleton, config should be loaded at startup and refreshed only on an explicit settings-change event. `NautobotSyncClient` continues to read config per-call since it has no shared state.
+4. Register `NautobotService` startup and shutdown in the existing lifespan hook in `backend/main.py`. Store the instance on `app.state`.
+5. Migrate all async callers from `NautobotService()` (per-request construction) to the app-scoped instance via dependency injection.
+6. Migrate all sync task callers from `nautobot_service._sync_graphql_query` / `_sync_rest_request` to `NautobotSyncClient().graphql_query` / `.rest_request`.
+    - Known callers from Phase 0 inventory: `tasks/export_devices_task.py`, `tasks/scan_prefixes_task.py`, `tasks/execution/backup_executor.py`, `tasks/execution/command_executor.py`, `services/nautobot/configs/config.py`, `services/nautobot/configs/backup.py`, `services/nautobot/ip_addresses/ip_address_query_service.py`.
+7. Fix the router bug in `routers/jobs/device_tasks.py` as part of this phase: it constructs `NautobotService()` inline and calls `_sync_graphql_query()` from inside an `async def` handler, blocking the event loop. Migrate it to the async path.
+8. Remove the module-level `nautobot_service` singleton from `client.py` after all callers migrate.
 
-   def get_inventory_service(
-       repo: NautobotInventoryRepository = Depends(get_inventory_repository),
-       evaluator: InventoryEvaluator = Depends(get_inventory_evaluator),
-       metadata: InventoryMetadataService = Depends(get_inventory_metadata_service),
-   ) -> InventoryService:
-       return InventoryService(repository=repo, evaluator=evaluator, metadata_service=metadata)
-   ```
+#### Important notes
 
-4. **Refactor API Routers (`backend/routers/`):**
-   Replace imports of global singletons with DI parameters:
-   ```python
-   # Before:
-   from services.inventory.inventory import inventory_service
+- `NautobotSyncClient` is not a permanent part of the architecture. It is an explicit migration aid. Mark it as such in its module docstring with a reference to Phase 6.
+- `tasks/update_ip_prefixes_from_csv_task.py` mixes both patterns: it creates a local `NautobotService()` and also calls `asyncio.run()` on async methods. Migrate it to `NautobotSyncClient` to remove both the local construction and the `asyncio.run()` calls.
 
-   # After:
-   from dependencies import get_inventory_service
-   from services.inventory.inventory import InventoryService
+#### Exit criteria
 
-   @router.post("/preview")
-   async def preview_inventory(
-       operations: List[LogicalOperation],
-       service: InventoryService = Depends(get_inventory_service),
-   ):
-       return await service.preview_inventory(operations)
-   ```
-
-5. **Background Tasks / Celery (`backend/background_jobs/`):**
-   For Celery tasks where `Depends()` is unavailable, implement a factory function pattern:
-   ```python
-   def build_inventory_service() -> InventoryService:
-       nautobot = NautobotService()
-       repo = NautobotInventoryRepository(nautobot)
-       evaluator = InventoryEvaluator()
-       metadata = InventoryMetadataService(nautobot)
-       return InventoryService(repo, evaluator, metadata)
-   ```
-
-6. **Remaining singletons (lower priority):** The git service cluster (`git_service`, `git_auth_service`, `git_cache_service`, etc.), network scanning services, and normalization services are used mostly internally by other services — tackle these in a follow-up pass once the primary router-facing services are migrated.
+- `NautobotService` is pure async using `httpx.AsyncClient`.
+- `NautobotSyncClient` exists and is used by all sync task callers.
+- The `ThreadPoolExecutor` is gone from `NautobotService`.
+- The app-scoped `NautobotService` instance is registered in the FastAPI lifespan.
+- No caller constructs `NautobotService()` per-request or per-task.
+- No caller calls private `_sync_*` methods on any object.
+- The router bug in `routers/jobs/device_tasks.py` is fixed.
 
 ---
 
-## 4. Pre & Post-Rollout Checks
-* Ensure the entire test suite `pytest backend/tests/` continues passing locally before executing Phase 1.
-* After Phase 2: Verify agent deployment works end-to-end (template render + git push + activation). Specifically test on macOS to confirm the `asyncio.new_event_loop()` crash is gone.
-* After Phase 3: Conduct manual inventory preview via UI and verify Ansible inventory generation and file save/load flows.
-* After Phase 4: Confirm all affected router endpoints return correct responses. Run integration test against Nautobot preview + CheckMK sync.
+### Phase 2: composition root and dependency injection
+
+**New files:** `backend/dependencies.py`, `backend/service_factory.py`
+
+**Goal:** Replace import-time singleton construction with explicit service factories and correct lifetimes.
+
+#### Design decision: plain factory functions, no DI library
+
+This codebase uses FastAPI's built-in `Depends()` system, which is already a dependency injection mechanism. Adding a third-party DI library (such as `dependency-injector`) would introduce a second overlapping DI pattern, a learning curve, and declarative wiring that obscures what is actually constructed. Plain factory functions are sufficient for the service graph here and are easier to read and test.
+
+Two files, strict separation:
+
+- **`backend/dependencies.py`** — FastAPI `Depends()` providers only. Imports `fastapi.Request`. Used exclusively by routers. Retrieves app-scoped services from `app.state` and constructs request-scoped services around them.
+- **`backend/service_factory.py`** — plain Python factory functions, no FastAPI imports. Used by Celery tasks and any non-router code that needs to construct a service. Tasks must not import from `dependencies.py` because that file depends on FastAPI internals.
+
+`dependencies.py` calls `service_factory.py` internally, not the other way around. This keeps the dependency arrow pointing in one direction.
+
+#### How Celery tasks access services
+
+Celery workers run in separate OS processes with no FastAPI app object. Tasks do not share the app-scoped `NautobotService` instance from `app.state`. Instead:
+
+- During Phases 1–5: sync tasks use `NautobotSyncClient` directly, which has no lifecycle dependency.
+- During Phase 6: when a task converts to async, it calls `service_factory.build_nautobot_service()` and uses it within a single `asyncio.run()` call. Each task invocation opens and closes its own short-lived client. There is no pooled connection shared across task invocations in the worker.
+
+#### Implementation details
+
+1. Create `backend/service_factory.py` with factory functions for each service lifetime:
+    - Functions that construct app-scoped services from config (used at lifespan startup and by async tasks in Phase 6).
+    - Functions that construct request-scoped or task-scoped orchestrators from their dependencies.
+2. Create `backend/dependencies.py` with FastAPI `Depends()` providers:
+    - App-scoped services are read from `request.app.state` (set during lifespan).
+    - Request-scoped services are constructed by calling the corresponding factory function.
+3. Wire app-scoped services in the FastAPI lifespan hook in `backend/main.py` using `service_factory` functions.
+4. Update routers to declare service dependencies via `Depends()` instead of importing singletons.
+5. Keep service construction out of routers and out of task bodies.
+6. Migrate package-level `__init__` exports last, after callers use factories instead of imports.
+
+#### Lifetime rules
+
+- `NautobotService`: app-scoped in FastAPI; short-lived per `asyncio.run()` call in async tasks (Phase 6).
+- `OIDCService`: app-scoped. Holds config, JWKS, and SSL caches. Must not be request-scoped.
+- `CheckMKHostService`: request-scoped or factory-built unless it later gains long-lived client state.
+- `DeviceQueryService`, `InventoryService`, `AgentDeploymentService`, `AgentTemplateRenderService`: factory-built or request-scoped depending on call path.
+
+#### Exit criteria
+
+- `backend/dependencies.py` and `backend/service_factory.py` exist with clear ownership.
+- Routers request services through `Depends()` providers in `dependencies.py`.
+- Tasks construct services through factory functions in `service_factory.py`.
+- No router and no task body imports a service singleton directly.
+- No new code is written that constructs services outside of these two files.
+
+---
+
+### Phase 3: agent deployment and template rendering
+
+**Primary files:**
+
+- `backend/services/agents/deployment_service.py`
+- `backend/services/agents/template_render_service.py`
+- `backend/routers/agents/deploy.py`
+- `backend/tasks/agent_deploy_tasks.py`
+- `backend/tasks/execution/deploy_agent_executor.py`
+
+**Goal:** Remove manual event-loop management and unify the deployment workflow across router and task entry points.
+
+#### Implementation details
+
+1. Convert `AgentDeploymentService.deploy()` and `deploy_multi()` to `async def`.
+2. Replace `asyncio.new_event_loop()` and `run_until_complete()` with direct `await` calls.
+3. Inject `template_manager`, `AgentTemplateRenderService`, git services, and repositories through the constructor.
+4. Remove direct `SessionLocal()` creation from `_activate_agent`.
+    - Accept a database session or cockpit-agent collaborator from the caller or factory.
+5. Refactor `backend/routers/agents/deploy.py` so the direct deploy flow calls the same service instead of reimplementing the workflow.
+6. Update task entry points to call the async deployment service through a controlled async boundary.
+7. Refactor `AgentTemplateRenderService` in the same phase.
+    - Inject inventory resolution, device querying, Nautobot metadata access, and config services.
+    - Remove inline imports of singleton collaborators.
+
+#### Important notes
+
+- This phase fixes one important `asyncio.new_event_loop()` hotspot, but it does not eliminate the broader task-level pattern yet.
+- Treat this as the first async-boundary cleanup slice, not the only one.
+
+#### Exit criteria
+
+- Agent deployment no longer creates event loops manually.
+- Router and task deployment paths share the same orchestration service.
+- Template rendering no longer imports singleton collaborators inside methods.
+
+---
+
+### Phase 4: inventory service decomposition
+
+**Primary file:** `backend/services/inventory/inventory.py`
+
+**Goal:** Split the current inventory God Object into clear responsibilities without colliding with the existing repository pattern.
+
+#### Proposed target structure
+
+- `backend/services/inventory/query_service.py`
+  - Nautobot device queries.
+  - Parsed `DeviceInfo` results.
+- `backend/services/inventory/evaluator.py`
+  - Logical operation execution.
+  - Set intersection and union behavior.
+- `backend/services/inventory/metadata_service.py`
+  - Custom field definitions.
+  - Field value lookups.
+  - Custom field type lookups.
+- `backend/services/inventory/git_storage_service.py`
+  - `save_inventory`.
+  - `list_inventories` for Git-backed files.
+  - `load_inventory` for Git-backed files.
+- `backend/services/inventory/analysis_service.py`
+  - `analyze_inventory` for saved PostgreSQL inventories.
+- `backend/services/inventory/inventory.py`
+  - Thin orchestration facade only.
+
+#### Naming rule
+
+Do not name the Nautobot query component `repository.py`.
+
+This codebase already uses `backend/repositories` for PostgreSQL repositories. The extracted inventory query component is a service or gateway, not a repository in the local database sense.
+
+#### Important boundary
+
+- Keep saved inventory CRUD in `backend/inventory_manager.py` and `backend/repositories/inventory/inventory_repository.py` separate from dynamic Nautobot inventory resolution.
+- If saved inventory CRUD later moves into a service layer, it should still use the existing repository classes instead of creating a new service-local repository abstraction.
+
+#### Exit criteria
+
+- Each extracted inventory component has one clear reason to change.
+- `InventoryService` becomes a thin facade.
+- Saved inventory CRUD and dynamic device resolution stay distinct.
+
+---
+
+### Phase 5: singleton removal by migration slice
+
+**Goal:** Remove import-time singletons in an order that does not strand internal callers.
+
+#### Priority order
+
+1. Router-facing services that already have clear factory paths.
+    - `inventory_service`
+    - `device_query_service`
+    - `checkmk_host_service`
+2. Services coupled to the deployment flow.
+    - `agent_template_render_service`
+    - git service helpers used directly by deployment code
+3. App-scoped network clients.
+    - `nautobot_service` module-level singleton (already replaced by app-scoped instance in Phase 1)
+    - `oidc_service`
+4. Lower-priority internal helpers.
+    - CheckMK normalization and folder services
+    - network scanning services
+    - remaining git helper services
+
+#### Implementation details
+
+1. Remove direct singleton imports from routers first.
+2. Remove direct singleton imports from task entry points second.
+3. Remove package-level singleton exports from `services.*.__init__` modules only after callers migrate.
+4. Keep temporary compatibility adapters if needed, but mark them deprecated in the plan and in code comments.
+
+#### Exit criteria
+
+- No router imports a mutable service singleton.
+- No task entry point imports a mutable service singleton.
+- Package `__init__` modules stop constructing service instances.
+
+---
+
+### Phase 6: broader async-boundary cleanup for Celery and background jobs
+
+**Goal:** Remove manual event-loop creation from the rest of the worker code in controlled slices, and retire `NautobotSyncClient` once all task callers migrate to async.
+
+#### Scope
+
+This phase covers the remaining task and background-job modules that still call `asyncio.new_event_loop()` or `run_until_complete()`, and all remaining callers of `NautobotSyncClient`.
+
+#### Implementation details
+
+1. Start with the highest-volume or highest-risk tasks.
+2. For each task, the target pattern is: convert the task's underlying service methods to `async def` and call them through a single standardized async boundary at the task entry point using `asyncio.run()`. Do not use `asyncio.new_event_loop()` or `run_until_complete()` — these are the patterns being replaced.
+3. As each task migrates from `NautobotSyncClient` to `NautobotService` (via the app-scoped instance or a factory), update the migration matrix from Phase 0.
+4. Delete `backend/services/nautobot/sync_client.py` once the migration matrix shows zero remaining callers.
+5. Keep the macOS worker safety constraints from `backend/start_celery.py` in mind during every slice. On macOS, the solo pool means `asyncio.run()` at task entry is safe. On Linux prefork, each forked worker process starts without an event loop, so `asyncio.run()` at task entry is also safe — do not create loops manually.
+
+#### Exit criteria
+
+- Manual event-loop management is isolated to explicitly approved transitional code or removed entirely.
+- Worker behavior is stable on macOS and Linux.
+
+---
+
+### Phase 7: tests, rollout, and cleanup
+
+**Goal:** Finish the migration cleanly and prevent regressions.
+
+#### Implementation details
+
+1. Update unit tests to construct services through factories instead of patching singleton symbols.
+2. Update tests that patch private Nautobot sync methods.
+3. Add focused tests for:
+    - FastAPI dependency providers.
+    - service factories for Celery tasks.
+    - Nautobot client lifecycle.
+    - inventory decomposition boundaries.
+    - agent deployment without manual event loops.
+4. Remove transitional compatibility methods only after tests and call-site inventory confirm they are unused.
+
+#### Exit criteria
+
+- No test relies on deprecated singleton construction.
+- No test relies on private Nautobot sync methods that no longer exist.
+- Cleanup removes deprecated compatibility code in a final pass.
+
+## 5. implementation order
+
+Use this execution order.
+
+1. Complete Phase 0 and produce the migration matrix.
+2. Implement Phase 1: split Nautobot client into `NautobotService` (async) and `NautobotSyncClient` (sync), register lifespan.
+3. Implement Phase 2 composition root and dependency providers.
+4. Refactor agent deployment and template rendering in Phase 3.
+5. Decompose inventory in Phase 4.
+6. Remove singletons slice by slice in Phase 5.
+7. Clean up the broader task async-boundary issues in Phase 6.
+8. Complete final cleanup and test migration in Phase 7.
+
+## 6. rollout checks
+
+### Before coding
+
+- Record all singleton imports, sync Nautobot callers, and manual event-loop callers.
+- Confirm the baseline test command and a minimal smoke-test command for routers and Celery paths.
+
+### After Phase 1
+
+- Verify async Nautobot calls still work in router flows.
+- Verify transitional sync Nautobot callers still work in task flows.
+- Verify client startup and shutdown run through FastAPI lifespan.
+
+### After Phase 2
+
+- Verify router providers resolve the expected service graph.
+- Verify Celery tasks can build the same graph through the factory layer.
+- Verify `OIDCService` caches still behave as app-scoped state.
+
+### After Phase 3
+
+- Verify single-template and multi-template deployment work end to end.
+- Verify template render, git write, git push, and activation still work.
+- Verify macOS deployment no longer depends on local event-loop creation in deployment code.
+
+### After Phase 4
+
+- Verify inventory preview through the UI.
+- Verify inventory generation still renders correctly.
+- Verify Git-backed inventory file save and load flows.
+- Verify saved inventory analysis still respects access control.
+
+### After Phase 5
+
+- Verify affected routers no longer import mutable singletons.
+- Verify task entry points no longer import mutable singletons.
+- Verify compatibility endpoints still work or are intentionally replaced.
+
+### After Phase 6 and Phase 7
+
+- Run the backend test suite.
+- Run focused integration tests for Nautobot preview and CheckMK sync.
+- Run smoke tests for Celery worker behavior on macOS and Linux.
+- Remove deprecated compatibility code only after the migration matrix is fully green.
+
+## 7. success criteria
+
+This refactor is complete when these statements are true.
+
+- Long-lived network clients are app-scoped and lifecycle-managed.
+- Routers and tasks build services through one composition root.
+- `InventoryService` is a thin orchestration facade.
+- Saved inventory CRUD remains aligned with the repository pattern.
+- Agent deployment and template rendering no longer create event loops manually.
+- Remaining task async-boundary issues are tracked and migrated in explicit slices.
+- Import-time service singletons are removed or reduced to temporary compatibility shims with a scheduled removal date.
