@@ -10,8 +10,6 @@ import logging
 from typing import Dict, Any
 from fastapi import HTTPException, status
 
-from services.checkmk.config import config_service
-from services.checkmk.normalization import device_normalization_service
 from models.nb2cmk import DeviceList
 
 logger = logging.getLogger(__name__)
@@ -19,6 +17,12 @@ logger = logging.getLogger(__name__)
 
 class DeviceQueryService:
     """Service for querying device data from Nautobot."""
+
+    def __init__(self):
+        import service_factory
+
+        self._config = service_factory.build_checkmk_config_service()
+        self._normalization = service_factory.build_device_normalization_service()
 
     async def get_devices_for_sync(self) -> DeviceList:
         """Get all devices from Nautobot for CheckMK sync.
@@ -30,7 +34,8 @@ class DeviceQueryService:
             HTTPException: If GraphQL query fails or other errors occur
         """
         try:
-            from services.nautobot import nautobot_service
+            import service_factory
+            nautobot_service = service_factory.build_nautobot_service()
 
             # Use GraphQL query to get all devices from Nautobot
             query = """
@@ -108,11 +113,12 @@ class DeviceQueryService:
             HTTPException: If device not found or normalization fails
         """
         try:
-            from services.nautobot import nautobot_service
+            import service_factory
+            nautobot_service = service_factory.build_nautobot_service()
 
             # Fetch device data from Nautobot including custom fields
             # Load query from configuration file
-            query = config_service.get_query("get_device_normalized")
+            query = self._config.get_query("get_device_normalized")
             if not query:
                 # Fallback to default query if not found in config
                 logger.warning(
@@ -167,7 +173,7 @@ class DeviceQueryService:
                 )
 
             # Normalize the device data
-            extensions = device_normalization_service.normalize_device(device_data)
+            extensions = self._normalization.normalize_device(device_data)
 
             # Convert to dictionary for API response
             normalized_dict = extensions.model_dump()

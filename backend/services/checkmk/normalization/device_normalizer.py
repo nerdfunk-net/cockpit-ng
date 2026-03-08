@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Dict, Any
 
-from services.checkmk.config import config_service
 from utils.cmk_site_utils import get_monitored_site, get_device_folder
 from models.nb2cmk import DeviceExtensions
 
@@ -22,10 +21,13 @@ class DeviceNormalizationService:
 
     def __init__(self):
         """Initialize with all normalizers."""
+        import service_factory
+
         self.ip_normalizer = IPNormalizer()
         self.snmp_normalizer = SNMPNormalizer()
         self.field_normalizer = FieldNormalizer()
         self.tag_normalizer = TagNormalizer(self.field_normalizer, self.ip_normalizer)
+        self._config = service_factory.build_checkmk_config_service()
 
     def normalize_device(self, device_data: Dict[str, Any]) -> DeviceExtensions:
         """Normalize device data from Nautobot for CheckMK comparison.
@@ -56,7 +58,7 @@ class DeviceNormalizationService:
 
             # Force load the configuration on service initialization
             try:
-                config_service.load_checkmk_config(force_reload=True)
+                self._config.load_checkmk_config(force_reload=True)
                 logger.debug(
                     "[NORMALIZATION] CheckMK config loaded successfully for %s",
                     device_name,

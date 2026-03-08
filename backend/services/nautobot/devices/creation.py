@@ -8,7 +8,6 @@ import logging
 import ipaddress
 from typing import Optional, List, Dict, Any
 from models.nautobot import AddDeviceRequest, InterfaceData
-from services.nautobot import nautobot_service
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot.devices.interface_workflow import InterfaceManagerService
@@ -21,8 +20,12 @@ class DeviceCreationService:
 
     def __init__(self):
         """Initialize the service."""
-        self.common_service = DeviceCommonService(nautobot_service)
-        self.interface_manager = InterfaceManagerService(nautobot_service)
+        import service_factory
+
+        nb = service_factory.build_nautobot_service()
+        self.common_service = DeviceCommonService(nb)
+        self.interface_manager = InterfaceManagerService(nb)
+        self._nb = nb
 
     async def create_device_with_interfaces(
         self,
@@ -260,7 +263,7 @@ class DeviceCreationService:
 
         logger.info("Device payload: %s", device_payload)
 
-        device_response = await nautobot_service.rest_request(
+        device_response = await self._nb.rest_request(
             endpoint="dcim/devices/", method="POST", data=device_payload
         )
 
@@ -561,6 +564,3 @@ class DeviceCreationService:
 
         return interfaces_created, result.primary_ip4_id
 
-
-# Singleton instance
-device_creation_service = DeviceCreationService()

@@ -27,15 +27,16 @@ if TYPE_CHECKING:
 
 
 def build_nautobot_service() -> "NautobotService":
-    """Return the module-level NautobotService singleton.
+    """Construct a fresh NautobotService instance.
 
-    In the FastAPI app, the singleton is lifecycle-managed via lifespan.
-    In Celery tasks, the service falls back to one-shot httpx requests
-    when its persistent client is not initialized.
+    In the FastAPI app the lifespan creates an app-scoped instance with a
+    persistent httpx.AsyncClient; routers receive it via Depends().
+    In Celery tasks and other non-FastAPI contexts a fresh instance is used;
+    it falls back to one-shot httpx connections when startup() is not called.
     """
-    from services.nautobot.client import nautobot_service
+    from services.nautobot.client import NautobotService
 
-    return nautobot_service
+    return NautobotService()
 
 
 def build_checkmk_client(site_name: Optional[str] = None) -> "CheckMKClient":
@@ -104,11 +105,11 @@ def build_checkmk_host_service() -> "CheckMKHostService":
 
 
 def build_nautobot_metadata_service() -> "NautobotMetadataService":
-    """Create a NautobotMetadataService using the module-level nautobot_service singleton."""
+    """Create a NautobotMetadataService with a fresh NautobotService."""
     from services.nautobot.metadata_service import NautobotMetadataService
-    from services.nautobot.client import nautobot_service
+    from services.nautobot.client import NautobotService
 
-    return NautobotMetadataService(nautobot_service)
+    return NautobotMetadataService(NautobotService())
 
 
 def build_offboarding_service() -> "OffboardingService":
@@ -138,24 +139,52 @@ def build_agent_deployment_service() -> "AgentDeploymentService":
 
 
 def build_checkmk_config_service():
-    """Return the module-level CheckMK ConfigService singleton."""
-    from services.checkmk.config import config_service
+    """Create a fresh CheckMK ConfigService instance."""
+    from services.checkmk.config import ConfigService
 
-    return config_service
+    return ConfigService()
 
 
 def build_nb2cmk_service():
-    """Return the module-level NautobotToCheckMKService singleton."""
-    from services.checkmk.sync import nb2cmk_service
+    """Create a fresh NautobotToCheckMKService instance."""
+    from services.checkmk.sync import NautobotToCheckMKService
 
-    return nb2cmk_service
+    return NautobotToCheckMKService()
 
 
 def build_nb2cmk_db_service():
-    """Return the module-level NB2CMKDatabaseService singleton."""
-    from services.checkmk.sync.database import nb2cmk_db_service
+    """Create a fresh NB2CMKDatabaseService instance."""
+    from services.checkmk.sync.database import NB2CMKDatabaseService
 
-    return nb2cmk_db_service
+    return NB2CMKDatabaseService()
+
+
+def build_nb2cmk_background_service():
+    """Return the module-level NB2CMKBackgroundService singleton.
+
+    Intentionally app-scoped: NB2CMKBackgroundService holds an in-memory
+    registry of running asyncio.Task objects (_running_jobs). Constructing
+    a fresh instance per call would lose visibility of active jobs.
+    This singleton is kept by design and is NOT subject to the Phase 6
+    singleton removal sweep.
+    """
+    from services.checkmk.sync.background import nb2cmk_background_service
+
+    return nb2cmk_background_service
+
+
+def build_checkmk_folder_service():
+    """Create a fresh CheckMKFolderService instance."""
+    from services.checkmk.folder import CheckMKFolderService
+
+    return CheckMKFolderService()
+
+
+def build_device_normalization_service():
+    """Create a fresh DeviceNormalizationService instance."""
+    from services.checkmk.normalization import DeviceNormalizationService
+
+    return DeviceNormalizationService()
 
 
 # ---------------------------------------------------------------------------
@@ -164,45 +193,45 @@ def build_nb2cmk_db_service():
 
 
 def build_git_service():
-    """Return the module-level GitService singleton."""
-    from services.settings.git.service import git_service
+    """Create a fresh GitService instance."""
+    from services.settings.git.service import GitService
 
-    return git_service
+    return GitService()
 
 
 def build_git_auth_service():
-    """Return the module-level GitAuthenticationService singleton."""
-    from services.settings.git.auth import git_auth_service
+    """Create a fresh GitAuthenticationService instance."""
+    from services.settings.git.auth import GitAuthenticationService
 
-    return git_auth_service
+    return GitAuthenticationService()
 
 
 def build_git_cache_service():
-    """Return the module-level GitCacheService singleton."""
-    from services.settings.git.cache import git_cache_service
+    """Create a fresh GitCacheService instance."""
+    from services.settings.git.cache import GitCacheService
 
-    return git_cache_service
+    return GitCacheService()
 
 
 def build_git_operations_service():
-    """Return the module-level GitOperationsService singleton."""
-    from services.settings.git.operations import git_operations_service
+    """Create a fresh GitOperationsService instance."""
+    from services.settings.git.operations import GitOperationsService
 
-    return git_operations_service
+    return GitOperationsService()
 
 
 def build_git_connection_service():
-    """Return the module-level GitConnectionService singleton."""
-    from services.settings.git.connection import git_connection_service
+    """Create a fresh GitConnectionService instance."""
+    from services.settings.git.connection import GitConnectionService
 
-    return git_connection_service
+    return GitConnectionService()
 
 
 def build_git_diff_service():
-    """Return the module-level GitDiffService singleton."""
-    from services.settings.git.diff import git_diff_service
+    """Create a fresh GitDiffService instance."""
+    from services.settings.git.diff import GitDiffService
 
-    return git_diff_service
+    return GitDiffService()
 
 
 # ---------------------------------------------------------------------------
@@ -225,8 +254,10 @@ def build_cache_service():
 def build_oidc_service():
     """Return the module-level OIDCService singleton.
 
-    This service is app-scoped; it is kept as a singleton because it holds
-    JWKS and SSL caches that should not be rebuilt per request.
+    Intentionally app-scoped: OIDCService holds JWKS keys and SSL caches
+    that are expensive to rebuild (require HTTP calls to the OIDC provider).
+    This singleton is kept by design and is NOT subject to the Phase 6
+    singleton removal sweep.
     """
     from services.auth.oidc import oidc_service
 
@@ -239,24 +270,24 @@ def build_oidc_service():
 
 
 def build_scan_service():
-    """Return the module-level ScanService singleton."""
-    from services.network.scanning.scan import scan_service
+    """Create a fresh ScanService instance."""
+    from services.network.scanning.scan import ScanService
 
-    return scan_service
+    return ScanService()
 
 
 def build_netmiko_service():
-    """Return the module-level NetmikoService singleton."""
-    from services.network.automation.netmiko import netmiko_service
+    """Create a fresh NetmikoService instance."""
+    from services.network.automation.netmiko import NetmikoService
 
-    return netmiko_service
+    return NetmikoService()
 
 
 def build_render_service():
-    """Return the module-level RenderService singleton."""
-    from services.network.automation.render import render_service
+    """Create a fresh RenderService instance."""
+    from services.network.automation.render import RenderService
 
-    return render_service
+    return RenderService()
 
 
 # ---------------------------------------------------------------------------
@@ -265,7 +296,7 @@ def build_render_service():
 
 
 def build_device_creation_service():
-    """Return the module-level DeviceCreationService singleton."""
-    from services.nautobot.devices.creation import device_creation_service
+    """Create a fresh DeviceCreationService instance."""
+    from services.nautobot.devices.creation import DeviceCreationService
 
-    return device_creation_service
+    return DeviceCreationService()

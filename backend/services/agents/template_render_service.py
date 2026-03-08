@@ -69,8 +69,9 @@ class AgentTemplateRenderService:
         Raises:
             ValueError: If rendering fails or variables are undefined
         """
-        from services.nautobot.devices import device_query_service
-        from services.checkmk.config import config_service
+        import service_factory
+        device_query_service = service_factory.build_device_query_service()
+        config_service = service_factory.build_checkmk_config_service()
 
         warnings = []
         context = {}
@@ -101,7 +102,8 @@ class AgentTemplateRenderService:
                 from utils.inventory_converter import (
                     convert_saved_inventory_to_operations,
                 )
-                from services.inventory.inventory import inventory_service
+                import service_factory as _sf
+                inventory_service = _sf.build_inventory_service()
 
                 # Get inventory by ID
                 inventory = inventory_manager.get_inventory(inventory_id)
@@ -283,7 +285,9 @@ class AgentTemplateRenderService:
 
         Supported sources: locations, tags, custom-fields, statuses, roles, namespaces.
         """
-        from services.nautobot import nautobot_service, nautobot_metadata_service
+        import service_factory
+        nautobot_service = service_factory.build_nautobot_service()
+        nautobot_metadata_service = service_factory.build_nautobot_metadata_service()
 
         metadata = var_def.get("metadata", {})
         source = metadata.get("nautobot_source")
@@ -403,7 +407,8 @@ class AgentTemplateRenderService:
                 the one in metadata (for deploy app where user selects inventory)
             inventory_cache: Optional cache dict for inventory analysis results
         """
-        from services.inventory.inventory import inventory_service
+        import service_factory
+        inventory_service = service_factory.build_inventory_service()
 
         metadata = var_def.get("metadata", {})
         # Use override if provided (from deploy app), otherwise use metadata
@@ -478,6 +483,3 @@ class AgentTemplateRenderService:
         )
         return result
 
-
-# Singleton instance
-agent_template_render_service = AgentTemplateRenderService()

@@ -99,7 +99,8 @@ class RenderService:
         # Fetch Nautobot device data if requested
         if use_nautobot_context and device_id:
             try:
-                from services.nautobot.devices import device_query_service
+                import service_factory
+                device_query_service = service_factory.build_device_query_service()
 
                 # Use shared device details service
                 device_data = await device_query_service.get_device_details(
@@ -193,7 +194,8 @@ class RenderService:
 
         if use_nautobot_context and device_id:
             try:
-                from services.nautobot import nautobot_service
+                import service_factory
+                nautobot_service = service_factory.build_nautobot_service()
 
                 query = """
                 query DeviceDetails($deviceId: ID!) {
@@ -426,6 +428,3 @@ class RenderService:
 
         return sorted(list(top_level_vars))
 
-
-# Singleton instance
-render_service = RenderService()

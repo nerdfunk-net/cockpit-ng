@@ -6,7 +6,6 @@ Consolidates common functions to avoid duplication.
 import logging
 from fastapi import HTTPException, status
 from git_repositories_manager import GitRepositoryManager
-from services.settings.git.service import git_service
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,8 @@ def get_git_repo_by_id(repo_id: int):
 
         # Open the repository (or clone if needed) using central git_service
         try:
-            repo = git_service.open_or_clone(repository)
+            import service_factory
+            repo = service_factory.build_git_service().open_or_clone(repository)
             return repo
         except Exception as e:
             logger.error("Failed to prepare repository %s: %s", repository["name"], e)

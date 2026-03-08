@@ -407,6 +407,3 @@ class GitCacheService:
         except Exception as e:
             logger.error("Failed to invalidate all caches: %s", e)
 
-
-# Singleton instance for use across the application
-git_cache_service = GitCacheService()

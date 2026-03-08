@@ -81,7 +81,8 @@ class InventoryExportService:
                 "device_count": 0,
             }
 
-        from services.nautobot.devices.query import device_query_service
+        import service_factory
+        device_query_service = service_factory.build_device_query_service()
 
         locations_set: Set[str] = set()
         tags_set: Set[str] = set()

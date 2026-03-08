@@ -33,7 +33,8 @@ class CheckMKCleanupManager:
             return
 
         try:
-            from services.checkmk import checkmk_host_service
+            import service_factory
+            checkmk_host_service = service_factory.build_checkmk_host_service()
 
             await checkmk_host_service.delete_host(device_name)
             results["removed_items"].append(f"CheckMK Host: {device_name}")

@@ -8,7 +8,6 @@ from typing import Any, Dict, List
 from fastapi import HTTPException
 
 from models.nautobot import OffboardDeviceRequest
-from services.nautobot import nautobot_service
 from services.nautobot_helpers import (
     get_device_cache_key,
     get_device_details_cache_key,
@@ -24,6 +23,11 @@ logger = logging.getLogger(__name__)
 
 class IPCleanupManager:
     """Handles IP address removal during offboarding."""
+
+    def __init__(self):
+        import service_factory
+
+        self._nb = service_factory.build_nautobot_service()
 
     async def remove_interface_ips(
         self,
@@ -149,7 +153,7 @@ class IPCleanupManager:
     async def _delete_ip_address(self, ip_id: str, device_id: str) -> Dict[str, Any]:
         """Delete an IP address from Nautobot."""
         try:
-            result = await nautobot_service.rest_request(
+            result = await self._nb.rest_request(
                 f"ipam/ip-addresses/{ip_id}/",
                 method="DELETE",
             )

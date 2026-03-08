@@ -18,7 +18,8 @@ from urllib.parse import urlparse
 
 from services.checkmk.sync.base import NautobotToCheckMKService
 from services.checkmk.config import ConfigService
-from services.nautobot import nautobot_service
+import service_factory as _sf
+nautobot_service = _sf.build_nautobot_service()
 from checkmk.client import CheckMKClient, CheckMKAPIError
 from settings_manager import settings_manager
 

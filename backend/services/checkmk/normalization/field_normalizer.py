@@ -3,7 +3,6 @@
 import logging
 from typing import Dict, Any
 
-from services.checkmk.config import config_service
 from models.nb2cmk import DeviceExtensions
 
 logger = logging.getLogger(__name__)
@@ -11,6 +10,11 @@ logger = logging.getLogger(__name__)
 
 class FieldNormalizer:
     """Handles field mapping and extraction from Nautobot device data."""
+
+    def __init__(self):
+        import service_factory
+
+        self._config = service_factory.build_checkmk_config_service()
 
     def process_field_mappings(
         self, device_data: Dict[str, Any], extensions: DeviceExtensions
@@ -22,7 +26,7 @@ class FieldNormalizer:
             extensions: Extensions object to update
         """
         try:
-            config = config_service.load_checkmk_config()
+            config = self._config.load_checkmk_config()
             mapping_config = config.get("mapping", {})
             device_name = device_data.get("name", "")
 

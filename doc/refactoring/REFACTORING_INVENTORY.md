@@ -2,19 +2,22 @@
 
 This document describes the current inventory architecture in Cockpit-NG, the main problems in the implementation, and a recommended refactor plan that preserves the inventory features while improving service boundaries, testability, and long-term maintainability.
 
+This version reflects the current backend state after the inventory service split that introduced dedicated query, evaluator, metadata, export, and git-storage services. The remaining refactor work is now mostly about saved-inventory resolution and caller consolidation, not about the original large-service decomposition.
+
 Inventory is a critical part of the application. It is used by the inventory UI, template rendering, job execution, backup flows, and device targeting. Because of that, this plan prioritizes correctness and migration safety over aggressive cleanup.
 
 ## 1. summary
 
-The current inventory implementation is built from three active layers:
+The current inventory implementation is built from four active layers:
 
 - `backend/inventory_manager.py` for saved inventory CRUD in PostgreSQL.
 - `backend/routers/inventory/main.py` for saved inventory CRUD endpoints.
-- `backend/services/inventory/inventory.py` plus `backend/routers/inventory/inventory.py` for dynamic device evaluation, field lookup, resolution, and analysis.
+- `backend/services/inventory/` for the split dynamic inventory service layer.
+- `backend/routers/inventory/inventory.py` plus shared helper callers for preview, metadata, saved-inventory resolution, and analysis.
 
 That high-level split is valid. The problem is that the boundaries are no longer clean.
 
-Today the router, manager, dynamic inventory service, template rendering service, and task utilities all participate in saved-inventory resolution. Some code paths load inventories from PostgreSQL, some convert tree structures to runtime operations, some evaluate devices against Nautobot, and some fetch detailed device metadata. Those concerns are spread across too many modules.
+Today the low-level dynamic inventory logic is in better shape than before, but saved-inventory resolution is still scattered. The router, manager, facade service, template rendering service, settings template router, and task utilities all participate in that flow. Some code paths load inventories from PostgreSQL, some convert tree structures to runtime operations, some evaluate devices against Nautobot, and some fetch detailed device metadata. Those concerns are still spread across too many modules.
 
 The result is a system that works, but is harder to reason about than it should be.
 
@@ -45,16 +48,25 @@ Dynamic inventory evaluation runs against Nautobot and returns device matches fo
 The current stack is:
 
 - `backend/services/inventory/inventory.py`
+- `backend/services/inventory/query_service.py`
+- `backend/services/inventory/evaluator.py`
+- `backend/services/inventory/metadata_service.py`
+- `backend/services/inventory/export_service.py`
+- `backend/services/inventory/git_storage_service.py`
 - `backend/routers/inventory/inventory.py`
 - `backend/models/inventory.py`
 - `backend/utils/inventory_converter.py`
+- `backend/dependencies.py`
+- `backend/service_factory.py`
 
 This flow also makes sense at a high level:
 
 1. The router accepts logical operations or a saved inventory ID.
-2. Saved tree data is converted to `LogicalOperation` objects.
-3. `InventoryService.preview_inventory()` evaluates the conditions.
-4. The router returns matched devices or fetches more detailed device records.
+2. `InventoryService` acts as a thin facade over the split services.
+3. `InventoryEvaluator` and `InventoryQueryService` evaluate the conditions.
+4. `InventoryMetadataService` serves UI field metadata.
+5. `InventoryExportService` renders final output and analyzes resolved devices.
+6. The router still performs saved-inventory orchestration for resolve and detailed-resolve endpoints.
 
 ### 2.3 Shared inventory resolution outside the inventory module
 
@@ -66,6 +78,7 @@ It is also used by:
 - `backend/tasks/execution/deploy_agent_executor.py`
 - `backend/utils/inventory_resolver.py`
 - `backend/routers/settings/templates.py`
+- `backend/tasks/utils/device_helpers.py`
 
 That means inventory is already a shared domain service, not just a single route feature.
 
@@ -83,6 +96,13 @@ It is called from:
 - `backend/services/inventory/inventory.py` for analysis of saved inventories.
 
 So `InventoryManager` is not legacy or unused. It remains part of the active runtime architecture.
+
+The split inventory services are also actively used.
+
+- `InventoryQueryService`, `InventoryEvaluator`, and `InventoryMetadataService` are constructed by `InventoryService`.
+- `InventoryExportService` now owns template rendering and device-set analysis.
+- `InventoryGitStorage` now owns git-backed inventory file persistence.
+- `dependencies.py` and `service_factory.py` already provide explicit construction for `InventoryService` and `DeviceQueryService` in router code.
 
 ## 4. problems in the current design
 
@@ -109,9 +129,9 @@ It currently performs these steps directly:
 
 That logic is orchestration logic. It should not live in the router.
 
-### 4.3 `InventoryService` crosses back into the storage layer
+### 4.3 `InventoryService` still crosses back into the storage layer
 
-`backend/services/inventory/inventory.py` contains dynamic Nautobot evaluation logic, but it also loads saved inventories from `inventory_manager` in `analyze_inventory()`.
+`backend/services/inventory/inventory.py` is now a much thinner facade, but it still loads saved inventories from `inventory_manager` in `analyze_inventory()`.
 
 That means the dynamic evaluation service depends directly on the saved-inventory storage layer.
 
@@ -121,33 +141,33 @@ This creates an awkward dependency direction:
 - Orchestration should call evaluation.
 - Evaluation should not reach back into storage on its own.
 
-### 4.4 The service mixes too many responsibilities
+### 4.4 The split is real, but the orchestration boundary is still incomplete
 
-`backend/services/inventory/inventory.py` currently includes at least these separate concerns:
+The large-service decomposition is already partially complete.
 
-- Querying Nautobot devices by various fields.
-- Evaluating nested logical operations.
-- Fetching and caching Nautobot custom field metadata.
-- Generating final inventory output for templates.
-- Saving inventory files to Git.
-- Listing and loading inventory files from Git.
-- Analyzing saved inventories by fetching detailed device metadata.
+The following responsibilities have been extracted into focused modules:
 
-That is too much for one class.
+- Querying Nautobot devices by various fields in `query_service.py`.
+- Evaluating nested logical operations in `evaluator.py`.
+- Fetching UI metadata in `metadata_service.py`.
+- Generating final inventory output and analyzing resolved devices in `export_service.py`.
+- Saving, listing, and loading inventory files from Git in `git_storage_service.py`.
+
+What is still missing is the saved-inventory resolver layer. Until that exists, the remaining orchestration responsibilities are split across the facade service, router, template rendering service, and utility wrappers.
 
 ### 4.5 There are two different inventory persistence models
 
 The application currently has two persistence models for inventory:
 
 - PostgreSQL saved inventories through `InventoryManager`.
-- Git-backed inventory JSON files through methods in `InventoryService`.
+- Git-backed inventory JSON files through `InventoryGitStorage`.
 
 These are not the same feature.
 
 The PostgreSQL path is clearly active.
-The Git-backed path appears to be unused in the current code search.
+The Git-backed implementation is now isolated in its own service, but current code search shows no callers outside the `InventoryService` facade delegation itself.
 
-That makes the service misleading. A reader sees inventory storage methods and cannot tell which persistence model is authoritative.
+That means the architecture is clearer than before, but the product status is still ambiguous. The codebase still exposes both persistence models even though only the PostgreSQL path is part of the active runtime flow.
 
 ### 4.6 Naming and routing are confusing
 
@@ -175,15 +195,16 @@ That flow exists in different forms in:
 - `routers/inventory/inventory.py`
 - `services/inventory/inventory.py`
 - `services/agents/template_render_service.py`
+- `routers/settings/templates.py`
 - `utils/inventory_resolver.py`
 
 This duplication is a real maintenance risk.
 
 ### 4.8 Sync wrappers still use ad hoc event loops
 
-`backend/utils/inventory_resolver.py` creates a new event loop in its sync wrapper.
+`backend/utils/inventory_resolver.py` uses `asyncio.run()` in its sync wrapper.
 
-That is consistent with some existing task code, but it keeps inventory tied to the broader async-boundary problem already identified elsewhere in the backend.
+That is consistent with other task code in the backend, so this is no longer an inventory-specific anomaly. It is still worth consolidating once the saved-inventory resolver is introduced, but it is a lower-priority cleanup item than the duplicated orchestration logic.
 
 ## 5. recommended target architecture
 
@@ -228,9 +249,9 @@ Suggested responsibilities:
 
 This is the missing architectural piece today.
 
-### 5.3 Split the current `InventoryService`
+### 5.3 Keep the split `InventoryService`, and finish the missing resolver layer
 
-Refactor `backend/services/inventory/inventory.py` into smaller services.
+Most of the original service split is already complete.
 
 Recommended structure:
 
@@ -244,8 +265,11 @@ Recommended structure:
   - Custom fields.
   - Field values.
   - Custom field types.
-- `backend/services/inventory/render_service.py`
+- `backend/services/inventory/export_service.py`
   - Final inventory generation for template output.
+  - Device-set analysis.
+- `backend/services/inventory/git_storage_service.py`
+  - Git-backed inventory persistence.
 - `backend/services/inventory/saved_inventory_resolver.py`
   - Saved inventory lookup.
   - Access validation.
@@ -254,22 +278,22 @@ Recommended structure:
   - Detailed device enrichment.
   - Inventory analysis.
 - `backend/services/inventory/inventory.py`
-  - Thin facade only, if still needed.
+  - Thin facade only.
 
 ### 5.4 Decide the future of Git-backed inventory persistence
 
-The Git-backed methods in `InventoryService` need a product decision.
+The Git-backed path now lives in `InventoryGitStorage`, so the architectural extraction is already done. What remains is a product and cleanup decision.
 
 There are only two reasonable outcomes:
 
 1. If Git-backed inventory files are still required:
-   - Move them into a separate `InventoryGitStorageService`.
-   - Keep them out of the dynamic evaluation service.
+  - Keep them in `InventoryGitStorage`.
+  - Keep them out of saved-inventory resolution.
    - Document how they relate to PostgreSQL saved inventories.
 2. If they are no longer required:
-   - Remove them after confirming there are no hidden callers.
+  - Remove the facade delegation and service after confirming there are no hidden callers.
 
-Do not keep them embedded in the core evaluation service.
+Do not re-couple them to the dynamic evaluation path.
 
 ## 6. proposed service boundaries
 
@@ -357,20 +381,37 @@ Should own:
 - Resolution to detailed device payloads.
 - Inventory analysis.
 
-### 6.6 `InventoryRenderService`
+### 6.6 `InventoryExportService`
 
 Purpose:
 
 - Convert resolved `DeviceInfo` results into final template-ready output.
+- Analyze resolved device sets by fetching detailed Nautobot device data.
 
 Dependencies:
 
 - `template_manager`.
+- `device_query_service`.
 
 Should not do:
 
 - Saved inventory lookup.
-- Nautobot metadata fetch.
+- Access control.
+
+### 6.7 `InventoryGitStorage`
+
+Purpose:
+
+- Persist inventory JSON files in Git repositories when that feature is needed.
+
+Dependencies:
+
+- Git settings and Git operations services.
+
+Should not do:
+
+- Resolve saved inventories to devices.
+- Participate in PostgreSQL-backed inventory CRUD.
 
 ## 7. router changes
 
@@ -384,6 +425,8 @@ Recommended changes:
 - Move export and import helpers into a dedicated import-export helper if they continue to grow.
 - Rename the router export so the name clearly reflects CRUD, for example `saved_inventory_router`.
 
+This router still uses the active PostgreSQL inventory path and should remain separate from the dynamic evaluation endpoints.
+
 ### 7.2 Dynamic inventory router
 
 `backend/routers/inventory/inventory.py` should stop orchestrating saved inventory resolution directly.
@@ -395,9 +438,13 @@ Recommended changes:
 - Remove direct imports of `inventory_manager` and `device_query_service` from the router.
 - Rename the router export to something clearer, for example `inventory_resolution_router` or `dynamic_inventory_router`.
 
+The router already uses dependency providers for `InventoryService` and `DeviceQueryService`, so the remaining work here is specifically about orchestration removal, not about introducing dependency injection from scratch.
+
 ## 8. migration plan
 
 ### Phase 0: inventory usage audit
+
+Status: completed.
 
 #### Goal
 
@@ -415,9 +462,18 @@ Build a complete migration map for inventory.
 
 - There is a complete call graph for inventory-related flows.
 
+Audit result:
+
+- `InventoryManager` remains active in CRUD routes, the dynamic inventory router, template rendering, settings templates, deploy execution, and the shared inventory resolver utility.
+- The split service modules exist and are wired through `InventoryService`.
+- `InventoryGitStorage` currently has no external callers outside facade delegation.
+- Saved-inventory resolution is still reconstructed in the dynamic router, template rendering, settings templates, and `utils.inventory_resolver.py`.
+
 ---
 
 ### Phase 1: introduce `SavedInventoryResolverService`
+
+Status: not started.
 
 #### Goal
 
@@ -447,6 +503,8 @@ Centralize the saved-inventory-to-device-resolution flow.
 
 ### Phase 2: split the dynamic inventory service
 
+Status: mostly completed.
+
 #### Goal
 
 Reduce `InventoryService` to focused components.
@@ -456,16 +514,23 @@ Reduce `InventoryService` to focused components.
 1. Extract Nautobot query methods into `InventoryQueryService`.
 2. Extract logical set execution into `InventoryEvaluator`.
 3. Extract UI metadata methods into `InventoryMetadataService`.
-4. Extract template generation into `InventoryRenderService`.
-5. Keep a thin facade only if the router layer still benefits from one.
+4. Extract template generation and device analysis into `InventoryExportService`.
+5. Keep `InventoryService` as a thin facade.
 
 #### Exit criteria
 
-- No single inventory service class mixes query, evaluation, metadata, rendering, and analysis concerns.
+- No single inventory service class mixes query, evaluation, metadata, rendering, git persistence, and analysis implementation concerns.
+
+Current result:
+
+- Completed for query, evaluation, metadata, export, and git persistence.
+- Still pending for saved-inventory resolution, which remains outside a dedicated service.
 
 ---
 
 ### Phase 3: decide the Git-backed inventory path
+
+Status: partially completed.
 
 #### Goal
 
@@ -474,7 +539,7 @@ Either isolate or remove Git-backed inventory persistence.
 #### Tasks
 
 1. Confirm real runtime usage.
-2. If it is active, extract `InventoryGitStorageService`.
+2. If it is active, keep `InventoryGitStorage` as the dedicated implementation.
 3. If it is inactive, delete the methods after verification and tests.
 4. Update documentation to clarify which persistence model is authoritative.
 
@@ -482,9 +547,16 @@ Either isolate or remove Git-backed inventory persistence.
 
 - There is no ambiguity about how saved inventories are stored.
 
+Current result:
+
+- The extraction is already complete as `InventoryGitStorage`.
+- The remaining question is whether to keep or remove it.
+
 ---
 
 ### Phase 4: dependency injection and factories
+
+Status: partially completed.
 
 #### Goal
 
@@ -501,9 +573,17 @@ Stop relying on inventory-related singletons in routers and helper services.
 - Inventory services are constructed explicitly.
 - Router modules no longer own orchestration behavior.
 
+Current result:
+
+- `InventoryService` and `DeviceQueryService` are already provided through `dependencies.py` and `service_factory.py`.
+- `InventoryManager` and the future resolver service are not yet part of that composition path.
+- The main remaining gap is orchestration inside routers and helper services.
+
 ---
 
 ### Phase 5: async-boundary cleanup for inventory helpers
+
+Status: not started.
 
 #### Goal
 
@@ -511,7 +591,7 @@ Remove inventory-specific ad hoc event-loop usage.
 
 #### Tasks
 
-1. Replace the manual event-loop wrapper in `utils.inventory_resolver.py` with the standard async-boundary pattern used elsewhere in the backend.
+1. Replace the sync wrapper in `utils.inventory_resolver.py` with the standard async-boundary pattern used elsewhere in the backend if the utility still exists after resolver consolidation.
 2. Ensure task callers use the approved sync or async bridging approach.
 
 #### Exit criteria
@@ -524,9 +604,10 @@ These are the highest-value steps.
 
 1. Keep `InventoryManager`.
 2. Introduce `SavedInventoryResolverService`.
-3. Update `routers/inventory/inventory.py` to become thin.
-4. Move `analyze_inventory()` out of `InventoryService` into the resolver service.
-5. Confirm whether the Git-backed inventory methods are dead code.
+3. Move `resolve-devices`, `resolve-devices/detailed`, and `analyze` behind that service.
+4. Update `template_render_service.py`, `routers/settings/templates.py`, and `utils/inventory_resolver.py` to use the resolver instead of rebuilding the flow.
+5. Remove `InventoryService.analyze_inventory()` after callers migrate.
+6. Decide whether to keep or delete `InventoryGitStorage` and its facade delegation.
 
 This sequence gives you the biggest clarity gain without destabilizing saved inventory CRUD.
 
@@ -563,6 +644,7 @@ Mitigation:
 Mitigation:
 
 - Complete the Phase 0 inventory usage audit before deleting any Git-backed methods.
+- Run a final caller search before removing the facade delegation.
 
 ## 11. testing plan
 
@@ -571,6 +653,7 @@ Mitigation:
 - `InventoryManager` CRUD and ownership rules.
 - Tree conversion in `inventory_converter.py`.
 - `InventoryEvaluator` set logic.
+- `InventoryExportService` device analysis behavior.
 - `SavedInventoryResolverService` access checks and resolution behavior.
 - `InventoryMetadataService` field and custom-field responses.
 
@@ -597,10 +680,10 @@ It is still used and it serves a valid purpose. The real issue is not that the m
 The recommended solution is:
 
 1. Keep saved inventory CRUD in `InventoryManager` and the repository layer.
-2. Keep dynamic Nautobot evaluation as a separate service area.
+2. Keep the existing split service layer for dynamic Nautobot evaluation, metadata, export, and git storage.
 3. Add `SavedInventoryResolverService` as the missing orchestration layer.
-4. Split `InventoryService` into smaller focused services.
-5. Isolate or remove the Git-backed inventory storage methods.
+4. Remove duplicated saved-inventory resolution logic from routers, template rendering, settings templates, and utility wrappers.
+5. Decide whether the isolated git-backed inventory storage feature should remain in the product.
 
 That gives you a design that matches the real domain model:
 

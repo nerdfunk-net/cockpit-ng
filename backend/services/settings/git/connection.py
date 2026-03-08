@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 
 from models.git_repositories import GitConnectionTestRequest, GitConnectionTestResponse
-from services.settings.git.auth import git_auth_service
+from services.settings.git.auth import GitAuthenticationService
 from services.settings.git.env import set_ssl_env
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,9 @@ logger = logging.getLogger(__name__)
 
 class GitConnectionService:
     """Service for testing Git repository connections."""
+
+    def __init__(self):
+        self._auth = GitAuthenticationService()
 
     def test_connection(
         self, test_request: GitConnectionTestRequest
@@ -78,7 +81,7 @@ class GitConnectionService:
                 # Resolve credentials using authentication service
                 logger.info("Resolving credentials for auth_type: %s", auth_type)
                 resolved_username, resolved_token, ssh_key_path = (
-                    git_auth_service.resolve_credentials(temp_repo)
+                    self._auth.resolve_credentials(temp_repo)
                 )
 
                 # Log resolved credentials (without exposing secrets)
@@ -213,7 +216,7 @@ class GitConnectionService:
         if auth_type in ["token", "generic"] and resolved_username and resolved_token:
             logger.info("Adding %s authentication to URL", auth_type)
             # Add authentication to URL using the service
-            clone_url = git_auth_service.build_auth_url(
+            clone_url = self._auth.build_auth_url(
                 clone_url, resolved_username, resolved_token
             )
             logger.debug("Authentication added to URL (credentials hidden)")
@@ -313,6 +316,3 @@ class GitConnectionService:
                 details={"error": result.stderr, "return_code": result.returncode},
             )
 
-
-# Singleton instance for use across the application
-git_connection_service = GitConnectionService()

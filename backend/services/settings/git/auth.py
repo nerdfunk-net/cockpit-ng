@@ -340,6 +340,3 @@ class GitAuthenticationService:
             elif "GIT_SSH_COMMAND" in os.environ:
                 del os.environ["GIT_SSH_COMMAND"]
 
-
-# Singleton instance for use across the application
-git_auth_service = GitAuthenticationService()

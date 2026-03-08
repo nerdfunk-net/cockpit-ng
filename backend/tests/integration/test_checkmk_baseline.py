@@ -17,7 +17,8 @@ import pytest
 
 from services.checkmk.sync.base import NautobotToCheckMKService
 from services.checkmk.config import ConfigService
-from services.nautobot import nautobot_service
+import service_factory as _sf
+nautobot_service = _sf.build_nautobot_service()
 
 
 @pytest.mark.integration
@@ -247,7 +248,8 @@ class TestSNMPMappingWithBaseline:
 
     def test_snmp_mapping_covers_baseline_credentials(self):
         """Verify SNMP mapping covers baseline credential IDs."""
-        from services.checkmk.config import config_service
+        import service_factory
+        config_service = service_factory.build_checkmk_config_service()
 
         # Load SNMP mapping
         snmp_mapping = config_service.load_snmp_mapping()
@@ -309,7 +311,8 @@ class TestPrerequisites:
 
     def test_checkmk_config_exists(self):
         """Test that CheckMK configuration exists."""
-        from services.checkmk.config import config_service
+        import service_factory
+        config_service = service_factory.build_checkmk_config_service()
 
         try:
             config = config_service.load_checkmk_config()
@@ -320,7 +323,8 @@ class TestPrerequisites:
 
     def test_snmp_mapping_exists(self):
         """Test that SNMP mapping exists."""
-        from services.checkmk.config import config_service
+        import service_factory
+        config_service = service_factory.build_checkmk_config_service()
 
         try:
             snmp_mapping = config_service.load_snmp_mapping()

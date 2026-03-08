@@ -373,6 +373,3 @@ class NB2CMKDatabaseService:
             logger.error("Error deleting job %s: %s", job_id, e)
             return False
 
-
-# Global instance
-nb2cmk_db_service = NB2CMKDatabaseService()

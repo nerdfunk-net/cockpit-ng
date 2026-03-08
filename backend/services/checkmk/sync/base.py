@@ -2,7 +2,8 @@
 DEPRECATED: This file has been refactored into focused service modules.
 
 Use the facade from services.checkmk.sync instead:
-  from services.checkmk.sync import nb2cmk_service
+  import service_factory
+  nb2cmk_service = service_factory.build_nb2cmk_service()
 
 New structure:
   - services/checkmk/sync/queries.py: GraphQL device queries
@@ -15,14 +16,11 @@ after validation period.
 
 IMPORTANT: All imports from this file will be redirected to the new facade.
 If you see this import in your code, please update to:
-  from services.checkmk.sync import nb2cmk_service, NautobotToCheckMKService
+  import service_factory; nb2cmk = service_factory.build_nb2cmk_service()
 """
 
 # Import from new location for backward compatibility
 # This ensures old imports still work during transition
-from services.checkmk.sync import (  # noqa: F401
-    NautobotToCheckMKService,
-    nb2cmk_service,
-)
+from services.checkmk.sync import NautobotToCheckMKService  # noqa: F401
 
-__all__ = ["NautobotToCheckMKService", "nb2cmk_service"]
+__all__ = ["NautobotToCheckMKService"]

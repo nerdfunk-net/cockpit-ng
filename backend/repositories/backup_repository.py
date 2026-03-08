@@ -32,8 +32,8 @@ class BackupRepository:
         This queries Nautobot API via GraphQL,
         then filters and paginates the results.
         """
-        # Import here to avoid circular dependency
-        from services.nautobot import nautobot_service
+        import service_factory
+        nautobot_service = service_factory.build_nautobot_service()
 
         # Build GraphQL query with filters
         filter_parts = []

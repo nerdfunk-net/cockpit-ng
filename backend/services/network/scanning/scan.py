@@ -1055,6 +1055,3 @@ class ScanService:
         logger.debug("All netmiko device types failed for %s", ip)
         return None
 
-
-# Global service instance
-scan_service = ScanService()

@@ -15,7 +15,7 @@ from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot.devices.update import DeviceUpdateService
 from services.nautobot.devices.interface_workflow import InterfaceManagerService
 from services.nautobot.devices.onboarding import DeviceOnboardingService
-from services.nautobot.devices.query import device_query_service, DEVICE_DETAILS_QUERY
+from services.nautobot.devices.query import DEVICE_DETAILS_QUERY
 from services.nautobot.devices.types import (
     DeviceIdentifier,
     InterfaceConfig,
@@ -29,7 +29,6 @@ __all__ = [
     "DeviceUpdateService",
     "InterfaceManagerService",
     "DeviceOnboardingService",
-    "device_query_service",
     "DEVICE_DETAILS_QUERY",
     "DeviceIdentifier",
     "InterfaceConfig",

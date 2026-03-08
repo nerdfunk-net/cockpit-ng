@@ -36,7 +36,7 @@ class TestInventoryPreview:
     async def test_preview_inventory_by_location(self, mock_nautobot_service):
         """Test previewing inventory filtered by location."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             devices = create_devices_list(count=5)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=devices)
 
@@ -63,7 +63,7 @@ class TestInventoryPreview:
     async def test_preview_inventory_by_role(self, mock_nautobot_service):
         """Test previewing inventory filtered by role."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             devices = create_devices_list(count=3)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=devices)
 
@@ -89,7 +89,7 @@ class TestInventoryPreview:
     async def test_preview_inventory_with_and_conditions(self, mock_nautobot_service):
         """Test inventory preview with AND logical operation."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             devices = create_devices_list(count=10)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=devices)
 
@@ -123,7 +123,7 @@ class TestInventoryPreview:
     async def test_preview_inventory_with_or_conditions(self, mock_nautobot_service):
         """Test inventory preview with OR logical operation."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             devices = create_devices_list(count=5)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=devices)
 
@@ -168,7 +168,7 @@ class TestDeviceFiltering:
     async def test_filter_by_name(self, mock_nautobot_service):
         """Test filtering devices by name."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             devices = {
                 "data": {
                     "devices": [
@@ -201,7 +201,7 @@ class TestDeviceFiltering:
     async def test_filter_by_tag(self, mock_nautobot_service):
         """Test filtering devices by tag."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             devices = create_devices_list(count=3)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=devices)
 
@@ -226,7 +226,7 @@ class TestDeviceFiltering:
     async def test_filter_by_platform(self, mock_nautobot_service):
         """Test filtering devices by platform."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             devices = create_devices_list(count=5)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=devices)
 
@@ -251,7 +251,7 @@ class TestDeviceFiltering:
     async def test_filter_by_has_primary_ip(self, mock_nautobot_service):
         """Test filtering devices that have primary IP."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             devices = create_devices_list(count=5)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=devices)
 
@@ -292,7 +292,7 @@ class TestInventoryGeneration:
     async def test_generate_inventory_format(self, mock_nautobot_service):
         """Test generating inventory in Ansible format."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             devices = create_devices_list(count=3)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=devices)
 
@@ -318,7 +318,7 @@ class TestInventoryGeneration:
     async def test_inventory_includes_device_variables(self, mock_nautobot_service):
         """Test that inventory includes device variables."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             device_with_vars = {
                 "data": {
                     "devices": [
@@ -384,7 +384,7 @@ class TestCustomFieldHandling:
         # Reset cache so fresh fetch happens
         self.service.query_service._custom_field_types_cache = None
 
-        with patch("services.nautobot.nautobot_metadata_service", mock_metadata_service):
+        with patch("service_factory.build_nautobot_metadata_service", return_value=mock_metadata_service):
             # Act
             field_types = await self.service._get_custom_field_types()
 
@@ -407,7 +407,7 @@ class TestCustomFieldHandling:
         # Reset cache so fresh fetch happens
         self.service.query_service._custom_field_types_cache = None
 
-        with patch("services.nautobot.nautobot_metadata_service", mock_metadata_service):
+        with patch("service_factory.build_nautobot_metadata_service", return_value=mock_metadata_service):
             # Act: Call twice
             await self.service._get_custom_field_types()
             await self.service._get_custom_field_types()
@@ -435,7 +435,7 @@ class TestComplexQueries:
     async def test_complex_and_or_combination(self, mock_nautobot_service):
         """Test complex combination of AND and OR operations."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             devices = create_devices_list(count=10)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=devices)
 
@@ -476,7 +476,7 @@ class TestComplexQueries:
     async def test_empty_operations(self, mock_nautobot_service):
         """Test handling empty operations list - should return all devices."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             # Mock the graphql_query to return all devices
             all_devices_response = {
                 "data": {
@@ -534,7 +534,7 @@ class TestGraphQLQueryConstruction:
     async def test_location_equals_builds_correct_query(self, mock_nautobot_service):
         """Test that location filter with equals operator builds correct GraphQL query."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
             )
@@ -568,7 +568,7 @@ class TestGraphQLQueryConstruction:
     async def test_location_contains_builds_correct_query(self, mock_nautobot_service):
         """Test that location filter with contains operator uses case-insensitive contains."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
             )
@@ -600,7 +600,7 @@ class TestGraphQLQueryConstruction:
     async def test_name_contains_builds_correct_query(self, mock_nautobot_service):
         """Test that name filter with contains operator uses regex."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
             )
@@ -632,7 +632,7 @@ class TestGraphQLQueryConstruction:
     async def test_name_equals_builds_correct_query(self, mock_nautobot_service):
         """Test that name filter with equals operator uses exact match."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
             )
@@ -664,7 +664,7 @@ class TestGraphQLQueryConstruction:
     async def test_and_conditions_make_multiple_queries(self, mock_nautobot_service):
         """Test that AND with multiple conditions makes separate GraphQL queries."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
             )
@@ -696,7 +696,7 @@ class TestGraphQLQueryConstruction:
     async def test_role_filter_builds_correct_query(self, mock_nautobot_service):
         """Test that role filter builds correct GraphQL query."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
             )
@@ -728,7 +728,7 @@ class TestGraphQLQueryConstruction:
     async def test_status_filter_builds_correct_query(self, mock_nautobot_service):
         """Test that status filter builds correct GraphQL query."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
             )
@@ -760,7 +760,7 @@ class TestGraphQLQueryConstruction:
     async def test_platform_filter_builds_correct_query(self, mock_nautobot_service):
         """Test that platform filter builds correct GraphQL query."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
             )
@@ -808,7 +808,7 @@ class TestClientSideFiltering:
     async def test_and_operation_returns_intersection(self, mock_nautobot_service):
         """Test that AND operation returns only devices matching ALL conditions."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             # Mock returns devices from each query separately
             # Query 1 (location=DC1): returns device-1, device-2, device-3
             # Query 2 (role=access): returns device-2, device-3, device-4
@@ -895,7 +895,7 @@ class TestClientSideFiltering:
     async def test_or_operation_returns_union(self, mock_nautobot_service):
         """Test that OR operation returns devices matching ANY condition."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             # Query 1 (location=DC1): returns device-1, device-2
             # Query 2 (location=DC2): returns device-3, device-4
             # Expected union: device-1, device-2, device-3, device-4
@@ -948,7 +948,7 @@ class TestClientSideFiltering:
     async def test_empty_result_when_no_intersection(self, mock_nautobot_service):
         """Test that AND operation returns empty when no devices match all conditions."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             # Query 1 (location=DC1): returns device-1, device-2
             # Query 2 (role=access): returns device-3, device-4
             # Expected intersection: empty (no overlap)
@@ -1015,7 +1015,7 @@ class TestAnsibleInventoryErrorHandling:
     async def test_handles_graphql_errors(self, mock_nautobot_service):
         """Test handling GraphQL errors."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"errors": [{"message": "GraphQL error"}]}
             )
@@ -1043,7 +1043,7 @@ class TestAnsibleInventoryErrorHandling:
     async def test_handles_invalid_field_name(self, mock_nautobot_service):
         """Test handling invalid field names."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             operations = [
                 LogicalOperation(
                     operation_type="AND",
@@ -1067,7 +1067,7 @@ class TestAnsibleInventoryErrorHandling:
     async def test_handles_empty_filter_value(self, mock_nautobot_service):
         """Test handling empty/None filter values."""
         # Arrange
-        with patch("services.nautobot.nautobot_service", mock_nautobot_service):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
             operations = [
                 LogicalOperation(
                     operation_type="AND",

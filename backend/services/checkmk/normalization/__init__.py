@@ -2,7 +2,4 @@
 
 from .device_normalizer import DeviceNormalizationService
 
-# Global instance for backward compatibility
-device_normalization_service = DeviceNormalizationService()
-
-__all__ = ["DeviceNormalizationService", "device_normalization_service"]
+__all__ = ["DeviceNormalizationService"]

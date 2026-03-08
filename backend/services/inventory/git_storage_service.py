@@ -34,8 +34,9 @@ class InventoryGitStorage:
     ) -> Dict[str, Any]:
         """Write an inventory JSON file and push it to the git repository."""
         from git_repositories_manager import GitRepositoryManager
-        from services.settings.git.service import git_service
-        from services.settings.git.auth import git_auth_service
+        import service_factory
+        git_service = service_factory.build_git_service()
+        git_auth_service = service_factory.build_git_auth_service()
 
         try:
             logger.info("Saving inventory '%s' to repository %s", name, repository_id)
@@ -110,8 +111,9 @@ class InventoryGitStorage:
     async def list_inventories(self, repository_id: int) -> List[SavedInventory]:
         """Return all saved inventories found in the repository's ``inventories/`` dir."""
         from git_repositories_manager import GitRepositoryManager
-        from services.settings.git.service import git_service
-        from services.settings.git.auth import git_auth_service
+        import service_factory
+        git_service = service_factory.build_git_service()
+        git_auth_service = service_factory.build_git_auth_service()
 
         try:
             logger.info("Listing inventories from repository %s", repository_id)
@@ -161,8 +163,9 @@ class InventoryGitStorage:
     ) -> Optional[SavedInventory]:
         """Load a single inventory by name from the git repository."""
         from git_repositories_manager import GitRepositoryManager
-        from services.settings.git.service import git_service
-        from services.settings.git.auth import git_auth_service
+        import service_factory
+        git_service = service_factory.build_git_service()
+        git_auth_service = service_factory.build_git_auth_service()
 
         try:
             logger.info(

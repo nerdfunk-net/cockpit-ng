@@ -9,17 +9,12 @@ This package contains services for:
 - Helper utilities
 """
 
-from .client import nautobot_service, NautobotService
-from .offboarding import offboarding_service
+from .client import NautobotService
+from .offboarding import OffboardingService
 from .metadata_service import NautobotMetadataService
 
-# Create metadata service instance
-nautobot_metadata_service = NautobotMetadataService(nautobot_service)
-
 __all__ = [
-    "nautobot_service",
     "NautobotService",
-    "offboarding_service",
-    "nautobot_metadata_service",
+    "OffboardingService",
     "NautobotMetadataService",
 ]

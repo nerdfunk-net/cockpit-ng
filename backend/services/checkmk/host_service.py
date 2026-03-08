@@ -94,6 +94,3 @@ class CheckMKHostService:
             logger.error("Error deleting host %s from CheckMK: %s", hostname, str(e))
             raise
 
-
-# Global CheckMK host service instance
-checkmk_host_service = CheckMKHostService()

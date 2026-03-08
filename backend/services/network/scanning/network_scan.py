@@ -386,6 +386,3 @@ class NetworkScanService:
         except ValueError:
             return False
 
-
-# Global service instance
-network_scan_service = NetworkScanService()

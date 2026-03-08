@@ -74,6 +74,17 @@ def mock_config_service(temp_snmp_mapping_file):
 
     config_service.load_snmp_mapping = load_snmp_mapping_mock
 
+    # Mock load_checkmk_config to return a default config without file access
+    def load_checkmk_config_mock(force_reload=False):
+        if config_service._checkmk_config is None or force_reload:
+            config_service._checkmk_config = {
+                "compare": ["attributes", "folder"],
+                "ignore_attributes": [],
+            }
+        return config_service._checkmk_config
+
+    config_service.load_checkmk_config = load_checkmk_config_mock
+
     return config_service
 
 
@@ -256,14 +267,14 @@ class TestSNMPVersionDetection:
     def setup(self, mock_config_service):
         """Set up test instance."""
         self.config_service = mock_config_service
-        self.normalization_service = DeviceNormalizationService()
+        with patch("service_factory.build_checkmk_config_service", return_value=mock_config_service):
+            self.normalization_service = DeviceNormalizationService()
 
     def test_snmp_v3_integer_detection(self):
         """Test SNMPv3 detection when version is integer 3."""
         device_data = NAUTOBOT_DEVICE_WITH_SNMP_V3.copy()
 
-        with patch("services.checkmk.config.config_service", self.config_service):
-            extensions = self.normalization_service.normalize_device(device_data)
+        extensions = self.normalization_service.normalize_device(device_data)
 
         # Verify SNMP v3 attributes were set correctly
         assert "snmp_community" in extensions.attributes
@@ -279,8 +290,7 @@ class TestSNMPVersionDetection:
         """Test SNMPv2c detection when version is integer 2."""
         device_data = NAUTOBOT_DEVICE_WITH_SNMP_V2.copy()
 
-        with patch("services.checkmk.config.config_service", self.config_service):
-            extensions = self.normalization_service.normalize_device(device_data)
+        extensions = self.normalization_service.normalize_device(device_data)
 
         # Verify SNMP v2 community attributes were set correctly
         assert "snmp_community" in extensions.attributes
@@ -302,8 +312,7 @@ class TestSNMPVersionDetection:
             "test-uuid", "test-host", "10.1.1.1/24", "snmp-string-v3"
         )
 
-        with patch("services.checkmk.config.config_service", mock_config_service):
-            extensions = self.normalization_service.normalize_device(device_data)
+        extensions = self.normalization_service.normalize_device(device_data)
 
         # Should still detect as v3
         assert "snmp_community" in extensions.attributes
@@ -322,8 +331,7 @@ class TestSNMPVersionDetection:
             "test-uuid", "test-host", "10.1.1.1/24", "snmp-string-v2"
         )
 
-        with patch("services.checkmk.config.config_service", mock_config_service):
-            extensions = self.normalization_service.normalize_device(device_data)
+        extensions = self.normalization_service.normalize_device(device_data)
 
         # Should still detect as v2
         assert "snmp_community" in extensions.attributes
@@ -334,8 +342,7 @@ class TestSNMPVersionDetection:
         """Test device normalization without SNMP credentials."""
         device_data = NAUTOBOT_DEVICE_WITHOUT_SNMP.copy()
 
-        with patch("services.checkmk.config.config_service", self.config_service):
-            extensions = self.normalization_service.normalize_device(device_data)
+        extensions = self.normalization_service.normalize_device(device_data)
 
         # Should not have snmp_community when no SNMP credentials
         assert "snmp_community" not in extensions.attributes
@@ -352,8 +359,7 @@ class TestSNMPVersionDetection:
             "test-uuid", "test-host", "10.1.1.1/24", "snmp-v3-auth-only"
         )
 
-        with patch("services.checkmk.config.config_service", mock_config_service):
-            extensions = self.normalization_service.normalize_device(device_data)
+        extensions = self.normalization_service.normalize_device(device_data)
 
         # Verify auth but no privacy
         snmp_config = extensions.attributes["snmp_community"]

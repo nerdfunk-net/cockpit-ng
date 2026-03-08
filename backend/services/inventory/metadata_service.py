@@ -30,7 +30,8 @@ class InventoryMetadataService:
             return self._custom_fields_cache
 
         try:
-            from services.nautobot import nautobot_service
+            import service_factory
+            nautobot_service = service_factory.build_nautobot_service()
 
             response = await nautobot_service.rest_request(
                 "extras/custom-fields/?content_types=dcim.device"
@@ -79,7 +80,8 @@ class InventoryMetadataService:
         Returns a list of ``{"value": ..., "label": ...}`` dicts, sorted by label.
         """
         try:
-            from services.nautobot import nautobot_service
+            import service_factory
+            nautobot_service = service_factory.build_nautobot_service()
 
             if field_name == "name":
                 return []

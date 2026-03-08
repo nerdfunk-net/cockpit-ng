@@ -14,7 +14,7 @@ CheckMK Version: REST API v1.0
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from services.checkmk.sync.base import NautobotToCheckMKService
 
@@ -118,22 +118,23 @@ class TestCheckMKAPIResponseStructure:
         # Create service instance
         service = NautobotToCheckMKService()
 
+        mock_nb_service = AsyncMock()
+        mock_nb_service.graphql_query = AsyncMock(
+            return_value={"data": {"device": mock_nautobot_device}}
+        )
+        mock_config = MagicMock()
+        mock_config.load_snmp_mapping.return_value = SNMP_MAPPING_CONFIG
+        mock_config.load_checkmk_config.return_value = {
+            "compare": ["attributes", "folder"],
+            "ignore_attributes": ["tag_address_family"],
+        }
+        mock_config.get_comparison_keys.return_value = ["attributes", "folder"]
+        mock_config.get_ignore_attributes.return_value = ["tag_address_family"]
         with (
-            patch("services.nautobot.nautobot_service") as mock_nb_service,
-            patch("services.checkmk.config.config_service") as mock_config,
+            patch("service_factory.build_nautobot_service", return_value=mock_nb_service),
+            patch("service_factory.build_checkmk_config_service", return_value=mock_config),
             patch("routers.checkmk.main.get_host") as mock_get_host,
         ):
-            # Configure mocks
-            mock_nb_service.graphql_query = AsyncMock(
-                return_value={"data": {"device": mock_nautobot_device}}
-            )
-            mock_config.load_snmp_mapping.return_value = SNMP_MAPPING_CONFIG
-            mock_config.load_checkmk_config.return_value = {
-                "compare": ["attributes", "folder"],
-                "ignore_attributes": ["tag_address_family"],
-            }
-            mock_config.get_comparison_keys.return_value = ["attributes", "folder"]
-            mock_config.get_ignore_attributes.return_value = ["tag_address_family"]
 
             # Mock CheckMK response
             mock_get_host.return_value = AsyncMock(data=mock_checkmk_response)

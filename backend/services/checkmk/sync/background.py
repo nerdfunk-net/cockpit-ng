@@ -9,8 +9,7 @@ import logging
 from typing import Dict, Optional
 from fastapi import HTTPException, status
 
-from services.checkmk.sync.database import nb2cmk_db_service, JobStatus
-from services.checkmk.sync.base import nb2cmk_service
+from services.checkmk.sync.database import JobStatus
 from models.nb2cmk import JobStartResponse, JobProgressResponse, JobResultsResponse
 
 logger = logging.getLogger(__name__)
@@ -20,8 +19,12 @@ class NB2CMKBackgroundService:
     """Service for managing background NB2CMK jobs."""
 
     def __init__(self):
+        import service_factory
+
         self._running_jobs: Dict[str, asyncio.Task] = {}
         self._shutdown = False
+        self._db = service_factory.build_nb2cmk_db_service()
+        self._sync = service_factory.build_nb2cmk_service()
 
     async def start_devices_diff_job(
         self, username: Optional[str] = None
@@ -29,7 +32,7 @@ class NB2CMKBackgroundService:
         """Start a background job to get device differences."""
 
         # Check if there's already an active job
-        active_job = nb2cmk_db_service.get_active_job()
+        active_job = self._db.get_active_job()
         if active_job:
             return JobStartResponse(
                 job_id=active_job.job_id,
@@ -38,7 +41,7 @@ class NB2CMKBackgroundService:
             )
 
         # Create new job
-        job_id = nb2cmk_db_service.create_job(username)
+        job_id = self._db.create_job(username)
 
         # Start background task
         task = asyncio.create_task(self._process_devices_diff(job_id))
@@ -55,7 +58,7 @@ class NB2CMKBackgroundService:
 
     async def get_job_progress(self, job_id: str) -> JobProgressResponse:
         """Get progress information for a job."""
-        job = nb2cmk_db_service.get_job(job_id)
+        job = self._db.get_job(job_id)
 
         if not job:
             raise HTTPException(
@@ -76,7 +79,7 @@ class NB2CMKBackgroundService:
 
     async def get_job_results(self, job_id: str) -> JobResultsResponse:
         """Get complete results for a completed job."""
-        job = nb2cmk_db_service.get_job(job_id)
+        job = self._db.get_job(job_id)
 
         if not job:
             raise HTTPException(
@@ -90,7 +93,7 @@ class NB2CMKBackgroundService:
             )
 
         # Get device results from database
-        device_results = nb2cmk_db_service.get_job_results(job_id)
+        device_results = self._db.get_job_results(job_id)
 
         # Transform to frontend format (same as DeviceListWithStatus)
         devices = []
@@ -132,7 +135,7 @@ class NB2CMKBackgroundService:
             del self._running_jobs[job_id]
 
         # Update job status in database
-        return nb2cmk_db_service.update_job_status(job_id, JobStatus.CANCELLED)
+        return self._db.update_job_status(job_id, JobStatus.CANCELLED)
 
     async def _process_devices_diff(self, job_id: str) -> None:
         """Background task to process all device differences."""
@@ -140,16 +143,17 @@ class NB2CMKBackgroundService:
             logger.info("Starting device comparison processing for job %s", job_id)
 
             # Update job to running
-            nb2cmk_db_service.update_job_status(job_id, JobStatus.RUNNING)
+            self._db.update_job_status(job_id, JobStatus.RUNNING)
 
             # Get all devices from Nautobot first
             logger.info("Job %s: Fetching devices from Nautobot", job_id)
-            nb2cmk_db_service.update_job_progress(
+            self._db.update_job_progress(
                 job_id, 0, 0, "Fetching devices from Nautobot..."
             )
 
             # Use the existing service to get devices
-            from services.nautobot import nautobot_service
+            import service_factory
+            nautobot_service = service_factory.build_nautobot_service()
 
             query = """
             query all_devices {
@@ -173,14 +177,14 @@ class NB2CMKBackgroundService:
             if "errors" in result:
                 error_msg = f"GraphQL errors: {result['errors']}"
                 logger.error("Job %s: %s", job_id, error_msg)
-                nb2cmk_db_service.update_job_status(job_id, JobStatus.FAILED, error_msg)
+                self._db.update_job_status(job_id, JobStatus.FAILED, error_msg)
                 return
 
             nautobot_devices = result["data"]["devices"]
             total_devices = len(nautobot_devices)
 
             logger.info("Job %s: Processing %s devices", job_id, total_devices)
-            nb2cmk_db_service.update_job_progress(
+            self._db.update_job_progress(
                 job_id,
                 0,
                 total_devices,
@@ -195,7 +199,7 @@ class NB2CMKBackgroundService:
                     # Check if job was cancelled
                     if self._shutdown:
                         logger.info("Job %s: Cancelled during processing", job_id)
-                        nb2cmk_db_service.update_job_status(job_id, JobStatus.CANCELLED)
+                        self._db.update_job_status(job_id, JobStatus.CANCELLED)
                         return
 
                     device_id = str(device.get("id", ""))
@@ -236,7 +240,7 @@ class NB2CMKBackgroundService:
                             device_name,
                             device_id,
                         )
-                        comparison_result = await nb2cmk_service.compare_device_config(
+                        comparison_result = await self._sync.compare_device_config(
                             device_id
                         )
                         device_info["checkmk_status"] = comparison_result.result
@@ -319,7 +323,7 @@ class NB2CMKBackgroundService:
                         device_info["checkmk_config"] = None
 
                     # Store result in database
-                    nb2cmk_db_service.add_device_result(
+                    self._db.add_device_result(
                         job_id=job_id,
                         device_id=device_id,
                         device_name=device_name,
@@ -343,7 +347,7 @@ class NB2CMKBackgroundService:
                             f"Processed {processed_count} of {total_devices} devices"
                         )
                         logger.info("Job %s: %s", job_id, progress_msg)
-                        nb2cmk_db_service.update_job_progress(
+                        self._db.update_job_progress(
                             job_id, processed_count, total_devices, progress_msg
                         )
 
@@ -366,7 +370,7 @@ class NB2CMKBackgroundService:
                     ):
                         progress_msg = f"Processed {processed_count} of {total_devices} devices (with errors)"
                         logger.info("Job %s: %s", job_id, progress_msg)
-                        nb2cmk_db_service.update_job_progress(
+                        self._db.update_job_progress(
                             job_id, processed_count, total_devices, progress_msg
                         )
                     continue
@@ -378,14 +382,14 @@ class NB2CMKBackgroundService:
             logger.info("Job %s: %s", job_id, completion_msg)
 
             # Ensure final progress is updated
-            nb2cmk_db_service.update_job_progress(
+            self._db.update_job_progress(
                 job_id, processed_count, total_devices, completion_msg
             )
-            nb2cmk_db_service.update_job_status(job_id, JobStatus.COMPLETED)
+            self._db.update_job_status(job_id, JobStatus.COMPLETED)
 
         except asyncio.CancelledError:
             logger.info("Job %s: Cancelled", job_id)
-            nb2cmk_db_service.update_job_status(job_id, JobStatus.CANCELLED)
+            self._db.update_job_status(job_id, JobStatus.CANCELLED)
             raise
 
         except Exception as e:
@@ -394,7 +398,7 @@ class NB2CMKBackgroundService:
             # Try to preserve progress information even on failure
             try:
                 if "processed_count" in locals() and "total_devices" in locals():
-                    nb2cmk_db_service.update_job_progress(
+                    self._db.update_job_progress(
                         job_id,
                         processed_count,
                         total_devices,
@@ -402,7 +406,7 @@ class NB2CMKBackgroundService:
                     )
             except Exception:
                 pass  # Don't let progress update failures mask the original error
-            nb2cmk_db_service.update_job_status(job_id, JobStatus.FAILED, error_msg)
+            self._db.update_job_status(job_id, JobStatus.FAILED, error_msg)
 
         finally:
             # Clean up task from running jobs
@@ -411,7 +415,7 @@ class NB2CMKBackgroundService:
 
     async def cleanup_old_jobs(self, days_old: int = 7) -> int:
         """Clean up old completed jobs."""
-        return nb2cmk_db_service.cleanup_old_jobs(days_old)
+        return self._db.cleanup_old_jobs(days_old)
 
     async def shutdown(self):
         """Gracefully shutdown background service."""
@@ -429,5 +433,8 @@ class NB2CMKBackgroundService:
         self._running_jobs.clear()
 
 
-# Global instance
+# Intentional app-scoped singleton: NB2CMKBackgroundService holds the in-memory
+# registry of running asyncio.Task objects (_running_jobs).  Constructing a fresh
+# instance per call would lose visibility of active jobs.
+# See REFACTORING_SERVICES.md — Phase 6 for the rationale.
 nb2cmk_background_service = NB2CMKBackgroundService()

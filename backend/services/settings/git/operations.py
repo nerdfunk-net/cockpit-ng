@@ -17,7 +17,7 @@ from git import Repo, GitCommandError
 
 from services.settings.git.paths import repo_path as get_repo_path
 from services.settings.git.env import set_ssl_env
-from services.settings.git.auth import git_auth_service
+from services.settings.git.auth import GitAuthenticationService
 from models.git import SyncResult, CloneResult
 
 logger = logging.getLogger(__name__)
@@ -25,6 +25,9 @@ logger = logging.getLogger(__name__)
 
 class GitOperationsService:
     """Service for git repository operations like sync, clone, pull, and status."""
+
+    def __init__(self):
+        self._auth = GitAuthenticationService()
 
     def sync_repository(
         self, repository: Dict[str, Any], force_clone: bool = False
@@ -57,7 +60,7 @@ class GitOperationsService:
         message = ""
 
         # Use authentication service for all auth operations
-        with git_auth_service.setup_auth_environment(repository) as (
+        with self._auth.setup_auth_environment(repository) as (
             clone_url,
             resolved_username,
             resolved_token,
@@ -190,7 +193,7 @@ class GitOperationsService:
         success = False
         message = ""
 
-        with git_auth_service.setup_auth_environment(repository) as (
+        with self._auth.setup_auth_environment(repository) as (
             clone_url,
             resolved_username,
             resolved_token,
@@ -277,7 +280,7 @@ class GitOperationsService:
         try:
             os.makedirs(os.path.dirname(repo_path), exist_ok=True)
 
-            with git_auth_service.setup_auth_environment(repository) as (
+            with self._auth.setup_auth_environment(repository) as (
                 clone_url,
                 _,
                 _,
@@ -374,7 +377,8 @@ class GitOperationsService:
 
             # Get recent commits using cache service
             try:
-                from services.settings.git.cache import git_cache_service
+                import service_factory
+                git_cache_service = service_factory.build_git_cache_service()
 
                 status_info["commits"] = git_cache_service.get_commits(
                     repo_id=repo_id,
@@ -448,6 +452,3 @@ class GitOperationsService:
 
         return status_info
 
-
-# Singleton instance for use across the application
-git_operations_service = GitOperationsService()

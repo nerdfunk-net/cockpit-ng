@@ -7,7 +7,6 @@ from typing import Any, Dict
 
 from fastapi import HTTPException
 
-from services.nautobot import nautobot_service
 from services.nautobot_helpers import (
     get_device_cache_key,
     get_device_details_cache_key,
@@ -23,10 +22,15 @@ logger = logging.getLogger(__name__)
 class DeviceCleanupManager:
     """Handles device-level mutations during offboarding."""
 
+    def __init__(self):
+        import service_factory
+
+        self._nb = service_factory.build_nautobot_service()
+
     async def delete_device(self, device_id: str) -> Dict[str, Any]:
         """Delete a device from Nautobot."""
         try:
-            result = await nautobot_service.rest_request(
+            result = await self._nb.rest_request(
                 f"dcim/devices/{device_id}/",
                 method="DELETE",
             )
@@ -41,7 +45,7 @@ class DeviceCleanupManager:
     ) -> Dict[str, Any]:
         """Update device attributes in Nautobot."""
         try:
-            updated_device = await nautobot_service.rest_request(
+            updated_device = await self._nb.rest_request(
                 f"dcim/devices/{device_id}/",
                 method="PATCH",
                 data=payload,

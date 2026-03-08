@@ -467,6 +467,3 @@ class NetmikoService:
         )
         return "cisco_ios"
 
-
-# Singleton instance
-netmiko_service = NetmikoService()

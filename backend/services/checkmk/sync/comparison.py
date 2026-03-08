@@ -10,7 +10,6 @@ import logging
 from typing import Dict, Any, List
 from fastapi import HTTPException, status
 
-from services.checkmk.config import config_service
 from models.nb2cmk import DeviceListWithStatus, DeviceComparison
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,10 @@ class DeviceComparisonService:
         Args:
             query_service: DeviceQueryService instance for retrieving device data
         """
+        import service_factory
+
         self.query_service = query_service
+        self._config = service_factory.build_checkmk_config_service()
 
     async def get_devices_diff(self) -> DeviceListWithStatus:
         """Get all devices from Nautobot with CheckMK comparison status.
@@ -37,7 +39,8 @@ class DeviceComparisonService:
             HTTPException: If operation fails
         """
         try:
-            from services.nautobot import nautobot_service
+            import service_factory
+            nautobot_service = service_factory.build_nautobot_service()
 
             # Use GraphQL query to get all devices from Nautobot
             query = """
@@ -135,7 +138,7 @@ class DeviceComparisonService:
             return DeviceListWithStatus(
                 devices=devices_with_status,
                 total=len(devices_with_status),
-                ignored_attributes=config_service.get_ignore_attributes(),
+                ignored_attributes=self._config.get_ignore_attributes(),
                 message=f"Retrieved {len(devices_with_status)} devices with CheckMK comparison status",
             )
 
@@ -317,7 +320,7 @@ class DeviceComparisonService:
                 diff=diff_text,
                 normalized_config=nb_config_with_internal,
                 checkmk_config=cmk_config_for_comparison,
-                ignored_attributes=config_service.get_ignore_attributes(),
+                ignored_attributes=self._config.get_ignore_attributes(),
             )
 
         except HTTPException:
@@ -344,8 +347,8 @@ class DeviceComparisonService:
         differences = []
 
         try:
-            compare_keys = config_service.get_comparison_keys()
-            ignore_attributes = config_service.get_ignore_attributes()
+            compare_keys = self._config.get_comparison_keys()
+            ignore_attributes = self._config.get_ignore_attributes()
             logger.debug("[COMPARE] Comparison keys: %s", compare_keys)
             logger.debug("[COMPARE] Ignore attributes: %s", ignore_attributes)
         except Exception as e:
@@ -541,7 +544,7 @@ class DeviceComparisonService:
         Returns:
             List of attribute names
         """
-        ignore_attributes = config_service.get_ignore_attributes()
+        ignore_attributes = self._config.get_ignore_attributes()
         return [key for key in nb_attributes.keys() if key not in ignore_attributes] + [
             key for key in cmk_attributes.keys() if key not in ignore_attributes
         ]

@@ -14,7 +14,8 @@ Key Features:
 - Proper error handling and logging
 
 Usage:
-    from services.settings.git.service import git_service
+    import service_factory
+    git_service = service_factory.build_git_service()
 
     # Clone or open a repository
     repo = git_service.open_or_clone(repository_dict)
@@ -39,7 +40,7 @@ from typing import Any, Dict, List, Optional, Union
 from git import Repo
 from git.exc import GitCommandError, InvalidGitRepositoryError
 
-from services.settings.git.auth import git_auth_service
+from services.settings.git.auth import GitAuthenticationService
 from services.settings.git.config import set_git_author
 from services.settings.git.env import set_ssl_env
 from services.settings.git.paths import repo_path as get_repo_path
@@ -103,7 +104,7 @@ class GitService:
     - Git author configuration for commits
 
     Example:
-        >>> from services.settings.git.service import git_service
+        >>> import service_factory; git_service = service_factory.build_git_service()
         >>>
         >>> # Repository configuration
         >>> repo_config = {
@@ -126,6 +127,9 @@ class GitService:
         ...     files=["router1.cfg", "router2.cfg"]
         ... )
     """
+
+    def __init__(self):
+        self._auth = GitAuthenticationService()
 
     def get_repo_path(self, repository: Dict) -> Path:
         """Get the filesystem path for a repository.
@@ -160,7 +164,7 @@ class GitService:
         repo_dir.mkdir(parents=True, exist_ok=True)
 
         expected_url_norm = (
-            git_auth_service.normalize_url(repository["url"])
+            self._auth.normalize_url(repository["url"])
             if repository.get("url")
             else None
         )
@@ -174,7 +178,7 @@ class GitService:
                 current_remote = None
 
             if expected_url_norm and current_remote:
-                current_url_norm = git_auth_service.normalize_url(current_remote)
+                current_url_norm = self._auth.normalize_url(current_remote)
                 if current_url_norm != expected_url_norm:
                     logger.warning(
                         "Repository URL mismatch. Expected: %s, Found: %s; re-cloning",
@@ -236,7 +240,7 @@ class GitService:
 
         try:
             with set_ssl_env(repository):
-                with git_auth_service.setup_auth_environment(repository) as (
+                with self._auth.setup_auth_environment(repository) as (
                     clone_url,
                     username,
                     token,
@@ -279,7 +283,7 @@ class GitService:
             branch = repository.get("branch", "main")
 
             with set_ssl_env(repository):
-                with git_auth_service.setup_auth_environment(repository) as (
+                with self._auth.setup_auth_environment(repository) as (
                     auth_url,
                     username,
                     token,
@@ -359,7 +363,7 @@ class GitService:
             push_branch = branch or repository.get("branch", "main")
 
             with set_ssl_env(repository):
-                with git_auth_service.setup_auth_environment(repository) as (
+                with self._auth.setup_auth_environment(repository) as (
                     auth_url,
                     username,
                     token,
@@ -615,7 +619,7 @@ class GitService:
                 repo = self.open_or_clone(repository)
 
             with set_ssl_env(repository):
-                with git_auth_service.setup_auth_environment(repository) as (
+                with self._auth.setup_auth_environment(repository) as (
                     auth_url,
                     username,
                     token,
@@ -737,9 +741,6 @@ class GitService:
             ...     pass
         """
         with set_ssl_env(repository):
-            with git_auth_service.setup_auth_environment(repository) as auth_info:
+            with self._auth.setup_auth_environment(repository) as auth_info:
                 yield auth_info
 
-
-# Singleton instance for use across the application
-git_service = GitService()

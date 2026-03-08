@@ -6,7 +6,6 @@ import logging
 import yaml
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-from services.nautobot import nautobot_service
 from services.nautobot.devices.import_service import DeviceImportService
 from services.nautobot.devices.common import DeviceCommonService
 
@@ -17,7 +16,10 @@ class TestBaselineService:
     """Service to load and create test baseline data in Nautobot."""
 
     def __init__(self):
-        self.nautobot = nautobot_service
+        import service_factory
+
+        nb = service_factory.build_nautobot_service()
+        self.nautobot = nb
         self.created_resources = {
             "location_types": {},
             "locations": {},
@@ -35,7 +37,7 @@ class TestBaselineService:
         self.custom_field_cache: Dict[
             str, str
         ] = {}  # Cache for custom field key -> UUID mapping
-        self.common = DeviceCommonService(nautobot_service)
+        self.common = DeviceCommonService(nb)
 
     async def load_baseline_files(
         self, directory: str = "../contributing-data/tests_baseline"

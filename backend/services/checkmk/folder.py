@@ -116,6 +116,3 @@ class CheckMKFolderService:
             logger.error("Error creating CheckMK path '%s': %s", folder_path, e)
             return False
 
-
-# Global instance for dependency injection
-checkmk_folder_service = CheckMKFolderService()

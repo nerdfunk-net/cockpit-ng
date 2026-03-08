@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 import logging
 from typing import Dict, Any
 
-from services.checkmk.config import config_service
 from models.nb2cmk import DeviceExtensions
 
 if TYPE_CHECKING:
@@ -26,8 +25,11 @@ class TagNormalizer:
             field_normalizer: Field normalizer for field extraction
             ip_normalizer: IP normalizer for IP extraction
         """
+        import service_factory
+
         self.field_normalizer = field_normalizer
         self.ip_normalizer = ip_normalizer
+        self._config = service_factory.build_checkmk_config_service()
 
     def process_additional_attributes(
         self, device_data: Dict[str, Any], extensions: DeviceExtensions
@@ -39,7 +41,7 @@ class TagNormalizer:
             extensions: Extensions object to update
         """
         try:
-            config = config_service.load_checkmk_config()
+            config = self._config.load_checkmk_config()
             additional_attributes_config = config.get("additional_attributes", {})
 
             device_name = device_data.get("name", "")
@@ -78,7 +80,7 @@ class TagNormalizer:
             extensions: Extensions object to update
         """
         try:
-            config = config_service.load_checkmk_config()
+            config = self._config.load_checkmk_config()
             cf2htg_config = config.get("cf2htg", {})
             custom_field_data = device_data.get("_custom_field_data", {})
             device_name = device_data.get("name", "")
@@ -111,7 +113,7 @@ class TagNormalizer:
             extensions: Extensions object to update
         """
         try:
-            config = config_service.load_checkmk_config()
+            config = self._config.load_checkmk_config()
             tags2htg_config = config.get("tags2htg", {})
             device_name = device_data.get("name", "")
 
@@ -160,7 +162,7 @@ class TagNormalizer:
             extensions: Extensions object to update
         """
         try:
-            config = config_service.load_checkmk_config()
+            config = self._config.load_checkmk_config()
             attr2htg_config = config.get("attr2htg", {})
             device_name = device_data.get("name", "")
 

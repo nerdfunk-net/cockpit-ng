@@ -7,7 +7,6 @@ import ipaddress
 import logging
 from typing import Dict, Any
 
-from services.checkmk.config import config_service
 from utils.cmk_site_utils import get_monitored_site, get_device_folder
 from models.nb2cmk import DeviceExtensions
 
@@ -16,6 +15,11 @@ logger = logging.getLogger(__name__)
 
 class DeviceNormalizationService:
     """Service for normalizing Nautobot device data to CheckMK format."""
+
+    def __init__(self):
+        import service_factory
+
+        self._config = service_factory.build_checkmk_config_service()
 
     def normalize_device(self, device_data: Dict[str, Any]) -> DeviceExtensions:
         """Normalize device data from Nautobot for CheckMK comparison.
@@ -46,7 +50,7 @@ class DeviceNormalizationService:
 
             # Force load the configuration on service initialization
             try:
-                config_service.load_checkmk_config(force_reload=True)
+                self._config.load_checkmk_config(force_reload=True)
                 logger.debug(
                     "[NORMALIZATION] CheckMK config loaded successfully for %s",
                     device_name,
@@ -283,7 +287,7 @@ class DeviceNormalizationService:
             if not snmp_credentials:
                 return
 
-            snmp_mapping = config_service.load_snmp_mapping()
+            snmp_mapping = self._config.load_snmp_mapping()
 
             if snmp_credentials in snmp_mapping:
                 snmp_config = snmp_mapping[snmp_credentials]
@@ -363,7 +367,7 @@ class DeviceNormalizationService:
             extensions: Extensions object to update
         """
         try:
-            config = config_service.load_checkmk_config()
+            config = self._config.load_checkmk_config()
             additional_attributes_config = config.get("additional_attributes", {})
 
             device_name = device_data.get("name", "")
@@ -459,7 +463,7 @@ class DeviceNormalizationService:
             extensions: Extensions object to update
         """
         try:
-            config = config_service.load_checkmk_config()
+            config = self._config.load_checkmk_config()
             cf2htg_config = config.get("cf2htg", {})
             custom_field_data = device_data.get("_custom_field_data", {})
             device_name = device_data.get("name", "")
@@ -492,7 +496,7 @@ class DeviceNormalizationService:
             extensions: Extensions object to update
         """
         try:
-            config = config_service.load_checkmk_config()
+            config = self._config.load_checkmk_config()
             tags2htg_config = config.get("tags2htg", {})
             device_name = device_data.get("name", "")
 
@@ -541,7 +545,7 @@ class DeviceNormalizationService:
             extensions: Extensions object to update
         """
         try:
-            config = config_service.load_checkmk_config()
+            config = self._config.load_checkmk_config()
             attr2htg_config = config.get("attr2htg", {})
             device_name = device_data.get("name", "")
 
@@ -605,7 +609,7 @@ class DeviceNormalizationService:
             extensions: Extensions object to update
         """
         try:
-            config = config_service.load_checkmk_config()
+            config = self._config.load_checkmk_config()
             mapping_config = config.get("mapping", {})
             device_name = device_data.get("name", "")
 
@@ -715,6 +719,3 @@ class DeviceNormalizationService:
             return ip_address.split("/")[0] if "/" in ip_address else ip_address
         return ""
 
-
-# Global instance for dependency injection
-device_normalization_service = DeviceNormalizationService()

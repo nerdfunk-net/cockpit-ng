@@ -124,6 +124,3 @@ class CheckMKService:
             else:
                 return False, f"Connection test failed: {str(e)}"
 
-
-# Global CheckMK service instance
-checkmk_service = CheckMKService()

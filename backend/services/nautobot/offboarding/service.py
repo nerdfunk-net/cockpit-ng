@@ -79,7 +79,8 @@ class OffboardingService:
     async def _fetch_device_details(self, device_id: str) -> Dict[str, Any]:
         """Fetch device details using shared device query service."""
         try:
-            from services.nautobot.devices import device_query_service
+            import service_factory
+            device_query_service = service_factory.build_device_query_service()
 
             # Use shared device details service
             device = await device_query_service.get_device_details(
@@ -130,6 +131,4 @@ class OffboardingService:
         )
 
 
-offboarding_service = OffboardingService()
-
-__all__ = ["offboarding_service", "OffboardingService"]
+__all__ = ["OffboardingService"]

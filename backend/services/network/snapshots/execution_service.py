@@ -10,8 +10,8 @@ from pathlib import Path
 
 from repositories.snapshots import SnapshotTemplateRepository, SnapshotRepository
 from models.snapshots import SnapshotExecuteRequest, SnapshotResponse
-from services.network.automation.netmiko import netmiko_service
-from services.settings.git.service import git_service
+from services.network.automation.netmiko import NetmikoService
+from services.settings.git.service import GitService
 from services.settings.git.paths import repo_path
 from git_repositories_manager import GitRepositoryManager
 import credentials_manager as cred_mgr
@@ -26,6 +26,8 @@ class SnapshotExecutionService:
         self.template_repo = SnapshotTemplateRepository()
         self.snapshot_repo = SnapshotRepository()
         self.git_manager = GitRepositoryManager()
+        self._netmiko = NetmikoService()
+        self._git = GitService()
 
     def _render_path(
         self,
@@ -97,7 +99,7 @@ class SnapshotExecutionService:
                 return None
 
             # Open or clone the repository
-            repo = git_service.open_or_clone(repo_data)
+            repo = self._git.open_or_clone(repo_data)
 
             # Get the repository path
             from services.settings.git.paths import repo_path
@@ -115,7 +117,7 @@ class SnapshotExecutionService:
             logger.info("Wrote snapshot to %s", full_path)
 
             # Commit and push the file
-            result = git_service.commit_and_push(
+            result = self._git.commit_and_push(
                 repository=repo_data,
                 message=commit_message,
                 files=[file_path],  # Relative path for git
@@ -304,7 +306,7 @@ class SnapshotExecutionService:
         )
 
         try:
-            session_id, results = await netmiko_service.execute_commands(
+            session_id, results = await self._netmiko.execute_commands(
                 devices=netmiko_devices,
                 commands=command_list,
                 username=cred_username,
@@ -469,7 +471,7 @@ class SnapshotExecutionService:
             raise ValueError(f"Git repository {git_repo_id} not found")
 
         # Open or clone repository
-        repo = git_service.open_or_clone(repo_data)
+        repo = self._git.open_or_clone(repo_data)
         local_repo_path = Path(repo_path(repo_data))
 
         # Collect file paths to delete
@@ -504,7 +506,7 @@ class SnapshotExecutionService:
                 commit_message = (
                     f"Delete snapshot: {snapshot.name} ({len(files_to_delete)} files)"
                 )
-                git_service.commit_and_push(
+                self._git.commit_and_push(
                     repository=repo_data,
                     message=commit_message,
                     files=None,  # Don't pass files since they're deleted

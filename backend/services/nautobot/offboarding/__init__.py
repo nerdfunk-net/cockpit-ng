@@ -1,8 +1,5 @@
 """Nautobot device offboarding module."""
 
-from services.nautobot.offboarding.service import (
-    OffboardingService,
-    offboarding_service,
-)
+from services.nautobot.offboarding.service import OffboardingService
 
-__all__ = ["offboarding_service", "OffboardingService"]
+__all__ = ["OffboardingService"]

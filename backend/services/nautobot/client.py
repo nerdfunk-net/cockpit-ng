@@ -201,7 +201,3 @@ class NautobotService:
         except Exception as e:
             return False, f"Connection failed: {str(e)}"
 
-
-# Module-level singleton — kept for backward compatibility while callers migrate to DI.
-# Will be removed in Phase 2 (see REFACTORING_SERVICES.md).
-nautobot_service = NautobotService()

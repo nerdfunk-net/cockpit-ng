@@ -181,6 +181,3 @@ class ConfigService:
         self._queries = None
         logger.info("Configuration cache cleared, will reload on next access")
 
-
-# Global instance for dependency injection
-config_service = ConfigService()

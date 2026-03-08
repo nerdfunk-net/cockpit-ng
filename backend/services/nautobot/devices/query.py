@@ -6,7 +6,6 @@ Handles device listing with filtering, pagination, and caching.
 
 import logging
 from typing import Optional
-from services.nautobot import nautobot_service
 from services.settings.cache import cache_service
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot_helpers.cache_helpers import (
@@ -193,6 +192,11 @@ query DeviceDetails($deviceId: ID!) {
 class DeviceQueryService:
     """Service for querying devices from Nautobot."""
 
+    def __init__(self):
+        import service_factory
+
+        self._nb = service_factory.build_nautobot_service()
+
     async def get_device_details(
         self,
         device_id: str,
@@ -226,7 +230,7 @@ class DeviceQueryService:
 
         # Execute GraphQL query
         try:
-            result = await nautobot_service.graphql_query(
+            result = await self._nb.graphql_query(
                 DEVICE_DETAILS_QUERY,
                 {"deviceId": device_id},
             )
@@ -339,7 +343,7 @@ class DeviceQueryService:
           }}
         }}
         """
-        count_result = await nautobot_service.graphql_query(
+        count_result = await self._nb.graphql_query(
             count_query, {"name_filter": [name_filter]}
         )
         if "errors" in count_result:
@@ -366,7 +370,7 @@ class DeviceQueryService:
         if offset is not None:
             variables["offset"] = offset
 
-        result = await nautobot_service.graphql_query(query, variables)
+        result = await self._nb.graphql_query(query, variables)
         if "errors" in result:
             raise Exception(f"GraphQL errors: {result['errors']}")
 
@@ -409,7 +413,7 @@ class DeviceQueryService:
         if offset is not None:
             variables["offset"] = offset
 
-        result = await nautobot_service.graphql_query(query, variables)
+        result = await self._nb.graphql_query(query, variables)
         if "errors" in result:
             raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
@@ -460,7 +464,7 @@ class DeviceQueryService:
         if offset is not None:
             variables["offset"] = offset
 
-        result = await nautobot_service.graphql_query(query, variables)
+        result = await self._nb.graphql_query(query, variables)
         if "errors" in result:
             raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
@@ -511,7 +515,7 @@ class DeviceQueryService:
         if offset is not None:
             variables["offset"] = offset
 
-        result = await nautobot_service.graphql_query(query, variables)
+        result = await self._nb.graphql_query(query, variables)
         if "errors" in result:
             raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
@@ -553,7 +557,7 @@ class DeviceQueryService:
         if offset is not None:
             variables["offset"] = offset
 
-        result = await nautobot_service.graphql_query(query, variables)
+        result = await self._nb.graphql_query(query, variables)
         if "errors" in result:
             raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
@@ -569,7 +573,7 @@ class DeviceQueryService:
               }
             }
             """
-            count_result = await nautobot_service.graphql_query(count_query, {})
+            count_result = await self._nb.graphql_query(count_query, {})
             if "errors" in count_result:
                 raise NautobotAPIError(
                     f"GraphQL errors in count query: {count_result['errors']}"
@@ -626,5 +630,3 @@ class DeviceQueryService:
         return response_data
 
 
-# Singleton instance
-device_query_service = DeviceQueryService()

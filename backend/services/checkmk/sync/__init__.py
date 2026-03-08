@@ -172,14 +172,9 @@ class NautobotToCheckMKService:
         return self.operations_service.get_default_site()
 
 
-# Global instance for dependency injection
-nb2cmk_service = NautobotToCheckMKService()
-
-# Export all classes and the singleton
 __all__ = [
     "NautobotToCheckMKService",
     "DeviceQueryService",
     "DeviceComparisonService",
     "DeviceSyncOperations",
-    "nb2cmk_service",
 ]

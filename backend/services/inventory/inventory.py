@@ -210,6 +210,3 @@ class InventoryService:
     ) -> Optional[Any]:
         return await self.git_storage.load_inventory(name, repository_id)
 
-
-# Global service instance — will be removed in Phase 6 when all callers migrate
-inventory_service = InventoryService()

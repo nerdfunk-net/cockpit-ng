@@ -3,7 +3,6 @@
 import logging
 from typing import Dict, Any
 
-from services.checkmk.config import config_service
 from models.nb2cmk import DeviceExtensions
 
 logger = logging.getLogger(__name__)
@@ -11,6 +10,11 @@ logger = logging.getLogger(__name__)
 
 class SNMPNormalizer:
     """Handles SNMP community mapping and configuration."""
+
+    def __init__(self):
+        import service_factory
+
+        self._config = service_factory.build_checkmk_config_service()
 
     def process_snmp_config(
         self, device_data: Dict[str, Any], extensions: DeviceExtensions
@@ -28,7 +32,7 @@ class SNMPNormalizer:
             if not snmp_credentials:
                 return
 
-            snmp_mapping = config_service.load_snmp_mapping()
+            snmp_mapping = self._config.load_snmp_mapping()
 
             if snmp_credentials in snmp_mapping:
                 snmp_config = snmp_mapping[snmp_credentials]

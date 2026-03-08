@@ -9,8 +9,6 @@ import json
 import logging
 from fastapi import HTTPException, status
 
-from services.checkmk.config import config_service
-from services.checkmk.folder import checkmk_folder_service
 from utils.cmk_site_utils import get_device_site_from_normalized_data
 from utils.cmk_folder_utils import normalize_folder_path
 from models.nb2cmk import (
@@ -31,7 +29,11 @@ class DeviceSyncOperations:
         Args:
             query_service: DeviceQueryService instance for retrieving device data
         """
+        import service_factory
+
         self.query_service = query_service
+        self._config = service_factory.build_checkmk_config_service()
+        self._folder = service_factory.build_checkmk_folder_service()
 
     async def add_device_to_checkmk(self, device_id: str) -> DeviceOperationResult:
         """Add a device from Nautobot to CheckMK using normalized config.
@@ -86,7 +88,7 @@ class DeviceSyncOperations:
                     logger.info(
                         "Ensuring folder '%s' exists before creating host", folder
                     )
-                    folder_created = await checkmk_folder_service.create_path(
+                    folder_created = await self._folder.create_path(
                         folder, device_site, {}
                     )
                     if not folder_created:
@@ -269,7 +271,7 @@ class DeviceSyncOperations:
 
             if folder_changed:
                 # Ensure the new folder path exists
-                path_created = await checkmk_folder_service.create_path(
+                path_created = await self._folder.create_path(
                     new_folder_normalized, device_site, {}
                 )
 
@@ -378,5 +380,5 @@ class DeviceSyncOperations:
         Returns:
             DefaultSiteResponse with default site name
         """
-        default_site = config_service.get_default_site()
+        default_site = self._config.get_default_site()
         return DefaultSiteResponse(default_site=default_site)
