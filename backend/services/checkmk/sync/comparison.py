@@ -228,6 +228,16 @@ class DeviceComparisonService:
                         checkmk_config=None,
                     )
                 except CheckMKAPIError as e:
+                    if e.status_code == 404:
+                        logger.info(
+                            "[COMPARE] Host '%s' not found in CheckMK (404)", hostname
+                        )
+                        return DeviceComparison(
+                            result="host_not_found",
+                            diff=f"Host '{hostname}' not found in CheckMK",
+                            normalized_config=normalized_config,
+                            checkmk_config=None,
+                        )
                     error_msg = f"CheckMK API error for host {hostname}: {str(e)}"
                     logger.error("[COMPARE ERROR] %s", error_msg)
                     raise HTTPException(

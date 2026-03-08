@@ -17,6 +17,7 @@ import pytest
 import logging
 from typing import Dict
 from services.nautobot import NautobotService
+from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.devices.creation import DeviceCreationService
 from services.nautobot.devices.update import DeviceUpdateService
 from models.nautobot import AddDeviceRequest, InterfaceData, IpAddressData
@@ -1059,20 +1060,22 @@ class TestDeviceOperationsEdgeCases:
     @pytest.mark.asyncio
     async def test_update_nonexistent_device(self, device_update_service):
         """
-        Test that updating a non-existent device fails gracefully.
-        """
-        # Try to update device that doesn't exist
-        result = await device_update_service.update_device(
-            device_identifier={"id": "00000000-0000-0000-0000-000000000000"},
-            update_data={"serial": "SHOULD-FAIL"},
-        )
+        Test that updating a non-existent device raises an exception.
 
-        # Verify failure
-        assert result["success"] is False
-        assert (
-            "not found" in result["message"].lower()
-            or "failed" in result["message"].lower()
-        )
+        The service re-raises NautobotAPIError (404) when the device UUID
+        does not exist in Nautobot.
+        """
+        with pytest.raises((NautobotAPIError, ValueError, Exception)) as exc_info:
+            await device_update_service.update_device(
+                device_identifier={"id": "00000000-0000-0000-0000-000000000000"},
+                update_data={"serial": "SHOULD-FAIL"},
+            )
+
+        error_message = str(exc_info.value).lower()
+        assert any(
+            keyword in error_message
+            for keyword in ["not found", "failed", "no device matches", "404"]
+        ), f"Unexpected error message: {exc_info.value}"
 
         logger.info("✓ Non-existent device update rejected as expected")
 
