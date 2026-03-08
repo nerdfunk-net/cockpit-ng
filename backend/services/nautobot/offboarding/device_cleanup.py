@@ -14,18 +14,17 @@ from services.nautobot_helpers import (
 )
 from services.nautobot.common.exceptions import translate_http_exception
 from services.nautobot.offboarding.types import DEVICE_CACHE_TTL, OffboardingResult
-from services.settings.cache import cache_service
-
 logger = logging.getLogger(__name__)
 
 
 class DeviceCleanupManager:
     """Handles device-level mutations during offboarding."""
 
-    def __init__(self):
+    def __init__(self, cache_service):
         import service_factory
 
         self._nb = service_factory.build_nautobot_service()
+        self._cache = cache_service
 
     async def delete_device(self, device_id: str) -> Dict[str, Any]:
         """Delete a device from Nautobot."""
@@ -85,16 +84,16 @@ class DeviceCleanupManager:
 
     def _invalidate_device_cache(self, device_id: str) -> None:
         """Delete all cached entries for a device."""
-        cache_service.delete(get_device_cache_key(device_id))
-        cache_service.delete(get_device_details_cache_key(device_id))
-        cache_service.delete(get_device_list_cache_key())
+        self._cache.delete(get_device_cache_key(device_id))
+        self._cache.delete(get_device_details_cache_key(device_id))
+        self._cache.delete(get_device_list_cache_key())
 
     def _update_device_cache(self, device_id: str, device_data: Dict[str, Any]) -> None:
         """Set device cache entries and invalidate list cache."""
-        cache_service.set(
+        self._cache.set(
             get_device_cache_key(device_id), device_data, DEVICE_CACHE_TTL
         )
-        cache_service.set(
+        self._cache.set(
             get_device_details_cache_key(device_id), device_data, DEVICE_CACHE_TTL
         )
-        cache_service.delete(get_device_list_cache_key())
+        self._cache.delete(get_device_list_cache_key())

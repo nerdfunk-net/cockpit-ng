@@ -467,14 +467,4 @@ class RedisCacheService:
         return 0
 
 
-# Initialize cache service with Redis
-try:
-    from config import settings
 
-    cache_service = RedisCacheService(
-        redis_url=settings.redis_url, key_prefix="cockpit-cache"
-    )
-    logger.info("Initialized Redis-based cache service")
-except Exception as e:
-    logger.error("Failed to initialize Redis cache service: %s", e)
-    raise

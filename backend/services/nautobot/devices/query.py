@@ -6,7 +6,6 @@ Handles device listing with filtering, pagination, and caching.
 
 import logging
 from typing import Optional
-from services.settings.cache import cache_service
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot_helpers.cache_helpers import (
     DEVICE_CACHE_TTL,
@@ -196,6 +195,7 @@ class DeviceQueryService:
         import service_factory
 
         self._nb = service_factory.build_nautobot_service()
+        self._cache = service_factory.build_cache_service()
 
     async def get_device_details(
         self,
@@ -221,7 +221,7 @@ class DeviceQueryService:
         # Check cache first
         cache_key = f"nautobot:device_details:{device_id}"
         if use_cache:
-            cached_device = cache_service.get(cache_key)
+            cached_device = self._cache.get(cache_key)
             if cached_device is not None:
                 logger.debug("Cache hit for device details: %s", device_id)
                 return cached_device
@@ -246,7 +246,7 @@ class DeviceQueryService:
             device = result["data"]["device"]
 
             # Cache the result
-            cache_service.set(cache_key, device, DEVICE_CACHE_TTL)
+            self._cache.set(cache_key, device, DEVICE_CACHE_TTL)
             logger.debug("Cached device details for: %s", device_id)
 
             return device
@@ -624,7 +624,7 @@ class DeviceQueryService:
 
         # Cache the result
         logger.debug("Caching devices list: %s", cache_key)
-        cache_service.set(cache_key, response_data, DEVICE_CACHE_TTL)
+        self._cache.set(cache_key, response_data, DEVICE_CACHE_TTL)
         cache_device_list(cache_key, response_data["devices"])
 
         return response_data

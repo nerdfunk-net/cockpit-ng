@@ -21,8 +21,11 @@ class OffboardingService:
     """Orchestrates the device offboarding workflow."""
 
     def __init__(self) -> None:
-        self._device_cleanup = DeviceCleanupManager()
-        self._ip_cleanup = IPCleanupManager()
+        import service_factory
+
+        cache_service = service_factory.build_cache_service()
+        self._device_cleanup = DeviceCleanupManager(cache_service)
+        self._ip_cleanup = IPCleanupManager(cache_service)
         self._checkmk_cleanup = CheckMKCleanupManager()
 
     async def offboard_device(

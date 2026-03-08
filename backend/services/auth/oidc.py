@@ -716,5 +716,3 @@ class OIDCService:
             )
 
 
-# Global OIDC service instance
-oidc_service = OIDCService()

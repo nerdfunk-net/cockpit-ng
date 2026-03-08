@@ -160,17 +160,15 @@ def build_nb2cmk_db_service():
 
 
 def build_nb2cmk_background_service():
-    """Return the module-level NB2CMKBackgroundService singleton.
+    """Create a new NB2CMKBackgroundService instance.
 
-    Intentionally app-scoped: NB2CMKBackgroundService holds an in-memory
-    registry of running asyncio.Task objects (_running_jobs). Constructing
-    a fresh instance per call would lose visibility of active jobs.
-    This singleton is kept by design and is NOT subject to the Phase 6
-    singleton removal sweep.
+    This service is app-scoped: it holds an in-memory registry of running
+    asyncio.Task objects. The app-scoped instance is created in the FastAPI
+    lifespan and stored on app.state. Routers access it via Depends().
     """
-    from services.checkmk.sync.background import nb2cmk_background_service
+    from services.checkmk.sync.background import NB2CMKBackgroundService
 
-    return nb2cmk_background_service
+    return NB2CMKBackgroundService()
 
 
 def build_checkmk_folder_service():
@@ -210,7 +208,7 @@ def build_git_cache_service():
     """Create a fresh GitCacheService instance."""
     from services.settings.git.cache import GitCacheService
 
-    return GitCacheService()
+    return GitCacheService(build_cache_service())
 
 
 def build_git_operations_service():
@@ -240,10 +238,11 @@ def build_git_diff_service():
 
 
 def build_cache_service():
-    """Return the module-level RedisCacheService singleton."""
-    from services.settings.cache import cache_service
+    """Create a new RedisCacheService instance."""
+    from config import settings
+    from services.settings.cache import RedisCacheService
 
-    return cache_service
+    return RedisCacheService(redis_url=settings.redis_url, key_prefix="cockpit-cache")
 
 
 # ---------------------------------------------------------------------------
@@ -252,16 +251,15 @@ def build_cache_service():
 
 
 def build_oidc_service():
-    """Return the module-level OIDCService singleton.
+    """Create a new OIDCService instance.
 
-    Intentionally app-scoped: OIDCService holds JWKS keys and SSL caches
-    that are expensive to rebuild (require HTTP calls to the OIDC provider).
-    This singleton is kept by design and is NOT subject to the Phase 6
-    singleton removal sweep.
+    This service is app-scoped: it holds JWKS keys and SSL caches that are
+    expensive to rebuild. The app-scoped instance is created in the FastAPI
+    lifespan and stored on app.state. Routers access it via Depends().
     """
-    from services.auth.oidc import oidc_service
+    from services.auth.oidc import OIDCService
 
-    return oidc_service
+    return OIDCService()
 
 
 # ---------------------------------------------------------------------------

@@ -433,8 +433,3 @@ class NB2CMKBackgroundService:
         self._running_jobs.clear()
 
 
-# Intentional app-scoped singleton: NB2CMKBackgroundService holds the in-memory
-# registry of running asyncio.Task objects (_running_jobs).  Constructing a fresh
-# instance per call would lose visibility of active jobs.
-# See REFACTORING_SERVICES.md — Phase 6 for the rationale.
-nb2cmk_background_service = NB2CMKBackgroundService()

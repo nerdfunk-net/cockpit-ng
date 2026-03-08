@@ -131,9 +131,9 @@ def get_git_diff_service():
 # ---------------------------------------------------------------------------
 
 
-def get_cache_service():
-    """Provide the RedisCacheService."""
-    return service_factory.build_cache_service()
+def get_cache_service(request: Request):
+    """Provide the app-scoped RedisCacheService from app.state."""
+    return request.app.state.cache_service
 
 
 # ---------------------------------------------------------------------------
@@ -141,9 +141,14 @@ def get_cache_service():
 # ---------------------------------------------------------------------------
 
 
-def get_oidc_service():
-    """Provide the app-scoped OIDCService."""
-    return service_factory.build_oidc_service()
+def get_oidc_service(request: Request):
+    """Provide the app-scoped OIDCService from app.state."""
+    return request.app.state.oidc_service
+
+
+def get_nb2cmk_background_service(request: Request):
+    """Provide the app-scoped NB2CMKBackgroundService from app.state."""
+    return request.app.state.nb2cmk_background_service
 
 
 # ---------------------------------------------------------------------------

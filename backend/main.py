@@ -107,10 +107,18 @@ async def lifespan(app: FastAPI):
     await nautobot_service.startup()
     app.state.nautobot_service = nautobot_service
 
+    app.state.oidc_service = service_factory.build_oidc_service()
+
+    app.state.cache_service = service_factory.build_cache_service()
+
+    nb2cmk_background = service_factory.build_nb2cmk_background_service()
+    app.state.nb2cmk_background_service = nb2cmk_background
+
     await _startup_services()
     yield
 
     await nautobot_service.shutdown()
+    await nb2cmk_background.shutdown()
     _shutdown_event()
 
 
@@ -368,9 +376,11 @@ async def _startup_services():
     try:
         logger.debug("Startup cache: hook invoked")
         # Local imports to avoid circular dependencies at import time
+        import service_factory
         from settings_manager import settings_manager
         from services.settings.git.shared_utils import get_git_repo_by_id
-        from services.settings.cache import cache_service
+
+        cache_service = service_factory.build_cache_service()
 
         cache_cfg = settings_manager.get_cache_settings()
         logger.debug("Startup cache: settings loaded: %s", cache_cfg)

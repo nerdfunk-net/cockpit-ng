@@ -16,18 +16,17 @@ from services.nautobot_helpers import (
 )
 from services.nautobot.common.exceptions import translate_http_exception
 from services.nautobot.offboarding.types import OffboardingResult
-from services.settings.cache import cache_service
-
 logger = logging.getLogger(__name__)
 
 
 class IPCleanupManager:
     """Handles IP address removal during offboarding."""
 
-    def __init__(self):
+    def __init__(self, cache_service):
         import service_factory
 
         self._nb = service_factory.build_nautobot_service()
+        self._cache = cache_service
 
     async def remove_interface_ips(
         self,
@@ -160,8 +159,8 @@ class IPCleanupManager:
         except Exception as exc:
             raise translate_http_exception(exc, f"Failed to delete IP address {ip_id}")
 
-        cache_service.delete(get_ip_address_cache_key(ip_id))
-        cache_service.delete(get_device_cache_key(device_id))
-        cache_service.delete(get_device_details_cache_key(device_id))
-        cache_service.delete(get_device_list_cache_key())
+        self._cache.delete(get_ip_address_cache_key(ip_id))
+        self._cache.delete(get_device_cache_key(device_id))
+        self._cache.delete(get_device_details_cache_key(device_id))
+        self._cache.delete(get_device_list_cache_key())
         return result
