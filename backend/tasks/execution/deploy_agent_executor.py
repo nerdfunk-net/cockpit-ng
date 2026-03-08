@@ -107,9 +107,10 @@ def execute_deploy_agent(
             inventory_name = template.get("inventory_name")
             inventory_id = None
             if inventory_name and template.get("inventory_source") == "inventory":
-                import inventory_manager as inv_mgr
+                import service_factory
 
-                inv = inv_mgr.inventory_manager.get_inventory_by_name(
+                persistence_service = service_factory.build_inventory_persistence_service()
+                inv = persistence_service.get_inventory_by_name(
                     inventory_name, "celery_scheduler"
                 )
                 if inv:
@@ -164,9 +165,10 @@ def execute_deploy_agent(
             inventory_id = None
             inventory_name = template.get("inventory_name")
             if inventory_name and template.get("inventory_source") == "inventory":
-                import inventory_manager as inv_mgr
+                import service_factory
 
-                inv = inv_mgr.inventory_manager.get_inventory_by_name(
+                persistence_service = service_factory.build_inventory_persistence_service()
+                inv = persistence_service.get_inventory_by_name(
                     inventory_name, "celery_scheduler"
                 )
                 if inv:

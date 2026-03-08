@@ -924,12 +924,13 @@ async def advanced_render_template(
             if render_request.inventory_id:
                 try:
                     # Fetch devices from inventory using the same pattern as /api/inventory/resolve-devices
-                    from inventory_manager import inventory_manager
                     from utils.inventory_converter import (
                         convert_saved_inventory_to_operations,
                     )
+                    import service_factory as _sf
+                    _persistence = _sf.build_inventory_persistence_service()
                     # Get inventory by ID
-                    inventory = inventory_manager.get_inventory(
+                    inventory = _persistence.get_inventory(
                         render_request.inventory_id
                     )
                     if not inventory:

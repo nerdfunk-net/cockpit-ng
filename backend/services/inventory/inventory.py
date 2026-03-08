@@ -14,7 +14,7 @@ See: doc/refactoring/REFACTORING_SERVICES.md — Phase 4
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from models.inventory import DeviceInfo, LogicalOperation
 
@@ -24,18 +24,22 @@ from services.inventory.git_storage_service import InventoryGitStorage
 from services.inventory.metadata_service import InventoryMetadataService
 from services.inventory.query_service import InventoryQueryService
 
+if TYPE_CHECKING:
+    from services.inventory.persistence_service import InventoryPersistenceService
+
 logger = logging.getLogger(__name__)
 
 
 class InventoryService:
     """Thin orchestration facade for Ansible inventory operations."""
 
-    def __init__(self):
+    def __init__(self, persistence_service: "InventoryPersistenceService" = None):
         self.query_service = InventoryQueryService()
         self.evaluator = InventoryEvaluator(self.query_service)
         self.metadata_service = InventoryMetadataService()
         self.export_service = InventoryExportService()
         self.git_storage = InventoryGitStorage()
+        self._persistence_service = persistence_service
 
     # ------------------------------------------------------------------
     # Backwards-compat delegation (used by tests and a few internal callers)
@@ -143,18 +147,18 @@ class InventoryService:
                 "Analyzing inventory ID %s for user '%s'", inventory_id, username
             )
 
-            from inventory_manager import inventory_manager
             from utils.inventory_converter import convert_saved_inventory_to_operations
 
-            inventory = inventory_manager.get_inventory(inventory_id)
+            # Use injected persistence service or fall back to factory
+            if self._persistence_service is not None:
+                persistence = self._persistence_service
+            else:
+                import service_factory
+                persistence = service_factory.build_inventory_persistence_service()
+
+            inventory = persistence.get_inventory(inventory_id, username=username)
             if not inventory:
                 raise ValueError(f"Inventory with ID {inventory_id} not found")
-
-            if (
-                inventory.get("scope") == "private"
-                and inventory.get("created_by") != username
-            ):
-                raise ValueError(f"Access denied to private inventory {inventory_id}")
 
             conditions = inventory.get("conditions", [])
             if not conditions:
@@ -173,6 +177,8 @@ class InventoryService:
             logger.info("Found %s devices to analyze", len(devices))
             return await self.export_service.analyze_devices(devices)
 
+        except PermissionError as e:
+            raise ValueError(str(e))
         except Exception as e:
             logger.error("Error analyzing inventory: %s", e, exc_info=True)
             raise

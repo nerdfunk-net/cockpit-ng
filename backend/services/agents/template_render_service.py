@@ -98,15 +98,15 @@ class AgentTemplateRenderService:
         # Fetch inventory devices if inventory_id provided
         if inventory_id:
             try:
-                from inventory_manager import inventory_manager
                 from utils.inventory_converter import (
                     convert_saved_inventory_to_operations,
                 )
                 import service_factory as _sf
+                persistence_service = _sf.build_inventory_persistence_service()
                 inventory_service = _sf.build_inventory_service()
 
                 # Get inventory by ID
-                inventory = inventory_manager.get_inventory(inventory_id)
+                inventory = persistence_service.get_inventory(inventory_id)
                 if not inventory:
                     raise ValueError(f"Inventory with ID {inventory_id} not found")
 

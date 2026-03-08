@@ -61,10 +61,10 @@ from routers.network.snapshots import (
 # Tools routers package (schema management, RBAC seeding, baseline, certificates)
 from routers.tools import tools_router, certificates_router
 
-# Inventory routers now use feature-based structure (Phase 3.7 migration)
+# Inventory routers (ops must be registered before crud — see routers/inventory/__init__.py)
 from routers.inventory import (
-    general_inventory_router,
-    inventory_router,
+    inventory_ops_router,
+    inventory_crud_router,
 )
 
 # git_repositories_router is included via git_router - no need to import separately
@@ -178,8 +178,8 @@ app.include_router(backup_router)  # Configuration backup management
 app.include_router(config_router)
 app.include_router(settings_router)
 app.include_router(templates_router)
-app.include_router(general_inventory_router)
-app.include_router(inventory_router)
+app.include_router(inventory_ops_router)
+app.include_router(inventory_crud_router)
 app.include_router(credentials_router)
 app.include_router(scan_and_add_router)
 app.include_router(cache_router)

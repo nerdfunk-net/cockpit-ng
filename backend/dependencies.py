@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from services.nautobot.metadata_service import NautobotMetadataService
     from services.nautobot.offboarding.service import OffboardingService
     from services.inventory.inventory import InventoryService
+    from services.inventory.persistence_service import InventoryPersistenceService
     from services.nautobot.devices.query import DeviceQueryService
     from services.checkmk.client import CheckMKService
     from services.checkmk.host_service import CheckMKHostService
@@ -31,8 +32,13 @@ def get_nautobot_service(request: Request) -> "NautobotService":
     return request.app.state.nautobot_service
 
 
+def get_inventory_persistence_service() -> "InventoryPersistenceService":
+    """Provide a new InventoryPersistenceService instance (PostgreSQL CRUD)."""
+    return service_factory.build_inventory_persistence_service()
+
+
 def get_inventory_service() -> "InventoryService":
-    """Provide a new InventoryService instance."""
+    """Provide a new InventoryService instance (Nautobot query facade)."""
     return service_factory.build_inventory_service()
 
 

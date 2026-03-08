@@ -7,6 +7,75 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
+# ============================================================================
+# Database CRUD models (PostgreSQL-backed inventories)
+# ============================================================================
+
+
+class CreateInventoryRequest(BaseModel):
+    """Request for creating a new inventory."""
+
+    name: str = Field(..., description="Inventory name")
+    description: Optional[str] = Field(None, description="Inventory description")
+    conditions: List[dict] = Field(
+        ..., description="List of logical conditions or tree structure"
+    )
+    template_category: Optional[str] = Field(
+        None, description="Template category (optional)"
+    )
+    template_name: Optional[str] = Field(None, description="Template name (optional)")
+    scope: str = Field(default="global", description="Scope: 'global' or 'private'")
+
+
+class UpdateInventoryRequest(BaseModel):
+    """Request for updating an inventory."""
+
+    name: Optional[str] = Field(None, description="Inventory name")
+    description: Optional[str] = Field(None, description="Inventory description")
+    conditions: Optional[List[dict]] = Field(
+        None, description="List of logical conditions or tree structure"
+    )
+    template_category: Optional[str] = Field(None, description="Template category")
+    template_name: Optional[str] = Field(None, description="Template name")
+    scope: Optional[str] = Field(None, description="Scope: 'global' or 'private'")
+
+
+class InventoryResponse(BaseModel):
+    """Response model for a single database-backed inventory."""
+
+    id: int
+    name: str
+    description: Optional[str]
+    conditions: List[dict]
+    template_category: Optional[str]
+    template_name: Optional[str]
+    scope: str
+    created_by: str
+    is_active: bool
+    created_at: Optional[str]
+    updated_at: Optional[str]
+
+
+class ListInventoriesResponse(BaseModel):
+    """Response with list of database-backed inventories."""
+
+    inventories: List[InventoryResponse]
+    total: int
+
+
+class InventoryDeleteResponse(BaseModel):
+    """Response after deleting an inventory."""
+
+    success: bool
+    message: str
+
+
+class ImportInventoryRequest(BaseModel):
+    """Request for importing an inventory from JSON."""
+
+    import_data: dict = Field(..., description="The JSON data to import")
+
+
 class LogicalCondition(BaseModel):
     """Represents a single logical condition for device filtering."""
 
@@ -123,8 +192,8 @@ class SaveInventoryResponse(BaseModel):
     inventory_name: str = Field(..., description="Name of saved inventory")
 
 
-class ListInventoriesResponse(BaseModel):
-    """Response with list of saved inventories."""
+class GitInventoryListResponse(BaseModel):
+    """Response with list of git-backed saved inventories."""
 
     inventories: List[SavedInventory] = Field(
         ..., description="List of saved inventories"

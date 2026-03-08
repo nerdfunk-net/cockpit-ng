@@ -1,27 +1,53 @@
 """
-Inventory Management for Ansible Inventory Builder
-Handles inventory storage, retrieval, and management operations in PostgreSQL
+Inventory persistence service — PostgreSQL CRUD for saved inventory configurations.
+
+Replaces the root-level inventory_manager.py singleton. Receives the repository
+via constructor injection so callers (routers, services, tasks) obtain an instance
+through service_factory.build_inventory_persistence_service() or
+dependencies.get_inventory_persistence_service().
+
+See: doc/refactoring/REFACTORING_INVENTORY.md — Step 3
 """
 
 from __future__ import annotations
-import logging
+
 import json
-from typing import Dict, Any, Optional, List
-from repositories.inventory.inventory_repository import InventoryRepository
+import logging
+from typing import Any, Dict, List, Optional
+
 from core.models import Inventory
+from repositories.inventory.inventory_repository import InventoryRepository
 
 logger = logging.getLogger(__name__)
 
 
-class InventoryManager:
-    """Manages Ansible inventory configurations in PostgreSQL database"""
+class InventoryPersistenceService:
+    """Manages Ansible inventory configurations in PostgreSQL database."""
+
+    def __init__(self, repository: InventoryRepository):
+        self.repository = repository
+
+    # ------------------------------------------------------------------
+    # Access control
+    # ------------------------------------------------------------------
+
+    def _assert_access(self, inventory: dict, username: str) -> None:
+        """Raise PermissionError if user cannot access a private inventory."""
+        if (
+            inventory.get("scope") == "private"
+            and inventory.get("created_by") != username
+        ):
+            raise PermissionError(
+                f"Access denied to inventory {inventory['id']}"
+            )
+
+    # ------------------------------------------------------------------
+    # CRUD operations
+    # ------------------------------------------------------------------
 
     def create_inventory(self, inventory_data: Dict[str, Any]) -> Optional[int]:
-        """Create a new inventory"""
+        """Create a new inventory."""
         try:
-            repo = InventoryRepository()
-
-            # Validate required fields
             if not inventory_data.get("name"):
                 raise ValueError("Inventory name is required")
 
@@ -32,7 +58,7 @@ class InventoryManager:
                 raise ValueError("Conditions are required")
 
             # Check for existing active inventory with same name and creator
-            existing = repo.get_by_name(
+            existing = self.repository.get_by_name(
                 inventory_data["name"], inventory_data["created_by"], active_only=True
             )
             if existing:
@@ -40,11 +66,9 @@ class InventoryManager:
                     f"Inventory with name '{inventory_data['name']}' already exists for this user"
                 )
 
-            # Serialize conditions to JSON
             conditions_json = json.dumps(inventory_data["conditions"])
 
-            # Create inventory
-            inventory = repo.create(
+            inventory = self.repository.create(
                 name=inventory_data["name"],
                 description=inventory_data.get("description"),
                 conditions=conditions_json,
@@ -63,22 +87,36 @@ class InventoryManager:
             )
             return inventory.id
 
-        except ValueError as e:
-            raise e
+        except ValueError:
+            raise
         except Exception as e:
             logger.error("Error creating inventory: %s", e)
-            raise e
+            raise
 
-    def get_inventory(self, inventory_id: int) -> Optional[Dict[str, Any]]:
-        """Get an inventory by ID"""
+    def get_inventory(
+        self,
+        inventory_id: int,
+        username: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Get an inventory by ID.
+
+        If *username* is provided, raises PermissionError when the caller
+        does not have access to a private inventory.
+        """
         try:
-            repo = InventoryRepository()
-            inventory = repo.get_by_id(inventory_id)
+            inventory = self.repository.get_by_id(inventory_id)
+            if not inventory:
+                return None
 
-            if inventory:
-                return self._model_to_dict(inventory)
-            return None
+            result = self._model_to_dict(inventory)
 
+            if username is not None:
+                self._assert_access(result, username)
+
+            return result
+
+        except PermissionError:
+            raise
         except Exception as e:
             logger.error("Error getting inventory %s: %s", inventory_id, e)
             return None
@@ -86,11 +124,9 @@ class InventoryManager:
     def get_inventory_by_name(
         self, name: str, username: str
     ) -> Optional[Dict[str, Any]]:
-        """Get an inventory by name for a specific user"""
+        """Get an inventory by name for a specific user."""
         try:
-            repo = InventoryRepository()
-            inventory = repo.get_by_name(name, username, active_only=True)
-
+            inventory = self.repository.get_by_name(name, username, active_only=True)
             if inventory:
                 return self._model_to_dict(inventory)
             return None
@@ -105,17 +141,12 @@ class InventoryManager:
         active_only: bool = True,
         scope: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        """
-        List inventories accessible to a user.
+        """List inventories accessible to a user.
 
-        Returns:
-        - Global inventories (scope='global')
-        - Private inventories owned by the user (scope='private' AND created_by=username)
+        Returns global inventories and private inventories owned by the user.
         """
         try:
-            repo = InventoryRepository()
-
-            inventories = repo.list_inventories(
+            inventories = self.repository.list_inventories(
                 username=username, active_only=active_only, scope=scope
             )
 
@@ -126,7 +157,6 @@ class InventoryManager:
                 username,
                 scope,
             )
-
             return results
 
         except Exception as e:
@@ -136,36 +166,26 @@ class InventoryManager:
     def update_inventory(
         self, inventory_id: int, inventory_data: Dict[str, Any], username: str
     ) -> bool:
-        """Update an existing inventory"""
+        """Update an existing inventory."""
         try:
-            repo = InventoryRepository()
-
-            # Get current inventory
-            current_obj = repo.get_by_id(inventory_id)
+            current_obj = self.repository.get_by_id(inventory_id)
             if not current_obj:
                 raise ValueError(f"Inventory with ID {inventory_id} not found")
 
-            # Check ownership for private inventories
             if current_obj.scope == "private" and current_obj.created_by != username:
                 raise ValueError("You don't have permission to update this inventory")
 
             current = self._model_to_dict(current_obj)
 
-            # Prepare update data
-            # If conditions are provided in update, serialize them to JSON
-            # Otherwise, use the original JSON string from the database (not the deserialized version)
             conditions_json = (
                 json.dumps(inventory_data["conditions"])
                 if "conditions" in inventory_data
-                else current_obj.conditions  # Use original JSON string, not deserialized version
+                else current_obj.conditions
             )
 
-            # Prepare update kwargs
             update_kwargs = {
                 "name": inventory_data.get("name", current["name"]),
-                "description": inventory_data.get(
-                    "description", current["description"]
-                ),
+                "description": inventory_data.get("description", current["description"]),
                 "conditions": conditions_json,
                 "template_category": inventory_data.get(
                     "template_category", current["template_category"]
@@ -176,37 +196,30 @@ class InventoryManager:
                 "scope": inventory_data.get("scope", current["scope"]),
             }
 
-            repo.update(inventory_id, **update_kwargs)
-
+            self.repository.update(inventory_id, **update_kwargs)
             logger.info("Inventory %s updated by %s", inventory_id, username)
             return True
 
         except Exception as e:
             logger.error("Error updating inventory %s: %s", inventory_id, e)
-            raise e
+            raise
 
     def delete_inventory(
         self, inventory_id: int, username: str, hard_delete: bool = True
     ) -> bool:
-        """Delete an inventory (hard delete by default)"""
+        """Delete an inventory (hard delete by default)."""
         try:
-            repo = InventoryRepository()
-
-            # Get inventory for ownership check
-            inventory = repo.get_by_id(inventory_id)
+            inventory = self.repository.get_by_id(inventory_id)
             if not inventory:
                 raise ValueError(f"Inventory with ID {inventory_id} not found")
 
-            # Check ownership for private inventories
             if inventory.scope == "private" and inventory.created_by != username:
                 raise ValueError("You don't have permission to delete this inventory")
 
             if hard_delete:
-                # Hard delete - remove from database
-                repo.delete(inventory_id)
+                self.repository.delete(inventory_id)
             else:
-                # Soft delete - mark as inactive
-                repo.update(inventory_id, is_active=False)
+                self.repository.update(inventory_id, is_active=False)
 
             logger.info(
                 "Inventory %s %s by %s",
@@ -218,16 +231,14 @@ class InventoryManager:
 
         except Exception as e:
             logger.error("Error deleting inventory %s: %s", inventory_id, e)
-            raise e
+            raise
 
     def delete_inventory_by_name(
         self, name: str, username: str, hard_delete: bool = True
     ) -> bool:
-        """Delete an inventory by name (hard delete by default)"""
+        """Delete an inventory by name (hard delete by default)."""
         try:
-            repo = InventoryRepository()
-            inventory = repo.get_by_name(name, username, active_only=False)
-
+            inventory = self.repository.get_by_name(name, username, active_only=False)
             if not inventory:
                 raise ValueError(f"Inventory '{name}' not found")
 
@@ -235,23 +246,43 @@ class InventoryManager:
 
         except Exception as e:
             logger.error("Error deleting inventory by name '%s': %s", name, e)
-            raise e
+            raise
 
     def search_inventories(
         self, query: str, username: str, active_only: bool = True
     ) -> List[Dict[str, Any]]:
-        """Search inventories by name or description"""
+        """Search inventories by name or description."""
         try:
-            repo = InventoryRepository()
-            inventories = repo.search_inventories(query, username, active_only)
+            inventories = self.repository.search_inventories(
+                query, username, active_only
+            )
             return [self._model_to_dict(inv) for inv in inventories]
 
         except Exception as e:
             logger.error("Error searching inventories: %s", e)
             return []
 
+    def health_check(self) -> Dict[str, Any]:
+        """Check inventory database health."""
+        try:
+            active_count = self.repository.get_active_count()
+            total_count = self.repository.get_total_count()
+            return {
+                "status": "healthy",
+                "storage_type": "database",
+                "active_inventories": active_count,
+                "total_inventories": total_count,
+            }
+        except Exception as e:
+            logger.error("Inventory database health check failed: %s", e)
+            return {"status": "unhealthy", "error": str(e)}
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
     def _model_to_dict(self, inventory: Inventory) -> Dict[str, Any]:
-        """Convert SQLAlchemy model to dictionary"""
+        """Convert SQLAlchemy model to dictionary."""
         result = {
             "id": inventory.id,
             "name": inventory.name,
@@ -261,15 +292,14 @@ class InventoryManager:
             "scope": inventory.scope,
             "created_by": inventory.created_by,
             "is_active": bool(inventory.is_active),
-            "created_at": inventory.created_at.isoformat()
-            if inventory.created_at
-            else None,
-            "updated_at": inventory.updated_at.isoformat()
-            if inventory.updated_at
-            else None,
+            "created_at": (
+                inventory.created_at.isoformat() if inventory.created_at else None
+            ),
+            "updated_at": (
+                inventory.updated_at.isoformat() if inventory.updated_at else None
+            ),
         }
 
-        # Parse JSON conditions field
         if inventory.conditions:
             try:
                 result["conditions"] = json.loads(inventory.conditions)
@@ -282,26 +312,3 @@ class InventoryManager:
             result["conditions"] = []
 
         return result
-
-    def health_check(self) -> Dict[str, Any]:
-        """Check inventory database health"""
-        try:
-            repo = InventoryRepository()
-
-            active_count = repo.get_active_count()
-            total_count = repo.get_total_count()
-
-            return {
-                "status": "healthy",
-                "storage_type": "database",
-                "active_inventories": active_count,
-                "total_inventories": total_count,
-            }
-
-        except Exception as e:
-            logger.error("Inventory database health check failed: %s", e)
-            return {"status": "unhealthy", "error": str(e)}
-
-
-# Global inventory manager instance
-inventory_manager = InventoryManager()

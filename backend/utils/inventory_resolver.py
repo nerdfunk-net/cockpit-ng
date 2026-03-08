@@ -52,12 +52,12 @@ async def resolve_inventory_to_device_ids(
     """
     try:
         import service_factory
-        from inventory_manager import inventory_manager
+        persistence = service_factory.build_inventory_persistence_service()
         inventory_service = service_factory.build_inventory_service()
         from utils.inventory_converter import convert_saved_inventory_to_operations
 
         # Load inventory from database by name
-        inventory = inventory_manager.get_inventory_by_name(inventory_name, username)
+        inventory = persistence.get_inventory_by_name(inventory_name, username)
 
         if not inventory:
             logger.warning(
