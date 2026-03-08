@@ -20,10 +20,6 @@ class AgentDeploymentService:
     def __init__(self):
         """Initialize the deployment service."""
         # Import required services at class level to avoid circular imports
-        from template_manager import template_manager
-        from services.agents.template_render_service import (
-            agent_template_render_service,
-        )
         import service_factory as _sf
         git_service = _sf.build_git_service()
         from repositories.settings.git_repository_repository import (
@@ -31,8 +27,8 @@ class AgentDeploymentService:
         )
         from repositories.settings.settings_repository import AgentsSettingRepository
 
-        self.template_manager = template_manager
-        self.agent_template_render_service = agent_template_render_service
+        self.template_manager = _sf.build_template_manager()
+        self.agent_template_render_service = _sf.build_agent_template_render_service()
         self.git_service = git_service
         self.git_repo_repository = GitRepositoryRepository()
         self.agents_repository = AgentsSettingRepository()

@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from checkmk.client import CheckMKClient
     from services.agents.deployment_service import AgentDeploymentService
     from services.agents.template_render_service import AgentTemplateRenderService
+    from template_manager import TemplateManager
 
 
 def build_nautobot_service() -> "NautobotService":
@@ -131,6 +132,13 @@ def build_agent_deployment_service() -> "AgentDeploymentService":
     from services.agents.deployment_service import AgentDeploymentService
 
     return AgentDeploymentService()
+
+
+def build_template_manager() -> "TemplateManager":
+    """Create a new TemplateManager instance."""
+    from template_manager import TemplateManager
+
+    return TemplateManager()
 
 
 # ---------------------------------------------------------------------------
