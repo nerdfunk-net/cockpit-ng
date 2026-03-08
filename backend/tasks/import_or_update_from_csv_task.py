@@ -18,7 +18,7 @@ import fnmatch
 import io
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 import service_factory
@@ -464,7 +464,7 @@ def _run_csv_import(
             "updated": updated,
             "skipped": skipped,
             "failures": failures,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         # Update job run if tracked

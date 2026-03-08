@@ -1,0 +1,9 @@
+name,device_type,ip_address,serial,role,status,location,platform,tags,interface_description,interface_enabled,interface_ip_address,interface_mac_address,interface_mtu,interface_name,interface_status,interface_type,cf_checkmk_site,cf_free_textfield,cf_last_network_data_sync,cf_net,cf_snmp_credentials,set_primary_ipv4
+LAB,Linux,192.168.180.240/24,131184641xxx,Network,Active,Berlin,Cisco IOS,lab,Ethernet0/0,true,192.168.180.240/24,AA:BB:CC:00:01:00,1500,Ethernet0/0,Active,other,,,2026-02-01,lab,credB,true
+LAB,Linux,192.168.180.240/24,131184641xxx,Network,Active,Berlin,Cisco IOS,lab,,true,192.168.179.240/24,AA:BB:CC:00:01:10,1500,Ethernet0/1,Active,other,,,2026-02-01,lab,credB,false
+LAB,Linux,192.168.180.240/24,131184641xxx,Network,Active,Berlin,Cisco IOS,lab,,false,,AA:BB:CC:00:01:20,1500,Ethernet0/2,Active,other,,,2026-02-01,lab,credB,
+LAB,Linux,192.168.180.240/24,131184641xxx,Network,Active,Berlin,Cisco IOS,lab,,false,,AA:BB:CC:00:01:30,1500,Ethernet0/3,Active,other,,,2026-02-01,lab,credB,
+lab-2,Linux,192.168.180.241/24,131184642xx,Network,Active,LAB,Cisco IOS,lab,,true,192.168.180.241/24,AA:BB:CC:00:02:00,1500,Ethernet0/0,Active,other,siteA,,2026-01-20,netA,credA,true
+lab-2,Linux,192.168.180.241/24,131184642xx,Network,Active,LAB,Cisco IOS,lab,,true,192.168.179.241/24,AA:BB:CC:00:02:10,1500,Ethernet0/1,Active,other,siteA,,2026-01-20,netA,credA,false
+lab-2,Linux,192.168.180.241/24,131184642xx,Network,Active,LAB,Cisco IOS,lab,,false,,AA:BB:CC:00:02:20,1500,Ethernet0/2,Active,other,siteA,,2026-01-20,netA,credA,
+lab-2,Linux,192.168.180.241/24,131184642xx,Network,Active,LAB,Cisco IOS,lab,,false,,AA:BB:CC:00:02:30,1500,Ethernet0/3,Active,other,siteA,,2026-01-20,netA,credA,
