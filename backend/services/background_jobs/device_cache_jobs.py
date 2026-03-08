@@ -30,6 +30,7 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
 
         # Import here to avoid circular dependencies
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
         cache_service = service_factory.build_cache_service()
         from services.background_jobs.base import (
@@ -224,6 +225,7 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
         logger.info("Starting cache_single_device task for device %s", device_id)
 
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
         cache_service = service_factory.build_cache_service()
         from services.background_jobs.base import safe_graphql_query

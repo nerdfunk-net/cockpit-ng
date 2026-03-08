@@ -100,6 +100,7 @@ class RenderService:
         if use_nautobot_context and device_id:
             try:
                 import service_factory
+
                 device_query_service = service_factory.build_device_query_service()
 
                 # Use shared device details service
@@ -195,6 +196,7 @@ class RenderService:
         if use_nautobot_context and device_id:
             try:
                 import service_factory
+
                 nautobot_service = service_factory.build_nautobot_service()
 
                 query = """
@@ -427,4 +429,3 @@ class RenderService:
             top_level_vars.add(top_var)
 
         return sorted(list(top_level_vars))
-

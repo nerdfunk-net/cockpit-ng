@@ -563,4 +563,3 @@ class DeviceCreationService:
             )
 
         return interfaces_created, result.primary_ip4_id
-

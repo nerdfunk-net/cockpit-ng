@@ -82,9 +82,11 @@ class InventoryService:
                     len(operation.nested_operations),
                 )
 
-                operation_result, op_count, devices_data = (
-                    await self.evaluator._execute_operation(operation)
-                )
+                (
+                    operation_result,
+                    op_count,
+                    devices_data,
+                ) = await self.evaluator._execute_operation(operation)
                 operations_count += op_count
                 all_devices_data.update(devices_data)
 
@@ -104,7 +106,9 @@ class InventoryService:
                     else:
                         result_devices = result_devices.intersection(operation_result)
 
-                logger.info("Result set size after operation %s: %s", i, len(result_devices))
+                logger.info(
+                    "Result set size after operation %s: %s", i, len(result_devices)
+                )
 
             result_list = [
                 all_devices_data[device_id]
@@ -135,7 +139,9 @@ class InventoryService:
             devices, template_name, template_category
         )
 
-    async def analyze_inventory(self, inventory_id: int, username: str) -> Dict[str, Any]:
+    async def analyze_inventory(
+        self, inventory_id: int, username: str
+    ) -> Dict[str, Any]:
         """
         Load a saved inventory, apply access control, and analyse its device set.
 
@@ -154,6 +160,7 @@ class InventoryService:
                 persistence = self._persistence_service
             else:
                 import service_factory
+
                 persistence = service_factory.build_inventory_persistence_service()
 
             inventory = persistence.get_inventory(inventory_id, username=username)
@@ -211,8 +218,5 @@ class InventoryService:
     async def list_inventories(self, repository_id: int) -> List[Any]:
         return await self.git_storage.list_inventories(repository_id)
 
-    async def load_inventory(
-        self, name: str, repository_id: int
-    ) -> Optional[Any]:
+    async def load_inventory(self, name: str, repository_id: int) -> Optional[Any]:
         return await self.git_storage.load_inventory(name, repository_id)
-

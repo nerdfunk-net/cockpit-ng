@@ -73,9 +73,7 @@ class OffboardingService:
         self._build_summary(results)
 
         # 7. Audit
-        log_offboarding_event(
-            results, device_details, request, current_user
-        )
+        log_offboarding_event(results, device_details, request, current_user)
 
         return results
 
@@ -83,6 +81,7 @@ class OffboardingService:
         """Fetch device details using shared device query service."""
         try:
             import service_factory
+
             device_query_service = service_factory.build_device_query_service()
 
             # Use shared device details service

@@ -39,6 +39,7 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
         import service_factory
+
         config_service = service_factory.build_checkmk_config_service()
         config_service.reload_config()
         logger.info("Reloaded configuration files for add device task")
@@ -122,6 +123,7 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
         import service_factory
+
         config_service = service_factory.build_checkmk_config_service()
         config_service.reload_config()
         logger.info("Reloaded configuration files for update device task")
@@ -210,6 +212,7 @@ def sync_devices_to_checkmk_task(
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
         import service_factory
+
         config_service = service_factory.build_checkmk_config_service()
         config_service.reload_config()
         logger.info("Reloaded configuration files for sync devices task")

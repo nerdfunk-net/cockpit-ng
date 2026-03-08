@@ -87,6 +87,7 @@ def _update_ip_in_nautobot(
     """
     import requests
     import service_factory
+
     nautobot_service = service_factory.build_nautobot_service()
 
     current_date = datetime.now().strftime("%Y-%m-%d")
@@ -269,6 +270,7 @@ def _update_prefix_last_scan(
     """
     import requests
     import service_factory
+
     nautobot_service = service_factory.build_nautobot_service()
 
     current_date = datetime.now().strftime("%Y-%m-%d")

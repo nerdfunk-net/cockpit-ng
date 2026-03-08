@@ -180,4 +180,3 @@ class ConfigService:
         self._snmp_mapping = None
         self._queries = None
         logger.info("Configuration cache cleared, will reload on next access")
-

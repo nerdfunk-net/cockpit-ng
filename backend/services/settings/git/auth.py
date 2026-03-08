@@ -339,4 +339,3 @@ class GitAuthenticationService:
                 os.environ["GIT_SSH_COMMAND"] = original_ssh_command
             elif "GIT_SSH_COMMAND" in os.environ:
                 del os.environ["GIT_SSH_COMMAND"]
-

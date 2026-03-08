@@ -33,6 +33,7 @@ class BackupRepository:
         then filters and paginates the results.
         """
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
 
         # Build GraphQL query with filters

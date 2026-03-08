@@ -34,6 +34,7 @@ def get_git_repo_by_id(repo_id: int):
         # Open the repository (or clone if needed) using central git_service
         try:
             import service_factory
+
             repo = service_factory.build_git_service().open_or_clone(repository)
             return repo
         except Exception as e:

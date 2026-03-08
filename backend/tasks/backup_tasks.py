@@ -46,6 +46,7 @@ def finalize_backup_task(
         dict: Final backup status
     """
     import service_factory
+
     git_service = service_factory.build_git_service()
     import job_run_manager
 
@@ -286,6 +287,7 @@ def backup_devices_task(
 
         # Import services
         import service_factory
+
         git_service = service_factory.build_git_service()
         git_auth_service = service_factory.build_git_auth_service()
         # Step 1: Validate inputs (delegated to service)

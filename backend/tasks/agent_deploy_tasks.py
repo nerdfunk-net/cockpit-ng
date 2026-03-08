@@ -58,22 +58,26 @@ def deploy_agent_task(
     # Route to multi-template or single-template deployment
     if template_entries:
         logger.info("Multi-template deployment: %s entries", len(template_entries))
-        return asyncio.run(deployment_service.deploy_multi(
-            template_entries=template_entries,
-            agent_id=agent_id,
-            activate_after_deploy=activate_after_deploy,
-            task_context=self,
-            username="celery_task",
-        ))
+        return asyncio.run(
+            deployment_service.deploy_multi(
+                template_entries=template_entries,
+                agent_id=agent_id,
+                activate_after_deploy=activate_after_deploy,
+                task_context=self,
+                username="celery_task",
+            )
+        )
     else:
         logger.info("Single-template deployment: template_id=%s", template_id)
-        return asyncio.run(deployment_service.deploy(
-            template_id=template_id,
-            agent_id=agent_id,
-            custom_variables=custom_variables,
-            path=path,
-            inventory_id=inventory_id,
-            activate_after_deploy=activate_after_deploy,
-            task_context=self,
-            username="celery_task",
-        ))
+        return asyncio.run(
+            deployment_service.deploy(
+                template_id=template_id,
+                agent_id=agent_id,
+                custom_variables=custom_variables,
+                path=path,
+                inventory_id=inventory_id,
+                activate_after_deploy=activate_after_deploy,
+                task_context=self,
+                username="celery_task",
+            )
+        )

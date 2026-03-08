@@ -315,4 +315,3 @@ class GitConnectionService:
                 message=f"Git connection failed: {result.stderr}",
                 details={"error": result.stderr, "return_code": result.returncode},
             )
-

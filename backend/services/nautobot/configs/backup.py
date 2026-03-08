@@ -44,7 +44,9 @@ class DeviceBackupService:
         Args:
             nautobot_service: NautobotService instance for API operations
         """
-        self.nautobot_service = nautobot_service or service_factory.build_nautobot_service()
+        self.nautobot_service = (
+            nautobot_service or service_factory.build_nautobot_service()
+        )
         self.config_service = DeviceConfigService(self.nautobot_service)
         self.platform_mapper = NetmikoPlatformMapper()
 
@@ -279,11 +281,13 @@ class DeviceBackupService:
 
                 update_data = {"custom_fields": {custom_field_name: backup_date}}
 
-                asyncio.run(self.nautobot_service.rest_request(
-                    endpoint="dcim/devices/%s/" % device_id,
-                    method="PATCH",
-                    data=update_data,
-                ))
+                asyncio.run(
+                    self.nautobot_service.rest_request(
+                        endpoint="dcim/devices/%s/" % device_id,
+                        method="PATCH",
+                        data=update_data,
+                    )
+                )
 
                 logger.info("✓ Updated custom field for %s", device_name)
                 status.updated_count += 1

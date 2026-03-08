@@ -40,7 +40,9 @@ router = APIRouter(prefix="/api/inventory", tags=["inventory"])
 async def create_inventory(
     request: CreateInventoryRequest,
     current_user: dict = Depends(require_permission("general.inventory", "write")),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> InventoryResponse:
     """Create a new inventory configuration.
 
@@ -100,7 +102,9 @@ async def list_inventories(
     scope: Optional[str] = None,
     active_only: bool = True,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> ListInventoriesResponse:
     """List all inventories accessible to the current user.
 
@@ -139,7 +143,9 @@ async def list_inventories(
 async def get_inventory(
     inventory_id: int,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> InventoryResponse:
     """Get a specific inventory by ID.
 
@@ -176,7 +182,9 @@ async def get_inventory(
 async def get_inventory_by_name(
     inventory_name: str,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> InventoryResponse:
     """Get a specific inventory by name.
 
@@ -217,7 +225,9 @@ async def update_inventory(
     inventory_id: int,
     request: UpdateInventoryRequest,
     current_user: dict = Depends(require_permission("general.inventory", "write")),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> InventoryResponse:
     """Update an existing inventory.
 
@@ -278,7 +288,9 @@ async def delete_inventory(
     inventory_id: int,
     hard_delete: bool = True,
     current_user: dict = Depends(require_permission("general.inventory", "delete")),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> InventoryDeleteResponse:
     """Delete an inventory (hard delete by default).
 
@@ -321,7 +333,9 @@ async def search_inventories(
     query: str,
     active_only: bool = True,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> ListInventoriesResponse:
     """Search inventories by name or description.
 
@@ -354,7 +368,9 @@ async def search_inventories(
 async def export_inventory(
     inventory_id: int,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ):
     """Export an inventory as a JSON file.
 
@@ -440,7 +456,9 @@ async def export_inventory(
 async def import_inventory(
     request: ImportInventoryRequest,
     current_user: dict = Depends(require_permission("general.inventory", "write")),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> InventoryResponse:
     """Import an inventory from exported JSON data.
 

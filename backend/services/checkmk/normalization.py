@@ -718,4 +718,3 @@ class DeviceNormalizationService:
             ip_address = primary_ip4.get("address")
             return ip_address.split("/")[0] if "/" in ip_address else ip_address
         return ""
-

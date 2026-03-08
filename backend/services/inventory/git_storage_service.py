@@ -35,6 +35,7 @@ class InventoryGitStorage:
         """Write an inventory JSON file and push it to the git repository."""
         from git_repositories_manager import GitRepositoryManager
         import service_factory
+
         git_service = service_factory.build_git_service()
         git_auth_service = service_factory.build_git_auth_service()
 
@@ -112,6 +113,7 @@ class InventoryGitStorage:
         """Return all saved inventories found in the repository's ``inventories/`` dir."""
         from git_repositories_manager import GitRepositoryManager
         import service_factory
+
         git_service = service_factory.build_git_service()
         git_auth_service = service_factory.build_git_auth_service()
 
@@ -149,7 +151,9 @@ class InventoryGitStorage:
                         )
                     )
                 except Exception as e:
-                    logger.warning("Error reading inventory file %s: %s", inventory_file, e)
+                    logger.warning(
+                        "Error reading inventory file %s: %s", inventory_file, e
+                    )
 
             logger.info("Found %s inventories", len(inventories))
             return inventories
@@ -164,6 +168,7 @@ class InventoryGitStorage:
         """Load a single inventory by name from the git repository."""
         from git_repositories_manager import GitRepositoryManager
         import service_factory
+
         git_service = service_factory.build_git_service()
         git_auth_service = service_factory.build_git_auth_service()
 
@@ -182,9 +187,7 @@ class InventoryGitStorage:
             repo = git_service.open_or_clone(repository)
             git_service.pull(repository, repo=repo)
 
-            inventory_file = (
-                Path(repo.working_dir) / "inventories" / f"{name}.json"
-            )
+            inventory_file = Path(repo.working_dir) / "inventories" / f"{name}.json"
             if not inventory_file.exists():
                 logger.warning("Inventory file not found: %s", inventory_file)
                 return None
@@ -193,9 +196,7 @@ class InventoryGitStorage:
             inventory = SavedInventory(
                 name=data["name"],
                 description=data.get("description"),
-                conditions=[
-                    SavedInventoryCondition(**c) for c in data["conditions"]
-                ],
+                conditions=[SavedInventoryCondition(**c) for c in data["conditions"]],
                 created_at=data.get("created_at"),
                 updated_at=data.get("updated_at"),
             )

@@ -331,4 +331,6 @@ class CsvImportRequest(BaseModel):
     column_mapping: Optional[Dict[str, Optional[str]]] = None
     template_id: Optional[int] = None
     dry_run: bool = False
-    file_filter: Optional[str] = None  # glob pattern; if set, process all matching files instead of file_path
+    file_filter: Optional[str] = (
+        None  # glob pattern; if set, process all matching files instead of file_path
+    )

@@ -44,11 +44,17 @@ from models.checkmk import (
     CheckMKOperationResponse,
 )
 import service_factory
-from dependencies import get_checkmk_service, get_checkmk_host_service, get_cache_service
+from dependencies import (
+    get_checkmk_service,
+    get_checkmk_host_service,
+    get_cache_service,
+)
 from services.checkmk.exceptions import CheckMKClientError, HostNotFoundError
+
 
 def _get_checkmk_client(site_name=None):
     return service_factory.build_checkmk_client(site_name)
+
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/checkmk", tags=["checkmk"])

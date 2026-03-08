@@ -406,4 +406,3 @@ class GitCacheService:
 
         except Exception as e:
             logger.error("Failed to invalidate all caches: %s", e)
-

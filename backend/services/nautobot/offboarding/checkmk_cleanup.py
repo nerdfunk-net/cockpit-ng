@@ -34,6 +34,7 @@ class CheckMKCleanupManager:
 
         try:
             import service_factory
+
             checkmk_host_service = service_factory.build_checkmk_host_service()
 
             await checkmk_host_service.delete_host(device_name)

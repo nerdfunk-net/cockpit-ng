@@ -867,5 +867,3 @@ async def update_nautobot_defaults(
             "success": False,
             "message": f"Failed to update Nautobot defaults: {str(e)}",
         }
-
-

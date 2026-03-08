@@ -40,7 +40,9 @@ class TestFetchDevicesFromNautobot:
     async def test_get_all_devices_success(self, mock_nautobot_service):
         """Test successfully fetching all devices from Nautobot."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value=NAUTOBOT_DEVICES_LIST.copy()
             )
@@ -60,7 +62,9 @@ class TestFetchDevicesFromNautobot:
     async def test_get_devices_handles_graphql_errors(self, mock_nautobot_service):
         """Test handling GraphQL errors during device fetch."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"errors": [{"message": "GraphQL syntax error"}]}
             )
@@ -78,7 +82,9 @@ class TestFetchDevicesFromNautobot:
     async def test_get_devices_with_empty_result(self, mock_nautobot_service):
         """Test fetching devices when Nautobot has no devices."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
             )
@@ -114,7 +120,9 @@ class TestDeviceComparison:
     ):
         """Test identifying devices in Nautobot but not in CheckMK."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             # Nautobot has 2 devices
             nautobot_data = {
                 "data": {
@@ -158,7 +166,9 @@ class TestDeviceComparison:
     ):
         """Test identifying devices in CheckMK but not in Nautobot."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             # Nautobot has no devices
             mock_nautobot_service.graphql_query = AsyncMock(
                 return_value={"data": {"devices": []}}
@@ -198,12 +208,12 @@ class TestSyncOperations:
     ):
         """Test adding new devices to CheckMK during sync."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             # Nautobot has devices
             nautobot_data = create_devices_list(count=2)
-            mock_nautobot_service.graphql_query = AsyncMock(
-                return_value=nautobot_data
-            )
+            mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)
 
             # CheckMK is empty
             mock_checkmk_client.get_all_hosts = Mock(return_value={})
@@ -224,7 +234,9 @@ class TestSyncOperations:
     ):
         """Test updating existing devices in CheckMK."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             # Device exists in both with different data
             nautobot_data = {
                 "data": {
@@ -283,7 +295,9 @@ class TestSyncErrorHandling:
     ):
         """Test handling when CheckMK reports host already exists."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             nautobot_data = create_devices_list(count=1)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)
 
@@ -305,7 +319,9 @@ class TestSyncErrorHandling:
     ):
         """Test handling when some devices fail to sync."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             # Multiple devices
             nautobot_data = create_devices_list(count=3)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)
@@ -351,7 +367,9 @@ class TestLiveUpdateTracking:
     ):
         """Test that sync progress is tracked."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             nautobot_data = create_devices_list(count=5)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)
 
@@ -392,7 +410,9 @@ class TestDataTransformation:
     async def test_transforms_nautobot_to_checkmk_format(self, mock_nautobot_service):
         """Test transforming Nautobot device data to CheckMK format."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             nautobot_data = {
                 "data": {
                     "devices": [
@@ -424,7 +444,9 @@ class TestDataTransformation:
     async def test_handles_missing_optional_fields(self, mock_nautobot_service):
         """Test handling devices with missing optional fields."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             # Device with minimal data (missing role, location)
             nautobot_data = {
                 "data": {
@@ -472,7 +494,9 @@ class TestCompleteSyncScenarios:
     ):
         """Test complete sync workflow from fetch to update."""
         # Arrange
-        with patch("service_factory.build_nautobot_service", return_value=mock_nautobot_service):
+        with patch(
+            "service_factory.build_nautobot_service", return_value=mock_nautobot_service
+        ):
             # Scenario: 3 devices in Nautobot, 1 in CheckMK, need to add 2
             nautobot_data = create_devices_list(count=3)
             mock_nautobot_service.graphql_query = AsyncMock(return_value=nautobot_data)

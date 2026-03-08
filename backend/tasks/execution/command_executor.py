@@ -101,13 +101,12 @@ def execute_run_commands(
 
             import asyncio
             import service_factory
+
             device_query_service = service_factory.build_device_query_service()
 
             devices_result = asyncio.run(device_query_service.get_devices())
             if devices_result and devices_result.get("devices"):
-                device_ids = [
-                    device.get("id") for device in devices_result["devices"]
-                ]
+                device_ids = [device.get("id") for device in devices_result["devices"]]
                 logger.info("Fetched %s devices from Nautobot", len(device_ids))
             else:
                 logger.warning("No devices found in Nautobot")
@@ -231,35 +230,35 @@ def execute_run_commands(
         total_devices = len(device_ids)
 
         for idx, device_id in enumerate(device_ids, 1):
-                device_result = {
-                    "device_id": device_id,
-                    "device_name": None,
-                    "device_ip": None,
-                    "platform": None,
-                    "success": False,
-                    "rendered_commands": None,
-                    "output": None,
-                    "error": None,
-                }
+            device_result = {
+                "device_id": device_id,
+                "device_name": None,
+                "device_ip": None,
+                "platform": None,
+                "success": False,
+                "rendered_commands": None,
+                "output": None,
+                "error": None,
+            }
 
-                try:
-                    logger.info("\n%s", "=" * 60)
-                    logger.info("Device %s/%s: %s", idx, total_devices, device_id)
-                    logger.info("%s", "=" * 60)
+            try:
+                logger.info("\n%s", "=" * 60)
+                logger.info("Device %s/%s: %s", idx, total_devices, device_id)
+                logger.info("%s", "=" * 60)
 
-                    progress = 10 + int((idx / total_devices) * 80)
-                    task_context.update_state(
-                        state="PROGRESS",
-                        meta={
-                            "current": progress,
-                            "total": 100,
-                            "status": f"Executing on device {idx}/{total_devices}...",
-                        },
-                    )
+                progress = 10 + int((idx / total_devices) * 80)
+                task_context.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "current": progress,
+                        "total": 100,
+                        "status": f"Executing on device {idx}/{total_devices}...",
+                    },
+                )
 
-                    # Get device details from Nautobot
-                    logger.info("[%s] Fetching device details from Nautobot...", idx)
-                    query = """
+                # Get device details from Nautobot
+                logger.info("[%s] Fetching device details from Nautobot...", idx)
+                query = """
                     query getDevice($deviceId: ID!) {
                       device(id: $deviceId) {
                         id
@@ -325,174 +324,166 @@ def execute_run_commands(
                       }
                     }
                     """
-                    variables = {"deviceId": device_id}
-                    device_data = asyncio.run(
-                        nautobot_service.graphql_query(query, variables)
+                variables = {"deviceId": device_id}
+                device_data = asyncio.run(
+                    nautobot_service.graphql_query(query, variables)
+                )
+
+                if (
+                    not device_data
+                    or "data" not in device_data
+                    or not device_data["data"].get("device")
+                ):
+                    logger.error("[%s] ✗ Failed to get device data from Nautobot", idx)
+                    device_result["error"] = "Failed to fetch device data from Nautobot"
+                    failed_devices.append(device_result)
+                    continue
+
+                device = device_data["data"]["device"]
+                device_name = device.get("name", device_id)
+                primary_ip = (
+                    device.get("primary_ip4", {}).get("address", "").split("/")[0]
+                    if device.get("primary_ip4")
+                    else None
+                )
+
+                # Get platform information from Nautobot
+                platform_obj = device.get("platform", {})
+                network_driver = (
+                    platform_obj.get("network_driver") if platform_obj else None
+                )
+                platform_name = (
+                    platform_obj.get("name", "unknown") if platform_obj else "unknown"
+                )
+
+                # Determine device type for Netmiko
+                if network_driver:
+                    # Use authoritative network_driver from Nautobot (already correct Netmiko format)
+                    device_type = network_driver
+                    platform = network_driver
+                    logger.info(
+                        "[%s] Using network_driver from Nautobot: %s",
+                        idx,
+                        network_driver,
                     )
-
-                    if (
-                        not device_data
-                        or "data" not in device_data
-                        or not device_data["data"].get("device")
-                    ):
-                        logger.error(
-                            "[%s] ✗ Failed to get device data from Nautobot", idx
-                        )
-                        device_result["error"] = (
-                            "Failed to fetch device data from Nautobot"
-                        )
-                        failed_devices.append(device_result)
-                        continue
-
-                    device = device_data["data"]["device"]
-                    device_name = device.get("name", device_id)
-                    primary_ip = (
-                        device.get("primary_ip4", {}).get("address", "").split("/")[0]
-                        if device.get("primary_ip4")
-                        else None
+                else:
+                    # Fallback: map platform name to Netmiko device type (best guess)
+                    platform = platform_name
+                    from utils.netmiko_platform_mapper import (
+                        map_platform_to_netmiko,
                     )
-
-                    # Get platform information from Nautobot
-                    platform_obj = device.get("platform", {})
-                    network_driver = (
-                        platform_obj.get("network_driver") if platform_obj else None
-                    )
-                    platform_name = (
-                        platform_obj.get("name", "unknown")
-                        if platform_obj
-                        else "unknown"
-                    )
-
-                    # Determine device type for Netmiko
-                    if network_driver:
-                        # Use authoritative network_driver from Nautobot (already correct Netmiko format)
-                        device_type = network_driver
-                        platform = network_driver
-                        logger.info(
-                            "[%s] Using network_driver from Nautobot: %s",
-                            idx,
-                            network_driver,
-                        )
-                    else:
-                        # Fallback: map platform name to Netmiko device type (best guess)
-                        platform = platform_name
-                        from utils.netmiko_platform_mapper import (
-                            map_platform_to_netmiko,
-                        )
-
-                        device_type = map_platform_to_netmiko(platform)
-                        logger.info(
-                            "[%s] No network_driver, mapped platform '%s' to: %s",
-                            idx,
-                            platform,
-                            device_type,
-                        )
-
-                    device_result["device_name"] = device_name
-                    device_result["device_ip"] = primary_ip
-                    device_result["platform"] = platform
-
-                    logger.info("[%s] ✓ Device data fetched", idx)
-                    logger.info("[%s]   - Name: %s", idx, device_name)
-                    logger.info("[%s]   - IP: %s", idx, primary_ip or "NOT SET")
-                    logger.info("[%s]   - Platform: %s", idx, platform)
-                    logger.info("[%s]   - Netmiko device type: %s", idx, device_type)
-
-                    if not primary_ip:
-                        logger.error("[%s] ✗ No primary IP", idx)
-                        device_result["error"] = "No primary IP address"
-                        failed_devices.append(device_result)
-                        continue
-
-                    # Render template for this device
-                    logger.info("[%s] Rendering template...", idx)
-                    try:
-                        render_result = asyncio.run(
-                            render_service.render_template(
-                                template_content=template_content,
-                                category="netmiko",
-                                device_id=device_id,
-                                user_variables={},
-                                use_nautobot_context=True,
-                            )
-                        )
-                        rendered_content = render_result["rendered_content"]
-                        device_result["rendered_commands"] = rendered_content
-                        logger.info("[%s] ✓ Template rendered successfully", idx)
-                    except Exception as render_error:
-                        logger.error(
-                            "[%s] ✗ Template rendering failed: %s", idx, render_error
-                        )
-                        device_result["error"] = (
-                            f"Template rendering failed: {str(render_error)}"
-                        )
-                        failed_devices.append(device_result)
-                        continue
-
-                    # Convert rendered content to command list
-                    commands = [
-                        line.strip()
-                        for line in rendered_content.split("\n")
-                        if line.strip()
-                    ]
-
-                    if not commands:
-                        logger.error(
-                            "[%s] ✗ No commands to execute after template rendering",
-                            idx,
-                        )
-                        device_result["error"] = (
-                            "No commands to execute after template rendering"
-                        )
-                        failed_devices.append(device_result)
-                        continue
-
-                    logger.info("[%s] Commands to execute: %s", idx, len(commands))
-
-                    # Map platform to Netmiko device type
-                    from utils.netmiko_platform_mapper import map_platform_to_netmiko
 
                     device_type = map_platform_to_netmiko(platform)
-                    logger.info("[%s] Netmiko device type: %s", idx, device_type)
-
-                    # Execute commands using Netmiko
                     logger.info(
-                        "[%s] Connecting via SSH and executing commands...", idx
-                    )
-                    result = netmiko_service._connect_and_execute(
-                        device_ip=primary_ip,
-                        device_type=device_type,
-                        username=username,
-                        password=password,
-                        commands=commands,
-                        enable_mode=False,
+                        "[%s] No network_driver, mapped platform '%s' to: %s",
+                        idx,
+                        platform,
+                        device_type,
                     )
 
-                    if result["success"]:
-                        device_result["success"] = True
-                        device_result["output"] = result["output"]
-                        logger.info("[%s] ✓ Commands executed successfully", idx)
-                        logger.info(
-                            "[%s]   - Output length: %s chars",
-                            idx,
-                            len(result["output"]),
-                        )
-                        successful_devices.append(device_result)
-                    else:
-                        device_result["error"] = result.get(
-                            "error", "Command execution failed"
-                        )
-                        logger.error(
-                            "[%s] ✗ Command execution failed: %s",
-                            idx,
-                            result.get("error"),
-                        )
-                        failed_devices.append(device_result)
+                device_result["device_name"] = device_name
+                device_result["device_ip"] = primary_ip
+                device_result["platform"] = platform
 
-                except Exception as e:
-                    logger.error("[%s] ✗ Exception: %s", idx, e, exc_info=True)
-                    device_result["error"] = str(e)
+                logger.info("[%s] ✓ Device data fetched", idx)
+                logger.info("[%s]   - Name: %s", idx, device_name)
+                logger.info("[%s]   - IP: %s", idx, primary_ip or "NOT SET")
+                logger.info("[%s]   - Platform: %s", idx, platform)
+                logger.info("[%s]   - Netmiko device type: %s", idx, device_type)
+
+                if not primary_ip:
+                    logger.error("[%s] ✗ No primary IP", idx)
+                    device_result["error"] = "No primary IP address"
                     failed_devices.append(device_result)
+                    continue
+
+                # Render template for this device
+                logger.info("[%s] Rendering template...", idx)
+                try:
+                    render_result = asyncio.run(
+                        render_service.render_template(
+                            template_content=template_content,
+                            category="netmiko",
+                            device_id=device_id,
+                            user_variables={},
+                            use_nautobot_context=True,
+                        )
+                    )
+                    rendered_content = render_result["rendered_content"]
+                    device_result["rendered_commands"] = rendered_content
+                    logger.info("[%s] ✓ Template rendered successfully", idx)
+                except Exception as render_error:
+                    logger.error(
+                        "[%s] ✗ Template rendering failed: %s", idx, render_error
+                    )
+                    device_result["error"] = (
+                        f"Template rendering failed: {str(render_error)}"
+                    )
+                    failed_devices.append(device_result)
+                    continue
+
+                # Convert rendered content to command list
+                commands = [
+                    line.strip()
+                    for line in rendered_content.split("\n")
+                    if line.strip()
+                ]
+
+                if not commands:
+                    logger.error(
+                        "[%s] ✗ No commands to execute after template rendering",
+                        idx,
+                    )
+                    device_result["error"] = (
+                        "No commands to execute after template rendering"
+                    )
+                    failed_devices.append(device_result)
+                    continue
+
+                logger.info("[%s] Commands to execute: %s", idx, len(commands))
+
+                # Map platform to Netmiko device type
+                from utils.netmiko_platform_mapper import map_platform_to_netmiko
+
+                device_type = map_platform_to_netmiko(platform)
+                logger.info("[%s] Netmiko device type: %s", idx, device_type)
+
+                # Execute commands using Netmiko
+                logger.info("[%s] Connecting via SSH and executing commands...", idx)
+                result = netmiko_service._connect_and_execute(
+                    device_ip=primary_ip,
+                    device_type=device_type,
+                    username=username,
+                    password=password,
+                    commands=commands,
+                    enable_mode=False,
+                )
+
+                if result["success"]:
+                    device_result["success"] = True
+                    device_result["output"] = result["output"]
+                    logger.info("[%s] ✓ Commands executed successfully", idx)
+                    logger.info(
+                        "[%s]   - Output length: %s chars",
+                        idx,
+                        len(result["output"]),
+                    )
+                    successful_devices.append(device_result)
+                else:
+                    device_result["error"] = result.get(
+                        "error", "Command execution failed"
+                    )
+                    logger.error(
+                        "[%s] ✗ Command execution failed: %s",
+                        idx,
+                        result.get("error"),
+                    )
+                    failed_devices.append(device_result)
+
+            except Exception as e:
+                logger.error("[%s] ✗ Exception: %s", idx, e, exc_info=True)
+                device_result["error"] = str(e)
+                failed_devices.append(device_result)
 
         logger.info("\n" + "=" * 80)
         logger.info("COMMAND EXECUTION SUMMARY")

@@ -123,4 +123,3 @@ class CheckMKService:
                 )
             else:
                 return False, f"Connection test failed: {str(e)}"
-

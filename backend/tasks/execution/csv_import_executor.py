@@ -29,7 +29,10 @@ def execute_csv_import(
     from tasks.import_or_update_from_csv_task import _run_csv_import
 
     if not template:
-        return {"success": False, "error": "No job template provided for csv_import job"}
+        return {
+            "success": False,
+            "error": "No job template provided for csv_import job",
+        }
 
     repo_id = template.get("csv_import_repo_id")
     file_path = template.get("csv_import_file_path") or ""
@@ -47,21 +50,42 @@ def execute_csv_import(
     template_id = template.get("id")
 
     if not repo_id:
-        return {"success": False, "error": "csv_import_repo_id is not configured in the job template"}
+        return {
+            "success": False,
+            "error": "csv_import_repo_id is not configured in the job template",
+        }
     if not import_type:
-        return {"success": False, "error": "csv_import_type is not configured in the job template"}
+        return {
+            "success": False,
+            "error": "csv_import_type is not configured in the job template",
+        }
     if not primary_key:
-        return {"success": False, "error": "csv_import_primary_key is not configured in the job template"}
+        return {
+            "success": False,
+            "error": "csv_import_primary_key is not configured in the job template",
+        }
     if not file_path and not file_filter:
-        return {"success": False, "error": "csv_import_file_path or csv_import_file_filter must be configured"}
+        return {
+            "success": False,
+            "error": "csv_import_file_path or csv_import_file_filter must be configured",
+        }
 
     logger.info(
         "Executing csv_import job: repo_id=%s, file_path=%s, file_filter=%s, "
         "import_type=%s, import_format=%s, primary_key=%s, update_existing=%s, "
         "delimiter=%r, quote_char=%r, defaults=%s, add_prefixes=%s, default_prefix_length=%s",
-        repo_id, file_path, file_filter, import_type, import_format, primary_key,
-        update_existing, delimiter, quote_char, csv_import_defaults,
-        add_prefixes, default_prefix_length,
+        repo_id,
+        file_path,
+        file_filter,
+        import_type,
+        import_format,
+        primary_key,
+        update_existing,
+        delimiter,
+        quote_char,
+        csv_import_defaults,
+        add_prefixes,
+        default_prefix_length,
     )
 
     # Call the extracted implementation function directly, passing task_context as

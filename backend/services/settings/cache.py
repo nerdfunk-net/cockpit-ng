@@ -465,6 +465,3 @@ class RedisCacheService:
         """
         logger.info("cleanup_expired called - Redis handles expiration automatically")
         return 0
-
-
-

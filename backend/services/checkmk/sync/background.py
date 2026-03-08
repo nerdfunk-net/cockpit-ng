@@ -153,6 +153,7 @@ class NB2CMKBackgroundService:
 
             # Use the existing service to get devices
             import service_factory
+
             nautobot_service = service_factory.build_nautobot_service()
 
             query = """
@@ -431,5 +432,3 @@ class NB2CMKBackgroundService:
             await asyncio.gather(*self._running_jobs.values(), return_exceptions=True)
 
         self._running_jobs.clear()
-
-

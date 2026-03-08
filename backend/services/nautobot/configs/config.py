@@ -144,7 +144,9 @@ class DeviceConfigService:
         - NetmikoService: For SSH connections to network devices
         - NetmikoPlatformMapper: For platform name normalization
         """
-        self.nautobot_service = nautobot_service or service_factory.build_nautobot_service()
+        self.nautobot_service = (
+            nautobot_service or service_factory.build_nautobot_service()
+        )
         self.netmiko_service = NetmikoService()
         self.platform_mapper = NetmikoPlatformMapper()
 

@@ -743,4 +743,3 @@ class GitService:
         with set_ssl_env(repository):
             with self._auth.setup_auth_environment(repository) as auth_info:
                 yield auth_info
-

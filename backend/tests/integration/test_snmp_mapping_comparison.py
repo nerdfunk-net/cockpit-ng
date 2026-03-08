@@ -267,7 +267,10 @@ class TestSNMPVersionDetection:
     def setup(self, mock_config_service):
         """Set up test instance."""
         self.config_service = mock_config_service
-        with patch("service_factory.build_checkmk_config_service", return_value=mock_config_service):
+        with patch(
+            "service_factory.build_checkmk_config_service",
+            return_value=mock_config_service,
+        ):
             self.normalization_service = DeviceNormalizationService()
 
     def test_snmp_v3_integer_detection(self):

@@ -222,10 +222,14 @@ class JobTemplateBase(BaseModel):
         None, description="Git repository ID for the CSV source (type=csv_imports)"
     )
     csv_import_file_path: Optional[str] = Field(
-        None, max_length=500, description="Relative path of the CSV file in the repository"
+        None,
+        max_length=500,
+        description="Relative path of the CSV file in the repository",
     )
     csv_import_type: Optional[str] = Field(
-        None, max_length=50, description="Object type to import: 'devices', 'ip-prefixes', 'ip-addresses'"
+        None,
+        max_length=50,
+        description="Object type to import: 'devices', 'ip-prefixes', 'ip-addresses'",
     )
     csv_import_primary_key: Optional[str] = Field(
         None, max_length=255, description="CSV column name used as the lookup key"
@@ -234,31 +238,41 @@ class JobTemplateBase(BaseModel):
         True, description="When True, update existing objects; when False, skip them"
     )
     csv_import_delimiter: Optional[str] = Field(
-        None, max_length=10, description="CSV field delimiter (default from Nautobot settings)"
+        None,
+        max_length=10,
+        description="CSV field delimiter (default from Nautobot settings)",
     )
     csv_import_quote_char: Optional[str] = Field(
-        None, max_length=10, description="CSV quote character (default from Nautobot settings)"
+        None,
+        max_length=10,
+        description="CSV quote character (default from Nautobot settings)",
     )
     csv_import_column_mapping: Optional[Dict[str, Optional[str]]] = Field(
-        None, description="Mapping from CSV column names to Nautobot field names (null = Not Used)"
+        None,
+        description="Mapping from CSV column names to Nautobot field names (null = Not Used)",
     )
     csv_import_file_filter: Optional[str] = Field(
-        None, max_length=255, description="Glob pattern to select CSV files at runtime (e.g. '*.csv')"
+        None,
+        max_length=255,
+        description="Glob pattern to select CSV files at runtime (e.g. '*.csv')",
     )
     csv_import_defaults: Optional[Dict[str, str]] = Field(
-        None, description="Default values for mandatory fields when CSV rows are missing them (e.g. {'location': 'Amsterdam'})"
+        None,
+        description="Default values for mandatory fields when CSV rows are missing them (e.g. {'location': 'Amsterdam'})",
     )
     csv_import_format: Optional[str] = Field(
-        None, max_length=50,
-        description="CSV format: 'cockpit' (multi-row per device), 'nautobot' (single-row, NULL filtering), 'generic' (single-row)"
+        None,
+        max_length=50,
+        description="CSV format: 'cockpit' (multi-row per device), 'nautobot' (single-row, NULL filtering), 'generic' (single-row)",
     )
     csv_import_add_prefixes: bool = Field(
         False,
-        description="Automatically create missing parent IP prefixes during import"
+        description="Automatically create missing parent IP prefixes during import",
     )
     csv_import_default_prefix_length: Optional[str] = Field(
-        None, max_length=10,
-        description="Default CIDR prefix length (e.g. '24') applied when an interface IP has no mask"
+        None,
+        max_length=10,
+        description="Default CIDR prefix length (e.g. '24') applied when an interface IP has no mask",
     )
     is_global: bool = Field(
         False,

@@ -238,4 +238,3 @@ class GitDiffService:
         line_by_line, stats = self.line_by_line_diff(content1, content2)
 
         return DiffResult(diff_lines=diff_lines, line_by_line=line_by_line, stats=stats)
-

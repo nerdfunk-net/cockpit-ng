@@ -502,6 +502,8 @@ def real_ansible_inventory_service(real_nautobot_service):
     from unittest.mock import patch
 
     # Patch service_factory so inventory service gets the real nautobot service
-    with patch("service_factory.build_nautobot_service", return_value=real_nautobot_service):
+    with patch(
+        "service_factory.build_nautobot_service", return_value=real_nautobot_service
+    ):
         service = InventoryService()
         yield service

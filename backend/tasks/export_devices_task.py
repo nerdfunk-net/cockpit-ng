@@ -271,6 +271,7 @@ def export_devices_task(
         logger.info("GraphQL query built with %s properties", len(properties))
 
         import service_factory
+
         nautobot_client = service_factory.build_nautobot_service()
 
         all_devices = []

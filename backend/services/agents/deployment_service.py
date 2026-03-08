@@ -21,6 +21,7 @@ class AgentDeploymentService:
         """Initialize the deployment service."""
         # Import required services at class level to avoid circular imports
         import service_factory as _sf
+
         git_service = _sf.build_git_service()
         from repositories.settings.git_repository_repository import (
             GitRepositoryRepository,
@@ -220,14 +221,16 @@ class AgentDeploymentService:
 
             # Render the template with stored variables
             try:
-                render_result = await self.agent_template_render_service.render_agent_template(
-                    template_content=template_content,
-                    inventory_id=effective_inventory_id,
-                    pass_snmp_mapping=template.get("pass_snmp_mapping", False),
-                    user_variables=custom_variables or {},
-                    path=path,
-                    stored_variables=template.get("variables"),
-                    username=username,
+                render_result = (
+                    await self.agent_template_render_service.render_agent_template(
+                        template_content=template_content,
+                        inventory_id=effective_inventory_id,
+                        pass_snmp_mapping=template.get("pass_snmp_mapping", False),
+                        user_variables=custom_variables or {},
+                        path=path,
+                        stored_variables=template.get("variables"),
+                        username=username,
+                    )
                 )
 
                 logger.info("✓ Template rendered successfully")
@@ -593,14 +596,16 @@ class AgentDeploymentService:
                     "inventory_id"
                 )
                 try:
-                    render_result = await self.agent_template_render_service.render_agent_template(
-                        template_content=template_content,
-                        inventory_id=effective_inventory_id,
-                        pass_snmp_mapping=template.get("pass_snmp_mapping", False),
-                        user_variables=entry_custom_variables,
-                        path=entry_path,
-                        stored_variables=template.get("variables"),
-                        username=username,
+                    render_result = (
+                        await self.agent_template_render_service.render_agent_template(
+                            template_content=template_content,
+                            inventory_id=effective_inventory_id,
+                            pass_snmp_mapping=template.get("pass_snmp_mapping", False),
+                            user_variables=entry_custom_variables,
+                            path=entry_path,
+                            stored_variables=template.get("variables"),
+                            username=username,
+                        )
                     )
                     logger.info(
                         "  Rendered: %s chars", len(render_result.rendered_content)

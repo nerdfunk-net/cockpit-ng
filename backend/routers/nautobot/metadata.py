@@ -8,7 +8,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from models.nautobot import OffboardDeviceRequest
-from dependencies import get_nautobot_service, get_offboarding_service, get_device_query_service
+from dependencies import (
+    get_nautobot_service,
+    get_offboarding_service,
+    get_device_query_service,
+)
 from services.nautobot.client import NautobotService
 from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.offboarding.service import OffboardingService
@@ -594,7 +598,6 @@ async def get_software_image_files(
         software_version: Optional software version string to filter image files
     """
     try:
-
         from settings_manager import settings_manager
 
         cache_key = f"nautobot:software_image_files:list:{software_version or 'all'}"

@@ -46,6 +46,7 @@ def _get_checkmk_client():
 async def _fetch_nautobot_devices() -> List[Dict[str, Any]]:
     """Fetch all devices from Nautobot."""
     import service_factory
+
     device_query_service = service_factory.build_device_query_service()
 
     result = await device_query_service.get_devices()

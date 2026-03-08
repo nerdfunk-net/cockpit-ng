@@ -37,9 +37,7 @@ class InventoryPersistenceService:
             inventory.get("scope") == "private"
             and inventory.get("created_by") != username
         ):
-            raise PermissionError(
-                f"Access denied to inventory {inventory['id']}"
-            )
+            raise PermissionError(f"Access denied to inventory {inventory['id']}")
 
     # ------------------------------------------------------------------
     # CRUD operations
@@ -185,7 +183,9 @@ class InventoryPersistenceService:
 
             update_kwargs = {
                 "name": inventory_data.get("name", current["name"]),
-                "description": inventory_data.get("description", current["description"]),
+                "description": inventory_data.get(
+                    "description", current["description"]
+                ),
                 "conditions": conditions_json,
                 "template_category": inventory_data.get(
                     "template_category", current["template_category"]

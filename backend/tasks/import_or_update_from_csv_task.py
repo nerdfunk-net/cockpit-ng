@@ -163,7 +163,10 @@ def _run_csv_import(
         repo_dir = str(git_repo_path(repository))
 
         if not os.path.exists(repo_dir):
-            return {"success": False, "error": f"Repository directory not found: {repo_dir}"}
+            return {
+                "success": False,
+                "error": f"Repository directory not found: {repo_dir}",
+            }
 
         repo_dir_resolved = os.path.realpath(repo_dir)
 
@@ -175,12 +178,22 @@ def _run_csv_import(
                 dirs[:] = [d for d in dirs if d != ".git"]
                 for f in files:
                     rel = os.path.relpath(os.path.join(root, f), repo_dir_resolved)
-                    if fnmatch.fnmatch(f, file_filter) or fnmatch.fnmatch(rel, file_filter):
+                    if fnmatch.fnmatch(f, file_filter) or fnmatch.fnmatch(
+                        rel, file_filter
+                    ):
                         files_to_process.append(rel)
             files_to_process.sort()
             if not files_to_process:
-                return {"success": False, "error": f"No files matched filter '{file_filter}'"}
-            logger.info("File filter '%s' matched %s file(s): %s", file_filter, len(files_to_process), files_to_process)
+                return {
+                    "success": False,
+                    "error": f"No files matched filter '{file_filter}'",
+                }
+            logger.info(
+                "File filter '%s' matched %s file(s): %s",
+                file_filter,
+                len(files_to_process),
+                files_to_process,
+            )
         else:
             files_to_process = [file_path]
 
@@ -188,7 +201,7 @@ def _run_csv_import(
             return {
                 "success": False,
                 "error": f"Unsupported import type '{import_type}'. "
-                         f"Must be one of: {list(_ENDPOINT_MAP.keys())}",
+                f"Must be one of: {list(_ENDPOINT_MAP.keys())}",
             }
 
         # Strip BOM and surrounding whitespace from primary_key (can appear when
@@ -203,7 +216,12 @@ def _run_csv_import(
             if nb_field is not None:
                 inverse_map[nb_field] = csv_col
         pk_csv_col = inverse_map.get(primary_key, primary_key)
-        logger.info("Primary key '%s' resolved to CSV column '%s' (inverse_map=%s)", primary_key, pk_csv_col, inverse_map)
+        logger.info(
+            "Primary key '%s' resolved to CSV column '%s' (inverse_map=%s)",
+            primary_key,
+            pk_csv_col,
+            inverse_map,
+        )
 
         # STEP 2–4: Process each file
         nautobot_service = service_factory.build_nautobot_service()
@@ -223,7 +241,12 @@ def _run_csv_import(
 
             if not abs_file_resolved.startswith(repo_dir_resolved):
                 logger.error("Security error: file path is outside repository: %s", fp)
-                failures.append({"file": fp, "error": "Security error: file path is outside repository"})
+                failures.append(
+                    {
+                        "file": fp,
+                        "error": "Security error: file path is outside repository",
+                    }
+                )
                 continue
 
             if not os.path.exists(abs_file_resolved):
@@ -245,7 +268,9 @@ def _run_csv_import(
                 with open(abs_file_resolved, "r", encoding="utf-8-sig") as f:
                     content = f.read()
             except UnicodeDecodeError:
-                failures.append({"file": fp, "error": f"File is not a valid UTF-8 text file: {fp}"})
+                failures.append(
+                    {"file": fp, "error": f"File is not a valid UTF-8 text file: {fp}"}
+                )
                 continue
 
             try:
@@ -265,16 +290,24 @@ def _run_csv_import(
                 continue
 
             csv_headers = list(rows[0].keys())
-            logger.info("File %s: headers=%s rows=%s format=%s", fp, csv_headers, len(rows), import_format)
+            logger.info(
+                "File %s: headers=%s rows=%s format=%s",
+                fp,
+                csv_headers,
+                len(rows),
+                import_format,
+            )
 
             if pk_csv_col not in csv_headers:
-                failures.append({
-                    "file": fp,
-                    "error": (
-                        f"Primary key column '{pk_csv_col}' not found in CSV headers. "
-                        f"Available headers: {csv_headers}"
-                    ),
-                })
+                failures.append(
+                    {
+                        "file": fp,
+                        "error": (
+                            f"Primary key column '{pk_csv_col}' not found in CSV headers. "
+                            f"Available headers: {csv_headers}"
+                        ),
+                    }
+                )
                 continue
 
             # Dispatch by import format
@@ -313,7 +346,9 @@ def _run_csv_import(
                     identifier = pk_value or f"row-{idx}"
 
                     try:
-                        progress = int((file_idx - 1) / total_files * 90) + int((idx / total_rows) * (90 / total_files))
+                        progress = int((file_idx - 1) / total_files * 90) + int(
+                            (idx / total_rows) * (90 / total_files)
+                        )
                         task_context.update_state(
                             state="PROGRESS",
                             meta={
@@ -328,8 +363,18 @@ def _run_csv_import(
                         )
 
                         if not pk_value:
-                            logger.warning("File %s row %s: empty primary key value, skipping", fp, idx)
-                            skipped.append({"file": fp, "row": idx, "reason": "Empty primary key value"})
+                            logger.warning(
+                                "File %s row %s: empty primary key value, skipping",
+                                fp,
+                                idx,
+                            )
+                            skipped.append(
+                                {
+                                    "file": fp,
+                                    "row": idx,
+                                    "reason": "Empty primary key value",
+                                }
+                            )
                             continue
 
                         csv_data = _apply_column_mapping(raw_row, col_map)
@@ -341,7 +386,14 @@ def _run_csv_import(
                             nautobot_data = csv_data
 
                         existing_id = asyncio.run(
-                            _lookup_object(nautobot_service, import_type, primary_key, pk_value, raw_row, col_map)
+                            _lookup_object(
+                                nautobot_service,
+                                import_type,
+                                primary_key,
+                                pk_value,
+                                raw_row,
+                                col_map,
+                            )
                         )
 
                         _process_single_object(
@@ -365,8 +417,22 @@ def _run_csv_import(
 
                     except Exception as e:
                         error_msg = str(e)
-                        logger.error("File %s row %s (%s) failed: %s", fp, idx, identifier, error_msg, exc_info=True)
-                        failures.append({"file": fp, "row": idx, "identifier": identifier, "error": error_msg})
+                        logger.error(
+                            "File %s row %s (%s) failed: %s",
+                            fp,
+                            idx,
+                            identifier,
+                            error_msg,
+                            exc_info=True,
+                        )
+                        failures.append(
+                            {
+                                "file": fp,
+                                "row": idx,
+                                "identifier": identifier,
+                                "error": error_msg,
+                            }
+                        )
 
         # STEP 5: Finalize
         task_context.update_state(
@@ -465,7 +531,11 @@ def _apply_default_prefix_length(
                 for ip in iface["ip_addresses"]
             ]
         # ip_address string format (pre-normalization)
-        elif "ip_address" in iface and iface["ip_address"] and "/" not in iface["ip_address"]:
+        elif (
+            "ip_address" in iface
+            and iface["ip_address"]
+            and "/" not in iface["ip_address"]
+        ):
             iface["ip_address"] = iface["ip_address"] + suffix
         patched.append(iface)
     return patched
@@ -500,17 +570,37 @@ def _process_single_object(
 
         # Apply default prefix length to IPs that have no CIDR mask
         if add_prefixes and default_prefix_length:
-            iface_config = _apply_default_prefix_length(iface_config, default_prefix_length)
+            iface_config = _apply_default_prefix_length(
+                iface_config, default_prefix_length
+            )
 
         if existing_id:
             if not update_existing:
-                logger.info("File %s row %s: %s already exists, skipping", fp, idx, identifier)
-                skipped.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "reason": "Already exists"})
+                logger.info(
+                    "File %s row %s: %s already exists, skipping", fp, idx, identifier
+                )
+                skipped.append(
+                    {
+                        "file": fp,
+                        "row": idx,
+                        "identifier": identifier,
+                        "id": existing_id,
+                        "reason": "Already exists",
+                    }
+                )
                 return
 
             if dry_run:
                 logger.info("[DRY RUN] Would update device %s", identifier)
-                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "dry_run": True})
+                updated.append(
+                    {
+                        "file": fp,
+                        "row": idx,
+                        "identifier": identifier,
+                        "id": existing_id,
+                        "dry_run": True,
+                    }
+                )
             else:
                 asyncio.run(
                     device_update_service.update_device(
@@ -521,11 +611,21 @@ def _process_single_object(
                     )
                 )
                 logger.info("Updated device %s", identifier)
-                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "updated_fields": list(nautobot_data.keys())})
+                updated.append(
+                    {
+                        "file": fp,
+                        "row": idx,
+                        "identifier": identifier,
+                        "id": existing_id,
+                        "updated_fields": list(nautobot_data.keys()),
+                    }
+                )
         else:
             if dry_run:
                 logger.info("[DRY RUN] Would create device %s", identifier)
-                created.append({"file": fp, "row": idx, "identifier": identifier, "dry_run": True})
+                created.append(
+                    {"file": fp, "row": idx, "identifier": identifier, "dry_run": True}
+                )
             else:
                 result = asyncio.run(
                     device_import_service.import_device(
@@ -536,37 +636,73 @@ def _process_single_object(
                 )
                 new_id = result.get("device_id")
                 logger.info("Created device %s (id=%s)", identifier, new_id)
-                created.append({"file": fp, "row": idx, "identifier": identifier, "id": new_id})
+                created.append(
+                    {"file": fp, "row": idx, "identifier": identifier, "id": new_id}
+                )
     else:
         # For ip-prefixes and ip-addresses use direct REST (no complex
         # name resolution needed for these types).
         if existing_id:
             if not update_existing:
-                logger.info("File %s row %s: %s already exists, skipping", fp, idx, identifier)
-                skipped.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "reason": "Already exists"})
+                logger.info(
+                    "File %s row %s: %s already exists, skipping", fp, idx, identifier
+                )
+                skipped.append(
+                    {
+                        "file": fp,
+                        "row": idx,
+                        "identifier": identifier,
+                        "id": existing_id,
+                        "reason": "Already exists",
+                    }
+                )
                 return
 
             if dry_run:
                 logger.info("[DRY RUN] Would update %s %s", import_type, identifier)
-                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "dry_run": True})
+                updated.append(
+                    {
+                        "file": fp,
+                        "row": idx,
+                        "identifier": identifier,
+                        "id": existing_id,
+                        "dry_run": True,
+                    }
+                )
             else:
                 endpoint = f"{_ENDPOINT_MAP[import_type]}{existing_id}/"
                 asyncio.run(
-                    nautobot_service.rest_request(endpoint, method="PATCH", data=nautobot_data)
+                    nautobot_service.rest_request(
+                        endpoint, method="PATCH", data=nautobot_data
+                    )
                 )
                 logger.info("Updated %s %s", import_type, identifier)
-                updated.append({"file": fp, "row": idx, "identifier": identifier, "id": existing_id, "updated_fields": list(nautobot_data.keys())})
+                updated.append(
+                    {
+                        "file": fp,
+                        "row": idx,
+                        "identifier": identifier,
+                        "id": existing_id,
+                        "updated_fields": list(nautobot_data.keys()),
+                    }
+                )
         else:
             if dry_run:
                 logger.info("[DRY RUN] Would create %s %s", import_type, identifier)
-                created.append({"file": fp, "row": idx, "identifier": identifier, "dry_run": True})
+                created.append(
+                    {"file": fp, "row": idx, "identifier": identifier, "dry_run": True}
+                )
             else:
                 result = asyncio.run(
-                    nautobot_service.rest_request(_ENDPOINT_MAP[import_type], method="POST", data=nautobot_data)
+                    nautobot_service.rest_request(
+                        _ENDPOINT_MAP[import_type], method="POST", data=nautobot_data
+                    )
                 )
                 new_id = result.get("id") if isinstance(result, dict) else None
                 logger.info("Created %s %s (id=%s)", import_type, identifier, new_id)
-                created.append({"file": fp, "row": idx, "identifier": identifier, "id": new_id})
+                created.append(
+                    {"file": fp, "row": idx, "identifier": identifier, "id": new_id}
+                )
 
 
 def _process_cockpit_rows(
@@ -610,7 +746,9 @@ def _process_cockpit_rows(
     for dev_idx, (pk_value, device_rows) in enumerate(groups.items(), 1):
         identifier = pk_value
         try:
-            progress = int((file_idx - 1) / total_files * 90) + int((dev_idx / max(total_devices, 1)) * (90 / total_files))
+            progress = int((file_idx - 1) / total_files * 90) + int(
+                (dev_idx / max(total_devices, 1)) * (90 / total_files)
+            )
             task_context.update_state(
                 state="PROGRESS",
                 meta={
@@ -652,7 +790,14 @@ def _process_cockpit_rows(
             iface_config = iface_list if iface_list else None
 
             existing_id = asyncio.run(
-                _lookup_object(nautobot_service, import_type, primary_key, pk_value, first_row, col_map)
+                _lookup_object(
+                    nautobot_service,
+                    import_type,
+                    primary_key,
+                    pk_value,
+                    first_row,
+                    col_map,
+                )
             )
 
             _process_single_object(
@@ -677,8 +822,22 @@ def _process_cockpit_rows(
 
         except Exception as e:
             error_msg = str(e)
-            logger.error("File %s device %s (%s) failed: %s", fp, dev_idx, identifier, error_msg, exc_info=True)
-            failures.append({"file": fp, "row": dev_idx, "identifier": identifier, "error": error_msg})
+            logger.error(
+                "File %s device %s (%s) failed: %s",
+                fp,
+                dev_idx,
+                identifier,
+                error_msg,
+                exc_info=True,
+            )
+            failures.append(
+                {
+                    "file": fp,
+                    "row": dev_idx,
+                    "identifier": identifier,
+                    "error": error_msg,
+                }
+            )
 
 
 # Maps the canonical interface_* field names used in column mappings/defaults
@@ -724,7 +883,7 @@ def _extract_interface_config(
             iface_fields[_INTERFACE_FIELD_MAP[key]] = value
         elif key.startswith("interface_"):
             # Unknown interface_* key — strip prefix and include as-is
-            iface_fields[key[len("interface_"):]] = value
+            iface_fields[key[len("interface_") :]] = value
         else:
             device_data[key] = value
 

@@ -928,11 +928,10 @@ async def advanced_render_template(
                         convert_saved_inventory_to_operations,
                     )
                     import service_factory as _sf
+
                     _persistence = _sf.build_inventory_persistence_service()
                     # Get inventory by ID
-                    inventory = _persistence.get_inventory(
-                        render_request.inventory_id
-                    )
+                    inventory = _persistence.get_inventory(render_request.inventory_id)
                     if not inventory:
                         raise ValueError(
                             f"Inventory with ID {render_request.inventory_id} not found"

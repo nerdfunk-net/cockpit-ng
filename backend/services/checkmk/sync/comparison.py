@@ -40,6 +40,7 @@ class DeviceComparisonService:
         """
         try:
             import service_factory
+
             nautobot_service = service_factory.build_nautobot_service()
 
             # Use GraphQL query to get all devices from Nautobot

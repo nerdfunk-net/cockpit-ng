@@ -378,6 +378,7 @@ class GitOperationsService:
             # Get recent commits using cache service
             try:
                 import service_factory
+
                 git_cache_service = service_factory.build_git_cache_service()
 
                 status_info["commits"] = git_cache_service.get_commits(
@@ -451,4 +452,3 @@ class GitOperationsService:
             logger.warning("Error checking Git repository status: %s", e)
 
         return status_info
-

@@ -36,7 +36,9 @@ class InventoryQueryService:
         try:
             import service_factory
 
-            nautobot_metadata_service = service_factory.build_nautobot_metadata_service()
+            nautobot_metadata_service = (
+                service_factory.build_nautobot_metadata_service()
+            )
 
             logger.info("Fetching custom field types from Nautobot")
 
@@ -72,6 +74,7 @@ class InventoryQueryService:
     async def _query_all_devices(self) -> List[DeviceInfo]:
         """Query all devices from Nautobot without any filters."""
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
 
         query = """
@@ -118,6 +121,7 @@ class InventoryQueryService:
     ) -> List[DeviceInfo]:
         """Query devices by name using GraphQL."""
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
 
         if not name_filter or (
@@ -220,6 +224,7 @@ class InventoryQueryService:
             use_negation: Use negation (location__n) to exclude devices from this location
         """
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
 
         if not location_filter or (
@@ -346,6 +351,7 @@ class InventoryQueryService:
     async def _query_devices_by_role(self, role_filter: str) -> List[DeviceInfo]:
         """Query devices by role using GraphQL."""
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
 
         if not role_filter or (
@@ -396,6 +402,7 @@ class InventoryQueryService:
     async def _query_devices_by_status(self, status_filter: str) -> List[DeviceInfo]:
         """Query devices by status using GraphQL."""
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
 
         if not status_filter or (
@@ -446,6 +453,7 @@ class InventoryQueryService:
     async def _query_devices_by_tag(self, tag_filter: str) -> List[DeviceInfo]:
         """Query devices by tag using GraphQL."""
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
 
         if not tag_filter or (isinstance(tag_filter, str) and tag_filter.strip() == ""):
@@ -496,6 +504,7 @@ class InventoryQueryService:
     ) -> List[DeviceInfo]:
         """Query devices by device type using GraphQL."""
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
 
         if not devicetype_filter or (
@@ -548,6 +557,7 @@ class InventoryQueryService:
     ) -> List[DeviceInfo]:
         """Query devices by manufacturer using GraphQL."""
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
 
         if not manufacturer_filter or (
@@ -600,6 +610,7 @@ class InventoryQueryService:
     ) -> List[DeviceInfo]:
         """Query devices by platform using GraphQL."""
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
 
         if not platform_filter or (
@@ -652,6 +663,7 @@ class InventoryQueryService:
     ) -> List[DeviceInfo]:
         """Query devices by whether they have a primary IP using GraphQL."""
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
 
         has_primary_bool = has_primary_filter.lower() == "true"
@@ -793,6 +805,7 @@ class InventoryQueryService:
         """
         try:
             import service_factory
+
             nautobot_service = service_factory.build_nautobot_service()
 
             if (

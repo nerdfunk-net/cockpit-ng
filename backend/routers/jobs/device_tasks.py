@@ -1032,8 +1032,7 @@ async def trigger_import_or_update_from_csv(
     )
 
     job_name = (
-        f"CSV Import ({request.import_type})"
-        f"{' (DRY RUN)' if request.dry_run else ''}"
+        f"CSV Import ({request.import_type}){' (DRY RUN)' if request.dry_run else ''}"
     )
     job_run = job_run_manager.create_job_run(
         job_name=job_name,

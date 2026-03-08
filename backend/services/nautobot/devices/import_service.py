@@ -154,7 +154,9 @@ class DeviceImportService:
                     created_interfaces,
                     primary_ipv4_id,
                 ) = await self._create_device_interfaces(
-                    device_id, interface_config, validated_data["name"],
+                    device_id,
+                    interface_config,
+                    validated_data["name"],
                     add_prefixes_automatically=add_prefixes_automatically,
                 )
                 details["interfaces"] = created_interfaces

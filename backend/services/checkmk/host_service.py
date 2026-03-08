@@ -93,4 +93,3 @@ class CheckMKHostService:
         except Exception as e:
             logger.error("Error deleting host %s from CheckMK: %s", hostname, str(e))
             raise
-

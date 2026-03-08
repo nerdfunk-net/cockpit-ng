@@ -90,9 +90,7 @@ def build_inventory_service() -> "InventoryService":
     """Create a new InventoryService instance (Nautobot query facade)."""
     from services.inventory.inventory import InventoryService
 
-    return InventoryService(
-        persistence_service=build_inventory_persistence_service()
-    )
+    return InventoryService(persistence_service=build_inventory_persistence_service())
 
 
 def build_device_query_service() -> "DeviceQueryService":

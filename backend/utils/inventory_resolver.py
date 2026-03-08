@@ -52,6 +52,7 @@ async def resolve_inventory_to_device_ids(
     """
     try:
         import service_factory
+
         persistence = service_factory.build_inventory_persistence_service()
         inventory_service = service_factory.build_inventory_service()
         from utils.inventory_converter import convert_saved_inventory_to_operations

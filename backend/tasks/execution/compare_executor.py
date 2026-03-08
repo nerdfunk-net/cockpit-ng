@@ -40,6 +40,7 @@ def execute_compare_devices(
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
         import service_factory
+
         config_service = service_factory.build_checkmk_config_service()
         config_service.reload_config()
         logger.info("Reloaded configuration files for device comparison task")
@@ -164,10 +165,8 @@ def execute_compare_devices(
                     )
 
                     # Use the same filtering logic as the manual job
-                    filtered_diff = (
-                        nb2cmk_service.filter_diff_by_ignored_attributes(
-                            raw_diff, ignored_attrs
-                        )
+                    filtered_diff = nb2cmk_service.filter_diff_by_ignored_attributes(
+                        raw_diff, ignored_attrs
                     )
 
                     # Store result in NB2CMK database using add_device_result

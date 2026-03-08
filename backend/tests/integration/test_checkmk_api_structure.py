@@ -131,11 +131,14 @@ class TestCheckMKAPIResponseStructure:
         mock_config.get_comparison_keys.return_value = ["attributes", "folder"]
         mock_config.get_ignore_attributes.return_value = ["tag_address_family"]
         with (
-            patch("service_factory.build_nautobot_service", return_value=mock_nb_service),
-            patch("service_factory.build_checkmk_config_service", return_value=mock_config),
+            patch(
+                "service_factory.build_nautobot_service", return_value=mock_nb_service
+            ),
+            patch(
+                "service_factory.build_checkmk_config_service", return_value=mock_config
+            ),
             patch("routers.checkmk.main.get_host") as mock_get_host,
         ):
-
             # Mock CheckMK response
             mock_get_host.return_value = AsyncMock(data=mock_checkmk_response)
 

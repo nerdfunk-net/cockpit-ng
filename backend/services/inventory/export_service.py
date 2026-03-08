@@ -82,6 +82,7 @@ class InventoryExportService:
             }
 
         import service_factory
+
         device_query_service = service_factory.build_device_query_service()
 
         locations_set: Set[str] = set()

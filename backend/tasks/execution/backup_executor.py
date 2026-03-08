@@ -72,6 +72,7 @@ def execute_backup(
         # Import services
         from services.settings.git.shared_utils import git_repo_manager
         import service_factory
+
         git_service = service_factory.build_git_service()
         git_auth_service = service_factory.build_git_auth_service()
         from services.network.automation.netmiko import NetmikoService
@@ -165,13 +166,12 @@ def execute_backup(
 
             import asyncio
             import service_factory
+
             device_query_service = service_factory.build_device_query_service()
 
             devices_result = asyncio.run(device_query_service.get_devices())
             if devices_result and devices_result.get("devices"):
-                device_ids = [
-                    device.get("id") for device in devices_result["devices"]
-                ]
+                device_ids = [device.get("id") for device in devices_result["devices"]]
                 logger.info("Fetched %s devices from Nautobot", len(device_ids))
             else:
                 logger.warning("No devices found in Nautobot")
@@ -536,7 +536,9 @@ def execute_backup(
                 }
                 """
                 variables = {"deviceId": device_id}
-                device_data = asyncio.run(nautobot_service.graphql_query(query, variables))
+                device_data = asyncio.run(
+                    nautobot_service.graphql_query(query, variables)
+                )
 
                 if (
                     not device_data
@@ -898,11 +900,13 @@ def execute_backup(
                         "custom_fields": {timestamp_custom_field_name: backup_date}
                     }
 
-                    result = asyncio.run(nautobot_service.rest_request(
-                        endpoint=f"dcim/devices/{device_id}/",
-                        method="PATCH",
-                        data=update_data,
-                    ))
+                    result = asyncio.run(
+                        nautobot_service.rest_request(
+                            endpoint=f"dcim/devices/{device_id}/",
+                            method="PATCH",
+                            data=update_data,
+                        )
+                    )
 
                     logger.info("✓ Updated custom field for %s", device_name)
                     timestamp_update_status["updated_count"] += 1

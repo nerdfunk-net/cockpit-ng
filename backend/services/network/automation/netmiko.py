@@ -466,4 +466,3 @@ class NetmikoService:
             platform,
         )
         return "cisco_ios"
-

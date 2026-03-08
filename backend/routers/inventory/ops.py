@@ -172,7 +172,9 @@ async def resolve_inventory_to_devices(
     inventory_id: int,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> dict:
     """Resolve a saved inventory to a list of device IDs by inventory ID."""
     try:
@@ -243,7 +245,9 @@ async def resolve_inventory_to_devices_detailed(
     current_user: dict = Depends(require_permission("general.inventory", "read")),
     inventory_service: InventoryService = Depends(get_inventory_service),
     device_query_service: DeviceQueryService = Depends(get_device_query_service),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> dict:
     """Resolve a saved inventory to detailed device information by inventory ID."""
     try:

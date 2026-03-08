@@ -70,6 +70,7 @@ class AgentTemplateRenderService:
             ValueError: If rendering fails or variables are undefined
         """
         import service_factory
+
         device_query_service = service_factory.build_device_query_service()
         config_service = service_factory.build_checkmk_config_service()
 
@@ -102,6 +103,7 @@ class AgentTemplateRenderService:
                     convert_saved_inventory_to_operations,
                 )
                 import service_factory as _sf
+
                 persistence_service = _sf.build_inventory_persistence_service()
                 inventory_service = _sf.build_inventory_service()
 
@@ -286,6 +288,7 @@ class AgentTemplateRenderService:
         Supported sources: locations, tags, custom-fields, statuses, roles, namespaces.
         """
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
         nautobot_metadata_service = service_factory.build_nautobot_metadata_service()
 
@@ -408,6 +411,7 @@ class AgentTemplateRenderService:
             inventory_cache: Optional cache dict for inventory analysis results
         """
         import service_factory
+
         inventory_service = service_factory.build_inventory_service()
 
         metadata = var_def.get("metadata", {})
@@ -482,4 +486,3 @@ class AgentTemplateRenderService:
             result,
         )
         return result
-

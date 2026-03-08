@@ -227,11 +227,13 @@ class IPAddressQueryService:
             return True  # nothing to do, not an error
 
         try:
-            asyncio.run(self.nautobot.rest_request(
-                endpoint=f"ipam/ip-addresses/{ip_id}/",
-                method="PATCH",
-                data=patch,
-            ))
+            asyncio.run(
+                self.nautobot.rest_request(
+                    endpoint=f"ipam/ip-addresses/{ip_id}/",
+                    method="PATCH",
+                    data=patch,
+                )
+            )
             logger.info("Updated IP address %s: %s", ip_id, list(patch.keys()))
             return True
         except Exception as e:
@@ -248,10 +250,12 @@ class IPAddressQueryService:
             True if deletion was successful, False otherwise
         """
         try:
-            asyncio.run(self.nautobot.rest_request(
-                endpoint=f"ipam/ip-addresses/{ip_id}/",
-                method="DELETE",
-            ))
+            asyncio.run(
+                self.nautobot.rest_request(
+                    endpoint=f"ipam/ip-addresses/{ip_id}/",
+                    method="DELETE",
+                )
+            )
             logger.info("Deleted IP address %s", ip_id)
             return True
         except Exception as e:

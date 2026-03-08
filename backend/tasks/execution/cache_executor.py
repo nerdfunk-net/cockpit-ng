@@ -43,6 +43,7 @@ def execute_cache_devices(
         )
 
         import service_factory
+
         nautobot_service = service_factory.build_nautobot_service()
         cache_service = service_factory.build_cache_service()
 

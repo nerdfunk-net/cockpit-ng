@@ -115,4 +115,3 @@ class CheckMKFolderService:
         except Exception as e:
             logger.error("Error creating CheckMK path '%s': %s", folder_path, e)
             return False
-

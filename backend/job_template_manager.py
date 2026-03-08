@@ -87,7 +87,9 @@ def create_job_template(
 
     # Serialize csv_import_column_mapping to JSON string for storage
     csv_import_column_mapping_json = (
-        json.dumps(csv_import_column_mapping) if csv_import_column_mapping is not None else None
+        json.dumps(csv_import_column_mapping)
+        if csv_import_column_mapping is not None
+        else None
     )
 
     # Serialize csv_import_defaults to JSON string for storage
@@ -359,7 +361,9 @@ def update_job_template(
     if csv_import_add_prefixes is not None:
         update_data["csv_import_add_prefixes"] = csv_import_add_prefixes
     if csv_import_default_prefix_length is not None:
-        update_data["csv_import_default_prefix_length"] = csv_import_default_prefix_length
+        update_data["csv_import_default_prefix_length"] = (
+            csv_import_default_prefix_length
+        )
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -465,10 +469,14 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "delimiter=%r quote_char=%r primary_key=%r "
         "repo_id=%r file_path=%r type=%r file_filter=%r "
         "column_mapping=%r defaults=%r",
-        template.id, template.name,
-        template.csv_import_delimiter, template.csv_import_quote_char,
-        template.csv_import_primary_key, template.csv_import_repo_id,
-        template.csv_import_file_path, template.csv_import_type,
+        template.id,
+        template.name,
+        template.csv_import_delimiter,
+        template.csv_import_quote_char,
+        template.csv_import_primary_key,
+        template.csv_import_repo_id,
+        template.csv_import_file_path,
+        template.csv_import_type,
         template.csv_import_file_filter,
         template.csv_import_column_mapping,
         template.csv_import_defaults,

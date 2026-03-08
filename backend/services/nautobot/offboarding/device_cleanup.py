@@ -14,6 +14,7 @@ from services.nautobot_helpers import (
 )
 from services.nautobot.common.exceptions import translate_http_exception
 from services.nautobot.offboarding.types import DEVICE_CACHE_TTL, OffboardingResult
+
 logger = logging.getLogger(__name__)
 
 
@@ -90,9 +91,7 @@ class DeviceCleanupManager:
 
     def _update_device_cache(self, device_id: str, device_data: Dict[str, Any]) -> None:
         """Set device cache entries and invalidate list cache."""
-        self._cache.set(
-            get_device_cache_key(device_id), device_data, DEVICE_CACHE_TTL
-        )
+        self._cache.set(get_device_cache_key(device_id), device_data, DEVICE_CACHE_TTL)
         self._cache.set(
             get_device_details_cache_key(device_id), device_data, DEVICE_CACHE_TTL
         )

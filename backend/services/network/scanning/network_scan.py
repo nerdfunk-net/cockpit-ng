@@ -385,4 +385,3 @@ class NetworkScanService:
             return True
         except ValueError:
             return False
-

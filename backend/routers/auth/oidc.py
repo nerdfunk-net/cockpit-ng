@@ -118,7 +118,11 @@ async def oidc_login(
 
 
 @router.post("/{provider_id}/test-login")
-async def oidc_test_login(provider_id: str, test_params: OIDCTestLoginRequest, oidc_service=Depends(get_oidc_service)):
+async def oidc_test_login(
+    provider_id: str,
+    test_params: OIDCTestLoginRequest,
+    oidc_service=Depends(get_oidc_service),
+):
     """
     Initiate OIDC authentication flow with custom test parameters.
     This endpoint allows overriding default configuration for testing purposes.
@@ -180,7 +184,11 @@ async def oidc_test_login(provider_id: str, test_params: OIDCTestLoginRequest, o
     "/{provider_id}/callback",
     response_model=Union[LoginResponse, ApprovalPendingResponse],
 )
-async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest, oidc_service=Depends(get_oidc_service)):
+async def oidc_callback(
+    provider_id: str,
+    callback_data: OIDCCallbackRequest,
+    oidc_service=Depends(get_oidc_service),
+):
     """
     Handle OIDC callback with authorization code for specific provider.
     Exchange code for tokens and authenticate user.
@@ -352,7 +360,11 @@ async def oidc_callback(provider_id: str, callback_data: OIDCCallbackRequest, oi
 
 
 @router.post("/{provider_id}/logout")
-async def oidc_logout(provider_id: str, id_token_hint: str = Query(None), oidc_service=Depends(get_oidc_service)):
+async def oidc_logout(
+    provider_id: str,
+    id_token_hint: str = Query(None),
+    oidc_service=Depends(get_oidc_service),
+):
     """
     Handle OIDC logout for specific provider.
     Returns end session endpoint URL if available.

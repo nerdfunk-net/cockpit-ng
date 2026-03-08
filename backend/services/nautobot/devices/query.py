@@ -628,5 +628,3 @@ class DeviceQueryService:
         cache_device_list(cache_key, response_data["devices"])
 
         return response_data
-
-

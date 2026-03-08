@@ -31,6 +31,7 @@ class InventoryMetadataService:
 
         try:
             import service_factory
+
             nautobot_service = service_factory.build_nautobot_service()
 
             response = await nautobot_service.rest_request(
@@ -65,7 +66,9 @@ class InventoryMetadataService:
                 )
 
             self._custom_fields_cache = transformed_fields
-            logger.info("Retrieved %s custom fields for devices", len(transformed_fields))
+            logger.info(
+                "Retrieved %s custom fields for devices", len(transformed_fields)
+            )
             return self._custom_fields_cache
 
         except Exception as e:
@@ -81,6 +84,7 @@ class InventoryMetadataService:
         """
         try:
             import service_factory
+
             nautobot_service = service_factory.build_nautobot_service()
 
             if field_name == "name":
@@ -110,22 +114,25 @@ class InventoryMetadataService:
         cf_info = next((cf for cf in custom_fields if cf.get("name") == cf_key), None)
 
         if cf_info and cf_info.get("type") == "select":
-            logger.info(
-                "Custom field '%s' is type 'select' - fetching choices", cf_key
-            )
+            logger.info("Custom field '%s' is type 'select' - fetching choices", cf_key)
             try:
                 choices_response = await nautobot_service.rest_request(
                     f"extras/custom-field-choices/?custom_field={cf_key}"
                 )
                 if choices_response and "results" in choices_response:
                     values = [
-                        {"value": str(c.get("value", "")), "label": str(c.get("value", ""))}
+                        {
+                            "value": str(c.get("value", "")),
+                            "label": str(c.get("value", "")),
+                        }
                         for c in choices_response["results"]
                         if c.get("value")
                     ]
                     values.sort(key=lambda x: (x.get("label") or "").lower())
                     logger.info(
-                        "Retrieved %s choices for custom field '%s'", len(values), cf_key
+                        "Retrieved %s choices for custom field '%s'",
+                        len(values),
+                        cf_key,
                     )
                     return values
             except Exception as e:

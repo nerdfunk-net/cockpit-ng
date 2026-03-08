@@ -109,7 +109,9 @@ def execute_deploy_agent(
             if inventory_name and template.get("inventory_source") == "inventory":
                 import service_factory
 
-                persistence_service = service_factory.build_inventory_persistence_service()
+                persistence_service = (
+                    service_factory.build_inventory_persistence_service()
+                )
                 inv = persistence_service.get_inventory_by_name(
                     inventory_name, "celery_scheduler"
                 )
@@ -124,13 +126,15 @@ def execute_deploy_agent(
                 if entry.get("inventory_id") is None and inventory_id is not None:
                     entry["inventory_id"] = inventory_id
 
-            return asyncio.run(deployment_service.deploy_multi(
-                template_entries=deploy_templates,
-                agent_id=deploy_agent_id,
-                activate_after_deploy=activate_after_deploy,
-                task_context=task_context,
-                username="celery_scheduler",
-            ))
+            return asyncio.run(
+                deployment_service.deploy_multi(
+                    template_entries=deploy_templates,
+                    agent_id=deploy_agent_id,
+                    activate_after_deploy=activate_after_deploy,
+                    task_context=task_context,
+                    username="celery_scheduler",
+                )
+            )
         else:
             # Legacy single-template deployment
             deploy_template_id = template.get("deploy_template_id")
@@ -167,7 +171,9 @@ def execute_deploy_agent(
             if inventory_name and template.get("inventory_source") == "inventory":
                 import service_factory
 
-                persistence_service = service_factory.build_inventory_persistence_service()
+                persistence_service = (
+                    service_factory.build_inventory_persistence_service()
+                )
                 inv = persistence_service.get_inventory_by_name(
                     inventory_name, "celery_scheduler"
                 )
@@ -177,16 +183,18 @@ def execute_deploy_agent(
                         "Resolved inventory '%s' to ID %s", inventory_name, inventory_id
                     )
 
-            return asyncio.run(deployment_service.deploy(
-                template_id=deploy_template_id,
-                agent_id=deploy_agent_id,
-                custom_variables=deploy_custom_variables,
-                path=deploy_path,
-                inventory_id=inventory_id,
-                activate_after_deploy=activate_after_deploy,
-                task_context=task_context,
-                username="celery_scheduler",
-            ))
+            return asyncio.run(
+                deployment_service.deploy(
+                    template_id=deploy_template_id,
+                    agent_id=deploy_agent_id,
+                    custom_variables=deploy_custom_variables,
+                    path=deploy_path,
+                    inventory_id=inventory_id,
+                    activate_after_deploy=activate_after_deploy,
+                    task_context=task_context,
+                    username="celery_scheduler",
+                )
+            )
 
     except Exception as e:
         logger.error("=" * 80)

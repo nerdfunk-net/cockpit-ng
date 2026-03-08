@@ -372,4 +372,3 @@ class NB2CMKDatabaseService:
         except Exception as e:
             logger.error("Error deleting job %s: %s", job_id, e)
             return False
-

@@ -13,7 +13,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from git import GitCommandError, Repo
 
 from core.auth import require_permission
-from dependencies import get_git_auth_service, get_git_cache_service, get_git_operations_service
+from dependencies import (
+    get_git_auth_service,
+    get_git_cache_service,
+    get_git_operations_service,
+)
 from services.settings.git.env import set_ssl_env
 from services.settings.git.paths import repo_path as git_repo_path
 from services.settings.git.shared_utils import get_git_repo_by_id, git_repo_manager
@@ -22,7 +26,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git/{repo_id}", tags=["git-operations"])
 
 
-def get_cached_commits(git_cache_service, repo_id: int, branch_name: str, repo_path: str, limit: int = 50):
+def get_cached_commits(
+    git_cache_service, repo_id: int, branch_name: str, repo_path: str, limit: int = 50
+):
     """
     Get commits for a repository using cache when available.
 
