@@ -67,6 +67,7 @@ mapping:
   name: alias
   location.name: location
   location.parent.name: city
+  _custom_field_data.free_textfield: textfeld
 
 compare:
   # only compare the following attributes
