@@ -8,12 +8,14 @@ This router provides endpoints for managing:
 - Permission checks
 """
 
+from __future__ import annotations
+
 import logging
-from typing import List
 
 import rbac_manager as rbac
 from core.auth import require_role, verify_token
 from fastapi import APIRouter, Depends, HTTPException, status
+from repositories.audit_log_repository import audit_log_repo
 from models.rbac import (
     BulkPermissionAssignment,
     BulkRoleAssignment,
@@ -47,7 +49,7 @@ router = APIRouter(prefix="/api/rbac", tags=["rbac"])
 # ============================================================================
 
 
-@router.get("/permissions", response_model=List[Permission])
+@router.get("/permissions", response_model=list[Permission])
 async def list_permissions(current_user: dict = Depends(verify_token)):
     """List all permissions in the system."""
     permissions = rbac.list_permissions()
@@ -101,7 +103,7 @@ async def delete_permission(
 # ============================================================================
 
 
-@router.get("/roles", response_model=List[Role])
+@router.get("/roles", response_model=list[Role])
 async def list_roles(current_user: dict = Depends(verify_token)):
     """List all roles in the system."""
     roles = rbac.list_roles()
@@ -117,8 +119,6 @@ async def create_role(
         created = rbac.create_role(
             name=role.name, description=role.description or "", is_system=role.is_system
         )
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -164,8 +164,6 @@ async def update_role(
         updated = rbac.update_role(
             role_id=role_id, name=role_update.name, description=role_update.description
         )
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -188,8 +186,6 @@ async def delete_role(
     """Delete a role (admin only, cannot delete system roles)."""
     try:
         rbac.delete_role(role_id)
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -204,7 +200,7 @@ async def delete_role(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/roles/{role_id}/permissions", response_model=List[PermissionWithGrant])
+@router.get("/roles/{role_id}/permissions", response_model=list[PermissionWithGrant])
 async def get_role_permissions(
     role_id: int, current_user: dict = Depends(verify_token)
 ):
@@ -248,8 +244,6 @@ async def assign_permission_to_role(
     rbac.assign_permission_to_role(
         role_id, assignment.permission_id, assignment.granted
     )
-    from repositories.audit_log_repository import audit_log_repo
-
     audit_log_repo.create_log(
         username=current_user.get("sub"),
         user_id=current_user.get("user_id"),
@@ -280,8 +274,6 @@ async def assign_multiple_permissions_to_role(
 
     for permission_id in assignment.permission_ids:
         rbac.assign_permission_to_role(role_id, permission_id, assignment.granted)
-    from repositories.audit_log_repository import audit_log_repo
-
     audit_log_repo.create_log(
         username=current_user.get("sub"),
         user_id=current_user.get("user_id"),
@@ -305,8 +297,6 @@ async def remove_permission_from_role(
 ):
     """Remove a permission from a role (admin only)."""
     rbac.remove_permission_from_role(role_id, permission_id)
-    from repositories.audit_log_repository import audit_log_repo
-
     audit_log_repo.create_log(
         username=current_user.get("sub"),
         user_id=current_user.get("user_id"),
@@ -324,7 +314,7 @@ async def remove_permission_from_role(
 # ============================================================================
 
 
-@router.get("/users/{user_id}/roles", response_model=List[Role])
+@router.get("/users/{user_id}/roles", response_model=list[Role])
 async def get_user_roles(user_id: int, current_user: dict = Depends(verify_token)):
     """Get all roles assigned to a user."""
     # Users can view their own roles, admins can view anyone's
@@ -411,7 +401,7 @@ async def get_user_permissions(
 
 
 @router.get(
-    "/users/{user_id}/permissions/overrides", response_model=List[PermissionWithGrant]
+    "/users/{user_id}/permissions/overrides", response_model=list[PermissionWithGrant]
 )
 async def get_user_permission_overrides(
     user_id: int, current_user: dict = Depends(verify_token)
@@ -448,6 +438,8 @@ async def assign_permission_to_user(
         rbac.assign_permission_to_user(
             user_id, assignment.permission_id, assignment.granted
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error assigning permission to user: %s", str(e), exc_info=True)
         raise HTTPException(
@@ -583,8 +575,6 @@ async def create_user(
         # Get full user with roles and permissions
         user_with_rbac = rbac.get_user_with_rbac(user["id"])
 
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -674,8 +664,6 @@ async def update_user(
                 detail=f"User {user_id} not found after update",
             )
 
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -709,8 +697,6 @@ async def delete_user(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),

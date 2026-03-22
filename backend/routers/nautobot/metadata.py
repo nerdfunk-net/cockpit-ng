@@ -7,6 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from services.nautobot.common.exceptions import NautobotNotFoundError
 from models.nautobot import OffboardDeviceRequest
 from dependencies import (
     get_nautobot_service,
@@ -17,6 +18,7 @@ from services.nautobot.client import NautobotService
 from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.offboarding.service import OffboardingService
 from dependencies import get_cache_service, get_nautobot_metadata_service
+from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
@@ -1116,8 +1118,6 @@ async def delete_device(
         for key in cache_keys_to_clear:
             cache_service.delete(key)
 
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -1135,13 +1135,13 @@ async def delete_device(
             "device_id": device_id,
         }
 
+    except NautobotNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Device {device_id} not found",
+        )
     except Exception as e:
         logger.error("Error deleting device %s: %s", device_id, str(e))
-        if "404" in str(e) or "Not Found" in str(e):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Device {device_id} not found",
-            )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete device: {str(e)}",

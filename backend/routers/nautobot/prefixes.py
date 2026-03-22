@@ -4,12 +4,14 @@ IPAM Prefix router for Nautobot prefix management.
 
 from __future__ import annotations
 import logging
-from typing import Optional
+from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from services.nautobot.common.exceptions import NautobotNotFoundError
 from dependencies import get_nautobot_service
 from services.nautobot.client import NautobotService
+from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ipam/prefixes", tags=["nautobot-ipam-prefixes"])
@@ -22,12 +24,12 @@ router = APIRouter(prefix="/ipam/prefixes", tags=["nautobot-ipam-prefixes"])
 
 @router.get("", summary="🔶 REST: List IP Prefixes")
 async def get_ipam_prefixes(
-    prefix: Optional[str] = None,
-    namespace: Optional[str] = None,
-    location: Optional[str] = None,
-    status: Optional[str] = None,
-    limit: Optional[int] = None,
-    offset: Optional[int] = None,
+    prefix: str | None = None,
+    namespace: str | None = None,
+    location: str | None = None,
+    status: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
@@ -63,8 +65,7 @@ async def get_ipam_prefixes(
         # Build endpoint URL with query parameters
         endpoint = "ipam/prefixes/"
         if params:
-            query_string = "&".join([f"{k}={v}" for k, v in params.items()])
-            endpoint = f"{endpoint}?{query_string}"
+            endpoint = f"{endpoint}?{urlencode(params)}"
 
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
@@ -98,12 +99,15 @@ async def get_ipam_prefix(
         logger.info("Retrieved prefix %s from Nautobot IPAM", prefix_id)
         return result
 
+    except NautobotNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"IPAM prefix not found: {prefix_id}",
+        )
     except Exception as e:
         logger.error("Failed to get IPAM prefix %s: %s", prefix_id, str(e))
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND
-            if "404" in str(e)
-            else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve IPAM prefix: {str(e)}",
         )
 
@@ -154,8 +158,6 @@ async def create_ipam_prefix(
         )
 
         logger.info("Created prefix %s in Nautobot IPAM", prefix_data.get("prefix"))
-
-        from repositories.audit_log_repository import audit_log_repo
 
         audit_log_repo.create_log(
             username=current_user.get("sub"),
@@ -220,8 +222,6 @@ async def update_ipam_prefix(
 
         logger.info("Updated prefix %s in Nautobot IPAM", prefix_id)
 
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -235,12 +235,15 @@ async def update_ipam_prefix(
 
         return result
 
+    except NautobotNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"IPAM prefix not found: {prefix_id}",
+        )
     except Exception as e:
         logger.error("Failed to update IPAM prefix %s: %s", prefix_id, str(e))
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND
-            if "404" in str(e)
-            else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update IPAM prefix: {str(e)}",
         )
 
@@ -263,8 +266,6 @@ async def delete_ipam_prefix(
 
         logger.info("Deleted prefix %s from Nautobot IPAM", prefix_id)
 
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -278,11 +279,14 @@ async def delete_ipam_prefix(
 
         return result
 
+    except NautobotNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"IPAM prefix not found: {prefix_id}",
+        )
     except Exception as e:
         logger.error("Failed to delete IPAM prefix %s: %s", prefix_id, str(e))
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND
-            if "404" in str(e)
-            else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete IPAM prefix: {str(e)}",
         )

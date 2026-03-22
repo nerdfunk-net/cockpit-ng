@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from dependencies import get_checkmk_service
+from repositories.audit_log_repository import audit_log_repo
 from models.settings import (
     NautobotSettingsRequest,
     GitSettingsRequest,
@@ -222,8 +223,6 @@ async def update_nautobot_settings(
         success = settings_manager.update_nautobot_settings(nautobot_request.dict())
 
         if success:
-            from repositories.audit_log_repository import audit_log_repo
-
             audit_log_repo.create_log(
                 username=current_user.get("sub"),
                 user_id=current_user.get("user_id"),
@@ -263,8 +262,6 @@ async def update_git_settings(
         success = settings_manager.update_git_settings(git_request.dict())
 
         if success:
-            from repositories.audit_log_repository import audit_log_repo
-
             audit_log_repo.create_log(
                 username=current_user.get("sub"),
                 user_id=current_user.get("user_id"),
@@ -305,8 +302,6 @@ async def create_nautobot_settings(
         success = settings_manager.update_nautobot_settings(nautobot_request.dict())
 
         if success:
-            from repositories.audit_log_repository import audit_log_repo
-
             audit_log_repo.create_log(
                 username=current_user.get("sub"),
                 user_id=current_user.get("user_id"),
@@ -344,8 +339,6 @@ async def create_git_settings(
         success = settings_manager.update_git_settings(git_request.dict())
 
         if success:
-            from repositories.audit_log_repository import audit_log_repo
-
             audit_log_repo.create_log(
                 username=current_user.get("sub"),
                 user_id=current_user.get("user_id"),
@@ -596,7 +589,8 @@ async def test_agents_connection(
 
             try:
                 ssh = paramiko.SSHClient()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh.load_system_host_keys()
+                ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
                 ssh.connect(
                     hostname=test_request.sftp_hostname,
                     port=test_request.sftp_port or 22,

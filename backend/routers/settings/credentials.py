@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import List, Optional
 
 from core.auth import require_permission, get_current_username
 from models.credentials import CredentialCreate, CredentialUpdate
+from repositories.audit_log_repository import audit_log_repo
 import credentials_manager as cred_mgr
 
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
@@ -15,11 +15,11 @@ router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 )
 def list_credentials(
     include_expired: bool = Query(False),
-    source: Optional[str] = Query(
+    source: str | None = Query(
         None, description="Filter by source: 'general', 'private', or None for all"
     ),
     current_user: str = Depends(get_current_username),
-) -> List[dict]:
+) -> list[dict]:
     """
     List credentials accessible to the current user.
 
@@ -73,8 +73,6 @@ def create_credential(
             ssh_private_key=payload.ssh_private_key,
             ssh_passphrase=payload.ssh_passphrase,
         )
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -110,8 +108,6 @@ def update_credential(
             ssh_private_key=payload.ssh_private_key,
             ssh_passphrase=payload.ssh_passphrase,
         )
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -136,8 +132,6 @@ def delete_credential(
 ) -> dict:
     try:
         cred_mgr.delete_credential(cred_id)
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),

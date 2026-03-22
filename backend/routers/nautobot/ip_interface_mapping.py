@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from core.auth import require_permission
 from dependencies import get_nautobot_service
 from services.nautobot.client import NautobotService
+from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ipam", tags=["nautobot-ipam-addresses"])
@@ -63,8 +64,6 @@ async def assign_ip_address_to_interface(
             assignment_data.get("ip_address"),
             assignment_data.get("interface"),
         )
-
-        from repositories.audit_log_repository import audit_log_repo
 
         audit_log_repo.create_log(
             username=current_user.get("sub"),

@@ -5,9 +5,9 @@ Nautobot service for handling GraphQL queries and REST API calls.
 from __future__ import annotations
 import httpx
 import logging
-from typing import Dict, Any, Optional
+from typing import Any
 
-from .common.exceptions import NautobotValidationError, NautobotAPIError
+from .common.exceptions import NautobotValidationError, NautobotAPIError, NautobotNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class NautobotService:
     """
 
     def __init__(self):
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
 
     async def startup(self) -> None:
         """Initialize the async HTTP client. Called by FastAPI lifespan on startup."""
@@ -34,7 +34,7 @@ class NautobotService:
             self._client = None
             logger.info("NautobotService shut down — httpx.AsyncClient closed")
 
-    def _get_config(self) -> Dict[str, Any]:
+    def _get_config(self) -> dict[str, Any]:
         """Get Nautobot configuration from database with fallback to environment variables."""
         try:
             from settings_manager import settings_manager
@@ -66,8 +66,8 @@ class NautobotService:
         return config
 
     async def graphql_query(
-        self, query: str, variables: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, query: str, variables: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Execute a GraphQL query against Nautobot."""
         config = self._get_config()
 
@@ -102,8 +102,8 @@ class NautobotService:
             raise
 
     async def rest_request(
-        self, endpoint: str, method: str = "GET", data: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, endpoint: str, method: str = "GET", data: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Execute a REST API request against Nautobot."""
         config = self._get_config()
 
@@ -127,6 +127,10 @@ class NautobotService:
                         "message": "Resource deleted successfully",
                     }
                 return response.json()
+            elif response.status_code == 404:
+                raise NautobotNotFoundError(
+                    f"Resource not found: {endpoint} — {response.text}"
+                )
             else:
                 raise NautobotAPIError(
                     f"REST request failed with status {response.status_code}: {response.text}"
@@ -162,7 +166,7 @@ class NautobotService:
         self,
         method: str,
         url: str,
-        data: Optional[dict],
+        data: dict | None,
         headers: dict,
         timeout: int,
     ) -> httpx.Response:

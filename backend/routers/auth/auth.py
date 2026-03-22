@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, Request
 from models.auth import UserLogin, LoginResponse
 from core.auth import create_access_token, get_api_key_user
 from core.limiter import limiter
+from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +93,6 @@ async def login(request: Request, user_data: UserLogin):
             UserRepository().update_last_login(user["id"])
 
             # Log successful login to audit log
-            from repositories.audit_log_repository import audit_log_repo
-
             audit_log_repo.create_log(
                 username=user["username"],
                 user_id=user["id"],
@@ -280,8 +279,6 @@ async def api_key_login(user_info: dict = Depends(get_api_key_user)):
         )
 
         # Log API key login to audit log
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=user_info["username"],
             user_id=user_info["user_id"],
@@ -347,8 +344,6 @@ async def logout(request: Request):
             user_id = payload.get("user_id")
 
             if username:
-                from repositories.audit_log_repository import audit_log_repo
-
                 audit_log_repo.create_log(
                     username=username,
                     user_id=user_id,

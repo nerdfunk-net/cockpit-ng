@@ -4,12 +4,14 @@ Nautobot IPAM IP Address endpoints.
 
 from __future__ import annotations
 import logging
-from typing import Optional
+from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from services.nautobot.common.exceptions import NautobotNotFoundError
 from dependencies import get_nautobot_service
 from services.nautobot.client import NautobotService
+from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ipam/ip-addresses", tags=["nautobot-ipam-addresses"])
@@ -21,15 +23,15 @@ router = APIRouter(prefix="/ipam/ip-addresses", tags=["nautobot-ipam-addresses"]
 
 @router.get("", summary="🔶 REST: List IP Addresses")
 async def get_ipam_ip_addresses(
-    address: Optional[str] = None,
-    namespace: Optional[str] = None,
-    parent: Optional[str] = None,
-    status: Optional[str] = None,
-    dns_name: Optional[str] = None,
-    device: Optional[str] = None,
-    interface: Optional[str] = None,
-    limit: Optional[int] = None,
-    offset: Optional[int] = None,
+    address: str | None = None,
+    namespace: str | None = None,
+    parent: str | None = None,
+    status: str | None = None,
+    dns_name: str | None = None,
+    device: str | None = None,
+    interface: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
     current_user: dict = Depends(require_permission("nautobot.locations", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
@@ -74,8 +76,7 @@ async def get_ipam_ip_addresses(
         # Build endpoint URL with query parameters
         endpoint = "ipam/ip-addresses/"
         if params:
-            query_string = "&".join([f"{k}={v}" for k, v in params.items()])
-            endpoint = f"{endpoint}?{query_string}"
+            endpoint = f"{endpoint}?{urlencode(params)}"
 
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
@@ -497,12 +498,15 @@ async def get_ipam_ip_address(
         logger.info("Retrieved IP address %s from Nautobot IPAM", ip_address_id)
         return result
 
+    except NautobotNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"IPAM IP address not found: {ip_address_id}",
+        )
     except Exception as e:
         logger.error("Failed to get IPAM IP address %s: %s", ip_address_id, str(e))
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND
-            if "404" in str(e)
-            else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve IPAM IP address: {str(e)}",
         )
 
@@ -552,8 +556,6 @@ async def create_ipam_ip_address(
         logger.info(
             "Created IP address %s in Nautobot IPAM", ip_address_data.get("address")
         )
-
-        from repositories.audit_log_repository import audit_log_repo
 
         audit_log_repo.create_log(
             username=current_user.get("sub"),
@@ -616,8 +618,6 @@ async def update_ipam_ip_address(
 
         logger.info("Updated IP address %s in Nautobot IPAM", ip_address_id)
 
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -631,12 +631,15 @@ async def update_ipam_ip_address(
 
         return result
 
+    except NautobotNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"IPAM IP address not found: {ip_address_id}",
+        )
     except Exception as e:
         logger.error("Failed to update IPAM IP address %s: %s", ip_address_id, str(e))
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND
-            if "404" in str(e)
-            else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update IPAM IP address: {str(e)}",
         )
 
@@ -659,8 +662,6 @@ async def delete_ipam_ip_address(
 
         logger.info("Deleted IP address %s from Nautobot IPAM", ip_address_id)
 
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -674,11 +675,14 @@ async def delete_ipam_ip_address(
 
         return result
 
+    except NautobotNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"IPAM IP address not found: {ip_address_id}",
+        )
     except Exception as e:
         logger.error("Failed to delete IPAM IP address %s: %s", ip_address_id, str(e))
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND
-            if "404" in str(e)
-            else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete IPAM IP address: {str(e)}",
         )

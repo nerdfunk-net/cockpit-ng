@@ -37,6 +37,12 @@ class NautobotDuplicateResourceError(NautobotError):
         super().__init__(f"{resource_type} already exists: {identifier}")
 
 
+class NautobotNotFoundError(NautobotError):
+    """Upstream Nautobot API returned 404."""
+
+    pass
+
+
 class NautobotAPIError(NautobotError):
     """API request failed."""
 

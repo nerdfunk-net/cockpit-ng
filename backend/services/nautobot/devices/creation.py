@@ -11,6 +11,7 @@ from models.nautobot import AddDeviceRequest, InterfaceData
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot.devices.interface_workflow import InterfaceManagerService
+from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 
@@ -97,8 +98,6 @@ class DeviceCreationService:
 
         # Log device creation to audit log
         if username:
-            from repositories.audit_log_repository import audit_log_repo
-
             device_created = workflow_status["step1_device"]["status"] == "success"
 
             # Prepare extra data for audit log

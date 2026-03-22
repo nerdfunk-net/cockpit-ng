@@ -6,6 +6,7 @@ import logging
 from typing import Any, Dict
 
 from models.nautobot import OffboardDeviceRequest
+from repositories.audit_log_repository import audit_log_repo
 from services.nautobot.offboarding.types import OffboardingResult
 
 logger = logging.getLogger(__name__)
@@ -24,8 +25,6 @@ def log_offboarding_event(
     if not username:
         logger.debug("No username found in current_user; skipping audit log")
         return
-
-    from repositories.audit_log_repository import audit_log_repo
 
     # Prepare extra data for audit log
     removed_count = len(results["removed_items"])

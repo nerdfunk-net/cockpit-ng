@@ -18,6 +18,7 @@ from models.auth import (
 )
 from core.auth import create_access_token, require_role
 from dependencies import get_oidc_service
+from repositories.audit_log_repository import audit_log_repo
 from settings_manager import settings_manager
 from config import settings
 
@@ -308,8 +309,6 @@ async def oidc_callback(
         UserRepository().update_last_login(user["id"])
 
         # Log successful OIDC login to audit log
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=user["username"],
             user_id=user["id"],

@@ -4,12 +4,14 @@ Nautobot DCIM Interface endpoints - CRUD operations for device interfaces.
 
 from __future__ import annotations
 import logging
-from typing import Optional
+from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from services.nautobot.common.exceptions import NautobotNotFoundError
 from dependencies import get_nautobot_service
 from services.nautobot.client import NautobotService
+from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/dcim/interfaces", tags=["nautobot-dcim-interfaces"])
@@ -21,16 +23,16 @@ router = APIRouter(prefix="/dcim/interfaces", tags=["nautobot-dcim-interfaces"])
 
 @router.get("", summary="🔶 REST: List Device Interfaces")
 async def get_dcim_interfaces(
-    device: Optional[str] = None,
-    device_id: Optional[str] = None,
-    name: Optional[str] = None,
-    type: Optional[str] = None,
-    enabled: Optional[bool] = None,
-    mgmt_only: Optional[bool] = None,
-    mac_address: Optional[str] = None,
-    status: Optional[str] = None,
-    limit: Optional[int] = None,
-    offset: Optional[int] = None,
+    device: str | None = None,
+    device_id: str | None = None,
+    name: str | None = None,
+    type: str | None = None,
+    enabled: bool | None = None,
+    mgmt_only: bool | None = None,
+    mac_address: str | None = None,
+    status: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
@@ -78,8 +80,7 @@ async def get_dcim_interfaces(
         # Build endpoint URL with query parameters
         endpoint = "dcim/interfaces/"
         if params:
-            query_string = "&".join([f"{k}={v}" for k, v in params.items()])
-            endpoint = f"{endpoint}?{query_string}"
+            endpoint = f"{endpoint}?{urlencode(params)}"
 
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
@@ -115,12 +116,15 @@ async def get_dcim_interface(
         logger.info("Retrieved interface %s from Nautobot DCIM", interface_id)
         return result
 
+    except NautobotNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"DCIM interface not found: {interface_id}",
+        )
     except Exception as e:
         logger.error("Failed to get DCIM interface %s: %s", interface_id, str(e))
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND
-            if "404" in str(e)
-            else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve DCIM interface: {str(e)}",
         )
 
@@ -185,8 +189,6 @@ async def create_dcim_interface(
             interface_data.get("name"),
             interface_data.get("device"),
         )
-
-        from repositories.audit_log_repository import audit_log_repo
 
         audit_log_repo.create_log(
             username=current_user.get("sub"),
@@ -257,8 +259,6 @@ async def update_dcim_interface(
 
         logger.info("Updated interface %s in Nautobot DCIM", interface_id)
 
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -272,12 +272,15 @@ async def update_dcim_interface(
 
         return result
 
+    except NautobotNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"DCIM interface not found: {interface_id}",
+        )
     except Exception as e:
         logger.error("Failed to update DCIM interface %s: %s", interface_id, str(e))
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND
-            if "404" in str(e)
-            else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update DCIM interface: {str(e)}",
         )
 
@@ -300,8 +303,6 @@ async def delete_dcim_interface(
 
         logger.info("Deleted interface %s from Nautobot DCIM", interface_id)
 
-        from repositories.audit_log_repository import audit_log_repo
-
         audit_log_repo.create_log(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
@@ -315,11 +316,14 @@ async def delete_dcim_interface(
 
         return result
 
+    except NautobotNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"DCIM interface not found: {interface_id}",
+        )
     except Exception as e:
         logger.error("Failed to delete DCIM interface %s: %s", interface_id, str(e))
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND
-            if "404" in str(e)
-            else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete DCIM interface: {str(e)}",
         )
