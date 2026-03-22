@@ -1075,6 +1075,7 @@ async def template_health_check(
 async def execute_template_and_sync_to_nautobot(
     request: TemplateExecuteAndSyncRequest,
     current_user: dict = Depends(require_permission("network.templates", "write")),
+    render_service=Depends(get_render_service),
 ) -> TemplateExecuteAndSyncResponse:
     """
     Execute template and sync results to Nautobot.

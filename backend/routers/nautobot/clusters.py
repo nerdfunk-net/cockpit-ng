@@ -647,6 +647,24 @@ async def create_virtual_machine(
         logger.info("Primary IP: %s", primary_ip_id)
         logger.info("Warnings: %s", len(response_data["warnings"]))
 
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-vm-created",
+            message=f"Virtual machine '{vm_request.name}' created in Nautobot",
+            resource_type="virtual_machine",
+            resource_id=vm_id,
+            resource_name=vm_request.name,
+            severity="info",
+            extra_data={
+                "cluster": vm_request.cluster,
+                "interfaces_created": len(response_data["interfaces"]),
+                "ip_addresses_created": len(response_data["ip_addresses"]),
+            },
+        )
+
         return response_data
 
     except Exception as e:

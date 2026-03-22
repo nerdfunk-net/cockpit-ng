@@ -185,6 +185,24 @@ async def create_dcim_interface(
             interface_data.get("name"),
             interface_data.get("device"),
         )
+
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-interface-created",
+            message=f"Interface '{interface_data.get('name')}' created on device '{interface_data.get('device')}'",
+            resource_type="interface",
+            resource_id=result.get("id"),
+            resource_name=interface_data.get("name"),
+            severity="info",
+            extra_data={
+                "device": interface_data.get("device"),
+                "type": interface_data.get("type"),
+            },
+        )
+
         return result
 
     except HTTPException:
@@ -238,6 +256,20 @@ async def update_dcim_interface(
         )
 
         logger.info("Updated interface %s in Nautobot DCIM", interface_id)
+
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-interface-updated",
+            message=f"Interface '{interface_id}' updated in Nautobot",
+            resource_type="interface",
+            resource_id=interface_id,
+            resource_name=interface_data.get("name", interface_id),
+            severity="info",
+        )
+
         return result
 
     except Exception as e:
@@ -267,6 +299,20 @@ async def delete_dcim_interface(
         result = await nautobot_service.rest_request(endpoint, method="DELETE")
 
         logger.info("Deleted interface %s from Nautobot DCIM", interface_id)
+
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-interface-deleted",
+            message=f"Interface '{interface_id}' deleted from Nautobot",
+            resource_type="interface",
+            resource_id=interface_id,
+            resource_name=interface_id,
+            severity="info",
+        )
+
         return result
 
     except Exception as e:

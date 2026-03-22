@@ -55,12 +55,13 @@ def list_credentials(
         return general_creds + user_private
 
 
-@router.post(
-    "", dependencies=[Depends(require_permission("settings.credentials", "write"))]
-)
-def create_credential(payload: CredentialCreate) -> dict:
+@router.post("")
+def create_credential(
+    payload: CredentialCreate,
+    current_user: dict = Depends(require_permission("settings.credentials", "write")),
+) -> dict:
     try:
-        return cred_mgr.create_credential(
+        result = cred_mgr.create_credential(
             name=payload.name,
             username=payload.username,
             cred_type=payload.type,
@@ -72,17 +73,31 @@ def create_credential(payload: CredentialCreate) -> dict:
             ssh_private_key=payload.ssh_private_key,
             ssh_passphrase=payload.ssh_passphrase,
         )
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="credential-created",
+            message=f"Credential '{payload.name}' created",
+            resource_type="credential",
+            resource_id=str(result.get("id")) if result else None,
+            resource_name=payload.name,
+            severity="info",
+        )
+        return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put(
-    "/{cred_id}",
-    dependencies=[Depends(require_permission("settings.credentials", "write"))],
-)
-def update_credential(cred_id: int, payload: CredentialUpdate) -> dict:
+@router.put("/{cred_id}")
+def update_credential(
+    cred_id: int,
+    payload: CredentialUpdate,
+    current_user: dict = Depends(require_permission("settings.credentials", "write")),
+) -> dict:
     try:
-        return cred_mgr.update_credential(
+        result = cred_mgr.update_credential(
             cred_id=cred_id,
             name=payload.name,
             username=payload.username,
@@ -95,19 +110,44 @@ def update_credential(cred_id: int, payload: CredentialUpdate) -> dict:
             ssh_private_key=payload.ssh_private_key,
             ssh_passphrase=payload.ssh_passphrase,
         )
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="credential-updated",
+            message=f"Credential '{payload.name}' updated",
+            resource_type="credential",
+            resource_id=str(cred_id),
+            resource_name=payload.name,
+            severity="info",
+        )
+        return result
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.delete(
-    "/{cred_id}",
-    dependencies=[Depends(require_permission("settings.credentials", "delete"))],
-)
-def delete_credential(cred_id: int) -> dict:
+@router.delete("/{cred_id}")
+def delete_credential(
+    cred_id: int,
+    current_user: dict = Depends(require_permission("settings.credentials", "delete")),
+) -> dict:
     try:
         cred_mgr.delete_credential(cred_id)
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="credential-deleted",
+            message=f"Credential '{cred_id}' deleted",
+            resource_type="credential",
+            resource_id=str(cred_id),
+            resource_name=str(cred_id),
+            severity="info",
+        )
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

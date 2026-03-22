@@ -154,6 +154,24 @@ async def create_ipam_prefix(
         )
 
         logger.info("Created prefix %s in Nautobot IPAM", prefix_data.get("prefix"))
+
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-prefix-created",
+            message=f"Prefix '{prefix_data.get('prefix')}' created in Nautobot",
+            resource_type="prefix",
+            resource_id=result.get("id"),
+            resource_name=prefix_data.get("prefix"),
+            severity="info",
+            extra_data={
+                "namespace": prefix_data.get("namespace"),
+                "status": prefix_data.get("status"),
+            },
+        )
+
         return result
 
     except HTTPException:
@@ -201,6 +219,20 @@ async def update_ipam_prefix(
         )
 
         logger.info("Updated prefix %s in Nautobot IPAM", prefix_id)
+
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-prefix-updated",
+            message=f"Prefix '{prefix_id}' updated in Nautobot",
+            resource_type="prefix",
+            resource_id=prefix_id,
+            resource_name=prefix_data.get("prefix", prefix_id),
+            severity="info",
+        )
+
         return result
 
     except Exception as e:
@@ -230,6 +262,20 @@ async def delete_ipam_prefix(
         result = await nautobot_service.rest_request(endpoint, method="DELETE")
 
         logger.info("Deleted prefix %s from Nautobot IPAM", prefix_id)
+
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-prefix-deleted",
+            message=f"Prefix '{prefix_id}' deleted from Nautobot",
+            resource_type="prefix",
+            resource_id=prefix_id,
+            resource_name=prefix_id,
+            severity="info",
+        )
+
         return result
 
     except Exception as e:

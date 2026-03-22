@@ -374,7 +374,7 @@ class GitCacheService:
             logger.info("Invalidating cache for repo %s", repo_id)
 
             # If cache service supports pattern deletion:
-            if hasattr(cache_service, "delete_pattern"):
+            if hasattr(self._cache, "delete_pattern"):
                 self._cache.delete_pattern(pattern)
             else:
                 # Fallback: just log that we can't invalidate
@@ -397,9 +397,9 @@ class GitCacheService:
 
             logger.warning("Invalidating ALL git caches")
 
-            if hasattr(cache_service, "delete_pattern"):
+            if hasattr(self._cache, "delete_pattern"):
                 self._cache.delete_pattern(pattern)
-            elif hasattr(cache_service, "clear"):
+            elif hasattr(self._cache, "clear"):
                 self._cache.clear()
             else:
                 logger.warning("Cache service doesn't support bulk deletion")

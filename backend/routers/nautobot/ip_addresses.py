@@ -552,6 +552,24 @@ async def create_ipam_ip_address(
         logger.info(
             "Created IP address %s in Nautobot IPAM", ip_address_data.get("address")
         )
+
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-ip-created",
+            message=f"IP address '{ip_address_data.get('address')}' created in Nautobot",
+            resource_type="ip_address",
+            resource_id=result.get("id"),
+            resource_name=ip_address_data.get("address"),
+            severity="info",
+            extra_data={
+                "namespace": ip_address_data.get("namespace"),
+                "status": ip_address_data.get("status"),
+            },
+        )
+
         return result
 
     except HTTPException:
@@ -597,6 +615,20 @@ async def update_ipam_ip_address(
         )
 
         logger.info("Updated IP address %s in Nautobot IPAM", ip_address_id)
+
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-ip-updated",
+            message=f"IP address '{ip_address_id}' updated in Nautobot",
+            resource_type="ip_address",
+            resource_id=ip_address_id,
+            resource_name=ip_address_data.get("address", ip_address_id),
+            severity="info",
+        )
+
         return result
 
     except Exception as e:
@@ -626,6 +658,20 @@ async def delete_ipam_ip_address(
         result = await nautobot_service.rest_request(endpoint, method="DELETE")
 
         logger.info("Deleted IP address %s from Nautobot IPAM", ip_address_id)
+
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-ip-deleted",
+            message=f"IP address '{ip_address_id}' deleted from Nautobot",
+            resource_type="ip_address",
+            resource_id=ip_address_id,
+            resource_name=ip_address_id,
+            severity="info",
+        )
+
         return result
 
     except Exception as e:

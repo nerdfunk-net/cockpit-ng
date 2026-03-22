@@ -1116,6 +1116,19 @@ async def delete_device(
         for key in cache_keys_to_clear:
             cache_service.delete(key)
 
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-device-deleted",
+            message=f"Device '{device_id}' deleted from Nautobot",
+            resource_type="device",
+            resource_id=device_id,
+            resource_name=device_id,
+            severity="info",
+        )
+
         return {
             "success": True,
             "message": f"Device {device_id} deleted successfully",

@@ -222,6 +222,17 @@ async def update_nautobot_settings(
         success = settings_manager.update_nautobot_settings(nautobot_request.dict())
 
         if success:
+            from repositories.audit_log_repository import audit_log_repo
+
+            audit_log_repo.create_log(
+                username=current_user.get("sub"),
+                user_id=current_user.get("user_id"),
+                event_type="settings-nautobot-updated",
+                message="Nautobot connection settings updated",
+                resource_type="settings",
+                resource_name="nautobot",
+                severity="info",
+            )
             return {
                 "message": "Nautobot settings updated successfully",
                 "nautobot": settings_manager.get_nautobot_settings(),
@@ -252,6 +263,17 @@ async def update_git_settings(
         success = settings_manager.update_git_settings(git_request.dict())
 
         if success:
+            from repositories.audit_log_repository import audit_log_repo
+
+            audit_log_repo.create_log(
+                username=current_user.get("sub"),
+                user_id=current_user.get("user_id"),
+                event_type="settings-git-updated",
+                message="Git connection settings updated",
+                resource_type="settings",
+                resource_name="git",
+                severity="info",
+            )
             return {
                 "message": "Git settings updated successfully",
                 "git": settings_manager.get_git_settings(),
@@ -283,6 +305,17 @@ async def create_nautobot_settings(
         success = settings_manager.update_nautobot_settings(nautobot_request.dict())
 
         if success:
+            from repositories.audit_log_repository import audit_log_repo
+
+            audit_log_repo.create_log(
+                username=current_user.get("sub"),
+                user_id=current_user.get("user_id"),
+                event_type="settings-nautobot-updated",
+                message="Nautobot connection settings updated",
+                resource_type="settings",
+                resource_name="nautobot",
+                severity="info",
+            )
             return {
                 "success": True,
                 "message": "Nautobot settings updated successfully",
@@ -311,6 +344,17 @@ async def create_git_settings(
         success = settings_manager.update_git_settings(git_request.dict())
 
         if success:
+            from repositories.audit_log_repository import audit_log_repo
+
+            audit_log_repo.create_log(
+                username=current_user.get("sub"),
+                user_id=current_user.get("user_id"),
+                event_type="settings-git-updated",
+                message="Git connection settings updated",
+                resource_type="settings",
+                resource_name="git",
+                severity="info",
+            )
             return {
                 "success": True,
                 "message": "Git settings updated successfully",

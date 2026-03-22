@@ -11,7 +11,7 @@ Both scenarios use add_prefixes=True and default_prefix_length="24".
 import os
 import shutil
 from contextlib import ExitStack
-from unittest.mock import AsyncMock, MagicMock, Mock, call, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
@@ -26,7 +26,7 @@ _COCKPIT_CSV = "cockpit_devices.csv"
 
 # Devices present in each CSV (used to assert expected call counts)
 _NAUTOBOT_DEVICE_COUNT = 3  # LAB, lab-2, switch
-_COCKPIT_DEVICE_COUNT = 2   # LAB (4 interface rows), lab-2 (4 interface rows)
+_COCKPIT_DEVICE_COUNT = 2  # LAB (4 interface rows), lab-2 (4 interface rows)
 _COCKPIT_INTERFACES_PER_DEVICE = 4
 
 # ---------------------------------------------------------------------------
@@ -125,9 +125,7 @@ def _make_services():
     treated as new and routed through import_device.
     """
     nautobot_svc = MagicMock()
-    nautobot_svc.graphql_query = AsyncMock(
-        return_value={"data": {"devices": []}}
-    )
+    nautobot_svc.graphql_query = AsyncMock(return_value={"data": {"devices": []}})
     nautobot_svc.rest_request = AsyncMock(return_value={"id": "rest-created-uuid"})
 
     import_svc = MagicMock()
@@ -285,7 +283,9 @@ class TestImportFromNautobotCsv:
         _SENTINELS = {"NULL", "NoObject", "null"}
 
         for positional, keyword in import_svc.import_device.call_args_list:
-            device_data = positional[0] if positional else keyword.get("device_data", {})
+            device_data = (
+                positional[0] if positional else keyword.get("device_data", {})
+            )
             # Sentinel values must not appear as top-level string fields
             for field_value in device_data.values():
                 if isinstance(field_value, str):

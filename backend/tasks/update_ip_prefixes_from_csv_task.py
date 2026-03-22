@@ -21,6 +21,7 @@ Custom Fields:
 """
 
 from celery_app import celery_app
+import asyncio
 import logging
 import csv
 import io

@@ -63,6 +63,21 @@ async def assign_ip_address_to_interface(
             assignment_data.get("ip_address"),
             assignment_data.get("interface"),
         )
+
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-ip-assigned",
+            message=f"IP address '{assignment_data.get('ip_address')}' assigned to interface '{assignment_data.get('interface')}'",
+            resource_type="ip_assignment",
+            resource_id=result.get("id"),
+            resource_name=assignment_data.get("ip_address"),
+            severity="info",
+            extra_data={"interface": assignment_data.get("interface")},
+        )
+
         return result
 
     except HTTPException:

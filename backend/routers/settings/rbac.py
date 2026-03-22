@@ -117,6 +117,18 @@ async def create_role(
         created = rbac.create_role(
             name=role.name, description=role.description or "", is_system=role.is_system
         )
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="rbac-role-created",
+            message=f"Role '{role.name}' created",
+            resource_type="role",
+            resource_id=str(created.get("id")) if created else None,
+            resource_name=role.name,
+            severity="info",
+        )
         return created
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -152,6 +164,18 @@ async def update_role(
         updated = rbac.update_role(
             role_id=role_id, name=role_update.name, description=role_update.description
         )
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="rbac-role-updated",
+            message=f"Role '{role_update.name}' updated",
+            resource_type="role",
+            resource_id=str(role_id),
+            resource_name=role_update.name,
+            severity="info",
+        )
         return updated
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -164,6 +188,18 @@ async def delete_role(
     """Delete a role (admin only, cannot delete system roles)."""
     try:
         rbac.delete_role(role_id)
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="rbac-role-deleted",
+            message=f"Role '{role_id}' deleted",
+            resource_type="role",
+            resource_id=str(role_id),
+            resource_name=str(role_id),
+            severity="info",
+        )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -212,6 +248,18 @@ async def assign_permission_to_role(
     rbac.assign_permission_to_role(
         role_id, assignment.permission_id, assignment.granted
     )
+    from repositories.audit_log_repository import audit_log_repo
+
+    audit_log_repo.create_log(
+        username=current_user.get("sub"),
+        user_id=current_user.get("user_id"),
+        event_type="rbac-permission-assigned",
+        message=f"Permission '{assignment.permission_id}' assigned to role '{role.get('name', role_id)}'",
+        resource_type="permission",
+        resource_id=str(assignment.permission_id),
+        resource_name=str(role.get("name", role_id)),
+        severity="info",
+    )
 
 
 @router.post(
@@ -232,6 +280,18 @@ async def assign_multiple_permissions_to_role(
 
     for permission_id in assignment.permission_ids:
         rbac.assign_permission_to_role(role_id, permission_id, assignment.granted)
+    from repositories.audit_log_repository import audit_log_repo
+
+    audit_log_repo.create_log(
+        username=current_user.get("sub"),
+        user_id=current_user.get("user_id"),
+        event_type="rbac-permission-assigned",
+        message=f"{len(assignment.permission_ids)} permission(s) assigned to role '{role.get('name', role_id)}'",
+        resource_type="permission",
+        resource_name=str(role.get("name", role_id)),
+        severity="info",
+        extra_data={"permission_ids": assignment.permission_ids},
+    )
 
 
 @router.delete(
@@ -245,6 +305,18 @@ async def remove_permission_from_role(
 ):
     """Remove a permission from a role (admin only)."""
     rbac.remove_permission_from_role(role_id, permission_id)
+    from repositories.audit_log_repository import audit_log_repo
+
+    audit_log_repo.create_log(
+        username=current_user.get("sub"),
+        user_id=current_user.get("user_id"),
+        event_type="rbac-permission-revoked",
+        message=f"Permission '{permission_id}' removed from role '{role_id}'",
+        resource_type="permission",
+        resource_id=str(permission_id),
+        resource_name=str(role_id),
+        severity="info",
+    )
 
 
 # ============================================================================
@@ -510,6 +582,20 @@ async def create_user(
 
         # Get full user with roles and permissions
         user_with_rbac = rbac.get_user_with_rbac(user["id"])
+
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="rbac-user-created",
+            message=f"User '{user_data.username}' created",
+            resource_type="user",
+            resource_id=str(user["id"]),
+            resource_name=user_data.username,
+            severity="info",
+        )
+
         return user_with_rbac
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -588,6 +674,19 @@ async def update_user(
                 detail=f"User {user_id} not found after update",
             )
 
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="rbac-user-updated",
+            message=f"User '{user_id}' updated",
+            resource_type="user",
+            resource_id=str(user_id),
+            resource_name=str(user_id),
+            severity="info",
+        )
+
         return user_with_rbac
     except HTTPException:
         raise
@@ -610,6 +709,18 @@ async def delete_user(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
+        from repositories.audit_log_repository import audit_log_repo
+
+        audit_log_repo.create_log(
+            username=current_user.get("sub"),
+            user_id=current_user.get("user_id"),
+            event_type="rbac-user-deleted",
+            message=f"User '{user_id}' deleted",
+            resource_type="user",
+            resource_id=str(user_id),
+            resource_name=str(user_id),
+            severity="info",
+        )
     except HTTPException:
         raise
     except Exception as e:

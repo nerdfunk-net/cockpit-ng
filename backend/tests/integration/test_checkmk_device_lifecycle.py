@@ -19,10 +19,10 @@ from urllib.parse import urlparse
 from services.checkmk.sync.base import NautobotToCheckMKService
 from services.checkmk.config import ConfigService
 import service_factory as _sf
-
-nautobot_service = _sf.build_nautobot_service()
 from checkmk.client import CheckMKClient, CheckMKAPIError
 from settings_manager import settings_manager
+
+nautobot_service = _sf.build_nautobot_service()
 
 # Suppress InsecureRequestWarning for self-signed certificates in test environment
 # This is expected when testing against CheckMK instances with self-signed certificates
