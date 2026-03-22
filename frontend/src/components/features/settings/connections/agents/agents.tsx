@@ -9,6 +9,8 @@ import { AgentCard } from './agent-card'
 import { AgentModal } from './agent-modal'
 import { HelpDialog, HelpButton } from './help-dialog'
 import type { Agent, AgentsSettings, AgentsResponse, GitRepositoriesResponse, GitRepository } from './types'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 type StatusType = 'idle' | 'success' | 'error' | 'saving'
 
@@ -21,7 +23,10 @@ export default function AgentsSettingsForm() {
   const [isLoading, setIsLoading] = useState(true)
   const [gitRepositories, setGitRepositories] = useState<GitRepository[]>([])
   const [loadingGitRepos, setLoadingGitRepos] = useState(false)
-  
+
+  // Confirm dialog
+  const { confirmDialog, openConfirm } = useConfirmDialog()
+
   // Modal state
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false)
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
@@ -130,14 +135,17 @@ export default function AgentsSettingsForm() {
   }, [])
 
   const handleRemoveAgent = useCallback((agentId: string) => {
-    if (!confirm('Are you sure you want to remove this agent? This action cannot be undone.')) {
-      return
-    }
-
-    const updatedAgents = agents.filter(a => a.id !== agentId)
-    setAgents(updatedAgents)
-    saveAgents(updatedAgents)
-  }, [agents, saveAgents])
+    openConfirm({
+      title: 'Remove Agent',
+      description: 'Are you sure you want to remove this agent? This action cannot be undone.',
+      variant: 'destructive',
+      onConfirm: () => {
+        const updatedAgents = agents.filter(a => a.id !== agentId)
+        setAgents(updatedAgents)
+        saveAgents(updatedAgents)
+      },
+    })
+  }, [agents, saveAgents, openConfirm])
 
   const handleSaveAgent = useCallback((agent: Agent) => {
     let updatedAgents: Agent[]
@@ -277,6 +285,8 @@ export default function AgentsSettingsForm() {
 
       {/* Help Dialog */}
       <HelpDialog isOpen={isHelpDialogOpen} onClose={() => setIsHelpDialogOpen(false)} />
+
+      <ConfirmDialog {...confirmDialog} />
     </div>
   )
 }

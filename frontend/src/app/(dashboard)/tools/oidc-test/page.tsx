@@ -375,8 +375,8 @@ export default function OIDCTestPage() {
                   <TabsContent value="config" className="space-y-4 mt-4">
                     {/* Issues */}
                     {selectedProviderInfo.issues.length > 0 && (
-                      <Alert className="border-red-500 bg-red-50 text-red-900">
-                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      <Alert className="status-error">
+                        <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
                           <div className="font-semibold mb-1">Configuration Issues:</div>
                           <ul className="list-disc list-inside space-y-1">

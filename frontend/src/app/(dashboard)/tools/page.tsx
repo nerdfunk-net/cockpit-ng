@@ -201,13 +201,13 @@ export default function ToolsPage() {
         </div>
 
         {/* Info Box */}
-        <Card className="bg-amber-50 border-amber-200">
+        <Card className="status-warning">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex-shrink-0">
                 <Wrench className="w-4 h-4" />
               </div>
-              <div className="text-sm text-amber-800">
+              <div className="text-sm">
                 <p className="font-medium mb-1">Developer Tools</p>
                 <p>
                   These tools are intended for debugging and administrative purposes.

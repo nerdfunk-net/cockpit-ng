@@ -138,9 +138,9 @@ export default function LogsPage() {
 
       {/* Error Alert */}
       {error && (
-        <Alert className="bg-red-50 border-red-200">
-          <XCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">
+        <Alert className="status-error">
+          <XCircle className="h-4 w-4" />
+          <AlertDescription>
             {error instanceof Error ? error.message : 'Failed to load audit logs.'}
           </AlertDescription>
         </Alert>

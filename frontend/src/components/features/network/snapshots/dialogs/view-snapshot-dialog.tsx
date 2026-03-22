@@ -78,7 +78,7 @@ export function ViewSnapshotDialog({
   const getStatusBadge = (status: string) => {
     if (status === 'completed' || status === 'success') {
       return (
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+        <Badge variant="outline" className="status-success border">
           {status === 'success' ? 'Success' : 'Completed'}
         </Badge>
       )

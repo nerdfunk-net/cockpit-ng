@@ -79,13 +79,13 @@ export function LegacyMappingPanel({
         </div>
       </div>
       <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
-        <Alert className="border-amber-500 bg-amber-50">
+        <Alert className="status-warning">
           <AlertDescription className="flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
-              <p className="font-medium text-amber-900 mb-1">Legacy CSV format detected</p>
-              <p className="text-amber-800">
-                This CSV file does not match the standard Nautobot format. Please map your CSV columns 
+              <p className="font-medium mb-1">Legacy CSV format detected</p>
+              <p>
+                This CSV file does not match the standard Nautobot format. Please map your CSV columns
                 to Nautobot fields below. The <strong>address</strong> field must be mapped.
               </p>
             </div>
@@ -93,10 +93,10 @@ export function LegacyMappingPanel({
         </Alert>
 
         {!isAddressMapped && (
-          <Alert className="border-red-500 bg-red-50">
+          <Alert className="status-error">
             <AlertDescription className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-              <span className="text-sm text-red-800">
+              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span className="text-sm">
                 <strong>Required:</strong> You must map at least one CSV column to the <strong>address</strong> field.
               </span>
             </AlertDescription>

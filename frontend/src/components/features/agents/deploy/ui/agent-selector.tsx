@@ -69,7 +69,7 @@ export function AgentSelector({
         </SelectContent>
       </Select>
       {agents.length > 0 && agents.every(a => !a.agent_id) && (
-        <div className="p-3 border rounded-md bg-amber-50 border-amber-200 text-amber-800 text-sm">
+        <div className="p-3 border rounded-md status-warning text-sm">
           <strong>Warning:</strong> No agents have an Agent ID configured. Please edit agents in Settings → Connections → Agents to add Agent IDs.
         </div>
       )}

@@ -235,7 +235,7 @@ export function CheckTab({
 
       {/* Validation Warnings */}
       {!hasDevices && (
-        <Alert className="border-red-500 bg-red-50 text-red-900">
+        <Alert className="status-error">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             No devices selected. Please go to the <strong>Devices</strong> tab to select devices.
@@ -244,7 +244,7 @@ export function CheckTab({
       )}
 
       {!hasChecks && (
-        <Alert className="border-red-500 bg-red-50 text-red-900">
+        <Alert className="status-error">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             No check types enabled. Please go to the <strong>Settings</strong> tab to enable at least one check type.
@@ -253,7 +253,7 @@ export function CheckTab({
       )}
 
       {hasChecks && !hasCredentials && (
-        <Alert className="border-red-500 bg-red-50 text-red-900">
+        <Alert className="status-error">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             No credentials selected for enabled checks. Please go to the <strong>Settings</strong> tab to select credentials.
@@ -393,7 +393,7 @@ export function CheckTab({
               </Button>
             </div>
           ) : (
-            <Alert className="border-red-500 bg-red-50 text-red-900">
+            <Alert className="status-error">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 Please configure all required settings before running compliance check.

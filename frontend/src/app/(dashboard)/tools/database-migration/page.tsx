@@ -258,11 +258,11 @@ export default function DatabaseMigrationPage() {
                                         )}
                                     </>
                                 ) : (
-                                    <Alert className="border-amber-200 bg-amber-50">
-                                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                    <Alert className="status-warning">
+                                        <AlertTriangle className="h-4 w-4" />
                                         <AlertTitle>Migration System Not Initialized</AlertTitle>
-                                        <AlertDescription className="text-amber-800">
-                                            The versioned migration system hasn&apos;t been set up yet. 
+                                        <AlertDescription>
+                                            The versioned migration system hasn&apos;t been set up yet.
                                             It will be initialized on the next application restart.
                                         </AlertDescription>
                                     </Alert>
@@ -274,10 +274,10 @@ export default function DatabaseMigrationPage() {
 
                 {/* Warnings */}
                 {status?.warnings && status.warnings.length > 0 && (
-                    <Alert className="border-amber-200 bg-amber-50">
-                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <Alert className="status-warning">
+                        <AlertTriangle className="h-4 w-4" />
                         <AlertTitle>Important Notes</AlertTitle>
-                        <AlertDescription className="text-amber-800 space-y-2">
+                        <AlertDescription className="space-y-2">
                             {status.warnings.map((warning) => (
                                 <p key={warning} className="flex items-start gap-2">
                                     <span className="mt-0.5">•</span>
@@ -304,10 +304,10 @@ export default function DatabaseMigrationPage() {
                     </CardHeader>
                     <CardContent>
                         {error && (
-                            <Alert className="mb-4 border-red-200 bg-red-50 text-red-900">
-                                <AlertTriangle className="h-4 w-4 text-red-600" />
+                            <Alert className="mb-4 status-error">
+                                <AlertTriangle className="h-4 w-4" />
                                 <AlertTitle>Error</AlertTitle>
-                                <AlertDescription className="text-red-800">{error}</AlertDescription>
+                                <AlertDescription>{error}</AlertDescription>
                             </Alert>
                         )}
 
@@ -317,7 +317,7 @@ export default function DatabaseMigrationPage() {
                             </div>
                         ) : status ? (
                             <div className="space-y-6">
-                                <div className={`p-4 rounded-lg flex items-center gap-3 ${status.is_up_to_date ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                                <div className={`p-4 rounded-lg flex items-center gap-3 ${status.is_up_to_date ? 'status-success border' : 'status-warning border'}`}>
                                     {status.is_up_to_date ? <CheckCircle className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
                                     <div>
                                         <p className="font-semibold text-lg">
@@ -405,8 +405,8 @@ export default function DatabaseMigrationPage() {
 
                                 {/* Migration Result Report */}
                                 {migrationResult && (
-                                    <div className={`mt-6 p-4 rounded-lg border ${migrationResult.success ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
-                                        <h3 className={`font-semibold mb-2 ${migrationResult.success ? 'text-blue-800' : 'text-red-800'}`}>
+                                    <div className={`mt-6 p-4 rounded-lg border ${migrationResult.success ? 'status-info' : 'status-error'}`}>
+                                        <h3 className="font-semibold mb-2">
                                             {migrationResult.message}
                                         </h3>
                                         {migrationResult.warnings && migrationResult.warnings.length > 0 && (
@@ -456,10 +456,10 @@ export default function DatabaseMigrationPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            <Alert className="border-blue-200 bg-blue-50">
-                                <AlertTriangle className="h-4 w-4 text-blue-600" />
+                            <Alert className="status-info">
+                                <AlertTriangle className="h-4 w-4" />
                                 <AlertTitle>About RBAC Seeding</AlertTitle>
-                                <AlertDescription className="text-blue-800 space-y-2">
+                                <AlertDescription className="space-y-2">
                                     <p>This process will:</p>
                                     <ul className="list-disc list-inside ml-2 space-y-1 text-sm">
                                         <li>Create or update all default permissions for system resources</li>
@@ -489,10 +489,10 @@ export default function DatabaseMigrationPage() {
                                     </label>
                                 </div>
                                 {removeExisting && (
-                                    <Alert className="border-red-200 bg-red-50">
-                                        <AlertTriangle className="h-4 w-4 text-red-600" />
-                                        <AlertTitle className="text-red-800">Warning: Destructive Operation</AlertTitle>
-                                        <AlertDescription className="text-red-700 space-y-1">
+                                    <Alert className="status-error">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <AlertTitle>Warning: Destructive Operation</AlertTitle>
+                                        <AlertDescription className="space-y-1">
                                             <p className="font-medium">This will permanently delete:</p>
                                             <ul className="list-disc list-inside ml-2 text-sm">
                                                 <li>All user-role assignments</li>

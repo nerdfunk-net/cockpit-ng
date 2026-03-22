@@ -12,12 +12,17 @@ import { RBACDataTable } from '../components/rbac-data-table'
 import { RBACLoading } from '../components/rbac-loading'
 import type { Role, CreateRoleData, UpdateRoleData } from '../types'
 import { EMPTY_ROLES, EMPTY_PERMISSIONS } from '../utils/constants'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 export function RolesManager() {
   // TanStack Query hooks
   const { data: roles = EMPTY_ROLES, isLoading: rolesLoading } = useRbacRoles()
   const { data: allPermissions = EMPTY_PERMISSIONS } = useRbacPermissions()
   const { createRole, updateRole, deleteRole, toggleRolePermission } = useRbacMutations()
+
+  // Confirm dialog
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   // Client-side UI state
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -49,10 +54,13 @@ export function RolesManager() {
       alert('System roles cannot be deleted')
       return
     }
-    if (confirm('Are you sure you want to delete this role?')) {
-      deleteRole.mutate(roleId)
-    }
-  }, [deleteRole])
+    openConfirm({
+      title: 'Delete Role',
+      description: 'Are you sure you want to delete this role?',
+      variant: 'destructive',
+      onConfirm: () => deleteRole.mutate(roleId),
+    })
+  }, [deleteRole, openConfirm])
 
   const handleEditRole = useCallback((role: Role) => {
     setEditingRole(role)
@@ -178,6 +186,7 @@ export function RolesManager() {
         allPermissions={allPermissions}
         onTogglePermission={handleTogglePermission}
       />
+      <ConfirmDialog {...confirmDialog} />
     </div>
   )
 }

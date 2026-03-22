@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { FolderOpen, Search, Globe, Lock, Trash2 } from 'lucide-react'
 import type { SavedInventory } from '@/hooks/queries/use-saved-inventories-queries'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 interface LoadInventoryDialogProps {
   show: boolean
@@ -28,7 +30,8 @@ export function LoadInventoryDialog({
   isLoading,
 }: LoadInventoryDialogProps) {
   const [searchTerm, setSearchTerm] = useState('')
-  
+  const { confirmDialog, openConfirm } = useConfirmDialog()
+
   const filteredInventories = useMemo(() => {
     if (searchTerm.trim() === '') {
       return inventories
@@ -47,12 +50,15 @@ export function LoadInventoryDialog({
     onClose()
   }
 
-  const handleDelete = async (e: React.MouseEvent, inventoryId: number, inventoryName: string) => {
+  const handleDelete = (e: React.MouseEvent, inventoryId: number, inventoryName: string) => {
     e.stopPropagation()
 
-    if (confirm(`Are you sure you want to delete inventory "${inventoryName}"?`)) {
-      await onDelete(inventoryId, inventoryName)
-    }
+    openConfirm({
+      title: 'Delete Inventory',
+      description: `Are you sure you want to delete inventory "${inventoryName}"?`,
+      onConfirm: () => onDelete(inventoryId, inventoryName),
+      variant: 'destructive',
+    })
   }
 
   const handleClose = () => {
@@ -185,6 +191,7 @@ export function LoadInventoryDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      <ConfirmDialog {...confirmDialog} />
     </Dialog>
   )
 }

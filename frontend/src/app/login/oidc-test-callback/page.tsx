@@ -265,8 +265,8 @@ function OIDCTestCallbackContent() {
 
         {/* Error Alert */}
         {debugInfo.error && (
-          <Alert className="border-red-500 bg-red-50 text-red-900">
-            <XCircle className="h-4 w-4 text-red-500" />
+          <Alert className="status-error">
+            <XCircle className="h-4 w-4" />
             <AlertDescription>
               <strong>Error:</strong> {debugInfo.error}
             </AlertDescription>

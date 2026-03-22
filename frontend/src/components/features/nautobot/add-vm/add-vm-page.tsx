@@ -219,10 +219,10 @@ export function AddVMPage() {
         <Alert
           className={
             statusMessage.type === 'success'
-              ? 'bg-green-50 border-green-200'
+              ? 'status-success'
               : statusMessage.type === 'error'
-                ? 'bg-red-50 border-red-200'
-                : 'bg-blue-50 border-blue-200'
+                ? 'status-error'
+                : 'status-info'
           }
         >
           <AlertDescription>{statusMessage.message}</AlertDescription>

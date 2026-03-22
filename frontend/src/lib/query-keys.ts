@@ -131,6 +131,10 @@ export const queryKeys = {
 
     // VM dropdowns (add-vm page)
     vmDropdowns: () => [...queryKeys.nautobot.all, 'vm-dropdowns'] as const,
+
+    // Software image files (add-vm page)
+    softwareImageFiles: (version?: string) =>
+      [...queryKeys.nautobot.all, 'software-image-files', version ?? 'all'] as const,
   },
 
   // Network
@@ -164,6 +168,8 @@ export const queryKeys = {
     fieldOptions: () => [...queryKeys.inventory.all, 'field-options'] as const,
     fieldValues: (fieldName: string) => [...queryKeys.inventory.all, 'field-values', fieldName] as const,
     customFields: () => [...queryKeys.inventory.all, 'custom-fields'] as const,
+    devicesDetailed: (inventoryId: number | null) =>
+      [...queryKeys.inventory.all, 'devices-detailed', inventoryId] as const,
   },
 
   // Compliance

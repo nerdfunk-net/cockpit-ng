@@ -4,6 +4,8 @@
  */
 
 import { useState, useMemo } from 'react'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,6 +59,7 @@ export function ManageInventoryDialog({
   isLoading,
 }: ManageInventoryDialogProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const { confirmDialog, openConfirm } = useConfirmDialog()
   const [selectedInventory, setSelectedInventory] = useState<SavedInventory | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'view' | 'edit'>('list')
   const [editName, setEditName] = useState('')
@@ -105,14 +108,19 @@ export function ManageInventoryDialog({
     }
   }
 
-  const handleDelete = async (inventory: SavedInventory) => {
-    if (confirm(`Are you sure you want to delete inventory "${inventory.name}"?`)) {
-      await onDelete(inventory.id, inventory.name)
-      if (selectedInventory?.id === inventory.id) {
-        setViewMode('list')
-        setSelectedInventory(null)
-      }
-    }
+  const handleDelete = (inventory: SavedInventory) => {
+    openConfirm({
+      title: 'Delete Inventory',
+      description: `Are you sure you want to delete inventory "${inventory.name}"?`,
+      onConfirm: async () => {
+        await onDelete(inventory.id, inventory.name)
+        if (selectedInventory?.id === inventory.id) {
+          setViewMode('list')
+          setSelectedInventory(null)
+        }
+      },
+      variant: 'destructive',
+    })
   }
 
   const handleClose = () => {
@@ -516,6 +524,7 @@ export function ManageInventoryDialog({
           </DialogFooter>
         )}
       </DialogContent>
+      <ConfirmDialog {...confirmDialog} />
     </Dialog>
   )
 }

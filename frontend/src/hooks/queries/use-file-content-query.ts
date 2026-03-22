@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from '@/lib/auth-store'
+import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 
 interface UseFileContentQueryOptions {
@@ -13,7 +13,7 @@ export function useFileContentQuery(
   filePath: string | null,
   options: UseFileContentQueryOptions = DEFAULT_OPTIONS
 ) {
-  const { token } = useAuthStore()
+  const { apiCall } = useApi()
   const { enabled } = options
 
   return useQuery({
@@ -22,25 +22,12 @@ export function useFileContentQuery(
       if (!repoId || !filePath) {
         throw new Error('Missing required parameters')
       }
-      
-      const headers: Record<string, string> = {
-        'Accept': 'text/plain',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-      
-      const response = await fetch(`/api/proxy/git/${repoId}/file-content?path=${encodeURIComponent(filePath)}`, {
-        headers,
+
+      // The proxy returns JSON-encoded text content
+      return apiCall<string>(`git/${repoId}/file-content?path=${encodeURIComponent(filePath)}`, {
+        method: 'GET',
+        headers: { Accept: 'text/plain' },
       })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file content: ${response.statusText}`)
-      }
-      
-      // The proxy returns JSON-encoded text, so parse it first
-      return response.json()
     },
     enabled: enabled && !!repoId && !!filePath,
     staleTime: 60 * 1000, // 1 minute

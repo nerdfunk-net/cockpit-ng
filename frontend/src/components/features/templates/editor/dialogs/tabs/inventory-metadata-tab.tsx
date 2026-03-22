@@ -209,7 +209,7 @@ export function InventoryMetadataTab({
         // Agent category with inventory selected - show which inventory is being used
         <div className="space-y-2">
           <Label>Using Inventory from Agent Options</Label>
-          <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded text-sm font-medium text-blue-900">
+          <div className="px-3 py-2 border rounded text-sm font-medium status-info">
             {agentInventoryName || `Inventory #${agentInventoryId}`}
           </div>
         </div>

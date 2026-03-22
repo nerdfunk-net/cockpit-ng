@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
+import { queryKeys } from '@/lib/query-keys'
 import { useMemo } from 'react'
 
 interface SimpleDevice {
@@ -100,7 +101,7 @@ export function useInventoryDevices(inventoryId: number | null, enabled: boolean
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['inventory-devices-detailed', inventoryId],
+    queryKey: queryKeys.inventory.devicesDetailed(inventoryId),
     queryFn: async () => {
       if (!inventoryId) return null
       return apiCall<InventoryDevicesResponse>(

@@ -124,7 +124,7 @@ export function NautobotDataDialog({ open, onOpenChange, nautobotData }: Nautobo
                   <Label className="text-sm font-semibold">Tags</Label>
                   <div className="flex flex-wrap gap-2">
                     {nautobotData.tags.map((tag: { id: number; name: string }) => (
-                      <Badge key={tag.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      <Badge key={tag.id} variant="outline" className="status-info border">
                         {tag.name}
                       </Badge>
                     ))}

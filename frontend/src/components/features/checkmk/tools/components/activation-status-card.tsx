@@ -47,15 +47,15 @@ export function ActivationStatusCard({ data, isLoading: _isLoading }: Activation
   }
 
   const getStatusColor = (state?: string) => {
-    if (!state) return 'bg-blue-50 border-blue-200'
+    if (!state) return 'status-info'
     switch (state) {
       case 'success':
-        return 'bg-green-50 border-green-200'
+        return 'status-success'
       case 'error':
       case 'failed':
-        return 'bg-red-50 border-red-200'
+        return 'status-error'
       default:
-        return 'bg-blue-50 border-blue-200'
+        return 'status-info'
     }
   }
 
@@ -188,9 +188,9 @@ export function ActivationStatusCard({ data, isLoading: _isLoading }: Activation
 
         {/* Loading indicator */}
         {isRunning && (
-          <Alert className="bg-blue-50 border-blue-200">
-            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-            <AlertDescription className="text-blue-800">
+          <Alert className="status-info">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription>
               Activation is in progress. Status will update automatically...
             </AlertDescription>
           </Alert>

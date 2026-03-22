@@ -127,9 +127,9 @@ export function PreviewChangesDialog({
 
           {/* Error Display */}
           {error && (
-            <Alert className="border-red-500 bg-red-50">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">{error}</AlertDescription>
+            <Alert className="status-error">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
@@ -203,9 +203,9 @@ export function PreviewChangesDialog({
 
               {/* Warning if there are failures */}
               {dryRunResult.failed_updates > 0 && (
-                <Alert className="border-red-500 bg-red-50">
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800">
+                <Alert className="status-error">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
                     {dryRunResult.failed_updates} device(s) will fail to update. Review the errors
                     above before proceeding.
                   </AlertDescription>

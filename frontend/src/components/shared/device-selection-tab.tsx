@@ -55,15 +55,9 @@ export function DeviceSelectionTab({
 }: DeviceSelectionTabProps) {
   // Determine alert CSS classes based on style
   const alertClasses = alertStyle === 'success'
-    ? 'bg-green-50 border-green-200'
+    ? 'status-success'
     : alertStyle === 'info'
-    ? 'bg-blue-50 border-blue-200'
-    : ''
-
-  const alertTextClasses = alertStyle === 'success'
-    ? 'text-green-800'
-    : alertStyle === 'info'
-    ? 'text-blue-800'
+    ? 'status-info'
     : ''
 
   const iconClasses = alertStyle === 'success'
@@ -96,7 +90,7 @@ export function DeviceSelectionTab({
       {selectedDevices.length > 0 && nextStepMessage && (
         <Alert className={alertClasses}>
           <CheckCircle2 className={`h-4 w-4 ${iconClasses}`} />
-          <AlertDescription className={alertTextClasses}>
+          <AlertDescription>
             <strong>{selectedDevices.length}</strong> device{selectedDevices.length !== 1 ? 's' : ''} selected.
             {' '}{nextStepMessage}
           </AlertDescription>

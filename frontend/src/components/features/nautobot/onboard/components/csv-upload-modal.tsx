@@ -438,17 +438,17 @@ export function CSVUploadModal({
 
           {/* Parse Error */}
           {parseError && (
-            <Alert className="border-red-200 bg-red-50">
-              <XCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">{parseError}</AlertDescription>
+            <Alert className="status-error">
+              <XCircle className="h-4 w-4" />
+              <AlertDescription>{parseError}</AlertDescription>
             </Alert>
           )}
 
           {/* Submit Error */}
           {submitError && (
-            <Alert className="border-red-200 bg-red-50">
-              <XCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">{submitError}</AlertDescription>
+            <Alert className="status-error">
+              <XCircle className="h-4 w-4" />
+              <AlertDescription>{submitError}</AlertDescription>
             </Alert>
           )}
 

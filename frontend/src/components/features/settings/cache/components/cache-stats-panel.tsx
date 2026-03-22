@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { HardDrive, RefreshCw, Database, Trash2 } from 'lucide-react'
 import { useCacheStats } from '../hooks/use-cache-queries'
 import { useCacheMutations } from '../hooks/use-cache-mutations'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 interface CacheStatsPanelProps {
   onLoadNamespace?: (namespace: string) => void
@@ -15,6 +17,7 @@ const DEFAULT_PROPS: CacheStatsPanelProps = {}
 export function CacheStatsPanel({ onLoadNamespace }: CacheStatsPanelProps = DEFAULT_PROPS) {
   const { data: stats, isLoading, refetch } = useCacheStats()
   const { clearCache } = useCacheMutations()
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   if (isLoading) {
     return (
@@ -117,9 +120,12 @@ export function CacheStatsPanel({ onLoadNamespace }: CacheStatsPanelProps = DEFA
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          if (confirm(`Clear the "${namespace}" namespace?`)) {
-                            clearCache.mutate(namespace)
-                          }
+                          openConfirm({
+                            title: `Clear the "${namespace}" namespace?`,
+                            description: 'This will remove all cache entries in this namespace.',
+                            onConfirm: () => clearCache.mutate(namespace),
+                            variant: 'destructive',
+                          })
                         }}
                         disabled={clearCache.isPending}
                         className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
@@ -147,6 +153,7 @@ export function CacheStatsPanel({ onLoadNamespace }: CacheStatsPanelProps = DEFA
           </div>
         </div>
       </CardContent>
+      <ConfirmDialog {...confirmDialog} />
     </Card>
   )
 }

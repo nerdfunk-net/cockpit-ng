@@ -8,6 +8,7 @@ import uvicorn
 import os
 from config import settings
 from settings_manager import settings_manager
+from cert_installer import install_certificates
 import logging
 
 
@@ -46,6 +47,10 @@ def initialize_database_settings():
 def main():
     """Start the FastAPI server with configuration."""
 
+    # Install certificates before anything else (Docker environments)
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    install_certificates(backend_dir)
+
     # Configure logging
     # Ensure log_level is valid, default to INFO if invalid
     try:
@@ -83,7 +88,6 @@ def main():
     logger.info("Log Level: %s", settings.log_level)
     logger.info("Data Directory: %s", settings.data_directory)
     logger.info("Nautobot (env): %s", settings.nautobot_url)
-    logger.info("Git SSL Verification: %s", settings.git_ssl_verify)
 
     # Start the server
     # Get the backend directory path

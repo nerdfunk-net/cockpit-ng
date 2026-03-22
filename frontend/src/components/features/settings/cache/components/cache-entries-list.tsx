@@ -9,6 +9,8 @@ import { Database, RefreshCw, Trash2 } from 'lucide-react'
 import { useCacheEntries } from '../hooks/use-cache-queries'
 import { useCacheMutations } from '../hooks/use-cache-mutations'
 import type { CacheEntry } from '../types'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 const EMPTY_ENTRIES: CacheEntry[] = []
 
@@ -16,6 +18,7 @@ export function CacheEntriesList() {
   const [includeExpired, setIncludeExpired] = useState(false)
   const { data: entries = EMPTY_ENTRIES, isLoading, refetch } = useCacheEntries(includeExpired)
   const { clearCache } = useCacheMutations()
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   if (isLoading) {
     return (
@@ -75,7 +78,7 @@ export function CacheEntriesList() {
                     key={entry.key}
                     className={`p-3 rounded-lg border ${
                       entry.is_expired
-                        ? 'bg-red-50 border-red-200'
+                        ? 'status-error'
                         : 'bg-white border-gray-200'
                     }`}
                   >
@@ -103,9 +106,12 @@ export function CacheEntriesList() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          if (confirm(`Clear namespace "${entry.namespace}"?`)) {
-                            clearCache.mutate(entry.namespace)
-                          }
+                          openConfirm({
+                            title: `Clear namespace "${entry.namespace}"?`,
+                            description: 'This will remove all cache entries in this namespace.',
+                            onConfirm: () => clearCache.mutate(entry.namespace),
+                            variant: 'destructive',
+                          })
                         }}
                         disabled={clearCache.isPending}
                         className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
@@ -128,6 +134,7 @@ export function CacheEntriesList() {
           )}
         </div>
       </CardContent>
+      <ConfirmDialog {...confirmDialog} />
     </Card>
   )
 }

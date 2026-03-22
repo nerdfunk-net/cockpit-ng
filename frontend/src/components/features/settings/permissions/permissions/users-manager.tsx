@@ -12,11 +12,16 @@ import { RBACDataTable } from '../components/rbac-data-table'
 import { RBACLoading } from '../components/rbac-loading'
 import type { User, CreateUserData, UpdateUserData } from '../types'
 import { EMPTY_USERS } from '../utils/constants'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 export function UsersManager() {
   // TanStack Query hooks - no manual state management needed
   const { data: users = EMPTY_USERS, isLoading, refetch } = useRbacUsers()
   const { createUser, updateUser, deleteUser } = useRbacMutations()
+
+  // Confirm dialog
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   // Client-side UI state only
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -45,11 +50,14 @@ export function UsersManager() {
     setIsDialogOpen(true)
   }, [])
 
-  const handleDelete = useCallback(async (userId: number) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      deleteUser.mutate(userId)
-    }
-  }, [deleteUser])
+  const handleDelete = useCallback((userId: number) => {
+    openConfirm({
+      title: 'Delete User',
+      description: 'Are you sure you want to delete this user?',
+      variant: 'destructive',
+      onConfirm: () => deleteUser.mutate(userId),
+    })
+  }, [deleteUser, openConfirm])
 
   const handleSubmit = useCallback((data: CreateUserData | UpdateUserData) => {
     if (selectedUser) {
@@ -155,6 +163,7 @@ export function UsersManager() {
         user={selectedUser}
         isEdit={!!selectedUser}
       />
+      <ConfirmDialog {...confirmDialog} />
     </div>
   )
 }

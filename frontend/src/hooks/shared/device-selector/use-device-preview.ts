@@ -9,6 +9,7 @@ import {
     BackendCondition
 } from '@/types/shared/device-selector'
 import { useDevicePreviewMutation } from '@/hooks/mutations/use-device-preview-mutation'
+import { useToast } from '@/hooks/use-toast'
 
 const EMPTY_DEVICES: DeviceInfo[] = []
 const EMPTY_DEVICE_IDS: string[] = []
@@ -22,11 +23,21 @@ export function useDevicePreview(
 ) {
     // Use TanStack Query mutation for preview
     const { mutate: executePreview, isPending: isLoadingPreview, data: previewData, error: previewError } = useDevicePreviewMutation()
+    const { toast } = useToast()
 
-    // Preview results (initialized from props or mutation data)
-    const [previewDevices, setPreviewDevices] = useState<DeviceInfo[]>(initialDevices)
-    const [totalDevices, setTotalDevices] = useState(initialDevices.length)
-    const [operationsExecuted, setOperationsExecuted] = useState(0)
+    // Derive preview results from mutation data — no duplicate state
+    const previewDevices = useMemo(
+        () => previewData?.devices ?? initialDevices,
+        [previewData, initialDevices]
+    )
+    const totalDevices = useMemo(
+        () => previewData?.total_count ?? initialDevices.length,
+        [previewData, initialDevices.length]
+    )
+    const operationsExecuted = useMemo(
+        () => previewData?.operations_executed ?? 0,
+        [previewData]
+    )
     const [showPreviewResults, setShowPreviewResults] = useState(initialDevices.length > 0)
 
     // Selection state
@@ -70,13 +81,9 @@ export function useDevicePreview(
         return flatConditions
     }, []) // Empty deps - pure function
 
-    // Update local state when mutation succeeds
+    // Update UI state and fire callbacks when mutation succeeds
     useEffect(() => {
         if (previewData) {
-             
-            setPreviewDevices(previewData.devices)
-            setTotalDevices(previewData.total_count)
-            setOperationsExecuted(previewData.operations_executed)
             setShowPreviewResults(true)
             setCurrentPage(1)
 
@@ -90,16 +97,17 @@ export function useDevicePreview(
     // Show error toast when mutation fails
     useEffect(() => {
         if (previewError) {
-            alert('Error previewing results: ' + (previewError as Error).message)
+            toast({
+                title: 'Preview failed',
+                description: (previewError as Error).message,
+                variant: 'destructive',
+            })
         }
-    }, [previewError])
+    }, [previewError, toast])
 
-    // Sync with initial props
+    // Show preview panel when initial devices are provided
     useEffect(() => {
         if (initialDevices.length > 0) {
-             
-            setPreviewDevices(initialDevices)
-            setTotalDevices(initialDevices.length)
             setShowPreviewResults(true)
         }
     }, [initialDevices])
@@ -212,13 +220,17 @@ export function useDevicePreview(
 
     const loadPreview = useCallback(() => {
         if (conditionTree.items.length === 0) {
-            alert('Please add at least one condition.')
+            toast({
+                title: 'No conditions',
+                description: 'Please add at least one condition.',
+                variant: 'destructive',
+            })
             return
         }
 
         const operations = buildOperationsFromTree(conditionTree)
         executePreview({ operations })
-    }, [conditionTree, executePreview, buildOperationsFromTree])
+    }, [conditionTree, executePreview, buildOperationsFromTree, toast])
 
     const handleSelectAll = useCallback((checked: boolean) => {
         if (checked) {

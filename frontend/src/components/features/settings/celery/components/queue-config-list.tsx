@@ -125,8 +125,8 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <Alert className="mb-4 bg-blue-50 border-blue-200">
-          <AlertDescription className="text-blue-800 text-sm">
+        <Alert className="mb-4 status-info">
+          <AlertDescription className="text-sm">
             <strong>Queue System:</strong> Built-in queues (default, backup, network, heavy) are hardcoded with automatic task routing and cannot be deleted.
             Custom queues can be added here for documentation. To use custom queues, configure the CELERY_WORKER_QUEUE environment variable in docker-compose.yml
             (e.g., CELERY_WORKER_QUEUE=monitoring) and manually route tasks to them.
@@ -241,8 +241,8 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
               </div>
 
               {error && (
-                <Alert className="bg-red-50 border-red-200">
-                  <AlertDescription className="text-red-800">{error}</AlertDescription>
+                <Alert className="status-error">
+                  <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
             </div>

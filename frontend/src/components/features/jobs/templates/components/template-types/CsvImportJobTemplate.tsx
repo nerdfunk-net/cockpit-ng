@@ -101,9 +101,9 @@ export function CsvImportJobTemplate({
           <CollapsibleContent>
           <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
             {/* Info alert */}
-            <Alert className="bg-blue-50 border-blue-200">
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
+            <Alert className="status-info">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
               The <strong>CSV File</strong> and file filter below are used only to load an
               example file for column mapping configuration. The actual files imported at
               runtime are determined by the <strong>Import Options</strong> file filter below.

@@ -42,13 +42,13 @@ export function ExportTab({
   return (
     <div className="space-y-6">
       {/* Summary Alert */}
-      <Alert className={canExport ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200'}>
+      <Alert className={canExport ? 'status-info' : 'status-warning'}>
         {canExport ? (
-          <FileText className="h-4 w-4 text-blue-600" />
+          <FileText className="h-4 w-4" />
         ) : (
-          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertCircle className="h-4 w-4" />
         )}
-        <AlertDescription className={canExport ? 'text-blue-800' : 'text-amber-800'}>
+        <AlertDescription>
           {canExport ? (
             <>
               Ready to export <strong>{selectedDevices.length}</strong> device

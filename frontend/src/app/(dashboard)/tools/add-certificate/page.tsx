@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -79,6 +81,7 @@ export default function AddCertificatePage() {
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const token = useAuthStore((state) => state.token)
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   const scanCertificates = useCallback(async () => {
     setScanning(true)
@@ -246,33 +249,38 @@ export default function AddCertificatePage() {
     setAdding(false)
   }
 
-  const handleDeleteCert = async (filename: string) => {
-    if (!confirm(`Delete certificate '${filename}'?`)) return
+  const handleDeleteCert = (filename: string) => {
+    openConfirm({
+      title: 'Delete Certificate',
+      description: `Delete certificate '${filename}'?`,
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/proxy/certificates/${encodeURIComponent(filename)}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          })
 
-    try {
-      const response = await fetch(`/api/proxy/certificates/${encodeURIComponent(filename)}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
+          const data = await response.json()
 
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        setSuccessMessage(`Certificate '${filename}' deleted`)
-        setCertificates(prev => prev.filter(c => c.filename !== filename))
-        setSelectedCerts(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(filename)
-          return newSet
-        })
-      } else {
-        setError(data.detail || data.message || 'Failed to delete certificate')
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete certificate')
-    }
+          if (response.ok && data.success) {
+            setSuccessMessage(`Certificate '${filename}' deleted`)
+            setCertificates(prev => prev.filter(c => c.filename !== filename))
+            setSelectedCerts(prev => {
+              const newSet = new Set(prev)
+              newSet.delete(filename)
+              return newSet
+            })
+          } else {
+            setError(data.detail || data.message || 'Failed to delete certificate')
+          }
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to delete certificate')
+        }
+      },
+      variant: 'destructive',
+    })
   }
 
   const formatFileSize = (bytes: number): string => {
@@ -347,28 +355,28 @@ export default function AddCertificatePage() {
 
         {/* Alerts */}
         {error && (
-          <Alert className="border-red-500 bg-red-50">
-            <AlertCircle className="h-4 w-4 text-red-500" />
-            <AlertTitle className="text-red-700">Error</AlertTitle>
-            <AlertDescription className="text-red-600">{error}</AlertDescription>
+          <Alert className="status-error">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         {successMessage && (
-          <Alert className="border-green-500 bg-green-50">
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <AlertTitle className="text-green-700">Success</AlertTitle>
-            <AlertDescription className="text-green-600">{successMessage}</AlertDescription>
+          <Alert className="status-success">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>{successMessage}</AlertDescription>
           </Alert>
         )}
 
         {/* Directory Info */}
         {certsDirectory && (
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="status-info">
             <CardContent className="py-4">
               <div className="flex items-center gap-3">
                 <FolderSearch className="w-5 h-5 text-blue-500" />
-                <span className="text-sm text-blue-700">
+                <span className="text-sm">
                   Scanning directory: <code className="bg-blue-100 px-2 py-0.5 rounded font-mono text-xs">{certsDirectory}</code>
                 </span>
               </div>
@@ -477,11 +485,11 @@ export default function AddCertificatePage() {
         </Card>
 
         {/* Info Box */}
-        <Card className="bg-amber-50 border-amber-200">
+        <Card className="status-warning">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-amber-800">
+              <div className="text-sm">
                 <p className="font-medium mb-2">Important Notes:</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>Certificates must be in PEM format with .crt extension</li>
@@ -521,6 +529,8 @@ export default function AddCertificatePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog {...confirmDialog} />
     </div>
   )
 }

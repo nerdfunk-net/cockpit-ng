@@ -49,7 +49,7 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 ### Naming Conventions
 - **Database**: `snake_case` (tables: `job_templates`, columns: `created_at`)
 - **Backend**: `snake_case` (files: `user_repository.py`, functions: `create_user()`)
-- **Frontend**: `kebab-case` dirs, `PascalCase` components (`bulk-edit/`, `BulkEditDialog.tsx`)
+- **Frontend**: `kebab-case` dirs and component files (`bulk-edit/`, `bulk-edit-dialog.tsx`)
 - **Models**: `PascalCase` (`JobTemplate`, `UserProfile`)
 
 ### Database Requirements

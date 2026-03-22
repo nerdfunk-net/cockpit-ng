@@ -8,17 +8,23 @@ import { CacheQuickStats } from './components/cache-quick-stats'
 import { CacheStatsPanel } from './components/cache-stats-panel'
 import { CacheEntriesList } from './components/cache-entries-list'
 import { useCacheMutations } from './hooks/use-cache-mutations'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 export default function CacheManagement() {
   const [showStats, setShowStats] = useState(false)
   const [showEntries, setShowEntries] = useState(false)
 
   const { clearCache, cleanupExpired } = useCacheMutations()
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   const handleClearAll = () => {
-    if (confirm('Are you sure you want to clear the entire cache?')) {
-      clearCache.mutate(undefined)
-    }
+    openConfirm({
+      title: 'Clear All Cache',
+      description: 'Are you sure you want to clear the entire cache? This will remove all cached data.',
+      variant: 'destructive',
+      onConfirm: () => clearCache.mutate(undefined),
+    })
   }
 
   return (
@@ -99,6 +105,7 @@ export default function CacheManagement() {
           <CacheQuickStats />
         </div>
       </div>
+      <ConfirmDialog {...confirmDialog} />
     </div>
   )
 }

@@ -151,7 +151,7 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                          <Badge variant="outline" className="status-success border">
                             <CheckCircle2 className="h-3 w-3 mr-1" />
                             {prefix.reachable_count} ({reachabilityPercent}%)
                           </Badge>

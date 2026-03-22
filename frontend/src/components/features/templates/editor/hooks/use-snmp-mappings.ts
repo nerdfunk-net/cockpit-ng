@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
+import { queryKeys } from '@/lib/query-keys'
 import { useMemo } from 'react'
 
 interface SnmpMapping {
@@ -33,7 +34,7 @@ export function useSnmpMappings(enabled: boolean = true) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['snmp-mappings'],
+    queryKey: queryKeys.complianceSettings.snmpMappings(),
     queryFn: async () => {
       const response = await apiCall<SnmpMappingsResponse>(
         'settings/compliance/snmp-mappings',

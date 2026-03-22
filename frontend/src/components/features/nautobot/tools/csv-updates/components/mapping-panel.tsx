@@ -104,8 +104,8 @@ export function MappingPanel({
 
             {/* Validation Errors */}
             {hasErrors && (
-              <Alert className="border-yellow-500 bg-yellow-50">
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <Alert className="status-warning">
+                <AlertTriangle className="h-4 w-4" />
                 <AlertDescription className="text-xs">
                   <strong>Required fields missing:</strong> {missingRequiredFields.join(', ')}
                   <div className="mt-1">Please map all required lookup fields before processing updates.</div>
@@ -152,8 +152,8 @@ export function MappingPanel({
             </div>
 
             {/* Summary */}
-            <Alert className="bg-blue-50 border-blue-200">
-              <Info className="h-4 w-4 text-blue-600" />
+            <Alert className="status-info">
+              <Info className="h-4 w-4" />
               <AlertDescription className="text-xs">
                 <strong>How it works:</strong> The mapped CSV columns will be used to identify existing {objectType} in Nautobot.
                 For example, if you map &quot;Prefix&quot; to CSV column &quot;network&quot;, the system will use the &quot;network&quot; column

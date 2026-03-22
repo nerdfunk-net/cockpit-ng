@@ -4,10 +4,7 @@
  */
 
 import React, { useEffect, useMemo, useCallback, useState } from 'react'
-import { RefreshCw, Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import { useApi } from '@/hooks/use-api'
@@ -48,6 +45,15 @@ import type {
 } from '@/components/features/nautobot/add-device/types'
 import type { InterfaceSource } from '@/components/features/checkmk/hosts-inventory/hooks/use-nautobot-sync'
 
+// Local sub-components
+import {
+  SyncModalHeader,
+  SyncLoadingState,
+  SyncFormFooter,
+  ValidationResultsModal,
+} from './components'
+import type { ValidationResults } from './components'
+
 interface DeviceSyncModalProps {
   open: boolean
   deviceId?: string
@@ -61,6 +67,18 @@ interface DeviceSyncModalProps {
   onSync: (formData: DeviceFormValues, deviceId?: string) => Promise<void>
   onClose: () => void
   isSyncing: boolean
+}
+
+const DEFAULT_VALIDATION_RESULTS: ValidationResults = {
+  isValid: true,
+  deviceRole: true,
+  deviceStatus: true,
+  deviceType: true,
+  location: true,
+  interfaceStatus: true,
+  interfaceIssues: 0,
+  ipAddresses: true,
+  ipAddressIssues: 0,
 }
 
 export function DeviceSyncModal({
@@ -79,16 +97,16 @@ export function DeviceSyncModal({
 }: DeviceSyncModalProps) {
   const { toast } = useToast()
   const { apiCall } = useApi()
-  
+
   // Fetch all dropdown data from Nautobot (for interface types, namespaces, IP roles, etc.)
   const { data: fullDropdownData } = useNautobotDropdownsQuery({
     enabled: open,
   })
-  
+
   // Transform CheckMK data to form format
   const initialFormData = useMemo(() => {
     if (!open || loadingMetadata) return undefined
-    
+
     return transformCheckMKToFormData(
       propertyMappings,
       nautobotMetadata,
@@ -135,27 +153,7 @@ export function DeviceSyncModal({
 
   // Validation modal state
   const [showValidationModal, setShowValidationModal] = useState(false)
-  const [validationResults, setValidationResults] = useState<{
-    isValid: boolean
-    deviceRole: boolean
-    deviceStatus: boolean
-    deviceType: boolean
-    location: boolean
-    interfaceStatus: boolean
-    interfaceIssues: number
-    ipAddresses: boolean
-    ipAddressIssues: number
-  }>({
-    isValid: true,
-    deviceRole: true,
-    deviceStatus: true,
-    deviceType: true,
-    location: true,
-    interfaceStatus: true,
-    interfaceIssues: 0,
-    ipAddresses: true,
-    ipAddressIssues: 0,
-  })
+  const [validationResults, setValidationResults] = useState<ValidationResults>(DEFAULT_VALIDATION_RESULTS)
 
   // Reset form when initial data changes or device changes
   useEffect(() => {
@@ -231,10 +229,10 @@ export function DeviceSyncModal({
   const handleSync = React.useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-      
+
       // Get current form values
       const values = form.getValues()
-      
+
       // Run validation
       const deviceRole = !!values.selectedRole
       const deviceStatus = !!values.selectedStatus
@@ -278,9 +276,9 @@ export function DeviceSyncModal({
           }
         })
       })
-      
+
       const isValid = deviceRole && deviceStatus && deviceType && location && allInterfacesHaveStatus && allIpAddressesValid
-      
+
       if (!isValid) {
         toast({
           title: 'Validation Failed',
@@ -289,7 +287,7 @@ export function DeviceSyncModal({
         })
         return
       }
-      
+
       // If validation passes, proceed with sync
       await onSync(values, deviceId)
     },
@@ -301,30 +299,30 @@ export function DeviceSyncModal({
     async () => {
       // Get current form values
       const values = form.getValues()
-      
+
       // Check required fields
       const deviceRole = !!values.selectedRole
       const deviceStatus = !!values.selectedStatus
       const deviceType = !!values.selectedDeviceType
       const location = !!values.selectedLocation
-      
+
       // Check interface statuses and IP addresses
       const interfaces = values.interfaces || []
       let interfaceIssues = 0
       let allInterfacesHaveStatus = true
       let ipAddressIssues = 0
       let allIpAddressesValid = true
-      
+
       // IP address validation regex: xxx.xxx.xxx.xxx/yy or xxxx:xxxx::/yy
       const ipv4CidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/
       const ipv6CidrRegex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\/\d{1,3}$/
-      
+
       interfaces.forEach(iface => {
         if (!iface.status) {
           allInterfacesHaveStatus = false
           interfaceIssues++
         }
-        
+
         // Check IP addresses
         const ipAddresses = iface.ip_addresses || []
         ipAddresses.forEach(ip => {
@@ -341,9 +339,9 @@ export function DeviceSyncModal({
           }
         })
       })
-      
+
       const isValid = deviceRole && deviceStatus && deviceType && location && allInterfacesHaveStatus && allIpAddressesValid
-      
+
       setValidationResults({
         isValid,
         deviceRole,
@@ -355,7 +353,7 @@ export function DeviceSyncModal({
         ipAddresses: allIpAddressesValid,
         ipAddressIssues,
       })
-      
+
       setShowValidationModal(true)
     },
     [form]
@@ -375,12 +373,12 @@ export function DeviceSyncModal({
           namespace?: string
         }
       }>('settings/nautobot/defaults')
-      
+
       console.log('[DeviceSyncModal] Default values received:', response)
-      
+
       if (response?.data) {
         const defaults = response.data
-        
+
         // Apply defaults to form
         if (defaults.device_role) {
           console.log('[DeviceSyncModal] Setting device_role to:', defaults.device_role)
@@ -398,7 +396,7 @@ export function DeviceSyncModal({
           console.log('[DeviceSyncModal] Setting platform to:', defaults.platform)
           form.setValue('selectedPlatform', defaults.platform)
         }
-        
+
         // Apply interface status to all interfaces
         if (defaults.interface_status) {
           console.log('[DeviceSyncModal] Setting interface_status to:', defaults.interface_status)
@@ -410,14 +408,14 @@ export function DeviceSyncModal({
             console.log('[DeviceSyncModal] Updated interface statuses for', currentInterfaces.length, 'interfaces')
           }
         }
-        
+
         console.log('[DeviceSyncModal] Form values after setting:', {
           selectedRole: form.getValues('selectedRole'),
           selectedStatus: form.getValues('selectedStatus'),
           selectedLocation: form.getValues('selectedLocation'),
           selectedPlatform: form.getValues('selectedPlatform'),
         })
-        
+
         toast({
           title: 'Default Values Applied',
           description: 'Nautobot default values have been applied to the form',
@@ -557,36 +555,20 @@ export function DeviceSyncModal({
         </DialogHeader>
 
         {/* Compact Header */}
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 px-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Sync Device to Nautobot</h2>
-                <p className="text-blue-100 text-sm">{form.watch('deviceName') || 'CheckMK Device'}</p>
-              </div>
-              {isUpdate && (
-                <Badge className="bg-red-600 text-white border-red-700 font-semibold px-3 py-1 shadow-lg">
-                  Update Existing Device
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
+        <SyncModalHeader
+          deviceName={form.watch('deviceName')}
+          isUpdate={isUpdate}
+        />
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto bg-gray-50/50">
           {loadingMetadata ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Loading metadata...</p>
-              </div>
-            </div>
+            <SyncLoadingState />
           ) : (
             <form onSubmit={handleSync} className="p-6 space-y-6">
               {!isUpdate && (
-                <Alert className="border-amber-200 bg-amber-50">
-                  <AlertDescription className="text-sm text-amber-800">
+                <Alert className="status-warning">
+                  <AlertDescription className="text-sm">
                     Device does not exist in Nautobot. A new device will be created.
                   </AlertDescription>
                 </Alert>
@@ -626,42 +608,11 @@ export function DeviceSyncModal({
               />
 
               {/* Footer Actions */}
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={isSyncing}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleValidate}
-                  className="min-w-[120px] hover:bg-blue-100 hover:border-blue-400 active:scale-95 transition-all cursor-pointer"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Validate
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isSyncing}
-                  className="min-w-[140px]"
-                >
-                  {isSyncing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Syncing...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Sync to Nautobot
-                    </>
-                  )}
-                </Button>
-              </div>
+              <SyncFormFooter
+                isSyncing={isSyncing}
+                onCancel={onClose}
+                onValidate={handleValidate}
+              />
             </form>
           )}
         </div>
@@ -697,132 +648,11 @@ export function DeviceSyncModal({
       </DialogContent>
 
       {/* Validation Results Modal */}
-      <Dialog open={showValidationModal} onOpenChange={setShowValidationModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {validationResults.isValid ? (
-                <>
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span>Validation Passed</span>
-                </>
-              ) : (
-                <>
-                  <XCircle className="h-5 w-5 text-red-600" />
-                  <span>Validation Failed</span>
-                </>
-              )}
-            </DialogTitle>
-            <DialogDescription>
-              {validationResults.isValid 
-                ? 'All required fields are properly configured.'
-                : 'Some required fields are missing or invalid.'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 py-4">
-            {/* Device Role */}
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
-              <div className="flex items-center gap-2">
-                {validationResults.deviceRole ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : (
-                  <XCircle className="h-4 w-4 text-red-600" />
-                )}
-                <span className="text-sm font-medium">Device Role</span>
-              </div>
-              <Badge variant={validationResults.deviceRole ? "default" : "destructive"}>
-                {validationResults.deviceRole ? 'Valid' : 'Required'}
-              </Badge>
-            </div>
-
-            {/* Device Status */}
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
-              <div className="flex items-center gap-2">
-                {validationResults.deviceStatus ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : (
-                  <XCircle className="h-4 w-4 text-red-600" />
-                )}
-                <span className="text-sm font-medium">Device Status</span>
-              </div>
-              <Badge variant={validationResults.deviceStatus ? "default" : "destructive"}>
-                {validationResults.deviceStatus ? 'Valid' : 'Required'}
-              </Badge>
-            </div>
-
-            {/* Device Type */}
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
-              <div className="flex items-center gap-2">
-                {validationResults.deviceType ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : (
-                  <XCircle className="h-4 w-4 text-red-600" />
-                )}
-                <span className="text-sm font-medium">Device Type</span>
-              </div>
-              <Badge variant={validationResults.deviceType ? "default" : "destructive"}>
-                {validationResults.deviceType ? 'Valid' : 'Required'}
-              </Badge>
-            </div>
-
-            {/* Location */}
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
-              <div className="flex items-center gap-2">
-                {validationResults.location ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : (
-                  <XCircle className="h-4 w-4 text-red-600" />
-                )}
-                <span className="text-sm font-medium">Location</span>
-              </div>
-              <Badge variant={validationResults.location ? "default" : "destructive"}>
-                {validationResults.location ? 'Valid' : 'Required'}
-              </Badge>
-            </div>
-
-            {/* Interface Status */}
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
-              <div className="flex items-center gap-2">
-                {validationResults.interfaceStatus ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                )}
-                <span className="text-sm font-medium">Interface Status</span>
-              </div>
-              <Badge variant={validationResults.interfaceStatus ? "default" : "destructive"}>
-                {validationResults.interfaceStatus 
-                  ? 'All Valid' 
-                  : `${validationResults.interfaceIssues} Missing`}
-              </Badge>
-            </div>
-
-            {/* IP Addresses */}
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
-              <div className="flex items-center gap-2">
-                {validationResults.ipAddresses ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                )}
-                <span className="text-sm font-medium">IP Addresses (CIDR)</span>
-              </div>
-              <Badge variant={validationResults.ipAddresses ? "default" : "destructive"}>
-                {validationResults.ipAddresses 
-                  ? 'All Valid' 
-                  : `${validationResults.ipAddressIssues} Invalid`}
-              </Badge>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Button onClick={() => setShowValidationModal(false)}>
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ValidationResultsModal
+        open={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        results={validationResults}
+      />
     </Dialog>
   )
 }

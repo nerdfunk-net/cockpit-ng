@@ -318,9 +318,9 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
 
               {/* Parsing status */}
               {isParsing && (
-                <Alert className="bg-blue-50 border-blue-200">
-                  <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
-                  <AlertDescription className="text-blue-800">
+                <Alert className="status-info">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <AlertDescription>
                     Parsing CSV file...
                   </AlertDescription>
                 </Alert>
@@ -328,16 +328,16 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
 
               {/* Parse error */}
               {parseError && !isParsing && (
-                <Alert className="bg-red-50 border-red-200">
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800">{parseError}</AlertDescription>
+                <Alert className="status-error">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{parseError}</AlertDescription>
                 </Alert>
               )}
 
               {/* CSV Format Info */}
-              <Alert className="bg-blue-50 border-blue-200">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800 text-sm">
+              <Alert className="status-info">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-sm">
                   <strong>Required:</strong> CSV must have at least one identifier column: <code>id</code>,{' '}
                   <code>name</code>, or <code>primary_ip4</code>
                   <br />
@@ -352,9 +352,9 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
           {/* Parsed Data Summary */}
           {parsedData && !showProgress && (
             <div className="space-y-4">
-              <Alert className="bg-green-50 border-green-200">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
+              <Alert className="status-success">
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertDescription>
                   CSV parsed successfully! Found <strong>{parsedData.rowCount}</strong> devices to update.
                 </AlertDescription>
               </Alert>
@@ -432,9 +432,9 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
           {/* Progress View */}
           {showProgress && taskId && (
             <div className="space-y-4">
-              <Alert className="bg-blue-50 border-blue-200">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
+              <Alert className="status-info">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
                   Update task is running in the background. You can track progress in the Jobs/View app.
                 </AlertDescription>
               </Alert>

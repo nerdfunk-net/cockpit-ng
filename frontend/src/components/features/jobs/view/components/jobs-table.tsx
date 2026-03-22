@@ -109,7 +109,7 @@ export function JobsTable({
                           <TooltipTrigger asChild>
                             <AlertTriangle className="h-4 w-4 text-amber-500 animate-pulse flex-shrink-0" />
                           </TooltipTrigger>
-                          <TooltipContent side="right" className="max-w-sm bg-amber-50 border-amber-200">
+                          <TooltipContent side="right" className="max-w-sm status-warning">
                             <div className="space-y-1 text-xs">
                               <p className="font-semibold text-amber-900">⚠️ Job May Be Stuck</p>
                               <p className="text-amber-700">{getSuspiciousJobWarning(run)}</p>

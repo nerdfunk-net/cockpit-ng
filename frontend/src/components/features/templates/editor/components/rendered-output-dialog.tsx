@@ -51,18 +51,18 @@ export function RenderedOutputDialog({
 
         <div className="flex-1 overflow-hidden px-6 py-4 space-y-3">
           {result?.error && (
-            <Alert className="border-red-200 bg-red-50">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">
+            <Alert className="status-error">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
                 {result.error}
               </AlertDescription>
             </Alert>
           )}
 
           {result?.warnings && result.warnings.length > 0 && (
-            <Alert className="border-amber-200 bg-amber-50">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-800">
+            <Alert className="status-warning">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
                 {result.warnings.join(', ')}
               </AlertDescription>
             </Alert>

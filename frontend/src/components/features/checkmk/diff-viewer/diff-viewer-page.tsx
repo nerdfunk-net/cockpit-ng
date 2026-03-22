@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { X } from 'lucide-react'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
@@ -23,6 +25,7 @@ export default function DiffViewerPage() {
   const token = useAuthStore(state => state.token)
   const { apiCall } = useApi()
   const { statusMessage, showMessage, clearMessage } = useStatusMessages()
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   // Diff loader
   const {
@@ -165,15 +168,19 @@ export default function DiffViewerPage() {
   }, [jobManagement, showMessage])
 
   // Handle clear results
-  const handleClearResults = useCallback(async () => {
-    if (!confirm('Are you sure you want to delete all comparison results? This action cannot be undone.')) {
-      return
-    }
-    const success = await jobManagement.clearResults()
-    if (success) {
-      setComparisonOverlay(new Map())
-    }
-  }, [jobManagement])
+  const handleClearResults = useCallback(() => {
+    openConfirm({
+      title: 'Delete Comparison Results',
+      description: 'Are you sure you want to delete all comparison results? This action cannot be undone.',
+      onConfirm: async () => {
+        const success = await jobManagement.clearResults()
+        if (success) {
+          setComparisonOverlay(new Map())
+        }
+      },
+      variant: 'destructive',
+    })
+  }, [jobManagement, openConfirm])
 
   // Handle close diff modal
   const handleCloseDiffModal = useCallback(() => {
@@ -268,6 +275,8 @@ export default function DiffViewerPage() {
         configComparison={configComparison}
         onClose={handleCloseDiffModal}
       />
+
+      <ConfirmDialog {...confirmDialog} />
     </div>
   )
 }

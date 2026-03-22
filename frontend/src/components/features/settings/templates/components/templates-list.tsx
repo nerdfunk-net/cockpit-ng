@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,6 +48,7 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
   const { templates, isLoading } = useTemplates({ filters })
   const { data: categories = EMPTY_CATEGORIES } = useTemplateCategories()
   const { deleteTemplate, bulkDeleteTemplates, syncTemplate } = useTemplateMutations()
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   const handleFilterChange = (key: keyof TemplateFilters, value: string) => {
     setFilters(prev => ({
@@ -74,19 +77,22 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
     }
   }
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = useCallback(() => {
     const templateNames = templates
       .filter(t => selectedTemplates.has(t.id))
       .map(t => t.name)
       .join(', ')
 
-    if (!confirm(`Are you sure you want to delete ${selectedTemplates.size} template(s)?\n\nTemplates: ${templateNames}`)) {
-      return
-    }
-
-    await bulkDeleteTemplates.mutateAsync(Array.from(selectedTemplates))
-    setSelectedTemplates(EMPTY_SET)
-  }
+    openConfirm({
+      title: `Delete ${selectedTemplates.size} template(s)?`,
+      description: `Templates: ${templateNames}`,
+      onConfirm: async () => {
+        await bulkDeleteTemplates.mutateAsync(Array.from(selectedTemplates))
+        setSelectedTemplates(EMPTY_SET)
+      },
+      variant: 'destructive',
+    })
+  }, [templates, selectedTemplates, openConfirm, bulkDeleteTemplates])
 
   const getSourceIcon = (source: string) => {
     switch (source) {
@@ -269,9 +275,12 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                if (confirm('Are you sure you want to delete this template?')) {
-                                  deleteTemplate.mutate(template.id)
-                                }
+                                openConfirm({
+                                  title: 'Delete template?',
+                                  description: 'Are you sure you want to delete this template?',
+                                  onConfirm: () => deleteTemplate.mutate(template.id),
+                                  variant: 'destructive',
+                                })
                               }}
                               className="text-red-600"
                             >
@@ -288,6 +297,7 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
           </div>
         </div>
       </CardContent>
+      <ConfirmDialog {...confirmDialog} />
     </Card>
   )
 }

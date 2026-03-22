@@ -7,6 +7,8 @@ import { Download, Loader2 } from 'lucide-react'
 import { useBackupHistory } from '../hooks/use-backup-devices'
 import { useBackupMutations } from '../hooks/use-backup-mutations'
 import type { Device } from '../types'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 const EMPTY_HISTORY_ARRAY: never[] = []
 
@@ -26,6 +28,7 @@ export function BackupHistoryDialog({
     { enabled: open && !!device }
   )
   const { downloadBackup, restoreBackup } = useBackupMutations()
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   const handleDownload = (backupId: string) => {
     if (!device) return
@@ -34,8 +37,12 @@ export function BackupHistoryDialog({
 
   const handleRestore = (backupId: string) => {
     if (!device) return
-    if (!confirm('Are you sure you want to restore this configuration?')) return
-    restoreBackup.mutate({ deviceId: device.id, backupId })
+    openConfirm({
+      title: 'Restore Configuration',
+      description: 'Are you sure you want to restore this configuration?',
+      onConfirm: () => restoreBackup.mutate({ deviceId: device.id, backupId }),
+      variant: 'destructive',
+    })
   }
 
   return (
@@ -115,6 +122,7 @@ export function BackupHistoryDialog({
           )}
         </div>
       </DialogContent>
+      <ConfirmDialog {...confirmDialog} />
     </Dialog>
   )
 }

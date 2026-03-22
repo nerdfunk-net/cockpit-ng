@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Github, GitBranch, Plus, RefreshCw } from 'lucide-react'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 // TanStack Query Hooks
 import { useGitRepositoriesQuery } from './hooks/queries/use-git-repositories-query'
@@ -35,6 +37,9 @@ import type { RepositoryFormValues } from './validation'
 const GitManagement: React.FC = () => {
   // Message state
   const [message] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Confirm dialog
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   // TanStack Query - Repositories
   const { data: reposData, isLoading: loadingRepos, refetch: refetchRepositories } = useGitRepositoriesQuery()
@@ -109,17 +114,20 @@ const GitManagement: React.FC = () => {
     setShowEditDialog(true)
   }, [])
 
-  const handleDeleteRepository = useCallback(async (repo: GitRepository) => {
-    if (!confirm(`Are you sure you want to delete "${repo.name}"?`)) {
-      return
-    }
-
-    try {
-      await deleteRepoMutation.mutateAsync(repo.id)
-    } catch {
-      // Error already handled by mutation's onError
-    }
-  }, [deleteRepoMutation])
+  const handleDeleteRepository = useCallback((repo: GitRepository) => {
+    openConfirm({
+      title: 'Delete Repository',
+      description: `Are you sure you want to delete "${repo.name}"?`,
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await deleteRepoMutation.mutateAsync(repo.id)
+        } catch {
+          // Error already handled by mutation's onError
+        }
+      },
+    })
+  }, [deleteRepoMutation, openConfirm])
 
   const handleSyncRepository = useCallback(async (repo: GitRepository) => {
     try {
@@ -129,19 +137,20 @@ const GitManagement: React.FC = () => {
     }
   }, [syncRepoMutation])
 
-  const handleRemoveAndSyncRepository = useCallback(async (repo: GitRepository) => {
-    if (!confirm(
-      `Are you sure you want to remove and re-clone "${repo.name}"? This will permanently delete the local copy and create a fresh clone.`
-    )) {
-      return
-    }
-
-    try {
-      await removeAndSyncRepoMutation.mutateAsync(repo.id)
-    } catch {
-      // Error already handled by mutation's onError
-    }
-  }, [removeAndSyncRepoMutation])
+  const handleRemoveAndSyncRepository = useCallback((repo: GitRepository) => {
+    openConfirm({
+      title: 'Remove and Re-clone Repository',
+      description: `Are you sure you want to remove and re-clone "${repo.name}"? This will permanently delete the local copy and create a fresh clone.`,
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await removeAndSyncRepoMutation.mutateAsync(repo.id)
+        } catch {
+          // Error already handled by mutation's onError
+        }
+      },
+    })
+  }, [removeAndSyncRepoMutation, openConfirm])
 
   return (
     <div className="space-y-4">
@@ -279,6 +288,8 @@ const GitManagement: React.FC = () => {
         isLoading={repositoryDebug.isLoading}
         onRunOperation={repositoryDebug.runOperation}
       />
+
+      <ConfirmDialog {...confirmDialog} />
     </div>
   )
 }

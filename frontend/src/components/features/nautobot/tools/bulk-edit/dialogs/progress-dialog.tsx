@@ -176,9 +176,9 @@ export function ProgressDialog({
         <div className="space-y-4">
           {/* Error Display */}
           {error && (
-            <Alert className="border-red-500 bg-red-50">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">{error}</AlertDescription>
+            <Alert className="status-error">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
@@ -238,9 +238,9 @@ export function ProgressDialog({
 
               {/* Error Message */}
               {jobStatus.error_message && (
-                <Alert className="border-red-500 bg-red-50">
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800">{jobStatus.error_message}</AlertDescription>
+                <Alert className="status-error">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{jobStatus.error_message}</AlertDescription>
                 </Alert>
               )}
 

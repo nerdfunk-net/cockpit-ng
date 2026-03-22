@@ -402,9 +402,9 @@ export function TemplateForm({
 
             {/* Source-specific configurations */}
             {watchedSource === 'git' && (
-              <Card className="bg-blue-50 border-blue-200">
+              <Card className="status-info">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2 text-blue-700">
+                  <CardTitle className="flex items-center space-x-2">
                     <GitBranch className="h-5 w-5" />
                     <span>Git Repository Configuration</span>
                   </CardTitle>
@@ -484,9 +484,9 @@ export function TemplateForm({
             )}
 
             {watchedSource === 'file' && (
-              <Card className="bg-green-50 border-green-200">
+              <Card className="status-success">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2 text-green-700">
+                  <CardTitle className="flex items-center space-x-2">
                     <Upload className="h-5 w-5" />
                     <span>File Upload</span>
                   </CardTitle>
@@ -510,9 +510,9 @@ export function TemplateForm({
             )}
 
             {watchedSource === 'webeditor' && (
-              <Card className="bg-yellow-50 border-yellow-200">
+              <Card className="status-warning">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2 text-yellow-700">
+                  <CardTitle className="flex items-center space-x-2">
                     <Code className="h-5 w-5" />
                     <span>Web Editor</span>
                   </CardTitle>

@@ -57,11 +57,6 @@ class Settings:
     # OIDC Configuration - Now managed via config/oidc_providers.yaml
     # No environment variables needed - all OIDC settings are in the YAML file
 
-    # SSL/TLS Configuration for Git operations
-    git_ssl_verify: bool = os.getenv("GIT_SSL_VERIFY", "true").lower() == "true"
-    git_ssl_cert: str = os.getenv("GIT_SSL_CERT", "")
-    git_ssl_ca_info: str = os.getenv("GIT_SSL_CA_INFO", "")
-
     # File storage configuration
     config_files_directory: str = os.getenv("CONFIG_FILES_DIRECTORY", "config_files")
     allowed_file_extensions: list = get_env_list(

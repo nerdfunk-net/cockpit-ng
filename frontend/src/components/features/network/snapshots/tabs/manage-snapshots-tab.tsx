@@ -97,7 +97,7 @@ export function ManageSnapshotsTab() {
   const getStatusBadge = (status: string) => {
     if (status === 'completed') {
       return (
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+        <Badge variant="outline" className="status-success border">
           Completed
         </Badge>
       )

@@ -52,14 +52,14 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
       {/* Message */}
       {result.message && (
         <div className={`border rounded-lg p-3 flex items-start gap-2 ${
-          result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+          result.success ? 'status-success' : 'status-error'
         }`}>
           {result.success ? (
             <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
           ) : (
             <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
           )}
-          <p className={`text-sm ${result.success ? 'text-green-800' : 'text-red-800'}`}>
+          <p className="text-sm">
             {String(result.message)}
           </p>
         </div>

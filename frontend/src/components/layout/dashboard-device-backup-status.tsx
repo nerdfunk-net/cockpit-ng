@@ -251,8 +251,8 @@ export default function DashboardDeviceBackupStatus({ refreshTrigger = 0 }: Dash
                     className={cn(
                       "p-4 rounded-lg border transition-all duration-200 hover:shadow-md",
                       device.last_backup_success
-                        ? "bg-green-50 border-green-200"
-                        : "bg-red-50 border-red-200"
+                        ? "status-success"
+                        : "status-error"
                     )}
                   >
                     <div className="flex items-start justify-between">

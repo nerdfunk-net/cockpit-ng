@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
+import { queryKeys } from '@/lib/query-keys'
 import { QUERY_STALE_TIMES } from '../../constants'
 import type { SoftwareImageOption } from '../../types'
 
@@ -20,7 +21,7 @@ export function useSoftwareImageFilesQuery(
   const { softwareVersion } = options
 
   return useQuery({
-    queryKey: ['nautobot', 'software-image-files', softwareVersion ?? 'all'] as const,
+    queryKey: queryKeys.nautobot.softwareImageFiles(softwareVersion),
     queryFn: async (): Promise<SoftwareImageOption[]> => {
       const params = softwareVersion ? `?software_version=${encodeURIComponent(softwareVersion)}` : ''
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

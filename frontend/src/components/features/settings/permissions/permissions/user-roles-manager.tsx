@@ -23,12 +23,17 @@ import { useRbacUsers, useRbacRoles } from '../hooks/use-rbac-queries'
 import { useRbacMutations } from '../hooks/use-rbac-mutations'
 import { RBACLoading } from '../components/rbac-loading'
 import { EMPTY_USERS, EMPTY_ROLES } from '../utils/constants'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 export function UserRolesManager() {
   // TanStack Query - no manual state management
   const { data: users = EMPTY_USERS, isLoading: usersLoading } = useRbacUsers()
   const { data: roles = EMPTY_ROLES, isLoading: rolesLoading } = useRbacRoles()
   const { assignRoleToUser, removeRoleFromUser } = useRbacMutations()
+
+  // Confirm dialog
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   // Client-side UI state only
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
@@ -63,11 +68,13 @@ export function UserRolesManager() {
   }, [selectedUserId, selectedRoleId, assignRoleToUser])
 
   const handleRemoveRole = useCallback((userId: number, roleId: number) => {
-    if (!confirm('Are you sure you want to remove this role from the user?')) {
-      return
-    }
-    removeRoleFromUser.mutate({ userId, roleId })
-  }, [removeRoleFromUser])
+    openConfirm({
+      title: 'Remove Role',
+      description: 'Are you sure you want to remove this role from the user?',
+      variant: 'destructive',
+      onConfirm: () => removeRoleFromUser.mutate({ userId, roleId }),
+    })
+  }, [removeRoleFromUser, openConfirm])
 
   if (usersLoading || rolesLoading) {
     return <RBACLoading message="Loading users and roles..." />
@@ -183,6 +190,8 @@ export function UserRolesManager() {
           </TableBody>
         </Table>
       </div>
+
+      <ConfirmDialog {...confirmDialog} />
 
       {/* Summary */}
       <div className="bg-muted rounded-lg p-4">

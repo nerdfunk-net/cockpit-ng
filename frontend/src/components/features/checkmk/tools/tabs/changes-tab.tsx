@@ -91,9 +91,9 @@ export function ChangesTab() {
 
             {/* Error Display */}
             {error && (
-              <Alert className="bg-red-50 border-red-200">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-800">
+              <Alert className="status-error">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
                   {error instanceof Error ? error.message : 'Failed to fetch pending changes'}
                 </AlertDescription>
               </Alert>
@@ -101,9 +101,9 @@ export function ChangesTab() {
 
             {/* No Changes Message */}
             {!isLoading && !error && !hasChanges && data && (
-              <Alert className="bg-green-50 border-green-200">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
+              <Alert className="status-success">
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertDescription>
                   No pending changes. All configurations are up to date.
                 </AlertDescription>
               </Alert>

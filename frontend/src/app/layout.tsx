@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import React from "react";
 import "./globals.css";
 import { localFonts } from "@/lib/local-fonts";
-import { AuthHydration } from "@/components/auth/auth-hydration";
+import { AuthHydration } from "@/components/auth/components/auth-hydration";
 import { QueryProvider } from "@/providers/query-provider";
 
 // Use local font configuration for air-gapped environments

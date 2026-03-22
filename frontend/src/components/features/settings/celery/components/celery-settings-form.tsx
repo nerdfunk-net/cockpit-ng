@@ -95,9 +95,9 @@ export function CelerySettingsForm() {
                   )}
                 />
 
-                <Alert className="bg-amber-50 border-amber-200">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800">
+                <Alert className="status-warning">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
                     <span className="font-medium">Restart Required:</span> Changes to worker configuration require restarting the Celery worker to take effect.
                   </AlertDescription>
                 </Alert>

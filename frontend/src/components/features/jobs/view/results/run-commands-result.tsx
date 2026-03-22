@@ -71,7 +71,7 @@ export function RunCommandsResultView({ result }: RunCommandsResultProps) {
           </div>
           <p className="text-2xl font-bold text-green-700">{result.success_count}</p>
         </div>
-        <div className={`${result.failed_count > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'} border rounded-lg p-3 text-center`}>
+        <div className={`${result.failed_count > 0 ? 'status-error' : 'bg-gray-50 border-gray-200'} border rounded-lg p-3 text-center`}>
           <div className="flex items-center justify-center gap-2 mb-1">
             <XCircleIcon className={`h-4 w-4 ${result.failed_count > 0 ? 'text-red-600' : 'text-gray-400'}`} />
             <p className={`text-xs uppercase tracking-wide font-medium ${result.failed_count > 0 ? 'text-red-600' : 'text-gray-500'}`}>Failed</p>

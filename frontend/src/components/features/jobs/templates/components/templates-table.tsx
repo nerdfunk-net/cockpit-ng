@@ -7,6 +7,8 @@ import { Edit, Copy, Trash2, Globe, Lock, FileText } from 'lucide-react'
 import { useTemplateMutations } from '../hooks/use-template-mutations'
 import { JOB_TYPE_LABELS, JOB_TYPE_COLORS } from '../utils/constants'
 import type { JobTemplate } from '../types'
+import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 interface TemplatesTableProps {
   templates: JobTemplate[]
@@ -15,6 +17,7 @@ interface TemplatesTableProps {
 
 export function TemplatesTable({ templates, onEdit }: TemplatesTableProps) {
   const { deleteTemplate, copyTemplate } = useTemplateMutations()
+  const { confirmDialog, openConfirm } = useConfirmDialog()
 
   const getJobTypeLabel = (jobType: string) => {
     return JOB_TYPE_LABELS[jobType] || jobType
@@ -24,9 +27,13 @@ export function TemplatesTable({ templates, onEdit }: TemplatesTableProps) {
     return JOB_TYPE_COLORS[jobType] || 'bg-gray-500'
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this template?")) return
-    await deleteTemplate.mutateAsync(id)
+  const handleDelete = (id: number) => {
+    openConfirm({
+      title: 'Delete Template',
+      description: 'Are you sure you want to delete this template?',
+      onConfirm: () => deleteTemplate.mutateAsync(id),
+      variant: 'destructive',
+    })
   }
 
   return (
@@ -138,6 +145,7 @@ export function TemplatesTable({ templates, onEdit }: TemplatesTableProps) {
           </TableBody>
         </Table>
       </div>
+      <ConfirmDialog {...confirmDialog} />
     </div>
   )
 }

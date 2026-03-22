@@ -213,11 +213,11 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg font-mono text-slate-700">{network.network}</CardTitle>
                       <div className="flex gap-2">
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 font-semibold shadow-sm">
+                        <Badge variant="outline" className="status-success border font-semibold shadow-sm">
                           <CheckCircle className="w-3 h-3 mr-1" />
                           {network.reachable_count}
                         </Badge>
-                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300 font-semibold shadow-sm">
+                        <Badge variant="outline" className="status-error border font-semibold shadow-sm">
                           <XCircle className="w-3 h-3 mr-1" />
                           {network.unreachable_count}
                         </Badge>
@@ -260,7 +260,7 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
                             <Badge
                               key={ipRange}
                               variant="outline"
-                              className="bg-red-50 text-red-700 border-red-300 font-mono font-semibold shadow-sm hover:shadow transition-shadow"
+                              className="status-error border font-mono font-semibold shadow-sm hover:shadow transition-shadow"
                             >
                               {ipRange}
                             </Badge>
@@ -277,7 +277,7 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
 
         {/* Error Section */}
         {taskStatus === 'FAILURE' && taskResult && !taskResult.success && (
-          <Card className="bg-red-50 border-red-300 shadow-md">
+          <Card className="status-error shadow-md">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
                 <div className="bg-red-100 p-2 rounded-lg">

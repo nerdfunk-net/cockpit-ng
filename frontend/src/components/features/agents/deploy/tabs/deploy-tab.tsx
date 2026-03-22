@@ -43,8 +43,8 @@ export function DeployTab({
     <div className="space-y-6">
       {/* Inventory Warning */}
       {!selectedInventoryId && (
-        <Alert className="bg-amber-50 border-amber-200">
-          <AlertDescription className="text-amber-800">
+        <Alert className="status-warning">
+          <AlertDescription>
             <strong>No inventory selected.</strong> Agent deployment requires a saved inventory.
             Please load a saved inventory from the Devices tab before deploying.
           </AlertDescription>

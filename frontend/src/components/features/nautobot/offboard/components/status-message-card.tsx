@@ -10,11 +10,12 @@ interface StatusMessageCardProps {
 
 export function StatusMessageCard({ message, onDismiss }: StatusMessageCardProps) {
   return (
-    <Alert className={`${message.type === 'error' ? 'border-red-500 bg-red-50' :
-      message.type === 'success' ? 'border-green-500 bg-green-50' :
-        message.type === 'warning' ? 'border-yellow-500 bg-yellow-50' :
-          'border-blue-500 bg-blue-50'
-      }`}>
+    <Alert className={
+      message.type === 'error' ? 'status-error' :
+      message.type === 'success' ? 'status-success' :
+      message.type === 'warning' ? 'status-warning' :
+      'status-info'
+    }>
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-2">
           {message.type === 'error' && <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />}
