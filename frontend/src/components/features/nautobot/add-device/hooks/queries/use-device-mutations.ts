@@ -44,7 +44,9 @@ export function useDeviceMutations() {
 
         // IP addresses
         if (summary?.ip_addresses_created > 0) {
-          statusMessages.push(`✓ Created ${summary.ip_addresses_created} IP address(es)`)
+          statusMessages.push(
+            `✓ Created ${summary.ip_addresses_created} IP address(es)`
+          )
         }
 
         return {
@@ -55,14 +57,29 @@ export function useDeviceMutations() {
           summary,
         }
       } catch (error) {
+        let errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+        // Extract detail from JSON error responses (e.g. "API Error 400: {"detail":"..."}")
+        const jsonMatch = errorMessage.match(/API Error \d+: (.+)/)
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[1])
+            if (parsed.detail) {
+              errorMessage = parsed.detail
+            }
+          } catch {
+            // Not valid JSON, use original message
+          }
+        }
+
         return {
           success: false,
-          message: `Workflow failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: errorMessage,
           messageType: 'error',
         }
       }
     },
-    onSuccess: (result) => {
+    onSuccess: result => {
       if (result.success) {
         // Invalidate relevant queries
         queryClient.invalidateQueries({ queryKey: queryKeys.nautobot.all })
