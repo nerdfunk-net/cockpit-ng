@@ -170,6 +170,12 @@ export function AddDevicePage() {
         dropdownData.deviceTypes.find(dt => dt.id === selectedDeviceType)?.model,
       platform: selectedPlatform || undefined,
       platformName: dropdownData.platforms.find(p => p.id === selectedPlatform)?.name,
+      selectedTags:
+        tagsManager.selectedTags.length > 0 ? tagsManager.selectedTags : undefined,
+      customFieldValues:
+        Object.keys(customFieldsManager.customFieldValues).length > 0
+          ? customFieldsManager.customFieldValues
+          : undefined,
     }
   }, [
     selectedRole,
@@ -178,6 +184,8 @@ export function AddDevicePage() {
     selectedDeviceType,
     selectedPlatform,
     dropdownData,
+    tagsManager.selectedTags,
+    customFieldsManager.customFieldValues,
   ])
 
   // CSV Import wizard
@@ -441,6 +449,10 @@ export function AddDevicePage() {
           dropdownData={dropdownData}
           prefixConfig={csvImport.prefixConfig}
           onPrefixConfigChange={csvImport.setPrefixConfig}
+          applyFormTags={csvImport.applyFormTags}
+          onApplyFormTagsChange={csvImport.setApplyFormTags}
+          applyFormCustomFields={csvImport.applyFormCustomFields}
+          onApplyFormCustomFieldsChange={csvImport.setApplyFormCustomFields}
           parseResult={csvImport.parseResult}
           dryRunErrors={csvImport.dryRunErrors}
           isDryRun={csvImport.isDryRun}

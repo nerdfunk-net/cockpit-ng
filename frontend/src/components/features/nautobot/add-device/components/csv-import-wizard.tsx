@@ -71,6 +71,10 @@ interface CsvImportWizardProps {
   dropdownData: NautobotDropdownsResponse
   prefixConfig: PrefixConfig
   onPrefixConfigChange: (config: PrefixConfig) => void
+  applyFormTags: boolean
+  onApplyFormTagsChange: (val: boolean) => void
+  applyFormCustomFields: boolean
+  onApplyFormCustomFieldsChange: (val: boolean) => void
 
   // Preview
   parseResult: CSVParseResult | null
@@ -110,6 +114,10 @@ export function CsvImportWizard({
   dropdownData,
   prefixConfig,
   onPrefixConfigChange,
+  applyFormTags,
+  onApplyFormTagsChange,
+  applyFormCustomFields,
+  onApplyFormCustomFieldsChange,
   parseResult,
   dryRunErrors,
   isDryRun,
@@ -278,6 +286,10 @@ export function CsvImportWizard({
               dropdownData={dropdownData}
               prefixConfig={prefixConfig}
               onPrefixConfigChange={onPrefixConfigChange}
+              applyFormTags={applyFormTags}
+              onApplyFormTagsChange={onApplyFormTagsChange}
+              applyFormCustomFields={applyFormCustomFields}
+              onApplyFormCustomFieldsChange={onApplyFormCustomFieldsChange}
             />
           )}
 

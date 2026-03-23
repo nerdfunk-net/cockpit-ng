@@ -41,6 +41,8 @@ export interface FormDefaults {
   locationName?: string
   platform?: string
   platformName?: string
+  selectedTags?: string[]
+  customFieldValues?: Record<string, string>
 }
 
 export interface PrefixConfig {
@@ -75,6 +77,10 @@ export function useCsvImport({
   // Defaults state
   const [defaults, setDefaults] = useState<Record<string, string>>({})
 
+  // Form data application flags
+  const [applyFormTags, setApplyFormTags] = useState(false)
+  const [applyFormCustomFields, setApplyFormCustomFields] = useState(false)
+
   // Prefix configuration
   const [prefixConfig, setPrefixConfig] = useState<PrefixConfig>(DEFAULT_PREFIX_CONFIG)
 
@@ -95,6 +101,30 @@ export function useCsvImport({
 
   // Available Nautobot fields for the mapping dropdowns
   const nautobotFields = useMemo(() => CSV_IMPORT_NAUTOBOT_FIELDS['devices'] || [], [])
+
+  // Wraps onImportDevice to merge form tags/custom fields when enabled
+  const importDeviceWithFormData = useCallback(
+    async (device: ParsedDevice, config: PrefixConfig, dryRun?: boolean) => {
+      let d = device
+      if (applyFormTags && formDefaults.selectedTags?.length) {
+        d = { ...d, tags: [...(d.tags || []), ...formDefaults.selectedTags] }
+      }
+      if (
+        applyFormCustomFields &&
+        Object.keys(formDefaults.customFieldValues || {}).length
+      ) {
+        d = {
+          ...d,
+          custom_fields: {
+            ...formDefaults.customFieldValues,
+            ...(d.custom_fields || {}),
+          },
+        }
+      }
+      return onImportDevice(d, config, dryRun)
+    },
+    [onImportDevice, applyFormTags, applyFormCustomFields, formDefaults]
+  )
 
   // Wraps parser.handleFileSelect — after reading, initialises column mapping and defaults
   const handleFileSelect = useCallback(
@@ -159,7 +189,7 @@ export function useCsvImport({
     const errors: DeviceValidationError[] = []
 
     for (const device of parseResult.devices) {
-      const result = await onImportDevice(device, prefixConfig, true)
+      const result = await importDeviceWithFormData(device, prefixConfig, true)
       if (result.status === 'error') {
         errors.push({
           deviceName: device.name,
@@ -173,7 +203,7 @@ export function useCsvImport({
     setDryRunErrors(errors)
     setIsDryRun(false)
     setDryRunCompleted(true)
-  }, [parseResult, onImportDevice, prefixConfig])
+  }, [parseResult, importDeviceWithFormData, prefixConfig])
 
   // Import all parsed devices sequentially
   const importDevices = useCallback(async () => {
@@ -197,7 +227,7 @@ export function useCsvImport({
       setImportProgress({ current: i + 1, total: parseResult.devices.length })
 
       try {
-        const result = await onImportDevice(device, prefixConfig)
+        const result = await importDeviceWithFormData(device, prefixConfig)
         results.push(result)
       } catch (error) {
         results.push({
@@ -219,7 +249,7 @@ export function useCsvImport({
     setImportSummary(summary)
     setIsImporting(false)
     setStep('summary')
-  }, [parseResult, onImportDevice, prefixConfig])
+  }, [parseResult, importDeviceWithFormData, prefixConfig])
 
   // Navigate to a wizard step
   const goToStep = useCallback(
@@ -238,6 +268,8 @@ export function useCsvImport({
     parser.clear()
     mapping.clear()
     setDefaults({})
+    setApplyFormTags(false)
+    setApplyFormCustomFields(false)
     setPrefixConfig(DEFAULT_PREFIX_CONFIG)
     setParseResult(null)
     setDryRunErrors([])
@@ -280,6 +312,12 @@ export function useCsvImport({
       defaults,
       setDefaults,
 
+      // Form data application
+      applyFormTags,
+      setApplyFormTags,
+      applyFormCustomFields,
+      setApplyFormCustomFields,
+
       // Prefix configuration
       prefixConfig,
       setPrefixConfig,
@@ -312,6 +350,8 @@ export function useCsvImport({
       mapping,
       nautobotFields,
       defaults,
+      applyFormTags,
+      applyFormCustomFields,
       parseResult,
       dryRunErrors,
       isDryRun,
