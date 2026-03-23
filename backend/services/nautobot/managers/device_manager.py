@@ -7,6 +7,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple
 
+from ..common.exceptions import NautobotAPIError
+
 if TYPE_CHECKING:
     from services.nautobot import NautobotService
     from ..resolvers.device_resolver import DeviceResolver
@@ -110,7 +112,7 @@ class DeviceManager:
                     "Current primary_ip4 (from UUID lookup): %s", current_primary_ip4
                 )
                 return current_primary_ip4
-            except Exception as e:
+            except NautobotAPIError as e:
                 logger.warning("Could not fetch IP details: %s", e)
                 return None
 
@@ -146,7 +148,7 @@ class DeviceManager:
             logger.info("Successfully assigned primary IPv4 to device %s", device_id)
             return True
 
-        except Exception as e:
+        except NautobotAPIError as e:
             logger.error(
                 "Failed to assign primary IPv4 to device %s: %s", device_id, str(e)
             )

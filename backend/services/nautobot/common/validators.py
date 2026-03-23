@@ -4,8 +4,11 @@ Pure validation functions for Nautobot operations.
 This module contains stateless validation logic with zero service dependencies.
 """
 
+import logging
 import re
 from typing import Dict, Any, List
+
+logger = logging.getLogger(__name__)
 
 
 def is_valid_uuid(uuid_str: str) -> bool:
@@ -48,10 +51,6 @@ def validate_ip_address(ip: str) -> bool:
         >>> validate_ip_address("invalid")
         False
     """
-    import logging
-
-    logger = logging.getLogger(__name__)
-
     # Simple regex patterns for IPv4 and IPv6
     ipv4_pattern = r"^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$"
     ipv6_pattern = r"^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}(\/\d{1,3})?$"
@@ -81,10 +80,6 @@ def validate_mac_address(mac: str) -> bool:
         >>> validate_mac_address("invalid")
         False
     """
-    import logging
-
-    logger = logging.getLogger(__name__)
-
     # Common MAC address formats: XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX
     mac_pattern = r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"
 

@@ -4,6 +4,7 @@ IP address lifecycle manager.
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 from typing import TYPE_CHECKING
 
@@ -110,7 +111,7 @@ class IPManager:
             logger.info("Created IP address: %s", ip_id)
             return ip_id
 
-        except Exception as e:
+        except NautobotAPIError as e:
             error_message = str(e)
 
             # Check if error is due to duplicate IP with different netmask
@@ -124,8 +125,6 @@ class IPManager:
                 )
 
                 # Extract the host IP without netmask (e.g., "192.168.1.1/24" -> "192.168.1.1")
-                import ipaddress
-
                 try:
                     ip_obj = ipaddress.ip_interface(ip_address)
                     host_ip = str(ip_obj.ip)
@@ -166,7 +165,7 @@ class IPManager:
                             f"IP {host_ip} reported as duplicate but not found in namespace"
                         )
 
-                except Exception as lookup_error:
+                except (ValueError, NautobotAPIError, KeyError) as lookup_error:
                     logger.error(
                         "Failed to find existing IP for %s: %s",
                         ip_address,
@@ -185,8 +184,6 @@ class IPManager:
                     )
 
                     # Extract the network prefix from the IP address (e.g., "192.168.1.1/24" -> "192.168.1.0/24")
-                    import ipaddress
-
                     try:
                         ip_obj = ipaddress.ip_interface(ip_address)
                         network_prefix = str(ip_obj.network)
@@ -228,7 +225,7 @@ class IPManager:
                         )
                         return ip_id
 
-                    except Exception as prefix_error:
+                    except (ValueError, NautobotAPIError) as prefix_error:
                         logger.error(
                             "Failed to auto-create prefix for %s: %s",
                             ip_address,
