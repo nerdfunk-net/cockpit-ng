@@ -30,6 +30,14 @@ export const MANDATORY_DEVICE_FIELDS = [
   'location',
 ] as const
 
+// Interface fields that are mandatory when IP is mapped but interface columns are absent
+export const MANDATORY_INTERFACE_FIELDS = [
+  'interface_name',
+  'interface_type',
+  'interface_status',
+  'interface_namespace',
+] as const
+
 // Form values passed from the Add Device page
 export interface FormDefaults {
   deviceType?: string
@@ -44,10 +52,20 @@ export interface FormDefaults {
   platformName?: string
 }
 
+export interface PrefixConfig {
+  addPrefix: boolean
+  defaultPrefixLength: string
+}
+
+const DEFAULT_PREFIX_CONFIG: PrefixConfig = {
+  addPrefix: false,
+  defaultPrefixLength: '/24',
+}
+
 interface UseCsvImportProps {
   nautobotDefaults: NautobotDropdownsResponse['nautobotDefaults']
   formDefaults: FormDefaults
-  onImportDevice: (device: ParsedDevice) => Promise<DeviceImportResult>
+  onImportDevice: (device: ParsedDevice, prefixConfig: PrefixConfig) => Promise<DeviceImportResult>
 }
 
 export function useCsvImport({
@@ -72,6 +90,9 @@ export function useCsvImport({
   // Defaults state
   const [defaults, setDefaults] = useState<Record<string, string>>({})
 
+  // Prefix configuration
+  const [prefixConfig, setPrefixConfig] = useState<PrefixConfig>(DEFAULT_PREFIX_CONFIG)
+
   // Preview state
   const [parseResult, setParseResult] = useState<CSVParseResult | null>(null)
   const [dryRunErrors, setDryRunErrors] = useState<DeviceValidationError[]>([])
@@ -91,6 +112,15 @@ export function useCsvImport({
       Object.values(columnMapping).filter((v): v is string => v !== null)
     )
     return MANDATORY_DEVICE_FIELDS.filter(field => !mappedTargets.has(field))
+  }, [columnMapping])
+
+  // Determine which interface fields need defaults — only when IP is mapped but interface columns are missing
+  const unmappedMandatoryInterfaceFields = useMemo(() => {
+    const mappedTargets = new Set(
+      Object.values(columnMapping).filter((v): v is string => v !== null)
+    )
+    if (!mappedTargets.has('interface_ip_address')) return [] as const satisfies readonly string[]
+    return MANDATORY_INTERFACE_FIELDS.filter(field => !mappedTargets.has(field))
   }, [columnMapping])
 
   // Parse CSV file and extract headers
@@ -164,6 +194,11 @@ export function useCsvImport({
           if (formDefaults.status) initialDefaults['status'] = formDefaults.status
           if (formDefaults.location) initialDefaults['location'] = formDefaults.location
           if (formDefaults.platform) initialDefaults['platform'] = formDefaults.platform
+          // Pre-fill interface defaults from Nautobot system defaults
+          if (nautobotDefaults?.interface_status)
+            initialDefaults['interface_status'] = nautobotDefaults.interface_status
+          if (nautobotDefaults?.namespace)
+            initialDefaults['interface_namespace'] = nautobotDefaults.namespace
           setDefaults(initialDefaults)
 
           setIsParsing(false)
@@ -183,7 +218,7 @@ export function useCsvImport({
 
       reader.readAsText(file)
     },
-    [delimiter, nautobotFields, formDefaults]
+    [delimiter, nautobotFields, formDefaults, nautobotDefaults]
   )
 
   // Build parsed devices from CSV content + mapping + defaults
@@ -313,6 +348,11 @@ export function useCsvImport({
 
       deviceEntry.rowIndices.push(i + 1)
 
+      // If an IP is present but no interface name, use the default interface name so the interface is created
+      if (interfaceFields.ip_address && !interfaceFields.name && defaults['interface_name']) {
+        interfaceFields.name = defaults['interface_name']
+      }
+
       if (interfaceFields.name) {
         deviceEntry.interfaces.push(interfaceFields as CSVInterfaceData)
       }
@@ -323,6 +363,7 @@ export function useCsvImport({
     deviceMap.forEach(entry => {
       const interfaces = entry.interfaces.map(iface => ({
         ...iface,
+        type: iface.type || defaults['interface_type'] || '',
         status:
           iface.status ||
           defaults['interface_status'] ||
@@ -458,7 +499,7 @@ export function useCsvImport({
       setImportProgress({ current: i + 1, total: parseResult.devices.length })
 
       try {
-        const result = await onImportDevice(device)
+        const result = await onImportDevice(device, prefixConfig)
         results.push(result)
       } catch (error) {
         results.push({
@@ -480,7 +521,7 @@ export function useCsvImport({
     setImportSummary(summary)
     setIsImporting(false)
     setStep('summary')
-  }, [parseResult, onImportDevice])
+  }, [parseResult, onImportDevice, prefixConfig])
 
   // Navigation
   const goToStep = useCallback(
@@ -502,6 +543,7 @@ export function useCsvImport({
     setParseError('')
     setColumnMapping({})
     setDefaults({})
+    setPrefixConfig(DEFAULT_PREFIX_CONFIG)
     setParseResult(null)
     setDryRunErrors([])
     setImportSummary(null)
@@ -536,10 +578,15 @@ export function useCsvImport({
       setColumnMapping,
       nautobotFields,
       unmappedMandatoryFields,
+      unmappedMandatoryInterfaceFields,
 
       // Defaults
       defaults,
       setDefaults,
+
+      // Prefix configuration
+      prefixConfig,
+      setPrefixConfig,
 
       // Preview
       parseResult,
@@ -571,6 +618,7 @@ export function useCsvImport({
       columnMapping,
       nautobotFields,
       unmappedMandatoryFields,
+      unmappedMandatoryInterfaceFields,
       defaults,
       parseResult,
       dryRunErrors,
@@ -581,6 +629,8 @@ export function useCsvImport({
       importProgress,
       importSummary,
       importDevices,
+      prefixConfig,
+      setPrefixConfig,
       reset,
     ]
   )

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { FieldErrors } from 'react-hook-form'
+import { FieldErrors, useWatch } from 'react-hook-form'
 import { Server, Loader2 } from 'lucide-react'
 
 // TanStack Query Hooks
@@ -16,6 +16,7 @@ import { useCustomFieldsManager } from './hooks/use-custom-fields-manager'
 import { usePropertiesModal } from './hooks/use-properties-modal'
 import { useCsvImport } from './hooks/use-csv-import'
 import type { FormDefaults } from './hooks/use-csv-import'
+import type { PrefixConfig } from './hooks/use-csv-import'
 
 // Components
 import {
@@ -162,7 +163,7 @@ export function AddDevicePage() {
 
   // Convert a parsed CSV device into the format the backend expects and submit it
   const handleImportDevice = useCallback(
-    async (device: ParsedDevice): Promise<DeviceImportResult> => {
+    async (device: ParsedDevice, prefixConfig: PrefixConfig): Promise<DeviceImportResult> => {
       try {
         const interfaces: InterfaceData[] = device.interfaces.map(iface => ({
           id: crypto.randomUUID(),
@@ -206,8 +207,8 @@ export function AddDevicePage() {
           tags: device.tags,
           custom_fields: device.custom_fields,
           interfaces,
-          add_prefix: false,
-          default_prefix_length: '',
+          add_prefix: prefixConfig.addPrefix,
+          default_prefix_length: prefixConfig.addPrefix ? prefixConfig.defaultPrefixLength : '',
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -216,13 +217,13 @@ export function AddDevicePage() {
           body: JSON.stringify(submissionData),
         })
 
-        const success = response.workflow_status?.create_device === 'SUCCESS'
+        const success = response.success === true
         return {
           deviceName: device.name,
           status: success ? 'success' : 'error',
           message: success
             ? `Device "${device.name}" created successfully`
-            : `Failed to create device "${device.name}": ${response.error ?? response.detail ?? 'Unknown error'}`,
+            : `Failed to create device "${device.name}": ${response.error ?? response.detail ?? response.message ?? 'Unknown error'}`,
           deviceId: response.device_id,
         }
       } catch (error) {
@@ -236,14 +237,14 @@ export function AddDevicePage() {
     [apiCall]
   )
 
-  // Build form defaults for CSV import wizard
-  const csvFormDefaults = useMemo((): FormDefaults => {
-    const selectedRole = watch('selectedRole')
-    const selectedStatus = watch('selectedStatus')
-    const selectedLocation = watch('selectedLocation')
-    const selectedDeviceType = watch('selectedDeviceType')
-    const selectedPlatform = watch('selectedPlatform')
+  // Build form defaults for CSV import wizard — useWatch creates reactive subscriptions
+  const [selectedRole, selectedStatus, selectedLocation, selectedDeviceType, selectedPlatform] =
+    useWatch({
+      control: form.control,
+      name: ['selectedRole', 'selectedStatus', 'selectedLocation', 'selectedDeviceType', 'selectedPlatform'],
+    })
 
+  const csvFormDefaults = useMemo((): FormDefaults => {
     return {
       role: selectedRole || undefined,
       roleName: dropdownData.roles.find(r => r.id === selectedRole)?.name,
@@ -258,7 +259,7 @@ export function AddDevicePage() {
       platform: selectedPlatform || undefined,
       platformName: dropdownData.platforms.find(p => p.id === selectedPlatform)?.name,
     }
-  }, [watch, dropdownData])
+  }, [selectedRole, selectedStatus, selectedLocation, selectedDeviceType, selectedPlatform, dropdownData])
 
   // CSV Import wizard
   const csvImport = useCsvImport({
@@ -621,10 +622,13 @@ export function AddDevicePage() {
           columnMapping={csvImport.columnMapping}
           onMappingChange={csvImport.setColumnMapping}
           unmappedMandatoryFields={csvImport.unmappedMandatoryFields}
+          unmappedMandatoryInterfaceFields={csvImport.unmappedMandatoryInterfaceFields}
           defaults={csvImport.defaults}
           onDefaultsChange={csvImport.setDefaults}
           formDefaults={csvFormDefaults}
           dropdownData={dropdownData}
+          prefixConfig={csvImport.prefixConfig}
+          onPrefixConfigChange={csvImport.setPrefixConfig}
           parseResult={csvImport.parseResult}
           dryRunErrors={csvImport.dryRunErrors}
           isDryRun={csvImport.isDryRun}

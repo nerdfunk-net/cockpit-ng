@@ -17,12 +17,7 @@ Test device data (mirrors the data entered in the frontend form):
   Interface Name:     Loopback
   Interface Type:     virtual
   Interface Status:   Active
-  IP Address:         192.168.180.254/24
-  Namespace:          Global
-  IP Role:            (none)
-  Primary:            True
-
-  Prefix Config:      add_prefix=True  (auto-create parent prefix)
+  IP Address:         192.168.181.254/24
 
 Setup:
   1. Configure .env.test with test Nautobot credentials
@@ -55,10 +50,14 @@ NAMESPACE_NAME = "Global"
 
 INTERFACE_NAME = "Loopback"
 INTERFACE_TYPE = "virtual"
-IP_ADDRESS = "192.168.180.254/24"
+IP_ADDRESS = "192.168.181.254/24"
 
 # The auto-created prefix derived from IP_ADDRESS and /24
-AUTO_PREFIX = "192.168.180.0/24"
+AUTO_PREFIX = "192.168.181.0/24"
+
+# IP used for the "no prefix" test (add_prefix=False, parent prefix absent)
+IP_ADDRESS_NO_PREFIX = "192.168.182.254/24"
+AUTO_PREFIX_NO_PREFIX = "192.168.182.0/24"
 
 
 # ---------------------------------------------------------------------------
@@ -470,7 +469,7 @@ class TestAddDeviceFormData:
     ):
         """
         Verify that the Loopback interface is created with type 'virtual'
-        and that the IP address 192.168.180.254/24 is assigned to it.
+        and that the IP address 192.168.181.254/24 is assigned to it.
         """
         device_ids, prefix_ids = cleanup_test_device
 
@@ -579,3 +578,89 @@ class TestAddDeviceFormData:
             logger.warning("Platform '%s' not found – tests will run without it", PLATFORM_NAME)
 
         logger.info("✓ All resource IDs resolved: %s", {k: v for k, v in ids.items() if k != "device_type_created"})
+
+    @pytest.mark.asyncio
+    async def test_add_device_without_prefix_fails(
+        self,
+        real_nautobot_service,
+        device_creation_service,
+        form_resource_ids,
+        cleanup_test_device,
+    ):
+        """
+        Verify that device creation fails when add_prefix=False and the parent
+        prefix (192.168.182.0/24) does not exist in Nautobot.
+
+        Expected behaviour:
+          - Step 1 (device creation) succeeds.
+          - Step 2 (IP address creation) raises an exception because Nautobot
+            requires a parent prefix and auto-creation is disabled.
+          - The parent prefix is NOT created as a side effect.
+          - The orphaned device is cleaned up by the fixture.
+        """
+        device_ids, prefix_ids = cleanup_test_device
+
+        # Pre-condition: parent prefix must not exist
+        pre_check = await real_nautobot_service.graphql_query(
+            f'query {{ prefixes(prefix: "{AUTO_PREFIX_NO_PREFIX}") {{ id }} }}'
+        )
+        assert pre_check["data"]["prefixes"] == [], (
+            f"Test requires {AUTO_PREFIX_NO_PREFIX} to be absent from Nautobot"
+        )
+
+        request = AddDeviceRequest(
+            name=f"{DEVICE_NAME}-no-prefix",
+            serial=f"{DEVICE_SERIAL}-no-prefix",
+            role=form_resource_ids["role_id"],
+            status=form_resource_ids["status_id"],
+            location=form_resource_ids["location_id"],
+            device_type=form_resource_ids["device_type_id"],
+            platform=form_resource_ids["platform_id"],
+            add_prefix=False,
+            default_prefix_length="/24",
+            interfaces=[
+                InterfaceData(
+                    name=INTERFACE_NAME,
+                    type=INTERFACE_TYPE,
+                    status=form_resource_ids["status_id"],
+                    ip_addresses=[
+                        IpAddressData(
+                            address=IP_ADDRESS_NO_PREFIX,
+                            namespace=form_resource_ids["namespace_id"],
+                            ip_role=None,
+                            is_primary=True,
+                        )
+                    ],
+                )
+            ],
+        )
+
+        with pytest.raises(Exception) as exc_info:
+            await device_creation_service.create_device_with_interfaces(request)
+
+        error = str(exc_info.value).lower()
+        assert any(
+            kw in error for kw in ["prefix", "parent", "network"]
+        ), f"Expected prefix-related error, got: {exc_info.value}"
+
+        # Verify the parent prefix was NOT created as a side effect
+        post_check = await real_nautobot_service.graphql_query(
+            f'query {{ prefixes(prefix: "{AUTO_PREFIX_NO_PREFIX}") {{ id }} }}'
+        )
+        assert post_check["data"]["prefixes"] == [], (
+            f"{AUTO_PREFIX_NO_PREFIX} must not be created when add_prefix=False"
+        )
+
+        # The device may have been created (step 1) before IP creation failed;
+        # find and track it so the cleanup fixture removes it.
+        orphan_check = await real_nautobot_service.graphql_query(
+            f'query {{ devices(name: "{DEVICE_NAME}-no-prefix") {{ id }} }}'
+        )
+        for d in orphan_check["data"]["devices"]:
+            device_ids.append(d["id"])
+            logger.info("Tracking orphaned device %s for cleanup", d["id"])
+
+        logger.info(
+            "✓ Device creation correctly rejected when add_prefix=False and %s is absent",
+            AUTO_PREFIX_NO_PREFIX,
+        )

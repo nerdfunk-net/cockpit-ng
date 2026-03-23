@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import type { CSVParseResult, ImportSummary, NautobotDropdownsResponse } from '../types'
 import type { DeviceValidationError } from '../types'
-import type { CsvImportStep, FormDefaults } from '../hooks/use-csv-import'
+import type { CsvImportStep, FormDefaults, PrefixConfig } from '../hooks/use-csv-import'
 import { CSVFileUpload } from './csv-file-upload'
 import { CsvImportMappingStep } from './csv-import-mapping-step'
 import { CsvImportDefaultsStep } from './csv-import-defaults-step'
@@ -62,12 +62,15 @@ interface CsvImportWizardProps {
   columnMapping: Record<string, string | null>
   onMappingChange: (mapping: Record<string, string | null>) => void
   unmappedMandatoryFields: readonly string[]
+  unmappedMandatoryInterfaceFields: readonly string[]
 
   // Defaults
   defaults: Record<string, string>
   onDefaultsChange: (defaults: Record<string, string>) => void
   formDefaults: FormDefaults
   dropdownData: NautobotDropdownsResponse
+  prefixConfig: PrefixConfig
+  onPrefixConfigChange: (config: PrefixConfig) => void
 
   // Preview
   parseResult: CSVParseResult | null
@@ -99,10 +102,13 @@ export function CsvImportWizard({
   columnMapping,
   onMappingChange,
   unmappedMandatoryFields,
+  unmappedMandatoryInterfaceFields,
   defaults,
   onDefaultsChange,
   formDefaults,
   dropdownData,
+  prefixConfig,
+  onPrefixConfigChange,
   parseResult,
   dryRunErrors,
   isDryRun,
@@ -263,10 +269,13 @@ export function CsvImportWizard({
           {step === 'defaults' && (
             <CsvImportDefaultsStep
               unmappedFields={unmappedMandatoryFields}
+              unmappedInterfaceFields={unmappedMandatoryInterfaceFields}
               defaults={defaults}
               onDefaultsChange={onDefaultsChange}
               formDefaults={formDefaults}
               dropdownData={dropdownData}
+              prefixConfig={prefixConfig}
+              onPrefixConfigChange={onPrefixConfigChange}
             />
           )}
 

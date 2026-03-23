@@ -61,7 +61,7 @@ export function useDeviceMutations() {
 
         // Extract detail from JSON error responses (e.g. "API Error 400: {"detail":"..."}")
         const jsonMatch = errorMessage.match(/API Error \d+: (.+)/)
-        if (jsonMatch) {
+        if (jsonMatch?.[1]) {
           try {
             const parsed = JSON.parse(jsonMatch[1])
             if (parsed.detail) {

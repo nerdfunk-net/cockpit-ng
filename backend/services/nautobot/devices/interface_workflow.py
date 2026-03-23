@@ -362,8 +362,21 @@ class InterfaceManagerService:
         Returns:
             Interface UUID if successful, None otherwise
         """
-        # Resolve status to UUID
-        interface_status = interface.get("status", "active")
+        # Validate required fields before hitting Nautobot
+        # Nautobot interface type slugs are always lowercase (e.g. "virtual", "1000base-t")
+        # Frontend may store the display name (e.g. "Virtual") — normalize to lowercase slug
+        interface_type = (interface.get("type") or "").strip().lower()
+        if not interface_type:
+            warnings.append(
+                f"Interface {interface['name']}: 'type' is required but was not provided — skipping"
+            )
+            logger.warning(
+                "Interface '%s' has no type set, skipping creation", interface["name"]
+            )
+            return None
+
+        # Resolve status to UUID — use "or" fallback so empty string also defaults to "active"
+        interface_status = interface.get("status") or "active"
         interface_status_id = await self.common.resolve_status_id(
             interface_status, "dcim.interface"
         )
@@ -371,7 +384,7 @@ class InterfaceManagerService:
         interface_payload = {
             "name": interface["name"],
             "device": device_id,
-            "type": interface["type"],
+            "type": interface_type,
             "status": interface_status_id,
         }
 
@@ -387,6 +400,8 @@ class InterfaceManagerService:
         for field in optional_fields:
             if field in interface and interface[field] is not None:
                 interface_payload[field] = interface[field]
+
+        logger.debug("Creating interface with payload: %s", interface_payload)
 
         # Try to create the interface
         try:
@@ -422,6 +437,9 @@ class InterfaceManagerService:
                         f"Interface {interface['name']}: Interface exists but could not be found"
                     )
             else:
+                logger.error(
+                    "Failed to create interface '%s': %s", interface["name"], str(create_error)
+                )
                 warnings.append(
                     f"Interface {interface['name']}: Failed to create interface: {str(create_error)}"
                 )
