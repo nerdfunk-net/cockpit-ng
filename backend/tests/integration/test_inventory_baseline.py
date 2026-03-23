@@ -19,7 +19,7 @@ Test Data Summary (from tests/baseline.yaml):
 Setup:
 1. Load baseline data into test Nautobot instance
 2. Configure .env.test with test Nautobot credentials
-3. Run: pytest -m "integration and nautobot" tests/integration/test_ansible_inventory_baseline_v2.py -v
+3. Run: pytest -m "integration and nautobot" tests/integration/test_inventory_baseline.py -v
 
 Architecture:
 - Tests use tree_to_operations() to convert tree structures

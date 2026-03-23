@@ -1,10 +1,78 @@
 # Integration Tests
 
-This directory contains tests for CheckMK integration with different approaches.
+This directory contains integration tests for Nautobot inventory and CheckMK with different approaches.
 
 ## Test Files Overview
 
-### 1. `test_checkmk_baseline.py` - Integration Tests (Real Systems) ✅
+### 1. `test_inventory_baseline.py` - Ansible Inventory Integration Tests (Real Nautobot) ✅
+
+**Uses**: Real Nautobot instance
+**Purpose**: End-to-end inventory filtering tests with actual baseline data using the tree-based logical expression structure
+**Speed**: Slower (requires live Nautobot)
+**Data**: 120 baseline devices from `baseline.yaml`
+
+```bash
+# Run inventory baseline tests (requires Nautobot running with baseline data)
+pytest -m "integration and nautobot" tests/integration/test_inventory_baseline.py -v
+```
+
+**What it tests**:
+- Basic filtering by location, role, platform, tag, and status
+- AND logic with multiple conditions
+- OR logic using nested groups
+- Operators: `equals`, `not_equals`, `contains`, `not_contains`
+- NOT operator with nested groups
+- Custom field filtering
+- Empty filter (returns all devices)
+
+**Test classes**:
+- `TestBaselineBasicFiltering` — single-field filters (location, role, platform, tag, status)
+- `TestBaselineAndLogic` — multiple AND conditions
+- `TestBaselineOrLogic` — OR logic with nested groups
+- `TestBaselineOperators` — operator variants (`not_equals`, `contains`, `not_contains`)
+- `TestBaselineNotLogic` — NOT operator and complex exclusions
+- `TestBaselineCustomFields` — custom field filtering
+- `TestBaselineEmptyFilters` — no-filter baseline (all 120 devices)
+
+**Prerequisites**:
+1. Nautobot running with baseline data loaded (`tests/baseline.yaml`)
+2. Backend `.env.test` configured with Nautobot credentials
+
+---
+
+### 2. `test_add_device_form_data.py` - Add Device Integration Tests (Real Nautobot) 🖊️
+
+**Uses**: Real Nautobot instance
+**Purpose**: End-to-end tests for the `POST /nautobot/add-device` endpoint, mirroring the data a user enters in the frontend Add Device form
+**Speed**: Slower (requires live Nautobot)
+**Data**: Creates and cleans up a test device (`testdevice`) with a Loopback interface and IP `192.168.180.254/24`
+
+```bash
+# Run add-device tests (requires Nautobot running)
+pytest -m "integration and nautobot" tests/integration/test_add_device_form_data.py -v
+```
+
+**What it tests**:
+- UUID resolution for all form resources (role, status, location, device type, platform, namespace)
+- Full 4-step device creation workflow: device → IP addresses → interfaces → primary IP
+- Auto-prefix creation (`192.168.180.0/24`) when `add_prefix=True`
+- Interface metadata (`type=virtual`, `enabled=True`, IP assignment)
+- Duplicate device name rejection
+
+**Test class**: `TestAddDeviceFormData`
+- `test_resource_ids_resolved_correctly` — validates UUID resolution without creating a device
+- `test_add_device_with_auto_prefix` — full happy-path with GraphQL verification
+- `test_add_device_interface_metadata` — interface type and IP assignment
+- `test_device_name_uniqueness` — duplicate-name rejection
+
+**Prerequisites**:
+1. Nautobot running with baseline data loaded (`tests/baseline.yaml`)
+2. Backend `.env.test` configured with Nautobot credentials
+3. Resources exist in Nautobot: role `network`, status `Active`, location `City A`, namespace `Global`
+
+---
+
+### 3. `test_checkmk_baseline.py` - Integration Tests (Real Systems) ✅
 
 **Uses**: Real Nautobot + Real CheckMK instances
 **Purpose**: End-to-end integration testing with actual running systems
@@ -27,7 +95,7 @@ pytest tests/integration/test_checkmk_baseline.py -v
 
 ---
 
-### 2. `test_checkmk_api_structure.py` - Unit Tests (Mocked Services) 📦
+### 4. `test_checkmk_api_structure.py` - Unit Tests (Mocked Services) 📦
 
 **Uses**: Captured real API responses + Mocked services
 **Purpose**: Validate API structure and data compatibility without live systems
@@ -51,7 +119,7 @@ pytest tests/integration/test_checkmk_api_structure.py -v
 
 ---
 
-### 3. `test_snmp_mapping_comparison.py` - SNMP Version Detection Tests
+### 5. `test_snmp_mapping_comparison.py` - SNMP Version Detection Tests
 
 **Uses**: Mocked config service + Real CheckMK devices (optional)
 **Purpose**: Test SNMP version detection and normalization
@@ -79,7 +147,7 @@ pytest tests/integration/test_snmp_mapping_comparison.py::TestDeviceComparisonLi
 
 ---
 
-### 4. `test_checkmk_device_lifecycle.py` - Device Lifecycle Tests (Real CheckMK) 🔄
+### 6. `test_checkmk_device_lifecycle.py` - Device Lifecycle Tests (Real CheckMK) 🔄
 
 **Uses**: Real CheckMK instance + Test device creation
 **Purpose**: End-to-end device lifecycle testing (Create → Compare → Sync → Delete)
@@ -117,6 +185,19 @@ pytest tests/integration/test_checkmk_device_lifecycle.py -v
 
 ## When to Use Which Tests
 
+### Use `test_inventory_baseline.py` when:
+- ✅ Testing Ansible inventory filtering logic with real Nautobot data
+- ✅ Validating tree-based logical expressions (AND, OR, NOT)
+- ✅ Testing operator variants (`equals`, `not_equals`, `contains`, `not_contains`)
+- ✅ Verifying custom field filtering
+- ✅ Regression testing against the 120-device baseline
+
+### Use `test_add_device_form_data.py` when:
+- ✅ Testing the Add Device form backend workflow end-to-end
+- ✅ Validating 4-step device creation (device → IPs → interfaces → primary IP)
+- ✅ Checking auto-prefix creation behaviour
+- ✅ Verifying duplicate device name rejection
+
 ### Use `test_checkmk_baseline.py` when:
 - ✅ Testing full integration workflow with baseline data
 - ✅ Validating Nautobot→CheckMK comparison logic
@@ -145,6 +226,12 @@ pytest tests/integration/test_checkmk_device_lifecycle.py -v
 ## Quick Commands
 
 ```bash
+# Run inventory baseline tests (requires Nautobot)
+pytest -m "integration and nautobot" tests/integration/test_inventory_baseline.py -v
+
+# Run add-device tests (requires Nautobot)
+pytest -m "integration and nautobot" tests/integration/test_add_device_form_data.py -v
+
 # Run all CheckMK tests
 pytest tests/integration/ -m checkmk -v
 
@@ -182,6 +269,16 @@ pytest tests/integration/test_checkmk_device_lifecycle.py::TestCheckMKConnection
 - `@pytest.mark.snmp` - SNMP-specific tests
 
 ## Prerequisites
+
+### For Inventory Baseline Tests (`test_inventory_baseline.py`):
+1. ✅ Nautobot running with baseline data loaded (`tests/baseline.yaml`)
+2. ✅ Backend `.env.test` configured with Nautobot credentials
+
+### For Add Device Tests (`test_add_device_form_data.py`):
+1. ✅ Nautobot running with baseline data loaded
+2. ✅ Backend `.env.test` configured with Nautobot credentials
+3. ✅ Resources exist in Nautobot: role `network`, status `Active`, location `City A`, namespace `Global`
+4. ℹ️ **Note**: Creates and deletes `testdevice` and `192.168.180.0/24` prefix during each test
 
 ### For Integration Tests (`test_checkmk_baseline.py`):
 1. ✅ Nautobot running with baseline data loaded
