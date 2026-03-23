@@ -9,6 +9,8 @@ export { useTagsManager } from './use-tags-manager'
 export { useCustomFieldsManager } from './use-custom-fields-manager'
 export { usePropertiesModal } from './use-properties-modal'
 export { useCSVUpload } from './use-csv-upload'
+export { useCsvImport } from './use-csv-import'
+export type { CsvImportStep, FormDefaults } from './use-csv-import'
 
 export type { SearchableDropdownState } from './use-searchable-dropdown'
 export type { TagsManagerHook } from './use-tags-manager'

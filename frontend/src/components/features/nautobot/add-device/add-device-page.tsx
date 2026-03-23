@@ -14,7 +14,8 @@ import { useSearchableDropdown } from './hooks/use-searchable-dropdown'
 import { useTagsManager } from './hooks/use-tags-manager'
 import { useCustomFieldsManager } from './hooks/use-custom-fields-manager'
 import { usePropertiesModal } from './hooks/use-properties-modal'
-import { useCSVUpload } from './hooks/use-csv-upload'
+import { useCsvImport } from './hooks/use-csv-import'
+import type { FormDefaults } from './hooks/use-csv-import'
 
 // Components
 import {
@@ -24,7 +25,7 @@ import {
   InterfacePropertiesModal,
   TagsModal,
   CustomFieldsModal,
-  CSVUploadModal,
+  CsvImportWizard,
   PageHeader,
   StatusAlert,
   ErrorModal,
@@ -45,7 +46,16 @@ import {
   EMPTY_SOFTWARE_VERSIONS,
   EMPTY_PLATFORMS,
 } from './constants'
-import type { StatusMessage, LocationItem, DeviceType, SoftwareVersion, ParsedDevice, DeviceSubmissionData, InterfaceData, DeviceImportResult } from './types'
+import type {
+  StatusMessage,
+  LocationItem,
+  DeviceType,
+  SoftwareVersion,
+  ParsedDevice,
+  DeviceSubmissionData,
+  InterfaceData,
+  DeviceImportResult,
+} from './types'
 import type { DeviceFormValues } from './validation'
 
 const DEFAULT_VALIDATION_RESULTS: ValidationResults = {
@@ -69,7 +79,9 @@ export function AddDevicePage() {
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [showHelpModal, setShowHelpModal] = useState(false)
   const [showValidationSummary, setShowValidationSummary] = useState(false)
-  const [validationResults, setValidationResults] = useState<ValidationResults>(DEFAULT_VALIDATION_RESULTS)
+  const [validationResults, setValidationResults] = useState<ValidationResults>(
+    DEFAULT_VALIDATION_RESULTS
+  )
 
   // Fetch all dropdown data with TanStack Query
   const {
@@ -105,7 +117,8 @@ export function AddDevicePage() {
   )
 
   const deviceTypeFilterPredicate = useCallback(
-    (dt: DeviceType, query: string) => (dt.display || dt.model).toLowerCase().includes(query),
+    (dt: DeviceType, query: string) =>
+      (dt.display || dt.model).toLowerCase().includes(query),
     []
   )
 
@@ -121,24 +134,24 @@ export function AddDevicePage() {
       [dropdownData.locations]
     ),
     selectedId: watch('selectedLocation'),
-    onSelect: (id) => form.setValue('selectedLocation', id),
-    getDisplayText: (loc) => loc.hierarchicalPath || loc.name,
+    onSelect: id => form.setValue('selectedLocation', id),
+    getDisplayText: loc => loc.hierarchicalPath || loc.name,
     filterPredicate: locationFilterPredicate,
   })
 
   const deviceTypeDropdown = useSearchableDropdown({
     items: dropdownData.deviceTypes,
     selectedId: watch('selectedDeviceType'),
-    onSelect: (id) => form.setValue('selectedDeviceType', id),
-    getDisplayText: (dt) => dt.display || dt.model,
+    onSelect: id => form.setValue('selectedDeviceType', id),
+    getDisplayText: dt => dt.display || dt.model,
     filterPredicate: deviceTypeFilterPredicate,
   })
 
   const softwareVersionDropdown = useSearchableDropdown({
     items: dropdownData.softwareVersions,
     selectedId: watch('selectedSoftwareVersion') || '',
-    onSelect: (id) => form.setValue('selectedSoftwareVersion', id),
-    getDisplayText: (sv) => `${sv.platform?.name || ''} ${sv.version}`.trim(),
+    onSelect: id => form.setValue('selectedSoftwareVersion', id),
+    getDisplayText: sv => `${sv.platform?.name || ''} ${sv.version}`.trim(),
     filterPredicate: softwareVersionFilterPredicate,
   })
 
@@ -148,81 +161,109 @@ export function AddDevicePage() {
   const propertiesModal = usePropertiesModal()
 
   // Convert a parsed CSV device into the format the backend expects and submit it
-  const handleImportDevice = useCallback(async (device: ParsedDevice): Promise<DeviceImportResult> => {
-    try {
-      const interfaces: InterfaceData[] = device.interfaces.map((iface) => ({
-        id: crypto.randomUUID(),
-        name: iface.name,
-        type: iface.type || '',
-        status: iface.status || '',
-        enabled: iface.enabled,
-        mgmt_only: iface.mgmt_only,
-        description: iface.description,
-        mac_address: iface.mac_address,
-        mtu: iface.mtu,
-        mode: iface.mode,
-        untagged_vlan: iface.untagged_vlan,
-        tagged_vlans: iface.tagged_vlans,
-        parent_interface: iface.parent_interface,
-        bridge: iface.bridge,
-        lag: iface.lag,
-        tags: iface.tags,
-        ip_addresses: iface.ip_address
-          ? [
-              {
-                id: crypto.randomUUID(),
-                address: iface.ip_address,
-                namespace: iface.namespace || '',
-                ip_role: '',
-                is_primary: iface.is_primary_ipv4,
-              },
-            ]
-          : [],
-      }))
+  const handleImportDevice = useCallback(
+    async (device: ParsedDevice): Promise<DeviceImportResult> => {
+      try {
+        const interfaces: InterfaceData[] = device.interfaces.map(iface => ({
+          id: crypto.randomUUID(),
+          name: iface.name,
+          type: iface.type || '',
+          status: iface.status || '',
+          enabled: iface.enabled,
+          mgmt_only: iface.mgmt_only,
+          description: iface.description,
+          mac_address: iface.mac_address,
+          mtu: iface.mtu,
+          mode: iface.mode,
+          untagged_vlan: iface.untagged_vlan,
+          tagged_vlans: iface.tagged_vlans,
+          parent_interface: iface.parent_interface,
+          bridge: iface.bridge,
+          lag: iface.lag,
+          tags: iface.tags,
+          ip_addresses: iface.ip_address
+            ? [
+                {
+                  id: crypto.randomUUID(),
+                  address: iface.ip_address,
+                  namespace: iface.namespace || '',
+                  ip_role: '',
+                  is_primary: iface.is_primary_ipv4,
+                },
+              ]
+            : [],
+        }))
 
-      const submissionData: DeviceSubmissionData = {
-        name: device.name,
-        serial: device.serial,
-        role: device.role || '',
-        status: device.status || '',
-        location: device.location || '',
-        device_type: device.device_type || '',
-        platform: device.platform,
-        software_version: device.software_version,
-        tags: device.tags,
-        custom_fields: device.custom_fields,
-        interfaces,
-        add_prefix: false,
-        default_prefix_length: '',
-      }
+        const submissionData: DeviceSubmissionData = {
+          name: device.name,
+          serial: device.serial,
+          role: device.role || '',
+          status: device.status || '',
+          location: device.location || '',
+          device_type: device.device_type || '',
+          platform: device.platform,
+          software_version: device.software_version,
+          tags: device.tags,
+          custom_fields: device.custom_fields,
+          interfaces,
+          add_prefix: false,
+          default_prefix_length: '',
+        }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await apiCall<any>('nautobot/add-device', {
-        method: 'POST',
-        body: JSON.stringify(submissionData),
-      })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await apiCall<any>('nautobot/add-device', {
+          method: 'POST',
+          body: JSON.stringify(submissionData),
+        })
 
-      const success = response.workflow_status?.create_device === 'SUCCESS'
-      return {
-        deviceName: device.name,
-        status: success ? 'success' : 'error',
-        message: success
-          ? `Device "${device.name}" created successfully`
-          : `Failed to create device "${device.name}": ${response.error ?? response.detail ?? 'Unknown error'}`,
-        deviceId: response.device_id,
+        const success = response.workflow_status?.create_device === 'SUCCESS'
+        return {
+          deviceName: device.name,
+          status: success ? 'success' : 'error',
+          message: success
+            ? `Device "${device.name}" created successfully`
+            : `Failed to create device "${device.name}": ${response.error ?? response.detail ?? 'Unknown error'}`,
+          deviceId: response.device_id,
+        }
+      } catch (error) {
+        return {
+          deviceName: device.name,
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        }
       }
-    } catch (error) {
-      return {
-        deviceName: device.name,
-        status: 'error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      }
+    },
+    [apiCall]
+  )
+
+  // Build form defaults for CSV import wizard
+  const csvFormDefaults = useMemo((): FormDefaults => {
+    const selectedRole = watch('selectedRole')
+    const selectedStatus = watch('selectedStatus')
+    const selectedLocation = watch('selectedLocation')
+    const selectedDeviceType = watch('selectedDeviceType')
+    const selectedPlatform = watch('selectedPlatform')
+
+    return {
+      role: selectedRole || undefined,
+      roleName: dropdownData.roles.find(r => r.id === selectedRole)?.name,
+      status: selectedStatus || undefined,
+      statusName: dropdownData.statuses.find(s => s.id === selectedStatus)?.name,
+      location: selectedLocation || undefined,
+      locationName: dropdownData.locations.find(l => l.id === selectedLocation)?.name,
+      deviceType: selectedDeviceType || undefined,
+      deviceTypeName:
+        dropdownData.deviceTypes.find(dt => dt.id === selectedDeviceType)?.display ||
+        dropdownData.deviceTypes.find(dt => dt.id === selectedDeviceType)?.model,
+      platform: selectedPlatform || undefined,
+      platformName: dropdownData.platforms.find(p => p.id === selectedPlatform)?.name,
     }
-  }, [apiCall])
+  }, [watch, dropdownData])
 
-  // CSV Upload
-  const csvUpload = useCSVUpload({
+  // CSV Import wizard
+  const csvImport = useCsvImport({
     nautobotDefaults: dropdownData.nautobotDefaults,
+    formDefaults: csvFormDefaults,
     onImportDevice: handleImportDevice,
   })
 
@@ -255,14 +296,17 @@ export function AddDevicePage() {
     if (validationErrors.interfaces) {
       console.error('Processing interface errors...')
       if (Array.isArray(validationErrors.interfaces)) {
-        console.error('Interface errors is an array with length:', validationErrors.interfaces.length)
+        console.error(
+          'Interface errors is an array with length:',
+          validationErrors.interfaces.length
+        )
         validationErrors.interfaces.forEach((interfaceError, index) => {
           console.error(`Interface ${index} error:`, interfaceError)
 
           if (!interfaceError) return
 
           // Iterate through all error fields in the interface
-          Object.keys(interfaceError).forEach((fieldName) => {
+          Object.keys(interfaceError).forEach(fieldName => {
             const fieldError = interfaceError[fieldName as keyof typeof interfaceError]
             console.error(`Interface ${index} field '${fieldName}' error:`, fieldError)
 
@@ -272,23 +316,41 @@ export function AddDevicePage() {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               if ((fieldError as any)?.message) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                console.error(`Interface ${index} has root ip_addresses message:`, (fieldError as any).message)
+                console.error(
+                  `Interface ${index} has root ip_addresses message:`,
+                  (fieldError as any).message
+                )
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                errors.push(`Interface ${index + 1} IP Addresses: ${(fieldError as any).message}`)
+                errors.push(
+                  `Interface ${index + 1} IP Addresses: ${(fieldError as any).message}`
+                )
               }
               // Check individual IP address errors
               else if (Array.isArray(fieldError)) {
-                console.error(`Interface ${index} ip_addresses is array with length:`, fieldError.length)
+                console.error(
+                  `Interface ${index} ip_addresses is array with length:`,
+                  fieldError.length
+                )
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 fieldError.forEach((ipError: any, ipIndex: number) => {
                   console.error(`Interface ${index}, IP ${ipIndex} error:`, ipError)
                   if (ipError?.address) {
-                    console.error(`Interface ${index}, IP ${ipIndex} address error:`, ipError.address.message)
-                    errors.push(`Interface ${index + 1}, IP ${ipIndex + 1} Address: ${ipError.address.message}`)
+                    console.error(
+                      `Interface ${index}, IP ${ipIndex} address error:`,
+                      ipError.address.message
+                    )
+                    errors.push(
+                      `Interface ${index + 1}, IP ${ipIndex + 1} Address: ${ipError.address.message}`
+                    )
                   }
                   if (ipError?.namespace) {
-                    console.error(`Interface ${index}, IP ${ipIndex} namespace error:`, ipError.namespace.message)
-                    errors.push(`Interface ${index + 1}, IP ${ipIndex + 1} Namespace: ${ipError.namespace.message}`)
+                    console.error(
+                      `Interface ${index}, IP ${ipIndex} namespace error:`,
+                      ipError.namespace.message
+                    )
+                    errors.push(
+                      `Interface ${index + 1}, IP ${ipIndex + 1} Namespace: ${ipError.namespace.message}`
+                    )
                   }
                 })
               }
@@ -297,7 +359,9 @@ export function AddDevicePage() {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const message = (fieldError as any)?.message
               if (message) {
-                const fieldLabel = fieldName.charAt(0).toUpperCase() + fieldName.slice(1).replace(/_/g, ' ')
+                const fieldLabel =
+                  fieldName.charAt(0).toUpperCase() +
+                  fieldName.slice(1).replace(/_/g, ' ')
                 errors.push(`Interface ${index + 1} ${fieldLabel}: ${message}`)
               }
             }
@@ -359,7 +423,8 @@ export function AddDevicePage() {
           return
         }
 
-        const isValidCidr = ipv4CidrRegex.test(ip.address) || ipv6CidrRegex.test(ip.address)
+        const isValidCidr =
+          ipv4CidrRegex.test(ip.address) || ipv6CidrRegex.test(ip.address)
         if (!isValidCidr) {
           allIpAddressesValid = false
           ipAddressIssues++
@@ -372,7 +437,14 @@ export function AddDevicePage() {
       })
     })
 
-    const isValid = deviceName && deviceRole && deviceStatus && deviceType && location && allInterfacesValid && allIpAddressesValid
+    const isValid =
+      deviceName &&
+      deviceRole &&
+      deviceStatus &&
+      deviceType &&
+      location &&
+      allInterfacesValid &&
+      allIpAddressesValid
 
     setValidationResults({
       isValid,
@@ -393,7 +465,10 @@ export function AddDevicePage() {
   // Form submission
   const onSubmit = useCallback(
     async (data: DeviceFormValues) => {
-      setStatusMessage({ type: 'info', message: 'Starting device addition workflow...' })
+      setStatusMessage({
+        type: 'info',
+        message: 'Starting device addition workflow...',
+      })
 
       form.setValue('selectedTags', tagsManager.selectedTags)
       form.setValue('customFieldValues', customFieldsManager.customFieldValues)
@@ -439,7 +514,9 @@ export function AddDevicePage() {
               <Server className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Add Device to Nautobot</h1>
+              <h1 className="text-3xl font-bold text-slate-900">
+                Add Device to Nautobot
+              </h1>
               <p className="text-muted-foreground mt-2">
                 Add a new network device or bare metal server
               </p>
@@ -457,12 +534,11 @@ export function AddDevicePage() {
     <div className="space-y-6">
       <PageHeader
         isLoading={createDevice.isPending}
-        onOpenCsvImport={() => csvUpload.setShowModal(true)}
+        onOpenCsvImport={() => csvImport.setShowModal(true)}
         onOpenHelp={() => setShowHelpModal(true)}
       />
 
       <form onSubmit={formHandleSubmit(onSubmit, onInvalid)} className="space-y-6">
-
         <StatusAlert statusMessage={statusMessage} />
 
         <ErrorModal
@@ -488,9 +564,9 @@ export function AddDevicePage() {
         <InterfaceList
           form={form}
           dropdownData={dropdownData}
-          onOpenProperties={(id) => {
+          onOpenProperties={id => {
             const location = dropdownData.locations.find(
-              (l) => l.id === watch('selectedLocation')
+              l => l.id === watch('selectedLocation')
             )
             propertiesModal.openModal(id, location?.name)
           }}
@@ -531,31 +607,33 @@ export function AddDevicePage() {
           customFieldChoices={customFieldsManager.customFieldChoices}
         />
 
-        <CSVUploadModal
-          showModal={csvUpload.showModal}
-          onClose={csvUpload.closeModal}
-          csvFile={csvUpload.csvFile}
-          parseResult={csvUpload.parseResult}
-          isParsing={csvUpload.isParsing}
-          parseError={csvUpload.parseError}
-          isImporting={csvUpload.isImporting}
-          importProgress={csvUpload.importProgress}
-          importSummary={csvUpload.importSummary}
-          columnMappings={csvUpload.columnMappings}
-          showMappingConfig={csvUpload.showMappingConfig}
-          lookupData={{
-            roles: dropdownData.roles,
-            locations: dropdownData.locations,
-            deviceTypes: dropdownData.deviceTypes,
-          }}
-          onFileSelect={csvUpload.parseCSV}
-          onImport={csvUpload.importDevices}
-          onUpdateMapping={csvUpload.updateMapping}
-          onApplyMappings={csvUpload.applyMappings}
-          onShowMappingConfig={csvUpload.setShowMappingConfig}
-          onReset={() => {
-            csvUpload.closeModal()
-          }}
+        <CsvImportWizard
+          open={csvImport.showModal}
+          onClose={csvImport.closeModal}
+          step={csvImport.step}
+          csvFile={csvImport.csvFile}
+          isParsing={csvImport.isParsing}
+          parseError={csvImport.parseError}
+          delimiter={csvImport.delimiter}
+          onDelimiterChange={csvImport.setDelimiter}
+          onFileSelect={csvImport.handleFileSelect}
+          headers={csvImport.headers}
+          columnMapping={csvImport.columnMapping}
+          onMappingChange={csvImport.setColumnMapping}
+          unmappedMandatoryFields={csvImport.unmappedMandatoryFields}
+          defaults={csvImport.defaults}
+          onDefaultsChange={csvImport.setDefaults}
+          formDefaults={csvFormDefaults}
+          dropdownData={dropdownData}
+          parseResult={csvImport.parseResult}
+          dryRunErrors={csvImport.dryRunErrors}
+          isDryRun={csvImport.isDryRun}
+          onDryRun={csvImport.runDryRun}
+          importProgress={csvImport.importProgress}
+          importSummary={csvImport.importSummary}
+          onImport={csvImport.importDevices}
+          onGoToStep={csvImport.goToStep}
+          onReset={csvImport.reset}
         />
       </form>
 
@@ -565,10 +643,7 @@ export function AddDevicePage() {
         errors={validationErrors}
       />
 
-      <HelpModal
-        open={showHelpModal}
-        onOpenChange={setShowHelpModal}
-      />
+      <HelpModal open={showHelpModal} onOpenChange={setShowHelpModal} />
 
       <ValidationSummaryModal
         open={showValidationSummary}

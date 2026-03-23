@@ -3,7 +3,7 @@
  */
 
 export { SearchableDropdownInput } from './searchable-dropdown-input'
-export { CSVUploadModal } from './csv-upload-modal'
+export { CsvImportWizard } from './csv-import-wizard'
 export { BulkUpdateModal } from './bulk-update-modal'
 export { DeviceInfoForm } from './device-info-form'
 export { PrefixConfiguration } from './prefix-configuration'
