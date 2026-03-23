@@ -6,7 +6,6 @@ import { Server, Loader2 } from 'lucide-react'
 
 // TanStack Query Hooks
 import { useNautobotDropdownsQuery, useDeviceMutations } from './hooks/queries'
-import { useApi } from '@/hooks/use-api'
 
 // Custom Hooks
 import { useDeviceForm } from './hooks/use-device-form'
@@ -16,7 +15,8 @@ import { useCustomFieldsManager } from './hooks/use-custom-fields-manager'
 import { usePropertiesModal } from './hooks/use-properties-modal'
 import { useCsvImport } from './hooks/use-csv-import'
 import type { FormDefaults } from './hooks/use-csv-import'
-import type { PrefixConfig } from './hooks/use-csv-import'
+import { useDeviceImport } from './hooks/use-device-import'
+import { useValidateDevice } from './hooks/use-validate-device'
 
 // Components
 import {
@@ -35,9 +35,6 @@ import {
   ValidationSummaryModal,
   FormActions,
 } from './components'
-import type { ValidationResults } from './components'
-
-// Utils
 import { buildLocationHierarchy, formatDeviceSubmissionData } from './utils'
 import {
   EMPTY_DROPDOWN_OPTIONS,
@@ -47,30 +44,8 @@ import {
   EMPTY_SOFTWARE_VERSIONS,
   EMPTY_PLATFORMS,
 } from './constants'
-import type {
-  StatusMessage,
-  LocationItem,
-  DeviceType,
-  SoftwareVersion,
-  ParsedDevice,
-  DeviceSubmissionData,
-  InterfaceData,
-  DeviceImportResult,
-} from './types'
+import type { StatusMessage, LocationItem, DeviceType, SoftwareVersion } from './types'
 import type { DeviceFormValues } from './validation'
-
-const DEFAULT_VALIDATION_RESULTS: ValidationResults = {
-  isValid: true,
-  deviceName: true,
-  deviceRole: true,
-  deviceStatus: true,
-  deviceType: true,
-  location: true,
-  interfaceStatus: true,
-  interfaceIssues: 0,
-  ipAddresses: true,
-  ipAddressIssues: 0,
-}
 
 export function AddDevicePage() {
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null)
@@ -79,10 +54,6 @@ export function AddDevicePage() {
   const [showValidationModal, setShowValidationModal] = useState(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [showHelpModal, setShowHelpModal] = useState(false)
-  const [showValidationSummary, setShowValidationSummary] = useState(false)
-  const [validationResults, setValidationResults] = useState<ValidationResults>(
-    DEFAULT_VALIDATION_RESULTS
-  )
 
   // Fetch all dropdown data with TanStack Query
   const {
@@ -108,7 +79,9 @@ export function AddDevicePage() {
 
   // Device mutation
   const { createDevice } = useDeviceMutations()
-  const { apiCall } = useApi()
+  const { handleImportDevice } = useDeviceImport()
+  const { handleValidate, showValidationSummary, setShowValidationSummary, validationResults } =
+    useValidateDevice(form)
 
   // Searchable dropdowns with memoized predicates
   const locationFilterPredicate = useCallback(
@@ -161,82 +134,6 @@ export function AddDevicePage() {
   const customFieldsManager = useCustomFieldsManager()
   const propertiesModal = usePropertiesModal()
 
-  // Convert a parsed CSV device into the format the backend expects and submit it
-  const handleImportDevice = useCallback(
-    async (device: ParsedDevice, prefixConfig: PrefixConfig): Promise<DeviceImportResult> => {
-      try {
-        const interfaces: InterfaceData[] = device.interfaces.map(iface => ({
-          id: crypto.randomUUID(),
-          name: iface.name,
-          type: iface.type || '',
-          status: iface.status || '',
-          enabled: iface.enabled,
-          mgmt_only: iface.mgmt_only,
-          description: iface.description,
-          mac_address: iface.mac_address,
-          mtu: iface.mtu,
-          mode: iface.mode,
-          untagged_vlan: iface.untagged_vlan,
-          tagged_vlans: iface.tagged_vlans,
-          parent_interface: iface.parent_interface,
-          bridge: iface.bridge,
-          lag: iface.lag,
-          tags: iface.tags,
-          ip_addresses: iface.ip_address
-            ? [
-                {
-                  id: crypto.randomUUID(),
-                  address: iface.ip_address,
-                  namespace: iface.namespace || '',
-                  ip_role: '',
-                  is_primary: iface.is_primary_ipv4,
-                },
-              ]
-            : [],
-        }))
-
-        const submissionData: DeviceSubmissionData = {
-          name: device.name,
-          serial: device.serial,
-          role: device.role || '',
-          status: device.status || '',
-          location: device.location || '',
-          device_type: device.device_type || '',
-          platform: device.platform,
-          software_version: device.software_version,
-          tags: device.tags,
-          custom_fields: device.custom_fields,
-          interfaces,
-          add_prefix: prefixConfig.addPrefix,
-          default_prefix_length: prefixConfig.addPrefix ? prefixConfig.defaultPrefixLength : '',
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const response = await apiCall<any>('nautobot/add-device', {
-          method: 'POST',
-          body: JSON.stringify(submissionData),
-        })
-
-        const success = response.success === true
-        return {
-          deviceName: device.name,
-          status: success ? 'success' : 'error',
-          message: success
-            ? `Device "${device.name}" created successfully`
-            : `Failed to create device "${device.name}": ${response.error ?? response.detail ?? response.message ?? 'Unknown error'}`,
-          deviceId: response.device_id,
-        }
-      } catch (error) {
-        return {
-          deviceName: device.name,
-          status: 'error',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        }
-      }
-    },
-    [apiCall]
-  )
-
   // Build form defaults for CSV import wizard — useWatch creates reactive subscriptions
   const [selectedRole, selectedStatus, selectedLocation, selectedDeviceType, selectedPlatform] =
     useWatch({
@@ -270,10 +167,6 @@ export function AddDevicePage() {
 
   // Handle form validation errors
   const onInvalid = useCallback((validationErrors: FieldErrors<DeviceFormValues>) => {
-    console.error('Form validation failed. All errors:', validationErrors)
-    console.error('Interfaces errors:', validationErrors.interfaces)
-    console.error('Is interfaces array?', Array.isArray(validationErrors.interfaces))
-
     const errors: string[] = []
 
     // Collect all validation errors
@@ -295,70 +188,46 @@ export function AddDevicePage() {
 
     // Check interface errors
     if (validationErrors.interfaces) {
-      console.error('Processing interface errors...')
       if (Array.isArray(validationErrors.interfaces)) {
-        console.error(
-          'Interface errors is an array with length:',
-          validationErrors.interfaces.length
-        )
         validationErrors.interfaces.forEach((interfaceError, index) => {
-          console.error(`Interface ${index} error:`, interfaceError)
-
           if (!interfaceError) return
 
           // Iterate through all error fields in the interface
           Object.keys(interfaceError).forEach(fieldName => {
             const fieldError = interfaceError[fieldName as keyof typeof interfaceError]
-            console.error(`Interface ${index} field '${fieldName}' error:`, fieldError)
 
             // Handle ip_addresses specially since it's an array
             if (fieldName === 'ip_addresses') {
               // Check if it's a root-level array error
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              if ((fieldError as any)?.message) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                console.error(
-                  `Interface ${index} has root ip_addresses message:`,
-                  (fieldError as any).message
-                )
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const fieldErrorWithMsg = fieldError as { message?: string }
+              if (fieldErrorWithMsg?.message) {
                 errors.push(
-                  `Interface ${index + 1} IP Addresses: ${(fieldError as any).message}`
+                  `Interface ${index + 1} IP Addresses: ${fieldErrorWithMsg.message}`
                 )
               }
               // Check individual IP address errors
               else if (Array.isArray(fieldError)) {
-                console.error(
-                  `Interface ${index} ip_addresses is array with length:`,
-                  fieldError.length
+                fieldError.forEach(
+                  (
+                    ipError: { address?: { message?: string }; namespace?: { message?: string } },
+                    ipIndex: number
+                  ) => {
+                    if (ipError?.address) {
+                      errors.push(
+                        `Interface ${index + 1}, IP ${ipIndex + 1} Address: ${ipError.address.message}`
+                      )
+                    }
+                    if (ipError?.namespace) {
+                      errors.push(
+                        `Interface ${index + 1}, IP ${ipIndex + 1} Namespace: ${ipError.namespace.message}`
+                      )
+                    }
+                  }
                 )
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                fieldError.forEach((ipError: any, ipIndex: number) => {
-                  console.error(`Interface ${index}, IP ${ipIndex} error:`, ipError)
-                  if (ipError?.address) {
-                    console.error(
-                      `Interface ${index}, IP ${ipIndex} address error:`,
-                      ipError.address.message
-                    )
-                    errors.push(
-                      `Interface ${index + 1}, IP ${ipIndex + 1} Address: ${ipError.address.message}`
-                    )
-                  }
-                  if (ipError?.namespace) {
-                    console.error(
-                      `Interface ${index}, IP ${ipIndex} namespace error:`,
-                      ipError.namespace.message
-                    )
-                    errors.push(
-                      `Interface ${index + 1}, IP ${ipIndex + 1} Namespace: ${ipError.namespace.message}`
-                    )
-                  }
-                })
               }
             } else {
               // Handle all other field errors
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const message = (fieldError as any)?.message
+              const message = (fieldError as { message?: string })?.message
               if (message) {
                 const fieldLabel =
                   fieldName.charAt(0).toUpperCase() +
@@ -369,12 +238,9 @@ export function AddDevicePage() {
           })
         })
       } else if (validationErrors.interfaces.message) {
-        console.error('Interfaces has a message:', validationErrors.interfaces.message)
         errors.push(`Interfaces: ${validationErrors.interfaces.message}`)
       }
     }
-
-    console.error('Collected errors:', errors)
 
     // Only show modal if there are actual errors
     if (errors.length > 0) {
@@ -384,85 +250,6 @@ export function AddDevicePage() {
   }, [])
 
   // Handle manual validation
-  const handleValidate = useCallback(() => {
-    const values = form.getValues()
-
-    const deviceName = !!values.deviceName?.trim()
-    const deviceRole = !!values.selectedRole
-    const deviceStatus = !!values.selectedStatus
-    const deviceType = !!values.selectedDeviceType
-    const location = !!values.selectedLocation
-
-    const interfaces = values.interfaces || []
-    let interfaceIssues = 0
-    let allInterfacesValid = true
-    let ipAddressIssues = 0
-    let allIpAddressesValid = true
-
-    const ipv4CidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/
-    const ipv6CidrRegex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\/\d{1,3}$/
-
-    interfaces.forEach(iface => {
-      if (!iface.name || !iface.name.trim()) {
-        allInterfacesValid = false
-        interfaceIssues++
-      }
-      if (!iface.type) {
-        allInterfacesValid = false
-        interfaceIssues++
-      }
-      if (!iface.status) {
-        allInterfacesValid = false
-        interfaceIssues++
-      }
-
-      const ipAddresses = iface.ip_addresses || []
-      ipAddresses.forEach(ip => {
-        if (!ip.address || !ip.address.trim()) {
-          allIpAddressesValid = false
-          ipAddressIssues++
-          return
-        }
-
-        const isValidCidr =
-          ipv4CidrRegex.test(ip.address) || ipv6CidrRegex.test(ip.address)
-        if (!isValidCidr) {
-          allIpAddressesValid = false
-          ipAddressIssues++
-        }
-
-        if (!ip.namespace || !ip.namespace.trim()) {
-          allIpAddressesValid = false
-          ipAddressIssues++
-        }
-      })
-    })
-
-    const isValid =
-      deviceName &&
-      deviceRole &&
-      deviceStatus &&
-      deviceType &&
-      location &&
-      allInterfacesValid &&
-      allIpAddressesValid
-
-    setValidationResults({
-      isValid,
-      deviceName,
-      deviceRole,
-      deviceStatus,
-      deviceType,
-      location,
-      interfaceStatus: allInterfacesValid,
-      interfaceIssues,
-      ipAddresses: allIpAddressesValid,
-      ipAddressIssues,
-    })
-
-    setShowValidationSummary(true)
-  }, [form])
-
   // Form submission
   const onSubmit = useCallback(
     async (data: DeviceFormValues) => {

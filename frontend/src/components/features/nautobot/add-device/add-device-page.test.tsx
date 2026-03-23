@@ -12,23 +12,6 @@ vi.mock('@/lib/auth-store', () => ({
     useAuthStore: () => ({ isAuthenticated: true })
 }))
 
-vi.mock('./hooks/use-csv-upload', () => ({
-    useCSVUpload: () => ({
-        showModal: false,
-        openModal: vi.fn(),
-        closeModal: vi.fn(),
-        csvFile: null,
-        parsedData: [],
-        isParsing: false,
-        isSubmitting: false
-    })
-}))
-
-// Mock child modals
-vi.mock('./components/csv-upload-modal', () => ({
-    CSVUploadModal: () => <div data-testid="csv-upload-modal" />
-}))
-
 // Mock UI components
 vi.mock('@/components/ui/alert', () => ({
     Alert: ({ children }: { children: React.ReactNode }) => <div data-testid="alert">{children}</div>,

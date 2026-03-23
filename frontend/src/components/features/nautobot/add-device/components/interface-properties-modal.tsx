@@ -43,11 +43,10 @@ export function InterfacePropertiesModal({
 }: InterfacePropertiesModalProps) {
   const { register, watch, setValue } = form
 
-  // interfaceId is now the index as a string
-  const interfaceIndex = interfaceId ? parseInt(interfaceId, 10) : -1
   const interfaces = watch('interfaces')
+  const interfaceIndex = interfaces?.findIndex(iface => iface.id === interfaceId) ?? -1
 
-  if (interfaceIndex === -1 || !show || isNaN(interfaceIndex) || !interfaces || interfaceIndex >= interfaces.length) return null
+  if (interfaceIndex === -1 || !show || !interfaces || interfaceIndex >= interfaces.length) return null
 
   const currentInterface = interfaces[interfaceIndex]
   if (!currentInterface) return null

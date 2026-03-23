@@ -37,17 +37,16 @@ export function InterfaceList({
   })
 
   const handleAddInterface = () => {
-    const newId = Date.now().toString()
     // Auto-select namespace if only one is available
     const defaultNamespace = dropdownData.nautobotDefaults?.namespace ||
       (dropdownData.namespaces.length === 1 ? dropdownData.namespaces[0]?.id : '') || ''
     
     append({
-      id: newId,
+      id: crypto.randomUUID(),
       ...DEFAULT_INTERFACE,
       status: dropdownData.nautobotDefaults?.interface_status || '',
       ip_addresses: [{
-        id: '1',
+        id: crypto.randomUUID(),
         ...DEFAULT_IP_ADDRESS,
         namespace: defaultNamespace,
         ip_role: 'none',
@@ -83,7 +82,7 @@ export function InterfaceList({
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
-                    onClick={() => onOpenProperties(index.toString())}
+                    onClick={() => onOpenProperties(field.id)}
                     disabled={isLoading}
                     size="sm"
                     variant="outline"

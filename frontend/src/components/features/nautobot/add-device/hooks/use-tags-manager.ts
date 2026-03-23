@@ -15,8 +15,8 @@ export interface TagsManagerHook {
   clearSelectedTags: () => void
 }
 
-export function useTagsManager(): TagsManagerHook {
-  const [selectedTags, setSelectedTags] = useState<string[]>(EMPTY_STRING_ARRAY)
+export function useTagsManager(initialTags: string[] = EMPTY_STRING_ARRAY): TagsManagerHook {
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialTags)
   const [showModal, setShowModal] = useState(false)
 
   // Fetch tags only when modal is open

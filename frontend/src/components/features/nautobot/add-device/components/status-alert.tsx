@@ -11,7 +11,7 @@ export function StatusAlert({ statusMessage }: StatusAlertProps) {
   if (!statusMessage || statusMessage.type === 'error') return null
 
   return (
-    <Alert className={`border-${statusMessage.type === 'success' ? 'green' : 'blue'}-500`}>
+    <Alert className={statusMessage.type === 'success' ? 'border-green-500' : 'border-blue-500'}>
       <AlertDescription>{statusMessage.message}</AlertDescription>
     </Alert>
   )

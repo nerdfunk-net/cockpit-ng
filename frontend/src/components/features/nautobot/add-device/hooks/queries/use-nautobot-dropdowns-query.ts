@@ -2,7 +2,16 @@ import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { QUERY_STALE_TIMES } from '../../constants'
-import type { NautobotDropdownsResponse } from '../../types'
+import type {
+  NautobotDropdownsResponse,
+  DropdownOption,
+  LocationItem,
+  DeviceType,
+  Platform,
+  SoftwareVersion,
+  InterfaceTypeOption,
+  NautobotDefaults,
+} from '../../types'
 
 interface UseNautobotDropdownsQueryOptions {
   enabled?: boolean
@@ -39,28 +48,17 @@ export function useNautobotDropdownsQuery(
         ipRoles,
         nautobotDefaults,
       ] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/roles/devices', { method: 'GET' }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/statuses/device', { method: 'GET' }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/locations', { method: 'GET' }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/device-types', { method: 'GET' }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/platforms', { method: 'GET' }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/software-versions', { method: 'GET' }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/interface-types', { method: 'GET' }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/statuses/interface', { method: 'GET' }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/namespaces', { method: 'GET' }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/roles/ipaddress', { method: 'GET' }),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('settings/nautobot/defaults', { method: 'GET' }).catch(() => null),
+        apiCall<DropdownOption[]>('nautobot/roles/devices', { method: 'GET' }),
+        apiCall<DropdownOption[]>('nautobot/statuses/device', { method: 'GET' }),
+        apiCall<LocationItem[]>('nautobot/locations', { method: 'GET' }),
+        apiCall<DeviceType[]>('nautobot/device-types', { method: 'GET' }),
+        apiCall<Platform[]>('nautobot/platforms', { method: 'GET' }),
+        apiCall<SoftwareVersion[]>('nautobot/software-versions', { method: 'GET' }),
+        apiCall<InterfaceTypeOption[]>('nautobot/interface-types', { method: 'GET' }),
+        apiCall<DropdownOption[]>('nautobot/statuses/interface', { method: 'GET' }),
+        apiCall<DropdownOption[]>('nautobot/namespaces', { method: 'GET' }),
+        apiCall<DropdownOption[]>('nautobot/roles/ipaddress', { method: 'GET' }),
+        apiCall<NautobotDefaults>('settings/nautobot/defaults', { method: 'GET' }).catch(() => null),
       ])
 
       return {
