@@ -76,6 +76,7 @@ interface CsvImportWizardProps {
   parseResult: CSVParseResult | null
   dryRunErrors: DeviceValidationError[]
   isDryRun: boolean
+  dryRunCompleted: boolean
   onDryRun: () => void
 
   // Import
@@ -112,6 +113,7 @@ export function CsvImportWizard({
   parseResult,
   dryRunErrors,
   isDryRun,
+  dryRunCompleted,
   onDryRun,
   importProgress,
   importSummary,
@@ -284,6 +286,9 @@ export function CsvImportWizard({
             <CsvImportPreviewStep
               parseResult={parseResult}
               dryRunErrors={dryRunErrors}
+              isDryRun={isDryRun}
+              dryRunCompleted={dryRunCompleted}
+              dropdownData={dropdownData}
             />
           )}
 

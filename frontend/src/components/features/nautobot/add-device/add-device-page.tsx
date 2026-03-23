@@ -80,8 +80,12 @@ export function AddDevicePage() {
   // Device mutation
   const { createDevice } = useDeviceMutations()
   const { handleImportDevice } = useDeviceImport()
-  const { handleValidate, showValidationSummary, setShowValidationSummary, validationResults } =
-    useValidateDevice(form)
+  const {
+    handleValidate,
+    showValidationSummary,
+    setShowValidationSummary,
+    validationResults,
+  } = useValidateDevice(form)
 
   // Searchable dropdowns with memoized predicates
   const locationFilterPredicate = useCallback(
@@ -135,11 +139,22 @@ export function AddDevicePage() {
   const propertiesModal = usePropertiesModal()
 
   // Build form defaults for CSV import wizard — useWatch creates reactive subscriptions
-  const [selectedRole, selectedStatus, selectedLocation, selectedDeviceType, selectedPlatform] =
-    useWatch({
-      control: form.control,
-      name: ['selectedRole', 'selectedStatus', 'selectedLocation', 'selectedDeviceType', 'selectedPlatform'],
-    })
+  const [
+    selectedRole,
+    selectedStatus,
+    selectedLocation,
+    selectedDeviceType,
+    selectedPlatform,
+  ] = useWatch({
+    control: form.control,
+    name: [
+      'selectedRole',
+      'selectedStatus',
+      'selectedLocation',
+      'selectedDeviceType',
+      'selectedPlatform',
+    ],
+  })
 
   const csvFormDefaults = useMemo((): FormDefaults => {
     return {
@@ -156,7 +171,14 @@ export function AddDevicePage() {
       platform: selectedPlatform || undefined,
       platformName: dropdownData.platforms.find(p => p.id === selectedPlatform)?.name,
     }
-  }, [selectedRole, selectedStatus, selectedLocation, selectedDeviceType, selectedPlatform, dropdownData])
+  }, [
+    selectedRole,
+    selectedStatus,
+    selectedLocation,
+    selectedDeviceType,
+    selectedPlatform,
+    dropdownData,
+  ])
 
   // CSV Import wizard
   const csvImport = useCsvImport({
@@ -209,7 +231,10 @@ export function AddDevicePage() {
               else if (Array.isArray(fieldError)) {
                 fieldError.forEach(
                   (
-                    ipError: { address?: { message?: string }; namespace?: { message?: string } },
+                    ipError: {
+                      address?: { message?: string }
+                      namespace?: { message?: string }
+                    },
                     ipIndex: number
                   ) => {
                     if (ipError?.address) {
@@ -419,6 +444,7 @@ export function AddDevicePage() {
           parseResult={csvImport.parseResult}
           dryRunErrors={csvImport.dryRunErrors}
           isDryRun={csvImport.isDryRun}
+          dryRunCompleted={csvImport.dryRunCompleted}
           onDryRun={csvImport.runDryRun}
           importProgress={csvImport.importProgress}
           importSummary={csvImport.importSummary}

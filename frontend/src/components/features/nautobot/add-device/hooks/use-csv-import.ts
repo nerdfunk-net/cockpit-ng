@@ -15,7 +15,10 @@ import { useCsvParser } from './use-csv-parser'
 import { useCsvColumnMapping } from './use-csv-column-mapping'
 
 // Re-export constants so existing consumer imports keep working
-export { MANDATORY_DEVICE_FIELDS, MANDATORY_INTERFACE_FIELDS } from './use-csv-column-mapping'
+export {
+  MANDATORY_DEVICE_FIELDS,
+  MANDATORY_INTERFACE_FIELDS,
+} from './use-csv-column-mapping'
 
 // Wizard steps
 export type CsvImportStep =
@@ -53,7 +56,11 @@ const DEFAULT_PREFIX_CONFIG: PrefixConfig = {
 interface UseCsvImportProps {
   nautobotDefaults: NautobotDropdownsResponse['nautobotDefaults']
   formDefaults: FormDefaults
-  onImportDevice: (device: ParsedDevice, prefixConfig: PrefixConfig) => Promise<DeviceImportResult>
+  onImportDevice: (
+    device: ParsedDevice,
+    prefixConfig: PrefixConfig,
+    dryRun?: boolean
+  ) => Promise<DeviceImportResult>
 }
 
 export function useCsvImport({
@@ -75,6 +82,7 @@ export function useCsvImport({
   const [parseResult, setParseResult] = useState<CSVParseResult | null>(null)
   const [dryRunErrors, setDryRunErrors] = useState<DeviceValidationError[]>([])
   const [isDryRun, setIsDryRun] = useState(false)
+  const [dryRunCompleted, setDryRunCompleted] = useState(false)
 
   // Import state
   const [isImporting, setIsImporting] = useState(false)
@@ -94,12 +102,13 @@ export function useCsvImport({
       setParseResult(null)
       setImportSummary(null)
       setDryRunErrors([])
-      parser.handleFileSelect(file, (parsedHeaders) => {
+      parser.handleFileSelect(file, parsedHeaders => {
         mapping.initMapping(parsedHeaders, nautobotFields)
 
         // Pre-fill defaults from form values and Nautobot system defaults
         const initialDefaults: Record<string, string> = {}
-        if (formDefaults.deviceType) initialDefaults['device_type'] = formDefaults.deviceType
+        if (formDefaults.deviceType)
+          initialDefaults['device_type'] = formDefaults.deviceType
         if (formDefaults.role) initialDefaults['role'] = formDefaults.role
         if (formDefaults.status) initialDefaults['status'] = formDefaults.status
         if (formDefaults.location) initialDefaults['location'] = formDefaults.location
@@ -135,23 +144,44 @@ export function useCsvImport({
     const result = buildParsedDevices()
     setParseResult(result)
     setDryRunErrors([])
+    setDryRunCompleted(false)
     setStep('preview')
   }, [buildParsedDevices])
 
-  // Dry run — validate without importing
-  const runDryRun = useCallback(() => {
+  // Dry run — validate each device against Nautobot without creating anything
+  const runDryRun = useCallback(async () => {
+    if (!parseResult || parseResult.devices.length === 0) return
+
     setIsDryRun(true)
-    const result = buildParsedDevices()
-    setParseResult(result)
-    setDryRunErrors(result.validationErrors)
+    setDryRunErrors([])
+    setDryRunCompleted(false)
+
+    const errors: DeviceValidationError[] = []
+
+    for (const device of parseResult.devices) {
+      const result = await onImportDevice(device, prefixConfig, true)
+      if (result.status === 'error') {
+        errors.push({
+          deviceName: device.name,
+          field: 'nautobot',
+          message: result.message,
+          severity: 'error',
+        })
+      }
+    }
+
+    setDryRunErrors(errors)
     setIsDryRun(false)
-  }, [buildParsedDevices])
+    setDryRunCompleted(true)
+  }, [parseResult, onImportDevice, prefixConfig])
 
   // Import all parsed devices sequentially
   const importDevices = useCallback(async () => {
     if (!parseResult || parseResult.devices.length === 0) return
 
-    const blockingErrors = parseResult.validationErrors.filter(e => e.severity === 'error')
+    const blockingErrors = parseResult.validationErrors.filter(
+      e => e.severity === 'error'
+    )
     if (blockingErrors.length > 0) return
 
     setStep('importing')
@@ -211,6 +241,7 @@ export function useCsvImport({
     setPrefixConfig(DEFAULT_PREFIX_CONFIG)
     setParseResult(null)
     setDryRunErrors([])
+    setDryRunCompleted(false)
     setImportSummary(null)
     setStep('upload')
   }, [parser, mapping])
@@ -257,6 +288,7 @@ export function useCsvImport({
       parseResult,
       dryRunErrors,
       isDryRun,
+      dryRunCompleted,
       goToPreview,
       runDryRun,
 
@@ -283,6 +315,7 @@ export function useCsvImport({
       parseResult,
       dryRunErrors,
       isDryRun,
+      dryRunCompleted,
       goToPreview,
       runDryRun,
       isImporting,

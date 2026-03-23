@@ -139,6 +139,8 @@ class AddDeviceRequest(BaseModel):
     default_prefix_length: str = "/24"
     # Interfaces array
     interfaces: list[InterfaceData] = []
+    # Dry run: validate without creating
+    dry_run: bool = False
 
 
 class UpdateDeviceRequest(BaseModel):

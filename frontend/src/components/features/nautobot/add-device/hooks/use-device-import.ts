@@ -2,7 +2,12 @@
 
 import { useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
-import type { ParsedDevice, InterfaceData, DeviceSubmissionData, DeviceImportResult } from '../types'
+import type {
+  ParsedDevice,
+  InterfaceData,
+  DeviceSubmissionData,
+  DeviceImportResult,
+} from '../types'
 import type { PrefixConfig } from './use-csv-import'
 
 /**
@@ -12,7 +17,11 @@ export function useDeviceImport() {
   const { apiCall } = useApi()
 
   const handleImportDevice = useCallback(
-    async (device: ParsedDevice, prefixConfig: PrefixConfig): Promise<DeviceImportResult> => {
+    async (
+      device: ParsedDevice,
+      prefixConfig: PrefixConfig,
+      dryRun?: boolean
+    ): Promise<DeviceImportResult> => {
       try {
         const interfaces: InterfaceData[] = device.interfaces.map(iface => ({
           id: crypto.randomUUID(),
@@ -57,7 +66,10 @@ export function useDeviceImport() {
           custom_fields: device.custom_fields,
           interfaces,
           add_prefix: prefixConfig.addPrefix,
-          default_prefix_length: prefixConfig.addPrefix ? prefixConfig.defaultPrefixLength : '',
+          default_prefix_length: prefixConfig.addPrefix
+            ? prefixConfig.defaultPrefixLength
+            : '',
+          dry_run: dryRun === true,
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,6 +79,20 @@ export function useDeviceImport() {
         })
 
         const success = response.success === true
+
+        // Dry run: surface per-device validation errors returned by the backend
+        if (response.dry_run) {
+          const apiErrors: string[] = response.errors ?? []
+          return {
+            deviceName: device.name,
+            status: success && apiErrors.length === 0 ? 'success' : 'error',
+            message:
+              apiErrors.length > 0
+                ? apiErrors.join('; ')
+                : `Device "${device.name}" passed Nautobot validation`,
+          }
+        }
+
         return {
           deviceName: device.name,
           status: success ? 'success' : 'error',

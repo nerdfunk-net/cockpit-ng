@@ -74,6 +74,10 @@ class DeviceCreationService:
         # Log incoming request data
         self._log_request_data(request)
 
+        # Dry run: validate only, no creation
+        if request.dry_run:
+            return await self._validate_dry_run(request)
+
         # Step 1: Create device
         device_id, device_response = await self._step1_create_device(
             request, workflow_status
@@ -188,6 +192,67 @@ class DeviceCreationService:
                 ),
                 "primary_ipv4_assigned": primary_ipv4_id is not None,
             },
+        }
+
+    async def _validate_dry_run(self, request: AddDeviceRequest) -> dict:
+        """
+        Validate a device request against Nautobot without creating anything.
+
+        Checks:
+        - Device name does not already exist
+        - device_type, role, status, location UUIDs are valid
+        - platform UUID is valid (if provided)
+
+        Returns:
+            dict with success, dry_run=True, errors list, and message
+        """
+        logger.info("Dry run validation for device: %s", request.name)
+        errors = []
+
+        # Check if device name already exists
+        try:
+            existing = await self._nb.rest_request(
+                f"dcim/devices/?name={request.name}&limit=1"
+            )
+            if existing.get("count", 0) > 0:
+                errors.append(f"A device named '{request.name}' already exists in Nautobot")
+        except Exception as e:
+            logger.warning("Dry run: could not check device existence: %s", str(e))
+
+        # Validate required UUID fields via list endpoints (filter by id=UUID)
+        # Using list+filter instead of direct UUID lookup to avoid 404 exceptions
+        uuid_checks = [
+            ("device_type", f"dcim/device-types/?id={request.device_type}&limit=1", "Device type"),
+            ("role", f"extras/roles/?id={request.role}&limit=1", "Role"),
+            ("status", f"extras/statuses/?id={request.status}&limit=1", "Status"),
+            ("location", f"dcim/locations/?id={request.location}&limit=1", "Location"),
+        ]
+        for _field, endpoint, label in uuid_checks:
+            try:
+                result = await self._nb.rest_request(endpoint)
+                if result.get("count", 0) == 0:
+                    errors.append(f"{label} ID '{getattr(request, _field)}' not found in Nautobot")
+            except Exception as e:
+                logger.warning("Dry run: could not validate %s: %s", label, str(e))
+
+        # Validate optional platform UUID
+        if request.platform:
+            try:
+                result = await self._nb.rest_request(
+                    f"dcim/platforms/?id={request.platform}&limit=1"
+                )
+                if result.get("count", 0) == 0:
+                    errors.append(f"Platform ID '{request.platform}' not found in Nautobot")
+            except Exception as e:
+                logger.warning("Dry run: could not validate platform: %s", str(e))
+
+        success = len(errors) == 0
+        return {
+            "success": success,
+            "dry_run": True,
+            "device_id": None,
+            "errors": errors,
+            "message": "Validation passed" if success else f"{len(errors)} validation error(s) found",
         }
 
     def _log_request_data(self, request: AddDeviceRequest) -> None:
