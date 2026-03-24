@@ -64,7 +64,6 @@ interface UseCsvImportProps {
   onImportDevice: (
     device: ParsedDevice,
     prefixConfig: PrefixConfig,
-    importFormat: CsvImportFormat,
     dryRun?: boolean
   ) => Promise<DeviceImportResult>
 }
@@ -126,9 +125,9 @@ export function useCsvImport({
           },
         }
       }
-      return onImportDevice(d, config, importFormat, dryRun)
+      return onImportDevice(d, config, dryRun)
     },
-    [onImportDevice, applyFormTags, applyFormCustomFields, formDefaults, importFormat]
+    [onImportDevice, applyFormTags, applyFormCustomFields, formDefaults]
   )
 
   // Wraps parser.handleFileSelect — after reading, initialises column mapping and defaults

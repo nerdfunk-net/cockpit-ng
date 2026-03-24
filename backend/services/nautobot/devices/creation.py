@@ -72,9 +72,9 @@ class DeviceCreationService:
             "step4_primary_ip": {"status": "pending", "message": "", "data": None},
         }
 
-        # Resolve human-readable names → UUIDs when import_format is set
-        if request.import_format:
-            request = await self._resolve_request_names_to_ids(request)
+        # Resolve names → UUIDs. Fields already holding a valid UUID pass through
+        # unchanged, so this is safe for both the UI form (UUIDs) and CSV import (names).
+        request = await self._resolve_request_names_to_ids(request)
 
         # Log incoming request data
         self._log_request_data(request)
@@ -299,13 +299,10 @@ class DeviceCreationService:
         """
         Resolve human-readable names to Nautobot UUIDs.
 
-        Called when import_format is set (i.e. the request originated from a CSV
-        import wizard rather than the UI form, which already supplies UUIDs).
-        Fields that already contain a valid UUID are left unchanged.
+        Fields that already contain a valid UUID are left unchanged, so this is
+        safe for both the UI form (which sends UUIDs) and CSV import (which sends names).
         """
-        logger.info(
-            "Resolving names to UUIDs for CSV import (format=%s)", request.import_format
-        )
+        logger.info("Resolving names to UUIDs (passthrough if already UUID)")
         updates: dict = {}
 
         # device_type
