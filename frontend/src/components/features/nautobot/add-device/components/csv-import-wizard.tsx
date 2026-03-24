@@ -14,6 +14,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   ArrowLeft,
   ArrowRight,
   FileSpreadsheet,
@@ -24,7 +31,12 @@ import {
 } from 'lucide-react'
 import type { CSVParseResult, ImportSummary, NautobotDropdownsResponse } from '../types'
 import type { DeviceValidationError } from '../types'
-import type { CsvImportStep, FormDefaults, PrefixConfig } from '../hooks/use-csv-import'
+import type {
+  CsvImportStep,
+  CsvImportFormat,
+  FormDefaults,
+  PrefixConfig,
+} from '../hooks/use-csv-import'
 import { CSVFileUpload } from './csv-file-upload'
 import { CsvImportMappingStep } from './csv-import-mapping-step'
 import { CsvImportDefaultsStep } from './csv-import-defaults-step'
@@ -55,6 +67,8 @@ interface CsvImportWizardProps {
   parseError: string
   delimiter: string
   onDelimiterChange: (value: string) => void
+  importFormat: CsvImportFormat
+  onImportFormatChange: (format: CsvImportFormat) => void
   onFileSelect: (file: File) => void
 
   // Mapping
@@ -102,6 +116,8 @@ export function CsvImportWizard({
   parseError,
   delimiter,
   onDelimiterChange,
+  importFormat,
+  onImportFormatChange,
   onFileSelect,
   headers,
   columnMapping,
@@ -245,6 +261,24 @@ export function CsvImportWizard({
                 onFileSelect={onFileSelect}
               />
               <div className="flex items-center gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-gray-600">
+                    Import Format
+                  </Label>
+                  <Select
+                    value={importFormat}
+                    onValueChange={v => onImportFormatChange(v as CsvImportFormat)}
+                  >
+                    <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="generic">Generic</SelectItem>
+                      <SelectItem value="nautobot">Nautobot Export</SelectItem>
+                      <SelectItem value="cockpit">Cockpit Export</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-medium text-gray-600">Delimiter</Label>
                   <Input

@@ -9,6 +9,7 @@ import ipaddress
 from typing import Optional, List, Dict, Any
 from models.nautobot import AddDeviceRequest, InterfaceData
 from services.nautobot.common.exceptions import NautobotAPIError
+from services.nautobot.common.validators import is_valid_uuid
 from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot.devices.interface_workflow import InterfaceManagerService
 from repositories.audit_log_repository import audit_log_repo
@@ -70,6 +71,10 @@ class DeviceCreationService:
             },
             "step4_primary_ip": {"status": "pending", "message": "", "data": None},
         }
+
+        # Resolve human-readable names → UUIDs when import_format is set
+        if request.import_format:
+            request = await self._resolve_request_names_to_ids(request)
 
         # Log incoming request data
         self._log_request_data(request)
@@ -287,6 +292,72 @@ class DeviceCreationService:
                     ip_data.ip_role,
                     ip_data.is_primary,
                 )
+
+    async def _resolve_request_names_to_ids(
+        self, request: AddDeviceRequest
+    ) -> AddDeviceRequest:
+        """
+        Resolve human-readable names to Nautobot UUIDs.
+
+        Called when import_format is set (i.e. the request originated from a CSV
+        import wizard rather than the UI form, which already supplies UUIDs).
+        Fields that already contain a valid UUID are left unchanged.
+        """
+        logger.info(
+            "Resolving names to UUIDs for CSV import (format=%s)", request.import_format
+        )
+        updates: dict = {}
+
+        # device_type
+        if request.device_type and not is_valid_uuid(request.device_type):
+            device_type_id = await self.common_service.resolve_device_type_id(
+                request.device_type
+            )
+            if not device_type_id:
+                raise ValueError(
+                    f"Device type '{request.device_type}' not found in Nautobot"
+                )
+            updates["device_type"] = device_type_id
+
+        # role
+        if request.role and not is_valid_uuid(request.role):
+            role_id = await self.common_service.resolve_role_id(request.role)
+            if not role_id:
+                raise ValueError(f"Role '{request.role}' not found in Nautobot")
+            updates["role"] = role_id
+
+        # status
+        if request.status and not is_valid_uuid(request.status):
+            status_id = await self.common_service.resolve_status_id(
+                request.status, content_type="dcim.device"
+            )
+            if not status_id:
+                raise ValueError(f"Status '{request.status}' not found in Nautobot")
+            updates["status"] = status_id
+
+        # location
+        if request.location and not is_valid_uuid(request.location):
+            location_id = await self.common_service.resolve_location_id(request.location)
+            if not location_id:
+                raise ValueError(
+                    f"Location '{request.location}' not found in Nautobot"
+                )
+            updates["location"] = location_id
+
+        # platform (optional field — skip silently if not found)
+        if request.platform and not is_valid_uuid(request.platform):
+            platform_id = await self.common_service.resolve_platform_id(request.platform)
+            if platform_id:
+                updates["platform"] = platform_id
+            else:
+                logger.warning(
+                    "Platform '%s' not found in Nautobot — skipping", request.platform
+                )
+                updates["platform"] = None
+
+        if updates:
+            return request.model_copy(update=updates)
+        return request
 
     async def _step1_create_device(
         self, request: AddDeviceRequest, workflow_status: dict

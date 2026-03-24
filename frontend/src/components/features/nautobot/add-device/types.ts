@@ -182,6 +182,7 @@ export interface DeviceSubmissionData {
   add_prefix: boolean
   default_prefix_length: string
   dry_run?: boolean
+  import_format?: string
 }
 
 export interface DeviceSubmissionResult {

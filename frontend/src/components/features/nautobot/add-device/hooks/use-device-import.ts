@@ -8,7 +8,7 @@ import type {
   DeviceSubmissionData,
   DeviceImportResult,
 } from '../types'
-import type { PrefixConfig } from './use-csv-import'
+import type { PrefixConfig, CsvImportFormat } from './use-csv-import'
 
 /**
  * Converts a parsed CSV device into the backend submission format and posts it.
@@ -20,6 +20,7 @@ export function useDeviceImport() {
     async (
       device: ParsedDevice,
       prefixConfig: PrefixConfig,
+      importFormat: CsvImportFormat,
       dryRun?: boolean
     ): Promise<DeviceImportResult> => {
       try {
@@ -70,6 +71,7 @@ export function useDeviceImport() {
             ? prefixConfig.defaultPrefixLength
             : '',
           dry_run: dryRun === true,
+          import_format: importFormat,
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

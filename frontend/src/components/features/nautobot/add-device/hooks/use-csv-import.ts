@@ -20,6 +20,9 @@ export {
   MANDATORY_INTERFACE_FIELDS,
 } from './use-csv-column-mapping'
 
+// CSV import format
+export type CsvImportFormat = 'generic' | 'nautobot' | 'cockpit'
+
 // Wizard steps
 export type CsvImportStep =
   | 'upload'
@@ -61,6 +64,7 @@ interface UseCsvImportProps {
   onImportDevice: (
     device: ParsedDevice,
     prefixConfig: PrefixConfig,
+    importFormat: CsvImportFormat,
     dryRun?: boolean
   ) => Promise<DeviceImportResult>
 }
@@ -73,6 +77,7 @@ export function useCsvImport({
   const [showModal, setShowModal] = useState(false)
   const [step, setStep] = useState<CsvImportStep>('upload')
   const [delimiter, setDelimiter] = useState(nautobotDefaults?.csv_delimiter || ',')
+  const [importFormat, setImportFormat] = useState<CsvImportFormat>('generic')
 
   // Defaults state
   const [defaults, setDefaults] = useState<Record<string, string>>({})
@@ -121,9 +126,9 @@ export function useCsvImport({
           },
         }
       }
-      return onImportDevice(d, config, dryRun)
+      return onImportDevice(d, config, importFormat, dryRun)
     },
-    [onImportDevice, applyFormTags, applyFormCustomFields, formDefaults]
+    [onImportDevice, applyFormTags, applyFormCustomFields, formDefaults, importFormat]
   )
 
   // Wraps parser.handleFileSelect — after reading, initialises column mapping and defaults
@@ -271,6 +276,7 @@ export function useCsvImport({
     setApplyFormTags(false)
     setApplyFormCustomFields(false)
     setPrefixConfig(DEFAULT_PREFIX_CONFIG)
+    setImportFormat('generic')
     setParseResult(null)
     setDryRunErrors([])
     setDryRunCompleted(false)
@@ -299,6 +305,8 @@ export function useCsvImport({
       headers: parser.headers,
       delimiter,
       setDelimiter,
+      importFormat,
+      setImportFormat,
       handleFileSelect,
 
       // Mapping
@@ -346,6 +354,7 @@ export function useCsvImport({
       goToStep,
       parser,
       delimiter,
+      importFormat,
       handleFileSelect,
       mapping,
       nautobotFields,

@@ -141,6 +141,10 @@ class AddDeviceRequest(BaseModel):
     interfaces: list[InterfaceData] = []
     # Dry run: validate without creating
     dry_run: bool = False
+    # When set, field values are human-readable names (from CSV) rather than UUIDs.
+    # The backend will resolve names → UUIDs before calling Nautobot.
+    # Valid values: "generic", "nautobot", "cockpit"
+    import_format: Optional[str] = None
 
 
 class UpdateDeviceRequest(BaseModel):

@@ -437,6 +437,8 @@ export function AddDevicePage() {
           parseError={csvImport.parseError}
           delimiter={csvImport.delimiter}
           onDelimiterChange={csvImport.setDelimiter}
+          importFormat={csvImport.importFormat}
+          onImportFormatChange={csvImport.setImportFormat}
           onFileSelect={csvImport.handleFileSelect}
           headers={csvImport.headers}
           columnMapping={csvImport.columnMapping}
