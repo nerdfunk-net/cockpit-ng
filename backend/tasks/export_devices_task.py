@@ -536,6 +536,9 @@ def _build_graphql_query(properties: List[str]) -> str:
           dns_name
           parent {
             prefix
+            namespace {
+              name
+            }
           }
           status {
             name
@@ -746,7 +749,18 @@ def _filter_device_properties(
     for device in devices:
         filtered_device = {}
         for prop in properties:
-            if prop in device:
+            if prop == "namespace":
+                # Namespace is nested: primary_ip4 -> parent -> namespace -> name
+                namespace_name = None
+                primary_ip4 = device.get("primary_ip4")
+                if isinstance(primary_ip4, dict):
+                    parent = primary_ip4.get("parent")
+                    if isinstance(parent, dict):
+                        ns = parent.get("namespace")
+                        if isinstance(ns, dict):
+                            namespace_name = ns.get("name")
+                filtered_device["namespace"] = namespace_name
+            elif prop in device:
                 filtered_device[prop] = device[prop]
             else:
                 # Property might be nested or missing

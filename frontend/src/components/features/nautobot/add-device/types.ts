@@ -351,6 +351,8 @@ export const DEFAULT_COLUMN_MAPPINGS: Record<string, string> = {
   // Common shorthand — maps a bare ip_address column directly to an interface IP
   ip_address: 'interface_ip_address',
   ip: 'interface_ip_address',
+  // Common shorthand — maps a bare namespace column (from cockpit CSV export) to interface namespace
+  namespace: 'interface_namespace',
   interface_namespace: 'interface_namespace',
   interface_is_primary_ipv4: 'interface_is_primary_ipv4',
   interface_primary: 'interface_is_primary_ipv4',
