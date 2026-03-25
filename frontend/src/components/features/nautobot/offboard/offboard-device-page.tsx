@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
+import { useToast } from '@/hooks/use-toast'
 import type { OffboardSummary } from '@/types/features/nautobot/offboard'
 
 // Custom hooks
-import { useStatusMessages } from './hooks/use-status-messages'
 import { useDeviceLoader } from './hooks/use-device-loader'
 import { useDeviceFilters } from './hooks/use-device-filters'
 import { useDeviceSelection } from './hooks/use-device-selection'
@@ -16,7 +16,6 @@ import { useUrlParams } from './hooks/use-url-params'
 
 // Components
 import { OffboardHeader } from './components/offboard-header'
-import { StatusMessageCard } from './components/status-message-card'
 import { OffboardPanel } from './components/offboard-panel'
 import { DeviceTable } from './components/device-table'
 import { ConfirmationModal } from './components/confirmation-modal'
@@ -26,11 +25,28 @@ export function OffboardDevicePage() {
   // Auth
   const { isAuthenticated, logout } = useAuthStore()
 
-  // Status messages
-  const { statusMessage, showMessage, clearMessage } = useStatusMessages()
+  // Toast notifications
+  const { toast } = useToast()
+  const showMessage = useCallback(
+    (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
+      const titleMap = {
+        success: 'Success',
+        error: 'Error',
+        warning: 'Warning',
+        info: 'Info',
+      }
+      toast({
+        title: titleMap[type],
+        description: message,
+        variant: type === 'error' ? 'destructive' : 'default',
+      })
+    },
+    [toast]
+  )
 
   // Device loader
-  const { devices, isLoading, dropdownOptions, loadDevices, reloadDevices } = useDeviceLoader()
+  const { devices, isLoading, dropdownOptions, loadDevices, reloadDevices } =
+    useDeviceLoader()
 
   // Device filters
   const {
@@ -40,7 +56,7 @@ export function OffboardDevicePage() {
     setFilters,
     setRoleFilters,
     handleFilterChange,
-    clearAllFilters
+    clearAllFilters,
   } = useDeviceFilters(devices, dropdownOptions)
 
   // Location filter
@@ -52,21 +68,23 @@ export function OffboardDevicePage() {
     setShowLocationDropdown,
     handleLocationSearchChange,
     handleLocationSelect,
-    loadLocations
+    loadLocations,
   } = useLocationFilter()
 
   // Device selection
-  const { selectedDevices, handleSelectDevice, handleSelectAll, clearSelection } = useDeviceSelection()
+  const { selectedDevices, handleSelectDevice, handleSelectAll, clearSelection } =
+    useDeviceSelection()
 
   // Pagination
-  const { pagination, currentPageItems, handlePageChange, handlePageSizeChange } = usePagination(filteredDevices.length)
+  const { pagination, currentPageItems, handlePageChange, handlePageSizeChange } =
+    usePagination(filteredDevices.length)
 
   // Offboard operations
   const {
     isSubmitting,
     offboardProperties,
     setOffboardProperties,
-    handleOffboardDevices
+    handleOffboardDevices,
   } = useOffboardOperations({ showMessage })
 
   // URL params
@@ -88,9 +106,7 @@ export function OffboardDevicePage() {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        showMessage('Loading devices...', 'info')
         await Promise.all([loadDevices(), loadLocations()])
-        clearMessage()
       } catch (error) {
         showMessage(
           `Failed to load initial data: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -104,16 +120,15 @@ export function OffboardDevicePage() {
   // Handlers
   const handleReloadDevices = useCallback(async () => {
     try {
-      showMessage('Reloading devices from Nautobot...', 'info')
       await reloadDevices()
-      clearMessage()
+      showMessage('Devices reloaded successfully', 'success')
     } catch (error) {
       showMessage(
         `Failed to reload devices: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'error'
       )
     }
-  }, [reloadDevices, showMessage, clearMessage])
+  }, [reloadDevices, showMessage])
 
   const confirmOffboard = useCallback(() => {
     if (selectedDevices.size === 0) {
@@ -125,13 +140,13 @@ export function OffboardDevicePage() {
 
   const handleConfirmRemove = useCallback(async () => {
     setShowConfirmationModal(false)
-    
+
     try {
       const summary = await handleOffboardDevices(Array.from(selectedDevices), devices)
       setOffboardSummary(summary)
       setShowResultsModal(true)
       clearSelection()
-      
+
       // Refresh device list after offboarding
       setTimeout(() => loadDevices(), 1000)
     } catch (error) {
@@ -158,11 +173,6 @@ export function OffboardDevicePage() {
       {/* Header */}
       <OffboardHeader />
 
-      {/* Status Messages */}
-      {statusMessage && (
-        <StatusMessageCard message={statusMessage} onDismiss={clearMessage} />
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Offboarding Panel */}
         <div className="lg:col-span-1">
@@ -170,7 +180,9 @@ export function OffboardDevicePage() {
             selectedCount={selectedDevices.size}
             isSubmitting={isSubmitting}
             offboardProperties={offboardProperties}
-            onOffboardPropertiesChange={(props) => setOffboardProperties(prev => ({ ...prev, ...props }))}
+            onOffboardPropertiesChange={props =>
+              setOffboardProperties(prev => ({ ...prev, ...props }))
+            }
             onOffboard={confirmOffboard}
             isFormValid={selectedDevices.size > 0}
           />
@@ -191,7 +203,7 @@ export function OffboardDevicePage() {
             showLocationDropdown={showLocationDropdown}
             locationContainerRef={locationContainerRef}
             onSelectDevice={handleSelectDevice}
-            onSelectAll={(checked) => handleSelectAll(currentPageDevices, checked)}
+            onSelectAll={checked => handleSelectAll(currentPageDevices, checked)}
             onFilterChange={handleFilterChange}
             onRoleFiltersChange={setRoleFilters}
             onLocationSearchChange={handleLocationSearchChange}
