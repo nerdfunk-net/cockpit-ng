@@ -103,6 +103,7 @@ async def get_field_options(
                 {"value": "manufacturer", "label": "Manufacturer"},
                 {"value": "platform", "label": "Platform"},
                 {"value": "has_primary", "label": "Has Primary"},
+                {"value": "ip_prefix", "label": "IP Prefix"},
                 {"value": "custom_fields", "label": "Custom Fields..."},
             ],
             "operators": [

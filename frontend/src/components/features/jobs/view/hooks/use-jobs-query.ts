@@ -3,7 +3,6 @@ import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import type { PaginatedResponse, JobSearchParams } from '../types'
 import { STALE_TIME, JOB_POLL_INTERVAL } from '../utils/constants'
-import { hasActiveJobs } from '../utils/job-utils'
 
 interface UseJobsQueryOptions {
   params?: JobSearchParams

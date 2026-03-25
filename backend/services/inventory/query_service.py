@@ -714,6 +714,108 @@ class InventoryQueryService:
 
         return devices
 
+    async def _query_devices_by_ip_prefix(
+        self, prefix_filter: str, operator: str = "within_include"
+    ) -> List[DeviceInfo]:
+        """Query devices by IP prefix using GraphQL.
+
+        Traverses: prefixes → ip_addresses → interface_assignments → interface → device.
+        IP addresses without interface assignments are ignored.
+        Devices are deduplicated by ID.
+
+        The value may optionally include a namespace name after the CIDR, separated by
+        a space (e.g. "192.168.183.0/24 Global"). When present, the namespace is added
+        as an additional filter to the GraphQL query.
+
+        Args:
+            prefix_filter: CIDR notation with optional namespace
+                           (e.g., "192.168.183.0/24" or "192.168.183.0/24 Global")
+            operator: One of "within_include", "within", "exact"
+        """
+        import service_factory
+
+        nautobot_service = service_factory.build_nautobot_service()
+
+        if not prefix_filter or prefix_filter.strip() == "":
+            logger.warning("Empty prefix_filter provided, returning empty result")
+            return []
+
+        # Split CIDR and optional namespace: "192.168.183.0/24 Global" → ("192.168.183.0/24", "Global")
+        parts = prefix_filter.strip().split(None, 1)
+        cidr = parts[0]
+        namespace = parts[1].strip() if len(parts) > 1 else None
+
+        namespace_arg = f', namespace: "{namespace}"' if namespace else ""
+
+        if operator == "within":
+            prefix_arg = f'within: "{cidr}"{namespace_arg}'
+        elif operator == "exact":
+            prefix_arg = f'prefix: "{cidr}"{namespace_arg}'
+        else:
+            prefix_arg = f'within_include: "{cidr}"{namespace_arg}'
+
+        logger.info(
+            "ip_prefix query: cidr='%s', namespace=%s, operator=%s",
+            cidr,
+            namespace,
+            operator,
+        )
+
+        query = f"""
+        query devices_by_ip_prefix {{
+            prefixes({prefix_arg}) {{
+                ip_addresses {{
+                    interface_assignments {{
+                        interface {{
+                            device {{
+                                id
+                                name
+                                serial
+                                primary_ip4 {{ address }}
+                                status {{ name }}
+                                device_type {{ model manufacturer {{ name }} }}
+                                role {{ name }}
+                                location {{ name }}
+                                tags {{ name }}
+                                platform {{ name }}
+                            }}
+                        }}
+                    }}
+                }}
+            }}
+        }}
+        """
+
+        result = await nautobot_service.graphql_query(query, {})
+
+        if "errors" in result:
+            logger.error("GraphQL errors in ip_prefix query: %s", result["errors"])
+            return []
+
+        prefixes_data = result.get("data", {}).get("prefixes", [])
+        seen_ids: Dict[str, DeviceInfo] = {}
+
+        for prefix in prefixes_data:
+            for ip_addr in prefix.get("ip_addresses", []):
+                for assignment in ip_addr.get("interface_assignments", []):
+                    interface = assignment.get("interface") or {}
+                    device_data = interface.get("device") or {}
+                    device_id = device_data.get("id")
+                    if device_id and device_id not in seen_ids:
+                        parsed = self._parse_device_data([device_data])
+                        if parsed:
+                            seen_ids[device_id] = parsed[0]
+
+        devices = list(seen_ids.values())
+        logger.info(
+            "ip_prefix query '%s' namespace=%s (operator=%s) returned %s unique devices",
+            cidr,
+            namespace,
+            operator,
+            len(devices),
+        )
+        return devices
+
     def _parse_device_data(
         self, devices_data: List[Dict[str, Any]]
     ) -> List[DeviceInfo]:
