@@ -1,24 +1,27 @@
-"""Celery Beat scheduler entry point.
-Run with: celery -A celery_beat beat --loglevel=info
+"""
+Celery Beat entry point for `celery -A celery_beat beat` invocation style.
+
+PREFERRED: Use `python start_beat.py` instead.
+  - Includes proper startup banner
+  - Validates schedule count on startup
+  - Handles KeyboardInterrupt cleanly
+
+This file is kept for compatibility with environments that call
+`celery -A celery_beat beat` directly (e.g., some Docker setups).
 """
 
-from celery_app import celery_app
+from celery_app import celery_app  # noqa: F401
 
-# Import worker lifecycle signals (for database connection handling)
-# Note: Beat runs as a single process, but signals ensure proper DB initialization
 import core.celery_signals  # noqa: F401 - Import for side effects (signal registration)
 
-# Import all tasks and schedules to register them
 try:
     from tasks import *  # noqa: F403 - intentional star import for task registration
 except ImportError:
-    # tasks module not yet created, will be added later
     pass
 
 try:
-    from beat_schedule import CELERY_BEAT_SCHEDULE  # noqa: F401 - imported for side effects
+    from beat_schedule import CELERY_BEAT_SCHEDULE  # noqa: F401
 except ImportError:
-    # beat_schedule.py not yet created, will be added later
     pass
 
 if __name__ == "__main__":

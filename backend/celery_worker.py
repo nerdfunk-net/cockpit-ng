@@ -1,18 +1,24 @@
-"""Celery worker entry point.
-Run with: celery -A celery_worker worker --loglevel=info
+"""
+Celery worker entry point for `celery -A celery_worker worker` invocation style.
+
+PREFERRED: Use `python start_celery.py` instead.
+  - Auto-detects macOS vs Linux and selects appropriate pool (solo vs prefork)
+  - Installs certificates from config/certs/ if INSTALL_CERTIFICATE_FILES=true
+  - Loads queue list from database when CELERY_WORKER_QUEUE is not set
+  - Handles KeyboardInterrupt cleanly
+
+This file is kept for compatibility with environments that call
+`celery -A celery_worker worker` directly (e.g., some Docker setups that
+override the pool and queue arguments themselves).
 """
 
-from celery_app import celery_app
+from celery_app import celery_app  # noqa: F401
 
-# Import worker lifecycle signals (MUST be imported before starting worker)
-# This ensures each worker process gets its own isolated database engine
 import core.celery_signals  # noqa: F401 - Import for side effects (signal registration)
 
-# Import all tasks to register them
 try:
     from tasks import *  # noqa: F403 - intentional star import for task registration
 except ImportError:
-    # tasks module not yet created, will be added later
     pass
 
 if __name__ == "__main__":

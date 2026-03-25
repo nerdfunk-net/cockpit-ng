@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, name="cache_all_locations")
-def cache_all_locations_task(self) -> Dict[str, Any]:
+def cache_all_locations_task(self, job_run_id: int = None) -> Dict[str, Any]:
     """
     Celery task to fetch all locations from Nautobot and cache them in Redis.
 
@@ -78,11 +78,15 @@ def cache_all_locations_task(self) -> Dict[str, Any]:
 
         if total_locations == 0:
             logger.warning("Task %s: No locations found in Nautobot", self.request.id)
-            return {
+            result = {
                 "status": "completed",
                 "message": "No locations found to cache",
                 "cached": 0,
             }
+            if job_run_id:
+                import job_run_manager
+                job_run_manager.mark_completed(job_run_id, result=result)
+            return result
 
         logger.info(
             "Task %s: Processing %s locations", self.request.id, total_locations
@@ -111,19 +115,28 @@ def cache_all_locations_task(self) -> Dict[str, Any]:
             total_locations,
         )
 
-        return {
+        result = {
             "status": "completed",
-            "message": f"Successfully cached {total_locations} locations",
+            "message": "Successfully cached %d locations" % total_locations,
             "cached": total_locations,
             "total": total_locations,
         }
+        if job_run_id:
+            import job_run_manager
+            job_run_manager.mark_completed(job_run_id, result=result)
+        return result
 
     except Exception as e:
+        error_msg = str(e)
         logger.error(
-            "Task %s failed with exception: %s", self.request.id, e, exc_info=True
+            "Task %s failed with exception: %s", self.request.id, error_msg, exc_info=True
         )
-        return {
+        result = {
             "status": "failed",
-            "error": str(e),
+            "error": error_msg,
             "cached": 0,
         }
+        if job_run_id:
+            import job_run_manager
+            job_run_manager.mark_failed(job_run_id, error_msg)
+        return result

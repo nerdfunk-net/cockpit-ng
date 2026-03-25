@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, name="cache_all_devices")
-def cache_all_devices_task(self) -> Dict[str, Any]:
+def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
     """
     Celery task to fetch all devices from Nautobot and cache them in Redis.
 
@@ -180,17 +180,17 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
         # Determine final status
         if failed_count == 0:
             status = "completed"
-            message = f"Successfully cached all {cached_count} devices"
+            message = "Successfully cached all %d devices" % cached_count
         elif cached_count == 0:
             status = "failed"
-            message = f"Failed to cache any devices ({failed_count} failures)"
+            message = "Failed to cache any devices (%d failures)" % failed_count
         else:
             status = "completed_with_errors"
-            message = f"Cached {cached_count} devices with {failed_count} failures"
+            message = "Cached %d devices with %d failures" % (cached_count, failed_count)
 
         logger.info("Task %s: %s", self.request.id, message)
 
-        return {
+        result = {
             "status": status,
             "message": message,
             "cached": cached_count,
@@ -198,16 +198,30 @@ def cache_all_devices_task(self) -> Dict[str, Any]:
             "total": total_devices,
         }
 
+        if job_run_id:
+            import job_run_manager
+            if status == "failed":
+                job_run_manager.mark_failed(job_run_id, message)
+            else:
+                job_run_manager.mark_completed(job_run_id, result=result)
+
+        return result
+
     except Exception as e:
+        error_msg = str(e)
         logger.error(
-            "Task %s failed with exception: %s", self.request.id, e, exc_info=True
+            "Task %s failed with exception: %s", self.request.id, error_msg, exc_info=True
         )
-        return {
+        result = {
             "status": "failed",
-            "error": str(e),
+            "error": error_msg,
             "cached": 0,
             "failed": 0,
         }
+        if job_run_id:
+            import job_run_manager
+            job_run_manager.mark_failed(job_run_id, error_msg)
+        return result
 
 
 @shared_task(bind=True, name="cache_single_device")

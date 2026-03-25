@@ -7,12 +7,39 @@ from celery import shared_task
 from celery_app import celery_app
 import logging
 from datetime import datetime, timezone
-from typing import Dict
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Track last run times for cache tasks (in-memory, reset on worker restart)
-_last_cache_runs: Dict[str, datetime] = {}
+
+def _get_last_cache_run(cache_type: str) -> Optional[datetime]:
+    """Read last run timestamp for a cache type from Redis."""
+    try:
+        import redis
+        from config import settings
+
+        r = redis.from_url(settings.redis_url)
+        key = "cockpit-ng:cache:last_run:%s" % cache_type
+        value = r.get(key)
+        if value:
+            return datetime.fromisoformat(value.decode())
+        return None
+    except Exception as e:
+        logger.warning("Failed to read last cache run for %s: %s", cache_type, e)
+        return None
+
+
+def _set_last_cache_run(cache_type: str, ts: datetime) -> None:
+    """Write last run timestamp for a cache type to Redis (TTL: 7 days)."""
+    try:
+        import redis
+        from config import settings
+
+        r = redis.from_url(settings.redis_url)
+        key = "cockpit-ng:cache:last_run:%s" % cache_type
+        r.set(key, ts.isoformat(), ex=604800)  # 7 days TTL
+    except Exception as e:
+        logger.warning("Failed to write last cache run for %s: %s", cache_type, e)
 
 
 @shared_task(name="tasks.worker_health_check")
@@ -28,9 +55,6 @@ def worker_health_check() -> dict:
     """
     try:
         inspect = celery_app.control.inspect()
-
-        # Get active workers
-        inspect.active()
         stats = inspect.stats()
 
         active_workers = len(stats) if stats else 0
@@ -40,7 +64,7 @@ def worker_health_check() -> dict:
         return {
             "success": True,
             "active_workers": active_workers,
-            "message": f"{active_workers} workers active",
+            "message": "%d workers active" % active_workers,
         }
 
     except Exception as e:
@@ -60,8 +84,6 @@ def load_cache_schedules_task() -> dict:
 
     Dispatches the appropriate cache task with job tracking when due.
     """
-    global _last_cache_runs
-
     try:
         from settings_manager import settings_manager
 
@@ -76,16 +98,15 @@ def load_cache_schedules_task() -> dict:
         # Check devices cache
         devices_interval = cache_settings.get("devices_cache_interval_minutes", 60)
         if devices_interval > 0:
-            last_run = _last_cache_runs.get("devices")
+            last_run = _get_last_cache_run("devices")
             if (
                 last_run is None
                 or (now - last_run).total_seconds() >= devices_interval * 60
             ):
-                # Dispatch devices cache task with tracking
                 dispatch_cache_task.delay(
                     cache_type="devices", task_name="cache_all_devices"
                 )
-                _last_cache_runs["devices"] = now
+                _set_last_cache_run("devices", now)
                 dispatched.append("devices")
                 logger.info(
                     "Dispatched devices cache task (interval: %sm)", devices_interval
@@ -94,40 +115,19 @@ def load_cache_schedules_task() -> dict:
         # Check locations cache
         locations_interval = cache_settings.get("locations_cache_interval_minutes", 10)
         if locations_interval > 0:
-            last_run = _last_cache_runs.get("locations")
+            last_run = _get_last_cache_run("locations")
             if (
                 last_run is None
                 or (now - last_run).total_seconds() >= locations_interval * 60
             ):
-                # Dispatch locations cache task with tracking
                 dispatch_cache_task.delay(
                     cache_type="locations", task_name="cache_all_locations"
                 )
-                _last_cache_runs["locations"] = now
+                _set_last_cache_run("locations", now)
                 dispatched.append("locations")
                 logger.info(
                     "Dispatched locations cache task (interval: %sm)",
                     locations_interval,
-                )
-
-        # Check git commits cache (placeholder for future implementation)
-        git_interval = cache_settings.get("git_commits_cache_interval_minutes", 15)
-        if git_interval > 0:
-            last_run = _last_cache_runs.get("git_commits")
-            if (
-                last_run is None
-                or (now - last_run).total_seconds() >= git_interval * 60
-            ):
-                # TODO: Dispatch git commits cache task when implemented
-                # dispatch_cache_task.delay(
-                #     cache_type='git_commits',
-                #     task_name='cache_git_commits'
-                # )
-                _last_cache_runs["git_commits"] = now
-                # dispatched.append('git_commits')
-                logger.debug(
-                    "Git commits cache task not yet implemented (interval: %sm)",
-                    git_interval,
                 )
 
         return {
@@ -137,7 +137,6 @@ def load_cache_schedules_task() -> dict:
             "intervals": {
                 "devices": devices_interval,
                 "locations": locations_interval,
-                "git_commits": git_interval,
             },
         }
 
@@ -149,71 +148,55 @@ def load_cache_schedules_task() -> dict:
 @shared_task(bind=True, name="tasks.dispatch_cache_task")
 def dispatch_cache_task(self, cache_type: str, task_name: str) -> dict:
     """
-    Dispatch a cache task and track it in job_runs.
+    Create a job run record and dispatch the named cache task asynchronously.
+
+    The cache task itself is responsible for calling mark_completed / mark_failed
+    via the job_run_id kwarg passed here.
 
     Args:
-        cache_type: Type of cache (devices, locations, git_commits)
-        task_name: Celery task name to execute
+        cache_type: Human-readable type (devices, locations)
+        task_name: Celery task name string (cache_all_devices, cache_all_locations)
     """
     try:
         import job_run_manager
+        from services.background_jobs import cache_all_devices_task, cache_all_locations_task
 
-        # Create job run record
+        task_map = {
+            "cache_all_devices": cache_all_devices_task,
+            "cache_all_locations": cache_all_locations_task,
+        }
+
+        celery_task = task_map.get(task_name)
+        if not celery_task:
+            logger.error("Unknown cache task: %s", task_name)
+            return {"success": False, "error": "Unknown task: %s" % task_name}
+
+        # Create job run record before dispatching
         job_run = job_run_manager.create_job_run(
-            job_name=f"Cache {cache_type.replace('_', ' ').title()}",
-            job_type=f"cache_{cache_type}",
+            job_name="Cache %s" % cache_type.replace("_", " ").title(),
+            job_type="cache_%s" % cache_type,
             triggered_by="system",
         )
         job_run_id = job_run["id"]
 
-        # Mark as started
-        job_run_manager.mark_started(job_run_id, self.request.id)
+        # Dispatch asynchronously — the cache task marks itself completed/failed
+        async_result = celery_task.apply_async(kwargs={"job_run_id": job_run_id})
 
-        try:
-            # Execute the actual cache task using .apply() to get a proper task context
-            # This runs synchronously but gives the task access to self.request.id
-            if task_name == "cache_all_devices":
-                from services.background_jobs import cache_all_devices_task
+        # Mark started with the REAL task ID
+        job_run_manager.mark_started(job_run_id, async_result.id)
 
-                async_result = cache_all_devices_task.apply()
-                result = (
-                    async_result.result
-                    if async_result.successful()
-                    else {"status": "failed", "error": str(async_result.result)}
-                )
-            elif task_name == "cache_all_locations":
-                from services.background_jobs import cache_all_locations_task
+        logger.info(
+            "Dispatched %s cache task (job_run=%s, celery_task=%s)",
+            cache_type,
+            job_run_id,
+            async_result.id,
+        )
 
-                async_result = cache_all_locations_task.apply()
-                result = (
-                    async_result.result
-                    if async_result.successful()
-                    else {"status": "failed", "error": str(async_result.result)}
-                )
-            elif task_name == "cache_git_commits":
-                # Placeholder for git commits cache
-                result = {
-                    "status": "not_implemented",
-                    "message": "Git commits cache not yet implemented",
-                }
-            else:
-                result = {"status": "error", "message": f"Unknown task: {task_name}"}
-
-            # Check result status
-            status = result.get("status", "completed")
-            if status in ["completed", "success"]:
-                job_run_manager.mark_completed(job_run_id, result=result)
-                return {"success": True, "job_run_id": job_run_id, "result": result}
-            else:
-                error_msg = (
-                    result.get("error") or result.get("message") or "Unknown error"
-                )
-                job_run_manager.mark_failed(job_run_id, error_msg)
-                return {"success": False, "job_run_id": job_run_id, "error": error_msg}
-
-        except Exception as e:
-            job_run_manager.mark_failed(job_run_id, str(e))
-            raise
+        return {
+            "success": True,
+            "job_run_id": job_run_id,
+            "celery_task_id": async_result.id,
+        }
 
     except Exception as e:
         logger.error(

@@ -19,52 +19,6 @@ celery_app = Celery(
 )
 
 
-def load_queue_configuration():
-    """
-    Load queue configuration from database settings.
-
-    IMPORTANT: This function is NOT called at module import time to avoid
-    database connections before worker processes fork (which causes SIGSEGV on macOS).
-
-    Instead, we use a static default configuration that matches the database defaults.
-    Queue configuration changes require a worker restart.
-
-    Returns a dict of queue configurations based on what's stored in the database.
-    If database is not available or no queues configured, returns default queue only.
-    """
-    try:
-        from settings_manager import settings_manager
-
-        celery_settings = settings_manager.get_celery_settings()
-        configured_queues = celery_settings.get("queues", [])
-
-        if not configured_queues:
-            logger.warning("No queues configured in database, using default queue only")
-            configured_queues = [{"name": "default", "description": "Default queue"}]
-
-        # Build task_queues dict from database configuration
-        task_queues = {}
-        for queue in configured_queues:
-            queue_name = queue.get("name", "default")
-            task_queues[queue_name] = {
-                "exchange": queue_name,
-                "routing_key": queue_name,
-            }
-            logger.info(
-                "Loaded queue from database: %s - %s",
-                queue_name,
-                queue.get("description", ""),
-            )
-
-        logger.info("Loaded %s queue(s) from database configuration", len(task_queues))
-        return task_queues
-
-    except Exception as e:
-        logger.error("Failed to load queues from database: %s", e)
-        logger.warning("Falling back to default queue configuration")
-        return get_default_queue_configuration()
-
-
 def get_default_queue_configuration():
     """
     Return default queue configuration without database access.
@@ -108,10 +62,7 @@ def get_default_queue_configuration():
     }
 
 
-# Use static default configuration to avoid database access before forking
-# NOTE: Previously this called load_queue_configuration() which accessed the database
-# at import time, causing SIGSEGV on macOS when workers forked
-#
+# Use static default configuration to avoid database access before forking.
 # Custom queues can be added by super users via:
 # 1. Settings UI (for documentation)
 # 2. CELERY_WORKER_QUEUE env var (tells worker which queue to listen to)

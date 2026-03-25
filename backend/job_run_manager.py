@@ -255,8 +255,6 @@ def cleanup_old_runs(days: int = 30) -> int:
 
 def cleanup_old_runs_hours(hours: int = 24) -> int:
     """Delete job runs older than specified hours"""
-    # Convert hours to days (fractional)
-    hours / 24.0
     count = repo.cleanup_old_runs_hours(hours)
     logger.info("Cleaned up %s old job runs (older than %s hours)", count, hours)
     return count
