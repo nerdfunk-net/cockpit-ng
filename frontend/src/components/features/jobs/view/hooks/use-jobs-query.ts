@@ -50,22 +50,17 @@ export function useJobsQuery(options: UseJobsQueryOptions = DEFAULT_OPTIONS) {
       const queryString = searchParams.toString()
       const endpoint = queryString ? `job-runs?${queryString}` : 'job-runs'
 
-      const response = await apiCall<PaginatedResponse>(endpoint, { method: 'GET' })
-      return response
+      return apiCall<PaginatedResponse>(endpoint, { method: 'GET' })
     },
     enabled,
     staleTime: STALE_TIME.JOBS_LIST,
     // Keep previous data while fetching next page (prevents UI flicker)
     placeholderData: keepPreviousData,
 
-    // Auto-refresh when jobs are running
-    // CRITICAL: Replaces manual setInterval (lines 281-291)
-    refetchInterval: (query) => {
-      const data = query.state.data
-      if (!data?.items) return false
-
-      // Auto-poll every 3s if any job is running/pending
-      return hasActiveJobs(data.items) ? JOB_POLL_INTERVAL : false
-    },
+    // Always poll while the Jobs page is mounted.
+    // Checking only the current page's items for active jobs is unreliable:
+    // a running job sorted by queued_at may be on a page other than page 1
+    // when more-recently-queued completed jobs push it off the visible page.
+    refetchInterval: JOB_POLL_INTERVAL,
   })
 }

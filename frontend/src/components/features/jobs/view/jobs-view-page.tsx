@@ -42,7 +42,7 @@ export function JobsViewPage() {
   }), [page, statusFilter, jobTypeFilter, triggerFilter, templateFilter])
 
   // TanStack Query hooks
-  const { data: jobsData, isLoading, refetch } = useJobsQuery({ params: queryParams })
+  const { data: jobsData, isLoading, refetch, isFetching } = useJobsQuery({ params: queryParams })
   const { data: viewingJob } = useJobDetailQuery(viewingJobId)
   const { data: jobProgress = EMPTY_PROGRESS } = useAllJobsProgress(jobsData?.items || EMPTY_ARRAY)
 
@@ -170,7 +170,7 @@ export function JobsViewPage() {
             onTemplateChange={handleFilterChange(setTemplateFilter)}
             onRefresh={() => refetch()}
             onClearHistory={handleClearHistory}
-            isRefreshing={isLoading}
+            isRefreshing={isFetching}
             isClearing={clearFilteredHistory.isPending || clearAllHistory.isPending}
             hasJobs={jobs.length > 0}
             hasActiveFilters={hasActiveFilters}

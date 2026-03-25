@@ -558,6 +558,7 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "settings.cache:read",
         "settings.credentials:read",
         "settings.templates:read",
+        "settings.nautobot:read",
         # Jobs
         "jobs:read",
         "jobs:execute",

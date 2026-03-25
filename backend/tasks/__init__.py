@@ -10,7 +10,7 @@ Tasks are organized by function:
 from .scheduling import check_job_schedules_task, dispatch_job
 
 # Import test tasks
-from .test_tasks import test_task, test_progress_task
+from .test_tasks import test_task, test_progress_task, debug_wait_task
 
 # Import onboard device task
 from .onboard_device_task import onboard_device_task
