@@ -48,6 +48,7 @@ def execute_job_type(
     from .deploy_agent_executor import execute_deploy_agent
     from .ip_addresses_executor import execute_ip_addresses
     from .csv_import_executor import execute_csv_import
+    from .csv_export_executor import execute_csv_export
 
     # Map job_type to execution function
     job_executors = {
@@ -60,6 +61,7 @@ def execute_job_type(
         "deploy_agent": execute_deploy_agent,
         "ip_addresses": execute_ip_addresses,
         "csv_import": execute_csv_import,
+        "csv_export": execute_csv_export,
     }
 
     executor = job_executors.get(job_type)

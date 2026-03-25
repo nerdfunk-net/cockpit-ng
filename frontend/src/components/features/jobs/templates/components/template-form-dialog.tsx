@@ -1,14 +1,37 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Plus, Edit } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useTemplateMutations } from '../hooks/use-template-mutations'
-import { useIpAddressStatuses, useIpAddressTags, useCsvImportRepos, useCsvFiles, useCsvHeaders, useNautobotDefaults } from '../hooks/use-template-queries'
-import { useCsvImportNautobotQuery, EMPTY_CSV_IMPORT_NAUTOBOT_DATA } from '../hooks/use-csv-import-nautobot-query'
-import { EMPTY_IP_STATUSES, EMPTY_IP_TAGS, EMPTY_REPOS, EMPTY_CSV_FILES, EMPTY_HEADERS } from '../utils/constants'
+import {
+  useIpAddressStatuses,
+  useIpAddressTags,
+  useCsvImportRepos,
+  useCsvExportRepos,
+  useCsvFiles,
+  useCsvHeaders,
+  useNautobotDefaults,
+} from '../hooks/use-template-queries'
+import {
+  useCsvImportNautobotQuery,
+  EMPTY_CSV_IMPORT_NAUTOBOT_DATA,
+} from '../hooks/use-csv-import-nautobot-query'
+import {
+  EMPTY_IP_STATUSES,
+  EMPTY_IP_TAGS,
+  EMPTY_REPOS,
+  EMPTY_CSV_FILES,
+  EMPTY_HEADERS,
+} from '../utils/constants'
 import { JobTemplateCommonFields } from './JobTemplateCommonFields'
 import { JobTemplateConfigRepoSection } from './JobTemplateConfigRepoSection'
 import { JobTemplateInventorySection } from './JobTemplateInventorySection'
@@ -17,13 +40,24 @@ import { RunCommandsJobTemplate } from './template-types/RunCommandsJobTemplate'
 import { SyncDevicesJobTemplate } from './template-types/SyncDevicesJobTemplate'
 import { CompareDevicesJobTemplate } from './template-types/CompareDevicesJobTemplate'
 import { ScanPrefixesJobTemplate } from './template-types/ScanPrefixesJobTemplate'
-import { DeployAgentJobTemplate, generateEntryKey } from './template-types/DeployAgentJobTemplate'
+import {
+  DeployAgentJobTemplate,
+  generateEntryKey,
+} from './template-types/DeployAgentJobTemplate'
 import { MaintainIPAddressesJobTemplate } from './template-types/MaintainIPAddressesJobTemplate'
 import { CsvImportJobTemplate } from './template-types/CsvImportJobTemplate'
+import { CsvExportJobTemplate } from './template-types/CsvExportJobTemplate'
 import { CsvImportMappingDialog } from './template-types/CsvImportMappingDialog'
 import { CsvImportDefaultsPanel } from './csv-import-defaults-panel'
 import type { DeployTemplateEntryData } from './template-types/DeployTemplateEntry'
-import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField } from '../types'
+import type {
+  JobTemplate,
+  JobType,
+  GitRepository,
+  SavedInventory,
+  CommandTemplate,
+  CustomField,
+} from '../types'
 import { JOB_TYPE_COLORS } from '../utils/constants'
 
 interface TemplateFormDialogProps {
@@ -49,167 +83,216 @@ export function TemplateFormDialog({
   commandTemplates,
   customFields,
   loadingInventories,
-  onSaved
+  onSaved,
 }: TemplateFormDialogProps) {
   const user = useAuthStore(state => state.user)
   const { createTemplate, updateTemplate } = useTemplateMutations()
 
   // Form state
-  const [formName, setFormName] = useState("")
-  const [formJobType, setFormJobType] = useState("")
-  const [formDescription, setFormDescription] = useState("")
+  const [formName, setFormName] = useState('')
+  const [formJobType, setFormJobType] = useState('')
+  const [formDescription, setFormDescription] = useState('')
   const [formConfigRepoId, setFormConfigRepoId] = useState<number | null>(null)
-  const [formInventorySource, setFormInventorySource] = useState<"all" | "inventory">("all")
-  const [formInventoryName, setFormInventoryName] = useState("")
-  const [formCommandTemplate, setFormCommandTemplate] = useState("")
-  const [formBackupRunningConfigPath, setFormBackupRunningConfigPath] = useState("")
-  const [formBackupStartupConfigPath, setFormBackupStartupConfigPath] = useState("")
-  const [formWriteTimestampToCustomField, setFormWriteTimestampToCustomField] = useState(false)
-  const [formTimestampCustomFieldName, setFormTimestampCustomFieldName] = useState("")
+  const [formInventorySource, setFormInventorySource] = useState<'all' | 'inventory'>(
+    'all'
+  )
+  const [formInventoryName, setFormInventoryName] = useState('')
+  const [formCommandTemplate, setFormCommandTemplate] = useState('')
+  const [formBackupRunningConfigPath, setFormBackupRunningConfigPath] = useState('')
+  const [formBackupStartupConfigPath, setFormBackupStartupConfigPath] = useState('')
+  const [formWriteTimestampToCustomField, setFormWriteTimestampToCustomField] =
+    useState(false)
+  const [formTimestampCustomFieldName, setFormTimestampCustomFieldName] = useState('')
   const [formParallelTasks, setFormParallelTasks] = useState(1)
   const [formActivateChangesAfterSync, setFormActivateChangesAfterSync] = useState(true)
   const [formScanResolveDns, setFormScanResolveDns] = useState(false)
-  const [formScanPingCount, setFormScanPingCount] = useState("")
-  const [formScanTimeoutMs, setFormScanTimeoutMs] = useState("")
-  const [formScanRetries, setFormScanRetries] = useState("")
-  const [formScanIntervalMs, setFormScanIntervalMs] = useState("")
-  const [formScanCustomFieldName, setFormScanCustomFieldName] = useState("")
-  const [formScanCustomFieldValue, setFormScanCustomFieldValue] = useState("")
-  const [formScanResponseCustomFieldName, setFormScanResponseCustomFieldName] = useState("")
+  const [formScanPingCount, setFormScanPingCount] = useState('')
+  const [formScanTimeoutMs, setFormScanTimeoutMs] = useState('')
+  const [formScanRetries, setFormScanRetries] = useState('')
+  const [formScanIntervalMs, setFormScanIntervalMs] = useState('')
+  const [formScanCustomFieldName, setFormScanCustomFieldName] = useState('')
+  const [formScanCustomFieldValue, setFormScanCustomFieldValue] = useState('')
+  const [formScanResponseCustomFieldName, setFormScanResponseCustomFieldName] =
+    useState('')
   const [formScanSetReachableIpActive, setFormScanSetReachableIpActive] = useState(true)
-  const [formScanMaxIps, setFormScanMaxIps] = useState("")
-  const [formDeployAgentId, setFormDeployAgentId] = useState("")
-  const [formDeployTemplateEntries, setFormDeployTemplateEntries] = useState<DeployTemplateEntryData[]>([
-    { _key: generateEntryKey(), templateId: null, inventoryId: null, path: '', customVariables: {} }
+  const [formScanMaxIps, setFormScanMaxIps] = useState('')
+  const [formDeployAgentId, setFormDeployAgentId] = useState('')
+  const [formDeployTemplateEntries, setFormDeployTemplateEntries] = useState<
+    DeployTemplateEntryData[]
+  >([
+    {
+      _key: generateEntryKey(),
+      templateId: null,
+      inventoryId: null,
+      path: '',
+      customVariables: {},
+    },
   ])
   const [formActivateAfterDeploy, setFormActivateAfterDeploy] = useState(true)
   // Maintain IP-Addresses
-  const [formIpAction, setFormIpAction] = useState("list")
-  const [formIpFilterField, setFormIpFilterField] = useState("")
-  const [formIpFilterType, setFormIpFilterType] = useState("__eq__")
-  const [formIpFilterValue, setFormIpFilterValue] = useState("")
+  const [formIpAction, setFormIpAction] = useState('list')
+  const [formIpFilterField, setFormIpFilterField] = useState('')
+  const [formIpFilterType, setFormIpFilterType] = useState('__eq__')
+  const [formIpFilterValue, setFormIpFilterValue] = useState('')
   const [formIpIncludeNull, setFormIpIncludeNull] = useState(false)
   // Mark action options
-  const [formIpMarkStatus, setFormIpMarkStatus] = useState("")
-  const [formIpMarkTag, setFormIpMarkTag] = useState("")
-  const [formIpMarkDescription, setFormIpMarkDescription] = useState("")
+  const [formIpMarkStatus, setFormIpMarkStatus] = useState('')
+  const [formIpMarkTag, setFormIpMarkTag] = useState('')
+  const [formIpMarkDescription, setFormIpMarkDescription] = useState('')
   // Remove action options
   const [formIpRemoveSkipAssigned, setFormIpRemoveSkipAssigned] = useState(true)
   // CSV Import
   const [formCsvImportRepoId, setFormCsvImportRepoId] = useState<number | null>(null)
-  const [formCsvImportFilePath, setFormCsvImportFilePath] = useState("")
-  const [formCsvImportType, setFormCsvImportType] = useState("")
-  const [formCsvImportPrimaryKey, setFormCsvImportPrimaryKey] = useState("")
+  const [formCsvImportFilePath, setFormCsvImportFilePath] = useState('')
+  const [formCsvImportType, setFormCsvImportType] = useState('')
+  const [formCsvImportPrimaryKey, setFormCsvImportPrimaryKey] = useState('')
   const [formCsvImportUpdateExisting, setFormCsvImportUpdateExisting] = useState(true)
-  const [formCsvImportDelimiter, setFormCsvImportDelimiter] = useState(",")
+  const [formCsvImportDelimiter, setFormCsvImportDelimiter] = useState(',')
   const [formCsvImportQuoteChar, setFormCsvImportQuoteChar] = useState('"')
-  const [formCsvImportColumnMapping, setFormCsvImportColumnMapping] = useState<Record<string, string | null>>({})
+  const [formCsvImportColumnMapping, setFormCsvImportColumnMapping] = useState<
+    Record<string, string | null>
+  >({})
   const [formCsvMappingDialogOpen, setFormCsvMappingDialogOpen] = useState(false)
-  const [csvFileQuery, setCsvFileQuery] = useState("")
-  const [formCsvImportFileFilter, setFormCsvImportFileFilter] = useState("")
-  const [formCsvImportDefaults, setFormCsvImportDefaults] = useState<Record<string, string>>({})
-  const [formCsvImportFormat, setFormCsvImportFormat] = useState("generic")
+  const [csvFileQuery, setCsvFileQuery] = useState('')
+  const [formCsvImportFileFilter, setFormCsvImportFileFilter] = useState('')
+  const [formCsvImportDefaults, setFormCsvImportDefaults] = useState<
+    Record<string, string>
+  >({})
+  const [formCsvImportFormat, setFormCsvImportFormat] = useState('generic')
   const [formCsvImportAddPrefixes, setFormCsvImportAddPrefixes] = useState(false)
-  const [formCsvImportDefaultPrefixLength, setFormCsvImportDefaultPrefixLength] = useState("")
+  const [formCsvImportDefaultPrefixLength, setFormCsvImportDefaultPrefixLength] =
+    useState('')
+  // CSV Export
+  const [formCsvExportRepoId, setFormCsvExportRepoId] = useState<number | null>(null)
+  const [formCsvExportFilePath, setFormCsvExportFilePath] = useState('')
+  const [formCsvExportProperties, setFormCsvExportProperties] = useState<string[]>([])
+  const [formCsvExportDelimiter, setFormCsvExportDelimiter] = useState(',')
+  const [formCsvExportQuoteChar, setFormCsvExportQuoteChar] = useState('"')
+  const [formCsvExportIncludeHeaders, setFormCsvExportIncludeHeaders] = useState(true)
   const [formIsGlobal, setFormIsGlobal] = useState(false)
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
-  const { data: ipStatuses = EMPTY_IP_STATUSES, isLoading: loadingIpStatuses } = useIpAddressStatuses({
-    enabled: formJobType === "ip_addresses",
-  })
+  const { data: ipStatuses = EMPTY_IP_STATUSES, isLoading: loadingIpStatuses } =
+    useIpAddressStatuses({
+      enabled: formJobType === 'ip_addresses',
+    })
   const { data: ipTags = EMPTY_IP_TAGS, isLoading: loadingIpTags } = useIpAddressTags({
-    enabled: formJobType === "ip_addresses",
+    enabled: formJobType === 'ip_addresses',
   })
 
   // CSV Import data (only fetched when job type is csv_import)
-  const isCsvImport = formJobType === "csv_import"
-  const { data: csvImportRepos = EMPTY_REPOS } = useCsvImportRepos({ enabled: isCsvImport })
+  const isCsvImport = formJobType === 'csv_import'
+  const { data: csvImportRepos = EMPTY_REPOS } = useCsvImportRepos({
+    enabled: isCsvImport,
+  })
   const { data: csvFiles = EMPTY_CSV_FILES, isLoading: csvFilesLoading } = useCsvFiles({
     repoId: formCsvImportRepoId,
     query: csvFileQuery,
     enabled: isCsvImport,
   })
-  const { data: csvHeaders = EMPTY_HEADERS, isLoading: csvHeadersLoading } = useCsvHeaders({
-    repoId: formCsvImportRepoId,
-    filePath: formCsvImportFilePath || null,
-    delimiter: formCsvImportDelimiter,
-    quoteChar: formCsvImportQuoteChar,
-    enabled: isCsvImport,
-  })
+  const { data: csvHeaders = EMPTY_HEADERS, isLoading: csvHeadersLoading } =
+    useCsvHeaders({
+      repoId: formCsvImportRepoId,
+      filePath: formCsvImportFilePath || null,
+      delimiter: formCsvImportDelimiter,
+      quoteChar: formCsvImportQuoteChar,
+      enabled: isCsvImport,
+    })
   const { data: nautobotDefaults } = useNautobotDefaults({ enabled: isCsvImport })
-  const { data: csvImportNautobotData = EMPTY_CSV_IMPORT_NAUTOBOT_DATA, isLoading: csvImportNautobotLoading } = useCsvImportNautobotQuery({ enabled: isCsvImport })
+  const {
+    data: csvImportNautobotData = EMPTY_CSV_IMPORT_NAUTOBOT_DATA,
+    isLoading: csvImportNautobotLoading,
+  } = useCsvImportNautobotQuery({ enabled: isCsvImport })
+
+  // CSV Export data (only fetched when job type is csv_export)
+  const isCsvExport = formJobType === 'csv_export'
+  const { data: csvExportRepos = EMPTY_REPOS } = useCsvExportRepos({
+    enabled: isCsvExport,
+  })
 
   // Pre-fill delimiter/quoteChar from Nautobot defaults when entering csv_import mode.
   // Only applies when creating a new template — never overwrite values loaded from an existing template.
   useEffect(() => {
     if (isCsvImport && nautobotDefaults && !editingTemplate) {
-      if (!formCsvImportDelimiter || formCsvImportDelimiter === ",") {
-        setFormCsvImportDelimiter(nautobotDefaults.csv_delimiter || ",")
+      if (!formCsvImportDelimiter || formCsvImportDelimiter === ',') {
+        setFormCsvImportDelimiter(nautobotDefaults.csv_delimiter || ',')
       }
       if (!formCsvImportQuoteChar || formCsvImportQuoteChar === '"') {
         setFormCsvImportQuoteChar(nautobotDefaults.csv_quote_char || '"')
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCsvImport, nautobotDefaults])
 
   const mappedColumnCount = useMemo(
-    () => Object.values(formCsvImportColumnMapping).filter((v) => v !== null).length,
+    () => Object.values(formCsvImportColumnMapping).filter(v => v !== null).length,
     [formCsvImportColumnMapping]
   )
 
   const resetForm = useCallback(() => {
-    setFormName("")
-    setFormJobType("")
-    setFormDescription("")
+    setFormName('')
+    setFormJobType('')
+    setFormDescription('')
     setFormConfigRepoId(null)
-    setFormInventorySource("all")
-    setFormInventoryName("")
-    setFormCommandTemplate("")
-    setFormBackupRunningConfigPath("")
-    setFormBackupStartupConfigPath("")
+    setFormInventorySource('all')
+    setFormInventoryName('')
+    setFormCommandTemplate('')
+    setFormBackupRunningConfigPath('')
+    setFormBackupStartupConfigPath('')
     setFormWriteTimestampToCustomField(false)
-    setFormTimestampCustomFieldName("")
+    setFormTimestampCustomFieldName('')
     setFormParallelTasks(1)
     setFormActivateChangesAfterSync(true)
     setFormScanResolveDns(false)
-    setFormScanPingCount("")
-    setFormScanTimeoutMs("")
-    setFormScanRetries("")
-    setFormScanIntervalMs("")
-    setFormScanCustomFieldName("")
-    setFormScanCustomFieldValue("")
-    setFormScanResponseCustomFieldName("")
+    setFormScanPingCount('')
+    setFormScanTimeoutMs('')
+    setFormScanRetries('')
+    setFormScanIntervalMs('')
+    setFormScanCustomFieldName('')
+    setFormScanCustomFieldValue('')
+    setFormScanResponseCustomFieldName('')
     setFormScanSetReachableIpActive(true)
-    setFormScanMaxIps("")
-    setFormDeployAgentId("")
+    setFormScanMaxIps('')
+    setFormDeployAgentId('')
     setFormDeployTemplateEntries([
-      { _key: generateEntryKey(), templateId: null, inventoryId: null, path: '', customVariables: {} }
+      {
+        _key: generateEntryKey(),
+        templateId: null,
+        inventoryId: null,
+        path: '',
+        customVariables: {},
+      },
     ])
     setFormActivateAfterDeploy(true)
-    setFormIpAction("list")
-    setFormIpFilterField("")
-    setFormIpFilterType("__eq__")
-    setFormIpFilterValue("")
+    setFormIpAction('list')
+    setFormIpFilterField('')
+    setFormIpFilterType('__eq__')
+    setFormIpFilterValue('')
     setFormIpIncludeNull(false)
-    setFormIpMarkStatus("")
-    setFormIpMarkTag("")
-    setFormIpMarkDescription("")
+    setFormIpMarkStatus('')
+    setFormIpMarkTag('')
+    setFormIpMarkDescription('')
     setFormIpRemoveSkipAssigned(true)
     setFormCsvImportRepoId(null)
-    setFormCsvImportFilePath("")
-    setFormCsvImportType("")
-    setFormCsvImportPrimaryKey("")
+    setFormCsvImportFilePath('')
+    setFormCsvImportType('')
+    setFormCsvImportPrimaryKey('')
     setFormCsvImportUpdateExisting(true)
-    setFormCsvImportDelimiter(",")
+    setFormCsvImportDelimiter(',')
     setFormCsvImportQuoteChar('"')
     setFormCsvImportColumnMapping({})
-    setCsvFileQuery("")
-    setFormCsvImportFileFilter("")
+    setCsvFileQuery('')
+    setFormCsvImportFileFilter('')
     setFormCsvImportDefaults({})
-    setFormCsvImportFormat("generic")
+    setFormCsvImportFormat('generic')
     setFormCsvImportAddPrefixes(false)
-    setFormCsvImportDefaultPrefixLength("")
+    setFormCsvImportDefaultPrefixLength('')
+    setFormCsvExportRepoId(null)
+    setFormCsvExportFilePath('')
+    setFormCsvExportProperties([])
+    setFormCsvExportDelimiter(',')
+    setFormCsvExportQuoteChar('"')
+    setFormCsvExportIncludeHeaders(true)
     setFormIsGlobal(false)
   }, [])
 
@@ -218,60 +301,81 @@ export function TemplateFormDialog({
     if (open && editingTemplate) {
       setFormName(editingTemplate.name)
       setFormJobType(editingTemplate.job_type)
-      setFormDescription(editingTemplate.description || "")
+      setFormDescription(editingTemplate.description || '')
       setFormConfigRepoId(editingTemplate.config_repository_id || null)
       setFormInventorySource(editingTemplate.inventory_source)
-      setFormInventoryName(editingTemplate.inventory_name || "")
-      setFormCommandTemplate(editingTemplate.command_template_name || "")
-      setFormBackupRunningConfigPath(editingTemplate.backup_running_config_path || "")
-      setFormBackupStartupConfigPath(editingTemplate.backup_startup_config_path || "")
-      setFormWriteTimestampToCustomField(editingTemplate.write_timestamp_to_custom_field ?? false)
-      setFormTimestampCustomFieldName(editingTemplate.timestamp_custom_field_name || "")
+      setFormInventoryName(editingTemplate.inventory_name || '')
+      setFormCommandTemplate(editingTemplate.command_template_name || '')
+      setFormBackupRunningConfigPath(editingTemplate.backup_running_config_path || '')
+      setFormBackupStartupConfigPath(editingTemplate.backup_startup_config_path || '')
+      setFormWriteTimestampToCustomField(
+        editingTemplate.write_timestamp_to_custom_field ?? false
+      )
+      setFormTimestampCustomFieldName(editingTemplate.timestamp_custom_field_name || '')
       setFormParallelTasks(editingTemplate.parallel_tasks || 1)
-      setFormActivateChangesAfterSync(editingTemplate.activate_changes_after_sync ?? true)
+      setFormActivateChangesAfterSync(
+        editingTemplate.activate_changes_after_sync ?? true
+      )
       setFormScanResolveDns(editingTemplate.scan_resolve_dns ?? false)
-      setFormScanPingCount(editingTemplate.scan_ping_count?.toString() || "")
-      setFormScanTimeoutMs(editingTemplate.scan_timeout_ms?.toString() || "")
-      setFormScanRetries(editingTemplate.scan_retries?.toString() || "")
-      setFormScanIntervalMs(editingTemplate.scan_interval_ms?.toString() || "")
-      setFormScanCustomFieldName(editingTemplate.scan_custom_field_name || "")
-      setFormScanCustomFieldValue(editingTemplate.scan_custom_field_value || "")
-      setFormScanResponseCustomFieldName(editingTemplate.scan_response_custom_field_name || "")
-      setFormScanSetReachableIpActive(editingTemplate.scan_set_reachable_ip_active ?? true)
-      setFormScanMaxIps(editingTemplate.scan_max_ips?.toString() || "")
-      setFormDeployAgentId(editingTemplate.deploy_agent_id || "")
+      setFormScanPingCount(editingTemplate.scan_ping_count?.toString() || '')
+      setFormScanTimeoutMs(editingTemplate.scan_timeout_ms?.toString() || '')
+      setFormScanRetries(editingTemplate.scan_retries?.toString() || '')
+      setFormScanIntervalMs(editingTemplate.scan_interval_ms?.toString() || '')
+      setFormScanCustomFieldName(editingTemplate.scan_custom_field_name || '')
+      setFormScanCustomFieldValue(editingTemplate.scan_custom_field_value || '')
+      setFormScanResponseCustomFieldName(
+        editingTemplate.scan_response_custom_field_name || ''
+      )
+      setFormScanSetReachableIpActive(
+        editingTemplate.scan_set_reachable_ip_active ?? true
+      )
+      setFormScanMaxIps(editingTemplate.scan_max_ips?.toString() || '')
+      setFormDeployAgentId(editingTemplate.deploy_agent_id || '')
       // Load multi-template entries: prefer deploy_templates, fall back to single legacy fields
-      if (editingTemplate.deploy_templates && editingTemplate.deploy_templates.length > 0) {
-        setFormDeployTemplateEntries(editingTemplate.deploy_templates.map(t => ({
-          _key: generateEntryKey(),
-          templateId: t.template_id,
-          inventoryId: t.inventory_id,
-          path: t.path || '',
-          customVariables: t.custom_variables || {},
-        })))
+      if (
+        editingTemplate.deploy_templates &&
+        editingTemplate.deploy_templates.length > 0
+      ) {
+        setFormDeployTemplateEntries(
+          editingTemplate.deploy_templates.map(t => ({
+            _key: generateEntryKey(),
+            templateId: t.template_id,
+            inventoryId: t.inventory_id,
+            path: t.path || '',
+            customVariables: t.custom_variables || {},
+          }))
+        )
       } else if (editingTemplate.deploy_template_id) {
         // Backward compat: convert legacy single fields to single-entry array
-        setFormDeployTemplateEntries([{
-          _key: generateEntryKey(),
-          templateId: editingTemplate.deploy_template_id,
-          inventoryId: null,
-          path: editingTemplate.deploy_path || '',
-          customVariables: editingTemplate.deploy_custom_variables || {},
-        }])
+        setFormDeployTemplateEntries([
+          {
+            _key: generateEntryKey(),
+            templateId: editingTemplate.deploy_template_id,
+            inventoryId: null,
+            path: editingTemplate.deploy_path || '',
+            customVariables: editingTemplate.deploy_custom_variables || {},
+          },
+        ])
       } else {
         setFormDeployTemplateEntries([
-          { _key: generateEntryKey(), templateId: null, inventoryId: null, path: '', customVariables: {} }
+          {
+            _key: generateEntryKey(),
+            templateId: null,
+            inventoryId: null,
+            path: '',
+            customVariables: {},
+          },
         ])
       }
       setFormActivateAfterDeploy(editingTemplate.activate_after_deploy ?? true)
-      setFormIpAction(editingTemplate.ip_action || "list")
-      setFormIpFilterField(editingTemplate.ip_filter_field || "")
-      setFormIpFilterType(editingTemplate.ip_filter_type || "__eq__")
-      setFormIpFilterValue(editingTemplate.ip_filter_value || "")
+      setFormIpAction(editingTemplate.ip_action || 'list')
+      setFormIpFilterField(editingTemplate.ip_filter_field || '')
+      setFormIpFilterType(editingTemplate.ip_filter_type || '__eq__')
+      setFormIpFilterValue(editingTemplate.ip_filter_value || '')
       setFormIpIncludeNull(editingTemplate.ip_include_null ?? false)
-      setFormIpMarkStatus(editingTemplate.ip_mark_status || "")
-      setFormIpMarkTag(editingTemplate.ip_mark_tag || "")
-      setFormIpMarkDescription(editingTemplate.ip_mark_description || "")
+      setFormIpMarkStatus(editingTemplate.ip_mark_status || '')
+      setFormIpMarkTag(editingTemplate.ip_mark_tag || '')
+      setFormIpMarkDescription(editingTemplate.ip_mark_description || '')
       setFormIpRemoveSkipAssigned(editingTemplate.ip_remove_skip_assigned ?? true)
       setFormCsvImportRepoId(editingTemplate.csv_import_repo_id || null)
       // DEBUG: log raw CSV fields from the API response
@@ -286,23 +390,31 @@ export function TemplateFormDialog({
         csv_import_file_filter: editingTemplate.csv_import_file_filter,
         csv_import_column_mapping: editingTemplate.csv_import_column_mapping,
       })
-      setFormCsvImportFilePath(editingTemplate.csv_import_file_path || "")
-      setFormCsvImportType(editingTemplate.csv_import_type || "")
-      setFormCsvImportPrimaryKey(editingTemplate.csv_import_primary_key || "")
+      setFormCsvImportFilePath(editingTemplate.csv_import_file_path || '')
+      setFormCsvImportType(editingTemplate.csv_import_type || '')
+      setFormCsvImportPrimaryKey(editingTemplate.csv_import_primary_key || '')
       setFormCsvImportUpdateExisting(editingTemplate.csv_import_update_existing ?? true)
-      setFormCsvImportDelimiter(editingTemplate.csv_import_delimiter || ",")
+      setFormCsvImportDelimiter(editingTemplate.csv_import_delimiter || ',')
       setFormCsvImportQuoteChar(editingTemplate.csv_import_quote_char || '"')
       setFormCsvImportColumnMapping(editingTemplate.csv_import_column_mapping || {})
-      setFormCsvImportFileFilter(editingTemplate.csv_import_file_filter ?? "")
+      setFormCsvImportFileFilter(editingTemplate.csv_import_file_filter ?? '')
       setFormCsvImportDefaults(editingTemplate.csv_import_defaults ?? {})
-      setFormCsvImportFormat(editingTemplate.csv_import_format || "generic")
+      setFormCsvImportFormat(editingTemplate.csv_import_format || 'generic')
       setFormCsvImportAddPrefixes(editingTemplate.csv_import_add_prefixes ?? false)
-      setFormCsvImportDefaultPrefixLength(editingTemplate.csv_import_default_prefix_length || "")
+      setFormCsvImportDefaultPrefixLength(
+        editingTemplate.csv_import_default_prefix_length || ''
+      )
       console.debug('[CSV_DEBUG][RENDER] form state after loading CSV fields:', {
         formCsvImportDelimiter: editingTemplate.csv_import_delimiter || ',',
         formCsvImportQuoteChar: editingTemplate.csv_import_quote_char || '"',
         formCsvImportPrimaryKey: editingTemplate.csv_import_primary_key || '',
       })
+      setFormCsvExportRepoId(editingTemplate.csv_export_repo_id || null)
+      setFormCsvExportFilePath(editingTemplate.csv_export_file_path || '')
+      setFormCsvExportProperties(editingTemplate.csv_export_properties || [])
+      setFormCsvExportDelimiter(editingTemplate.csv_export_delimiter || ',')
+      setFormCsvExportQuoteChar(editingTemplate.csv_export_quote_char || '"')
+      setFormCsvExportIncludeHeaders(editingTemplate.csv_export_include_headers ?? true)
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
@@ -311,23 +423,68 @@ export function TemplateFormDialog({
 
   const isFormValid = useCallback(() => {
     if (!formName.trim() || !formJobType) return false
-    if (formJobType === "backup" && formWriteTimestampToCustomField && !formTimestampCustomFieldName) return false
-    if (formJobType === "backup" && formBackupStartupConfigPath && !formBackupRunningConfigPath) return false
-    if (formInventorySource === "inventory" && !formInventoryName) return false
-    if (formJobType === "run_commands" && !formCommandTemplate) return false
-    if (formJobType === "deploy_agent") {
+    if (
+      formJobType === 'backup' &&
+      formWriteTimestampToCustomField &&
+      !formTimestampCustomFieldName
+    )
+      return false
+    if (
+      formJobType === 'backup' &&
+      formBackupStartupConfigPath &&
+      !formBackupRunningConfigPath
+    )
+      return false
+    if (formInventorySource === 'inventory' && !formInventoryName) return false
+    if (formJobType === 'run_commands' && !formCommandTemplate) return false
+    if (formJobType === 'deploy_agent') {
       if (!formDeployAgentId) return false
       const hasValidEntry = formDeployTemplateEntries.some(e => e.templateId !== null)
       if (!hasValidEntry) return false
     }
-    if (formJobType === "ip_addresses") {
+    if (formJobType === 'ip_addresses') {
       if (!formIpFilterField.trim() || !formIpFilterValue.trim()) return false
     }
-    if (formJobType === "csv_import") {
-      if (!formCsvImportRepoId || !formCsvImportFilePath || !formCsvImportType || !formCsvImportPrimaryKey) return false
+    if (formJobType === 'csv_import') {
+      if (
+        !formCsvImportRepoId ||
+        !formCsvImportFilePath ||
+        !formCsvImportType ||
+        !formCsvImportPrimaryKey
+      )
+        return false
+    }
+    if (formJobType === 'csv_export') {
+      if (
+        !formCsvExportRepoId ||
+        !formCsvExportFilePath ||
+        formCsvExportProperties.length === 0
+      )
+        return false
     }
     return true
-  }, [formName, formJobType, formWriteTimestampToCustomField, formTimestampCustomFieldName, formBackupStartupConfigPath, formBackupRunningConfigPath, formInventorySource, formInventoryName, formCommandTemplate, formDeployAgentId, formDeployTemplateEntries, formIpFilterField, formIpFilterValue, formCsvImportRepoId, formCsvImportFilePath, formCsvImportType, formCsvImportPrimaryKey])
+  }, [
+    formName,
+    formJobType,
+    formWriteTimestampToCustomField,
+    formTimestampCustomFieldName,
+    formBackupStartupConfigPath,
+    formBackupRunningConfigPath,
+    formInventorySource,
+    formInventoryName,
+    formCommandTemplate,
+    formDeployAgentId,
+    formDeployTemplateEntries,
+    formIpFilterField,
+    formIpFilterValue,
+    formCsvImportRepoId,
+    formCsvImportFilePath,
+    formCsvImportType,
+    formCsvImportPrimaryKey,
+    formCsvExportRepoId,
+    formCsvExportFilePath,
+    formCsvExportProperties,
+  ])
 
   const handleSubmit = async () => {
     const payload = {
@@ -336,71 +493,160 @@ export function TemplateFormDialog({
       description: formDescription || undefined,
       config_repository_id: formConfigRepoId || undefined,
       inventory_source: formInventorySource,
-      inventory_name: formInventorySource === "inventory" ? formInventoryName : undefined,
-      command_template_name: formJobType === "run_commands" ? formCommandTemplate : undefined,
-      backup_running_config_path: formJobType === "backup" ? formBackupRunningConfigPath : undefined,
-      backup_startup_config_path: formJobType === "backup" ? formBackupStartupConfigPath : undefined,
-      write_timestamp_to_custom_field: formJobType === "backup" ? formWriteTimestampToCustomField : undefined,
-      timestamp_custom_field_name: formJobType === "backup" && formWriteTimestampToCustomField ? formTimestampCustomFieldName : undefined,
-      parallel_tasks: formJobType === "backup" ? formParallelTasks : undefined,
-      activate_changes_after_sync: formJobType === "sync_devices" ? formActivateChangesAfterSync : undefined,
-      scan_resolve_dns: formJobType === "scan_prefixes" ? formScanResolveDns : undefined,
-      scan_ping_count: formJobType === "scan_prefixes" && formScanPingCount ? parseInt(formScanPingCount) : undefined,
-      scan_timeout_ms: formJobType === "scan_prefixes" && formScanTimeoutMs ? parseInt(formScanTimeoutMs) : undefined,
-      scan_retries: formJobType === "scan_prefixes" && formScanRetries ? parseInt(formScanRetries) : undefined,
-      scan_interval_ms: formJobType === "scan_prefixes" && formScanIntervalMs ? parseInt(formScanIntervalMs) : undefined,
-      scan_custom_field_name: formJobType === "scan_prefixes" ? formScanCustomFieldName : undefined,
-      scan_custom_field_value: formJobType === "scan_prefixes" ? formScanCustomFieldValue : undefined,
-      scan_response_custom_field_name: formJobType === "scan_prefixes" ? formScanResponseCustomFieldName : undefined,
-      scan_set_reachable_ip_active: formJobType === "scan_prefixes" ? formScanSetReachableIpActive : undefined,
-      scan_max_ips: formJobType === "scan_prefixes" && formScanMaxIps ? parseInt(formScanMaxIps) : undefined,
+      inventory_name:
+        formInventorySource === 'inventory' ? formInventoryName : undefined,
+      command_template_name:
+        formJobType === 'run_commands' ? formCommandTemplate : undefined,
+      backup_running_config_path:
+        formJobType === 'backup' ? formBackupRunningConfigPath : undefined,
+      backup_startup_config_path:
+        formJobType === 'backup' ? formBackupStartupConfigPath : undefined,
+      write_timestamp_to_custom_field:
+        formJobType === 'backup' ? formWriteTimestampToCustomField : undefined,
+      timestamp_custom_field_name:
+        formJobType === 'backup' && formWriteTimestampToCustomField
+          ? formTimestampCustomFieldName
+          : undefined,
+      parallel_tasks: formJobType === 'backup' ? formParallelTasks : undefined,
+      activate_changes_after_sync:
+        formJobType === 'sync_devices' ? formActivateChangesAfterSync : undefined,
+      scan_resolve_dns:
+        formJobType === 'scan_prefixes' ? formScanResolveDns : undefined,
+      scan_ping_count:
+        formJobType === 'scan_prefixes' && formScanPingCount
+          ? parseInt(formScanPingCount)
+          : undefined,
+      scan_timeout_ms:
+        formJobType === 'scan_prefixes' && formScanTimeoutMs
+          ? parseInt(formScanTimeoutMs)
+          : undefined,
+      scan_retries:
+        formJobType === 'scan_prefixes' && formScanRetries
+          ? parseInt(formScanRetries)
+          : undefined,
+      scan_interval_ms:
+        formJobType === 'scan_prefixes' && formScanIntervalMs
+          ? parseInt(formScanIntervalMs)
+          : undefined,
+      scan_custom_field_name:
+        formJobType === 'scan_prefixes' ? formScanCustomFieldName : undefined,
+      scan_custom_field_value:
+        formJobType === 'scan_prefixes' ? formScanCustomFieldValue : undefined,
+      scan_response_custom_field_name:
+        formJobType === 'scan_prefixes' ? formScanResponseCustomFieldName : undefined,
+      scan_set_reachable_ip_active:
+        formJobType === 'scan_prefixes' ? formScanSetReachableIpActive : undefined,
+      scan_max_ips:
+        formJobType === 'scan_prefixes' && formScanMaxIps
+          ? parseInt(formScanMaxIps)
+          : undefined,
       // Legacy single-template fields (populated from first entry for backward compat)
-      deploy_template_id: formJobType === "deploy_agent" && formDeployTemplateEntries[0]?.templateId ? formDeployTemplateEntries[0].templateId : undefined,
-      deploy_agent_id: formJobType === "deploy_agent" ? formDeployAgentId : undefined,
-      deploy_path: formJobType === "deploy_agent" && formDeployTemplateEntries[0]?.path ? formDeployTemplateEntries[0].path : undefined,
-      deploy_custom_variables: formJobType === "deploy_agent" && formDeployTemplateEntries[0]?.customVariables && Object.keys(formDeployTemplateEntries[0].customVariables).length > 0 ? formDeployTemplateEntries[0].customVariables : undefined,
-      activate_after_deploy: formJobType === "deploy_agent" ? formActivateAfterDeploy : undefined,
+      deploy_template_id:
+        formJobType === 'deploy_agent' && formDeployTemplateEntries[0]?.templateId
+          ? formDeployTemplateEntries[0].templateId
+          : undefined,
+      deploy_agent_id: formJobType === 'deploy_agent' ? formDeployAgentId : undefined,
+      deploy_path:
+        formJobType === 'deploy_agent' && formDeployTemplateEntries[0]?.path
+          ? formDeployTemplateEntries[0].path
+          : undefined,
+      deploy_custom_variables:
+        formJobType === 'deploy_agent' &&
+        formDeployTemplateEntries[0]?.customVariables &&
+        Object.keys(formDeployTemplateEntries[0].customVariables).length > 0
+          ? formDeployTemplateEntries[0].customVariables
+          : undefined,
+      activate_after_deploy:
+        formJobType === 'deploy_agent' ? formActivateAfterDeploy : undefined,
       // Multi-template entries
-      deploy_templates: formJobType === "deploy_agent" ? formDeployTemplateEntries
-        .filter(e => e.templateId !== null)
-        .map(e => ({
-          template_id: e.templateId!,
-          inventory_id: e.inventoryId,
-          path: e.path || '',
-          custom_variables: e.customVariables,
-        })) : undefined,
-      ip_action: formJobType === "ip_addresses" ? formIpAction : undefined,
-      ip_filter_field: formJobType === "ip_addresses" ? formIpFilterField : undefined,
-      ip_filter_type: formJobType === "ip_addresses"
-        ? (formIpFilterType && formIpFilterType !== "__eq__" ? formIpFilterType : null)
-        : undefined,
-      ip_filter_value: formJobType === "ip_addresses" ? formIpFilterValue : undefined,
-      ip_include_null: formJobType === "ip_addresses" ? formIpIncludeNull : undefined,
-      ip_mark_status: formJobType === "ip_addresses" && formIpAction === "mark" ? formIpMarkStatus || undefined : undefined,
-      ip_mark_tag: formJobType === "ip_addresses" && formIpAction === "mark" ? formIpMarkTag || undefined : undefined,
-      ip_mark_description: formJobType === "ip_addresses" && formIpAction === "mark" ? formIpMarkDescription || undefined : undefined,
-      ip_remove_skip_assigned: formJobType === "ip_addresses" && formIpAction === "remove" ? formIpRemoveSkipAssigned : undefined,
+      deploy_templates:
+        formJobType === 'deploy_agent'
+          ? formDeployTemplateEntries
+              .filter(e => e.templateId !== null)
+              .map(e => ({
+                template_id: e.templateId!,
+                inventory_id: e.inventoryId,
+                path: e.path || '',
+                custom_variables: e.customVariables,
+              }))
+          : undefined,
+      ip_action: formJobType === 'ip_addresses' ? formIpAction : undefined,
+      ip_filter_field: formJobType === 'ip_addresses' ? formIpFilterField : undefined,
+      ip_filter_type:
+        formJobType === 'ip_addresses'
+          ? formIpFilterType && formIpFilterType !== '__eq__'
+            ? formIpFilterType
+            : null
+          : undefined,
+      ip_filter_value: formJobType === 'ip_addresses' ? formIpFilterValue : undefined,
+      ip_include_null: formJobType === 'ip_addresses' ? formIpIncludeNull : undefined,
+      ip_mark_status:
+        formJobType === 'ip_addresses' && formIpAction === 'mark'
+          ? formIpMarkStatus || undefined
+          : undefined,
+      ip_mark_tag:
+        formJobType === 'ip_addresses' && formIpAction === 'mark'
+          ? formIpMarkTag || undefined
+          : undefined,
+      ip_mark_description:
+        formJobType === 'ip_addresses' && formIpAction === 'mark'
+          ? formIpMarkDescription || undefined
+          : undefined,
+      ip_remove_skip_assigned:
+        formJobType === 'ip_addresses' && formIpAction === 'remove'
+          ? formIpRemoveSkipAssigned
+          : undefined,
       // CSV Import fields
-      csv_import_repo_id: formJobType === "csv_import" ? formCsvImportRepoId || undefined : undefined,
-      csv_import_file_path: formJobType === "csv_import" ? formCsvImportFilePath || undefined : undefined,
-      csv_import_type: formJobType === "csv_import" ? formCsvImportType || undefined : undefined,
-      csv_import_primary_key: formJobType === "csv_import" ? formCsvImportPrimaryKey || undefined : undefined,
-      csv_import_update_existing: formJobType === "csv_import" ? formCsvImportUpdateExisting : undefined,
-      csv_import_delimiter: formJobType === "csv_import" ? formCsvImportDelimiter || undefined : undefined,
-      csv_import_quote_char: formJobType === "csv_import" ? formCsvImportQuoteChar || undefined : undefined,
-      csv_import_column_mapping: formJobType === "csv_import"
-        ? formCsvImportColumnMapping
-        : undefined,
-      csv_import_file_filter: formJobType === "csv_import" ? formCsvImportFileFilter || undefined : undefined,
-      csv_import_defaults: formJobType === "csv_import" && Object.keys(formCsvImportDefaults).length > 0 ? formCsvImportDefaults : undefined,
-      csv_import_format: formJobType === "csv_import" ? formCsvImportFormat || undefined : undefined,
-      csv_import_add_prefixes: formJobType === "csv_import" ? formCsvImportAddPrefixes : undefined,
-      csv_import_default_prefix_length: formJobType === "csv_import" && formCsvImportAddPrefixes ? formCsvImportDefaultPrefixLength || undefined : undefined,
-      is_global: formIsGlobal
+      csv_import_repo_id:
+        formJobType === 'csv_import' ? formCsvImportRepoId || undefined : undefined,
+      csv_import_file_path:
+        formJobType === 'csv_import' ? formCsvImportFilePath || undefined : undefined,
+      csv_import_type:
+        formJobType === 'csv_import' ? formCsvImportType || undefined : undefined,
+      csv_import_primary_key:
+        formJobType === 'csv_import' ? formCsvImportPrimaryKey || undefined : undefined,
+      csv_import_update_existing:
+        formJobType === 'csv_import' ? formCsvImportUpdateExisting : undefined,
+      csv_import_delimiter:
+        formJobType === 'csv_import' ? formCsvImportDelimiter || undefined : undefined,
+      csv_import_quote_char:
+        formJobType === 'csv_import' ? formCsvImportQuoteChar || undefined : undefined,
+      csv_import_column_mapping:
+        formJobType === 'csv_import' ? formCsvImportColumnMapping : undefined,
+      csv_import_file_filter:
+        formJobType === 'csv_import' ? formCsvImportFileFilter || undefined : undefined,
+      csv_import_defaults:
+        formJobType === 'csv_import' && Object.keys(formCsvImportDefaults).length > 0
+          ? formCsvImportDefaults
+          : undefined,
+      csv_import_format:
+        formJobType === 'csv_import' ? formCsvImportFormat || undefined : undefined,
+      csv_import_add_prefixes:
+        formJobType === 'csv_import' ? formCsvImportAddPrefixes : undefined,
+      csv_import_default_prefix_length:
+        formJobType === 'csv_import' && formCsvImportAddPrefixes
+          ? formCsvImportDefaultPrefixLength || undefined
+          : undefined,
+      // CSV Export fields
+      csv_export_repo_id:
+        formJobType === 'csv_export' ? formCsvExportRepoId || undefined : undefined,
+      csv_export_file_path:
+        formJobType === 'csv_export' ? formCsvExportFilePath || undefined : undefined,
+      csv_export_properties:
+        formJobType === 'csv_export' && formCsvExportProperties.length > 0
+          ? formCsvExportProperties
+          : undefined,
+      csv_export_delimiter:
+        formJobType === 'csv_export' ? formCsvExportDelimiter || undefined : undefined,
+      csv_export_quote_char:
+        formJobType === 'csv_export' ? formCsvExportQuoteChar || undefined : undefined,
+      csv_export_include_headers:
+        formJobType === 'csv_export' ? formCsvExportIncludeHeaders : undefined,
+      is_global: formIsGlobal,
     }
 
     // DEBUG: log CSV fields being submitted to the API
-    if (formJobType === "csv_import") {
+    if (formJobType === 'csv_import') {
       console.debug('[CSV_DEBUG][SUBMIT] CSV payload fields:', {
         csv_import_delimiter: payload.csv_import_delimiter,
         csv_import_quote_char: payload.csv_import_quote_char,
@@ -436,10 +682,12 @@ export function TemplateFormDialog({
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
           <DialogHeader className="text-white">
             <DialogTitle className="text-lg font-semibold text-white">
-              {editingTemplate ? "Edit Job Template" : "Create Job Template"}
+              {editingTemplate ? 'Edit Job Template' : 'Create Job Template'}
             </DialogTitle>
             <DialogDescription className="text-blue-50">
-              {editingTemplate ? "Update job template settings" : "Create a new reusable job template"}
+              {editingTemplate
+                ? 'Update job template settings'
+                : 'Create a new reusable job template'}
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -463,7 +711,7 @@ export function TemplateFormDialog({
           />
 
           {/* Config Repository - Only for backup */}
-          {formJobType === "backup" && (
+          {formJobType === 'backup' && (
             <JobTemplateConfigRepoSection
               formConfigRepoId={formConfigRepoId}
               setFormConfigRepoId={setFormConfigRepoId}
@@ -471,20 +719,24 @@ export function TemplateFormDialog({
             />
           )}
 
-          {/* Inventory - Not for scan_prefixes, deploy_agent, ip_addresses, or csv_import */}
-          {formJobType !== "scan_prefixes" && formJobType !== "deploy_agent" && formJobType !== "ip_addresses" && formJobType !== "csv_import" && (
-            <JobTemplateInventorySection
-              formInventorySource={formInventorySource}
-              setFormInventorySource={setFormInventorySource}
-              formInventoryName={formInventoryName}
-              setFormInventoryName={setFormInventoryName}
-              savedInventories={savedInventories}
-              loadingInventories={loadingInventories}
-            />
-          )}
+          {/* Inventory - Not for scan_prefixes, deploy_agent, ip_addresses, csv_import, or csv_export */}
+          {formJobType !== 'scan_prefixes' &&
+            formJobType !== 'deploy_agent' &&
+            formJobType !== 'ip_addresses' &&
+            formJobType !== 'csv_import' &&
+            formJobType !== 'csv_export' && (
+              <JobTemplateInventorySection
+                formInventorySource={formInventorySource}
+                setFormInventorySource={setFormInventorySource}
+                formInventoryName={formInventoryName}
+                setFormInventoryName={setFormInventoryName}
+                savedInventories={savedInventories}
+                loadingInventories={loadingInventories}
+              />
+            )}
 
           {/* Job Type Specific Sections */}
-          {formJobType === "backup" && (
+          {formJobType === 'backup' && (
             <BackupJobTemplate
               formBackupRunningConfigPath={formBackupRunningConfigPath}
               setFormBackupRunningConfigPath={setFormBackupRunningConfigPath}
@@ -500,11 +752,9 @@ export function TemplateFormDialog({
             />
           )}
 
-          {formJobType === "compare_devices" && (
-            <CompareDevicesJobTemplate />
-          )}
+          {formJobType === 'compare_devices' && <CompareDevicesJobTemplate />}
 
-          {formJobType === "run_commands" && (
+          {formJobType === 'run_commands' && (
             <RunCommandsJobTemplate
               formCommandTemplate={formCommandTemplate}
               setFormCommandTemplate={setFormCommandTemplate}
@@ -512,14 +762,14 @@ export function TemplateFormDialog({
             />
           )}
 
-          {formJobType === "sync_devices" && (
+          {formJobType === 'sync_devices' && (
             <SyncDevicesJobTemplate
               formActivateChangesAfterSync={formActivateChangesAfterSync}
               setFormActivateChangesAfterSync={setFormActivateChangesAfterSync}
             />
           )}
 
-          {formJobType === "scan_prefixes" && (
+          {formJobType === 'scan_prefixes' && (
             <ScanPrefixesJobTemplate
               formScanResolveDns={formScanResolveDns}
               setFormScanResolveDns={setFormScanResolveDns}
@@ -544,7 +794,7 @@ export function TemplateFormDialog({
             />
           )}
 
-          {formJobType === "ip_addresses" && (
+          {formJobType === 'ip_addresses' && (
             <MaintainIPAddressesJobTemplate
               formIpAction={formIpAction}
               setFormIpAction={setFormIpAction}
@@ -570,7 +820,7 @@ export function TemplateFormDialog({
             />
           )}
 
-          {formJobType === "deploy_agent" && (
+          {formJobType === 'deploy_agent' && (
             <DeployAgentJobTemplate
               formDeployAgentId={formDeployAgentId}
               setFormDeployAgentId={setFormDeployAgentId}
@@ -583,7 +833,7 @@ export function TemplateFormDialog({
             />
           )}
 
-          {formJobType === "csv_import" && (
+          {formJobType === 'csv_import' && (
             <>
               <CsvImportJobTemplate
                 formCsvImportRepoId={formCsvImportRepoId}
@@ -608,7 +858,9 @@ export function TemplateFormDialog({
                 formCsvImportAddPrefixes={formCsvImportAddPrefixes}
                 setFormCsvImportAddPrefixes={setFormCsvImportAddPrefixes}
                 formCsvImportDefaultPrefixLength={formCsvImportDefaultPrefixLength}
-                setFormCsvImportDefaultPrefixLength={setFormCsvImportDefaultPrefixLength}
+                setFormCsvImportDefaultPrefixLength={
+                  setFormCsvImportDefaultPrefixLength
+                }
                 csvImportRepos={csvImportRepos}
                 csvFiles={csvFiles}
                 csvHeaders={csvHeaders}
@@ -636,6 +888,24 @@ export function TemplateFormDialog({
               />
             </>
           )}
+
+          {formJobType === 'csv_export' && (
+            <CsvExportJobTemplate
+              formCsvExportRepoId={formCsvExportRepoId}
+              setFormCsvExportRepoId={setFormCsvExportRepoId}
+              formCsvExportFilePath={formCsvExportFilePath}
+              setFormCsvExportFilePath={setFormCsvExportFilePath}
+              formCsvExportProperties={formCsvExportProperties}
+              setFormCsvExportProperties={setFormCsvExportProperties}
+              formCsvExportDelimiter={formCsvExportDelimiter}
+              setFormCsvExportDelimiter={setFormCsvExportDelimiter}
+              formCsvExportQuoteChar={formCsvExportQuoteChar}
+              setFormCsvExportQuoteChar={setFormCsvExportQuoteChar}
+              formCsvExportIncludeHeaders={formCsvExportIncludeHeaders}
+              setFormCsvExportIncludeHeaders={setFormCsvExportIncludeHeaders}
+              csvExportRepos={csvExportRepos}
+            />
+          )}
         </div>
 
         {/* Footer */}
@@ -652,7 +922,9 @@ export function TemplateFormDialog({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!isFormValid() || createTemplate.isPending || updateTemplate.isPending}
+            disabled={
+              !isFormValid() || createTemplate.isPending || updateTemplate.isPending
+            }
             className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400 disabled:cursor-not-allowed"
           >
             {editingTemplate ? (

@@ -100,6 +100,12 @@ async def create_job_template(
             csv_import_format=template_data.csv_import_format,
             csv_import_add_prefixes=template_data.csv_import_add_prefixes,
             csv_import_default_prefix_length=template_data.csv_import_default_prefix_length,
+            csv_export_repo_id=template_data.csv_export_repo_id,
+            csv_export_file_path=template_data.csv_export_file_path,
+            csv_export_properties=template_data.csv_export_properties,
+            csv_export_delimiter=template_data.csv_export_delimiter,
+            csv_export_quote_char=template_data.csv_export_quote_char,
+            csv_export_include_headers=template_data.csv_export_include_headers,
             is_global=template_data.is_global,
         )
 
@@ -272,6 +278,12 @@ async def update_job_template(
             csv_import_format=update_data.csv_import_format,
             csv_import_add_prefixes=update_data.csv_import_add_prefixes,
             csv_import_default_prefix_length=update_data.csv_import_default_prefix_length,
+            csv_export_repo_id=update_data.csv_export_repo_id,
+            csv_export_file_path=update_data.csv_export_file_path,
+            csv_export_properties=update_data.csv_export_properties,
+            csv_export_delimiter=update_data.csv_export_delimiter,
+            csv_export_quote_char=update_data.csv_export_quote_char,
+            csv_export_include_headers=update_data.csv_export_include_headers,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

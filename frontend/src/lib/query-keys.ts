@@ -11,10 +11,12 @@ export const queryKeys = {
         : ([...queryKeys.checkmk.all, 'hosts'] as const),
     host: (id: string) => [...queryKeys.checkmk.all, 'host', id] as const,
     diffViewer: () => [...queryKeys.checkmk.all, 'diff-viewer'] as const,
-    diffTask: (taskId: string) => [...queryKeys.checkmk.all, 'diff-task', taskId] as const,
+    diffTask: (taskId: string) =>
+      [...queryKeys.checkmk.all, 'diff-task', taskId] as const,
     syncStatus: () => [...queryKeys.checkmk.all, 'sync-status'] as const,
     pendingChanges: () => [...queryKeys.checkmk.all, 'pending-changes'] as const,
-    activationStatus: (activationId: string) => [...queryKeys.checkmk.all, 'activation-status', activationId] as const,
+    activationStatus: (activationId: string) =>
+      [...queryKeys.checkmk.all, 'activation-status', activationId] as const,
   },
 
   // Git Repositories
@@ -23,16 +25,23 @@ export const queryKeys = {
     repositories: () => [...queryKeys.git.all, 'repositories'] as const,
     repository: (id: number) => [...queryKeys.git.all, 'repository', id] as const,
     status: (id: number) => [...queryKeys.git.repository(id), 'status'] as const,
-    tree: (repoId: number | null) =>
-      [...queryKeys.git.all, 'tree', repoId] as const,
+    tree: (repoId: number | null) => [...queryKeys.git.all, 'tree', repoId] as const,
     directoryFiles: (repoId: number | null, path: string) =>
       [...queryKeys.git.all, 'directoryFiles', repoId, path] as const,
     fileHistory: (repoId: number | null, filePath: string | null) =>
       [...queryKeys.git.all, 'fileHistory', repoId, filePath] as const,
-    fileDiff: (repoId: number | null, commit1: string | null, commit2: string | null, filePath: string | null) =>
+    fileDiff: (
+      repoId: number | null,
+      commit1: string | null,
+      commit2: string | null,
+      filePath: string | null
+    ) =>
       [...queryKeys.git.all, 'fileDiff', repoId, commit1, commit2, filePath] as const,
-    fileCompare: (repoId: number | null, filePath1: string | null, filePath2: string | null) =>
-      [...queryKeys.git.all, 'fileCompare', repoId, filePath1, filePath2] as const,
+    fileCompare: (
+      repoId: number | null,
+      filePath1: string | null,
+      filePath2: string | null
+    ) => [...queryKeys.git.all, 'fileCompare', repoId, filePath1, filePath2] as const,
     fileContent: (repoId: number | null, filePath: string | null) =>
       [...queryKeys.git.all, 'fileContent', repoId, filePath] as const,
   },
@@ -79,7 +88,9 @@ export const queryKeys = {
 
     // CSV Import dependencies
     csvImportRepos: () => [...queryKeys.jobs.all, 'csv-import-repos'] as const,
-    csvImportNautobotData: () => [...queryKeys.jobs.all, 'csv-import-nautobot-data'] as const,
+    csvExportRepos: () => [...queryKeys.jobs.all, 'csv-export-repos'] as const,
+    csvImportNautobotData: () =>
+      [...queryKeys.jobs.all, 'csv-import-nautobot-data'] as const,
     csvFiles: (repoId: number | null, query?: string) =>
       [...queryKeys.jobs.all, 'csv-files', repoId, query] as const,
     csvHeaders: (repoId: number | null, filePath: string | null, delimiter?: string) =>
@@ -121,9 +132,12 @@ export const queryKeys = {
     defaults: () => [...queryKeys.nautobot.all, 'defaults'] as const,
 
     // Dynamic data (short cache or no cache)
-    tags: (contentType: string) => [...queryKeys.nautobot.all, 'tags', contentType] as const,
-    customFields: (contentType: string) => [...queryKeys.nautobot.all, 'custom-fields', contentType] as const,
-    customFieldChoices: (fieldKey: string) => [...queryKeys.nautobot.all, 'custom-field-choices', fieldKey] as const,
+    tags: (contentType: string) =>
+      [...queryKeys.nautobot.all, 'tags', contentType] as const,
+    customFields: (contentType: string) =>
+      [...queryKeys.nautobot.all, 'custom-fields', contentType] as const,
+    customFieldChoices: (fieldKey: string) =>
+      [...queryKeys.nautobot.all, 'custom-field-choices', fieldKey] as const,
     vlans: (filters?: { location?: string; global?: boolean }) =>
       filters
         ? ([...queryKeys.nautobot.all, 'vlans', filters] as const)
@@ -166,7 +180,8 @@ export const queryKeys = {
     byName: (name: string) => [...queryKeys.inventory.all, 'by-name', name] as const,
     byId: (id: number) => [...queryKeys.inventory.all, 'by-id', id] as const,
     fieldOptions: () => [...queryKeys.inventory.all, 'field-options'] as const,
-    fieldValues: (fieldName: string) => [...queryKeys.inventory.all, 'field-values', fieldName] as const,
+    fieldValues: (fieldName: string) =>
+      [...queryKeys.inventory.all, 'field-values', fieldName] as const,
     customFields: () => [...queryKeys.inventory.all, 'custom-fields'] as const,
     devicesDetailed: (inventoryId: number | null) =>
       [...queryKeys.inventory.all, 'devices-detailed', inventoryId] as const,
@@ -232,7 +247,8 @@ export const queryKeys = {
         : ([...queryKeys.cache.all, 'entries'] as const),
 
     // Namespace
-    namespace: (namespace: string) => [...queryKeys.cache.all, 'namespace', namespace] as const,
+    namespace: (namespace: string) =>
+      [...queryKeys.cache.all, 'namespace', namespace] as const,
   },
 
   // Credentials
@@ -259,13 +275,16 @@ export const queryKeys = {
     // Users
     users: () => [...queryKeys.rbac.all, 'users'] as const,
     user: (id: number) => [...queryKeys.rbac.all, 'user', id] as const,
-    userRoles: (userId: number) => [...queryKeys.rbac.all, 'user', userId, 'roles'] as const,
-    userPermissions: (userId: number) => [...queryKeys.rbac.all, 'user', userId, 'permissions'] as const,
+    userRoles: (userId: number) =>
+      [...queryKeys.rbac.all, 'user', userId, 'roles'] as const,
+    userPermissions: (userId: number) =>
+      [...queryKeys.rbac.all, 'user', userId, 'permissions'] as const,
 
     // Roles
     roles: () => [...queryKeys.rbac.all, 'roles'] as const,
     role: (id: number) => [...queryKeys.rbac.all, 'role', id] as const,
-    rolePermissions: (roleId: number) => [...queryKeys.rbac.all, 'role', roleId, 'permissions'] as const,
+    rolePermissions: (roleId: number) =>
+      [...queryKeys.rbac.all, 'role', roleId, 'permissions'] as const,
 
     // Permissions
     permissions: () => [...queryKeys.rbac.all, 'permissions'] as const,
@@ -275,7 +294,8 @@ export const queryKeys = {
   cockpitAgents: {
     all: ['cockpitAgents'] as const,
     list: () => [...queryKeys.cockpitAgents.all, 'list'] as const,
-    history: (agentId: string) => [...queryKeys.cockpitAgents.all, 'history', agentId] as const,
+    history: (agentId: string) =>
+      [...queryKeys.cockpitAgents.all, 'history', agentId] as const,
   },
 
   // Common Settings
@@ -312,8 +332,7 @@ export const queryKeys = {
       [...queryKeys.complianceSettings.all, 'regexPatterns'] as const,
     loginCredentials: () =>
       [...queryKeys.complianceSettings.all, 'loginCredentials'] as const,
-    snmpMappings: () =>
-      [...queryKeys.complianceSettings.all, 'snmpMappings'] as const,
+    snmpMappings: () => [...queryKeys.complianceSettings.all, 'snmpMappings'] as const,
   },
 
   // General

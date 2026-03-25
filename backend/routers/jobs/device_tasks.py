@@ -27,6 +27,7 @@ from models.celery import (
     BackupCheckResponse,
     BackupDevicesRequest,
     BulkOnboardDevicesRequest,
+    CsvExportRequest,
     CsvImportRequest,
     DeployAgentRequest,
     ExportDevicesRequest,
@@ -1051,6 +1052,64 @@ async def trigger_import_or_update_from_csv(
             f"CSV import task queued for {request.import_type}"
             f"{' (dry run mode)' if request.dry_run else ''}: {task.id}"
         ),
+    )
+
+
+# ============================================================================
+# CSV Export to Git repository
+# ============================================================================
+
+
+@router.post("/tasks/csv-export", response_model=TaskWithJobResponse)
+@handle_celery_errors("export devices to CSV")
+async def trigger_csv_export(
+    request: CsvExportRequest,
+    current_user: dict = Depends(require_permission("nautobot.export", "execute")),
+):
+    """
+    Export Nautobot devices to a CSV file and commit it to a Git repository.
+
+    Request Body:
+        device_ids: List of Nautobot device UUIDs to export
+        properties: List of device property names to include in the export
+        repo_id: Git repository ID (category: csv_exports)
+        file_path: Relative path within the repository (e.g. exports/devices.csv)
+        delimiter: CSV field delimiter (default: ",")
+        quote_char: CSV quote character (default: '"')
+        include_headers: Whether to include a header row (default: True)
+        template_id: Optional job template ID for tracking
+
+    Returns:
+        TaskWithJobResponse with task_id and job_id
+    """
+    from tasks.csv_export_task import csv_export_task
+
+    job_run = job_run_manager.create_job_run(
+        job_name="CSV Export",
+        job_type="csv_export",
+        triggered_by="manual",
+        executed_by=current_user.get("username"),
+        job_template_id=request.template_id,
+    )
+
+    task = csv_export_task.delay(
+        device_ids=request.device_ids,
+        properties=request.properties,
+        repo_id=request.repo_id,
+        file_path=request.file_path,
+        delimiter=request.delimiter,
+        quote_char=request.quote_char,
+        include_headers=request.include_headers,
+        job_run_id=job_run["id"],
+    )
+
+    job_run_manager.mark_started(job_run["id"], task.id)
+
+    return TaskWithJobResponse(
+        task_id=task.id,
+        job_id=str(job_run["id"]),
+        status="queued",
+        message=f"CSV export task queued for {len(request.device_ids)} devices: {task.id}",
     )
 
 

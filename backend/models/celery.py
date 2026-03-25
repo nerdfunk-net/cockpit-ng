@@ -334,3 +334,16 @@ class CsvImportRequest(BaseModel):
     file_filter: Optional[str] = (
         None  # glob pattern; if set, process all matching files instead of file_path
     )
+
+
+class CsvExportRequest(BaseModel):
+    """Request model for exporting Nautobot devices to a CSV file in a Git repository."""
+
+    device_ids: List[str]
+    properties: List[str]
+    repo_id: int
+    file_path: str  # Relative path within the repository (e.g. exports/devices.csv)
+    delimiter: str = ","
+    quote_char: str = '"'
+    include_headers: bool = True
+    template_id: Optional[int] = None

@@ -494,6 +494,13 @@ class JobTemplate(Base):
     csv_import_default_prefix_length = Column(
         String(10), nullable=True
     )  # e.g. "24" applied when IP has no mask
+    # CSV Export (csv_export type)
+    csv_export_repo_id = Column(Integer, nullable=True)
+    csv_export_file_path = Column(String(500), nullable=True)
+    csv_export_properties = Column(Text, nullable=True)  # JSON list of property names
+    csv_export_delimiter = Column(String(10), nullable=True)
+    csv_export_quote_char = Column(String(10), nullable=True)
+    csv_export_include_headers = Column(Boolean, nullable=True, default=True)
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

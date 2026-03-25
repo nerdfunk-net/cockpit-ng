@@ -1,8 +1,31 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import type { JobTemplate, JobType, GitRepository, SavedInventory, CommandTemplate, CustomField, IpAddressStatus, IpAddressTag, CsvRepoFile, NautobotDefaults } from '../types'
-import { STALE_TIME, EMPTY_TEMPLATES, EMPTY_TYPES, EMPTY_REPOS, EMPTY_INVENTORIES, EMPTY_CMD_TEMPLATES, EMPTY_CUSTOM_FIELDS, EMPTY_IP_STATUSES, EMPTY_IP_TAGS, EMPTY_CSV_FILES, EMPTY_HEADERS } from '../utils/constants'
+import type {
+  JobTemplate,
+  JobType,
+  GitRepository,
+  SavedInventory,
+  CommandTemplate,
+  CustomField,
+  IpAddressStatus,
+  IpAddressTag,
+  CsvRepoFile,
+  NautobotDefaults,
+} from '../types'
+import {
+  STALE_TIME,
+  EMPTY_TEMPLATES,
+  EMPTY_TYPES,
+  EMPTY_REPOS,
+  EMPTY_INVENTORIES,
+  EMPTY_CMD_TEMPLATES,
+  EMPTY_CUSTOM_FIELDS,
+  EMPTY_IP_STATUSES,
+  EMPTY_IP_TAGS,
+  EMPTY_CSV_FILES,
+  EMPTY_HEADERS,
+} from '../utils/constants'
 
 interface UseQueryOptions {
   enabled?: boolean
@@ -24,7 +47,10 @@ interface UseCsvHeadersOptions {
 
 const DEFAULT_OPTIONS: UseQueryOptions = { enabled: true }
 const DEFAULT_CSV_FILES_OPTIONS: UseCsvFilesOptions = { repoId: null }
-const DEFAULT_CSV_HEADERS_OPTIONS: UseCsvHeadersOptions = { repoId: null, filePath: null }
+const DEFAULT_CSV_HEADERS_OPTIONS: UseCsvHeadersOptions = {
+  repoId: null,
+  filePath: null,
+}
 
 /**
  * Fetch all job templates
@@ -37,7 +63,10 @@ export function useJobTemplates(options: UseQueryOptions = DEFAULT_OPTIONS) {
   return useQuery({
     queryKey: queryKeys.jobs.templates(),
     queryFn: async () => {
-      const response = await apiCall<{ templates: JobTemplate[] }>('/api/job-templates', { method: 'GET' })
+      const response = await apiCall<{ templates: JobTemplate[] }>(
+        '/api/job-templates',
+        { method: 'GET' }
+      )
       return response?.templates || EMPTY_TEMPLATES
     },
     enabled,
@@ -56,7 +85,9 @@ export function useJobTypes(options: UseQueryOptions = DEFAULT_OPTIONS) {
   return useQuery({
     queryKey: queryKeys.jobs.jobTypes(),
     queryFn: async () => {
-      const response = await apiCall<JobType[]>('/api/job-templates/types', { method: 'GET' })
+      const response = await apiCall<JobType[]>('/api/job-templates/types', {
+        method: 'GET',
+      })
       return response || EMPTY_TYPES
     },
     enabled,
@@ -97,7 +128,9 @@ export function useSavedInventories(options: UseQueryOptions = DEFAULT_OPTIONS) 
   return useQuery({
     queryKey: queryKeys.jobs.savedInventories(),
     queryFn: async () => {
-      const response = await apiCall<{ inventories: SavedInventory[] }>('/inventory', { method: 'GET' })
+      const response = await apiCall<{ inventories: SavedInventory[] }>('/inventory', {
+        method: 'GET',
+      })
       return response?.inventories || EMPTY_INVENTORIES
     },
     enabled,
@@ -116,7 +149,10 @@ export function useCommandTemplates(options: UseQueryOptions = DEFAULT_OPTIONS) 
   return useQuery({
     queryKey: queryKeys.jobs.commandTemplates(),
     queryFn: async () => {
-      const response = await apiCall<{ templates: CommandTemplate[] }>('/api/templates', { method: 'GET' })
+      const response = await apiCall<{ templates: CommandTemplate[] }>(
+        '/api/templates',
+        { method: 'GET' }
+      )
       return response?.templates || EMPTY_CMD_TEMPLATES
     },
     enabled,
@@ -135,13 +171,16 @@ export function useCustomFields(options: UseQueryOptions = DEFAULT_OPTIONS) {
   return useQuery({
     queryKey: queryKeys.jobs.customFields('devices'),
     queryFn: async () => {
-      const response = await apiCall<CustomField[]>('/api/nautobot/custom-fields/devices', { method: 'GET' })
+      const response = await apiCall<CustomField[]>(
+        '/api/nautobot/custom-fields/devices',
+        { method: 'GET' }
+      )
       const allFields = Array.isArray(response) ? response : []
 
       // Filter for text and date type custom fields that can hold timestamp
       const fields = allFields.filter((cf: CustomField) => {
         const cfType = cf.type?.value?.toLowerCase() || ''
-        return ["text", "date", "datetime", "url"].includes(cfType)
+        return ['text', 'date', 'datetime', 'url'].includes(cfType)
       })
 
       return fields || EMPTY_CUSTOM_FIELDS
@@ -162,7 +201,9 @@ export function useIpAddressStatuses(options: UseQueryOptions = DEFAULT_OPTIONS)
   return useQuery({
     queryKey: queryKeys.nautobot.statuses('ipaddress'),
     queryFn: async () => {
-      const data = await apiCall<IpAddressStatus[]>('nautobot/statuses/ipaddress', { method: 'GET' })
+      const data = await apiCall<IpAddressStatus[]>('nautobot/statuses/ipaddress', {
+        method: 'GET',
+      })
       return Array.isArray(data) ? data : EMPTY_IP_STATUSES
     },
     enabled,
@@ -181,7 +222,9 @@ export function useIpAddressTags(options: UseQueryOptions = DEFAULT_OPTIONS) {
   return useQuery({
     queryKey: queryKeys.nautobot.tags('ip-addresses'),
     queryFn: async () => {
-      const data = await apiCall<IpAddressTag[]>('nautobot/tags/ip-addresses', { method: 'GET' })
+      const data = await apiCall<IpAddressTag[]>('nautobot/tags/ip-addresses', {
+        method: 'GET',
+      })
       return Array.isArray(data) ? data : EMPTY_IP_TAGS
     },
     enabled,
@@ -223,10 +266,10 @@ export function useCsvFiles(options: UseCsvFilesOptions = DEFAULT_CSV_FILES_OPTI
     queryKey: queryKeys.jobs.csvFiles(repoId, query),
     queryFn: async () => {
       const params = query ? `?query=${encodeURIComponent(query)}` : ''
-      const response = await apiCall<{ success: boolean; data: { files: CsvRepoFile[] } }>(
-        `/api/git/${repoId}/csv-files${params}`,
-        { method: 'GET' }
-      )
+      const response = await apiCall<{
+        success: boolean
+        data: { files: CsvRepoFile[] }
+      }>(`/api/git/${repoId}/csv-files${params}`, { method: 'GET' })
       return response?.data?.files || EMPTY_CSV_FILES
     },
     enabled: enabled && !!repoId,
@@ -238,7 +281,9 @@ export function useCsvFiles(options: UseCsvFilesOptions = DEFAULT_CSV_FILES_OPTI
  * Fetch CSV column headers from a file in a Git repository
  * Used in CSV Import job template
  */
-export function useCsvHeaders(options: UseCsvHeadersOptions = DEFAULT_CSV_HEADERS_OPTIONS) {
+export function useCsvHeaders(
+  options: UseCsvHeadersOptions = DEFAULT_CSV_HEADERS_OPTIONS
+) {
   const { apiCall } = useApi()
   const { repoId, filePath, delimiter = ',', quoteChar = '"', enabled = true } = options
 
@@ -258,6 +303,28 @@ export function useCsvHeaders(options: UseCsvHeadersOptions = DEFAULT_CSV_HEADER
     },
     enabled: enabled && !!repoId && !!filePath,
     staleTime: STALE_TIME.CSV_HEADERS,
+  })
+}
+
+/**
+ * Fetch Git repositories with category=csv_exports
+ * Used in CSV Export job template
+ */
+export function useCsvExportRepos(options: UseQueryOptions = DEFAULT_OPTIONS) {
+  const { apiCall } = useApi()
+  const { enabled = true } = options
+
+  return useQuery({
+    queryKey: queryKeys.jobs.csvExportRepos(),
+    queryFn: async () => {
+      const response = await apiCall<{ repositories: GitRepository[] }>(
+        '/api/git-repositories?category=csv_exports',
+        { method: 'GET' }
+      )
+      return response?.repositories || EMPTY_REPOS
+    },
+    enabled,
+    staleTime: STALE_TIME.CSV_REPOS,
   })
 }
 

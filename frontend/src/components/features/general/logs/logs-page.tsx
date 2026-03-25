@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { ScrollText, RefreshCw, ChevronLeft, ChevronRight, X, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +27,21 @@ const ALL_COLUMNS: ColumnDef[] = [
 ]
 
 const DEFAULT_VISIBLE = ALL_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.id)
+
+const DEFAULT_WIDTHS: Record<string, number> = {
+  username: 120,
+  event_type: 140,
+  message: 280,
+  severity: 90,
+  created_at: 160,
+  id: 60,
+  user_id: 70,
+  ip_address: 120,
+  resource_type: 130,
+  resource_id: 130,
+  resource_name: 150,
+  extra_data: 200,
+}
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100, 200]
 
@@ -61,6 +76,27 @@ export default function LogsPage() {
   const [severity, setSeverity] = useState('')
   const [eventType, setEventType] = useState('')
   const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>(DEFAULT_VISIBLE)
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(DEFAULT_WIDTHS)
+  const resizingRef = useRef<{ colId: string; startX: number; startWidth: number } | null>(null)
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizingRef.current) return
+      const { colId, startX, startWidth } = resizingRef.current
+      const delta = e.clientX - startX
+      const newWidth = Math.max(50, startWidth + delta)
+      setColumnWidths((prev) => ({ ...prev, [colId]: newWidth }))
+    }
+    const handleMouseUp = () => {
+      resizingRef.current = null
+    }
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [])
 
   const filters: LogsFilters = useMemo(
     () => ({
@@ -91,6 +127,15 @@ export default function LogsPage() {
       visible ? [...prev, columnId] : prev.filter((id) => id !== columnId)
     )
   }, [])
+
+  const handleResizeStart = useCallback((colId: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    resizingRef.current = {
+      colId,
+      startX: e.clientX,
+      startWidth: columnWidths[colId] ?? DEFAULT_WIDTHS[colId] ?? 100,
+    }
+  }, [columnWidths])
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
@@ -256,15 +301,30 @@ export default function LogsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table
+                className="text-sm"
+                style={{
+                  tableLayout: 'fixed',
+                  width: visibleColumns.reduce((sum, c) => sum + (columnWidths[c.id] ?? DEFAULT_WIDTHS[c.id] ?? 100), 0),
+                }}
+              >
+                <colgroup>
+                  {visibleColumns.map((col) => (
+                    <col key={col.id} style={{ width: columnWidths[col.id] ?? DEFAULT_WIDTHS[col.id] ?? 100 }} />
+                  ))}
+                </colgroup>
                 <thead>
                   <tr className="border-b bg-gray-50">
                     {visibleColumns.map((col) => (
                       <th
                         key={col.id}
-                        className="text-left px-3 py-2 font-medium text-gray-600 whitespace-nowrap"
+                        className="text-left px-3 py-2 font-medium text-gray-600 whitespace-nowrap relative select-none overflow-hidden"
                       >
-                        {col.label}
+                        <span className="block truncate">{col.label}</span>
+                        <div
+                          className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400 transition-colors"
+                          onMouseDown={(e) => handleResizeStart(col.id, e)}
+                        />
                       </th>
                     ))}
                   </tr>
@@ -273,7 +333,7 @@ export default function LogsPage() {
                   {items.map((item) => (
                     <tr key={item.id} className="border-b hover:bg-gray-50 transition-colors">
                       {visibleColumns.map((col) => (
-                        <td key={col.id} className="px-3 py-2 align-top">
+                        <td key={col.id} className="px-3 py-2 align-top overflow-hidden">
                           {col.id === 'severity' ? (
                             <SeverityBadge severity={item.severity} />
                           ) : col.id === 'created_at' ? (
@@ -281,18 +341,18 @@ export default function LogsPage() {
                               {formatDate(item.created_at)}
                             </span>
                           ) : col.id === 'message' ? (
-                            <span className="max-w-xs block truncate" title={item.message}>
+                            <span className="block truncate" title={item.message}>
                               {item.message}
                             </span>
                           ) : col.id === 'extra_data' ? (
                             <span
-                              className="max-w-xs block truncate font-mono text-xs text-gray-500"
+                              className="block truncate font-mono text-xs text-gray-500"
                               title={item.extra_data ?? ''}
                             >
                               {item.extra_data ?? '—'}
                             </span>
                           ) : (
-                            <span>
+                            <span className="block truncate">
                               {((item as unknown as Record<string, unknown>)[col.id] as string) ?? '—'}
                             </span>
                           )}

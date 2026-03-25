@@ -30,6 +30,7 @@ export const REPOSITORY_CATEGORIES = [
   { value: 'templates', label: 'Templates' },
   { value: 'agent', label: 'Agents' },
   { value: 'csv_imports', label: 'CSV Imports' },
+  { value: 'csv_exports', label: 'CSV Exports' },
 ] as const
 
 // Authentication types

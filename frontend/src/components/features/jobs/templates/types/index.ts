@@ -11,7 +11,7 @@ export interface JobTemplate {
   job_type: string
   description?: string
   config_repository_id?: number
-  inventory_source: "all" | "inventory"
+  inventory_source: 'all' | 'inventory'
   inventory_repository_id?: number
   inventory_name?: string
   command_template_name?: string
@@ -49,6 +49,13 @@ export interface JobTemplate {
   ip_mark_description?: string
   // Remove action options
   ip_remove_skip_assigned?: boolean
+  // CSV Export (csv_export type)
+  csv_export_repo_id?: number
+  csv_export_file_path?: string
+  csv_export_properties?: string[]
+  csv_export_delimiter?: string
+  csv_export_quote_char?: string
+  csv_export_include_headers?: boolean
   // CSV Import (csv_import type)
   csv_import_repo_id?: number
   csv_import_file_path?: string

@@ -69,6 +69,12 @@ def create_job_template(
     csv_import_format: Optional[str] = None,
     csv_import_add_prefixes: bool = False,
     csv_import_default_prefix_length: Optional[str] = None,
+    csv_export_repo_id: Optional[int] = None,
+    csv_export_file_path: Optional[str] = None,
+    csv_export_properties: Optional[List[str]] = None,
+    csv_export_delimiter: Optional[str] = None,
+    csv_export_quote_char: Optional[str] = None,
+    csv_export_include_headers: bool = True,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -95,6 +101,11 @@ def create_job_template(
     # Serialize csv_import_defaults to JSON string for storage
     csv_import_defaults_json = (
         json.dumps(csv_import_defaults) if csv_import_defaults is not None else None
+    )
+
+    # Serialize csv_export_properties to JSON string for storage
+    csv_export_properties_json = (
+        json.dumps(csv_export_properties) if csv_export_properties is not None else None
     )
 
     template = repo.create(
@@ -149,6 +160,12 @@ def create_job_template(
         csv_import_format=csv_import_format,
         csv_import_add_prefixes=csv_import_add_prefixes,
         csv_import_default_prefix_length=csv_import_default_prefix_length,
+        csv_export_repo_id=csv_export_repo_id,
+        csv_export_file_path=csv_export_file_path,
+        csv_export_properties=csv_export_properties_json,
+        csv_export_delimiter=csv_export_delimiter,
+        csv_export_quote_char=csv_export_quote_char,
+        csv_export_include_headers=csv_export_include_headers,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -248,6 +265,12 @@ def update_job_template(
     csv_import_format: Optional[str] = None,
     csv_import_add_prefixes: Optional[bool] = None,
     csv_import_default_prefix_length: Optional[str] = None,
+    csv_export_repo_id: Optional[int] = None,
+    csv_export_file_path: Optional[str] = None,
+    csv_export_properties: Optional[List[str]] = None,
+    csv_export_delimiter: Optional[str] = None,
+    csv_export_quote_char: Optional[str] = None,
+    csv_export_include_headers: Optional[bool] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -364,6 +387,18 @@ def update_job_template(
         update_data["csv_import_default_prefix_length"] = (
             csv_import_default_prefix_length
         )
+    if csv_export_repo_id is not None:
+        update_data["csv_export_repo_id"] = csv_export_repo_id
+    if csv_export_file_path is not None:
+        update_data["csv_export_file_path"] = csv_export_file_path
+    if csv_export_properties is not None:
+        update_data["csv_export_properties"] = json.dumps(csv_export_properties)
+    if csv_export_delimiter is not None:
+        update_data["csv_export_delimiter"] = csv_export_delimiter
+    if csv_export_quote_char is not None:
+        update_data["csv_export_quote_char"] = csv_export_quote_char
+    if csv_export_include_headers is not None:
+        update_data["csv_export_include_headers"] = csv_export_include_headers
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -458,6 +493,11 @@ def get_job_types() -> List[Dict[str, str]]:
             "label": "CSV Import",
             "description": "Import or update Nautobot objects from a CSV file in a Git repository",
         },
+        {
+            "value": "csv_export",
+            "label": "CSV Export",
+            "description": "Export Nautobot devices to a CSV file and commit it to a Git repository",
+        },
     ]
 
 
@@ -548,6 +588,16 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "csv_import_format": template.csv_import_format,
         "csv_import_add_prefixes": template.csv_import_add_prefixes,
         "csv_import_default_prefix_length": template.csv_import_default_prefix_length,
+        "csv_export_repo_id": template.csv_export_repo_id,
+        "csv_export_file_path": template.csv_export_file_path,
+        "csv_export_properties": (
+            json.loads(template.csv_export_properties)
+            if template.csv_export_properties
+            else None
+        ),
+        "csv_export_delimiter": template.csv_export_delimiter,
+        "csv_export_quote_char": template.csv_export_quote_char,
+        "csv_export_include_headers": template.csv_export_include_headers,
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

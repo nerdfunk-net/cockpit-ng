@@ -17,6 +17,7 @@ JobTemplateType = Literal[
     "deploy_agent",
     "ip_addresses",
     "csv_import",
+    "csv_export",
 ]
 
 # Inventory source options
@@ -274,6 +275,33 @@ class JobTemplateBase(BaseModel):
         max_length=10,
         description="Default CIDR prefix length (e.g. '24') applied when an interface IP has no mask",
     )
+    # CSV Export (csv_export type)
+    csv_export_repo_id: Optional[int] = Field(
+        None, description="Git repository ID for the CSV export destination (type=csv_exports)"
+    )
+    csv_export_file_path: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Relative path of the CSV file in the repository (e.g. exports/devices.csv)",
+    )
+    csv_export_properties: Optional[List[str]] = Field(
+        None,
+        description="List of device properties to include in the CSV export",
+    )
+    csv_export_delimiter: Optional[str] = Field(
+        None,
+        max_length=10,
+        description="CSV field delimiter (default: ',')",
+    )
+    csv_export_quote_char: Optional[str] = Field(
+        None,
+        max_length=10,
+        description="CSV quote character (default: '\"')",
+    )
+    csv_export_include_headers: bool = Field(
+        True,
+        description="Whether to include a header row in the CSV export",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -340,6 +368,13 @@ class JobTemplateUpdate(BaseModel):
     csv_import_format: Optional[str] = Field(None, max_length=50)
     csv_import_add_prefixes: Optional[bool] = None
     csv_import_default_prefix_length: Optional[str] = Field(None, max_length=10)
+    # CSV Export
+    csv_export_repo_id: Optional[int] = None
+    csv_export_file_path: Optional[str] = Field(None, max_length=500)
+    csv_export_properties: Optional[List[str]] = None
+    csv_export_delimiter: Optional[str] = Field(None, max_length=10)
+    csv_export_quote_char: Optional[str] = Field(None, max_length=10)
+    csv_export_include_headers: Optional[bool] = None
     is_global: Optional[bool] = None
 
 

@@ -16,6 +16,7 @@ class GitCategory(str, Enum):
     TEMPLATES = "templates"
     AGENT = "agent"
     CSV_IMPORTS = "csv_imports"
+    CSV_EXPORTS = "csv_exports"
 
 
 class GitAuthType(str, Enum):
