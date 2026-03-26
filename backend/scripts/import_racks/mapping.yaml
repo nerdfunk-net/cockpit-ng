@@ -1,7 +1,7 @@
 ---
 city:
-  - name: 10115
-    city: Berlin
+  - name: 12345
+    city: City A
 building:
-  - name: CHM
-    building: CHM
+  - name: building1
+    building: Building A
