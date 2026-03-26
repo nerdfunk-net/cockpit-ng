@@ -5,7 +5,7 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 
 ## Tech Stack
 
-**Frontend:** Next.js 15.4.7 (App Router), React 19, TypeScript 5, Tailwind CSS 4, Shadcn UI, TanStack Query v5, Zustand, Lucide Icons
+**Frontend:** Next.js 15.5.12 (App Router), React 19, TypeScript 5, Tailwind CSS 4, Shadcn UI, TanStack Query v5, Zustand, Lucide Icons
 **Backend:** FastAPI, Python 3.9+, PostgreSQL, SQLAlchemy, JWT auth, Celery/Beat, Netmiko, Ansible, GitPython
 **Integrations:** Nautobot API, CheckMK, OIDC multi-provider
 
@@ -100,9 +100,13 @@ from core.auth import verify_token, require_permission, verify_admin_token
 async def get_data(user: dict = Depends(verify_token)):
     pass
 
-# Permission required
+# Permission required (format: "resource" or "resource.subresource", action)
 @router.post("/users", dependencies=[Depends(require_permission("users", "write"))])
 async def create_user():
+    pass
+
+@router.get("/devices", dependencies=[Depends(require_permission("nautobot.devices", "read"))])
+async def get_devices():
     pass
 
 # Admin only
@@ -133,6 +137,8 @@ fetch('/api/proxy/users', {
 **Compliance:** `compliance_rules`, `compliance_checks`, `regex_patterns`
 **Sync:** `nb2cmk_sync`, `nb2cmk_jobs`, `nb2cmk_job_results`
 **Inventory:** `inventories`
+**Snapshots:** `snapshots`, `snapshot_command_templates`, `snapshot_commands`, `snapshot_results`
+**Audit & Agents:** `audit_logs`, `cockpit_agent_commands`
 
 ## UI/UX Standards
 
@@ -367,7 +373,6 @@ const syncRepository = useMutation({
 ### Documentation:
 - **Best Practices**: `/frontend/src/hooks/queries/BEST_PRACTICES.md`
 - **Optimistic Updates**: `/frontend/src/hooks/queries/OPTIMISTIC_UPDATES.md`
-- **Migration Guide**: `/frontend/TANSTACK_QUERY_MIGRATION.md`
 
 ## React Best Practices (CRITICAL - Prevents Infinite Loops)
 

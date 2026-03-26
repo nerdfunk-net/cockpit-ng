@@ -1,0 +1,4 @@
+name,position,planet,continent,country,city,building_long,building_short,floor,level,room,room_short,dispatcher,rack
+lab-003,10,Earth,Europe,Country A,city_a,building_long,building_a1,floor,1,Room A1,A1,,A_1
+lab-010,12,Earth,Europe,Country A,city_a,building_long,building_a2,floor,1,Room A2,A2,,A_2
+lab-014,14,Earth,Europe,Country A,city_a,building_long,building_a3,floor,1,Room A3,A3,,A_3

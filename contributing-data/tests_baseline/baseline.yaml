@@ -35,66 +35,83 @@ location_types:
   parent: State
   description: City
   content_types: dcim.device
+- name: Building
+  parent: City
+  description: Building
+- name: Room
+  parent: Building
+  description: Room
+  content_types: dcim.rack
 
 location:
-- location_types: Country
+- name: Country A
+  location_types: Country
   parent: null
-  name: Country A
   status: active
   description: Country A
-- parent: Country A
+- name: State A
+  parent: Country A
   location_types: State
-  name: State A
   description: State A
   status: active
-- parent: State A
+- name: City A
+  parent: State A
   location_types: City
-  name: City A
   description: City A
   status: active
-- parent: State A
+- name: Building A
+  parent: City A
+  location_types: Building
+  description: Building A
+  status: active
+- name: Room A
+  parent: Building A
+  location_types: Room
+  description: Room A
+  status: active
+- name: Another City A
+  parent: State A
   location_types: City
-  name: Another City A
   description: Another City A
   status: active
-- location_types: Country
+- name: Country B
+  location_types: Country
   parent: null
-  name: Country B
   status: active
   description: Country B
-- parent: Country B
+- name: State B
+  parent: Country B
   location_types: State
-  name: State B
   description: State B
   status: active
-- parent: State B
+- name: City B
+  parent: State B
   location_types: City
-  name: City B
   description: City B
   status: active
-- parent: State B
+- name: Another City B
+  parent: State B
   location_types: City
-  name: Another City B
   description: Another City B
   status: active
-- location_types: Country
+- name: Country C
+  location_types: Country
   parent: null
-  name: Country C
   status: active
   description: Country C
-- parent: Country C
+- name: State C
+  parent: Country C
   location_types: State
-  name: State C
   description: State C
   status: active
-- parent: State C
+- name: City C
+  parent: State C
   location_types: City
-  name: City C
   description: City C
   status: active
-- parent: State C
+- name: Another City C
+  parent: State C
   location_types: City
-  name: Another City C
   description: Another City C
   status: active
 

@@ -1,0 +1,37 @@
+---
+import:
+  - csv: room
+    nautobot: Room
+  - csv: building_short
+    nautobot: Building
+dependencies:
+  - name: Rack
+    location: Room
+  - name: Room
+    parent: Building
+  - name: Building
+    parent: City
+  - name: City
+    parent: State
+  - name: State
+    parent: Country
+  - name: Country
+    parent: null
+mappings:
+  city:
+    - csv: city_a
+      nautobot: City A
+  building_short:
+    - csv: building_a1
+      nautobot: Building A1
+    - csv: building_a2
+      nautobot: Building A2
+    - csv: building_a3
+      nautobot: Building A3
+
+defaults:
+  rack:
+    Status: Active
+    type: 4-post-cabinet
+    width: 19 inches
+    height: 42
