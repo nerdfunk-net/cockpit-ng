@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { MANDATORY_DEVICE_FIELDS, MANDATORY_INTERFACE_FIELDS, buildInitialColumnMapping } from './csv-import-utils'
+import { MANDATORY_DEVICE_FIELDS, MANDATORY_INTERFACE_FIELDS, buildInitialColumnMapping } from '../utils/csv-import-utils'
 
 export { MANDATORY_DEVICE_FIELDS, MANDATORY_INTERFACE_FIELDS }
 

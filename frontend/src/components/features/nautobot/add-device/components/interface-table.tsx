@@ -17,7 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Plus, Trash2, Settings, Download } from 'lucide-react'
 import { UseFormReturn } from 'react-hook-form'
 import { useMemo } from 'react'
-import type { DeviceFormValues } from '../validation'
+import type { DeviceFormValues } from '../utils/validation'
 import type { NautobotDropdownsResponse } from '../types'
 import { DEFAULT_INTERFACE, DEFAULT_IP_ADDRESS } from '../constants'
 

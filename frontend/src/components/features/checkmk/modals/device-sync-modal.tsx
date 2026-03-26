@@ -35,7 +35,7 @@ import {
   TagsModal,
   CustomFieldsModal,
   InterfacePropertiesModal,
-} from '@/components/features/nautobot/add-device/components'
+} from '@/components/features/nautobot/add-device/dialogs'
 
 import type {
   LocationItem,

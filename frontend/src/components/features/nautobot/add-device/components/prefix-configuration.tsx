@@ -2,7 +2,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UseFormReturn } from 'react-hook-form'
-import type { DeviceFormValues } from '../validation'
+import type { DeviceFormValues } from '../utils/validation'
 import { PREFIX_LENGTH_OPTIONS } from '../constants'
 
 interface PrefixConfigurationProps {

@@ -12,7 +12,7 @@ import type {
   Platform,
   InterfaceData,
   VlanItem,
-} from './types'
+} from '../types'
 
 // ============================================================================
 // Empty Arrays (used as default parameters)

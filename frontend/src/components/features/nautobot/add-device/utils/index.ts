@@ -1,4 +1,4 @@
-import type { LocationItem, DeviceSubmissionData } from './types'
+import type { LocationItem, DeviceSubmissionData } from '../types'
 import type { DeviceFormValues } from './validation'
 
 /**

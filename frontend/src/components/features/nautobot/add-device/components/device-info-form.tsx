@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { UseFormReturn } from 'react-hook-form'
 import { SearchableDropdownInput } from './searchable-dropdown-input'
-import type { DeviceFormValues } from '../validation'
+import type { DeviceFormValues } from '../utils/validation'
 import type {
   NautobotDropdownsResponse,
   LocationItem,

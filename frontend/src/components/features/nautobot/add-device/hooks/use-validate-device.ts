@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
-import type { ValidationResults } from '../components'
-import type { DeviceFormValues } from '../validation'
+import type { ValidationResults } from '../dialogs'
+import type { DeviceFormValues } from '../utils/validation'
 
 const DEFAULT_VALIDATION_RESULTS: ValidationResults = {
   isValid: true,

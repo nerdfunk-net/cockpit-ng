@@ -1,4 +1,4 @@
-import type { CSVConfig, ParsedCSVData, ValidationResult, ObjectType } from './types'
+import type { CSVConfig, ParsedCSVData, ValidationResult, ObjectType } from '../types'
 
 export const DEFAULT_CSV_CONFIG: CSVConfig = {
   delimiter: ',',

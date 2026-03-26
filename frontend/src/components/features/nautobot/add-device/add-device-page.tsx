@@ -23,18 +23,20 @@ import {
   DeviceInfoForm,
   PrefixConfiguration,
   InterfaceList,
+  PageHeader,
+  StatusAlert,
+  FormActions,
+} from './components'
+import {
   InterfacePropertiesModal,
   TagsModal,
   CustomFieldsModal,
   CsvImportWizard,
-  PageHeader,
-  StatusAlert,
   ErrorModal,
   ValidationErrorModal,
   HelpModal,
   ValidationSummaryModal,
-  FormActions,
-} from './components'
+} from './dialogs'
 import { buildLocationHierarchy, formatDeviceSubmissionData } from './utils'
 import {
   EMPTY_DROPDOWN_OPTIONS,
@@ -45,7 +47,7 @@ import {
   EMPTY_PLATFORMS,
 } from './constants'
 import type { StatusMessage, LocationItem, DeviceType, SoftwareVersion } from './types'
-import type { DeviceFormValues } from './validation'
+import type { DeviceFormValues } from './utils/validation'
 
 export function AddDevicePage() {
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null)

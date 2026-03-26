@@ -37,7 +37,7 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 ```
 /components/features/{domain}/
   ├── components/     # Feature-specific components
-  ├── constants/      # Constats (if any)
+  ├── constants/      # Constants (if any)
   ├── hooks/          # Custom hooks (use-{name}.ts)
   ├── dialogs/        # Modal dialogs
   ├── tabs/           # Tab components

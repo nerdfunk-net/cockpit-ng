@@ -10,7 +10,7 @@ import type {
   ParsedDevice,
 } from '../types'
 import { CSV_IMPORT_NAUTOBOT_FIELDS } from '@/components/features/jobs/templates/utils/constants'
-import { parseCsvDevices } from './csv-import-utils'
+import { parseCsvDevices } from '../utils/csv-import-utils'
 import { useCsvParser } from './use-csv-parser'
 import { useCsvColumnMapping } from './use-csv-column-mapping'
 

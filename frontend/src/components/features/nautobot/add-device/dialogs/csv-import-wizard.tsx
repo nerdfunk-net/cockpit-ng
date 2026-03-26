@@ -37,12 +37,12 @@ import type {
   FormDefaults,
   PrefixConfig,
 } from '../hooks/use-csv-import'
-import { CSVFileUpload } from './csv-file-upload'
-import { CsvImportMappingStep } from './csv-import-mapping-step'
-import { CsvImportDefaultsStep } from './csv-import-defaults-step'
-import { CsvImportPreviewStep } from './csv-import-preview-step'
-import { CSVImportProgress } from './csv-import-progress'
-import { CSVImportSummary } from './csv-import-summary'
+import { CSVFileUpload } from '../components/csv-file-upload'
+import { CsvImportMappingStep } from '../components/csv-import-mapping-step'
+import { CsvImportDefaultsStep } from '../components/csv-import-defaults-step'
+import { CsvImportPreviewStep } from '../components/csv-import-preview-step'
+import { CSVImportProgress } from '../components/csv-import-progress'
+import { CSVImportSummary } from '../components/csv-import-summary'
 import { CSVHelpDialog } from './csv-help-dialog'
 
 const STEP_LABELS: Record<CsvImportStep, string> = {

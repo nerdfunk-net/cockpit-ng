@@ -20,7 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Settings, Loader2 } from 'lucide-react'
 import { UseFormReturn } from 'react-hook-form'
-import type { DeviceFormValues } from '../validation'
+import type { DeviceFormValues } from '../utils/validation'
 import type { VlanItem } from '../types'
 import { VLAN_MODES } from '../constants'
 

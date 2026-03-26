@@ -12,7 +12,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Plus, Trash2, Settings, X } from 'lucide-react'
 import { UseFormReturn, useFieldArray } from 'react-hook-form'
-import type { DeviceFormValues } from '../validation'
+import type { DeviceFormValues } from '../utils/validation'
 import type { NautobotDropdownsResponse } from '../types'
 import { DEFAULT_INTERFACE, DEFAULT_IP_ADDRESS } from '../constants'
 
