@@ -665,6 +665,11 @@ async def trigger_update_devices_from_csv(
         csv_content: CSV file content as string
         csv_options: Optional CSV parsing options
         dry_run: If True, validate without making changes (default: False)
+        tags_mode: How to handle tags - "replace" or "merge" (default: "replace")
+        column_mapping: Maps CSV column names to Nautobot field names (optional)
+        selected_columns: List of CSV columns to update (optional, defaults to all)
+        primary_key_column: CSV column used to look up devices (optional, defaults to "name")
+        matching_strategy: How to match devices by name - "exact", "contains", "starts_with"
 
     Returns:
         TaskWithJobResponse with task_id (for Celery) and job_id (for Jobs/Views tracking)
@@ -688,6 +693,11 @@ async def trigger_update_devices_from_csv(
         csv_content=request.csv_content,
         csv_options=csv_options,
         dry_run=request.dry_run,
+        tags_mode=request.tags_mode,
+        column_mapping=request.column_mapping,
+        selected_columns=request.selected_columns,
+        primary_key_column=request.primary_key_column,
+        matching_strategy=request.matching_strategy,
     )
 
     job_name = f"Update devices from CSV{'(DRY RUN)' if request.dry_run else ''}"

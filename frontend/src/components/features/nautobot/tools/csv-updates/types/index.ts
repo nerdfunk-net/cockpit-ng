@@ -32,3 +32,12 @@ export interface UpdateSummary {
   skipped: number
   results: UpdateResult[]
 }
+
+/** Strategy used to look up a device by name in Nautobot. */
+export type MatchingStrategy = 'exact' | 'contains' | 'starts_with'
+
+/** A single default property (field + value) configured by the user. */
+export interface DefaultProperty {
+  field: string
+  value: string
+}

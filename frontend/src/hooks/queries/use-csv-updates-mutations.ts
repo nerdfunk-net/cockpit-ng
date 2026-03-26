@@ -19,6 +19,7 @@ interface ProcessCSVUpdatesInput {
   columnMapping?: Record<string, string> // { csvColumn: nautobotField } — only mapped columns
   selectedColumns?: string[] // CSV columns included in the update (derived from columnMapping)
   primaryKeyColumn?: string // CSV column used to look up objects in Nautobot
+  matchingStrategy?: 'exact' | 'contains' | 'starts_with' // How to match objects by name
 }
 
 interface CeleryTaskResponse {
@@ -109,6 +110,7 @@ export function useCsvUpdatesMutations() {
           column_mapping: input.columnMapping, // Pass column mapping if provided
           selected_columns: input.selectedColumns, // Pass selected columns if provided
           primary_key_column: input.primaryKeyColumn, // Column used to look up objects
+          matching_strategy: input.matchingStrategy || 'exact', // How to match by name
         }),
       })
 

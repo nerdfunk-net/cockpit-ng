@@ -3,13 +3,14 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useCsvUpload } from './use-csv-upload'
 import { buildAutoFieldMapping } from '../constants'
-import type { ObjectType, ParsedCSVData } from '../types'
+import type { ObjectType, ParsedCSVData, MatchingStrategy, DefaultProperty } from '../types'
 
-export type WizardStep = 'upload' | 'configure' | 'preview' | 'processing' | 'summary'
+export type WizardStep = 'upload' | 'configure' | 'properties' | 'preview' | 'processing' | 'summary'
 
 export const WIZARD_STEP_ORDER: WizardStep[] = [
   'upload',
   'configure',
+  'properties',
   'preview',
   'processing',
   'summary',
@@ -40,6 +41,8 @@ export function useCsvWizard() {
 
   const [primaryKeyColumn, setPrimaryKeyColumn] = useState<string>('')
   const [tagsMode, setTagsMode] = useState<'replace' | 'merge'>('replace')
+  const [matchingStrategy, setMatchingStrategy] = useState<MatchingStrategy>('exact')
+  const [defaultProperties, setDefaultProperties] = useState<DefaultProperty[]>([])
 
   const [taskId, setTaskId] = useState<string | null>(null)
   const [dryRunTaskId, setDryRunTaskId] = useState<string | null>(null)
@@ -83,6 +86,8 @@ export function useCsvWizard() {
     setFieldMapping(EMPTY_FIELD_MAPPING)
     setPrimaryKeyColumn('')
     setTagsMode('replace')
+    setMatchingStrategy('exact')
+    setDefaultProperties([])
     setTaskId(null)
     setDryRunTaskId(null)
     csvUpload.clearData()
@@ -131,6 +136,12 @@ export function useCsvWizard() {
       // Tags mode
       tagsMode,
       setTagsMode,
+      // Matching strategy
+      matchingStrategy,
+      setMatchingStrategy,
+      // Default properties
+      defaultProperties,
+      setDefaultProperties,
       // Derived
       selectedColumns,
       columnMappingForBackend,
@@ -152,6 +163,8 @@ export function useCsvWizard() {
       fieldMapping,
       primaryKeyColumn,
       tagsMode,
+      matchingStrategy,
+      defaultProperties,
       selectedColumns,
       columnMappingForBackend,
       taskId,

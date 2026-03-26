@@ -162,6 +162,19 @@ class UpdateDevicesRequest(BaseModel):
     csv_content: str
     csv_options: Optional[Dict[str, str]] = None
     dry_run: bool = False
+    tags_mode: str = "replace"  # How to handle tags: "replace" or "merge"
+    column_mapping: Optional[Dict[str, str]] = (
+        None  # Maps CSV column names to Nautobot field names
+    )
+    selected_columns: Optional[List[str]] = (
+        None  # List of CSV columns to update (if None, all non-excluded columns are updated)
+    )
+    primary_key_column: Optional[str] = (
+        None  # CSV column used to look up devices (default: "name")
+    )
+    matching_strategy: str = (
+        "exact"  # Name matching strategy: "exact", "contains", "starts_with"
+    )
 
 
 class UpdateDevicesJSONRequest(BaseModel):

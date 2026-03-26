@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { ArrowLeft, ArrowRight, Search, Play, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCsvWizard, WIZARD_STEP_ORDER } from '../hooks/use-csv-wizard'
 import type { WizardStep } from '../hooks/use-csv-wizard'
 import { useCsvUpdatesMutations } from '@/hooks/queries/use-csv-updates-mutations'
 import { CsvUploadStep } from './csv-upload-step'
 import { CsvConfigureStep } from './csv-configure-step'
+import { CsvPropertiesStep } from './csv-properties-step'
 import { CsvPreviewStep } from './csv-preview-step'
 import { CsvProcessingStep } from './csv-processing-step'
 import { CsvSummaryStep } from './csv-summary-step'
@@ -16,12 +16,13 @@ import { CsvSummaryStep } from './csv-summary-step'
 const STEP_LABELS: Record<WizardStep, string> = {
   upload: 'Upload CSV',
   configure: 'Configure',
+  properties: 'Properties',
   preview: 'Preview & Validate',
   processing: 'Processing',
   summary: 'Results',
 }
 
-const INDICATOR_STEPS: WizardStep[] = ['upload', 'configure', 'preview']
+const INDICATOR_STEPS: WizardStep[] = ['upload', 'configure', 'properties', 'preview']
 
 export function CsvUpdateWizard() {
   const wizard = useCsvWizard()
@@ -46,6 +47,10 @@ export function CsvUpdateWizard() {
     setPrimaryKeyColumn,
     tagsMode,
     setTagsMode,
+    matchingStrategy,
+    setMatchingStrategy,
+    defaultProperties,
+    setDefaultProperties,
     selectedColumns,
     columnMappingForBackend,
     taskId,
@@ -56,38 +61,85 @@ export function CsvUpdateWizard() {
 
   const { parsedData, validationResults, validationSummary, csvConfig } = csvUpload
 
+  /**
+   * Enrich parsed CSV data with default properties:
+   * For each default property whose field is NOT already a CSV column,
+   * inject a synthetic column with the constant value into every row.
+   */
+  const enrichedCsvData = useMemo(() => {
+    const validDefaults = defaultProperties.filter(dp => dp.field && dp.value)
+    if (validDefaults.length === 0) return parsedData
+
+    const existingHeaders = new Set(parsedData.headers)
+    const toInject = validDefaults.filter(dp => !existingHeaders.has(dp.field))
+    if (toInject.length === 0) return parsedData
+
+    return {
+      headers: [...parsedData.headers, ...toInject.map(dp => dp.field)],
+      rows: parsedData.rows.map(row => [...row, ...toInject.map(dp => dp.value)]),
+      rowCount: parsedData.rowCount,
+    }
+  }, [parsedData, defaultProperties])
+
+  /** Extend column mapping with injected default columns. */
+  const enrichedColumnMapping = useMemo(() => {
+    const base = { ...columnMappingForBackend }
+    const existingHeaders = new Set(parsedData.headers)
+    for (const dp of defaultProperties) {
+      if (dp.field && dp.value && !existingHeaders.has(dp.field)) {
+        base[dp.field] = dp.field
+      }
+    }
+    return base
+  }, [columnMappingForBackend, defaultProperties, parsedData.headers])
+
+  /** Extend selected columns with injected default columns. */
+  const enrichedSelectedColumns = useMemo(() => {
+    const base = [...selectedColumns]
+    const existingHeaders = new Set(parsedData.headers)
+    for (const dp of defaultProperties) {
+      if (dp.field && dp.value && !existingHeaders.has(dp.field) && !base.includes(dp.field)) {
+        base.push(dp.field)
+      }
+    }
+    return base
+  }, [selectedColumns, defaultProperties, parsedData.headers])
+
   const handleDryRun = useCallback(async () => {
     try {
       const response = await processUpdates.mutateAsync({
         objectType,
-        csvData: { headers: parsedData.headers, rows: parsedData.rows },
+        csvData: { headers: enrichedCsvData.headers, rows: enrichedCsvData.rows },
         csvOptions: csvConfig,
         dryRun: true,
         tagsMode,
-        columnMapping: columnMappingForBackend,
-        selectedColumns,
+        columnMapping: enrichedColumnMapping,
+        selectedColumns: enrichedSelectedColumns,
         primaryKeyColumn,
+        matchingStrategy,
       })
       setDryRunTaskId(response.task_id)
     } catch {
       // Error handled by mutation's onError toast
     }
   }, [
-    processUpdates, objectType, parsedData, csvConfig,
-    tagsMode, columnMappingForBackend, selectedColumns, primaryKeyColumn, setDryRunTaskId,
+    processUpdates, objectType, enrichedCsvData, csvConfig,
+    tagsMode, enrichedColumnMapping, enrichedSelectedColumns, primaryKeyColumn,
+    matchingStrategy, setDryRunTaskId,
   ])
 
   const handleSubmit = useCallback(async () => {
     try {
       const response = await processUpdates.mutateAsync({
         objectType,
-        csvData: { headers: parsedData.headers, rows: parsedData.rows },
+        csvData: { headers: enrichedCsvData.headers, rows: enrichedCsvData.rows },
         csvOptions: csvConfig,
         dryRun: false,
         tagsMode,
-        columnMapping: columnMappingForBackend,
-        selectedColumns,
+        columnMapping: enrichedColumnMapping,
+        selectedColumns: enrichedSelectedColumns,
         primaryKeyColumn,
+        matchingStrategy,
       })
       setTaskId(response.task_id)
       goToStep('processing')
@@ -95,8 +147,9 @@ export function CsvUpdateWizard() {
       // Error handled by mutation's onError toast
     }
   }, [
-    processUpdates, objectType, parsedData, csvConfig,
-    tagsMode, columnMappingForBackend, selectedColumns, primaryKeyColumn, setTaskId, goToStep,
+    processUpdates, objectType, enrichedCsvData, csvConfig,
+    tagsMode, enrichedColumnMapping, enrichedSelectedColumns, primaryKeyColumn,
+    matchingStrategy, setTaskId, goToStep,
   ])
 
   const handleProcessingComplete = useCallback(
@@ -121,10 +174,11 @@ export function CsvUpdateWizard() {
 
   const isNextEnabled = (() => {
     switch (step) {
-      case 'upload':    return parsedData.rowCount > 0 && !csvUpload.isParsing
-      case 'configure': return primaryKeyColumn.length > 0
-      case 'preview':   return false
-      default:          return false
+      case 'upload':      return parsedData.rowCount > 0 && !csvUpload.isParsing
+      case 'configure':   return primaryKeyColumn.length > 0
+      case 'properties':  return true
+      case 'preview':     return false
+      default:            return false
     }
   })()
 
@@ -134,15 +188,18 @@ export function CsvUpdateWizard() {
     currentStepIndex <= INDICATOR_STEPS.length - 1
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <FileSpreadsheet className="h-5 w-5" />
-          Update Objects from CSV
-        </CardTitle>
-      </CardHeader>
+    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+      {/* Gradient header */}
+      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 rounded-t-lg">
+        <div className="flex items-center gap-2">
+          <FileSpreadsheet className="h-4 w-4" />
+          <span className="text-sm font-medium">CSV Update Wizard</span>
+        </div>
+        <div className="text-xs text-blue-100">Follow the steps to configure and submit your CSV update</div>
+      </div>
 
-      <CardContent className="space-y-6">
+      {/* Content */}
+      <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
         {/* Step Indicator */}
         {!isProcessingOrSummary && (
           <div className="flex items-center gap-1">
@@ -207,6 +264,17 @@ export function CsvUpdateWizard() {
               onFieldMappingChange={setFieldMapping}
               tagsMode={tagsMode}
               onTagsModeChange={setTagsMode}
+            />
+          )}
+
+          {step === 'properties' && (
+            <CsvPropertiesStep
+              objectType={objectType}
+              primaryKeyColumn={primaryKeyColumn}
+              matchingStrategy={matchingStrategy}
+              onMatchingStrategyChange={setMatchingStrategy}
+              defaultProperties={defaultProperties}
+              onDefaultPropertiesChange={setDefaultProperties}
             />
           )}
 
@@ -281,7 +349,7 @@ export function CsvUpdateWizard() {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

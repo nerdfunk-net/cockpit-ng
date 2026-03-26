@@ -54,6 +54,7 @@ class DeviceUpdateService:
         create_if_missing: bool = False,
         add_prefix: bool = True,
         default_prefix_length: str = "/24",
+        matching_strategy: str = "exact",
     ) -> Dict[str, Any]:
         """
         Update a single device.
@@ -143,7 +144,9 @@ class DeviceUpdateService:
         try:
             # Step 1: Resolve device ID
             logger.info("Step 1: Resolving device ID")
-            device_id, device_name = await self._resolve_device_id(device_identifier)
+            device_id, device_name = await self._resolve_device_id(
+                device_identifier, matching_strategy=matching_strategy
+            )
 
             if not device_id:
                 if create_if_missing:
@@ -296,13 +299,14 @@ class DeviceUpdateService:
             raise
 
     async def _resolve_device_id(
-        self, device_identifier: Dict[str, Any]
+        self, device_identifier: Dict[str, Any], matching_strategy: str = "exact"
     ) -> Tuple[Optional[str], Optional[str]]:
         """
         Resolve device UUID and name from identifier.
 
         Args:
             device_identifier: Dict with id, name, or ip_address
+            matching_strategy: How to match by name - "exact", "contains", "starts_with"
 
         Returns:
             Tuple of (device_id, device_name)
@@ -324,6 +328,7 @@ class DeviceUpdateService:
             device_id=device_id,
             device_name=device_name,
             ip_address=ip_address,
+            matching_strategy=matching_strategy,
         )
 
         if not resolved_id:
@@ -432,6 +437,19 @@ class DeviceUpdateService:
                 else:
                     validated[field] = value
 
+            elif field == "rack":
+                # Resolve rack name to UUID
+                if not self.common._is_valid_uuid(value):
+                    rack_id = await self.common.resolve_rack_id(value)
+                    if rack_id:
+                        validated[field] = rack_id
+                    else:
+                        logger.warning(
+                            "Rack '%s' not found, will be omitted", value
+                        )
+                else:
+                    validated[field] = value
+
             elif field == "device_type":
                 # Resolve device type name to UUID
                 if not self.common._is_valid_uuid(value):
@@ -465,6 +483,17 @@ class DeviceUpdateService:
             else:
                 # Copy other fields as-is (including primary_ip4, etc.)
                 validated[field] = value
+
+        # Rack / position / face consistency check.
+        # Nautobot requires "face" whenever "position" is set.  If "position" arrived
+        # in the update data but "face" did not (or is empty), clear "position" to
+        # avoid the "Must specify rack face when defining rack position" error.
+        if "position" in validated and not validated.get("face"):
+            logger.warning(
+                "Dropping 'position' from update data because 'face' is not set — "
+                "Nautobot requires both fields when specifying a rack position."
+            )
+            validated.pop("position")
 
         logger.info("Validation complete, %s fields to update", len(validated))
         logger.debug("Validated data: %s", validated)

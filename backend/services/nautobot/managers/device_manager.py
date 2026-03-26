@@ -215,7 +215,15 @@ class DeviceManager:
             if isinstance(actual_value, dict) and "id" in actual_value:
                 actual_value = actual_value["id"]
 
+            # Handle choice/enum fields (e.g., face returns {'value': 'front', 'label': 'Front'})
+            elif isinstance(actual_value, dict) and "value" in actual_value:
+                actual_value = actual_value["value"]
+
+            # Normalize types for scalar comparison (e.g., int 10 vs str '10')
             if actual_value != expected_value:
+                if str(actual_value) == str(expected_value):
+                    continue
+
                 mismatches.append(
                     {
                         "field": field,

@@ -257,3 +257,37 @@ class MetadataResolver(BaseResolver):
         except Exception as e:
             logger.error("Error resolving secrets group: %s", e, exc_info=True)
             return None
+
+    async def resolve_rack_id(self, rack_name: str) -> Optional[str]:
+        """
+        Resolve rack name to UUID using REST API.
+
+        Args:
+            rack_name: Name of the rack (e.g., "A_1", "Rack-01")
+
+        Returns:
+            Rack UUID if found, None otherwise
+        """
+        if is_valid_uuid(rack_name):
+            logger.debug("Rack is already a UUID: %s", rack_name)
+            return rack_name
+
+        try:
+            logger.info("Resolving rack '%s'", rack_name)
+
+            result = await self.nautobot.rest_request(
+                endpoint=f"dcim/racks/?name={rack_name}&format=json", method="GET"
+            )
+
+            if result and result.get("count", 0) > 0:
+                rack = result["results"][0]
+                rack_id = rack["id"]
+                logger.info("Resolved rack '%s' to UUID %s", rack_name, rack_id)
+                return rack_id
+
+            logger.warning("Rack not found: %s", rack_name)
+            return None
+
+        except Exception as e:
+            logger.error("Error resolving rack: %s", e, exc_info=True)
+            return None

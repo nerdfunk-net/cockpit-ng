@@ -137,16 +137,19 @@ class DeviceResolver(BaseResolver):
         device_id: Optional[str] = None,
         device_name: Optional[str] = None,
         ip_address: Optional[str] = None,
+        matching_strategy: str = "exact",
     ) -> Optional[str]:
         """
         Resolve device UUID from any available identifier.
 
-        Tries in order: device_id (if valid), device_name, ip_address
+        Tries in order: device_id (if valid), device_name (using matching_strategy), ip_address
 
         Args:
             device_id: Device UUID (if already known)
             device_name: Device name to search for
             ip_address: Primary IPv4 address to search for
+            matching_strategy: How to match by name — "exact" (default),
+                "contains", or "starts_with"
 
         Returns:
             Device UUID if found, None otherwise
@@ -160,20 +163,159 @@ class DeviceResolver(BaseResolver):
             else:
                 logger.warning("Invalid device ID format: %s", device_id)
 
-        # Try resolving by name
+        # Try resolving by name using the configured strategy
         if device_name:
-            device_id = await self.resolve_device_by_name(device_name)
-            if device_id:
-                return device_id
+            if matching_strategy == "contains":
+                resolved = await self.resolve_device_by_name_contains(device_name)
+            elif matching_strategy == "starts_with":
+                resolved = await self.resolve_device_by_name_starts_with(device_name)
+            else:
+                # Default: exact match
+                resolved = await self.resolve_device_by_name(device_name)
+
+            if resolved:
+                return resolved
 
         # Try resolving by IP address
         if ip_address:
-            device_id = await self.resolve_device_by_ip(ip_address)
-            if device_id:
-                return device_id
+            resolved = await self.resolve_device_by_ip(ip_address)
+            if resolved:
+                return resolved
 
         logger.error("Could not resolve device ID from any identifier")
         return None
+
+    async def resolve_device_by_name_contains(self, device_name: str) -> Optional[str]:
+        """
+        Resolve device UUID by searching for devices whose name *contains* the given string.
+
+        When multiple devices match, the first result is returned and a warning is logged.
+
+        Args:
+            device_name: Partial device name to search for
+
+        Returns:
+            Device UUID if exactly one match found, None otherwise
+        """
+        try:
+            logger.info("Looking up device by name (contains): %s", device_name)
+
+            # Nautobot GraphQL supports name__ic for case-insensitive contains
+            query = """
+            query GetDeviceByNameContains($name: String) {
+              devices(name__ic: $name) {
+                id
+                name
+              }
+            }
+            """
+            variables = {"name": device_name}
+            result = await self.nautobot.graphql_query(query, variables)
+
+            if "errors" in result:
+                logger.error(
+                    "GraphQL error looking up device by name (contains): %s",
+                    result["errors"],
+                )
+                return None
+
+            devices = result.get("data", {}).get("devices", [])
+            if not devices:
+                logger.warning(
+                    "No device found whose name contains: %s", device_name
+                )
+                return None
+
+            if len(devices) > 1:
+                names = [d.get("name") for d in devices]
+                logger.warning(
+                    "Multiple devices (%s) match name contains '%s': %s — using first match",
+                    len(devices),
+                    device_name,
+                    names,
+                )
+
+            device_id = devices[0].get("id")
+            logger.info(
+                "Found device by name contains '%s': %s (%s)",
+                device_name,
+                devices[0].get("name"),
+                device_id,
+            )
+            return device_id
+
+        except Exception as e:
+            logger.error(
+                "Error resolving device by name (contains): %s", e, exc_info=True
+            )
+            return None
+
+    async def resolve_device_by_name_starts_with(
+        self, device_name: str
+    ) -> Optional[str]:
+        """
+        Resolve device UUID by searching for devices whose name *starts with* the given string.
+
+        When multiple devices match, the first result is returned and a warning is logged.
+
+        Args:
+            device_name: Name prefix to search for
+
+        Returns:
+            Device UUID if a match is found, None otherwise
+        """
+        try:
+            logger.info("Looking up device by name (starts with): %s", device_name)
+
+            # Nautobot GraphQL supports name__isw for case-insensitive starts-with
+            query = """
+            query GetDeviceByNameStartsWith($name: String) {
+              devices(name__isw: $name) {
+                id
+                name
+              }
+            }
+            """
+            variables = {"name": device_name}
+            result = await self.nautobot.graphql_query(query, variables)
+
+            if "errors" in result:
+                logger.error(
+                    "GraphQL error looking up device by name (starts_with): %s",
+                    result["errors"],
+                )
+                return None
+
+            devices = result.get("data", {}).get("devices", [])
+            if not devices:
+                logger.warning(
+                    "No device found whose name starts with: %s", device_name
+                )
+                return None
+
+            if len(devices) > 1:
+                names = [d.get("name") for d in devices]
+                logger.warning(
+                    "Multiple devices (%s) match name starts_with '%s': %s — using first match",
+                    len(devices),
+                    device_name,
+                    names,
+                )
+
+            device_id = devices[0].get("id")
+            logger.info(
+                "Found device by name starts_with '%s': %s (%s)",
+                device_name,
+                devices[0].get("name"),
+                device_id,
+            )
+            return device_id
+
+        except Exception as e:
+            logger.error(
+                "Error resolving device by name (starts_with): %s", e, exc_info=True
+            )
+            return None
 
     async def resolve_device_type_id(
         self, model: str, manufacturer: Optional[str] = None

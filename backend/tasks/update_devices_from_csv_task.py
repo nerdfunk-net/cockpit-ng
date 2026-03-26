@@ -36,6 +36,11 @@ def update_devices_from_csv_task(
     csv_content: str,
     csv_options: Optional[Dict[str, Any]] = None,
     dry_run: bool = False,
+    tags_mode: str = "replace",
+    column_mapping: Optional[Dict[str, str]] = None,
+    selected_columns: Optional[list] = None,
+    primary_key_column: Optional[str] = None,
+    matching_strategy: str = "exact",
 ) -> dict:
     """
     Task: Update Nautobot devices from CSV data.
@@ -52,6 +57,16 @@ def update_devices_from_csv_task(
             - delimiter: Field delimiter (default: ",")
             - quoteChar: Quote character (default: '"')
         dry_run: If True, validate without making changes (default: False)
+        tags_mode: How to handle tags - "replace" or "merge" (default: "replace")
+        column_mapping: Maps CSV column names to Nautobot field names. Only mapped
+            columns are included in the update. Example:
+            {"hostname": "name", "rack_name": "rack"}
+        selected_columns: List of CSV column names to update. If provided, ONLY these
+            columns are processed (after column_mapping is applied). Columns absent
+            from this list are skipped even if present in the CSV.
+        primary_key_column: CSV column used to look up devices (default: "name").
+        matching_strategy: How to match devices by name - "exact" (default),
+            "contains", or "starts_with". Only applies when looking up by name.
 
     Returns:
         dict: Update results including success/failure counts and details
@@ -61,6 +76,11 @@ def update_devices_from_csv_task(
         logger.info("UPDATE DEVICES FROM CSV TASK STARTED")
         logger.info("=" * 80)
         logger.info("Dry run: %s", dry_run)
+        logger.info("Tags mode: %s", tags_mode)
+        logger.info("Column mapping: %s", column_mapping)
+        logger.info("Selected columns: %s", selected_columns)
+        logger.info("Primary key column: %s", primary_key_column)
+        logger.info("Matching strategy: %s", matching_strategy)
         logger.info("CSV Options: %s", csv_options)
 
         self.update_state(
@@ -177,7 +197,7 @@ def update_devices_from_csv_task(
 
                 # Prepare data for service
                 device_identifier, update_data, interface_config = _prepare_row_data(
-                    row, headers
+                    row, headers, column_mapping, selected_columns, primary_key_column
                 )
 
                 if not update_data:
@@ -220,6 +240,7 @@ def update_devices_from_csv_task(
                             device_identifier=device_identifier,
                             update_data=update_data,
                             interface_config=interface_config,
+                            matching_strategy=matching_strategy,
                         )
                     )
 
@@ -329,46 +350,74 @@ def update_devices_from_csv_task(
 
 
 def _prepare_row_data(
-    row: Dict[str, str], headers: list
+    row: Dict[str, str],
+    headers: list,
+    column_mapping: Optional[Dict[str, str]] = None,
+    selected_columns: Optional[list] = None,
+    primary_key_column: Optional[str] = None,
 ) -> tuple[Dict[str, Any], Dict[str, Any], Optional[Dict[str, str]]]:
     """
     Prepare row data for DeviceUpdateService.
 
     Extracts:
     1. Device identifier (id, name, or ip_address)
-    2. Update data (all other fields except identifier and interface fields)
+    2. Update data (mapped/selected columns only, excluding identifier and interface fields)
     3. Interface config (if interface_name/type/status present)
 
+    Column mapping and selection:
+    - column_mapping: maps CSV column names to Nautobot field names
+    - selected_columns: list of CSV columns to include; columns absent from this list are skipped
+    - primary_key_column: CSV column used as device lookup key (default: "name")
+
     Custom fields handling:
-    - Fields starting with "cf_" are treated as custom fields
+    - Fields starting with "cf_" (after mapping) are treated as custom fields
     - The "cf_" prefix is removed and they're grouped under "custom_fields"
-    - Example: "cf_net" becomes {"custom_fields": {"net": "..."}}
 
     Tags handling:
     - The "tags" field accepts comma-separated tag names
-    - Example: "production,core,monitored" becomes ["production", "core", "monitored"]
     - Whitespace around tag names is automatically trimmed
 
     Args:
         row: CSV row as dictionary
         headers: List of column headers
+        column_mapping: Optional dict mapping CSV column → Nautobot field name
+        selected_columns: Optional list of CSV columns to include in updates
+        primary_key_column: CSV column used for device lookup (default: "name")
 
     Returns:
         Tuple of (device_identifier, update_data, interface_config)
     """
-    # Extract device identifier
+    mapping = column_mapping or {}
+    pk_col = primary_key_column or "name"
+
+    # Build set of CSV columns that should be processed for updates.
+    # If selected_columns is provided, only those columns are eligible.
+    if selected_columns is not None:
+        allowed_csv_cols = set(selected_columns)
+    else:
+        allowed_csv_cols = set(headers)
+
+    def nautobot_field(csv_col: str) -> str:
+        """Return the Nautobot field name for a CSV column (using mapping if provided)."""
+        return mapping.get(csv_col, csv_col)
+
+    # Extract device identifier using the primary key column (plus id/ip_address fall-backs)
     device_identifier = {}
-    if "id" in row and row["id"].strip():
-        device_identifier["id"] = row["id"].strip()
-    if "name" in row and row["name"].strip():
-        device_identifier["name"] = row["name"].strip()
-    if "ip_address" in row and row["ip_address"].strip():
-        device_identifier["ip_address"] = row["ip_address"].strip()
+    pk_nb_field = nautobot_field(pk_col)
 
-    # Fields to exclude from updates (identifiers)
-    excluded_fields = {"id", "name", "ip_address"}
+    for id_csv_col, id_nb_field in [
+        ("id", "id"),
+        (pk_col, pk_nb_field),
+        ("ip_address", "ip_address"),
+    ]:
+        val = row.get(id_csv_col, "").strip()
+        if val:
+            device_identifier[id_nb_field] = val
 
-    # Interface configuration fields
+    # Nautobot identifier field names — never sent as update fields
+    identifier_nautobot_fields = {"id", "name", "ip_address"}
+
+    # Interface configuration CSV columns
     interface_fields = {
         "interface_name",
         "interface_type",
@@ -387,44 +436,50 @@ def _prepare_row_data(
             "status": row.get("interface_status", "").strip() or "active",
         }
 
-    # Build update data (all fields except identifiers and interface fields)
+    # Build update data — respecting selected_columns and column_mapping
     update_data = {}
     custom_fields = {}
 
-    for field in headers:
-        if field in excluded_fields or field in interface_fields:
+    for csv_col in headers:
+        # Skip CSV columns not in the allowed set
+        if csv_col not in allowed_csv_cols:
             continue
 
-        value = row.get(field, "").strip()
+        # Resolve to Nautobot field name
+        nb_field = nautobot_field(csv_col)
+
+        # Skip identifier fields and interface configuration fields
+        if nb_field in identifier_nautobot_fields:
+            continue
+        if csv_col in interface_fields or nb_field in interface_fields:
+            continue
+
+        value = row.get(csv_col, "").strip()
 
         # Skip empty values
         if not value:
             continue
 
-        # Handle custom fields (fields starting with "cf_")
-        if field.startswith("cf_"):
-            # Extract custom field name by removing "cf_" prefix
-            custom_field_name = field[3:]  # Remove first 3 characters ("cf_")
-
-            # Handle special values for custom fields
-            if value.upper() == "NULL" or value.upper() == "NOOBJECT":
+        # Handle custom fields (Nautobot field names starting with "cf_")
+        if nb_field.startswith("cf_"):
+            custom_field_name = nb_field[3:]
+            if value.upper() in ("NULL", "NOOBJECT"):
                 custom_fields[custom_field_name] = None
-            elif value.lower() in ["true", "false"]:
+            elif value.lower() in ("true", "false"):
                 custom_fields[custom_field_name] = value.lower() == "true"
             else:
                 custom_fields[custom_field_name] = value
-
             continue
 
-        # Handle tags field - convert comma-separated string to list
-        if field == "tags":
-            # Split by comma and strip whitespace from each tag
-            tag_list = [tag.strip() for tag in value.split(",") if tag.strip()]
-            update_data[field] = tag_list
+        # Handle tags field — convert comma-separated string to list
+        if nb_field == "tags":
+            update_data[nb_field] = [
+                tag.strip() for tag in value.split(",") if tag.strip()
+            ]
             continue
 
-        # Add to update data as-is (service will handle validation/resolution)
-        update_data[field] = value
+        # Add to update data (service handles validation/resolution)
+        update_data[nb_field] = value
 
     # Add custom fields to update data if any were found
     if custom_fields:

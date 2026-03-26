@@ -181,10 +181,11 @@ class DeviceCommonService:
         device_id: Optional[str] = None,
         device_name: Optional[str] = None,
         ip_address: Optional[str] = None,
+        matching_strategy: str = "exact",
     ) -> Optional[str]:
         """Delegate to DeviceResolver."""
         return await self.device_resolver.resolve_device_id(
-            device_id, device_name, ip_address
+            device_id, device_name, ip_address, matching_strategy=matching_strategy
         )
 
     async def find_interface_with_ip(
@@ -230,6 +231,10 @@ class DeviceCommonService:
     async def resolve_location_id(self, location_name: str) -> Optional[str]:
         """Delegate to MetadataResolver."""
         return await self.metadata_resolver.resolve_location_id(location_name)
+
+    async def resolve_rack_id(self, rack_name: str) -> Optional[str]:
+        """Delegate to MetadataResolver."""
+        return await self.metadata_resolver.resolve_rack_id(rack_name)
 
     # ========================================================================
     # NETWORK RESOLUTION METHODS (delegated to NetworkResolver)
