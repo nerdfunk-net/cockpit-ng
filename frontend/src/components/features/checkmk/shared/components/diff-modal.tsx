@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import type { Device, DiffResult } from '@/types/features/checkmk/sync-devices'
-import { formatValue } from '@/utils/features/checkmk/sync-devices/diff-helpers'
+import type { Device, DiffResult } from '../../sync-devices/types'
+import { formatValue } from '../../sync-devices/utils/diff-helpers'
 
 interface DiffModalProps {
   isOpen: boolean

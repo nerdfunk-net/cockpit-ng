@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import type { Device, FilterOptions } from '@/types/features/checkmk/sync-devices'
+import type { Device, FilterOptions } from '../types'
 
 // Map CheckMK status values to display values
 const getCheckmkDisplayValue = (status: string | undefined): string => {

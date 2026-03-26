@@ -1,9 +1,9 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
-import { startDiffTask } from '../api/diff-viewer.api'
+import { startDiffTask } from '../utils/diff-viewer.api'
 import { useAuthStore } from '@/lib/auth-store'
-import type { DiffDevice, DiffTaskResult } from '@/types/features/checkmk/diff-viewer'
-import type { CeleryTaskStatus } from '@/types/features/checkmk/sync-devices'
+import type { DiffDevice, DiffTaskResult } from '../types'
+import type { CeleryTaskStatus } from '../../sync-devices/types'
 
 const EMPTY_ARRAY: DiffDevice[] = []
 

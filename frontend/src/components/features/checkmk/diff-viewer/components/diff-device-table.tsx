@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select'
 import { DiffTableHeader } from './diff-table-header'
 import { DiffTableRow } from './diff-table-row'
-import type { DiffDevice, SystemFilter } from '@/types/features/checkmk/diff-viewer'
+import type { DiffDevice, SystemFilter } from '../types'
 
 interface DiffDeviceTableProps {
   devices: DiffDevice[]

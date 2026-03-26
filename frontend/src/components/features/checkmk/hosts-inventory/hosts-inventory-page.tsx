@@ -21,11 +21,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/lib/auth-store'
 
-import { HostDetailsModal } from '../modals/host-details-modal'
-import { InventoryModal } from '../modals/inventory-modal'
-import { DeviceSyncModal } from '../modals/device-sync-modal'
+import { HostDetailsDialog } from './dialogs/host-details-dialog'
+import { InventoryDialog } from './dialogs/inventory-dialog'
+import { DeviceSyncDialog } from './dialogs/device-sync-dialog'
 
-import { useCheckmkHostsQuery } from './queries/use-checkmk-hosts-query'
+import { useCheckmkHostsQuery } from './hooks/use-checkmk-hosts-query'
 import { useHostsFilter } from './hooks/use-hosts-filter'
 import { useHostsPagination } from './hooks/use-hosts-pagination'
 import { useHostsSelection } from './hooks/use-hosts-selection'
@@ -35,7 +35,7 @@ import { useModalState } from './hooks/use-modal-state'
 import { useNautobotSync } from './hooks/use-nautobot-sync'
 
 // Types imported from centralized location
-import type { CheckMKHost, FilterOptions } from '@/types/checkmk/types'
+import type { CheckMKHost, FilterOptions } from './types'
 
 export default function HostsInventoryPage() {
   const { isAuthenticated, token } = useAuthStore()
@@ -524,22 +524,22 @@ export default function HostsInventoryPage() {
         </div>
       </div>
 
-      {/* Host Details Modal */}
-      <HostDetailsModal
+      {/* Host Details Dialog */}
+      <HostDetailsDialog
         open={isHostModalOpen}
         onOpenChange={closeHostModal}
         host={selectedHostForView}
       />
 
-      {/* Inventory Modal */}
-      <InventoryModal
+      {/* Inventory Dialog */}
+      <InventoryDialog
         open={isInventoryModalOpen}
         onOpenChange={closeInventoryModal}
         host={selectedHostForInventory}
       />
 
-      {/* Sync to Nautobot Modal */}
-      <DeviceSyncModal
+      {/* Sync to Nautobot Dialog */}
+      <DeviceSyncDialog
         open={isSyncModalOpen}
         deviceId={nautobotDevice?.id as string | undefined}
         propertyMappings={propertyMappings}

@@ -1,12 +1,12 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import type { Job } from '../api/sync-devices.api'
-import type { Device } from '@/types/features/checkmk/sync-devices'
+import type { Job } from '../../sync-devices/utils/sync-devices.api'
+import type { Device } from '../../sync-devices/types'
 import {
   fetchJobs,
   loadJobResults as apiLoadJobResults,
   clearResults as apiClearResults,
   startComparisonJob as apiStartComparisonJob
-} from '../api/sync-devices.api'
+} from '../../sync-devices/utils/sync-devices.api'
 
 interface DeviceResult {
   device_id?: string

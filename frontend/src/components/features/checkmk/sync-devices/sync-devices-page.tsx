@@ -4,24 +4,24 @@ import { useState, useCallback, useEffect, useMemo } from 'react'
 import { X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAuthStore } from '@/lib/auth-store'
-import type { Device } from '@/types/features/checkmk/sync-devices'
+import type { Device } from './types'
 
 // Custom hooks
-import { useStatusMessages } from './hooks/use-status-messages'
+import { useStatusMessages } from '../shared/hooks/use-status-messages'
 import { useDeviceLoader } from './hooks/use-device-loader'
 import { useDeviceFilters } from './hooks/use-device-filters'
 import { useDeviceSelection } from './hooks/use-device-selection'
 import { useTaskTracking } from './hooks/use-task-tracking'
-import { useDiffComparison } from './hooks/use-diff-comparison'
+import { useDiffComparison } from '../shared/hooks/use-diff-comparison'
 import { useDeviceOperations } from './hooks/use-device-operations'
-import { useJobManagement } from './hooks/use-job-management'
+import { useJobManagement } from '../shared/hooks/use-job-management'
 
 // Components
-import { StatusMessageCard } from './components/status-message-card'
+import { StatusMessageCard } from '../shared/components/status-message-card'
 import { ActiveTasksPanel } from './components/active-tasks-panel'
 import { SyncDevicesHeader } from './components/sync-devices-header'
 import { DeviceTable } from './components/device-table'
-import { DiffModal } from './components/diff-modal'
+import { DiffModal } from '../shared/components/diff-modal'
 import { AddDeviceModal } from './components/add-device-modal'
 
 export default function SyncDevicesPage() {

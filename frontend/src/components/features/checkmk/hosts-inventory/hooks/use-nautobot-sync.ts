@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
-import type { CheckMKHost, CheckMKConfig, NautobotMetadata, PropertyMapping } from '@/types/checkmk/types'
-import { initializePropertyMappings, type InterfaceMappingData } from '@/lib/checkmk/property-mapping-utils'
+import type { CheckMKHost, CheckMKConfig, NautobotMetadata, PropertyMapping } from '../types'
+import { initializePropertyMappings, type InterfaceMappingData } from '../utils/property-mapping-utils'
 import { formatDeviceSubmissionData } from '@/components/features/nautobot/add-device/utils'
 import type { DeviceFormValues } from '@/components/shared/device-form'
-import { parseInterfacesFromInventory, parseInterfacesFromAddresses, type CheckMKInterface } from '@/lib/checkmk/interface-mapping-utils'
+import { parseInterfacesFromInventory, parseInterfacesFromAddresses, type CheckMKInterface } from '../utils/interface-mapping-utils'
 
 export type InterfaceSource = 'interfaces' | 'addresses'
 

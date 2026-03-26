@@ -3,7 +3,7 @@
 import { CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import type { ActivationStatusResponse } from '../hooks/queries/use-checkmk-changes-query'
+import type { ActivationStatusResponse } from '../hooks/use-checkmk-changes-query'
 
 interface ActivationStatusCardProps {
   data: ActivationStatusResponse

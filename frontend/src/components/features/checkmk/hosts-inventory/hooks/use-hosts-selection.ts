@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { CheckMKHost } from '@/types/checkmk/types'
+import type { CheckMKHost } from '../types'
 
 interface UseHostsSelectionReturn {
   selectedHosts: Set<string>

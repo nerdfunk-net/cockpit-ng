@@ -4,17 +4,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { JsonRenderer } from '../renderers/json-renderer'
+import { JsonRenderer } from '../components/json-renderer'
 import { useApi } from '@/hooks/use-api'
-import type { CheckMKHost } from '@/types/checkmk/types'
+import type { CheckMKHost } from '../types'
 
-interface HostDetailsModalProps {
+interface HostDetailsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   host: CheckMKHost | null
 }
 
-export function HostDetailsModal({ open, onOpenChange, host }: HostDetailsModalProps) {
+export function HostDetailsDialog({ open, onOpenChange, host }: HostDetailsDialogProps) {
   const { apiCall } = useApi()
   const [hostDetails, setHostDetails] = useState<Record<string, unknown> | null>(null)
   const [loadingHostDetails, setLoadingHostDetails] = useState(false)

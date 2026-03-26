@@ -14,7 +14,7 @@ import {
   DropdownMenuItem
 } from '@/components/ui/dropdown-menu'
 import { SearchableDropdown } from '@/components/shared/searchable-dropdown'
-import type { FilterOptions } from '@/types/features/checkmk/sync-devices'
+import type { FilterOptions } from '../types'
 
 interface DeviceTableHeaderProps {
   hasSelectedDevices: boolean

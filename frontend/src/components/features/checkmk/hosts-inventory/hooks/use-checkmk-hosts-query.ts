@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import type { CheckMKHost } from '@/types/checkmk/types'
+import type { CheckMKHost } from '../types'
 
 interface CheckMKHostsResponse {
   hosts?: CheckMKHost[]

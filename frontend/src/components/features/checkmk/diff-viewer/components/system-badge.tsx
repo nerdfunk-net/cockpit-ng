@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import type { DeviceSource } from '@/types/features/checkmk/diff-viewer'
+import type { DeviceSource } from '../types'
 
 interface SystemBadgeProps {
   source: DeviceSource

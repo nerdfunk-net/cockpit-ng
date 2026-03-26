@@ -1,4 +1,4 @@
-import type { ConfigAttribute } from '@/types/features/checkmk/sync-devices'
+import type { ConfigAttribute } from '../types'
 
 const EMPTY_IGNORED_ATTRIBUTES: string[] = []
 

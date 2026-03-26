@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu'
-import type { SystemFilter } from '@/types/features/checkmk/diff-viewer'
+import type { SystemFilter } from '../types'
 
 interface DiffTableHeaderProps {
   deviceNameFilter: string

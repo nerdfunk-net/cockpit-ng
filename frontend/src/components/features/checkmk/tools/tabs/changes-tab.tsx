@@ -5,7 +5,7 @@ import { RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { useCheckmkPendingChangesQuery, useCheckmkChangesMutations, useCheckmkActivationStatusQuery } from '../hooks/queries/use-checkmk-changes-query'
+import { useCheckmkPendingChangesQuery, useCheckmkChangesMutations, useCheckmkActivationStatusQuery } from '../hooks/use-checkmk-changes-query'
 import { ActivationStatusCard } from '../components/activation-status-card'
 
 export function ChangesTab() {

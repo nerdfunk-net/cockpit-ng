@@ -4,7 +4,7 @@
  */
 
 import type { DeviceFormValues, InterfaceFormValues } from '../validation'
-import type { CheckMKHost, PropertyMapping, NautobotMetadata } from '@/types/checkmk/types'
+import type { CheckMKHost, PropertyMapping, NautobotMetadata } from '@/components/features/checkmk/hosts-inventory/types'
 
 /**
  * Resolves a Nautobot ID from a name/value using metadata

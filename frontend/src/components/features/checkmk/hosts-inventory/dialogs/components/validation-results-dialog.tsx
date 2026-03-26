@@ -17,7 +17,7 @@ export interface ValidationResults {
   ipAddressIssues: number
 }
 
-interface ValidationResultsModalProps {
+interface ValidationResultsDialogProps {
   open: boolean
   onClose: () => void
   results: ValidationResults
@@ -56,7 +56,7 @@ function ValidationRow({ label, valid, issueCount, useAlertIcon = false }: Valid
   )
 }
 
-export function ValidationResultsModal({ open, onClose, results }: ValidationResultsModalProps) {
+export function ValidationResultsDialog({ open, onClose, results }: ValidationResultsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">

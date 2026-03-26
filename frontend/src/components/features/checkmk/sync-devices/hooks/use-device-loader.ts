@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useApi } from '@/hooks/use-api'
 import { useAuthStore } from '@/lib/auth-store'
-import type { Device, PaginationState } from '@/types/features/checkmk/sync-devices'
+import type { Device, PaginationState } from '../types'
 
 export function useDeviceLoader() {
   const { apiCall } = useApi()

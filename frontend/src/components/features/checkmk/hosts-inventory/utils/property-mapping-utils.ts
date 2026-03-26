@@ -4,7 +4,7 @@ import type {
   CheckMKConfig, 
   NautobotMetadata, 
   PropertyMapping 
-} from '@/types/checkmk/types'
+} from '../types'
 
 /**
  * Initialize property mappings from a CheckMK host to Nautobot fields

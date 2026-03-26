@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import type { DiffDevice, SystemFilter } from '@/types/features/checkmk/diff-viewer'
+import type { DiffDevice, SystemFilter } from '../types'
 
 interface FilterOptions {
   roles: Set<string>

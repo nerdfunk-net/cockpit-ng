@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useApi } from '@/hooks/use-api'
-import type { CheckMKConfig } from '@/types/checkmk/types'
+import type { CheckMKConfig } from '../types'
 
 interface UseCheckmkConfigReturn {
   checkmkConfig: CheckMKConfig | null

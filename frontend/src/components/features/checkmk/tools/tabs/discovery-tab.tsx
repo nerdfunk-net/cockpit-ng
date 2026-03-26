@@ -9,8 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useApi } from '@/hooks/use-api'
-import { useCheckmkDiscoveryMutations } from '../hooks/queries/use-checkmk-discovery-mutations'
-import type { Device } from '@/types/features/checkmk/sync-devices'
+import { useCheckmkDiscoveryMutations } from '../hooks/use-checkmk-discovery-mutations'
+import type { Device } from '../../sync-devices/types'
 
 const DISCOVERY_MODES = [
   { value: 'fix_all', label: 'Accept all' },

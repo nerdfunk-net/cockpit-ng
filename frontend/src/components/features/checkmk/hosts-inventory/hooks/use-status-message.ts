@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import type { StatusMessage } from '@/types/checkmk/types'
+import type { StatusMessage } from '../types'
 
 interface UseStatusMessageReturn {
   statusMessage: StatusMessage | null

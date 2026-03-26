@@ -2,7 +2,7 @@ import { GitCompare, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { SystemBadge } from './system-badge'
-import type { DiffDevice } from '@/types/features/checkmk/diff-viewer'
+import type { DiffDevice } from '../types'
 
 interface DiffTableRowProps {
   device: DiffDevice

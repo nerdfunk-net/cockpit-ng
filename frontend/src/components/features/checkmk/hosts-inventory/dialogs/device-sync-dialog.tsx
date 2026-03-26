@@ -21,8 +21,8 @@ import { useDeviceForm, transformCheckMKToFormData } from '@/components/shared/d
 import type { DeviceFormValues } from '@/components/shared/device-form'
 
 // CheckMK types
-import type { NautobotMetadata, PropertyMapping } from '@/types/checkmk/types'
-import type { InterfaceMappingData } from '@/lib/checkmk/property-mapping-utils'
+import type { NautobotMetadata, PropertyMapping } from '../types'
+import type { InterfaceMappingData } from '../utils/property-mapping-utils'
 
 // Add-device types and utilities
 import { useSearchableDropdown } from '@/components/features/nautobot/add-device/hooks/use-searchable-dropdown'
@@ -43,18 +43,18 @@ import type {
   SoftwareVersion,
   NautobotDropdownsResponse,
 } from '@/components/features/nautobot/add-device/types'
-import type { InterfaceSource } from '@/components/features/checkmk/hosts-inventory/hooks/use-nautobot-sync'
+import type { InterfaceSource } from '../hooks/use-nautobot-sync'
 
 // Local sub-components
 import {
-  SyncModalHeader,
+  SyncDialogHeader,
   SyncLoadingState,
   SyncFormFooter,
-  ValidationResultsModal,
+  ValidationResultsDialog,
 } from './components'
 import type { ValidationResults } from './components'
 
-interface DeviceSyncModalProps {
+interface DeviceSyncDialogProps {
   open: boolean
   deviceId?: string
   propertyMappings: Record<string, PropertyMapping>
@@ -81,7 +81,7 @@ const DEFAULT_VALIDATION_RESULTS: ValidationResults = {
   ipAddressIssues: 0,
 }
 
-export function DeviceSyncModal({
+export function DeviceSyncDialog({
   open,
   deviceId,
   propertyMappings,
@@ -94,7 +94,7 @@ export function DeviceSyncModal({
   onSync,
   onClose,
   isSyncing,
-}: DeviceSyncModalProps) {
+}: DeviceSyncDialogProps) {
   const { toast } = useToast()
   const { apiCall } = useApi()
 
@@ -555,7 +555,7 @@ export function DeviceSyncModal({
         </DialogHeader>
 
         {/* Compact Header */}
-        <SyncModalHeader
+        <SyncDialogHeader
           deviceName={form.watch('deviceName')}
           isUpdate={isUpdate}
         />
@@ -647,8 +647,8 @@ export function DeviceSyncModal({
         />
       </DialogContent>
 
-      {/* Validation Results Modal */}
-      <ValidationResultsModal
+      {/* Validation Results Dialog */}
+      <ValidationResultsDialog
         open={showValidationModal}
         onClose={() => setShowValidationModal(false)}
         results={validationResults}

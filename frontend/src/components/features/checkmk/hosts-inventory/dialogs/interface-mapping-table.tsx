@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { CheckMKInterface, CheckMKAddress } from '@/lib/checkmk/interface-mapping-utils'
-import { getAdminStatusLabel, getOperStatusLabel, formatSpeed } from '@/lib/checkmk/interface-mapping-utils'
+import type { CheckMKInterface, CheckMKAddress } from '../utils/interface-mapping-utils'
+import { getAdminStatusLabel, getOperStatusLabel, formatSpeed } from '../utils/interface-mapping-utils'
 
 interface InterfaceMappingTableProps {
   interfaces: CheckMKInterface[]

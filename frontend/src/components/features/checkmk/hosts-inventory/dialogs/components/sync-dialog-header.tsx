@@ -2,12 +2,12 @@
 
 import { Badge } from '@/components/ui/badge'
 
-interface SyncModalHeaderProps {
+interface SyncDialogHeaderProps {
   deviceName: string
   isUpdate: boolean
 }
 
-export function SyncModalHeader({ deviceName, isUpdate }: SyncModalHeaderProps) {
+export function SyncDialogHeader({ deviceName, isUpdate }: SyncDialogHeaderProps) {
   return (
     <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 px-6">
       <div className="flex items-center justify-between">

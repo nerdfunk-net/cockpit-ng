@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useApi } from '@/hooks/use-api'
-import type { DeviceTask, CeleryTaskStatus } from '@/types/features/checkmk/sync-devices'
+import type { DeviceTask, CeleryTaskStatus } from '../types'
 
 interface UseTaskTrackingProps {
   onTaskSuccess?: () => void

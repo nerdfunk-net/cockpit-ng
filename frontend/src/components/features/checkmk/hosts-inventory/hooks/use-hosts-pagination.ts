@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import type { CheckMKHost } from '@/types/checkmk/types'
+import type { CheckMKHost } from '../types'
 
 interface UseHostsPaginationReturn {
   currentPage: number

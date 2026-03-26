@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { InventoryRenderer } from '../renderers/inventory-renderer'
+import { InventoryRenderer } from '../components/inventory-renderer'
 import { useApi } from '@/hooks/use-api'
-import type { CheckMKHost } from '@/types/checkmk/types'
+import type { CheckMKHost } from '../types'
 
-interface InventoryModalProps {
+interface InventoryDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   host: CheckMKHost | null
 }
 
-export function InventoryModal({ open, onOpenChange, host }: InventoryModalProps) {
+export function InventoryDialog({ open, onOpenChange, host }: InventoryDialogProps) {
   const { apiCall } = useApi()
   const [inventoryData, setInventoryData] = useState<Record<string, unknown> | null>(null)
   const [loadingInventory, setLoadingInventory] = useState(false)

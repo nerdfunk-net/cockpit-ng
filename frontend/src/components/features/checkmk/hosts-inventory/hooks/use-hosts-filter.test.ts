@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useHostsFilter } from './use-hosts-filter'
-import type { CheckMKHost, FilterOptions } from '@/types/checkmk/types'
+import type { CheckMKHost, FilterOptions } from '../types'
 
 // Mock data for testing
 const mockHosts: CheckMKHost[] = [

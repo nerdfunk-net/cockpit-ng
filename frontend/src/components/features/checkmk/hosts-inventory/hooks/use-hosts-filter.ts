@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import type { CheckMKHost, FilterOptions } from '@/types/checkmk/types'
+import type { CheckMKHost, FilterOptions } from '../types'
 
 interface UseHostsFilterReturn {
   filteredHosts: CheckMKHost[]
