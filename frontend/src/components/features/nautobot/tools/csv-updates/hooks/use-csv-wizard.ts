@@ -45,6 +45,7 @@ export function useCsvWizard() {
   const [defaultProperties, setDefaultProperties] = useState<DefaultProperty[]>([])
 
   const [taskId, setTaskId] = useState<string | null>(null)
+  const [jobId, setJobId] = useState<number | null>(null)
   const [dryRunTaskId, setDryRunTaskId] = useState<string | null>(null)
 
   const onParseComplete = useCallback(
@@ -89,6 +90,7 @@ export function useCsvWizard() {
     setMatchingStrategy('exact')
     setDefaultProperties([])
     setTaskId(null)
+    setJobId(null)
     setDryRunTaskId(null)
     csvUpload.clearData()
   }, [csvUpload])
@@ -148,6 +150,8 @@ export function useCsvWizard() {
       // Task tracking
       taskId,
       setTaskId,
+      jobId,
+      setJobId,
       dryRunTaskId,
       setDryRunTaskId,
     }),
@@ -168,6 +172,7 @@ export function useCsvWizard() {
       selectedColumns,
       columnMappingForBackend,
       taskId,
+      jobId,
       dryRunTaskId,
     ]
   )

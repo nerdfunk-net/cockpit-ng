@@ -55,6 +55,8 @@ export function CsvUpdateWizard() {
     columnMappingForBackend,
     taskId,
     setTaskId,
+    jobId,
+    setJobId,
     dryRunTaskId,
     setDryRunTaskId,
   } = wizard
@@ -142,6 +144,7 @@ export function CsvUpdateWizard() {
         matchingStrategy,
       })
       setTaskId(response.task_id)
+      if (response.job_id) setJobId(parseInt(response.job_id, 10))
       goToStep('processing')
     } catch {
       // Error handled by mutation's onError toast
@@ -149,7 +152,7 @@ export function CsvUpdateWizard() {
   }, [
     processUpdates, objectType, enrichedCsvData, csvConfig,
     tagsMode, enrichedColumnMapping, enrichedSelectedColumns, primaryKeyColumn,
-    matchingStrategy, setTaskId, goToStep,
+    matchingStrategy, setTaskId, setJobId, goToStep,
   ])
 
   const handleProcessingComplete = useCallback(
@@ -297,6 +300,7 @@ export function CsvUpdateWizard() {
               taskResult={completedResult}
               taskError={completedError}
               taskId={taskId}
+              jobId={jobId}
               onReset={handleReset}
             />
           )}

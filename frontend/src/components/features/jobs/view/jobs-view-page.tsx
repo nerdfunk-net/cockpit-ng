@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { History, RefreshCw } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { JobResultDialog } from './dialogs/job-result-dialog'
@@ -16,6 +17,8 @@ import { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, EMPTY_ARRAY, EMPTY_PROGRESS } from './
 import type { JobSearchParams } from './types'
 
 export function JobsViewPage() {
+  const searchParams = useSearchParams()
+
   // Filter state (TODO: Move to URL search params in future enhancement)
   const [statusFilter, setStatusFilter] = useState<string[]>([])
   const [jobTypeFilter, setJobTypeFilter] = useState<string[]>([])
@@ -26,6 +29,15 @@ export function JobsViewPage() {
   // Dialog state
   const [viewingJobId, setViewingJobId] = useState<number | null>(null)
   const [clearHistoryDialogOpen, setClearHistoryDialogOpen] = useState(false)
+
+  // Auto-open job dialog when ?job=<id> is present in the URL
+  useEffect(() => {
+    const jobParam = searchParams.get('job')
+    if (jobParam) {
+      const id = parseInt(jobParam, 10)
+      if (!isNaN(id)) setViewingJobId(id)
+    }
+  }, [searchParams])
 
   // Mutation loading states
   const [cancellingId, setCancellingId] = useState<number | null>(null)
