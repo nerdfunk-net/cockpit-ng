@@ -21,14 +21,12 @@ const STEP_LABELS: Record<WizardStep, string> = {
   summary: 'Results',
 }
 
-// Steps shown in the indicator (exclude processing/summary)
 const INDICATOR_STEPS: WizardStep[] = ['upload', 'configure', 'preview']
 
 export function CsvUpdateWizard() {
   const wizard = useCsvWizard()
   const { processUpdates } = useCsvUpdatesMutations()
 
-  // Summary state (set when processing completes)
   const [completedStatus, setCompletedStatus] = useState<string>('')
   const [completedResult, setCompletedResult] = useState<unknown>(null)
   const [completedError, setCompletedError] = useState<string | undefined>(undefined)
@@ -42,18 +40,14 @@ export function CsvUpdateWizard() {
     csvUpload,
     objectType,
     handleObjectTypeChange,
-    ignoreUuid,
-    setIgnoreUuid,
-    ignoredColumns,
-    setIgnoredColumns,
+    fieldMapping,
+    setFieldMapping,
+    primaryKeyColumn,
+    setPrimaryKeyColumn,
     tagsMode,
     setTagsMode,
-    columnMapping,
-    setColumnMapping,
-    isLegacyFormat,
-    legacyMapping,
-    setLegacyMapping,
     selectedColumns,
+    columnMappingForBackend,
     taskId,
     setTaskId,
     dryRunTaskId,
@@ -69,25 +63,18 @@ export function CsvUpdateWizard() {
         csvData: { headers: parsedData.headers, rows: parsedData.rows },
         csvOptions: csvConfig,
         dryRun: true,
-        ignoreUuid,
         tagsMode,
-        columnMapping,
+        columnMapping: columnMappingForBackend,
         selectedColumns,
+        primaryKeyColumn,
       })
       setDryRunTaskId(response.task_id)
     } catch {
       // Error handled by mutation's onError toast
     }
   }, [
-    processUpdates,
-    objectType,
-    parsedData,
-    csvConfig,
-    ignoreUuid,
-    tagsMode,
-    columnMapping,
-    selectedColumns,
-    setDryRunTaskId,
+    processUpdates, objectType, parsedData, csvConfig,
+    tagsMode, columnMappingForBackend, selectedColumns, primaryKeyColumn, setDryRunTaskId,
   ])
 
   const handleSubmit = useCallback(async () => {
@@ -97,10 +84,10 @@ export function CsvUpdateWizard() {
         csvData: { headers: parsedData.headers, rows: parsedData.rows },
         csvOptions: csvConfig,
         dryRun: false,
-        ignoreUuid,
         tagsMode,
-        columnMapping,
+        columnMapping: columnMappingForBackend,
         selectedColumns,
+        primaryKeyColumn,
       })
       setTaskId(response.task_id)
       goToStep('processing')
@@ -108,16 +95,8 @@ export function CsvUpdateWizard() {
       // Error handled by mutation's onError toast
     }
   }, [
-    processUpdates,
-    objectType,
-    parsedData,
-    csvConfig,
-    ignoreUuid,
-    tagsMode,
-    columnMapping,
-    selectedColumns,
-    setTaskId,
-    goToStep,
+    processUpdates, objectType, parsedData, csvConfig,
+    tagsMode, columnMappingForBackend, selectedColumns, primaryKeyColumn, setTaskId, goToStep,
   ])
 
   const handleProcessingComplete = useCallback(
@@ -137,25 +116,22 @@ export function CsvUpdateWizard() {
     setCompletedError(undefined)
   }, [reset])
 
-  // Navigation logic
   const currentStepIndex = WIZARD_STEP_ORDER.indexOf(step)
   const isProcessingOrSummary = step === 'processing' || step === 'summary'
 
   const isNextEnabled = (() => {
     switch (step) {
-      case 'upload':
-        return parsedData.rowCount > 0 && !csvUpload.isParsing
-      case 'configure':
-        return true
-      case 'preview':
-        return false // submit handled separately
-      default:
-        return false
+      case 'upload':    return parsedData.rowCount > 0 && !csvUpload.isParsing
+      case 'configure': return primaryKeyColumn.length > 0
+      case 'preview':   return false
+      default:          return false
     }
   })()
 
   const canGoBack =
-    !isProcessingOrSummary && currentStepIndex > 0 && currentStepIndex <= INDICATOR_STEPS.length - 1
+    !isProcessingOrSummary &&
+    currentStepIndex > 0 &&
+    currentStepIndex <= INDICATOR_STEPS.length - 1
 
   return (
     <Card className="w-full">
@@ -225,17 +201,12 @@ export function CsvUpdateWizard() {
             <CsvConfigureStep
               objectType={objectType}
               headers={parsedData.headers}
-              ignoreUuid={ignoreUuid}
-              onIgnoreUuidChange={setIgnoreUuid}
-              ignoredColumns={ignoredColumns}
-              onIgnoredColumnsChange={setIgnoredColumns}
+              primaryKeyColumn={primaryKeyColumn}
+              onPrimaryKeyColumnChange={setPrimaryKeyColumn}
+              fieldMapping={fieldMapping}
+              onFieldMappingChange={setFieldMapping}
               tagsMode={tagsMode}
               onTagsModeChange={setTagsMode}
-              columnMapping={columnMapping}
-              onColumnMappingChange={setColumnMapping}
-              isLegacyFormat={isLegacyFormat}
-              legacyMapping={legacyMapping}
-              onLegacyMappingChange={setLegacyMapping}
             />
           )}
 
@@ -249,10 +220,7 @@ export function CsvUpdateWizard() {
           )}
 
           {step === 'processing' && taskId && (
-            <CsvProcessingStep
-              taskId={taskId}
-              onComplete={handleProcessingComplete}
-            />
+            <CsvProcessingStep taskId={taskId} onComplete={handleProcessingComplete} />
           )}
 
           {step === 'summary' && (

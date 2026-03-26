@@ -1,166 +1,124 @@
 'use client'
 
-import { Info } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { MappingPanel } from './mapping-panel'
-import { PropertiesPanel } from './properties-panel'
-import { LegacyMappingPanel } from './legacy-mapping-panel'
-import { getRequiredHeaders } from '../utils/csv-parser'
+import { Key } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { CsvFieldMappingPanel } from './csv-field-mapping-panel'
 import type { ObjectType } from '../types'
 
 interface CsvConfigureStepProps {
   objectType: ObjectType
   headers: string[]
-  ignoreUuid: boolean
-  onIgnoreUuidChange: (v: boolean) => void
-  ignoredColumns: Set<string>
-  onIgnoredColumnsChange: (cols: Set<string>) => void
+  /** Which CSV column is used to look up objects in Nautobot */
+  primaryKeyColumn: string
+  onPrimaryKeyColumnChange: (col: string) => void
+  /** CSV column → Nautobot field name (null = not used) */
+  fieldMapping: Record<string, string | null>
+  onFieldMappingChange: (mapping: Record<string, string | null>) => void
+  /** How to handle the tags field when present */
   tagsMode: 'replace' | 'merge'
   onTagsModeChange: (mode: 'replace' | 'merge') => void
-  columnMapping: Record<string, string>
-  onColumnMappingChange: (mapping: Record<string, string>) => void
-  isLegacyFormat: boolean
-  legacyMapping: Record<string, string>
-  onLegacyMappingChange: (mapping: Record<string, string>) => void
 }
 
-const REQUIRED_HEADERS_DESCRIPTIONS: Record<string, string> = {
-  name: 'Device name (used to identify the device)',
-  id: 'Nautobot UUID (optional, used if available)',
-  device_type__model: 'Device type model name',
-  location__name: 'Location name',
-  location_type__name: 'Location type name',
-  'namespace__name': 'Namespace name',
-  'parent__namespace__name': 'Parent namespace name',
-  prefix: 'IP prefix (e.g. 192.168.1.0/24)',
-  address: 'IP address (e.g. 192.168.1.1/24)',
+function PrimaryKeySelector({
+  headers,
+  primaryKeyColumn,
+  onPrimaryKeyColumnChange,
+}: {
+  headers: string[]
+  primaryKeyColumn: string
+  onPrimaryKeyColumnChange: (col: string) => void
+}) {
+  return (
+    <div className="border rounded-md p-4 space-y-3 bg-amber-50 border-amber-200">
+      <div className="flex items-center gap-2">
+        <Key className="h-4 w-4 text-amber-600 flex-shrink-0" />
+        <Label className="text-sm font-medium text-amber-900">Identify objects by</Label>
+      </div>
+      <p className="text-xs text-amber-700">
+        Select which CSV column is used to look up existing objects in Nautobot.
+        Use <code className="bg-amber-100 px-1 rounded">id</code> for exact UUID match, or a
+        name / address column for lookup by value.
+      </p>
+      <Select value={primaryKeyColumn} onValueChange={onPrimaryKeyColumnChange}>
+        <SelectTrigger className="w-64 bg-white border-amber-300">
+          <SelectValue placeholder="Select a column…" />
+        </SelectTrigger>
+        <SelectContent>
+          {headers.map(h => (
+            <SelectItem key={h} value={h}>
+              <code className="text-xs font-mono">{h}</code>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
 }
 
 export function CsvConfigureStep({
   objectType,
   headers,
-  ignoreUuid,
-  onIgnoreUuidChange,
-  ignoredColumns,
-  onIgnoredColumnsChange,
+  primaryKeyColumn,
+  onPrimaryKeyColumnChange,
+  fieldMapping,
+  onFieldMappingChange,
   tagsMode,
   onTagsModeChange,
-  columnMapping,
-  onColumnMappingChange,
-  isLegacyFormat,
-  legacyMapping,
-  onLegacyMappingChange,
 }: CsvConfigureStepProps) {
-  const hasIdColumn = headers.includes('id')
-  const hasTagsColumn = headers.includes('tags')
-  const requiredHeaders = getRequiredHeaders(objectType)
+  const hasTagsColumn = Object.values(fieldMapping).includes('tags')
 
-  // Devices and Locations: just show info about expected headers
-  if (objectType === 'devices' || objectType === 'locations') {
-    return (
-      <div className="space-y-4">
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription className="text-sm">
-            No additional configuration needed for <strong>{objectType}</strong>. Objects are
-            identified by the <code className="bg-slate-100 px-1 rounded">name</code> or{' '}
-            <code className="bg-slate-100 px-1 rounded">id</code> column. All other columns
-            will be used to update matching objects.
-          </AlertDescription>
-        </Alert>
-
-        <div className="border rounded-md p-4 space-y-3">
-          <p className="text-sm font-medium text-gray-700">Expected CSV headers</p>
-          <div className="flex flex-wrap gap-2">
-            {requiredHeaders.map(h => (
-              <div key={h} className="flex items-center gap-1.5">
-                <Badge
-                  variant={headers.includes(h) ? 'default' : 'outline'}
-                  className={
-                    headers.includes(h)
-                      ? 'bg-green-100 text-green-800 border-green-300'
-                      : 'border-red-300 text-red-700'
-                  }
-                >
-                  {h}
-                </Badge>
-                {REQUIRED_HEADERS_DESCRIPTIONS[h] && (
-                  <span className="text-xs text-gray-500">
-                    — {REQUIRED_HEADERS_DESCRIPTIONS[h]}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <PropertiesPanel
-          objectType={objectType}
-          headers={headers}
-          hasIdColumn={hasIdColumn}
-          ignoreUuid={ignoreUuid}
-          onIgnoreUuidChange={onIgnoreUuidChange}
-          ignoredColumns={ignoredColumns}
-          onIgnoredColumnsChange={onIgnoredColumnsChange}
-          hasTagsColumn={hasTagsColumn}
-          tagsMode={tagsMode}
-          onTagsModeChange={onTagsModeChange}
-        />
-      </div>
-    )
-  }
-
-  // IP Addresses: show legacy mapping panel if legacy format, otherwise PropertiesPanel
-  if (objectType === 'ip-addresses') {
-    return (
-      <div className="space-y-4">
-        {isLegacyFormat ? (
-          <LegacyMappingPanel
-            objectType={objectType}
-            csvHeaders={headers}
-            legacyMapping={legacyMapping}
-            onLegacyMappingChange={onLegacyMappingChange}
-          />
-        ) : (
-          <PropertiesPanel
-            objectType={objectType}
-            headers={headers}
-            hasIdColumn={hasIdColumn}
-            ignoreUuid={ignoreUuid}
-            onIgnoreUuidChange={onIgnoreUuidChange}
-            ignoredColumns={ignoredColumns}
-            onIgnoredColumnsChange={onIgnoredColumnsChange}
-            hasTagsColumn={hasTagsColumn}
-            tagsMode={tagsMode}
-            onTagsModeChange={onTagsModeChange}
-          />
-        )}
-      </div>
-    )
-  }
-
-  // IP Prefixes: MappingPanel + PropertiesPanel
   return (
     <div className="space-y-4">
-      <MappingPanel
-        objectType={objectType}
-        csvHeaders={headers}
-        columnMapping={columnMapping}
-        onColumnMappingChange={onColumnMappingChange}
+      {/* 1. Primary key selector */}
+      <PrimaryKeySelector
+        headers={headers}
+        primaryKeyColumn={primaryKeyColumn}
+        onPrimaryKeyColumnChange={onPrimaryKeyColumnChange}
       />
-      <PropertiesPanel
+
+      {/* 2. Field mapping table */}
+      <CsvFieldMappingPanel
         objectType={objectType}
         headers={headers}
-        hasIdColumn={hasIdColumn}
-        ignoreUuid={ignoreUuid}
-        onIgnoreUuidChange={onIgnoreUuidChange}
-        ignoredColumns={ignoredColumns}
-        onIgnoredColumnsChange={onIgnoredColumnsChange}
-        hasTagsColumn={hasTagsColumn}
-        tagsMode={tagsMode}
-        onTagsModeChange={onTagsModeChange}
+        fieldMapping={fieldMapping}
+        onFieldMappingChange={onFieldMappingChange}
       />
+
+      {/* 3. Tags mode — only shown when a column is mapped to 'tags' */}
+      {hasTagsColumn && (
+        <div className="border rounded-md p-4 space-y-3">
+          <Label className="text-sm font-medium">Tags Handling</Label>
+          <p className="text-xs text-muted-foreground">
+            Choose how the mapped tags column is applied to existing objects.
+          </p>
+          <RadioGroup
+            value={tagsMode}
+            onValueChange={v => onTagsModeChange(v as 'replace' | 'merge')}
+            className="space-y-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="replace" id="tags-replace" />
+              <Label htmlFor="tags-replace" className="text-sm font-normal cursor-pointer">
+                <span className="font-medium">Replace</span> — overwrite all existing tags
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="merge" id="tags-merge" />
+              <Label htmlFor="tags-merge" className="text-sm font-normal cursor-pointer">
+                <span className="font-medium">Merge</span> — add to existing tags (no duplicates)
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+      )}
     </div>
   )
 }

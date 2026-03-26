@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useCsvUpload } from './use-csv-upload'
+import { buildAutoFieldMapping } from '../constants'
 import type { ObjectType, ParsedCSVData } from '../types'
 
 export type WizardStep = 'upload' | 'configure' | 'preview' | 'processing' | 'summary'
@@ -14,54 +15,41 @@ export const WIZARD_STEP_ORDER: WizardStep[] = [
   'summary',
 ]
 
-const EMPTY_SET = new Set<string>()
-const EMPTY_MAPPING: Record<string, string> = {}
+const EMPTY_FIELD_MAPPING: Record<string, string | null> = {}
+
+/** Preferred primary-key columns per object type (first match wins). */
+const PRIMARY_KEY_PREFERENCES: Record<ObjectType, string[]> = {
+  devices:       ['name', 'id'],
+  locations:     ['name', 'id'],
+  'ip-prefixes': ['prefix', 'id'],
+  'ip-addresses':['address', 'id'],
+}
+
+function detectPrimaryKey(headers: string[], type: ObjectType): string {
+  const preferred = PRIMARY_KEY_PREFERENCES[type] ?? []
+  return preferred.find(col => headers.includes(col)) ?? headers[0] ?? ''
+}
 
 export function useCsvWizard() {
   const [step, setStep] = useState<WizardStep>('upload')
   const [objectType, setObjectType] = useState<ObjectType>('devices')
-  const [ignoreUuid, setIgnoreUuid] = useState(true)
-  const [ignoredColumns, setIgnoredColumns] = useState<Set<string>>(EMPTY_SET)
+
+  // Single mapping: CSV column → Nautobot field name (null = not used)
+  const [fieldMapping, setFieldMapping] =
+    useState<Record<string, string | null>>(EMPTY_FIELD_MAPPING)
+
+  const [primaryKeyColumn, setPrimaryKeyColumn] = useState<string>('')
   const [tagsMode, setTagsMode] = useState<'replace' | 'merge'>('replace')
-  const [columnMapping, setColumnMapping] = useState<Record<string, string>>(EMPTY_MAPPING)
-  const [isLegacyFormat, setIsLegacyFormat] = useState(false)
-  const [legacyMapping, setLegacyMapping] = useState<Record<string, string>>(EMPTY_MAPPING)
+
   const [taskId, setTaskId] = useState<string | null>(null)
   const [dryRunTaskId, setDryRunTaskId] = useState<string | null>(null)
 
-  const autoPopulateColumnMapping = useCallback((headers: string[], type: ObjectType) => {
-    if (type !== 'ip-prefixes') return
-    const newMapping: Record<string, string> = {}
-    if (headers.includes('prefix')) newMapping['prefix'] = 'prefix'
-    if (headers.includes('namespace')) {
-      newMapping['namespace'] = 'namespace'
-    } else if (headers.includes('namespace__name')) {
-      newMapping['namespace'] = 'namespace__name'
-    }
-    setColumnMapping(newMapping)
-  }, [])
-
   const onParseComplete = useCallback(
     (data: ParsedCSVData) => {
-      autoPopulateColumnMapping(data.headers, objectType)
-      if (objectType === 'ip-addresses') {
-        const hasAddress = data.headers.includes('address')
-        const hasId = data.headers.includes('id')
-        const hasNamespace = data.headers.includes('parent__namespace__name')
-        if (!hasAddress || (!hasId && !hasNamespace)) {
-          setIsLegacyFormat(true)
-          const initialMapping: Record<string, string> = {}
-          data.headers.forEach(h => {
-            initialMapping[h] = 'none'
-          })
-          setLegacyMapping(initialMapping)
-        } else {
-          setIsLegacyFormat(false)
-          setLegacyMapping(EMPTY_MAPPING)
-        }
-      }
+      setFieldMapping(buildAutoFieldMapping(data.headers, objectType))
+      setPrimaryKeyColumn(detectPrimaryKey(data.headers, objectType))
     },
-    [objectType, autoPopulateColumnMapping]
+    [objectType]
   )
 
   const csvUpload = useCsvUpload({ objectType, onParseComplete })
@@ -69,10 +57,8 @@ export function useCsvWizard() {
   const handleObjectTypeChange = useCallback(
     (type: ObjectType) => {
       setObjectType(type)
-      setColumnMapping(EMPTY_MAPPING)
-      setIgnoredColumns(EMPTY_SET)
-      setIsLegacyFormat(false)
-      setLegacyMapping(EMPTY_MAPPING)
+      setFieldMapping(EMPTY_FIELD_MAPPING)
+      setPrimaryKeyColumn('')
       setDryRunTaskId(null)
       csvUpload.clearData()
     },
@@ -94,22 +80,34 @@ export function useCsvWizard() {
   const reset = useCallback(() => {
     setStep('upload')
     setObjectType('devices')
-    setIgnoreUuid(true)
-    setIgnoredColumns(EMPTY_SET)
+    setFieldMapping(EMPTY_FIELD_MAPPING)
+    setPrimaryKeyColumn('')
     setTagsMode('replace')
-    setColumnMapping(EMPTY_MAPPING)
-    setIsLegacyFormat(false)
-    setLegacyMapping(EMPTY_MAPPING)
     setTaskId(null)
     setDryRunTaskId(null)
     csvUpload.clearData()
   }, [csvUpload])
 
-  const selectedColumns = useMemo(() => {
-    const { parsedData } = csvUpload
-    if (parsedData.headers.length === 0 || ignoredColumns.size === 0) return undefined
-    return parsedData.headers.filter(h => !ignoredColumns.has(h))
-  }, [csvUpload, ignoredColumns])
+  /**
+   * Columns that have a non-null mapping — used as `selected_columns` for the backend.
+   * Columns mapped to null are effectively ignored.
+   */
+  const selectedColumns = useMemo(
+    () => Object.keys(fieldMapping).filter(k => fieldMapping[k] !== null),
+    [fieldMapping]
+  )
+
+  /**
+   * The field mapping in the format the backend expects:
+   * { csvColumnName: nautobotFieldName }  (only mapped columns included)
+   */
+  const columnMappingForBackend = useMemo(() => {
+    const result: Record<string, string> = {}
+    for (const [col, field] of Object.entries(fieldMapping)) {
+      if (field !== null) result[col] = field
+    }
+    return result
+  }, [fieldMapping])
 
   return useMemo(
     () => ({
@@ -124,19 +122,18 @@ export function useCsvWizard() {
       // Object type
       objectType,
       handleObjectTypeChange,
-      // Update options
-      ignoreUuid,
-      setIgnoreUuid,
-      ignoredColumns,
-      setIgnoredColumns,
+      // Field mapping
+      fieldMapping,
+      setFieldMapping,
+      // Primary key
+      primaryKeyColumn,
+      setPrimaryKeyColumn,
+      // Tags mode
       tagsMode,
       setTagsMode,
-      columnMapping,
-      setColumnMapping,
-      isLegacyFormat,
-      legacyMapping,
-      setLegacyMapping,
+      // Derived
       selectedColumns,
+      columnMappingForBackend,
       // Task tracking
       taskId,
       setTaskId,
@@ -152,13 +149,11 @@ export function useCsvWizard() {
       csvUpload,
       objectType,
       handleObjectTypeChange,
-      ignoreUuid,
-      ignoredColumns,
+      fieldMapping,
+      primaryKeyColumn,
       tagsMode,
-      columnMapping,
-      isLegacyFormat,
-      legacyMapping,
       selectedColumns,
+      columnMappingForBackend,
       taskId,
       dryRunTaskId,
     ]

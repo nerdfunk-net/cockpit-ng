@@ -108,10 +108,7 @@ export function validateEmptyRows(rows: string[][]): ValidationResult[] {
 /**
  * Validate UUID format in ID column
  */
-export function validateIds(
-  headers: string[],
-  rows: string[][]
-): ValidationResult[] {
+export function validateIds(headers: string[], rows: string[][]): ValidationResult[] {
   const results: ValidationResult[] = []
   const idColumnIndex = headers.indexOf('id')
 
@@ -211,10 +208,17 @@ export function validateCSVData(
 ): ValidationResult[] {
   const results: ValidationResult[] = []
 
-  results.push(...validateHeaders(headers, type))
+  // No mandatory headers — user selects the primary key in the configure step
   results.push(...validateEmptyRows(rows))
   results.push(...validateIds(headers, rows))
   results.push(...validateIpAddresses(headers, rows, type))
+
+  if (results.length === 0) {
+    results.push({
+      type: 'success',
+      message: `Parsed ${rows.length} rows with ${headers.length} columns`,
+    })
+  }
 
   return results
 }

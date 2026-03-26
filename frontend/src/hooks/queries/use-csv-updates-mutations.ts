@@ -15,10 +15,10 @@ interface ProcessCSVUpdatesInput {
     quoteChar: string
   }
   dryRun?: boolean
-  ignoreUuid?: boolean  // For IP prefixes: use prefix+namespace lookup instead of UUID
-  tagsMode?: 'replace' | 'merge'  // How to handle tags: replace all or merge with existing
-  columnMapping?: Record<string, string>  // Maps lookup fields to CSV column names
-  selectedColumns?: string[]  // List of CSV columns to update (if not provided, all non-excluded columns are updated)
+  tagsMode?: 'replace' | 'merge' // How to handle the tags field
+  columnMapping?: Record<string, string> // { csvColumn: nautobotField } — only mapped columns
+  selectedColumns?: string[] // CSV columns included in the update (derived from columnMapping)
+  primaryKeyColumn?: string // CSV column used to look up objects in Nautobot
 }
 
 interface CeleryTaskResponse {
@@ -105,10 +105,10 @@ export function useCsvUpdatesMutations() {
           csv_content: csvContent,
           csv_options: input.csvOptions,
           dry_run: input.dryRun || false,
-          ignore_uuid: input.ignoreUuid !== undefined ? input.ignoreUuid : true, // Default: true
-          tags_mode: input.tagsMode || 'replace', // Default: replace
+          tags_mode: input.tagsMode || 'replace',
           column_mapping: input.columnMapping, // Pass column mapping if provided
           selected_columns: input.selectedColumns, // Pass selected columns if provided
+          primary_key_column: input.primaryKeyColumn, // Column used to look up objects
         }),
       })
 
@@ -139,7 +139,8 @@ export function useCsvUpdatesMutations() {
     onError: (error: Error, variables) => {
       toast({
         title: 'Error',
-        description: error.message || `Failed to process ${variables.objectType} updates`,
+        description:
+          error.message || `Failed to process ${variables.objectType} updates`,
         variant: 'destructive',
       })
     },
