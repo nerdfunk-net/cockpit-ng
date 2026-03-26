@@ -19,11 +19,14 @@ export const JOB_TYPE_OPTIONS: readonly FilterOption[] = [
   { value: "cache_devices", label: "Cache Devices" },
   { value: "cache_locations", label: "Cache Locations" },
   { value: "cache_git_commits", label: "Cache Git Commits" },
-  { value: "sync_devices", label: "Sync Devices" },
-  { value: "run_commands", label: "Run Commands" },
   { value: "compare_devices", label: "Compare Devices" },
-  { value: "scan_prefixes", label: "Scan Prefixes" },
+  { value: "csv_export", label: "CSV Export" },
+  { value: "csv_import", label: "CSV Import" },
   { value: "deploy_agent", label: "Deploy Agent" },
+  { value: "ip_addresses", label: "IP Addresses" },
+  { value: "run_commands", label: "Run Commands" },
+  { value: "scan_prefixes", label: "Scan Prefixes" },
+  { value: "sync_devices", label: "Sync Devices" },
 ] as const
 
 export const TRIGGER_OPTIONS: readonly FilterOption[] = [
