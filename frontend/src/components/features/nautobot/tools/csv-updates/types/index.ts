@@ -41,3 +41,19 @@ export interface DefaultProperty {
   field: string
   value: string
 }
+
+/** How to transform the CSV name value before device lookup. */
+export type NameTransformMode = 'regex' | 'replace'
+
+/**
+ * Name transform applied to the CSV name value before it is used for device lookup.
+ * - regex:   re.search(pattern, name) — use captured group(1) if present, else full match
+ * - replace: re.sub(pattern, replacement, name)
+ * Leave `pattern` empty to disable the transform.
+ */
+export interface NameTransform {
+  mode: NameTransformMode
+  pattern: string
+  /** Only used in replace mode. Empty string = delete the matched portion. */
+  replacement: string
+}

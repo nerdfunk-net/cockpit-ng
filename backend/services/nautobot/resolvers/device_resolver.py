@@ -269,7 +269,7 @@ class DeviceResolver(BaseResolver):
 
             # Nautobot GraphQL supports name__isw for case-insensitive starts-with
             query = """
-            query GetDeviceByNameStartsWith($name: String) {
+            query GetDeviceByNameStartsWith($name: [String]) {
               devices(name__isw: $name) {
                 id
                 name

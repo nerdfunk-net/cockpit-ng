@@ -20,6 +20,7 @@ from celery_app import celery_app
 import logging
 import csv
 import io
+import re
 import asyncio
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -41,6 +42,7 @@ def update_devices_from_csv_task(
     selected_columns: Optional[list] = None,
     primary_key_column: Optional[str] = None,
     matching_strategy: str = "exact",
+    name_transform: Optional[Dict[str, Any]] = None,
 ) -> dict:
     """
     Task: Update Nautobot devices from CSV data.
@@ -81,6 +83,7 @@ def update_devices_from_csv_task(
         logger.info("Selected columns: %s", selected_columns)
         logger.info("Primary key column: %s", primary_key_column)
         logger.info("Matching strategy: %s", matching_strategy)
+        logger.info("Name transform: %s", name_transform)
         logger.info("CSV Options: %s", csv_options)
 
         self.update_state(
@@ -199,6 +202,19 @@ def update_devices_from_csv_task(
                 device_identifier, update_data, interface_config = _prepare_row_data(
                     row, headers, column_mapping, selected_columns, primary_key_column
                 )
+
+                # Apply name transform before lookup (only when identifier contains a name)
+                if name_transform and "name" in device_identifier:
+                    original_name = device_identifier["name"]
+                    device_identifier["name"] = _apply_name_transform(
+                        original_name, name_transform
+                    )
+                    if device_identifier["name"] != original_name:
+                        logger.info(
+                            "Name transform applied: '%s' → '%s'",
+                            original_name,
+                            device_identifier["name"],
+                        )
 
                 if not update_data:
                     logger.info("No update data for device %s, skipping", identifier)
@@ -347,6 +363,48 @@ def update_devices_from_csv_task(
             logger.warning("Failed to update job run status: %s", job_error)
 
         return error_result
+
+
+def _apply_name_transform(name: str, name_transform: Optional[Dict[str, Any]]) -> str:
+    """
+    Apply a name transformation to a CSV name value before device lookup.
+
+    Modes:
+    - "regex":   re.search(pattern, name) → use group(1) if a capturing group is present,
+                 otherwise use group(0) (the full match). Returns original name on no match.
+    - "replace": re.sub(pattern, replacement, name) — supports regex patterns.
+
+    Returns the original name unchanged if:
+    - name_transform is None
+    - pattern is empty
+    - mode is "regex" and the pattern produces no match
+    - the pattern is invalid (logs a warning and falls back)
+
+    Args:
+        name: The original name value from the CSV row.
+        name_transform: Dict with keys "mode", "pattern", and optionally "replacement".
+
+    Returns:
+        Transformed name string.
+    """
+    if not name_transform:
+        return name
+    pattern = name_transform.get("pattern", "").strip()
+    if not pattern:
+        return name
+    mode = name_transform.get("mode", "regex")
+    try:
+        if mode == "regex":
+            match = re.search(pattern, name)
+            if match:
+                return match.group(1) if match.lastindex else match.group(0)
+            return name  # No match — leave unchanged
+        if mode == "replace":
+            replacement = name_transform.get("replacement", "")
+            return re.sub(pattern, replacement, name)
+    except re.error as exc:
+        logger.warning("Invalid name_transform pattern '%s': %s", pattern, exc)
+    return name
 
 
 def _prepare_row_data(

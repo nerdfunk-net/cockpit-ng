@@ -20,6 +20,7 @@ interface ProcessCSVUpdatesInput {
   selectedColumns?: string[] // CSV columns included in the update (derived from columnMapping)
   primaryKeyColumn?: string // CSV column used to look up objects in Nautobot
   matchingStrategy?: 'exact' | 'contains' | 'starts_with' // How to match objects by name
+  nameTransform?: { mode: string; pattern: string; replacement: string } | null // Transform CSV name before lookup
 }
 
 interface CeleryTaskResponse {
@@ -111,6 +112,7 @@ export function useCsvUpdatesMutations() {
           selected_columns: input.selectedColumns, // Pass selected columns if provided
           primary_key_column: input.primaryKeyColumn, // Column used to look up objects
           matching_strategy: input.matchingStrategy || 'exact', // How to match by name
+          name_transform: input.nameTransform ?? null, // Optional name transform before lookup
         }),
       })
 

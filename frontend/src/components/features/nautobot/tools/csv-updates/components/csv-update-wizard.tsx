@@ -51,6 +51,8 @@ export function CsvUpdateWizard() {
     setMatchingStrategy,
     defaultProperties,
     setDefaultProperties,
+    nameTransform,
+    setNameTransform,
     selectedColumns,
     columnMappingForBackend,
     taskId,
@@ -62,6 +64,13 @@ export function CsvUpdateWizard() {
   } = wizard
 
   const { parsedData, validationResults, validationSummary, csvConfig } = csvUpload
+
+  /** Values from the primary-key column — fed into the name transform try-out preview. */
+  const csvNameValues = useMemo(() => {
+    const idx = parsedData.headers.indexOf(primaryKeyColumn)
+    if (idx === -1) return []
+    return parsedData.rows.map(row => row[idx] ?? '').filter(Boolean)
+  }, [parsedData, primaryKeyColumn])
 
   /**
    * Enrich parsed CSV data with default properties:
@@ -100,7 +109,12 @@ export function CsvUpdateWizard() {
     const base = [...selectedColumns]
     const existingHeaders = new Set(parsedData.headers)
     for (const dp of defaultProperties) {
-      if (dp.field && dp.value && !existingHeaders.has(dp.field) && !base.includes(dp.field)) {
+      if (
+        dp.field &&
+        dp.value &&
+        !existingHeaders.has(dp.field) &&
+        !base.includes(dp.field)
+      ) {
         base.push(dp.field)
       }
     }
@@ -119,15 +133,24 @@ export function CsvUpdateWizard() {
         selectedColumns: enrichedSelectedColumns,
         primaryKeyColumn,
         matchingStrategy,
+        nameTransform,
       })
       setDryRunTaskId(response.task_id)
     } catch {
       // Error handled by mutation's onError toast
     }
   }, [
-    processUpdates, objectType, enrichedCsvData, csvConfig,
-    tagsMode, enrichedColumnMapping, enrichedSelectedColumns, primaryKeyColumn,
-    matchingStrategy, setDryRunTaskId,
+    processUpdates,
+    objectType,
+    enrichedCsvData,
+    csvConfig,
+    tagsMode,
+    enrichedColumnMapping,
+    enrichedSelectedColumns,
+    primaryKeyColumn,
+    matchingStrategy,
+    nameTransform,
+    setDryRunTaskId,
   ])
 
   const handleSubmit = useCallback(async () => {
@@ -142,6 +165,7 @@ export function CsvUpdateWizard() {
         selectedColumns: enrichedSelectedColumns,
         primaryKeyColumn,
         matchingStrategy,
+        nameTransform,
       })
       setTaskId(response.task_id)
       if (response.job_id) setJobId(parseInt(response.job_id, 10))
@@ -150,9 +174,19 @@ export function CsvUpdateWizard() {
       // Error handled by mutation's onError toast
     }
   }, [
-    processUpdates, objectType, enrichedCsvData, csvConfig,
-    tagsMode, enrichedColumnMapping, enrichedSelectedColumns, primaryKeyColumn,
-    matchingStrategy, setTaskId, setJobId, goToStep,
+    processUpdates,
+    objectType,
+    enrichedCsvData,
+    csvConfig,
+    tagsMode,
+    enrichedColumnMapping,
+    enrichedSelectedColumns,
+    primaryKeyColumn,
+    matchingStrategy,
+    nameTransform,
+    setTaskId,
+    setJobId,
+    goToStep,
   ])
 
   const handleProcessingComplete = useCallback(
@@ -177,11 +211,16 @@ export function CsvUpdateWizard() {
 
   const isNextEnabled = (() => {
     switch (step) {
-      case 'upload':      return parsedData.rowCount > 0 && !csvUpload.isParsing
-      case 'configure':   return primaryKeyColumn.length > 0
-      case 'properties':  return true
-      case 'preview':     return false
-      default:            return false
+      case 'upload':
+        return parsedData.rowCount > 0 && !csvUpload.isParsing
+      case 'configure':
+        return primaryKeyColumn.length > 0
+      case 'properties':
+        return true
+      case 'preview':
+        return false
+      default:
+        return false
     }
   })()
 
@@ -198,7 +237,9 @@ export function CsvUpdateWizard() {
           <FileSpreadsheet className="h-4 w-4" />
           <span className="text-sm font-medium">CSV Update Wizard</span>
         </div>
-        <div className="text-xs text-blue-100">Follow the steps to configure and submit your CSV update</div>
+        <div className="text-xs text-blue-100">
+          Follow the steps to configure and submit your CSV update
+        </div>
       </div>
 
       {/* Content */}
@@ -230,7 +271,9 @@ export function CsvUpdateWizard() {
                     {STEP_LABELS[s]}
                   </span>
                   {i < INDICATOR_STEPS.length - 1 && (
-                    <div className={`flex-1 h-px ${isPast ? 'bg-blue-200' : 'bg-gray-200'}`} />
+                    <div
+                      className={`flex-1 h-px ${isPast ? 'bg-blue-200' : 'bg-gray-200'}`}
+                    />
                   )}
                 </div>
               )
@@ -278,6 +321,9 @@ export function CsvUpdateWizard() {
               onMatchingStrategyChange={setMatchingStrategy}
               defaultProperties={defaultProperties}
               onDefaultPropertiesChange={setDefaultProperties}
+              nameTransform={nameTransform}
+              onNameTransformChange={setNameTransform}
+              csvNameValues={csvNameValues}
             />
           )}
 
@@ -325,7 +371,9 @@ export function CsvUpdateWizard() {
                     variant="outline"
                     size="sm"
                     onClick={handleDryRun}
-                    disabled={processUpdates.isPending || validationSummary.errorCount > 0}
+                    disabled={
+                      processUpdates.isPending || validationSummary.errorCount > 0
+                    }
                   >
                     <Search className="h-4 w-4 mr-1" />
                     {processUpdates.isPending && !taskId ? 'Running…' : 'Dry Run'}
@@ -341,7 +389,8 @@ export function CsvUpdateWizard() {
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     <Play className="h-4 w-4 mr-1" />
-                    Submit {parsedData.rowCount > 0 ? `(${parsedData.rowCount} rows)` : ''}
+                    Submit{' '}
+                    {parsedData.rowCount > 0 ? `(${parsedData.rowCount} rows)` : ''}
                   </Button>
                 </>
               ) : (

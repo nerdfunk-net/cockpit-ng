@@ -3,9 +3,21 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useCsvUpload } from './use-csv-upload'
 import { buildAutoFieldMapping } from '../constants'
-import type { ObjectType, ParsedCSVData, MatchingStrategy, DefaultProperty } from '../types'
+import type {
+  ObjectType,
+  ParsedCSVData,
+  MatchingStrategy,
+  DefaultProperty,
+  NameTransform,
+} from '../types'
 
-export type WizardStep = 'upload' | 'configure' | 'properties' | 'preview' | 'processing' | 'summary'
+export type WizardStep =
+  | 'upload'
+  | 'configure'
+  | 'properties'
+  | 'preview'
+  | 'processing'
+  | 'summary'
 
 export const WIZARD_STEP_ORDER: WizardStep[] = [
   'upload',
@@ -20,10 +32,10 @@ const EMPTY_FIELD_MAPPING: Record<string, string | null> = {}
 
 /** Preferred primary-key columns per object type (first match wins). */
 const PRIMARY_KEY_PREFERENCES: Record<ObjectType, string[]> = {
-  devices:       ['name', 'id'],
-  locations:     ['name', 'id'],
+  devices: ['name', 'id'],
+  locations: ['name', 'id'],
   'ip-prefixes': ['prefix', 'id'],
-  'ip-addresses':['address', 'id'],
+  'ip-addresses': ['address', 'id'],
 }
 
 function detectPrimaryKey(headers: string[], type: ObjectType): string {
@@ -43,6 +55,7 @@ export function useCsvWizard() {
   const [tagsMode, setTagsMode] = useState<'replace' | 'merge'>('replace')
   const [matchingStrategy, setMatchingStrategy] = useState<MatchingStrategy>('exact')
   const [defaultProperties, setDefaultProperties] = useState<DefaultProperty[]>([])
+  const [nameTransform, setNameTransform] = useState<NameTransform | null>(null)
 
   const [taskId, setTaskId] = useState<string | null>(null)
   const [jobId, setJobId] = useState<number | null>(null)
@@ -89,6 +102,7 @@ export function useCsvWizard() {
     setTagsMode('replace')
     setMatchingStrategy('exact')
     setDefaultProperties([])
+    setNameTransform(null)
     setTaskId(null)
     setJobId(null)
     setDryRunTaskId(null)
@@ -144,6 +158,9 @@ export function useCsvWizard() {
       // Default properties
       defaultProperties,
       setDefaultProperties,
+      // Name transform
+      nameTransform,
+      setNameTransform,
       // Derived
       selectedColumns,
       columnMappingForBackend,
@@ -169,6 +186,7 @@ export function useCsvWizard() {
       tagsMode,
       matchingStrategy,
       defaultProperties,
+      nameTransform,
       selectedColumns,
       columnMappingForBackend,
       taskId,

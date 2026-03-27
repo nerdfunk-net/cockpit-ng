@@ -156,6 +156,14 @@ class PreviewExportResponse(BaseModel):
     message: Optional[str] = None
 
 
+class NameTransformConfig(BaseModel):
+    """Configuration for transforming a CSV name value before device lookup."""
+
+    mode: str  # "regex" or "replace"
+    pattern: str  # Regex pattern to apply
+    replacement: str = ""  # Only used in "replace" mode; empty string = delete match
+
+
 class UpdateDevicesRequest(BaseModel):
     """Request model for updating devices from CSV."""
 
@@ -174,6 +182,9 @@ class UpdateDevicesRequest(BaseModel):
     )
     matching_strategy: str = (
         "exact"  # Name matching strategy: "exact", "contains", "starts_with"
+    )
+    name_transform: Optional[NameTransformConfig] = (
+        None  # Optional transform applied to the CSV name value before lookup
     )
 
 
