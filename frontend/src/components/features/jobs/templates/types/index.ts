@@ -70,6 +70,11 @@ export interface JobTemplate {
   csv_import_format?: string
   csv_import_add_prefixes?: boolean
   csv_import_default_prefix_length?: string
+  // Ping Agent (ping_agent type)
+  ping_agent_id?: string | null
+  // Set Primary IP (set_primary_ip type)
+  set_primary_ip_strategy?: string | null
+  set_primary_ip_agent_id?: string | null
   is_global: boolean
   user_id?: number
   created_by?: string

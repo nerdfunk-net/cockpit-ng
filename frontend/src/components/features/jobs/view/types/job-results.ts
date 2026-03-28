@@ -1,6 +1,6 @@
 /**
  * Job Result Types and Type Guards
- * 
+ *
  * This file contains all the TypeScript interfaces and type guards
  * for different job result types in the Jobs View feature.
  */
@@ -102,13 +102,15 @@ export interface SyncJobDeviceResult {
   operation: string
   success: boolean
   message?: string
-  error?: string | {
-    error?: string
-    status_code?: number
-    detail?: string
-    title?: string
-    fields?: Record<string, unknown>
-  }
+  error?:
+    | string
+    | {
+        error?: string
+        status_code?: number
+        detail?: string
+        title?: string
+        fields?: Record<string, unknown>
+      }
 }
 
 export interface SyncJobResult {
@@ -382,7 +384,7 @@ export interface IPAddressEntry {
   ip_version: number
   description: string
   dns_name: string
-  [key: string]: unknown  // custom fields like cf_last_scan
+  [key: string]: unknown // custom fields like cf_last_scan
 }
 
 export interface IPRemovedEntry {
@@ -393,7 +395,11 @@ export interface IPRemovedEntry {
 export interface IPSkippedEntry {
   address: string
   id: string
-  interface_assignments: Array<{ id: string | null; interface: string | null; device: string | null }>
+  interface_assignments: Array<{
+    id: string | null
+    interface: string | null
+    device: string | null
+  }>
 }
 
 export interface IPFailedEntry {
@@ -435,7 +441,9 @@ export interface IPAddressesJobResult {
  * Check if result is a backup job result.
  * Must check for 'backed_up_devices' specifically to distinguish from run_commands results.
  */
-export function isBackupJobResult(result: Record<string, unknown>): result is BackupJobResult {
+export function isBackupJobResult(
+  result: Record<string, unknown>
+): result is BackupJobResult {
   return (
     'backed_up_devices' in result ||
     ('devices_backed_up' in result && 'devices_failed' in result)
@@ -446,7 +454,9 @@ export function isBackupJobResult(result: Record<string, unknown>): result is Ba
  * Check if result is a sync job result (CheckMK sync).
  * Has activation field or is sync_devices type.
  */
-export function isSyncJobResult(result: Record<string, unknown>): result is SyncJobResult {
+export function isSyncJobResult(
+  result: Record<string, unknown>
+): result is SyncJobResult {
   return (
     'activation' in result ||
     ('success_count' in result && 'results' in result && Array.isArray(result.results))
@@ -457,7 +467,9 @@ export function isSyncJobResult(result: Record<string, unknown>): result is Sync
  * Check if result is a run_commands job result.
  * Has command_template and successful_devices or failed_devices.
  */
-export function isRunCommandsJobResult(result: Record<string, unknown>): result is RunCommandsJobResult {
+export function isRunCommandsJobResult(
+  result: Record<string, unknown>
+): result is RunCommandsJobResult {
   return (
     'command_template' in result &&
     ('successful_devices' in result || 'failed_devices' in result)
@@ -469,23 +481,21 @@ export function isRunCommandsJobResult(result: Record<string, unknown>): result 
  * Has file_path and export_format fields.
  */
 
-export function isExportDevicesJobResult(result: Record<string, unknown>): result is ExportDevicesJobResult {
-  return (
-    'export_format' in result &&
-    'file_path' in result &&
-    'filename' in result
-  )
+export function isExportDevicesJobResult(
+  result: Record<string, unknown>
+): result is ExportDevicesJobResult {
+  return 'export_format' in result && 'file_path' in result && 'filename' in result
 }
 
 /**
  * Check if result is a bulk_onboard job result.
  * Has device_count and devices array.
  */
-export function isBulkOnboardJobResult(result: Record<string, unknown>): result is BulkOnboardJobResult {
+export function isBulkOnboardJobResult(
+  result: Record<string, unknown>
+): result is BulkOnboardJobResult {
   return (
-    'device_count' in result &&
-    'devices' in result &&
-    Array.isArray(result.devices)
+    'device_count' in result && 'devices' in result && Array.isArray(result.devices)
   )
 }
 
@@ -493,7 +503,9 @@ export function isBulkOnboardJobResult(result: Record<string, unknown>): result 
  * Check if result is an update_devices job result.
  * Has dry_run flag and summary object with total/successful/failed/skipped counts.
  */
-export function isUpdateDevicesJobResult(result: Record<string, unknown>): result is UpdateDevicesJobResult {
+export function isUpdateDevicesJobResult(
+  result: Record<string, unknown>
+): result is UpdateDevicesJobResult {
   return (
     'dry_run' in result &&
     'summary' in result &&
@@ -510,7 +522,9 @@ export function isUpdateDevicesJobResult(result: Record<string, unknown>): resul
  * Check if result is a check_ip job result.
  * Has statistics object with matches/name_mismatches/ip_not_found/errors counts.
  */
-export function isCheckIPJobResult(result: Record<string, unknown>): result is CheckIPJobResult {
+export function isCheckIPJobResult(
+  result: Record<string, unknown>
+): result is CheckIPJobResult {
   return (
     'statistics' in result &&
     typeof result.statistics === 'object' &&
@@ -528,19 +542,19 @@ export function isCheckIPJobResult(result: Record<string, unknown>): result is C
  * Check if result is a deploy_agent job result.
  * Has agent_name, commit_sha, and repository_name fields.
  */
-export function isDeployAgentJobResult(result: Record<string, unknown>): result is DeployAgentJobResult {
-  return (
-    'agent_name' in result &&
-    'commit_sha' in result &&
-    'repository_name' in result
-  )
+export function isDeployAgentJobResult(
+  result: Record<string, unknown>
+): result is DeployAgentJobResult {
+  return 'agent_name' in result && 'commit_sha' in result && 'repository_name' in result
 }
 
 /**
  * Check if result is a scan_prefix job result.
  * Has prefixes array with total_ips_scanned and total_reachable/total_unreachable counts.
  */
-export function isScanPrefixJobResult(result: Record<string, unknown>): result is ScanPrefixJobResult {
+export function isScanPrefixJobResult(
+  result: Record<string, unknown>
+): result is ScanPrefixJobResult {
   return (
     'prefixes' in result &&
     Array.isArray(result.prefixes) &&
@@ -598,16 +612,117 @@ export interface CsvImportJobResult {
  * Check if result is an ip_addresses job result.
  * Has action ('list' or 'delete'), filter_field, and filter_value fields.
  */
-export function isIPAddressesJobResult(result: Record<string, unknown>): result is IPAddressesJobResult {
+export function isIPAddressesJobResult(
+  result: Record<string, unknown>
+): result is IPAddressesJobResult {
   return (
     'action' in result &&
-    (result.action === 'list' || result.action === 'delete' || result.action === 'remove' || result.action === 'mark') &&
+    (result.action === 'list' ||
+      result.action === 'delete' ||
+      result.action === 'remove' ||
+      result.action === 'mark') &&
     'filter_field' in result &&
     'filter_value' in result &&
     'total' in result
   )
 }
 
+// ============================================================================
+// Ping Agent Job Result Types
+// ============================================================================
+
+export interface PingAgentIpResult {
+  ip_address: string
+  reachable: boolean
+  latency_ms: number | null
+  packet_loss_percent: number
+}
+
+export interface PingAgentDeviceResult {
+  device_name: string
+  device_id: string | null
+  ip_results: PingAgentIpResult[]
+}
+
+export interface PingAgentOutput {
+  results: PingAgentDeviceResult[]
+  total_devices: number
+  reachable_count: number
+  unreachable_count: number
+}
+
+export interface PingAgentJobResult {
+  success: boolean
+  status: string
+  command_id: string
+  output: PingAgentOutput
+  total_devices: number
+  reachable_count: number
+  unreachable_count: number
+  execution_time_ms: number
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
+}
+
+/**
+ * Check if result is a ping_agent job result.
+ * Unique discriminator: has output.results with ip_results arrays.
+ */
+export function isPingAgentJobResult(
+  result: Record<string, unknown>
+): result is PingAgentJobResult {
+  return (
+    'output' in result &&
+    typeof result.output === 'object' &&
+    result.output !== null &&
+    'results' in result.output &&
+    Array.isArray((result.output as Record<string, unknown>).results) &&
+    'reachable_count' in result.output &&
+    'unreachable_count' in result.output
+  )
+}
+
+// ============================================================================
+// Set Primary IP Job Result Types
+// ============================================================================
+
+export interface SetPrimaryIpDeviceResult {
+  device_name: string
+  device_id: string | null
+  status: 'assigned' | 'skipped' | 'unreachable' | 'failed'
+  primary_ip: string | null
+  reachable_ips: string[]
+  reason: string | null
+}
+
+export interface SetPrimaryIpJobResult {
+  success: boolean
+  strategy: string
+  total_devices: number
+  assigned_count: number
+  skipped_count: number
+  unreachable_count: number
+  failed_count: number
+  execution_time_ms: number
+  results: SetPrimaryIpDeviceResult[]
+  note?: string
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
+}
+
+/**
+ * Check if result is a set_primary_ip job result.
+ * Unique discriminator: has assigned_count + skipped_count + unreachable_count fields.
+ */
+export function isSetPrimaryIpJobResult(
+  result: Record<string, unknown>
+): result is SetPrimaryIpJobResult {
+  return (
+    'assigned_count' in result &&
+    'skipped_count' in result &&
+    'unreachable_count' in result
+  )
+}
 
 // ============================================================================
 // Utility Functions
@@ -628,7 +743,9 @@ export function formatBytes(bytes: number): string {
  * Check if result is a csv_import job result.
  * Has import_type field and summary with files_processed + created/updated counters.
  */
-export function isCsvImportJobResult(result: Record<string, unknown>): result is CsvImportJobResult {
+export function isCsvImportJobResult(
+  result: Record<string, unknown>
+): result is CsvImportJobResult {
   return (
     'import_type' in result &&
     'summary' in result &&

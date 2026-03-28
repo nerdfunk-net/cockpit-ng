@@ -106,6 +106,9 @@ async def create_job_template(
             csv_export_delimiter=template_data.csv_export_delimiter,
             csv_export_quote_char=template_data.csv_export_quote_char,
             csv_export_include_headers=template_data.csv_export_include_headers,
+            ping_agent_id=template_data.ping_agent_id,
+            set_primary_ip_strategy=template_data.set_primary_ip_strategy,
+            set_primary_ip_agent_id=template_data.set_primary_ip_agent_id,
             is_global=template_data.is_global,
         )
 
@@ -284,6 +287,9 @@ async def update_job_template(
             csv_export_delimiter=update_data.csv_export_delimiter,
             csv_export_quote_char=update_data.csv_export_quote_char,
             csv_export_include_headers=update_data.csv_export_include_headers,
+            ping_agent_id=update_data.ping_agent_id,
+            set_primary_ip_strategy=update_data.set_primary_ip_strategy,
+            set_primary_ip_agent_id=update_data.set_primary_ip_agent_id,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

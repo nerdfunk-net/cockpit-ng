@@ -129,3 +129,11 @@ class PingResponse(BaseModel):
     output: Optional[PingOutput] = None
     error: Optional[str] = None
     execution_time_ms: int
+
+
+class PingJobResponse(BaseModel):
+    """Returned immediately when a ping is submitted as a background Celery job"""
+
+    celery_task_id: str
+    status: str  # queued
+    message: str

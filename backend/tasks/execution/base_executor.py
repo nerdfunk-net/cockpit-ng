@@ -49,6 +49,8 @@ def execute_job_type(
     from .ip_addresses_executor import execute_ip_addresses
     from .csv_import_executor import execute_csv_import
     from .csv_export_executor import execute_csv_export
+    from .ping_agent_executor import execute_ping_agent
+    from .set_primary_ip_executor import execute_set_primary_ip
 
     # Map job_type to execution function
     job_executors = {
@@ -62,6 +64,8 @@ def execute_job_type(
         "ip_addresses": execute_ip_addresses,
         "csv_import": execute_csv_import,
         "csv_export": execute_csv_export,
+        "ping_agent": execute_ping_agent,
+        "set_primary_ip": execute_set_primary_ip,
     }
 
     executor = job_executors.get(job_type)

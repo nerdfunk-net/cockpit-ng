@@ -7,7 +7,7 @@ import type {
   DockerRestartInput,
   CommandResult,
   PingInput,
-  PingCommandResult,
+  PingJobResponse,
 } from '../types'
 
 export function useAgentMutations() {
@@ -67,21 +67,17 @@ export function useAgentMutations() {
   })
 
   const ping = useMutation({
-    mutationFn: async (input: PingInput): Promise<PingCommandResult> => {
-      return apiCall<PingCommandResult>(`cockpit-agent/${input.agent_id}/ping`, {
+    mutationFn: async (input: PingInput): Promise<PingJobResponse> => {
+      return apiCall<PingJobResponse>(`cockpit-agent/${input.agent_id}/ping`, {
         method: 'POST',
         body: JSON.stringify({ inventory_id: input.inventory_id }),
       })
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.cockpitAgents.history(variables.agent_id),
+    onSuccess: () => {
+      toast({
+        title: 'Ping Job Queued',
+        description: 'Ping is running in the background — view progress in Jobs → View',
       })
-      const output = data.output
-      const summary = output
-        ? `${output.reachable_count} reachable, ${output.unreachable_count} unreachable`
-        : `Completed in ${data.execution_time_ms}ms`
-      toast({ title: 'Ping Completed', description: summary })
     },
     onError: (error: Error) => {
       toast({

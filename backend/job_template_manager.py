@@ -75,6 +75,9 @@ def create_job_template(
     csv_export_delimiter: Optional[str] = None,
     csv_export_quote_char: Optional[str] = None,
     csv_export_include_headers: bool = True,
+    ping_agent_id: Optional[str] = None,
+    set_primary_ip_strategy: Optional[str] = None,
+    set_primary_ip_agent_id: Optional[str] = None,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -166,6 +169,9 @@ def create_job_template(
         csv_export_delimiter=csv_export_delimiter,
         csv_export_quote_char=csv_export_quote_char,
         csv_export_include_headers=csv_export_include_headers,
+        ping_agent_id=ping_agent_id,
+        set_primary_ip_strategy=set_primary_ip_strategy,
+        set_primary_ip_agent_id=set_primary_ip_agent_id,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -271,6 +277,9 @@ def update_job_template(
     csv_export_delimiter: Optional[str] = None,
     csv_export_quote_char: Optional[str] = None,
     csv_export_include_headers: Optional[bool] = None,
+    ping_agent_id: Optional[str] = None,
+    set_primary_ip_strategy: Optional[str] = None,
+    set_primary_ip_agent_id: Optional[str] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -399,6 +408,12 @@ def update_job_template(
         update_data["csv_export_quote_char"] = csv_export_quote_char
     if csv_export_include_headers is not None:
         update_data["csv_export_include_headers"] = csv_export_include_headers
+    if ping_agent_id is not None:
+        update_data["ping_agent_id"] = ping_agent_id
+    if set_primary_ip_strategy is not None:
+        update_data["set_primary_ip_strategy"] = set_primary_ip_strategy
+    if set_primary_ip_agent_id is not None:
+        update_data["set_primary_ip_agent_id"] = set_primary_ip_agent_id
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -497,6 +512,16 @@ def get_job_types() -> List[Dict[str, str]]:
             "value": "csv_export",
             "label": "CSV Export",
             "description": "Export Nautobot devices to a CSV file and commit it to a Git repository",
+        },
+        {
+            "value": "ping_agent",
+            "label": "Ping Agent",
+            "description": "Ping devices from a saved inventory via a Cockpit Agent",
+        },
+        {
+            "value": "set_primary_ip",
+            "label": "Set Primary IP",
+            "description": "Set the primary IP address of devices based on reachability or interface name",
         },
     ]
 
@@ -598,6 +623,9 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "csv_export_delimiter": template.csv_export_delimiter,
         "csv_export_quote_char": template.csv_export_quote_char,
         "csv_export_include_headers": template.csv_export_include_headers,
+        "ping_agent_id": template.ping_agent_id,
+        "set_primary_ip_strategy": template.set_primary_ip_strategy,
+        "set_primary_ip_agent_id": template.set_primary_ip_agent_id,
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

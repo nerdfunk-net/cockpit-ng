@@ -81,3 +81,9 @@ export interface PingCommandResult {
   error: string | null
   execution_time_ms: number
 }
+
+export interface PingJobResponse {
+  celery_task_id: string
+  status: string
+  message: string
+}

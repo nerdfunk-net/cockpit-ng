@@ -9,12 +9,11 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Wifi, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { Wifi, Loader2, CheckCircle2 } from 'lucide-react'
 import type { UseMutationResult } from '@tanstack/react-query'
 import type { DeviceInfo } from '@/components/shared/device-selector'
 import { DeviceSelectionTab } from '../../deploy/tabs/device-selection-tab'
-import type { PingInput, PingCommandResult, PingOutput } from '../types'
+import type { PingInput, PingJobResponse } from '../types'
 
 const EMPTY_DEVICES: DeviceInfo[] = []
 const EMPTY_IDS: string[] = []
@@ -23,7 +22,7 @@ interface PingDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   agentId: string
-  mutation: UseMutationResult<PingCommandResult, Error, PingInput>
+  mutation: UseMutationResult<PingJobResponse, Error, PingInput>
 }
 
 export function PingDialog({ open, onOpenChange, agentId, mutation }: PingDialogProps) {
@@ -53,8 +52,6 @@ export function PingDialog({ open, onOpenChange, agentId, mutation }: PingDialog
     onOpenChange(false)
   }, [mutation, onOpenChange])
 
-  const pingOutput: PingOutput | null = mutation.data?.output ?? null
-
   const canPing = useMemo(
     () => inventoryId !== null && selectedDevices.length > 0 && !mutation.isPending,
     [inventoryId, selectedDevices.length, mutation.isPending]
@@ -71,8 +68,17 @@ export function PingDialog({ open, onOpenChange, agentId, mutation }: PingDialog
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
-          {/* Device / inventory selection */}
-          {!pingOutput && (
+          {mutation.isSuccess ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
+              <CheckCircle2 className="h-12 w-12 text-green-500" />
+              <div>
+                <p className="font-medium text-lg">Ping Job Queued</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {mutation.data.message}
+                </p>
+              </div>
+            </div>
+          ) : (
             <DeviceSelectionTab
               selectedDeviceIds={selectedDeviceIds}
               selectedDevices={selectedDevices}
@@ -80,16 +86,13 @@ export function PingDialog({ open, onOpenChange, agentId, mutation }: PingDialog
               onInventoryLoaded={handleInventoryLoaded}
             />
           )}
-
-          {/* Ping results */}
-          {pingOutput && <PingResults output={pingOutput} />}
         </div>
 
         <DialogFooter className="pt-4 border-t">
           <Button variant="outline" onClick={handleClose}>
-            {pingOutput ? 'Close' : 'Cancel'}
+            {mutation.isSuccess ? 'Close' : 'Cancel'}
           </Button>
-          {!pingOutput && (
+          {!mutation.isSuccess && (
             <Button onClick={handleSubmit} disabled={!canPing}>
               {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {!inventoryId
@@ -102,62 +105,5 @@ export function PingDialog({ open, onOpenChange, agentId, mutation }: PingDialog
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Results sub-component
-// ---------------------------------------------------------------------------
-
-function PingResults({ output }: { output: PingOutput }) {
-  return (
-    <div className="space-y-4 py-2">
-      {/* Summary row */}
-      <div className="flex gap-4 text-sm">
-        <span className="text-muted-foreground">
-          Total devices: <strong>{output.total_devices}</strong>
-        </span>
-        <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-          {output.reachable_count} reachable
-        </Badge>
-        {output.unreachable_count > 0 && (
-          <Badge variant="destructive">{output.unreachable_count} unreachable</Badge>
-        )}
-      </div>
-
-      {/* Per-device breakdown */}
-      <div className="space-y-3">
-        {output.results.map(device => (
-          <div key={device.device_name} className="border rounded-lg p-3">
-            <p className="font-medium text-sm mb-2">{device.device_name}</p>
-            <div className="space-y-1">
-              {device.ip_results.map(ip => (
-                <div key={ip.ip_address} className="flex items-center gap-3 text-xs">
-                  {ip.reachable ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                  ) : (
-                    <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-                  )}
-                  <span className="font-mono w-36">{ip.ip_address}</span>
-                  {ip.reachable ? (
-                    <span className="text-green-700">{ip.latency_ms} ms</span>
-                  ) : (
-                    <span className="text-red-500">not reachable</span>
-                  )}
-                  {ip.packet_loss_percent > 0 && ip.reachable && (
-                    <span className="text-amber-500">
-                      {ip.packet_loss_percent}% loss
-                    </span>
-                  )}
-                </div>
-              ))}
-              {device.ip_results.length === 0 && (
-                <p className="text-xs text-muted-foreground">No IP addresses found</p>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   )
 }

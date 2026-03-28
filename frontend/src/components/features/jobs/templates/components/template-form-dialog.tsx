@@ -47,6 +47,7 @@ import {
 import { MaintainIPAddressesJobTemplate } from './template-types/MaintainIPAddressesJobTemplate'
 import { CsvImportJobTemplate } from './template-types/CsvImportJobTemplate'
 import { CsvExportJobTemplate } from './template-types/CsvExportJobTemplate'
+import { SetPrimaryIpJobTemplate } from './template-types/SetPrimaryIpJobTemplate'
 import { CsvImportMappingDialog } from './template-types/CsvImportMappingDialog'
 import { CsvImportDefaultsPanel } from './csv-import-defaults-panel'
 import type { DeployTemplateEntryData } from './template-types/DeployTemplateEntry'
@@ -170,6 +171,9 @@ export function TemplateFormDialog({
   const [formCsvExportQuoteChar, setFormCsvExportQuoteChar] = useState('"')
   const [formCsvExportIncludeHeaders, setFormCsvExportIncludeHeaders] = useState(true)
   const [formIsGlobal, setFormIsGlobal] = useState(false)
+  // Set Primary IP
+  const [formSetPrimaryIpStrategy, setFormSetPrimaryIpStrategy] = useState('')
+  const [formSetPrimaryIpAgentId, setFormSetPrimaryIpAgentId] = useState('')
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
   const { data: ipStatuses = EMPTY_IP_STATUSES, isLoading: loadingIpStatuses } =
@@ -294,6 +298,8 @@ export function TemplateFormDialog({
     setFormCsvExportQuoteChar('"')
     setFormCsvExportIncludeHeaders(true)
     setFormIsGlobal(false)
+    setFormSetPrimaryIpStrategy('')
+    setFormSetPrimaryIpAgentId('')
   }, [])
 
   // Load editing template data
@@ -415,11 +421,20 @@ export function TemplateFormDialog({
       setFormCsvExportDelimiter(editingTemplate.csv_export_delimiter || ',')
       setFormCsvExportQuoteChar(editingTemplate.csv_export_quote_char || '"')
       setFormCsvExportIncludeHeaders(editingTemplate.csv_export_include_headers ?? true)
+      setFormSetPrimaryIpStrategy(editingTemplate.set_primary_ip_strategy || '')
+      setFormSetPrimaryIpAgentId(editingTemplate.set_primary_ip_agent_id || '')
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
     }
   }, [open, editingTemplate, resetForm])
+
+  // Force inventory_source = 'inventory' when set_primary_ip is selected
+  useEffect(() => {
+    if (formJobType === 'set_primary_ip') {
+      setFormInventorySource('inventory')
+    }
+  }, [formJobType])
 
   const isFormValid = useCallback(() => {
     if (!formName.trim() || !formJobType) return false
@@ -462,6 +477,12 @@ export function TemplateFormDialog({
       )
         return false
     }
+    if (formJobType === 'set_primary_ip') {
+      if (!formSetPrimaryIpStrategy) return false
+      if (formSetPrimaryIpStrategy === 'ip_reachable' && !formSetPrimaryIpAgentId)
+        return false
+      if (!formInventoryName) return false
+    }
     return true
   }, [
     formName,
@@ -484,6 +505,8 @@ export function TemplateFormDialog({
     formCsvExportRepoId,
     formCsvExportFilePath,
     formCsvExportProperties,
+    formSetPrimaryIpStrategy,
+    formSetPrimaryIpAgentId,
   ])
 
   const handleSubmit = async () => {
@@ -642,6 +665,14 @@ export function TemplateFormDialog({
         formJobType === 'csv_export' ? formCsvExportQuoteChar || undefined : undefined,
       csv_export_include_headers:
         formJobType === 'csv_export' ? formCsvExportIncludeHeaders : undefined,
+      set_primary_ip_strategy:
+        formJobType === 'set_primary_ip'
+          ? formSetPrimaryIpStrategy || undefined
+          : undefined,
+      set_primary_ip_agent_id:
+        formJobType === 'set_primary_ip'
+          ? formSetPrimaryIpAgentId || undefined
+          : undefined,
       is_global: formIsGlobal,
     }
 
@@ -732,6 +763,7 @@ export function TemplateFormDialog({
                 setFormInventoryName={setFormInventoryName}
                 savedInventories={savedInventories}
                 loadingInventories={loadingInventories}
+                inventoryRequired={formJobType === 'set_primary_ip'}
               />
             )}
 
@@ -904,6 +936,15 @@ export function TemplateFormDialog({
               formCsvExportIncludeHeaders={formCsvExportIncludeHeaders}
               setFormCsvExportIncludeHeaders={setFormCsvExportIncludeHeaders}
               csvExportRepos={csvExportRepos}
+            />
+          )}
+
+          {formJobType === 'set_primary_ip' && (
+            <SetPrimaryIpJobTemplate
+              formStrategy={formSetPrimaryIpStrategy}
+              setFormStrategy={setFormSetPrimaryIpStrategy}
+              formAgentId={formSetPrimaryIpAgentId}
+              setFormAgentId={setFormSetPrimaryIpAgentId}
             />
           )}
         </div>

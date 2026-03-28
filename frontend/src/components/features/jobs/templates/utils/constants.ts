@@ -33,6 +33,8 @@ export const JOB_TYPE_LABELS: Record<string, string> = {
   ip_addresses: 'Maintain IP-Addresses',
   csv_import: 'CSV Import',
   csv_export: 'CSV Export',
+  ping_agent: 'Ping Agent',
+  set_primary_ip: 'Set Primary IP',
 } as const
 
 export const JOB_TYPE_COLORS: Record<string, string> = {
@@ -46,6 +48,8 @@ export const JOB_TYPE_COLORS: Record<string, string> = {
   ip_addresses: 'bg-emerald-500',
   csv_import: 'bg-yellow-500',
   csv_export: 'bg-emerald-600',
+  ping_agent: 'bg-sky-500',
+  set_primary_ip: 'bg-cyan-600',
 } as const
 
 export const CSV_EXPORT_PROPERTIES: {

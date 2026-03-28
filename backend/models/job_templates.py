@@ -18,6 +18,8 @@ JobTemplateType = Literal[
     "ip_addresses",
     "csv_import",
     "csv_export",
+    "ping_agent",
+    "set_primary_ip",
 ]
 
 # Inventory source options
@@ -302,6 +304,23 @@ class JobTemplateBase(BaseModel):
         True,
         description="Whether to include a header row in the CSV export",
     )
+    # Ping Agent (ping_agent type)
+    ping_agent_id: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="ID of the cockpit agent to ping through (ping_agent type)",
+    )
+    # Set Primary IP (set_primary_ip type)
+    set_primary_ip_strategy: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="Strategy for selecting primary IP: 'ip_reachable' or 'interface_name'",
+    )
+    set_primary_ip_agent_id: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Cockpit agent ID used for reachability ping (set_primary_ip type)",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -375,6 +394,11 @@ class JobTemplateUpdate(BaseModel):
     csv_export_delimiter: Optional[str] = Field(None, max_length=10)
     csv_export_quote_char: Optional[str] = Field(None, max_length=10)
     csv_export_include_headers: Optional[bool] = None
+    # Ping Agent
+    ping_agent_id: Optional[str] = Field(None, max_length=255)
+    # Set Primary IP
+    set_primary_ip_strategy: Optional[str] = Field(None, max_length=50)
+    set_primary_ip_agent_id: Optional[str] = Field(None, max_length=255)
     is_global: Optional[bool] = None
 
 

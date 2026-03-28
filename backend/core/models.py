@@ -501,6 +501,15 @@ class JobTemplate(Base):
     csv_export_delimiter = Column(String(10), nullable=True)
     csv_export_quote_char = Column(String(10), nullable=True)
     csv_export_include_headers = Column(Boolean, nullable=True, default=True)
+    # Ping Agent (ping_agent type)
+    ping_agent_id = Column(String(255), nullable=True)  # ID of the cockpit agent to ping through
+    # Set Primary IP (set_primary_ip type)
+    set_primary_ip_strategy = Column(
+        String(50), nullable=True
+    )  # "ip_reachable" or "interface_name"
+    set_primary_ip_agent_id = Column(
+        String(255), nullable=True
+    )  # cockpit agent ID used for reachability ping
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

@@ -2,7 +2,6 @@
 API Router for Cockpit Agent management
 """
 
-import json
 import logging
 from typing import List
 
@@ -20,10 +19,7 @@ from models.cockpit_agent import (
     CommandHistoryResponse,
     CommandHistoryItem,
     PingRequest,
-    PingResponse,
-    PingOutput,
-    PingDeviceResult,
-    PingIpResult,
+    PingJobResponse,
 )
 from models.inventory import LogicalOperation
 from services.cockpit_agent_service import CockpitAgentService
@@ -182,7 +178,7 @@ query DeviceInterfaces($name: [String]) {
 
 @router.post(
     "/{agent_id}/ping",
-    response_model=PingResponse,
+    response_model=PingJobResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
 async def ping_devices(
@@ -196,17 +192,18 @@ async def ping_devices(
 ):
     """
     Resolve devices from a saved inventory, fetch their IP addresses from Nautobot,
-    then send a ping command to the specified agent and return the results.
+    then submit a background Celery job to ping all devices via the specified agent.
+    Returns immediately with a celery_task_id — results are visible in Jobs → View.
     """
     try:
+        from tasks import dispatch_job
+
         # 1. Load the saved inventory
         inventory = inventory_persistence.get_inventory(request.inventory_id)
         if not inventory:
             raise HTTPException(status_code=404, detail=f"Inventory {request.inventory_id} not found")
 
         # 2. Resolve devices from inventory conditions
-        # Conditions are stored as [{version: 2, tree: <ConditionTree>}] (new format)
-        # or as [{operation_type, conditions, nested_operations}] (legacy format).
         conditions = inventory.get("conditions", [])
         operations = _conditions_to_operations(conditions)
         devices, _ = await inventory_svc.preview_inventory(operations)
@@ -214,7 +211,7 @@ async def ping_devices(
         if not devices:
             raise HTTPException(status_code=400, detail="No devices found in inventory")
 
-        logger.info("Resolved %d devices from inventory %d", len(devices), request.inventory_id)
+        logger.info("Resolved %d devices from inventory %d for ping job", len(devices), request.inventory_id)
 
         # 3. For each device, query Nautobot GraphQL to get interface IP addresses
         device_ping_list: List[dict] = []
@@ -237,64 +234,39 @@ async def ping_devices(
         if not device_ping_list:
             raise HTTPException(status_code=400, detail="No devices with names found in inventory")
 
-        # 4. Send ping command to agent and wait for response (up to 120 s)
-        service = CockpitAgentService(db)
-        raw = service.send_ping(
-            agent_id=agent_id,
-            devices=device_ping_list,
-            sent_by=user.get("sub", "system"),
-            timeout=120,
+        username = user.get("sub", "system")
+
+        # 4. Submit background Celery job — returns immediately
+        task = dispatch_job.delay(
+            job_name=f"Ping - Agent {agent_id}",
+            job_type="ping_agent",
+            triggered_by="manual",
+            executed_by=username,
+            target_devices=[d["device_name"] for d in device_ping_list],
+            job_parameters={
+                "agent_id": agent_id,
+                "devices": device_ping_list,
+                "sent_by": username,
+            },
         )
 
-        if raw.get("status") == "error":
-            raise HTTPException(status_code=500, detail=raw.get("error"))
-        if raw.get("status") == "timeout":
-            raise HTTPException(status_code=504, detail=raw.get("error"))
+        logger.info(
+            "Ping job queued: agent=%s, devices=%d, celery_task_id=%s",
+            agent_id,
+            len(device_ping_list),
+            task.id,
+        )
 
-        # 5. Parse the nested output dict into the PingOutput model
-        raw_output = raw.get("output")
-        if isinstance(raw_output, str):
-            try:
-                raw_output = json.loads(raw_output)
-            except json.JSONDecodeError:
-                raw_output = None
-
-        ping_output: PingOutput | None = None
-        if isinstance(raw_output, dict):
-            ping_output = PingOutput(
-                results=[
-                    PingDeviceResult(
-                        device_name=d["device_name"],
-                        device_id=d.get("device_id"),
-                        ip_results=[
-                            PingIpResult(
-                                ip_address=r["ip_address"],
-                                reachable=r["reachable"],
-                                latency_ms=r.get("latency_ms"),
-                                packet_loss_percent=r.get("packet_loss_percent", 100),
-                            )
-                            for r in d.get("ip_results", [])
-                        ],
-                    )
-                    for d in raw_output.get("results", [])
-                ],
-                total_devices=raw_output.get("total_devices", 0),
-                reachable_count=raw_output.get("reachable_count", 0),
-                unreachable_count=raw_output.get("unreachable_count", 0),
-            )
-
-        return PingResponse(
-            command_id=raw.get("command_id", ""),
-            status=raw.get("status", "success"),
-            output=ping_output,
-            error=raw.get("error"),
-            execution_time_ms=raw.get("execution_time_ms", 0),
+        return PingJobResponse(
+            celery_task_id=task.id,
+            status="queued",
+            message=f"Ping job queued for {len(device_ping_list)} device(s) — view progress in Jobs → View",
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Ping failed: %s", e, exc_info=True)
+        logger.error("Ping job submission failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
