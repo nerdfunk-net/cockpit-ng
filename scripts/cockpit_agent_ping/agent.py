@@ -139,6 +139,24 @@ class CockpitAgent:
             except Exception as e:
                 logger.error(f"Failed to execute buffered command: {e}")
 
+    def _make_progress_publisher(self, command_id: str):
+        """
+        Return a callable that publishes a progress update to the response channel.
+        The backend's wait_for_response recognises type='progress' messages and
+        keeps waiting instead of treating them as the final result.
+        """
+        response_channel = config.get_response_channel()
+
+        def publish_progress(data: dict) -> None:
+            try:
+                message = {"command_id": command_id, "type": "progress", **data}
+                self.redis_client.publish(response_channel, json.dumps(message))
+                logger.debug(f"Progress update sent for {command_id}: {data}")
+            except Exception as e:
+                logger.warning(f"Failed to send progress update: {e}")
+
+        return publish_progress
+
     async def _execute_and_respond(self, command_data: dict):
         """Execute command and send response"""
         command_id = command_data.get("command_id")
@@ -147,8 +165,10 @@ class CockpitAgent:
 
         logger.info(f"Executing command: {command} (ID: {command_id})")
 
+        publish_progress = self._make_progress_publisher(command_id)
+
         # Execute command
-        result = await self.executor.execute(command, params)
+        result = await self.executor.execute(command, params, publish_progress=publish_progress)
 
         # Increment counter
         if self.heartbeat_thread:

@@ -11,6 +11,8 @@ import re
 import time
 from typing import Callable, Dict, List, Optional, Tuple
 
+_PROGRESS_EVERY_N_IPS = 10  # publish a progress update after every N completed IPs
+
 from config import config
 
 logger = logging.getLogger(__name__)
@@ -40,9 +42,14 @@ class CommandExecutor:
         self.handlers[command_name] = handler
         logger.info(f"Registered command handler: {command_name}")
 
-    async def execute(self, command: str, params: dict) -> dict:
+    async def execute(self, command: str, params: dict, publish_progress: Optional[Callable] = None) -> dict:
         """
         Execute a command by name.
+
+        publish_progress: optional callable(data: dict) that sends intermediate
+        progress updates back to the backend while the command is still running.
+        Currently only used by the 'ping' command.
+
         Returns: dict with status, output, error, execution_time_ms
         """
         start_time = time.time()
@@ -57,7 +64,10 @@ class CommandExecutor:
 
         try:
             handler = self.handlers[command]
-            result = await handler(params)
+            if command == "ping":
+                result = await handler(params, publish_progress=publish_progress)
+            else:
+                result = await handler(params)
             result["execution_time_ms"] = int((time.time() - start_time) * 1000)
             return result
         except Exception as e:
@@ -79,7 +89,7 @@ class CommandExecutor:
         logger.info(f"Echo command: {message}")
         return {"status": "success", "output": message, "error": None}
 
-    async def _execute_ping(self, params: dict) -> dict:
+    async def _execute_ping(self, params: dict, publish_progress: Optional[Callable] = None) -> dict:
         """
         Ping a list of devices and return reachability results.
 
@@ -119,37 +129,61 @@ class CommandExecutor:
             f"Ping command: {len(devices)} devices, count={count}, timeout={timeout}s"
         )
 
-        # Build flat task list: (device_index, device_info, clean_ip)
-        tasks: List[Tuple[int, dict, str]] = []
+        # Build flat task list: (device_index, device_info, clean_ip, ip_uuid)
+        # ip_addresses entries may be plain strings or {"address": ..., "uuid": ...} dicts.
+        tasks: List[Tuple[int, dict, str, Optional[str]]] = []
         for idx, device in enumerate(devices):
             device_name = device.get("device_name", f"device-{idx}")
             raw_ips = device.get("ip_addresses", [])
             if not raw_ips:
                 logger.warning(f"Device '{device_name}' has no ip_addresses, skipping")
             for raw_ip in raw_ips:
-                clean_ip = _strip_cidr(raw_ip)
+                if isinstance(raw_ip, dict):
+                    ip_str = raw_ip.get("address", "")
+                    ip_uuid: Optional[str] = raw_ip.get("uuid")
+                else:
+                    ip_str = raw_ip
+                    ip_uuid = None
+                clean_ip = _strip_cidr(ip_str)
                 if clean_ip is None:
-                    logger.warning(f"Invalid IP address '{raw_ip}' for device '{device_name}', skipping")
+                    logger.warning(f"Invalid IP address '{ip_str}' for device '{device_name}', skipping")
                     continue
-                tasks.append((idx, device, clean_ip))
+                tasks.append((idx, device, clean_ip, ip_uuid))
 
-        # Run all pings concurrently, capped by semaphore
+        # Run all pings concurrently, capped by semaphore.
+        # Results are processed via as_completed so progress updates can be
+        # published after every _PROGRESS_EVERY_N_IPS finished pings.
         semaphore = asyncio.Semaphore(config.ping_max_concurrency)
+        total_ips = len(tasks)
 
-        async def bounded_ping(ip: str) -> dict:
-            async with semaphore:
-                return await _ping_one(ip, count, timeout)
-
-        ping_coroutines = [bounded_ping(ip) for (_, _device, ip) in tasks]
-        raw_results = await asyncio.gather(*ping_coroutines, return_exceptions=True)
-
-        # Re-assemble per-device structure
-        device_ip_results: Dict[int, List[dict]] = {i: [] for i in range(len(devices))}
-        for (idx, _, ip), result in zip(tasks, raw_results):
-            if isinstance(result, Exception):
-                logger.error(f"Unexpected error pinging {ip}: {result}")
+        async def bounded_ping_tracked(task_tuple: Tuple[int, dict, str, Optional[str]]) -> Tuple:
+            idx, device, ip, ip_uuid = task_tuple
+            try:
+                async with semaphore:
+                    result = await _ping_one(ip, count, timeout)
+            except Exception as e:
+                logger.error(f"Unexpected error pinging {ip}: {e}")
                 result = {"ip_address": ip, "reachable": False, "latency_ms": None, "packet_loss_percent": 100}
+            if ip_uuid is not None:
+                result["uuid"] = ip_uuid
+            return task_tuple, result
+
+        futures = [asyncio.ensure_future(bounded_ping_tracked(t)) for t in tasks]
+
+        # Re-assemble per-device structure as results arrive
+        device_ip_results: Dict[int, List[dict]] = {i: [] for i in range(len(devices))}
+        completed_ips = 0
+
+        for coro in asyncio.as_completed(futures):
+            (idx, _, _ip, _uuid), result = await coro
             device_ip_results[idx].append(result)
+            completed_ips += 1
+
+            if publish_progress and completed_ips % _PROGRESS_EVERY_N_IPS == 0:
+                publish_progress({
+                    "completed_ips": completed_ips,
+                    "total_ips": total_ips,
+                })
 
         results = []
         for idx, device in enumerate(devices):

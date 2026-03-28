@@ -135,26 +135,21 @@ def _execute_ip_reachable(
     if not device_records:
         return {"success": False, "error": "No devices found in inventory"}
 
-    # Build the flat ip_addresses list (strings) for the ping agent.
-    # Nautobot returns addresses in CIDR notation (e.g. "192.168.178.1/24");
-    # strip the prefix so the ping agent receives a bare IP.
+    # Build the ip_addresses list as objects carrying both the address and its
+    # Nautobot UUID.  The agent echoes the UUID back in each ip_result so we can
+    # identify the exact IP object without any IP→UUID re-lookup (which would be
+    # ambiguous when the same address exists in multiple namespaces).
     device_ping_list = [
         {
             "device_name": r["device_name"],
             "device_id": r["device_id"],
-            "ip_addresses": [obj["address"].split("/")[0] for obj in r["ip_objects"]],
+            "ip_addresses": [
+                {"address": obj["address"].split("/")[0], "uuid": obj["id"]}
+                for obj in r["ip_objects"]
+            ],
         }
         for r in device_records
     ]
-
-    # Build a quick lookup: device_id → {bare_ip → ip_uuid}
-    # Use bare IPs as keys to match what the ping agent returns.
-    ip_uuid_lookup: Dict[str, Dict[str, str]] = {}
-    for r in device_records:
-        device_id = r["device_id"] or r["device_name"]
-        ip_uuid_lookup[device_id] = {
-            obj["address"].split("/")[0]: obj["id"] for obj in r["ip_objects"]
-        }
 
     logger.info(
         "Set Primary IP executor (ip_reachable): agent=%s, devices=%d, job_run_id=%s",
@@ -177,7 +172,7 @@ def _execute_ip_reachable(
             agent_id=agent_id,
             devices=device_ping_list,
             sent_by="celery_scheduler",
-            timeout=120,
+            timeout=600,  # 10 min — accommodates large inventories (hundreds of devices)
         )
     except Exception as exc:
         logger.error("Ping failed: %s", exc, exc_info=True)
@@ -186,7 +181,7 @@ def _execute_ip_reachable(
         db.close()
 
     if raw.get("status") == "timeout":
-        return {"success": False, "error": "Ping timed out after 120 seconds"}
+        return {"success": False, "error": "Ping timed out after 600 seconds"}
     if raw.get("status") == "error":
         return {"success": False, "error": raw.get("error", "Ping returned an error")}
 
@@ -221,13 +216,10 @@ def _execute_ip_reachable(
         device_id = ping_device.get("device_id")
         ip_results = ping_device.get("ip_results", [])
 
-        reachable_ips = [
-            ip["ip_address"]
-            for ip in ip_results
-            if ip.get("reachable")
-        ]
+        reachable_entries = [ip for ip in ip_results if ip.get("reachable")]
+        reachable_ips = [ip["ip_address"] for ip in reachable_entries]
 
-        if not reachable_ips:
+        if not reachable_entries:
             results.append({
                 "device_name": device_name,
                 "device_id": device_id,
@@ -239,22 +231,22 @@ def _execute_ip_reachable(
             unreachable_count += 1
             continue
 
-        if len(reachable_ips) > 1:
+        if len(reachable_entries) > 1:
             results.append({
                 "device_name": device_name,
                 "device_id": device_id,
                 "status": "skipped",
                 "primary_ip": None,
                 "reachable_ips": reachable_ips,
-                "reason": f"Ambiguous: {len(reachable_ips)} IPs are reachable",
+                "reason": f"Ambiguous: {len(reachable_entries)} IPs are reachable",
             })
             skipped_count += 1
             continue
 
-        # Exactly 1 reachable IP
-        reachable_ip = reachable_ips[0]
-        lookup_key = device_id or device_name
-        ip_uuid = ip_uuid_lookup.get(lookup_key, {}).get(reachable_ip)
+        # Exactly 1 reachable IP — UUID is carried directly in the ping result.
+        reachable_entry = reachable_entries[0]
+        reachable_ip = reachable_entry.get("ip_address", "")
+        ip_uuid = reachable_entry.get("uuid")
 
         if not ip_uuid:
             results.append({

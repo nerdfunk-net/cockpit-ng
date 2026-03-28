@@ -99,53 +99,74 @@ class CockpitAgentService:
         """
         response_channel = f"cockpit-agent-response:{agent_id}"
 
+        # Use a short per-read socket timeout so the loop can check elapsed time
+        # without blocking indefinitely.  The total budget is enforced by comparing
+        # wall-clock time against `timeout`; the socket-level value only limits how
+        # long a single blocking recv can take before we re-check.
+        _POLL_INTERVAL = 5  # seconds per blocking read attempt
+
         try:
             # Create separate Redis client for subscription (can't use same client for pub/sub)
             redis_sub = redis.from_url(
-                settings.redis_url, decode_responses=True, socket_timeout=timeout
+                settings.redis_url, decode_responses=True, socket_timeout=_POLL_INTERVAL
             )
             pubsub = redis_sub.pubsub()
             pubsub.subscribe(response_channel)
 
             # Wait for response
             start_time = time.time()
-            for message in pubsub.listen():
-                if message["type"] != "message":
+            while time.time() - start_time < timeout:
+                try:
+                    message = pubsub.get_message(ignore_subscribe_messages=True, timeout=_POLL_INTERVAL)
+                except redis.exceptions.TimeoutError:
+                    # No message within the poll window — check elapsed time and retry.
+                    continue
+
+                if message is None:
+                    continue
+
+                if message.get("type") != "message":
                     continue
 
                 try:
                     response_data = json.loads(message["data"])
-
-                    # Check if this is the response we're waiting for
-                    if response_data.get("command_id") == command_id:
-                        # Serialize dict/list outputs to JSON string for DB storage
-                        raw_output = response_data.get("output")
-                        output_to_store = (
-                            json.dumps(raw_output)
-                            if isinstance(raw_output, (dict, list))
-                            else raw_output
-                        )
-                        # Update database with result
-                        self.repository.update_command_result(
-                            command_id=command_id,
-                            status=response_data.get("status"),
-                            output=output_to_store,
-                            error=response_data.get("error"),
-                            execution_time_ms=response_data.get("execution_time_ms"),
-                        )
-
-                        pubsub.unsubscribe()
-                        pubsub.close()
-                        redis_sub.close()
-                        return response_data
-
                 except json.JSONDecodeError as e:
                     logger.error("Failed to parse response JSON: %s", e)
                     continue
 
-                # Check timeout
-                if time.time() - start_time > timeout:
-                    break
+                if response_data.get("command_id") != command_id:
+                    continue
+
+                # Progress updates: log and keep waiting for the final result.
+                if response_data.get("type") == "progress":
+                    logger.info(
+                        "Agent progress for %s: %s/%s IPs completed",
+                        command_id,
+                        response_data.get("completed_ips", "?"),
+                        response_data.get("total_ips", "?"),
+                    )
+                    continue
+
+                # Serialize dict/list outputs to JSON string for DB storage
+                raw_output = response_data.get("output")
+                output_to_store = (
+                    json.dumps(raw_output)
+                    if isinstance(raw_output, (dict, list))
+                    else raw_output
+                )
+                # Update database with result
+                self.repository.update_command_result(
+                    command_id=command_id,
+                    status=response_data.get("status"),
+                    output=output_to_store,
+                    error=response_data.get("error"),
+                    execution_time_ms=response_data.get("execution_time_ms"),
+                )
+
+                pubsub.unsubscribe()
+                pubsub.close()
+                redis_sub.close()
+                return response_data
 
             # Timeout occurred
             pubsub.unsubscribe()
