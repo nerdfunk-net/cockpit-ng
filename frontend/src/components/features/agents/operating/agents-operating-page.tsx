@@ -3,28 +3,29 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Activity, RefreshCw, Server, Wifi, WifiOff, Loader2, BookOpen } from 'lucide-react'
+import { Activity, RefreshCw, Server, Wifi, WifiOff, Loader2 } from 'lucide-react'
 import { useAgentsQuery } from './hooks/use-agents-query'
 import { useAgentMutations } from './hooks/use-agent-mutations'
 import { AgentsGrid } from './components/agents-grid'
-import { DeployInstructions } from './components/deploy-instructions'
 import { GitPullDialog } from './dialogs/git-pull-dialog'
+import { PingDialog } from './dialogs/ping-dialog'
 import { CommandHistoryDialog } from './dialogs/command-history-dialog'
 import { EMPTY_AGENTS } from './utils/constants'
 
 export function AgentsOperatingPage() {
   const { data, isLoading, refetch, isFetching } = useAgentsQuery()
-  const { gitPull, dockerRestart } = useAgentMutations()
+  const { gitPull, dockerRestart, ping } = useAgentMutations()
 
   const agents = data?.agents ?? EMPTY_AGENTS
 
   // Dialog state
   const [gitPullAgent, setGitPullAgent] = useState<string | null>(null)
+  const [pingAgent, setPingAgent] = useState<string | null>(null)
   const [historyAgent, setHistoryAgent] = useState<string | null>(null)
 
   // Summary stats
   const stats = useMemo(() => {
-    const online = agents.filter((a) => a.status === 'online').length
+    const online = agents.filter(a => a.status === 'online').length
     return { total: agents.length, online, offline: agents.length - online }
   }, [agents])
 
@@ -36,7 +37,11 @@ export function AgentsOperatingPage() {
     },
     [dockerRestart]
   )
-  const handleViewHistory = useCallback((agentId: string) => setHistoryAgent(agentId), [])
+  const handlePing = useCallback((agentId: string) => setPingAgent(agentId), [])
+  const handleViewHistory = useCallback(
+    (agentId: string) => setHistoryAgent(agentId),
+    []
+  )
   const handleRefresh = useCallback(() => refetch(), [refetch])
 
   return (
@@ -49,11 +54,18 @@ export function AgentsOperatingPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Agents Operating</h1>
-            <p className="text-muted-foreground mt-2">Monitor and manage running Cockpit agents</p>
+            <p className="text-muted-foreground mt-2">
+              Monitor and manage running Cockpit agents
+            </p>
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isFetching}
+          >
             {isFetching ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -113,22 +125,10 @@ export function AgentsOperatingPage() {
               agents={agents}
               onGitPull={handleGitPull}
               onDockerRestart={handleDockerRestart}
+              onPing={handlePing}
               onViewHistory={handleViewHistory}
             />
           )}
-        </CardContent>
-      </Card>
-
-      {/* Deployment Instructions */}
-      <Card className="shadow-lg border-0 overflow-hidden p-0">
-        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-t-lg m-0 py-2 px-4">
-          <CardTitle className="flex items-center space-x-2 text-sm font-medium">
-            <BookOpen className="h-5 w-5" />
-            <span>Deployment Instructions</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
-          <DeployInstructions />
         </CardContent>
       </Card>
 
@@ -136,15 +136,23 @@ export function AgentsOperatingPage() {
       {gitPullAgent && (
         <GitPullDialog
           open={!!gitPullAgent}
-          onOpenChange={(open) => !open && setGitPullAgent(null)}
+          onOpenChange={open => !open && setGitPullAgent(null)}
           agentId={gitPullAgent}
           mutation={gitPull}
+        />
+      )}
+      {pingAgent && (
+        <PingDialog
+          open={!!pingAgent}
+          onOpenChange={open => !open && setPingAgent(null)}
+          agentId={pingAgent}
+          mutation={ping}
         />
       )}
       {historyAgent && (
         <CommandHistoryDialog
           open={!!historyAgent}
-          onOpenChange={(open) => !open && setHistoryAgent(null)}
+          onOpenChange={open => !open && setHistoryAgent(null)}
           agentId={historyAgent}
         />
       )}

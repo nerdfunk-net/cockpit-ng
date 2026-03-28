@@ -8,10 +8,17 @@ interface AgentsGridProps {
   agents: CockpitAgent[]
   onGitPull: (agentId: string) => void
   onDockerRestart: (agentId: string) => void
+  onPing: (agentId: string) => void
   onViewHistory: (agentId: string) => void
 }
 
-export function AgentsGrid({ agents, onGitPull, onDockerRestart, onViewHistory }: AgentsGridProps) {
+export function AgentsGrid({
+  agents,
+  onGitPull,
+  onDockerRestart,
+  onPing,
+  onViewHistory,
+}: AgentsGridProps) {
   if (agents.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -24,12 +31,13 @@ export function AgentsGrid({ agents, onGitPull, onDockerRestart, onViewHistory }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {agents.map((agent) => (
+      {agents.map(agent => (
         <AgentCard
           key={agent.agent_id}
           agent={agent}
           onGitPull={onGitPull}
           onDockerRestart={onDockerRestart}
+          onPing={onPing}
           onViewHistory={onViewHistory}
         />
       ))}

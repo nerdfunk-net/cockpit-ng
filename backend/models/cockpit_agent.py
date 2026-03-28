@@ -87,3 +87,45 @@ class AgentListResponse(BaseModel):
     """List of all registered agents"""
 
     agents: List[AgentStatusResponse]
+
+
+class PingRequest(BaseModel):
+    """Request to ping devices from an inventory via a cockpit agent"""
+
+    inventory_id: int = Field(..., description="Saved inventory ID to resolve devices from")
+
+
+class PingIpResult(BaseModel):
+    """Result for a single IP address ping"""
+
+    ip_address: str
+    reachable: bool
+    latency_ms: Optional[float] = None
+    packet_loss_percent: int
+
+
+class PingDeviceResult(BaseModel):
+    """Ping results for one device"""
+
+    device_name: str
+    device_id: Optional[str] = None
+    ip_results: List[PingIpResult]
+
+
+class PingOutput(BaseModel):
+    """Structured output returned by the ping agent command"""
+
+    results: List[PingDeviceResult]
+    total_devices: int
+    reachable_count: int
+    unreachable_count: int
+
+
+class PingResponse(BaseModel):
+    """Response from agent after ping command execution"""
+
+    command_id: str
+    status: str  # success, error, timeout
+    output: Optional[PingOutput] = None
+    error: Optional[str] = None
+    execution_time_ms: int

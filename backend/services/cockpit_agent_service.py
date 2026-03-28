@@ -118,11 +118,18 @@ class CockpitAgentService:
 
                     # Check if this is the response we're waiting for
                     if response_data.get("command_id") == command_id:
+                        # Serialize dict/list outputs to JSON string for DB storage
+                        raw_output = response_data.get("output")
+                        output_to_store = (
+                            json.dumps(raw_output)
+                            if isinstance(raw_output, (dict, list))
+                            else raw_output
+                        )
                         # Update database with result
                         self.repository.update_command_result(
                             command_id=command_id,
                             status=response_data.get("status"),
-                            output=response_data.get("output"),
+                            output=output_to_store,
                             error=response_data.get("error"),
                             execution_time_ms=response_data.get("execution_time_ms"),
                         )
@@ -271,6 +278,34 @@ class CockpitAgentService:
         )
 
         # Wait for response
+        return self.wait_for_response(agent_id, command_id, timeout)
+
+    def send_ping(
+        self,
+        agent_id: str,
+        devices: List[dict],
+        sent_by: str,
+        timeout: int = 120,
+    ) -> dict:
+        """
+        Convenience method: Send ping command and wait for response.
+        *devices* is the list already built by the router (device_name, device_id, ip_addresses).
+        """
+        if not self.check_agent_online(agent_id):
+            return {
+                "status": "error",
+                "error": "Agent is offline or not responding",
+                "command_id": "",
+                "execution_time_ms": 0,
+            }
+
+        command_id = self.send_command(
+            agent_id=agent_id,
+            command="ping",
+            params={"devices": devices},
+            sent_by=sent_by,
+        )
+
         return self.wait_for_response(agent_id, command_id, timeout)
 
     def send_docker_restart(

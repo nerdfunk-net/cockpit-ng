@@ -48,3 +48,36 @@ export interface CommandResult {
   error: string | null
   execution_time_ms: number
 }
+
+export interface PingInput {
+  agent_id: string
+  inventory_id: number
+}
+
+export interface PingIpResult {
+  ip_address: string
+  reachable: boolean
+  latency_ms: number | null
+  packet_loss_percent: number
+}
+
+export interface PingDeviceResult {
+  device_name: string
+  device_id: string | null
+  ip_results: PingIpResult[]
+}
+
+export interface PingOutput {
+  results: PingDeviceResult[]
+  total_devices: number
+  reachable_count: number
+  unreachable_count: number
+}
+
+export interface PingCommandResult {
+  command_id: string
+  status: string
+  output: PingOutput | null
+  error: string | null
+  execution_time_ms: number
+}
