@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Info, CheckCircle, AlertCircle, Upload } from 'lucide-react'
-import type { DebugResult } from '../../types'
+import type { DebugResult } from '../types'
 
 interface DiagnosticsTabProps {
   result: DebugResult | null

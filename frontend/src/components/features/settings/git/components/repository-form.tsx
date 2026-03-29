@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { REPOSITORY_CATEGORIES, AUTH_TYPES } from '../constants'
 import { CredentialSelect } from './credential-select'
 import { ConnectionTestPanel } from './connection-test-panel'
-import type { RepositoryFormValues } from '../validation'
+import type { RepositoryFormValues } from '../utils/validation'
 import type { GitCredential } from '../types'
 
 interface RepositoryFormProps {

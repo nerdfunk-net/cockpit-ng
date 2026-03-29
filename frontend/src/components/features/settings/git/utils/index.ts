@@ -1,6 +1,6 @@
 // Git Repository Management Utility Functions
 
-import type { GitCredential } from './types'
+import type { GitCredential } from '../types'
 
 /**
  * Extract credential name from "id:name" format used by Select component

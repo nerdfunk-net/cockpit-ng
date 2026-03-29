@@ -3,8 +3,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Bug, Info, FileText, Edit, X, Upload } from 'lucide-react'
-import { DiagnosticsTab } from './diagnostics-tab'
-import { TestOperationTab } from './test-operation-tab'
+import { DiagnosticsTab } from '../../tabs/diagnostics-tab'
+import { TestOperationTab } from '../../tabs/test-operation-tab'
 import type { GitRepository, DebugResult, DebugOperation } from '../../types'
 
 interface RepositoryDebugDialogProps {

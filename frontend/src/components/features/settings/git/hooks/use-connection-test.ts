@@ -1,8 +1,8 @@
 // Connection Test Hook - Manages connection testing state
 
 import { useState, useCallback, useMemo } from 'react'
-import { useGitMutations } from './queries/use-git-mutations'
-import type { ConnectionTestValues } from '../validation'
+import { useGitMutations } from '@/hooks/queries/use-git-mutations'
+import type { ConnectionTestValues } from '../utils/validation'
 
 export interface ConnectionTestHook {
   status: { type: 'success' | 'error'; text: string } | null

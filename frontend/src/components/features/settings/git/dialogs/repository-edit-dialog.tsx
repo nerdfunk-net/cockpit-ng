@@ -5,11 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Settings } from 'lucide-react'
 import { useRepositoryForm } from '../hooks/use-repository-form'
-import { useGitMutations } from '../hooks/queries/use-git-mutations'
-import { RepositoryForm } from './repository-form'
+import { useGitMutations } from '@/hooks/queries/use-git-mutations'
+import { RepositoryForm } from '../components/repository-form'
 import { buildCredentialValue, extractCredentialName } from '../utils'
 import type { GitRepository, GitCredential } from '../types'
-import type { RepositoryFormValues } from '../validation'
+import type { RepositoryFormValues } from '../utils/validation'
 
 interface RepositoryEditDialogProps {
   repository: GitRepository | null

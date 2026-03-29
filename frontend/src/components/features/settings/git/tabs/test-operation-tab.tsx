@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, FileText, Edit, X, Upload, CheckCircle, AlertCircle } from 'lucide-react'
-import type { DebugResult, DebugOperation } from '../../types'
+import type { DebugResult, DebugOperation } from '../types'
 
 interface TestOperationTabProps {
   title: string

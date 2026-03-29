@@ -3,7 +3,7 @@
 import { useForm, UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo } from 'react'
-import { repositoryFormSchema, type RepositoryFormValues } from '../validation'
+import { repositoryFormSchema, type RepositoryFormValues } from '../utils/validation'
 import { DEFAULT_FORM_DATA } from '../constants'
 import type { GitRepository } from '../types'
 

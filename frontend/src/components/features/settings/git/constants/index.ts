@@ -1,7 +1,7 @@
 // Git Repository Management Constants
 
-import type { GitCredential } from './types'
-import type { RepositoryFormValues } from './validation'
+import type { GitCredential } from '../types'
+import type { RepositoryFormValues } from '../utils/validation'
 
 // Empty arrays (prevent re-render loops)
 export const EMPTY_CREDENTIALS: GitCredential[] = []

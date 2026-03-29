@@ -1,10 +1,17 @@
-// Credentials Query Hook for Git Authentication
-
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import { QUERY_STALE_TIMES, EMPTY_CREDENTIALS } from '../../constants'
-import type { GitCredential } from '../../types'
+
+interface GitCredential {
+  id?: number
+  name: string
+  username: string
+  type: string
+  source?: string
+}
+
+const CREDENTIALS_STALE_TIME = 5 * 60 * 1000  // 5 minutes
+const EMPTY_CREDENTIALS: GitCredential[] = []
 
 interface UseCredentialsQueryOptions {
   enabled?: boolean
@@ -40,6 +47,6 @@ export function useCredentialsQuery(
       }
     },
     enabled,
-    staleTime: QUERY_STALE_TIMES.CREDENTIALS,
+    staleTime: CREDENTIALS_STALE_TIME,
   })
 }

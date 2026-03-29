@@ -9,30 +9,32 @@ import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 // TanStack Query Hooks
-import { useGitRepositoriesQuery } from './hooks/queries/use-git-repositories-query'
-import { useGitMutations } from './hooks/queries/use-git-mutations'
-import { useCredentialsQuery } from './hooks/queries/use-credentials-query'
+import { useGitRepositoriesQuery } from '@/hooks/queries/use-git-repositories-query'
+import { useGitMutations } from '@/hooks/queries/use-git-mutations'
+import { useCredentialsQuery } from '@/hooks/queries/use-credentials-query'
 
 // Custom Hooks
-import { useRepositoryForm } from './hooks/use-repository-form'
-import { useRepositoryStatus } from './hooks/use-repository-status'
-import { useRepositoryDebug } from './hooks/use-repository-debug'
-import { useConnectionTest } from './hooks/use-connection-test'
+import { useRepositoryForm } from '../hooks/use-repository-form'
+import { useRepositoryStatus } from '../hooks/use-repository-status'
+import { useRepositoryDebug } from '../hooks/use-repository-debug'
+import { useConnectionTest } from '../hooks/use-connection-test'
 
 // Components
 import {
   RepositoryList,
   RepositoryForm,
+} from '.'
+import {
   RepositoryEditDialog,
   RepositoryStatusDialog,
   RepositoryDebugDialog,
-} from './components'
+} from '../dialogs'
 
 // Utils
-import { extractCredentialName } from './utils'
-import { DEFAULT_FORM_DATA, EMPTY_CREDENTIALS } from './constants'
-import type { GitRepository } from './types'
-import type { RepositoryFormValues } from './validation'
+import { extractCredentialName } from '../utils'
+import { DEFAULT_FORM_DATA, EMPTY_CREDENTIALS } from '../constants'
+import type { GitRepository } from '../types'
+import type { RepositoryFormValues } from '../utils/validation'
 
 const GitManagement: React.FC = () => {
   // Message state
