@@ -86,9 +86,9 @@ export function CsvPreviewStep({
       {/* Validation Issues */}
       {validationResults.length > 0 && (
         <div className="border rounded-md max-h-36 overflow-y-auto">
-          {validationResults.map((result, i) => (
+          {validationResults.map((result) => (
             <div
-              key={i}
+              key={`${result.type}-${result.rowNumber ?? ''}-${result.message}`}
               className={`px-3 py-1.5 text-xs border-b last:border-0 flex items-start gap-1.5 ${
                 result.type === 'error'
                   ? 'bg-red-50 text-red-800'
@@ -143,10 +143,11 @@ export function CsvPreviewStep({
             </TableHeader>
             <TableBody>
               {previewRows.map((row, rowIdx) => (
+                // eslint-disable-next-line react/no-array-index-key
                 <TableRow key={rowIdx}>
-                  {previewHeaders.map((_, colIdx) => (
+                  {previewHeaders.map((header, colIdx) => (
                     <TableCell
-                      key={colIdx}
+                      key={header}
                       className="text-xs font-mono whitespace-nowrap px-2 py-1.5 max-w-[160px] truncate"
                       title={row[colIdx] ?? ''}
                     >

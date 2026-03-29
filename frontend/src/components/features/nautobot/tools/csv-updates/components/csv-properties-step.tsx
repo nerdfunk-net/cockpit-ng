@@ -376,10 +376,10 @@ export function CsvPropertiesStep({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {tryResults.map((row, i) => {
+                {tryResults.map((row) => {
                   const changed = row.result !== row.original && !row.error
                   return (
-                    <tr key={i} className={changed ? 'bg-blue-50/40' : ''}>
+                    <tr key={row.original} className={changed ? 'bg-blue-50/40' : ''}>
                       <td className="px-3 py-1.5 font-mono text-gray-700">
                         {row.original}
                       </td>
@@ -447,10 +447,8 @@ export function CsvPropertiesStep({
             </div>
 
             {defaultProperties.map((prop, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center"
-              >
+              // eslint-disable-next-line react/no-array-index-key
+              <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                 <Select
                   value={prop.field}
                   onValueChange={value => handlePropertyFieldChange(index, value)}

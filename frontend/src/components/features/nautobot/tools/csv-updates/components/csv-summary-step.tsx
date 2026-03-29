@@ -161,6 +161,7 @@ export function CsvSummaryStep({
               </TableHeader>
               <TableBody>
                 {allRows.map((row, i) => (
+                  // eslint-disable-next-line react/no-array-index-key
                   <TableRow key={i} className={row.ok ? '' : 'bg-red-50'}>
                     <TableCell className="px-3 py-2">
                       {row.ok ? (

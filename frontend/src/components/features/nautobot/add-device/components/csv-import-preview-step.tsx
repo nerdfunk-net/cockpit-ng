@@ -100,16 +100,16 @@ export function CsvImportPreviewStep({
       {/* Validation Issues List */}
       {(errors.length > 0 || warnings.length > 0) && (
         <div className="max-h-32 overflow-y-auto border rounded-lg p-3 space-y-1">
-          {errors.map((error, i) => (
-            <div key={`err-${i}`} className="flex items-start gap-2 text-xs">
+          {errors.map((error) => (
+            <div key={`${error.deviceName}-${error.field}-${error.message}`} className="flex items-start gap-2 text-xs">
               <XCircle className="h-3.5 w-3.5 text-red-500 mt-0.5 shrink-0" />
               <span>
                 <strong>{error.deviceName}</strong> — {error.field}: {error.message}
               </span>
             </div>
           ))}
-          {warnings.map((warning, i) => (
-            <div key={`warn-${i}`} className="flex items-start gap-2 text-xs">
+          {warnings.map((warning) => (
+            <div key={`${warning.deviceName}-${warning.field}-${warning.message}`} className="flex items-start gap-2 text-xs">
               <AlertCircle className="h-3.5 w-3.5 text-yellow-500 mt-0.5 shrink-0" />
               <span>
                 <strong>{warning.deviceName}</strong> — {warning.field}:{' '}
@@ -143,8 +143,8 @@ export function CsvImportPreviewStep({
             <strong>Dry run:</strong> Nautobot validation found {dryRunErrors.length}{' '}
             error(s):
             <ul className="mt-1 list-disc list-inside space-y-0.5">
-              {dryRunErrors.map((e, i) => (
-                <li key={i} className="text-xs">
+              {dryRunErrors.map((e) => (
+                <li key={`${e.deviceName}-${e.message}`} className="text-xs">
                   <strong>{e.deviceName}</strong>: {e.message}
                 </li>
               ))}

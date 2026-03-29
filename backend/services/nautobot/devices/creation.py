@@ -392,6 +392,16 @@ class DeviceCreationService:
             device_payload["tags"] = request.tags
         if request.custom_fields:
             device_payload["custom_fields"] = request.custom_fields
+        if request.rack:
+            rack_id = request.rack
+            if not is_valid_uuid(rack_id):
+                rack_id = await self.common_service.resolve_rack_id(rack_id)
+                if not rack_id:
+                    logger.warning("Rack '%s' not found — skipping rack placement", request.rack)
+            if rack_id:
+                device_payload["rack"] = rack_id
+                if request.face:
+                    device_payload["face"] = request.face.lower()
 
         logger.info("Device payload: %s", device_payload)
 

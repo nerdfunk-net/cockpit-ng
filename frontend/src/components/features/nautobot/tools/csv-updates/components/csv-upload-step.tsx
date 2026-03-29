@@ -167,9 +167,9 @@ export function CsvUploadStep({
 
           {validationResults.length > 0 && (
             <div className="border rounded-md max-h-40 overflow-y-auto">
-              {validationResults.map((result, i) => (
+              {validationResults.map((result) => (
                 <div
-                  key={i}
+                  key={`${result.type}-${result.rowNumber ?? ''}-${result.message}`}
                   className={`px-3 py-1.5 text-xs border-b last:border-0 ${
                     result.type === 'error'
                       ? 'bg-red-50 text-red-800'

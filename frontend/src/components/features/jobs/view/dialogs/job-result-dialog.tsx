@@ -51,9 +51,8 @@ interface JobResultDialogProps {
 /**
  * Routes to the appropriate result view based on job type
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function renderJobResult(
-  result: Record<string, any>,
+  result: Record<string, unknown>,
   taskId?: string
 ): React.ReactElement {
   // Check type guards in order of specificity
