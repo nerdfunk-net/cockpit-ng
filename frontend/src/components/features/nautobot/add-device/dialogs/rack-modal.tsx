@@ -74,12 +74,15 @@ export function RackModal({
               {/* Rack Group */}
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Rack Group</Label>
-                <Select value={selectedRackGroup} onValueChange={onSelectRackGroup}>
+                <Select
+                  value={selectedRackGroup || '__none__'}
+                  onValueChange={(val) => onSelectRackGroup(val === '__none__' ? '' : val)}
+                >
                   <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                     <SelectValue placeholder="Any rack group..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Any rack group</SelectItem>
+                    <SelectItem value="__none__">Any rack group</SelectItem>
                     {availableRackGroups.map((rg) => (
                       <SelectItem key={rg.id} value={rg.id}>
                         {rg.name}
@@ -92,12 +95,15 @@ export function RackModal({
               {/* Rack */}
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Rack</Label>
-                <Select value={selectedRack} onValueChange={onSelectRack}>
+                <Select
+                  value={selectedRack || '__none__'}
+                  onValueChange={(val) => onSelectRack(val === '__none__' ? '' : val)}
+                >
                   <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                     <SelectValue placeholder="Select rack..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No rack</SelectItem>
+                    <SelectItem value="__none__">No rack</SelectItem>
                     {availableRacks.map((rack) => (
                       <SelectItem key={rack.id} value={rack.id}>
                         {rack.name} ({rack.u_height}U)
@@ -110,11 +116,15 @@ export function RackModal({
               {/* Rack Face */}
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Rack Face</Label>
-                <Select value={selectedFace} onValueChange={onSelectFace}>
+                <Select
+                  value={selectedFace || '__none__'}
+                  onValueChange={(val) => onSelectFace(val === '__none__' ? '' : val)}
+                >
                   <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                     <SelectValue placeholder="Select face..." />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="__none__">No preference</SelectItem>
                     <SelectItem value="front">Front</SelectItem>
                     <SelectItem value="rear">Rear</SelectItem>
                   </SelectContent>
@@ -130,14 +140,14 @@ export function RackModal({
                   </p>
                 ) : (
                   <Select
-                    value={position === '' ? '' : String(position)}
-                    onValueChange={(val) => onSetPosition(val === '' ? '' : Number(val))}
+                    value={position === '' ? '__none__' : String(position)}
+                    onValueChange={(val) => onSetPosition(val === '__none__' ? '' : Number(val))}
                   >
                     <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                       <SelectValue placeholder="Select position..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No position</SelectItem>
+                      <SelectItem value="__none__">No position</SelectItem>
                       {availablePositions.map((pos) => (
                         <SelectItem key={pos} value={String(pos)}>
                           U{pos}
