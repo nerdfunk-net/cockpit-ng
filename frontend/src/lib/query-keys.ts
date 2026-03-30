@@ -142,6 +142,14 @@ export const queryKeys = {
       filters
         ? ([...queryKeys.nautobot.all, 'vlans', filters] as const)
         : ([...queryKeys.nautobot.all, 'vlans'] as const),
+    racks: (filters?: { location?: string }) =>
+      filters
+        ? ([...queryKeys.nautobot.all, 'racks', filters] as const)
+        : ([...queryKeys.nautobot.all, 'racks'] as const),
+    rackGroups: (filters?: { location?: string }) =>
+      filters
+        ? ([...queryKeys.nautobot.all, 'rack-groups', filters] as const)
+        : ([...queryKeys.nautobot.all, 'rack-groups'] as const),
 
     // VM dropdowns (add-vm page)
     vmDropdowns: () => [...queryKeys.nautobot.all, 'vm-dropdowns'] as const,

@@ -751,6 +751,84 @@ async def get_vlans(
         )
 
 
+@router.get("/racks", summary="🔶 REST: List Racks")
+async def get_racks(
+    location: str = None,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+    cache_service=Depends(get_cache_service),
+):
+    """Get list of racks from Nautobot, optionally filtered by location.
+
+    **🔶 This endpoint uses REST API** to fetch rack data.
+
+    Args:
+        location: Optional location ID or name to filter racks
+    """
+    try:
+        from settings_manager import settings_manager
+
+        cache_key = f"nautobot:racks:list:{location or 'all'}"
+        cached = cache_service.get(cache_key)
+        if cached is not None:
+            return cached
+
+        endpoint = "dcim/racks/"
+        if location:
+            endpoint = f"dcim/racks/?location={location}"
+
+        result = await nautobot_service.rest_request(endpoint=endpoint, method="GET")
+        racks = result.get("results", [])
+
+        ttl = int(settings_manager.get_cache_settings().get("ttl_seconds", 600))
+        cache_service.set(cache_key, racks, ttl)
+        return racks
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch racks: {str(e)}",
+        )
+
+
+@router.get("/rack-groups", summary="🔶 REST: List Rack Groups")
+async def get_rack_groups(
+    location: str = None,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+    cache_service=Depends(get_cache_service),
+):
+    """Get list of rack groups from Nautobot, optionally filtered by location.
+
+    **🔶 This endpoint uses REST API** to fetch rack group data.
+
+    Args:
+        location: Optional location ID or name to filter rack groups
+    """
+    try:
+        from settings_manager import settings_manager
+
+        cache_key = f"nautobot:rack-groups:list:{location or 'all'}"
+        cached = cache_service.get(cache_key)
+        if cached is not None:
+            return cached
+
+        endpoint = "dcim/rack-groups/"
+        if location:
+            endpoint = f"dcim/rack-groups/?location={location}"
+
+        result = await nautobot_service.rest_request(endpoint=endpoint, method="GET")
+        rack_groups = result.get("results", [])
+
+        ttl = int(settings_manager.get_cache_settings().get("ttl_seconds", 600))
+        cache_service.set(cache_key, rack_groups, ttl)
+        return rack_groups
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch rack groups: {str(e)}",
+        )
+
+
 @router.get("/interface-types", summary="🔶 REST: List Interface Types")
 async def get_interface_types(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),

@@ -126,6 +126,31 @@ export interface TagItem {
   color?: string
 }
 
+export interface RackGroupItem {
+  id: string
+  name: string
+  display?: string
+  location?: {
+    id: string
+    name: string
+  }
+}
+
+export interface RackItem {
+  id: string
+  name: string
+  display?: string
+  u_height: number
+  rack_group?: {
+    id: string
+    name: string
+  } | null
+  location?: {
+    id: string
+    name: string
+  }
+}
+
 export interface CustomField {
   id: string
   key: string
@@ -178,6 +203,9 @@ export interface DeviceSubmissionData {
   software_version?: string
   tags?: string[]
   custom_fields?: Record<string, string>
+  rack?: string
+  face?: string
+  position?: number
   interfaces: InterfaceData[]
   add_prefix: boolean
   default_prefix_length: string

@@ -402,6 +402,8 @@ class DeviceCreationService:
                 device_payload["rack"] = rack_id
                 if request.face:
                     device_payload["face"] = request.face.lower()
+                if request.position is not None:
+                    device_payload["position"] = request.position
 
         logger.info("Device payload: %s", device_payload)
 

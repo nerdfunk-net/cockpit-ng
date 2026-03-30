@@ -46,6 +46,9 @@ export function formatDeviceSubmissionData(formData: DeviceFormValues): DeviceSu
       Object.keys(formData.customFieldValues).length > 0
         ? formData.customFieldValues
         : undefined,
+    rack: formData.selectedRack || undefined,
+    face: formData.selectedFace || undefined,
+    position: formData.rackPosition ?? undefined,
     interfaces: formData.interfaces,
     add_prefix: formData.addPrefix,
     default_prefix_length: formData.defaultPrefixLength,

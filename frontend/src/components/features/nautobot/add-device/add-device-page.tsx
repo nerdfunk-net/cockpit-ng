@@ -12,6 +12,7 @@ import { useDeviceForm } from './hooks/use-device-form'
 import { useSearchableDropdown } from './hooks/use-searchable-dropdown'
 import { useTagsManager } from './hooks/use-tags-manager'
 import { useCustomFieldsManager } from './hooks/use-custom-fields-manager'
+import { useRackManager } from './hooks/use-rack-manager'
 import { usePropertiesModal } from './hooks/use-properties-modal'
 import { useCsvImport } from './hooks/use-csv-import'
 import type { FormDefaults } from './hooks/use-csv-import'
@@ -31,6 +32,7 @@ import {
   InterfacePropertiesModal,
   TagsModal,
   CustomFieldsModal,
+  RackModal,
   CsvImportWizard,
   ErrorModal,
   ValidationErrorModal,
@@ -138,6 +140,7 @@ export function AddDevicePage() {
   // Modal managers
   const tagsManager = useTagsManager()
   const customFieldsManager = useCustomFieldsManager()
+  const rackManager = useRackManager()
   const propertiesModal = usePropertiesModal()
 
   // Build form defaults for CSV import wizard — useWatch creates reactive subscriptions
@@ -300,6 +303,9 @@ export function AddDevicePage() {
         ...data,
         selectedTags: tagsManager.selectedTags,
         customFieldValues: customFieldsManager.customFieldValues,
+        selectedRack: rackManager.selectedRack || undefined,
+        selectedFace: rackManager.selectedFace || undefined,
+        rackPosition: rackManager.position !== '' ? rackManager.position : undefined,
       })
       const result = await createDevice.mutateAsync(submissionData)
 
@@ -317,15 +323,16 @@ export function AddDevicePage() {
         }
       }
     },
-    [createDevice, form, tagsManager, customFieldsManager]
+    [createDevice, form, tagsManager, customFieldsManager, rackManager]
   )
 
   const handleClearForm = useCallback(() => {
     reset()
     tagsManager.clearSelectedTags()
     customFieldsManager.clearFieldValues()
+    rackManager.clearRack()
     setStatusMessage(null)
-  }, [reset, tagsManager, customFieldsManager])
+  }, [reset, tagsManager, customFieldsManager, rackManager])
 
   // Loading state
   if (isLoadingDropdowns) {
@@ -379,7 +386,9 @@ export function AddDevicePage() {
           isLoading={createDevice.isPending}
           onOpenTags={tagsManager.openModal}
           onOpenCustomFields={customFieldsManager.openModal}
+          onOpenRack={() => rackManager.openModal(watch('selectedLocation') || undefined)}
           selectedTagsCount={tagsManager.selectedTags.length}
+          isRackConfigured={rackManager.isConfigured}
         />
 
         <PrefixConfiguration form={form} isLoading={createDevice.isPending} />
@@ -428,6 +437,23 @@ export function AddDevicePage() {
           onUpdateField={customFieldsManager.updateFieldValue}
           isLoading={customFieldsManager.isLoading}
           customFieldChoices={customFieldsManager.customFieldChoices}
+        />
+
+        <RackModal
+          show={rackManager.showModal}
+          onClose={rackManager.closeModal}
+          availableRacks={rackManager.availableRacks}
+          availableRackGroups={rackManager.availableRackGroups}
+          availablePositions={rackManager.availablePositions}
+          selectedRackGroup={rackManager.selectedRackGroup}
+          onSelectRackGroup={rackManager.setSelectedRackGroup}
+          selectedRack={rackManager.selectedRack}
+          onSelectRack={rackManager.setSelectedRack}
+          selectedFace={rackManager.selectedFace}
+          onSelectFace={(face) => rackManager.setSelectedFace(face as 'front' | 'rear' | '')}
+          position={rackManager.position}
+          onSetPosition={rackManager.setPosition}
+          isLoading={rackManager.isLoading}
         />
 
         <CsvImportWizard

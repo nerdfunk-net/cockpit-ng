@@ -28,8 +28,10 @@ interface DeviceInfoFormProps {
   isLoading: boolean
   onOpenTags: () => void
   onOpenCustomFields: () => void
+  onOpenRack?: () => void
   onUseDefaultValues?: () => void
   selectedTagsCount: number
+  isRackConfigured?: boolean
 }
 
 export function DeviceInfoForm({
@@ -41,8 +43,10 @@ export function DeviceInfoForm({
   isLoading,
   onOpenTags,
   onOpenCustomFields,
+  onOpenRack,
   onUseDefaultValues,
   selectedTagsCount,
+  isRackConfigured = false,
 }: DeviceInfoFormProps) {
   const {
     register,
@@ -67,6 +71,17 @@ export function DeviceInfoForm({
               className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 text-xs"
             >
               Use Default Values
+            </Button>
+          )}
+          {onOpenRack && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={onOpenRack}
+              disabled={isLoading}
+              className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 text-xs"
+            >
+              Rack {isRackConfigured && '(configured)'}
             </Button>
           )}
           <Button
