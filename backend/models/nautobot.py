@@ -291,3 +291,19 @@ class AddVirtualInterfaceRequest(BaseModel):
     untagged_vlan: Optional[str] = None  # VLAN UUID
     tagged_vlans: Optional[list[str]] = None  # List of VLAN UUIDs
     tags: Optional[list[str]] = None  # List of tag UUIDs
+
+
+class CreateVirtualChassisRequest(BaseModel):
+    """Request model for creating a Virtual Chassis in Nautobot."""
+
+    name: str
+    domain: Optional[str] = None
+
+
+class VirtualChassisResponse(BaseModel):
+    """Response model for a Virtual Chassis object."""
+
+    id: str
+    name: str
+    master: Optional[dict] = None
+    domain: Optional[str] = None
