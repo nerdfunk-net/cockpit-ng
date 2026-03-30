@@ -195,7 +195,11 @@ async def run(
 
         # Create one copy per extra serial (index 1, 2, …)
         for idx, serial in enumerate(serials[1:], start=2):
-            new_name = f"{device_name}:{idx}"
+            if "." in device_name:
+                hostname, _, rest = device_name.partition(".")
+                new_name = f"{hostname}:{idx}.{rest}"
+            else:
+                new_name = f"{device_name}:{idx}"
             request = _build_request(device, new_name, serial, dry_run)
 
             if dry_run:
