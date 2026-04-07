@@ -53,6 +53,8 @@ export function CsvUpdateWizard() {
     setDefaultProperties,
     nameTransform,
     setNameTransform,
+    rackLocationColumn,
+    setRackLocationColumn,
     selectedColumns,
     columnMappingForBackend,
     taskId,
@@ -64,6 +66,12 @@ export function CsvUpdateWizard() {
   } = wizard
 
   const { parsedData, validationResults, validationSummary, csvConfig } = csvUpload
+
+  /** True when the 'rack' Nautobot field is mapped to any CSV column. */
+  const isRackMapped = useMemo(
+    () => Object.values(fieldMapping).includes('rack'),
+    [fieldMapping]
+  )
 
   /** Values from the primary-key column — fed into the name transform try-out preview. */
   const csvNameValues = useMemo(() => {
@@ -134,6 +142,7 @@ export function CsvUpdateWizard() {
         primaryKeyColumn,
         matchingStrategy,
         nameTransform,
+        rackLocationColumn,
       })
       setDryRunTaskId(response.task_id)
     } catch {
@@ -150,6 +159,7 @@ export function CsvUpdateWizard() {
     primaryKeyColumn,
     matchingStrategy,
     nameTransform,
+    rackLocationColumn,
     setDryRunTaskId,
   ])
 
@@ -166,6 +176,7 @@ export function CsvUpdateWizard() {
         primaryKeyColumn,
         matchingStrategy,
         nameTransform,
+        rackLocationColumn,
       })
       setTaskId(response.task_id)
       if (response.job_id) setJobId(parseInt(response.job_id, 10))
@@ -184,6 +195,7 @@ export function CsvUpdateWizard() {
     primaryKeyColumn,
     matchingStrategy,
     nameTransform,
+    rackLocationColumn,
     setTaskId,
     setJobId,
     goToStep,
@@ -324,6 +336,10 @@ export function CsvUpdateWizard() {
               nameTransform={nameTransform}
               onNameTransformChange={setNameTransform}
               csvNameValues={csvNameValues}
+              isRackMapped={isRackMapped}
+              csvHeaders={parsedData.headers}
+              rackLocationColumn={rackLocationColumn}
+              onRackLocationColumnChange={setRackLocationColumn}
             />
           )}
 

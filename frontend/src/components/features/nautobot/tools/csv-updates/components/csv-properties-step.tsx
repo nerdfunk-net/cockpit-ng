@@ -10,6 +10,7 @@ import {
   FlaskConical,
   ArrowRight,
   AlertTriangle,
+  MapPin,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -87,6 +88,8 @@ const MATCHING_STRATEGY_OPTIONS: {
   },
 ]
 
+const NOT_USED_SENTINEL = '--not-used--'
+
 interface CsvPropertiesStepProps {
   objectType: ObjectType
   primaryKeyColumn: string
@@ -98,6 +101,13 @@ interface CsvPropertiesStepProps {
   onNameTransformChange: (t: NameTransform | null) => void
   /** Values from the primary-key column in the uploaded CSV, used for the try-out preview. */
   csvNameValues: string[]
+  /** Whether the 'rack' Nautobot field is present in the current column mapping. */
+  isRackMapped: boolean
+  /** All CSV column headers — used to populate the rack-location dropdown. */
+  csvHeaders: string[]
+  /** CSV column whose value is used as location filter when resolving rack UUIDs. */
+  rackLocationColumn: string | null
+  onRackLocationColumnChange: (col: string | null) => void
 }
 
 export function CsvPropertiesStep({
@@ -110,6 +120,10 @@ export function CsvPropertiesStep({
   nameTransform,
   onNameTransformChange,
   csvNameValues,
+  isRackMapped,
+  csvHeaders,
+  rackLocationColumn,
+  onRackLocationColumnChange,
 }: CsvPropertiesStepProps) {
   const availableFields = NAUTOBOT_UPDATE_FIELDS[objectType] ?? []
   const [tryModalOpen, setTryModalOpen] = useState(false)
@@ -410,6 +424,54 @@ export function CsvPropertiesStep({
           </p>
         </DialogContent>
       </Dialog>
+
+      {/* Rack Location Disambiguation */}
+      {isRackMapped && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <MapPin className="h-4 w-4 text-amber-600" />
+            <h3 className="text-sm font-semibold text-gray-800">Rack Location Disambiguation</h3>
+          </div>
+          <p className="text-xs text-gray-600">
+            Rack names must be unique within a location, but the same rack name can exist in
+            multiple locations (e.g., both <span className="font-medium">Building A</span> and{' '}
+            <span className="font-medium">Building B</span> may each have a rack named{' '}
+            <span className="font-medium text-gray-800">A_1</span>). If your CSV covers devices
+            from several locations, select the CSV column that identifies the location so the
+            correct rack UUID can be resolved. If more than one rack with that name exists in the
+            given location, the device will not be updated and an error will be reported.
+          </p>
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
+            <span className="text-xs text-gray-600 whitespace-nowrap">Location column</span>
+            <Select
+              value={rackLocationColumn ?? NOT_USED_SENTINEL}
+              onValueChange={v =>
+                onRackLocationColumnChange(v === NOT_USED_SENTINEL ? null : v)
+              }
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NOT_USED_SENTINEL} className="text-xs text-gray-400">
+                  NOT USED
+                </SelectItem>
+                {csvHeaders.map(col => (
+                  <SelectItem key={col} value={col} className="text-xs">
+                    {col}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {rackLocationColumn && (
+            <p className="text-xs text-amber-700">
+              Column <span className="font-medium">{rackLocationColumn}</span> will be used to
+              filter racks by location during UUID resolution.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Default Properties */}
       <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">

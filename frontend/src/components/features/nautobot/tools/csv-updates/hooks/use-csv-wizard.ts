@@ -56,6 +56,7 @@ export function useCsvWizard() {
   const [matchingStrategy, setMatchingStrategy] = useState<MatchingStrategy>('exact')
   const [defaultProperties, setDefaultProperties] = useState<DefaultProperty[]>([])
   const [nameTransform, setNameTransform] = useState<NameTransform | null>(null)
+  const [rackLocationColumn, setRackLocationColumn] = useState<string | null>(null)
 
   const [taskId, setTaskId] = useState<string | null>(null)
   const [jobId, setJobId] = useState<number | null>(null)
@@ -103,6 +104,7 @@ export function useCsvWizard() {
     setMatchingStrategy('exact')
     setDefaultProperties([])
     setNameTransform(null)
+    setRackLocationColumn(null)
     setTaskId(null)
     setJobId(null)
     setDryRunTaskId(null)
@@ -161,6 +163,9 @@ export function useCsvWizard() {
       // Name transform
       nameTransform,
       setNameTransform,
+      // Rack location disambiguation
+      rackLocationColumn,
+      setRackLocationColumn,
       // Derived
       selectedColumns,
       columnMappingForBackend,
@@ -187,6 +192,7 @@ export function useCsvWizard() {
       matchingStrategy,
       defaultProperties,
       nameTransform,
+      rackLocationColumn,
       selectedColumns,
       columnMappingForBackend,
       taskId,

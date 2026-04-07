@@ -186,6 +186,9 @@ class UpdateDevicesRequest(BaseModel):
     name_transform: Optional[NameTransformConfig] = (
         None  # Optional transform applied to the CSV name value before lookup
     )
+    rack_location_column: Optional[str] = (
+        None  # CSV column providing location name for rack UUID disambiguation
+    )
 
 
 class UpdateDevicesJSONRequest(BaseModel):

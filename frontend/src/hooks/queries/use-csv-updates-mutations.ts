@@ -21,6 +21,7 @@ interface ProcessCSVUpdatesInput {
   primaryKeyColumn?: string // CSV column used to look up objects in Nautobot
   matchingStrategy?: 'exact' | 'contains' | 'starts_with' // How to match objects by name
   nameTransform?: { mode: string; pattern: string; replacement: string } | null // Transform CSV name before lookup
+  rackLocationColumn?: string | null // CSV column used as location filter when resolving rack UUIDs
 }
 
 interface CeleryTaskResponse {
@@ -113,6 +114,7 @@ export function useCsvUpdatesMutations() {
           primary_key_column: input.primaryKeyColumn, // Column used to look up objects
           matching_strategy: input.matchingStrategy || 'exact', // How to match by name
           name_transform: input.nameTransform ?? null, // Optional name transform before lookup
+          rack_location_column: input.rackLocationColumn ?? null, // Location column for rack disambiguation
         }),
       })
 

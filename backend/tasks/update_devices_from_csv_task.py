@@ -43,6 +43,7 @@ def update_devices_from_csv_task(
     primary_key_column: Optional[str] = None,
     matching_strategy: str = "exact",
     name_transform: Optional[Dict[str, Any]] = None,
+    rack_location_column: Optional[str] = None,
 ) -> dict:
     """
     Task: Update Nautobot devices from CSV data.
@@ -84,6 +85,7 @@ def update_devices_from_csv_task(
         logger.info("Primary key column: %s", primary_key_column)
         logger.info("Matching strategy: %s", matching_strategy)
         logger.info("Name transform: %s", name_transform)
+        logger.info("Rack location column: %s", rack_location_column)
         logger.info("CSV Options: %s", csv_options)
 
         self.update_state(
@@ -216,6 +218,11 @@ def update_devices_from_csv_task(
                             device_identifier["name"],
                         )
 
+                # Extract rack location value for rack UUID disambiguation
+                rack_location_value = None
+                if rack_location_column and "rack" in update_data:
+                    rack_location_value = row.get(rack_location_column, "").strip() or None
+
                 if not update_data:
                     logger.info("No update data for device %s, skipping", identifier)
                     skipped.append(
@@ -257,6 +264,7 @@ def update_devices_from_csv_task(
                             update_data=update_data,
                             interface_config=interface_config,
                             matching_strategy=matching_strategy,
+                            rack_location=rack_location_value,
                         )
                     )
 

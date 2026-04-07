@@ -258,36 +258,59 @@ class MetadataResolver(BaseResolver):
             logger.error("Error resolving secrets group: %s", e, exc_info=True)
             return None
 
-    async def resolve_rack_id(self, rack_name: str) -> Optional[str]:
+    async def resolve_rack_id(
+        self, rack_name: str, location: Optional[str] = None
+    ) -> Optional[str]:
         """
         Resolve rack name to UUID using REST API.
 
+        If location is provided, the query is filtered by that location name so that
+        racks with the same name in different locations can be disambiguated.
+        When the filtered query returns more than one result an exception is raised
+        because the correct rack cannot be determined.
+
         Args:
-            rack_name: Name of the rack (e.g., "A_1", "Rack-01")
+            rack_name: Name of the rack (e.g., "A_1", "Rack-01") or UUID
+            location: Optional location name used to narrow the search
 
         Returns:
             Rack UUID if found, None otherwise
+
+        Raises:
+            ValueError: If more than one rack matches rack_name in the given location
         """
         if is_valid_uuid(rack_name):
             logger.debug("Rack is already a UUID: %s", rack_name)
             return rack_name
 
         try:
-            logger.info("Resolving rack '%s'", rack_name)
+            logger.info("Resolving rack '%s' (location filter: %s)", rack_name, location)
 
-            result = await self.nautobot.rest_request(
-                endpoint=f"dcim/racks/?name={rack_name}&format=json", method="GET"
-            )
+            endpoint = f"dcim/racks/?name={rack_name}&format=json"
+            if location:
+                endpoint += f"&location={location}"
 
-            if result and result.get("count", 0) > 0:
-                rack = result["results"][0]
-                rack_id = rack["id"]
-                logger.info("Resolved rack '%s' to UUID %s", rack_name, rack_id)
-                return rack_id
+            result = await self.nautobot.rest_request(endpoint=endpoint, method="GET")
 
-            logger.warning("Rack not found: %s", rack_name)
-            return None
+            count = result.get("count", 0) if result else 0
 
+            if count == 0:
+                logger.warning("Rack not found: %s", rack_name)
+                return None
+
+            if count > 1:
+                raise ValueError(
+                    f"Rack '{rack_name}' is ambiguous: {count} racks with this name "
+                    f"exist in location '{location}'. "
+                    "Cannot determine the correct rack — device will not be updated."
+                )
+
+            rack_id = result["results"][0]["id"]
+            logger.info("Resolved rack '%s' to UUID %s", rack_name, rack_id)
+            return rack_id
+
+        except ValueError:
+            raise
         except Exception as e:
             logger.error("Error resolving rack: %s", e, exc_info=True)
             return None

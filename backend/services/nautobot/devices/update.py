@@ -55,6 +55,7 @@ class DeviceUpdateService:
         add_prefix: bool = True,
         default_prefix_length: str = "/24",
         matching_strategy: str = "exact",
+        rack_location: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Update a single device.
@@ -173,7 +174,7 @@ class DeviceUpdateService:
             # Step 2: Validate and resolve update data
             logger.info("Step 2: Validating and resolving update data")
             validated_data, ip_namespace = await self.validate_update_data(
-                device_id, update_data, interface_config
+                device_id, update_data, interface_config, rack_location=rack_location
             )
 
             # Only return early if BOTH validated_data AND interfaces are empty
@@ -350,6 +351,7 @@ class DeviceUpdateService:
         device_id: str,
         update_data: Dict[str, Any],
         interface_config: Optional[Dict[str, str]] = None,
+        rack_location: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], Optional[str]]:
         """
         Validate update data and resolve all resource names to UUIDs.
@@ -438,9 +440,9 @@ class DeviceUpdateService:
                     validated[field] = value
 
             elif field == "rack":
-                # Resolve rack name to UUID
+                # Resolve rack name to UUID, optionally filtered by location
                 if not self.common._is_valid_uuid(value):
-                    rack_id = await self.common.resolve_rack_id(value)
+                    rack_id = await self.common.resolve_rack_id(value, location=rack_location)
                     if rack_id:
                         validated[field] = rack_id
                     else:
