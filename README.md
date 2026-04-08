@@ -63,27 +63,27 @@ Cockpit-NG uses a modern microservices architecture with the following component
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Docker Environment                        │
+│                        Docker Environment                       │
 ├─────────────────┬─────────────────┬─────────────────────────────┤
 │                 │                 │                             │
-│  ┌───────────┐  │  ┌───────────┐  │  ┌───────────┐             │
-│  │  Next.js  │  │  │  FastAPI  │  │  │  Celery   │             │
-│  │ Frontend  │◄─┼─►│  Backend  │◄─┼─►│  Worker   │             │
-│  │  :3000    │  │  │   :8000   │  │  │           │             │
-│  └───────────┘  │  └─────┬─────┘  │  └─────┬─────┘             │
+│  ┌───────────┐  │  ┌───────────┐  │  ┌───────────┐              │
+│  │  Next.js  │  │  │  FastAPI  │  │  │  Celery   │              │
+│  │ Frontend  │◄─┼─►│  Backend  │◄─┼─►│  Worker   │              │
+│  │  :3000    │  │  │   :8000   │  │  │           │              │
+│  └───────────┘  │  └─────┬─────┘  │  └─────┬─────┘              │
 │                 │        │        │        │                    │
 │                 │        ▼        │        ▼                    │
-│                 │  ┌───────────┐  │  ┌───────────┐             │
-│                 │  │PostgreSQL │  │  │   Redis   │             │
-│                 │  │  Database │  │  │  Broker   │             │
-│                 │  └───────────┘  │  └───────────┘             │
+│                 │  ┌───────────┐  │  ┌───────────┐              │
+│                 │  │PostgreSQL │  │  │   Redis   │              │
+│                 │  │  Database │  │  │  Broker   │              │
+│                 │  └───────────┘  │  └───────────┘              │
 │                 │                 │        ▲                    │
 │                 │                 │        │                    │
-│                 │                 │  ┌─────┴─────┐             │
-│                 │                 │  │  Celery   │             │
-│                 │                 │  │   Beat    │             │
-│                 │                 │  │(Scheduler)│             │
-│                 │                 │  └───────────┘             │
+│                 │                 │  ┌─────┴─────┐              │
+│                 │                 │  │  Celery   │              │
+│                 │                 │  │   Beat    │              │
+│                 │                 │  │(Scheduler)│              │
+│                 │                 │  └───────────┘              │
 └─────────────────┴─────────────────┴─────────────────────────────┘
                            │
                            ▼
@@ -100,14 +100,14 @@ Cockpit-NG uses a modern microservices architecture with the following component
 
 ### Components
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Frontend** | Next.js 15, React 19, TypeScript | Modern web UI with Tailwind CSS |
-| **Backend** | FastAPI, Python 3.11+ | REST API, authentication, business logic |
-| **Worker** | Celery | Background task execution |
-| **Scheduler** | Celery Beat | Periodic task scheduling |
-| **Database** | PostgreSQL | Persistent data storage |
-| **Message Broker** | Redis | Task queue and caching |
+| Component          | Technology                       | Purpose                                  |
+|--------------------|----------------------------------|------------------------------------------|
+| **Frontend**       | Next.js 15, React 19, TypeScript | Modern web UI with Tailwind CSS          |
+| **Backend**        | FastAPI, Python 3.11+            | REST API, authentication, business logic |
+| **Worker**         | Celery                           | Background task execution                |
+| **Scheduler**      | Celery Beat                      | Periodic task scheduling                 |
+| **Database**       | PostgreSQL                       | Persistent data storage                  |
+| **Message Broker** | Redis                            | Task queue and caching                   |
 
 ---
 
@@ -126,7 +126,7 @@ cd cockpit-ng
 
 # Copy and configure environment
 cp docker/.env.example docker/.env
-# Edit docker/.env with your settings
+# Edit docker/.env with your settings (see Docker Setup below)
 
 # Start the application
 cd docker
@@ -149,14 +149,89 @@ For detailed installation instructions, see [INSTALL.md](INSTALL.md).
 
 ---
 
+## 🐳 Docker Setup
+
+### Environment Variables (`docker/.env`)
+
+Copy `docker/.env.example` to `docker/.env` and set the following variables:
+
+| Variable                 | Default.                | Description |
+|--------------------------|-------------------------|---------------------------------------------------------|
+| `FRONTEND_PORT`          | `3000`                  | Port exposed for the web UI                             |
+| `POSTGRES_DB`            | `cockpit`               | PostgreSQL database name                                |
+| `POSTGRES_USER`          | `cockpit`               | PostgreSQL username                                     |
+| `POSTGRES_PASSWORD`      | `cockpit123`            | PostgreSQL password — **change in production**          |
+| `COCKPIT_REDIS_PASSWORD` | `changeme`.             | Redis password — **change in production**               |
+| `SECRET_KEY`             | *(insecure default)*    | JWT signing key — **must change in production**         |
+| `NAUTOBOT_URL`           | `http://localhost:8080` | URL of your Nautobot instance                           |
+| `NAUTOBOT_TOKEN`         | *(empty)*               | Nautobot API token                                      |
+| `NAUTOBOT_TIMEOUT`       | `30`                    | Nautobot API timeout in seconds                         |
+| `LOG_LEVEL`              | `INFO`                  | Logging verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+
+Minimal production-ready `.env` example:
+
+```bash
+POSTGRES_PASSWORD=<strong-password>
+COCKPIT_REDIS_PASSWORD=<strong-password>
+SECRET_KEY=<random-64-char-string>
+NAUTOBOT_URL=https://nautobot.example.com
+NAUTOBOT_TOKEN=your_nautobot_api_token
+```
+
+> The backend port `8000` is fixed inside the container. To remap the host port, edit `docker/docker-compose.yml`:
+> ```yaml
+> ports:
+>   - "8080:8000"  # expose backend on host port 8080
+> ```
+
+### Configuration Files (`config/`)
+
+The `config/` directory is mounted into all containers at `/app/config/`. Populate it before starting:
+
+| File                         | Required | Description                            |
+|------------------------------|----------|----------------------------------------|
+| `config/checkmk.yaml`        | Optional | CheckMK integration (URL, credentials) |
+| `config/oidc_providers.yaml` | Optional | OIDC/SSO provider configuration        |
+| `config/snmp_mapping.yaml`   | Optional | SNMP community / tag mappings          |
+
+Example — copy the bundled templates:
+
+```bash
+cp config/checkmk.yaml.example config/checkmk.yaml
+cp config/oidc_providers.yaml.example config/oidc_providers.yaml
+# Edit each file with your settings
+```
+
+### Deployment Variants
+
+| Variant.            | Command                                | Use Case                             |
+|---------------------|----------------------------------------|--------------------------------------|
+| Standard (internet) | `cd docker && docker compose up -d`    | Development / standard deployment    |
+| Air-gap (offline)   | `cd docker && ./prepare-all-in-one.sh` | Environments without internet access |
+
+### Verify the Deployment
+
+```bash
+# Check all containers are healthy
+docker compose ps
+
+# Stream logs
+docker compose logs -f
+
+# Quick health check
+curl http://localhost:8000/health
+```
+
+---
+
 ## 📖 Documentation
 
-| Document | Description |
-|----------|-------------|
-| [INSTALL.md](INSTALL.md) | Detailed installation guide |
-| [OIDC_SETUP.md](OIDC_SETUP.md) | OIDC/SSO configuration |
-| [PERMISSIONS.md](PERMISSIONS.md) | RBAC and permission system |
-| [docker/README.md](docker/README.md) | Docker deployment options |
+| Document                             | Description                 |
+|--------------------------------------|-----------------------------|
+| [INSTALL.md](INSTALL.md)             | Detailed installation guide |
+| [OIDC_SETUP.md](OIDC_SETUP.md)       | OIDC/SSO configuration      |
+| [PERMISSIONS.md](PERMISSIONS.md)     | RBAC and permission system  | 
+| [docker/README.md](docker/README.md) | Docker deployment options   |
 
 ---
 
