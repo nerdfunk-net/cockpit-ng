@@ -117,19 +117,25 @@ The Nautobot URL and token are configured in the `.env` file (see above).
 
 #### CheckMK Configuration (Optional)
 
-Create or edit `config/checkmk.yaml`:
+Copy the bundled example and edit it:
 
-```yaml
-checkmk:
-  url: https://checkmk.example.com/mysite
-  username: automation
-  password: your_automation_secret
-  verify_ssl: true
+```bash
+cp config/checkmk.yaml.example config/checkmk.yaml
 ```
+
+The file controls folder mapping, host tag groups, site assignment, and attribute mapping between Nautobot and CheckMK. The example contains inline documentation for every option.
+
+#### SNMP Mapping Configuration (Optional)
+
+`config/snmp_mapping.yaml` is already present in the repository. Edit it to define SNMP community strings and credential mappings for your devices.
 
 #### OIDC/SSO Configuration (Optional)
 
-Create or edit `config/oidc_providers.yaml`:
+Copy the bundled example and edit it:
+
+```bash
+cp config/oidc_providers.yaml.example config/oidc_providers.yaml
+```
 
 ```yaml
 providers:
@@ -232,19 +238,20 @@ After installation, the directory structure looks like this:
 cockpit-ng/
 ├── docker/
 │   ├── docker-compose.yml    # Main Docker Compose file
-│   ├── .env                  # Environment configuration (create this)
+│   ├── .env                  # Environment configuration (create from .env.example)
 │   └── .env.example          # Example environment file
-├── config/
-│   ├── checkmk.yaml          # CheckMK configuration
-│   ├── oidc_providers.yaml   # OIDC/SSO configuration
+├── config/                   # Mounted into containers at /app/config (read-write)
+│   ├── checkmk.yaml          # CheckMK configuration (copy from .example)
+│   ├── checkmk.yaml.example  # Bundled template
+│   ├── oidc_providers.yaml   # OIDC/SSO configuration (copy from .example)
+│   ├── oidc_providers.yaml.example  # Bundled template
 │   ├── snmp_mapping.yaml     # SNMP community mappings
 │   └── certs/                # SSL certificates
-├── data/                     # Persistent data (auto-created)
-│   ├── git/                  # Git repository clones
-│   └── ssh_keys/             # SSH keys for device access
 ├── backend/                  # Backend source code
 └── frontend/                 # Frontend source code
 ```
+
+> **Note**: Application data (Git clones, SSH keys, uploads) is stored in the `cockpit_data` Docker volume, not on the local filesystem. Use `docker volume inspect cockpit_data` to find the mount path.
 
 ---
 
