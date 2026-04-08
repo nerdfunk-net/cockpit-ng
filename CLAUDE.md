@@ -130,10 +130,10 @@ fetch('/api/proxy/users', {
 
 ## Database Schema (Key Tables)
 
-**Users & RBAC:** `users`, `roles`, `permissions`, `role_permissions`, `user_roles`
-**Settings:** `settings`, `nautobot_settings`, `checkmk_settings`, `git_settings`, `celery_settings`
+**Users & RBAC:** `users`, `user_profiles`, `roles`, `permissions`, `role_permissions`, `user_roles`, `user_permissions`
+**Settings:** `settings`, `settings_metadata`, `nautobot_settings`, `nautobot_defaults`, `checkmk_settings`, `git_settings`, `celery_settings`, `agents_settings`, `cache_settings`
 **Credentials:** `credentials`, `login_credentials`, `snmp_mapping`
-**Jobs:** `job_templates`, `job_schedules`, `job_runs`
+**Jobs:** `jobs`, `job_templates`, `job_schedules`, `job_runs`
 **Git:** `git_repositories`, `templates`, `template_versions`
 **Compliance:** `compliance_rules`, `compliance_checks`, `regex_patterns`
 **Sync:** `nb2cmk_sync`, `nb2cmk_jobs`, `nb2cmk_job_results`
