@@ -10,7 +10,11 @@ from sqlalchemy.orm import Session
 
 from core.auth import verify_token, require_permission
 from core.database import get_db
-from dependencies import get_nautobot_service, get_inventory_persistence_service, get_inventory_service
+from dependencies import (
+    get_nautobot_service,
+    get_inventory_persistence_service,
+    get_inventory_service,
+)
 from models.cockpit_agent import (
     AgentListResponse,
     AgentStatusResponse,
@@ -201,7 +205,9 @@ async def ping_devices(
         # 1. Load the saved inventory
         inventory = inventory_persistence.get_inventory(request.inventory_id)
         if not inventory:
-            raise HTTPException(status_code=404, detail=f"Inventory {request.inventory_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Inventory {request.inventory_id} not found"
+            )
 
         # 2. Resolve devices from inventory conditions
         conditions = inventory.get("conditions", [])
@@ -211,7 +217,11 @@ async def ping_devices(
         if not devices:
             raise HTTPException(status_code=400, detail="No devices found in inventory")
 
-        logger.info("Resolved %d devices from inventory %d for ping job", len(devices), request.inventory_id)
+        logger.info(
+            "Resolved %d devices from inventory %d for ping job",
+            len(devices),
+            request.inventory_id,
+        )
 
         # 3. For each device, query Nautobot GraphQL to get interface IP addresses
         device_ping_list: List[dict] = []
@@ -219,20 +229,28 @@ async def ping_devices(
             if not device.name:
                 continue
             try:
-                result = await nautobot.graphql_query(_DEVICE_IPS_QUERY, {"name": device.name})
+                result = await nautobot.graphql_query(
+                    _DEVICE_IPS_QUERY, {"name": device.name}
+                )
                 ip_addresses = _extract_ip_addresses(result, device.name)
             except Exception as exc:
-                logger.warning("Failed to fetch IPs for device '%s': %s", device.name, exc)
+                logger.warning(
+                    "Failed to fetch IPs for device '%s': %s", device.name, exc
+                )
                 ip_addresses = []
 
-            device_ping_list.append({
-                "device_name": device.name,
-                "device_id": device.id,
-                "ip_addresses": ip_addresses,
-            })
+            device_ping_list.append(
+                {
+                    "device_name": device.name,
+                    "device_id": device.id,
+                    "ip_addresses": ip_addresses,
+                }
+            )
 
         if not device_ping_list:
-            raise HTTPException(status_code=400, detail="No devices with names found in inventory")
+            raise HTTPException(
+                status_code=400, detail="No devices with names found in inventory"
+            )
 
         username = user.get("sub", "system")
 
@@ -306,11 +324,13 @@ def _convert_tree_item(item: dict) -> LogicalOperation:
                     converted_sub.operation_type = "NOT"
                 nested.append(converted_sub)
             else:
-                group_conditions.append(LC(
-                    field=sub["field"],
-                    operator=sub["operator"],
-                    value=sub.get("value", ""),
-                ))
+                group_conditions.append(
+                    LC(
+                        field=sub["field"],
+                        operator=sub["operator"],
+                        value=sub.get("value", ""),
+                    )
+                )
         return LogicalOperation(
             operation_type=item.get("internalLogic", "AND"),
             conditions=group_conditions,
@@ -319,11 +339,13 @@ def _convert_tree_item(item: dict) -> LogicalOperation:
     else:
         return LogicalOperation(
             operation_type="AND",
-            conditions=[LC(
-                field=item["field"],
-                operator=item["operator"],
-                value=item.get("value", ""),
-            )],
+            conditions=[
+                LC(
+                    field=item["field"],
+                    operator=item["operator"],
+                    value=item.get("value", ""),
+                )
+            ],
             nested_operations=[],
         )
 
@@ -362,11 +384,13 @@ def _tree_to_operations(tree: dict) -> List[LogicalOperation]:
                     nested_ops.append(op)
                 elif len(op.conditions) == 1:
                     root_conditions.extend(op.conditions)
-            operations.append(LogicalOperation(
-                operation_type=internal_logic,
-                conditions=root_conditions,
-                nested_operations=nested_ops,
-            ))
+            operations.append(
+                LogicalOperation(
+                    operation_type=internal_logic,
+                    conditions=root_conditions,
+                    nested_operations=nested_ops,
+                )
+            )
 
     operations.extend(not_ops)
     return operations

@@ -14,7 +14,7 @@ Workflow:
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from celery_app import celery_app
 
@@ -161,7 +161,9 @@ def _run_csv_export(
         }
         csv_content = _export_to_csv(filtered_devices, csv_options)
         logger.info(
-            "Generated CSV (%s bytes) for %s devices", len(csv_content), len(filtered_devices)
+            "Generated CSV (%s bytes) for %s devices",
+            len(csv_content),
+            len(filtered_devices),
         )
 
         # ------------------------------------------------------------------ #
@@ -196,7 +198,11 @@ def _run_csv_export(
         # ------------------------------------------------------------------ #
         self.update_state(
             state="PROGRESS",
-            meta={"current": 75, "total": 100, "status": "Writing CSV file to repository..."},
+            meta={
+                "current": 75,
+                "total": 100,
+                "status": "Writing CSV file to repository...",
+            },
         )
 
         repo_dir = get_repo_path(repository)
@@ -215,7 +221,11 @@ def _run_csv_export(
         # ------------------------------------------------------------------ #
         self.update_state(
             state="PROGRESS",
-            meta={"current": 85, "total": 100, "status": "Committing and pushing to Git..."},
+            meta={
+                "current": 85,
+                "total": 100,
+                "status": "Committing and pushing to Git...",
+            },
         )
 
         from git import Repo as GitRepo
@@ -250,7 +260,9 @@ def _run_csv_export(
             "properties_count": len(properties),
             "file_path": file_path,
             "file_size_bytes": len(csv_content),
-            "commit_sha": commit_result.commit_sha[:8] if commit_result.commit_sha else None,
+            "commit_sha": commit_result.commit_sha[:8]
+            if commit_result.commit_sha
+            else None,
             "pushed": getattr(commit_result, "pushed", False),
         }
 

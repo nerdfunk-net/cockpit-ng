@@ -221,7 +221,9 @@ def update_devices_from_csv_task(
                 # Extract rack location value for rack UUID disambiguation
                 rack_location_value = None
                 if rack_location_column and "rack" in update_data:
-                    rack_location_value = row.get(rack_location_column, "").strip() or None
+                    rack_location_value = (
+                        row.get(rack_location_column, "").strip() or None
+                    )
 
                 if not update_data:
                     logger.info("No update data for device %s, skipping", identifier)

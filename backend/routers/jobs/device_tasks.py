@@ -698,7 +698,9 @@ async def trigger_update_devices_from_csv(
         selected_columns=request.selected_columns,
         primary_key_column=request.primary_key_column,
         matching_strategy=request.matching_strategy,
-        name_transform=request.name_transform.model_dump() if request.name_transform else None,
+        name_transform=request.name_transform.model_dump()
+        if request.name_transform
+        else None,
         rack_location_column=request.rack_location_column,
     )
 

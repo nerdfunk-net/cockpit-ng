@@ -220,14 +220,20 @@ class DeviceCreationService:
                 f"dcim/devices/?name={request.name}&limit=1"
             )
             if existing.get("count", 0) > 0:
-                errors.append(f"A device named '{request.name}' already exists in Nautobot")
+                errors.append(
+                    f"A device named '{request.name}' already exists in Nautobot"
+                )
         except Exception as e:
             logger.warning("Dry run: could not check device existence: %s", str(e))
 
         # Validate required UUID fields via list endpoints (filter by id=UUID)
         # Using list+filter instead of direct UUID lookup to avoid 404 exceptions
         uuid_checks = [
-            ("device_type", f"dcim/device-types/?id={request.device_type}&limit=1", "Device type"),
+            (
+                "device_type",
+                f"dcim/device-types/?id={request.device_type}&limit=1",
+                "Device type",
+            ),
             ("role", f"extras/roles/?id={request.role}&limit=1", "Role"),
             ("status", f"extras/statuses/?id={request.status}&limit=1", "Status"),
             ("location", f"dcim/locations/?id={request.location}&limit=1", "Location"),
@@ -236,7 +242,9 @@ class DeviceCreationService:
             try:
                 result = await self._nb.rest_request(endpoint)
                 if result.get("count", 0) == 0:
-                    errors.append(f"{label} ID '{getattr(request, _field)}' not found in Nautobot")
+                    errors.append(
+                        f"{label} ID '{getattr(request, _field)}' not found in Nautobot"
+                    )
             except Exception as e:
                 logger.warning("Dry run: could not validate %s: %s", label, str(e))
 
@@ -247,7 +255,9 @@ class DeviceCreationService:
                     f"dcim/platforms/?id={request.platform}&limit=1"
                 )
                 if result.get("count", 0) == 0:
-                    errors.append(f"Platform ID '{request.platform}' not found in Nautobot")
+                    errors.append(
+                        f"Platform ID '{request.platform}' not found in Nautobot"
+                    )
             except Exception as e:
                 logger.warning("Dry run: could not validate platform: %s", str(e))
 
@@ -257,7 +267,9 @@ class DeviceCreationService:
             "dry_run": True,
             "device_id": None,
             "errors": errors,
-            "message": "Validation passed" if success else f"{len(errors)} validation error(s) found",
+            "message": "Validation passed"
+            if success
+            else f"{len(errors)} validation error(s) found",
         }
 
     def _log_request_data(self, request: AddDeviceRequest) -> None:
@@ -334,16 +346,18 @@ class DeviceCreationService:
 
         # location
         if request.location and not is_valid_uuid(request.location):
-            location_id = await self.common_service.resolve_location_id(request.location)
+            location_id = await self.common_service.resolve_location_id(
+                request.location
+            )
             if not location_id:
-                raise ValueError(
-                    f"Location '{request.location}' not found in Nautobot"
-                )
+                raise ValueError(f"Location '{request.location}' not found in Nautobot")
             updates["location"] = location_id
 
         # platform (optional field — skip silently if not found)
         if request.platform and not is_valid_uuid(request.platform):
-            platform_id = await self.common_service.resolve_platform_id(request.platform)
+            platform_id = await self.common_service.resolve_platform_id(
+                request.platform
+            )
             if platform_id:
                 updates["platform"] = platform_id
             else:
@@ -397,7 +411,9 @@ class DeviceCreationService:
             if not is_valid_uuid(rack_id):
                 rack_id = await self.common_service.resolve_rack_id(rack_id)
                 if not rack_id:
-                    logger.warning("Rack '%s' not found — skipping rack placement", request.rack)
+                    logger.warning(
+                        "Rack '%s' not found — skipping rack placement", request.rack
+                    )
             if rack_id:
                 device_payload["rack"] = rack_id
                 if request.face:

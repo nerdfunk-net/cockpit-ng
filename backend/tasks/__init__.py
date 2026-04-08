@@ -87,6 +87,7 @@ __all__ = [
     # Test tasks
     "test_task",
     "test_progress_task",
+    "debug_wait_task",
     # Device onboarding
     "onboard_device_task",
     "bulk_onboard_devices_task",

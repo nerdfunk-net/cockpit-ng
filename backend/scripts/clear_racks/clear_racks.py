@@ -83,6 +83,7 @@ _DEVICES_QUERY_ALL = """
 # Core logic
 # ---------------------------------------------------------------------------
 
+
 async def run(
     devices_filter: str | None,
     dry_run: bool,
@@ -166,14 +167,23 @@ async def _run(
                     # clear optional FK/relationship fields in Nautobot.
                     data={"rack": None, "face": None, "position": None},
                 )
-                logger.info("Cleared rack config for device %s (%s)", device["name"], device["id"])
+                logger.info(
+                    "Cleared rack config for device %s (%s)",
+                    device["name"],
+                    device["id"],
+                )
             except Exception as exc:
                 print(f"  ERROR: Failed to update {device['name']}: {exc}")
-                logger.error("Failed to clear rack config for %s: %s", device["name"], exc, exc_info=True)
+                logger.error(
+                    "Failed to clear rack config for %s: %s",
+                    device["name"],
+                    exc,
+                    exc_info=True,
+                )
                 failed += 1
 
     if dry_run:
-        print(f"\n[DRY RUN] No changes made. Re-run without --dry-run to apply.")
+        print("\n[DRY RUN] No changes made. Re-run without --dry-run to apply.")
     else:
         success = len(targets) - failed
         print(f"\nDone: {success} updated, {failed} failed.")
@@ -184,6 +194,7 @@ async def _run(
 # ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(

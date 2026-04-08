@@ -221,9 +221,7 @@ class DeviceResolver(BaseResolver):
 
             devices = result.get("data", {}).get("devices", [])
             if not devices:
-                logger.warning(
-                    "No device found whose name contains: %s", device_name
-                )
+                logger.warning("No device found whose name contains: %s", device_name)
                 return None
 
             if len(devices) > 1:

@@ -232,9 +232,13 @@ class DeviceCommonService:
         """Delegate to MetadataResolver."""
         return await self.metadata_resolver.resolve_location_id(location_name)
 
-    async def resolve_rack_id(self, rack_name: str, location: Optional[str] = None) -> Optional[str]:
+    async def resolve_rack_id(
+        self, rack_name: str, location: Optional[str] = None
+    ) -> Optional[str]:
         """Delegate to MetadataResolver."""
-        return await self.metadata_resolver.resolve_rack_id(rack_name, location=location)
+        return await self.metadata_resolver.resolve_rack_id(
+            rack_name, location=location
+        )
 
     # ========================================================================
     # NETWORK RESOLUTION METHODS (delegated to NetworkResolver)

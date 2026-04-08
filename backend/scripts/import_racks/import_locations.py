@@ -30,7 +30,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import yaml
 
 # Allow imports from the backend root
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +52,14 @@ class LocationImporter:
         self.location_cache: Dict[str, str] = {}  # name -> id
 
         # Lookup tables built from config
-        self._import_map: Dict[str, str] = {}          # csv_column -> nautobot_type
-        self._nautobot_to_csv: Dict[str, str] = {}     # nautobot_type -> csv_column
-        self._dependency_map: Dict[str, Optional[str]] = {}  # nautobot_type -> parent_nautobot_type
-        self._mapping_lookup: Dict[str, Dict[str, Dict[str, Any]]] = {}  # csv_col -> {csv_val -> {nautobot, parent?}}
+        self._import_map: Dict[str, str] = {}  # csv_column -> nautobot_type
+        self._nautobot_to_csv: Dict[str, str] = {}  # nautobot_type -> csv_column
+        self._dependency_map: Dict[
+            str, Optional[str]
+        ] = {}  # nautobot_type -> parent_nautobot_type
+        self._mapping_lookup: Dict[
+            str, Dict[str, Dict[str, Any]]
+        ] = {}  # csv_col -> {csv_val -> {nautobot, parent?}}
 
         self._build_lookups()
 
@@ -64,10 +70,14 @@ class LocationImporter:
             self._import_map[csv_col] = nb_type
             self._nautobot_to_csv[nb_type] = csv_col
 
-        self._rack_location_type: Optional[str] = None  # nautobot type that holds the rack
+        self._rack_location_type: Optional[str] = (
+            None  # nautobot type that holds the rack
+        )
         for dep in self.config.get("dependencies", []):
             parent = dep.get("parent")
-            self._dependency_map[dep["name"]] = parent if parent and parent != "null" else None
+            self._dependency_map[dep["name"]] = (
+                parent if parent and parent != "null" else None
+            )
             if "location" in dep:
                 self._rack_location_type = dep["location"]
 
@@ -151,7 +161,9 @@ class LocationImporter:
                 self.status_cache[status["name"]] = status["id"]
                 self.status_cache[status["name"].lower()] = status["id"]
 
-        return self.status_cache.get(status_name) or self.status_cache.get(status_name.lower())
+        return self.status_cache.get(status_name) or self.status_cache.get(
+            status_name.lower()
+        )
 
     async def resolve_location_type_id(self, nb_type_name: str) -> Optional[str]:
         """Resolve a location type name to its UUID, with caching."""
@@ -221,7 +233,9 @@ class LocationImporter:
                     name,
                 )
 
-        result = await self.nautobot.rest_request("dcim/locations/", method="POST", data=payload)
+        result = await self.nautobot.rest_request(
+            "dcim/locations/", method="POST", data=payload
+        )
         loc_id = result.get("id")
         if loc_id:
             self.location_cache[name] = loc_id
@@ -269,7 +283,9 @@ class LocationImporter:
         if "height" in defaults:
             payload["u_height"] = int(defaults["height"])
 
-        result = await self.nautobot.rest_request("dcim/racks/", method="POST", data=payload)
+        result = await self.nautobot.rest_request(
+            "dcim/racks/", method="POST", data=payload
+        )
         rack_id = result.get("id")
         if rack_id:
             logger.debug("Created rack '%s' at location '%s'", name, location_name)
@@ -280,7 +296,9 @@ class LocationImporter:
     ) -> Dict[str, int]:
         """Import racks from CSV rows using the deepest imported location as the rack location."""
         if not self._rack_location_type:
-            logger.warning("No 'location' defined for Rack in dependencies; skipping rack import")
+            logger.warning(
+                "No 'location' defined for Rack in dependencies; skipping rack import"
+            )
             return {"created": 0, "skipped": 0, "errors": 0}
 
         rack_location_csv_col = self._nautobot_to_csv.get(self._rack_location_type)
@@ -363,7 +381,9 @@ class LocationImporter:
                         stats["skipped"] += 1
                         continue
 
-                    loc_id = await self.create_location(location_name, nb_type, parent_name)
+                    loc_id = await self.create_location(
+                        location_name, nb_type, parent_name
+                    )
                     if loc_id:
                         stats["created"] += 1
                         parent_info = f" -> {parent_name}" if parent_name else ""
@@ -381,7 +401,9 @@ class LocationImporter:
         for key in stats:
             stats[key] += rack_stats[key]
 
-        print(f"\nDone. Created: {stats['created']}, Skipped: {stats['skipped']}, Errors: {stats['errors']}")
+        print(
+            f"\nDone. Created: {stats['created']}, Skipped: {stats['skipped']}, Errors: {stats['errors']}"
+        )
         return stats
 
 

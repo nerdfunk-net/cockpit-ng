@@ -543,6 +543,7 @@ def _apply_default_prefix_length(
 @dataclass
 class ImportContext:
     """Bundles services and accumulator lists for CSV import processing."""
+
     nautobot_service: Any
     device_import_service: Any
     device_update_service: Any

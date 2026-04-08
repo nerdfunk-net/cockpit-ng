@@ -284,7 +284,9 @@ class MetadataResolver(BaseResolver):
             return rack_name
 
         try:
-            logger.info("Resolving rack '%s' (location filter: %s)", rack_name, location)
+            logger.info(
+                "Resolving rack '%s' (location filter: %s)", rack_name, location
+            )
 
             endpoint = f"dcim/racks/?name={rack_name}&format=json"
             if location:

@@ -135,9 +135,9 @@ class AddDeviceRequest(BaseModel):
     # Custom fields (key-value pairs)
     custom_fields: Optional[dict[str, str]] = None
     # Rack placement (all optional; omit to skip)
-    rack: Optional[str] = None        # Rack UUID or name
-    face: Optional[str] = None        # Rack face: "front" or "rear"
-    position: Optional[int] = None    # Rack U position (1 to u_height)
+    rack: Optional[str] = None  # Rack UUID or name
+    face: Optional[str] = None  # Rack face: "front" or "rear"
+    position: Optional[int] = None  # Rack U position (1 to u_height)
     # Prefix configuration
     add_prefix: bool = True
     default_prefix_length: str = "/24"

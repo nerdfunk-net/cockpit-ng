@@ -60,7 +60,7 @@ def main():
     # Create the job_run record first (status: pending)
     job_run = job_run_manager.create_job_run(
         job_name=f"Debug Wait ({duration}s)",
-        job_type="cache_devices",      # use an existing job_type so it appears with a known label
+        job_type="cache_devices",  # use an existing job_type so it appears with a known label
         triggered_by="manual",
     )
     job_run_id = job_run["id"]
@@ -73,7 +73,9 @@ def main():
     print(f"  Celery task dispatched   → task_id={result.id}")
     print()
     print("Job is now RUNNING. Open the Job History page and verify that:")
-    print("  1. The job appears with status 'running' (should update automatically every 3s)")
+    print(
+        "  1. The job appears with status 'running' (should update automatically every 3s)"
+    )
     print("  2. The Refresh button forces an immediate update")
     print(f"  3. After ~{duration}s the status changes to 'completed'")
     print()

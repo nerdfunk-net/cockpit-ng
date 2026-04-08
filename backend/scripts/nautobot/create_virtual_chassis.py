@@ -72,6 +72,7 @@ _DEVICES_QUERY = """
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _group_key(device_name: str) -> str:
     """Return the canonical group key for a device name.
 
@@ -114,6 +115,7 @@ def _member_position(device_name: str) -> int:
 # Core logic
 # ---------------------------------------------------------------------------
 
+
 async def run(
     name_filter: str | None,
     dry_run: bool,
@@ -155,7 +157,9 @@ async def _run(
     if name_filter:
         needle = name_filter.lower()
         devices = [d for d in devices if needle in (d.get("name") or "").lower()]
-        logger.info("After filter '%s': %d device(s) remain.", name_filter, len(devices))
+        logger.info(
+            "After filter '%s': %d device(s) remain.", name_filter, len(devices)
+        )
 
     # ------------------------------------------------------------------
     # Group by canonical base name
@@ -183,14 +187,11 @@ async def _run(
         others = [d for d in members if d["id"] != master["id"]]
 
         member_names = ", ".join(d["name"] for d in members)
-        print(
-            f"FOUND {canon_name}  ({len(members)} members: {member_names})"
-        )
+        print(f"FOUND {canon_name}  ({len(members)} members: {member_names})")
 
         if dry_run:
             print(
-                f"  [DRY RUN] Would create VC '{canon_name}'"
-                f"  master={master['name']}"
+                f"  [DRY RUN] Would create VC '{canon_name}'  master={master['name']}"
             )
             continue
 
@@ -243,6 +244,7 @@ async def _run(
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

@@ -281,7 +281,9 @@ async def create_virtual_machine(
 
         if use_new_format:
             # NEW FORMAT: Process interfaces array
-            logger.debug("Processing %s interfaces (new format)", len(vm_request.interfaces))
+            logger.debug(
+                "Processing %s interfaces (new format)", len(vm_request.interfaces)
+            )
 
             for idx, interface_data in enumerate(vm_request.interfaces):
                 try:
@@ -442,7 +444,9 @@ async def create_virtual_machine(
 
         elif use_legacy_format:
             # LEGACY FORMAT: Single interface with single IP
-            logger.debug("Creating interface (legacy format): %s", vm_request.interfaceName)
+            logger.debug(
+                "Creating interface (legacy format): %s", vm_request.interfaceName
+            )
 
             try:
                 interface_result = await vm_manager.create_virtual_interface(
@@ -487,7 +491,9 @@ async def create_virtual_machine(
                             logger.debug("Resolved namespace ID: %s", namespace_id)
 
                         # Create or get the IP address
-                        logger.debug("Creating/ensuring IP address exists in Nautobot...")
+                        logger.debug(
+                            "Creating/ensuring IP address exists in Nautobot..."
+                        )
                         ip_id = await ip_manager.ensure_ip_address_exists(
                             ip_address=vm_request.primaryIpv4,
                             namespace_id=namespace_id,

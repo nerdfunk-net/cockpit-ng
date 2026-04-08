@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from core.auth import require_permission
 from dependencies import get_nb2cmk_service, get_nb2cmk_db_service
+from utils.audit_logger import log_checkmk_sync_event
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nb2cmk", tags=["nb2cmk"])
@@ -76,10 +77,21 @@ async def add_device_to_checkmk(
     nb2cmk_service=Depends(get_nb2cmk_service),
 ):
     """Add a device from Nautobot to CheckMK using normalized config."""
+    username = current_user.get("sub", "unknown")
+    user_id = current_user.get("user_id")
+
     try:
         logger.info("[ROUTER] Add device request for device ID: %s", device_id)
         result = await nb2cmk_service.add_device_to_checkmk(device_id)
         logger.info("[ROUTER] Device %s added successfully to CheckMK", device_id)
+        log_checkmk_sync_event(
+            username=username,
+            action="add",
+            device_name=result.hostname or device_id,
+            device_id=device_id,
+            user_id=user_id,
+            success=True,
+        )
         return result.model_dump()
     except HTTPException as http_exc:
         logger.error(
@@ -88,10 +100,28 @@ async def add_device_to_checkmk(
             device_id,
             http_exc.detail,
         )
+        log_checkmk_sync_event(
+            username=username,
+            action="add",
+            device_name=device_id,
+            device_id=device_id,
+            user_id=user_id,
+            success=False,
+            error_message=str(http_exc.detail),
+        )
         raise
     except ValueError as val_err:
         error_msg = f"Validation error adding device {device_id}: {str(val_err)}"
         logger.error("[ROUTER] %s", error_msg, exc_info=True)
+        log_checkmk_sync_event(
+            username=username,
+            action="add",
+            device_name=device_id,
+            device_id=device_id,
+            user_id=user_id,
+            success=False,
+            error_message=str(val_err),
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg,
@@ -99,6 +129,15 @@ async def add_device_to_checkmk(
     except Exception as e:
         error_msg = f"Unexpected error adding device {device_id} to CheckMK: {str(e)}"
         logger.error("[ROUTER] %s", error_msg, exc_info=True)
+        log_checkmk_sync_event(
+            username=username,
+            action="add",
+            device_name=device_id,
+            device_id=device_id,
+            user_id=user_id,
+            success=False,
+            error_message=str(e),
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_msg,
@@ -112,10 +151,21 @@ async def update_device_in_checkmk(
     nb2cmk_service=Depends(get_nb2cmk_service),
 ):
     """Update/sync a device from Nautobot to CheckMK using normalized config."""
+    username = current_user.get("sub", "unknown")
+    user_id = current_user.get("user_id")
+
     try:
         logger.info("[ROUTER] Update device request for device ID: %s", device_id)
         result = await nb2cmk_service.update_device_in_checkmk(device_id)
         logger.info("[ROUTER] Device %s updated successfully in CheckMK", device_id)
+        log_checkmk_sync_event(
+            username=username,
+            action="update",
+            device_name=result.hostname or device_id,
+            device_id=device_id,
+            user_id=user_id,
+            success=True,
+        )
         return result.model_dump()
     except HTTPException as http_exc:
         logger.error(
@@ -124,10 +174,28 @@ async def update_device_in_checkmk(
             device_id,
             http_exc.detail,
         )
+        log_checkmk_sync_event(
+            username=username,
+            action="update",
+            device_name=device_id,
+            device_id=device_id,
+            user_id=user_id,
+            success=False,
+            error_message=str(http_exc.detail),
+        )
         raise
     except ValueError as val_err:
         error_msg = f"Validation error updating device {device_id}: {str(val_err)}"
         logger.error("[ROUTER] %s", error_msg, exc_info=True)
+        log_checkmk_sync_event(
+            username=username,
+            action="update",
+            device_name=device_id,
+            device_id=device_id,
+            user_id=user_id,
+            success=False,
+            error_message=str(val_err),
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg,
@@ -135,6 +203,15 @@ async def update_device_in_checkmk(
     except Exception as e:
         error_msg = f"Unexpected error updating device {device_id} in CheckMK: {str(e)}"
         logger.error("[ROUTER] %s", error_msg, exc_info=True)
+        log_checkmk_sync_event(
+            username=username,
+            action="update",
+            device_name=device_id,
+            device_id=device_id,
+            user_id=user_id,
+            success=False,
+            error_message=str(e),
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_msg,

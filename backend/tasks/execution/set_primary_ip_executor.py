@@ -62,7 +62,9 @@ def execute_set_primary_ip(
     params = job_parameters or {}
     tmpl = template or {}
 
-    strategy = params.get("set_primary_ip_strategy") or tmpl.get("set_primary_ip_strategy")
+    strategy = params.get("set_primary_ip_strategy") or tmpl.get(
+        "set_primary_ip_strategy"
+    )
     if not strategy:
         return {"success": False, "error": "No set_primary_ip_strategy provided"}
 
@@ -104,32 +106,50 @@ def _execute_ip_reachable(
     3. Ping all IPs via the selected Cockpit Agent.
     4. For each device with exactly 1 reachable IP, set it as primary in Nautobot.
     """
-    agent_id = params.get("set_primary_ip_agent_id") or tmpl.get("set_primary_ip_agent_id")
+    agent_id = params.get("set_primary_ip_agent_id") or tmpl.get(
+        "set_primary_ip_agent_id"
+    )
     if not agent_id:
         return {"success": False, "error": "No set_primary_ip_agent_id provided"}
 
     start_ms = int(time.time() * 1000)
 
     # Resolve devices from inventory
-    inventory_name: Optional[str] = params.get("inventory_name") or tmpl.get("inventory_name")
+    inventory_name: Optional[str] = params.get("inventory_name") or tmpl.get(
+        "inventory_name"
+    )
     inventory_id: Optional[int] = params.get("inventory_id")
 
-    if not inventory_id and inventory_name and tmpl.get("inventory_source") == "inventory":
+    if (
+        not inventory_id
+        and inventory_name
+        and tmpl.get("inventory_source") == "inventory"
+    ):
         import service_factory
+
         persistence_service = service_factory.build_inventory_persistence_service()
-        inv = persistence_service.get_inventory_by_name(inventory_name, "celery_scheduler")
+        inv = persistence_service.get_inventory_by_name(
+            inventory_name, "celery_scheduler"
+        )
         if inv:
             inventory_id = inv.get("id")
-            logger.info("Resolved inventory '%s' to ID %s", inventory_name, inventory_id)
+            logger.info(
+                "Resolved inventory '%s' to ID %s", inventory_name, inventory_id
+            )
 
     if not inventory_id:
-        return {"success": False, "error": "No inventory resolved — inventory_id or inventory_name required"}
+        return {
+            "success": False,
+            "error": "No inventory resolved — inventory_id or inventory_name required",
+        }
 
     try:
         # device_records: List[{device_name, device_id, ip_objects: [{id, address}]}]
         device_records = asyncio.run(_resolve_devices_with_ip_ids(inventory_id))
     except Exception as exc:
-        logger.error("Failed to resolve inventory %s: %s", inventory_id, exc, exc_info=True)
+        logger.error(
+            "Failed to resolve inventory %s: %s", inventory_id, exc, exc_info=True
+        )
         return {"success": False, "error": f"Failed to resolve inventory: {exc}"}
 
     if not device_records:
@@ -166,7 +186,10 @@ def _execute_ip_reachable(
         cockpit_svc = CockpitAgentService(db)
 
         if not cockpit_svc.check_agent_online(agent_id):
-            return {"success": False, "error": f"Agent '{agent_id}' is offline or not responding"}
+            return {
+                "success": False,
+                "error": f"Agent '{agent_id}' is offline or not responding",
+            }
 
         raw = cockpit_svc.send_ping(
             agent_id=agent_id,
@@ -204,12 +227,17 @@ def _execute_ip_reachable(
 
     try:
         import service_factory
+
         nautobot_svc = service_factory.build_nautobot_service()
         from services.nautobot.devices.common import DeviceCommonService
+
         device_svc = DeviceCommonService(nautobot_svc)
     except Exception as exc:
         logger.error("Failed to initialize Nautobot service: %s", exc, exc_info=True)
-        return {"success": False, "error": f"Failed to initialize Nautobot service: {exc}"}
+        return {
+            "success": False,
+            "error": f"Failed to initialize Nautobot service: {exc}",
+        }
 
     for ping_device in ping_results:
         device_name = ping_device.get("device_name", "")
@@ -220,26 +248,30 @@ def _execute_ip_reachable(
         reachable_ips = [ip["ip_address"] for ip in reachable_entries]
 
         if not reachable_entries:
-            results.append({
-                "device_name": device_name,
-                "device_id": device_id,
-                "status": "unreachable",
-                "primary_ip": None,
-                "reachable_ips": [],
-                "reason": None,
-            })
+            results.append(
+                {
+                    "device_name": device_name,
+                    "device_id": device_id,
+                    "status": "unreachable",
+                    "primary_ip": None,
+                    "reachable_ips": [],
+                    "reason": None,
+                }
+            )
             unreachable_count += 1
             continue
 
         if len(reachable_entries) > 1:
-            results.append({
-                "device_name": device_name,
-                "device_id": device_id,
-                "status": "skipped",
-                "primary_ip": None,
-                "reachable_ips": reachable_ips,
-                "reason": f"Ambiguous: {len(reachable_entries)} IPs are reachable",
-            })
+            results.append(
+                {
+                    "device_name": device_name,
+                    "device_id": device_id,
+                    "status": "skipped",
+                    "primary_ip": None,
+                    "reachable_ips": reachable_ips,
+                    "reason": f"Ambiguous: {len(reachable_entries)} IPs are reachable",
+                }
+            )
             skipped_count += 1
             continue
 
@@ -249,26 +281,30 @@ def _execute_ip_reachable(
         ip_uuid = reachable_entry.get("uuid")
 
         if not ip_uuid:
-            results.append({
-                "device_name": device_name,
-                "device_id": device_id,
-                "status": "failed",
-                "primary_ip": reachable_ip,
-                "reachable_ips": reachable_ips,
-                "reason": f"IP UUID not found for {reachable_ip}",
-            })
+            results.append(
+                {
+                    "device_name": device_name,
+                    "device_id": device_id,
+                    "status": "failed",
+                    "primary_ip": reachable_ip,
+                    "reachable_ips": reachable_ips,
+                    "reason": f"IP UUID not found for {reachable_ip}",
+                }
+            )
             failed_count += 1
             continue
 
         if not device_id:
-            results.append({
-                "device_name": device_name,
-                "device_id": None,
-                "status": "failed",
-                "primary_ip": reachable_ip,
-                "reachable_ips": reachable_ips,
-                "reason": "Device ID (Nautobot UUID) not available",
-            })
+            results.append(
+                {
+                    "device_name": device_name,
+                    "device_id": None,
+                    "status": "failed",
+                    "primary_ip": reachable_ip,
+                    "reachable_ips": reachable_ips,
+                    "reason": "Device ID (Nautobot UUID) not available",
+                }
+            )
             failed_count += 1
             continue
 
@@ -283,24 +319,28 @@ def _execute_ip_reachable(
             success = False
 
         if success:
-            results.append({
-                "device_name": device_name,
-                "device_id": device_id,
-                "status": "assigned",
-                "primary_ip": reachable_ip,
-                "reachable_ips": reachable_ips,
-                "reason": None,
-            })
+            results.append(
+                {
+                    "device_name": device_name,
+                    "device_id": device_id,
+                    "status": "assigned",
+                    "primary_ip": reachable_ip,
+                    "reachable_ips": reachable_ips,
+                    "reason": None,
+                }
+            )
             assigned_count += 1
         else:
-            results.append({
-                "device_name": device_name,
-                "device_id": device_id,
-                "status": "failed",
-                "primary_ip": reachable_ip,
-                "reachable_ips": reachable_ips,
-                "reason": "Nautobot API call to assign primary IP failed",
-            })
+            results.append(
+                {
+                    "device_name": device_name,
+                    "device_id": device_id,
+                    "status": "failed",
+                    "primary_ip": reachable_ip,
+                    "reachable_ips": reachable_ips,
+                    "reason": "Nautobot API call to assign primary IP failed",
+                }
+            )
             failed_count += 1
 
     execution_time_ms = int(time.time() * 1000) - start_ms
@@ -354,11 +394,13 @@ async def _resolve_devices_with_ip_ids(inventory_id: int) -> List[dict]:
             logger.warning("Failed to fetch IPs for device '%s': %s", device.name, exc)
             ip_objects = []
 
-        device_records.append({
-            "device_name": device.name,
-            "device_id": device.id,
-            "ip_objects": ip_objects,
-        })
+        device_records.append(
+            {
+                "device_name": device.name,
+                "device_id": device.id,
+                "ip_objects": ip_objects,
+            }
+        )
 
     return device_records
 

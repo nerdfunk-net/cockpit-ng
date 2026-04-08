@@ -279,7 +279,8 @@ class JobTemplateBase(BaseModel):
     )
     # CSV Export (csv_export type)
     csv_export_repo_id: Optional[int] = Field(
-        None, description="Git repository ID for the CSV export destination (type=csv_exports)"
+        None,
+        description="Git repository ID for the CSV export destination (type=csv_exports)",
     )
     csv_export_file_path: Optional[str] = Field(
         None,

@@ -186,7 +186,10 @@ def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
             message = "Failed to cache any devices (%d failures)" % failed_count
         else:
             status = "completed_with_errors"
-            message = "Cached %d devices with %d failures" % (cached_count, failed_count)
+            message = "Cached %d devices with %d failures" % (
+                cached_count,
+                failed_count,
+            )
 
         logger.info("Task %s: %s", self.request.id, message)
 
@@ -200,6 +203,7 @@ def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
 
         if job_run_id:
             import job_run_manager
+
             if status == "failed":
                 job_run_manager.mark_failed(job_run_id, message)
             else:
@@ -210,7 +214,10 @@ def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
     except Exception as e:
         error_msg = str(e)
         logger.error(
-            "Task %s failed with exception: %s", self.request.id, error_msg, exc_info=True
+            "Task %s failed with exception: %s",
+            self.request.id,
+            error_msg,
+            exc_info=True,
         )
         result = {
             "status": "failed",
@@ -220,6 +227,7 @@ def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
         }
         if job_run_id:
             import job_run_manager
+
             job_run_manager.mark_failed(job_run_id, error_msg)
         return result
 

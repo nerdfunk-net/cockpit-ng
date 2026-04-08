@@ -86,7 +86,9 @@ def debug_wait_task(self, duration: int = 60, job_run_id: int = None) -> dict:
     """
     import job_run_manager
 
-    logger.info("DEBUG wait task started (duration=%ss, job_run_id=%s)", duration, job_run_id)
+    logger.info(
+        "DEBUG wait task started (duration=%ss, job_run_id=%s)", duration, job_run_id
+    )
 
     try:
         if job_run_id:

@@ -71,6 +71,41 @@ def log_device_onboarding(
         )
 
 
+def log_checkmk_sync_event(
+    username: str,
+    action: str,  # "add", "update"
+    device_name: str,
+    device_id: Optional[str] = None,
+    user_id: Optional[int] = None,
+    success: bool = True,
+    error_message: Optional[str] = None,
+):
+    """Log CheckMK device synchronization events."""
+    severity = "info" if success else "error"
+    action_label = "added to" if action == "add" else "updated in"
+
+    if success:
+        message = f"Device '{device_name}' {action_label} CheckMK"
+    else:
+        message = f"Failed to {action} device '{device_name}' in CheckMK"
+        if error_message:
+            message += f" - Error: {error_message}"
+
+    try:
+        audit_log_repo.create_log(
+            username=username,
+            user_id=user_id,
+            event_type="checkmk_sync",
+            message=message,
+            resource_type="device",
+            resource_id=device_id,
+            resource_name=device_name,
+            severity=severity,
+        )
+    except Exception as e:
+        logger.error("Failed to create CheckMK sync audit log: %s", e)
+
+
 def log_system_event(
     message: str,
     event_type: str = "system",

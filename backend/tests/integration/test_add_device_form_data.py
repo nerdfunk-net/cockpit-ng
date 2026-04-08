@@ -345,7 +345,9 @@ class TestAddDeviceFormData:
             device_ids.append(result["device_id"])
 
         # --- Top-level success -----------------------------------------------
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
         assert result["device_id"] is not None, "device_id must be returned"
 
         # --- Workflow steps ---------------------------------------------------
@@ -365,7 +367,7 @@ class TestAddDeviceFormData:
         # --- Verify device in Nautobot ----------------------------------------
         query = f"""
         query {{
-          device(id: "{result['device_id']}") {{
+          device(id: "{result["device_id"]}") {{
             id
             name
             serial
@@ -507,12 +509,14 @@ class TestAddDeviceFormData:
         if result.get("device_id"):
             device_ids.append(result["device_id"])
 
-        assert result["success"] is True, f"Expected success, got: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Expected success, got: {result.get('message')}"
+        )
 
         # Verify interface type via GraphQL
         query = f"""
         query {{
-          device(id: "{result['device_id']}") {{
+          device(id: "{result["device_id"]}") {{
             interfaces {{
               name
               type
@@ -575,9 +579,14 @@ class TestAddDeviceFormData:
         assert ids["manufacturer_id"], "manufacturer_id must be resolved"
         # platform_id may be None if Cisco IOS isn't in the test Nautobot
         if ids["platform_id"] is None:
-            logger.warning("Platform '%s' not found – tests will run without it", PLATFORM_NAME)
+            logger.warning(
+                "Platform '%s' not found – tests will run without it", PLATFORM_NAME
+            )
 
-        logger.info("✓ All resource IDs resolved: %s", {k: v for k, v in ids.items() if k != "device_type_created"})
+        logger.info(
+            "✓ All resource IDs resolved: %s",
+            {k: v for k, v in ids.items() if k != "device_type_created"},
+        )
 
     @pytest.mark.asyncio
     async def test_add_device_without_prefix_fails(
@@ -639,9 +648,9 @@ class TestAddDeviceFormData:
             await device_creation_service.create_device_with_interfaces(request)
 
         error = str(exc_info.value).lower()
-        assert any(
-            kw in error for kw in ["prefix", "parent", "network"]
-        ), f"Expected prefix-related error, got: {exc_info.value}"
+        assert any(kw in error for kw in ["prefix", "parent", "network"]), (
+            f"Expected prefix-related error, got: {exc_info.value}"
+        )
 
         # Verify the parent prefix was NOT created as a side effect
         post_check = await real_nautobot_service.graphql_query(

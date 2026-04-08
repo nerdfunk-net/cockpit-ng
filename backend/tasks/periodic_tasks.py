@@ -159,7 +159,10 @@ def dispatch_cache_task(self, cache_type: str, task_name: str) -> dict:
     """
     try:
         import job_run_manager
-        from services.background_jobs import cache_all_devices_task, cache_all_locations_task
+        from services.background_jobs import (
+            cache_all_devices_task,
+            cache_all_locations_task,
+        )
 
         task_map = {
             "cache_all_devices": cache_all_devices_task,

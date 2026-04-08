@@ -442,13 +442,13 @@ class DeviceUpdateService:
             elif field == "rack":
                 # Resolve rack name to UUID, optionally filtered by location
                 if not self.common._is_valid_uuid(value):
-                    rack_id = await self.common.resolve_rack_id(value, location=rack_location)
+                    rack_id = await self.common.resolve_rack_id(
+                        value, location=rack_location
+                    )
                     if rack_id:
                         validated[field] = rack_id
                     else:
-                        logger.warning(
-                            "Rack '%s' not found, will be omitted", value
-                        )
+                        logger.warning("Rack '%s' not found, will be omitted", value)
                 else:
                     validated[field] = value
 

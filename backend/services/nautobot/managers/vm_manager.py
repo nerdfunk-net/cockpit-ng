@@ -47,7 +47,11 @@ class VirtualMachineManager:
         Raises:
             Exception: If assignment fails
         """
-        logger.info("Assigning IP %s to virtual interface %s", ip_address_id, virtual_interface_id)
+        logger.info(
+            "Assigning IP %s to virtual interface %s",
+            ip_address_id,
+            virtual_interface_id,
+        )
 
         # Check if assignment already exists
         check_endpoint = (
@@ -78,7 +82,9 @@ class VirtualMachineManager:
                 data=payload,
             )
 
-            logger.info("Assigned IP to virtual interface, assignment ID: %s", result.get("id"))
+            logger.info(
+                "Assigned IP to virtual interface, assignment ID: %s", result.get("id")
+            )
             return True
 
         except NautobotAPIError as e:
@@ -249,7 +255,9 @@ class VirtualMachineManager:
         Raises:
             Exception: If interface creation fails
         """
-        logger.info("Creating virtual interface '%s' for VM %s", name, virtual_machine_id)
+        logger.info(
+            "Creating virtual interface '%s' for VM %s", name, virtual_machine_id
+        )
 
         # Build the interface data payload according to Nautobot's REST API schema
         interface_data: Dict[str, Any] = {
@@ -288,7 +296,9 @@ class VirtualMachineManager:
                 "virtualization/interfaces/", method="POST", data=interface_data
             )
 
-            logger.info("Created virtual interface '%s' with ID %s", name, result.get("id"))
+            logger.info(
+                "Created virtual interface '%s' with ID %s", name, result.get("id")
+            )
             return result
 
         except NautobotAPIError as e:

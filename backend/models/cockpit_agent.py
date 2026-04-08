@@ -92,7 +92,9 @@ class AgentListResponse(BaseModel):
 class PingRequest(BaseModel):
     """Request to ping devices from an inventory via a cockpit agent"""
 
-    inventory_id: int = Field(..., description="Saved inventory ID to resolve devices from")
+    inventory_id: int = Field(
+        ..., description="Saved inventory ID to resolve devices from"
+    )
 
 
 class PingIpResult(BaseModel):

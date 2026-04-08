@@ -438,7 +438,9 @@ class InterfaceManagerService:
                     )
             else:
                 logger.error(
-                    "Failed to create interface '%s': %s", interface["name"], str(create_error)
+                    "Failed to create interface '%s': %s",
+                    interface["name"],
+                    str(create_error),
                 )
                 warnings.append(
                     f"Interface {interface['name']}: Failed to create interface: {str(create_error)}"

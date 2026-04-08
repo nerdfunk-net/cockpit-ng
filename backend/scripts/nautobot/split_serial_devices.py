@@ -96,6 +96,7 @@ _DEVICES_QUERY = """
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _parse_serials(serial_field: str | None) -> list[str]:
     """Return a list of stripped serial numbers from a raw field value."""
     if not serial_field:
@@ -140,6 +141,7 @@ def _build_request(
 # ---------------------------------------------------------------------------
 # Core logic
 # ---------------------------------------------------------------------------
+
 
 async def run(
     name_filter: str | None,
@@ -233,6 +235,7 @@ async def run(
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

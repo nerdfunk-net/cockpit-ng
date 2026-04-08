@@ -59,7 +59,9 @@ def execute_ping_agent(
         try:
             devices = asyncio.run(_resolve_devices_from_inventory(inventory_id))
         except Exception as exc:
-            logger.error("Failed to resolve inventory %s: %s", inventory_id, exc, exc_info=True)
+            logger.error(
+                "Failed to resolve inventory %s: %s", inventory_id, exc, exc_info=True
+            )
             return {"success": False, "error": f"Failed to resolve inventory: {exc}"}
 
     if not devices:
@@ -80,7 +82,10 @@ def execute_ping_agent(
         service = CockpitAgentService(db)
 
         if not service.check_agent_online(agent_id):
-            return {"success": False, "error": f"Agent '{agent_id}' is offline or not responding"}
+            return {
+                "success": False,
+                "error": f"Agent '{agent_id}' is offline or not responding",
+            }
 
         raw = service.send_ping(
             agent_id=agent_id,
@@ -93,7 +98,10 @@ def execute_ping_agent(
             return {"success": False, "error": "Ping timed out after 120 seconds"}
 
         if raw.get("status") == "error":
-            return {"success": False, "error": raw.get("error", "Ping returned an error")}
+            return {
+                "success": False,
+                "error": raw.get("error", "Ping returned an error"),
+            }
 
         output = raw.get("output")
         if isinstance(output, str):
@@ -164,16 +172,20 @@ async def _resolve_devices_from_inventory(inventory_id: int) -> List[dict]:
         if not device.name:
             continue
         try:
-            result = await nautobot_svc.graphql_query(_DEVICE_IPS_QUERY, {"name": device.name})
+            result = await nautobot_svc.graphql_query(
+                _DEVICE_IPS_QUERY, {"name": device.name}
+            )
             ip_addresses = _extract_ip_addresses(result, device.name)
         except Exception as exc:
             logger.warning("Failed to fetch IPs for device '%s': %s", device.name, exc)
             ip_addresses = []
 
-        device_ping_list.append({
-            "device_name": device.name,
-            "device_id": device.id,
-            "ip_addresses": ip_addresses,
-        })
+        device_ping_list.append(
+            {
+                "device_name": device.name,
+                "device_id": device.id,
+                "ip_addresses": ip_addresses,
+            }
+        )
 
     return device_ping_list

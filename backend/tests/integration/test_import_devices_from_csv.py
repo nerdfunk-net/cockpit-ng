@@ -223,8 +223,8 @@ class TestCsvParsePipeline:
 
         # Columns with NULL / NoObject values are removed by _filter_nautobot_nulls
         # before mapping, so they must not appear in the result.
-        assert "face" not in mapped          # raw value: "NULL"
-        assert "rack__name" not in mapped    # raw value: "NoObject"
+        assert "face" not in mapped  # raw value: "NULL"
+        assert "rack__name" not in mapped  # raw value: "NoObject"
 
         # Columns not present in COLUMN_MAPPING pass through with their CSV name.
         # validate_import_data silently ignores them, so we do not assert absence
@@ -283,7 +283,9 @@ class TestCsvParsePipeline:
 # ---------------------------------------------------------------------------
 
 
-async def _resolve_optional_id(nautobot, query: str, path: tuple[str, ...]) -> str | None:
+async def _resolve_optional_id(
+    nautobot, query: str, path: tuple[str, ...]
+) -> str | None:
     """Run a GraphQL query and return the first result's ID, or None."""
     result = await nautobot.graphql_query(query)
     data = result["data"]
@@ -361,7 +363,11 @@ async def ensure_device_type(real_nautobot_service):
     dt_id, was_created = await get_or_create_device_type(
         real_nautobot_service, DEVICE_TYPE_MODEL, mfr_id
     )
-    yield {"manufacturer_id": mfr_id, "device_type_id": dt_id, "was_created": was_created}
+    yield {
+        "manufacturer_id": mfr_id,
+        "device_type_id": dt_id,
+        "was_created": was_created,
+    }
 
     if was_created:
         try:
@@ -466,7 +472,9 @@ class TestImportDevicesFromCsv:
         ns_result = await real_nautobot_service.graphql_query(
             f'query {{ namespaces(name: "{NAMESPACE_NAME}") {{ id }} }}'
         )
-        assert ns_result["data"]["namespaces"], f"Namespace '{NAMESPACE_NAME}' not found"
+        assert ns_result["data"]["namespaces"], (
+            f"Namespace '{NAMESPACE_NAME}' not found"
+        )
         logger.info("✓ Namespace '%s' exists", NAMESPACE_NAME)
 
         # Platform (optional — log warning if absent)
@@ -509,7 +517,9 @@ class TestImportDevicesFromCsv:
             f'query {{ devices(name: "{DEVICE_NAME}", location: ["{LOCATION_NAME}"]) {{ id }} }}'
         )
         for existing in pre_check["data"]["devices"]:
-            logger.info("Pre-existing device found, adding to cleanup: %s", existing["id"])
+            logger.info(
+                "Pre-existing device found, adding to cleanup: %s", existing["id"]
+            )
             device_ids.append(existing["id"])
             # Delete it so the import starts from a clean state
             await real_nautobot_service.rest_request(
@@ -548,7 +558,7 @@ class TestImportDevicesFromCsv:
         # --- Verify device in Nautobot via GraphQL --------------------------------
         gql = f"""
         query {{
-          device(id: "{result['device_id']}") {{
+          device(id: "{result["device_id"]}") {{
             id
             name
             serial
@@ -591,9 +601,9 @@ class TestImportDevicesFromCsv:
         )
         assert loopback is not None, f"Interface '{INTERFACE_NAME}' not found"
         assert loopback["type"].lower() == INTERFACE_TYPE.lower()
-        assert any(
-            ip["address"] == IP_ADDRESS for ip in loopback["ip_addresses"]
-        ), f"IP {IP_ADDRESS} not found on interface; got: {loopback['ip_addresses']}"
+        assert any(ip["address"] == IP_ADDRESS for ip in loopback["ip_addresses"]), (
+            f"IP {IP_ADDRESS} not found on interface; got: {loopback['ip_addresses']}"
+        )
 
         # --- Verify auto-created prefix -------------------------------------------
         pfx_result = await real_nautobot_service.graphql_query(
@@ -661,8 +671,12 @@ class TestImportDevicesFromCsv:
             add_prefixes_automatically=True,
         )
 
-        assert second["success"] is True, f"Second import failed: {second.get('message')}"
-        assert second["created"] is False, "Device already existed — created must be False"
+        assert second["success"] is True, (
+            f"Second import failed: {second.get('message')}"
+        )
+        assert second["created"] is False, (
+            "Device already existed — created must be False"
+        )
         assert second["device_id"] is not None
 
         logger.info(
@@ -716,9 +730,9 @@ class TestImportDevicesFromCsv:
             )
 
         error = str(exc_info.value).lower()
-        assert any(kw in error for kw in ["already exists", "duplicate", "unique", "name"]), (
-            f"Expected a duplicate-device error, got: {exc_info.value}"
-        )
+        assert any(
+            kw in error for kw in ["already exists", "duplicate", "unique", "name"]
+        ), f"Expected a duplicate-device error, got: {exc_info.value}"
 
         logger.info(
             "✓ Duplicate device correctly rejected when skip_if_exists=False: %s",
@@ -754,14 +768,14 @@ GENERIC_COLUMN_MAPPING: dict[str, str | None] = {
 # CSV contains only the device name and the IP address.
 GENERIC_IMPORT_DEFAULTS: dict[str, str] = {
     # Device-level mandatory fields
-    "device_type": DEVICE_TYPE_MODEL,   # "networkA" — resolved by name
+    "device_type": DEVICE_TYPE_MODEL,  # "networkA" — resolved by name
     "manufacturer": MANUFACTURER_NAME,  # "NetworkInc" — helps disambiguate device_type
-    "role": ROLE_NAME,                  # "Network"
-    "status": STATUS_NAME,              # "Active"
+    "role": ROLE_NAME,  # "Network"
+    "status": STATUS_NAME,  # "Active"
     "location": GENERIC_LOCATION_NAME,  # "City A"
     # Interface defaults
-    "interface_name": INTERFACE_NAME,   # "Loopback"
-    "interface_type": INTERFACE_TYPE,   # "virtual"
+    "interface_name": INTERFACE_NAME,  # "Loopback"
+    "interface_type": INTERFACE_TYPE,  # "virtual"
     "interface_status": INTERFACE_STATUS,
     "interface_namespace": NAMESPACE_NAME,  # "Global"
 }
@@ -954,7 +968,7 @@ class TestImportDevicesFromGenericCsv:
         # --- Verify in Nautobot via GraphQL ---------------------------------------
         gql = f"""
         query {{
-          device(id: "{result['device_id']}") {{
+          device(id: "{result["device_id"]}") {{
             id
             name
             role {{ name }}
@@ -989,7 +1003,9 @@ class TestImportDevicesFromGenericCsv:
         assert loopback["type"].lower() == INTERFACE_TYPE.lower()
         assert any(
             ip["address"] == GENERIC_IP_ADDRESS for ip in loopback["ip_addresses"]
-        ), f"IP {GENERIC_IP_ADDRESS} not found on interface; got: {loopback['ip_addresses']}"
+        ), (
+            f"IP {GENERIC_IP_ADDRESS} not found on interface; got: {loopback['ip_addresses']}"
+        )
 
         # --- Verify auto-created prefix -------------------------------------------
         pfx_result = await real_nautobot_service.graphql_query(
@@ -1059,7 +1075,7 @@ class TestImportDevicesFromGenericCsv:
         # Verify the device has no serial (generic CSV provides none)
         gql = f"""
         query {{
-          device(id: "{result['device_id']}") {{
+          device(id: "{result["device_id"]}") {{
             serial
             platform {{ name }}
           }}

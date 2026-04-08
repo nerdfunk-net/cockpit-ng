@@ -85,6 +85,7 @@ def cache_all_locations_task(self, job_run_id: int = None) -> Dict[str, Any]:
             }
             if job_run_id:
                 import job_run_manager
+
                 job_run_manager.mark_completed(job_run_id, result=result)
             return result
 
@@ -123,13 +124,17 @@ def cache_all_locations_task(self, job_run_id: int = None) -> Dict[str, Any]:
         }
         if job_run_id:
             import job_run_manager
+
             job_run_manager.mark_completed(job_run_id, result=result)
         return result
 
     except Exception as e:
         error_msg = str(e)
         logger.error(
-            "Task %s failed with exception: %s", self.request.id, error_msg, exc_info=True
+            "Task %s failed with exception: %s",
+            self.request.id,
+            error_msg,
+            exc_info=True,
         )
         result = {
             "status": "failed",
@@ -138,5 +143,6 @@ def cache_all_locations_task(self, job_run_id: int = None) -> Dict[str, Any]:
         }
         if job_run_id:
             import job_run_manager
+
             job_run_manager.mark_failed(job_run_id, error_msg)
         return result

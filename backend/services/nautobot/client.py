@@ -7,7 +7,11 @@ import httpx
 import logging
 from typing import Any
 
-from .common.exceptions import NautobotValidationError, NautobotAPIError, NautobotNotFoundError
+from .common.exceptions import (
+    NautobotValidationError,
+    NautobotAPIError,
+    NautobotNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 

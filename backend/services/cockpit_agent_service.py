@@ -117,7 +117,9 @@ class CockpitAgentService:
             start_time = time.time()
             while time.time() - start_time < timeout:
                 try:
-                    message = pubsub.get_message(ignore_subscribe_messages=True, timeout=_POLL_INTERVAL)
+                    message = pubsub.get_message(
+                        ignore_subscribe_messages=True, timeout=_POLL_INTERVAL
+                    )
                 except redis.exceptions.TimeoutError:
                     # No message within the poll window — check elapsed time and retry.
                     continue
