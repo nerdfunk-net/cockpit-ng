@@ -348,8 +348,15 @@ class InventoryQueryService:
         devices_data = result.get("data", {}).get("devices", [])
         return self._parse_device_data(devices_data)
 
-    async def _query_devices_by_role(self, role_filter: str) -> List[DeviceInfo]:
-        """Query devices by role using GraphQL."""
+    async def _query_devices_by_role(
+        self, role_filter: str, use_negation: bool = False
+    ) -> List[DeviceInfo]:
+        """Query devices by role using GraphQL.
+
+        Args:
+            role_filter: Role name to filter by
+            use_negation: Use negation (role__n) to exclude devices with this role
+        """
         import service_factory
 
         nautobot_service = service_factory.build_nautobot_service()
@@ -360,38 +367,40 @@ class InventoryQueryService:
             logger.warning("Empty role_filter provided, returning empty result")
             return []
 
-        query = """
-        query devices_by_role($role_filter: [String]) {
-            devices(role: $role_filter) {
+        filter_arg = "role__n" if use_negation else "role"
+
+        query = f"""
+        query devices_by_role($role_filter: [String]) {{
+            devices({filter_arg}: $role_filter) {{
                 id
                 name
                 serial
-                primary_ip4 {
+                primary_ip4 {{
                     address
-                }
-                status {
+                }}
+                status {{
                     name
-                }
-                device_type {
+                }}
+                device_type {{
                     model
-                    manufacturer {
+                    manufacturer {{
                         name
-                    }
-                }
-                role {
+                    }}
+                }}
+                role {{
                     name
-                }
-                location {
+                }}
+                location {{
                     name
-                }
-                tags {
+                }}
+                tags {{
                     name
-                }
-                platform {
+                }}
+                platform {{
                     name
-                }
-            }
-        }
+                }}
+            }}
+        }}
         """
 
         variables = {"role_filter": [role_filter]}
@@ -500,9 +509,14 @@ class InventoryQueryService:
         return self._parse_device_data(result.get("data", {}).get("devices", []))
 
     async def _query_devices_by_devicetype(
-        self, devicetype_filter: str
+        self, devicetype_filter: str, use_negation: bool = False
     ) -> List[DeviceInfo]:
-        """Query devices by device type using GraphQL."""
+        """Query devices by device type using GraphQL.
+
+        Args:
+            devicetype_filter: Device type name to filter by
+            use_negation: Use negation (device_type__n) to exclude devices of this type
+        """
         import service_factory
 
         nautobot_service = service_factory.build_nautobot_service()
@@ -513,38 +527,40 @@ class InventoryQueryService:
             logger.warning("Empty devicetype_filter provided, returning empty result")
             return []
 
-        query = """
-        query devices_by_devicetype($devicetype_filter: [String]) {
-            devices(device_type: $devicetype_filter) {
+        filter_arg = "device_type__n" if use_negation else "device_type"
+
+        query = f"""
+        query devices_by_devicetype($devicetype_filter: [String]) {{
+            devices({filter_arg}: $devicetype_filter) {{
                 id
                 name
                 serial
-                primary_ip4 {
+                primary_ip4 {{
                     address
-                }
-                status {
+                }}
+                status {{
                     name
-                }
-                device_type {
+                }}
+                device_type {{
                     model
-                    manufacturer {
+                    manufacturer {{
                         name
-                    }
-                }
-                role {
+                    }}
+                }}
+                role {{
                     name
-                }
-                location {
+                }}
+                location {{
                     name
-                }
-                tags {
+                }}
+                tags {{
                     name
-                }
-                platform {
+                }}
+                platform {{
                     name
-                }
-            }
-        }
+                }}
+            }}
+        }}
         """
 
         variables = {"devicetype_filter": [devicetype_filter]}
@@ -553,9 +569,14 @@ class InventoryQueryService:
         return self._parse_device_data(result.get("data", {}).get("devices", []))
 
     async def _query_devices_by_manufacturer(
-        self, manufacturer_filter: str
+        self, manufacturer_filter: str, use_negation: bool = False
     ) -> List[DeviceInfo]:
-        """Query devices by manufacturer using GraphQL."""
+        """Query devices by manufacturer using GraphQL.
+
+        Args:
+            manufacturer_filter: Manufacturer name to filter by
+            use_negation: Use negation (manufacturer__n) to exclude devices from this manufacturer
+        """
         import service_factory
 
         nautobot_service = service_factory.build_nautobot_service()
@@ -566,38 +587,40 @@ class InventoryQueryService:
             logger.warning("Empty manufacturer_filter provided, returning empty result")
             return []
 
-        query = """
-        query devices_by_manufacturer($manufacturer_filter: [String]) {
-            devices(manufacturer: $manufacturer_filter) {
+        filter_arg = "manufacturer__n" if use_negation else "manufacturer"
+
+        query = f"""
+        query devices_by_manufacturer($manufacturer_filter: [String]) {{
+            devices({filter_arg}: $manufacturer_filter) {{
                 id
                 name
                 serial
-                primary_ip4 {
+                primary_ip4 {{
                     address
-                }
-                status {
+                }}
+                status {{
                     name
-                }
-                device_type {
+                }}
+                device_type {{
                     model
-                    manufacturer {
+                    manufacturer {{
                         name
-                    }
-                }
-                role {
+                    }}
+                }}
+                role {{
                     name
-                }
-                location {
+                }}
+                location {{
                     name
-                }
-                tags {
+                }}
+                tags {{
                     name
-                }
-                platform {
+                }}
+                platform {{
                     name
-                }
-            }
-        }
+                }}
+            }}
+        }}
         """
 
         variables = {"manufacturer_filter": [manufacturer_filter]}

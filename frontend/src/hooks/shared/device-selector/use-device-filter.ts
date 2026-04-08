@@ -96,9 +96,6 @@ export function useDeviceFilter() {
   // Helper function to update operator options based on field type
   const updateOperatorOptions = useCallback((fieldName: string) => {
     const restrictedFields = [
-      'role',
-      'device_type',
-      'manufacturer',
       'platform',
       'has_primary',
     ]
@@ -107,7 +104,7 @@ export function useDeviceFilter() {
     if (restrictedFields.includes(fieldName)) {
       setOperatorOptionsOverride([{ value: 'equals', label: 'Equals' }])
       setCurrentOperator('equals')
-    } else if (fieldName === 'location' || fieldName === 'tag') {
+    } else if (fieldName === 'role' || fieldName === 'manufacturer' || fieldName === 'device_type' || fieldName === 'status' || fieldName === 'location' || fieldName === 'tag') {
       // Location and Tag support equals and not_equals
       setOperatorOptionsOverride([
         { value: 'equals', label: 'Equals' },

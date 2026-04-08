@@ -233,6 +233,54 @@ class InventoryEvaluator:
                 )
                 return device_ids, len(devices_data), devices_dict
 
+            # Special handling for device_type with not_equals - use GraphQL device_type__n filter
+            if condition.field == "device_type" and condition.operator == "not_equals":
+                devices_data = await self.query_service._query_devices_by_devicetype(
+                    condition.value, use_negation=True
+                )
+                device_ids = {device.id for device in devices_data}
+                devices_dict = {device.id: device for device in devices_data}
+                logger.info(
+                    "Condition %s %s '%s' returned %s devices (using GraphQL device_type__n)",
+                    condition.field,
+                    condition.operator,
+                    condition.value,
+                    len(devices_data),
+                )
+                return device_ids, 1, devices_dict
+
+            # Special handling for manufacturer with not_equals - use GraphQL manufacturer__n filter
+            if condition.field == "manufacturer" and condition.operator == "not_equals":
+                devices_data = await self.query_service._query_devices_by_manufacturer(
+                    condition.value, use_negation=True
+                )
+                device_ids = {device.id for device in devices_data}
+                devices_dict = {device.id: device for device in devices_data}
+                logger.info(
+                    "Condition %s %s '%s' returned %s devices (using GraphQL manufacturer__n)",
+                    condition.field,
+                    condition.operator,
+                    condition.value,
+                    len(devices_data),
+                )
+                return device_ids, 1, devices_dict
+
+            # Special handling for role with not_equals - use GraphQL role__n filter
+            if condition.field == "role" and condition.operator == "not_equals":
+                devices_data = await self.query_service._query_devices_by_role(
+                    condition.value, use_negation=True
+                )
+                device_ids = {device.id for device in devices_data}
+                devices_dict = {device.id: device for device in devices_data}
+                logger.info(
+                    "Condition %s %s '%s' returned %s devices (using GraphQL role__n)",
+                    condition.field,
+                    condition.operator,
+                    condition.value,
+                    len(devices_data),
+                )
+                return device_ids, 1, devices_dict
+
             # Only name and location support contains matching
             if condition.field in ["name", "location"] and use_contains:
                 devices_data = await query_func(condition.value, use_contains=True)
