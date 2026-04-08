@@ -283,11 +283,11 @@ This represents: `(role = router) AND NOT (status = down OR status = maintenance
 **Field-Specific Operator Restrictions:**
 ```typescript
 // Exact match only
-restrictedFields = ['role', 'device_type', 'manufacturer', 'platform', 'has_primary']
+restrictedFields = ['platform', 'has_primary']
 → Operators: ['equals']
 
 // Exact match + negation
-['location', 'tag']
+['role', 'manufacturer', 'device_type', 'status', 'location', 'tag']
 → Operators: ['equals', 'not_equals']
 
 // Full text search
@@ -814,11 +814,11 @@ Each query method builds a GraphQL query with appropriate filters.
 **Example: _query_devices_by_role()**
 
 ```python
-def _query_devices_by_role(role_filter: str, operator: str) -> QueryResponse:
+def _query_devices_by_role(role_filter: str, use_negation: bool = False) -> QueryResponse:
     """
     Query devices by role.
 
-    GraphQL Filter: role: [String]
+    GraphQL Filter: role: [String] (equals) or role__n: [String] (not_equals)
     """
     query = """
         query devices_by_role($role: [String]) {
@@ -876,7 +876,22 @@ def _query_devices_by_role(role_filter: str, operator: str) -> QueryResponse:
    # - not_equals: location__n: [String]
    ```
 
-2. **Name (Regex):**
+2. **Role / Manufacturer / Device Type:**
+   ```python
+   # Direct GraphQL negation — no fetch-all required
+   # Operator support:
+   # - equals:     role: [String] / manufacturer: [String] / device_type: [String]
+   # - not_equals: role__n: [String] / manufacturer__n: [String] / device_type__n: [String]
+   ```
+
+3. **Status:**
+   ```python
+   # Operator support:
+   # - equals:     status: [String]
+   # - not_equals: fetch-all-then-subtract (status__n not wired up)
+   ```
+
+4. **Name (Regex):**
    ```python
    # Operator support:
    # - equals: name: [String]
