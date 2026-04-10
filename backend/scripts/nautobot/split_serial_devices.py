@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Split Nautobot devices that carry multiple comma-separated serial numbers.
+"""Split Nautobot devices that carry multiple serial numbers.
 
-For every device whose `serial` field contains more than one value (comma-
-separated), this script creates a copy in Nautobot for each extra serial:
+For every device whose `serial` field contains more than one value (separated
+by a configurable delimiter, default ","), this script creates a copy in
+Nautobot for each extra serial AND updates the original device to keep only
+the first serial number:
 
     fritz.box  serial="12345,67890"
+      → updates fritz.box  serial="12345"
       → creates fritz.box:2  serial="67890"
 
-The original device is left untouched.  The copies carry the same role,
-status, location, device_type, custom_fields, and tags as the original.
-Interfaces and IP addresses are NOT copied.
+The copies carry the same role, status, location, device_type, custom_fields,
+and tags as the original.  Interfaces and IP addresses are NOT copied.
 
 Usage
 -----
@@ -21,6 +23,9 @@ Usage
 
     # Run for real with verbose output
     python split_serial_devices.py --verbose
+
+    # Use a different delimiter (e.g. semicolon)
+    python split_serial_devices.py --separator ";"
 """
 
 from __future__ import annotations
@@ -39,6 +44,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from models.nautobot import AddDeviceRequest  # noqa: E402
 from services.nautobot.devices.creation import DeviceCreationService  # noqa: E402
+from services.nautobot.devices.update import DeviceUpdateService  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -55,6 +61,7 @@ logger = logging.getLogger(__name__)
 _DEVICES_QUERY = """
 {
   devices {
+    id
     name
     role {
       id
@@ -97,11 +104,11 @@ _DEVICES_QUERY = """
 # ---------------------------------------------------------------------------
 
 
-def _parse_serials(serial_field: str | None) -> list[str]:
+def _parse_serials(serial_field: str | None, separator: str = ",") -> list[str]:
     """Return a list of stripped serial numbers from a raw field value."""
     if not serial_field:
         return []
-    return [s.strip() for s in serial_field.split(",") if s.strip()]
+    return [s.strip() for s in serial_field.split(separator) if s.strip()]
 
 
 def _build_request(
@@ -147,20 +154,22 @@ async def run(
     name_filter: str | None,
     dry_run: bool,
     verbose: bool,
+    separator: str,
 ) -> int:
-    """Fetch devices, detect multi-serial entries, create copies.
+    """Fetch devices, detect multi-serial entries, create copies and update originals.
 
-    Returns 0 on full success, 1 if any creation failed.
+    Returns 0 on full success, 1 if any operation failed.
     """
     if verbose:
         logging.getLogger().setLevel(logging.INFO)
 
     creation_service = DeviceCreationService()
+    update_service = DeviceUpdateService(creation_service._nb)
 
     # ------------------------------------------------------------------
     # Fetch all devices from Nautobot via GraphQL
     # ------------------------------------------------------------------
-    logger.info("Fetching devices from Nautobot…")
+    logger.info("Fetching devices from Nautobot...")
     result = await creation_service._nb.graphql_query(_DEVICES_QUERY)
 
     devices: list[dict[str, Any]] = result.get("data", {}).get("devices", [])
@@ -183,19 +192,49 @@ async def run(
 
     for device in devices:
         device_name: str = device.get("name") or "<unnamed>"
-        serials = _parse_serials(device.get("serial"))
+        device_id: str = device.get("id") or ""
+        serials = _parse_serials(device.get("serial"), separator)
 
         if len(serials) <= 1:
             if verbose:
                 print(f"SKIP  {device_name}  (single or empty serial)")
             continue
 
+        first_serial = serials[0]
+
         print(
             f"FOUND {device_name}  serial={device['serial']!r}"
-            f"  → will create {len(serials) - 1} copy/copies"
+            f"  → will update original + create {len(serials) - 1} copy/copies"
         )
 
+        # ------------------------------------------------------------------
+        # Update the original device to keep only the first serial
+        # ------------------------------------------------------------------
+        if dry_run:
+            print(
+                f"  [DRY RUN] Would update: {device_name}"
+                f"  (serial: {device['serial']!r} → {first_serial!r})"
+            )
+        else:
+            try:
+                await update_service.update_device(
+                    device_identifier={"id": device_id},
+                    update_data={"serial": first_serial},
+                )
+                print(
+                    f"  Updated:  {device_name}"
+                    f"  (serial: {device['serial']!r} → {first_serial!r})"
+                )
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"  ERROR updating {device_name}: {exc}",
+                    file=sys.stderr,
+                )
+                had_error = True
+
+        # ------------------------------------------------------------------
         # Create one copy per extra serial (index 1, 2, …)
+        # ------------------------------------------------------------------
         for idx, serial in enumerate(serials[1:], start=2):
             if "." in device_name:
                 hostname, _, rest = device_name.partition(".")
@@ -240,8 +279,8 @@ async def run(
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Split Nautobot devices with multiple comma-separated serial numbers "
-            "by creating a copy for each extra serial."
+            "Split Nautobot devices with multiple serial numbers "
+            "by updating the original and creating a copy for each extra serial."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
@@ -260,13 +299,20 @@ def main() -> None:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Print what would be created without making any API calls.",
+        help="Print what would be changed without making any API calls.",
     )
     parser.add_argument(
         "--verbose",
         "-v",
         action="store_true",
         help="Also print devices that are skipped (single serial).",
+    )
+    parser.add_argument(
+        "--separator",
+        "-s",
+        default=",",
+        metavar="CHAR",
+        help="Delimiter used to split multiple serial numbers (default: ',').",
     )
     args = parser.parse_args()
 
@@ -275,6 +321,7 @@ def main() -> None:
             name_filter=args.name_filter,
             dry_run=args.dry_run,
             verbose=args.verbose,
+            separator=args.separator,
         )
     )
     sys.exit(exit_code)

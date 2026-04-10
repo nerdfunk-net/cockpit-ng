@@ -76,7 +76,10 @@ interface ConditionTreeBuilderProps {
     isLoadingPreview: boolean
     showActions?: boolean
     showSaveLoad?: boolean
-    onOpenSaveModal: () => void
+    loadedInventoryName?: string
+    onSaveCurrent?: () => void
+    isSavingCurrent?: boolean
+    onOpenSaveAsModal: () => void
     onOpenLoadModal: () => void
     onOpenManageModal: () => void
     onShowHelp: () => void
@@ -120,7 +123,10 @@ export function ConditionTreeBuilder({
     isLoadingPreview,
     showActions = true,
     showSaveLoad = true,
-    onOpenSaveModal,
+    loadedInventoryName,
+    onSaveCurrent,
+    isSavingCurrent,
+    onOpenSaveAsModal,
     onOpenLoadModal,
     onOpenManageModal,
     onShowHelp,
@@ -191,6 +197,11 @@ export function ConditionTreeBuilder({
                 <div className="flex items-center space-x-2">
                     <Filter className="h-4 w-4" />
                     <span className="text-sm font-medium">Device Filter</span>
+                    {loadedInventoryName && (
+                        <span className="text-xs text-white/80 bg-white/10 px-2 py-0.5 rounded ml-1">
+                            Inventory loaded: {loadedInventoryName}
+                        </span>
+                    )}
                 </div>
                 <button
                     onClick={onShowHelp}
@@ -473,12 +484,22 @@ export function ConditionTreeBuilder({
                         {showSaveLoad && (
                             <>
                                 <Button
-                                    onClick={onOpenSaveModal}
-                                    disabled={conditionTree.items.length === 0}
+                                    onClick={onSaveCurrent}
+                                    disabled={!loadedInventoryName || conditionTree.items.length === 0 || isSavingCurrent}
                                     className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white border-0"
+                                    title={!loadedInventoryName ? 'Load an inventory first to use Save' : 'Overwrite the loaded inventory'}
                                 >
                                     <Save className="h-4 w-4" />
-                                    <span>Save</span>
+                                    <span>{isSavingCurrent ? 'Saving...' : 'Save'}</span>
+                                </Button>
+                                <Button
+                                    onClick={onOpenSaveAsModal}
+                                    disabled={conditionTree.items.length === 0}
+                                    className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white border-0"
+                                    title="Save as a new inventory"
+                                >
+                                    <Save className="h-4 w-4" />
+                                    <span>Save as</span>
                                 </Button>
                                 <Button
                                     onClick={onOpenLoadModal}

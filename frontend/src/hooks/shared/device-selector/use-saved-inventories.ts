@@ -4,6 +4,14 @@ import {
     ConditionTree,
     ConditionItem
 } from '@/types/shared/device-selector'
+
+export interface LoadedInventoryData {
+    tree: ConditionTree
+    id: number
+    name: string
+    description?: string
+    scope: string
+}
 import {
     useSavedInventoriesQuery,
     useSaveInventoryMutation,
@@ -100,10 +108,14 @@ export function useSavedInventories() {
         return tree
     }
 
-    const loadInventory = async (inventoryId: number): Promise<ConditionTree | null> => {
+    const loadInventory = async (inventoryId: number): Promise<LoadedInventoryData | null> => {
         try {
             // Make direct API call to load inventory by ID (not by name to avoid ambiguity)
             const response = await apiCall<{
+                id: number
+                name: string
+                description?: string
+                scope: string
                 conditions: LogicalCondition[] | Array<{ version: number; tree: ConditionTree }>
             }>(`inventory/${inventoryId}`)
 
@@ -112,18 +124,28 @@ export function useSavedInventories() {
             }
 
             // Check if this is a new tree structure (version 2) or legacy flat format
+            let tree: ConditionTree | null = null
             if (response.conditions && response.conditions.length > 0) {
                 const firstItem = response.conditions[0]
 
                 if (firstItem && typeof firstItem === 'object' && 'version' in firstItem && firstItem.version === 2) {
                     // New tree structure format
-                    return firstItem.tree
+                    tree = firstItem.tree
                 } else {
                     // Legacy flat conditions format
-                    return flatConditionsToTree(response.conditions as LogicalCondition[])
+                    tree = flatConditionsToTree(response.conditions as LogicalCondition[])
                 }
             }
-            return null
+
+            if (!tree) return null
+
+            return {
+                tree,
+                id: response.id,
+                name: response.name,
+                description: response.description,
+                scope: response.scope,
+            }
         } catch (error) {
             console.error('Error loading inventory:', error)
             throw error

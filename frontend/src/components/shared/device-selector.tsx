@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   DeviceSelectorProps,
   LogicalCondition,
@@ -21,6 +21,7 @@ import { useConditionTree } from '@/hooks/shared/device-selector/use-condition-t
 import { useDeviceFilter } from '@/hooks/shared/device-selector/use-device-filter'
 import { useDevicePreview } from '@/hooks/shared/device-selector/use-device-preview'
 import { useSavedInventories } from '@/hooks/shared/device-selector/use-saved-inventories'
+import type { LoadedInventoryData } from '@/hooks/shared/device-selector/use-saved-inventories'
 
 import { ConditionTreeBuilder } from '@/components/shared/device-selector-components/condition-tree-builder'
 import { DeviceTable } from '@/components/shared/device-selector-components/device-table'
@@ -141,6 +142,9 @@ export function DeviceSelector({
   const [showLogicalTreeModal, setShowLogicalTreeModal] = useState(false)
   const [showHelpModal, setShowHelpModal] = useState(false)
 
+  // Track the currently loaded inventory for Save / Save as
+  const [loadedInventory, setLoadedInventory] = useState<Pick<LoadedInventoryData, 'id' | 'name' | 'description' | 'scope'> | null>(null)
+
   // -- EFFECTS --
 
   // Sync with initial props
@@ -184,9 +188,10 @@ export function DeviceSelector({
 
   const handleLoadInventory = async (id: number) => {
     try {
-      const loadedTree = await loadInventory(id)
-      if (loadedTree) {
-        setConditionTree(loadedTree)
+      const result = await loadInventory(id)
+      if (result) {
+        setConditionTree(result.tree)
+        setLoadedInventory({ id: result.id, name: result.name, description: result.description, scope: result.scope })
         setShowPreviewResults(false)
         setShowLoadModal(false)
         // Notify parent component that an inventory was loaded
@@ -196,6 +201,22 @@ export function DeviceSelector({
       alert('Error loading inventory: ' + (error as Error).message)
     }
   }
+
+  const handleDirectSave = useCallback(async () => {
+    if (!loadedInventory) return
+    try {
+      await saveInventory(
+        loadedInventory.name,
+        loadedInventory.description ?? '',
+        loadedInventory.scope,
+        conditionTree,
+        true,
+        loadedInventory.id
+      )
+    } catch (e) {
+      alert('Error saving inventory: ' + (e as Error).message)
+    }
+  }, [loadedInventory, conditionTree, saveInventory])
 
   const handleExportInventory = async (id: number) => {
     try {
@@ -263,7 +284,10 @@ export function DeviceSelector({
         showActions={showActions}
         showSaveLoad={showSaveLoad}
 
-        onOpenSaveModal={handleOpenSaveModal}
+        loadedInventoryName={loadedInventory?.name}
+        onSaveCurrent={handleDirectSave}
+        isSavingCurrent={isSavingInventory}
+        onOpenSaveAsModal={handleOpenSaveModal}
         onOpenLoadModal={handleOpenLoadModal}
         onOpenManageModal={handleOpenManageModal}
         onShowHelp={() => setShowHelpModal(true)}
@@ -295,6 +319,8 @@ export function DeviceSelector({
         onSave={handleSaveInventory}
         isSaving={isSavingInventory}
         savedInventories={savedInventories}
+        initialName={loadedInventory?.name}
+        initialDescription={loadedInventory?.description}
       />
 
       <LoadInventoryModal

@@ -247,10 +247,10 @@ class LocationImporter:
         """Extract integer rack width from a value like '19 inches' or 19."""
         return int(str(width_value).split()[0])
 
-    async def resolve_rack_id(self, rack_name: str) -> Optional[str]:
-        """Check whether a rack with this name already exists in Nautobot."""
+    async def resolve_rack_id(self, rack_name: str, location_name: str) -> Optional[str]:
+        """Check whether a rack with this name and location already exists in Nautobot."""
         response = await self.nautobot.rest_request(
-            f"dcim/racks/?name={rack_name}", method="GET"
+            f"dcim/racks/?name={rack_name}&location={location_name}", method="GET"
         )
         if response.get("count", 0) > 0:
             return response["results"][0]["id"]
@@ -292,22 +292,33 @@ class LocationImporter:
         return rack_id
 
     async def import_racks(
-        self, rows: List[Dict[str, str]], defaults: Dict[str, Any]
+        self,
+        rows: List[Dict[str, str]],
+        defaults: Dict[str, Any],
+        location_col: Optional[str] = None,
     ) -> Dict[str, int]:
-        """Import racks from CSV rows using the deepest imported location as the rack location."""
-        if not self._rack_location_type:
-            logger.warning(
-                "No 'location' defined for Rack in dependencies; skipping rack import"
-            )
-            return {"created": 0, "skipped": 0, "errors": 0}
+        """Import racks from CSV rows.
 
-        rack_location_csv_col = self._nautobot_to_csv.get(self._rack_location_type)
-        if not rack_location_csv_col:
-            logger.error(
-                "Rack location type '%s' is not in the import list; cannot find CSV column",
-                self._rack_location_type,
-            )
-            return {"created": 0, "skipped": 0, "errors": 0}
+        The rack location CSV column is determined by:
+        1. ``location_col`` if provided (from ``defaults.location`` in config)
+        2. The column mapped to the location type declared in ``dependencies[].location``
+        """
+        if location_col:
+            rack_location_csv_col = location_col
+        else:
+            if not self._rack_location_type:
+                logger.warning(
+                    "No 'location' defined for Rack in dependencies; skipping rack import"
+                )
+                return {"created": 0, "skipped": 0, "errors": 0}
+
+            rack_location_csv_col = self._nautobot_to_csv.get(self._rack_location_type)
+            if not rack_location_csv_col:
+                logger.error(
+                    "Rack location type '%s' is not in the import list; cannot find CSV column",
+                    self._rack_location_type,
+                )
+                return {"created": 0, "skipped": 0, "errors": 0}
 
         stats = {"created": 0, "skipped": 0, "errors": 0}
         print("\n--- Importing Rack (column: rack) ---")
@@ -326,7 +337,7 @@ class LocationImporter:
             location_name = self.map_value(rack_location_csv_col, location_csv_value)
 
             try:
-                existing_id = await self.resolve_rack_id(rack_name)
+                existing_id = await self.resolve_rack_id(rack_name, location_name)
                 if existing_id:
                     print(f"  SKIP   {rack_name}")
                     stats["skipped"] += 1
@@ -396,8 +407,10 @@ class LocationImporter:
                     stats["errors"] += 1
                     print(f"  ERROR  {location_name}: {exc}")
 
-        rack_defaults = self.config.get("defaults", {}).get("rack", {})
-        rack_stats = await self.import_racks(rows, rack_defaults)
+        defaults_section = self.config.get("defaults", {})
+        rack_defaults = defaults_section.get("rack", {})
+        location_col_override = defaults_section.get("location")
+        rack_stats = await self.import_racks(rows, rack_defaults, location_col_override)
         for key in stats:
             stats[key] += rack_stats[key]
 

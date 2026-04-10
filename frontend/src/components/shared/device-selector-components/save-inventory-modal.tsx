@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,8 @@ interface SaveInventoryModalProps {
     onSave: (name: string, description: string, scope: string, isUpdate: boolean, existingId?: number) => Promise<boolean>
     isSaving: boolean
     savedInventories: Array<{ id: number; name: string }>
+    initialName?: string
+    initialDescription?: string
 }
 
 export function SaveInventoryModal({
@@ -20,13 +22,26 @@ export function SaveInventoryModal({
     onClose,
     onSave,
     isSaving,
-    savedInventories
+    savedInventories,
+    initialName,
+    initialDescription
 }: SaveInventoryModalProps) {
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
     const [scope, setScope] = useState<string>('global')
     const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false)
     const [inventoryToOverwrite, setInventoryToOverwrite] = useState<{ id: number; name: string } | null>(null)
+
+    // Reset and pre-fill form whenever the modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setName(initialName ?? '')
+            setDescription(initialDescription ?? '')
+            setScope('global')
+            setShowOverwriteConfirm(false)
+            setInventoryToOverwrite(null)
+        }
+    }, [isOpen, initialName, initialDescription])
 
     const handleSaveClick = async () => {
         if (!name.trim()) {

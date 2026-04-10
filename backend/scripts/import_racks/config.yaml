@@ -35,3 +35,5 @@ defaults:
     type: 4-post-cabinet
     width: 19 inches
     height: 42
+  # use the following column as location to get the UUID of the rack
+  location: room

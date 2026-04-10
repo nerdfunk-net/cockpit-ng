@@ -7,6 +7,7 @@ import React from 'react'
 import { useSavedInventories } from './use-saved-inventories'
 import { useApi } from '@/hooks/use-api'
 import type { ConditionTree } from '@/types/shared/device-selector'
+import type { LoadedInventoryData } from './use-saved-inventories'
 import * as savedInventoriesQueries from '@/hooks/queries/use-saved-inventories-queries'
 
 // Mock dependencies
@@ -237,6 +238,10 @@ describe('useSavedInventories', () => {
   describe('loadInventory', () => {
     it('should load inventory with tree structure (version 2)', async () => {
       const apiCallMock = vi.fn().mockResolvedValue({
+        id: 1,
+        name: 'Production Routers',
+        description: 'All production routers',
+        scope: 'global',
         conditions: [{
           version: 2,
           tree: mockConditionTree
@@ -253,14 +258,18 @@ describe('useSavedInventories', () => {
         wrapper: createWrapper()
       })
 
-      let loadedTree: ConditionTree | null = null
+      let loaded: LoadedInventoryData | null = null
 
       await act(async () => {
-        loadedTree = await result.current.loadInventory('Production Routers')
+        loaded = await result.current.loadInventory(1)
       })
 
-      expect(apiCallMock).toHaveBeenCalledWith('inventory/by-name/Production%20Routers')
-      expect(loadedTree).toEqual(mockConditionTree)
+      expect(apiCallMock).toHaveBeenCalledWith('inventory/1')
+      expect(loaded).not.toBeNull()
+      expect(loaded!.tree).toEqual(mockConditionTree)
+      expect(loaded!.id).toBe(1)
+      expect(loaded!.name).toBe('Production Routers')
+      expect(loaded!.scope).toBe('global')
     })
 
     it('should load legacy flat conditions and convert to tree', async () => {
@@ -270,6 +279,9 @@ describe('useSavedInventories', () => {
       ]
 
       const apiCallMock = vi.fn().mockResolvedValue({
+        id: 2,
+        name: 'Old Inventory',
+        scope: 'global',
         conditions: legacyConditions
       })
 
@@ -283,16 +295,16 @@ describe('useSavedInventories', () => {
         wrapper: createWrapper()
       })
 
-      let loadedTree: ConditionTree | null = null
+      let loaded: LoadedInventoryData | null = null
 
       await act(async () => {
-        loadedTree = await result.current.loadInventory('Old Inventory')
+        loaded = await result.current.loadInventory(2)
       })
 
-      expect(loadedTree).toBeDefined()
-      expect(loadedTree!.type).toBe('root')
-      expect(loadedTree!.items).toHaveLength(2)
-      expect(loadedTree!.items[0]).toMatchObject({
+      expect(loaded).not.toBeNull()
+      expect(loaded!.tree.type).toBe('root')
+      expect(loaded!.tree.items).toHaveLength(2)
+      expect(loaded!.tree.items[0]).toMatchObject({
         field: 'device_type',
         operator: 'equals',
         value: 'Router'
@@ -301,6 +313,9 @@ describe('useSavedInventories', () => {
 
     it('should return null for empty conditions', async () => {
       const apiCallMock = vi.fn().mockResolvedValue({
+        id: 3,
+        name: 'Empty Inventory',
+        scope: 'global',
         conditions: []
       })
 
@@ -314,13 +329,13 @@ describe('useSavedInventories', () => {
         wrapper: createWrapper()
       })
 
-      let loadedTree: ConditionTree | null = null
+      let loaded: LoadedInventoryData | null = null
 
       await act(async () => {
-        loadedTree = await result.current.loadInventory('Empty Inventory')
+        loaded = await result.current.loadInventory(3)
       })
 
-      expect(loadedTree).toBeNull()
+      expect(loaded).toBeNull()
     })
 
     it('should handle load errors', async () => {
@@ -339,7 +354,7 @@ describe('useSavedInventories', () => {
 
       await expect(async () => {
         await act(async () => {
-          await result.current.loadInventory('Broken Inventory')
+          await result.current.loadInventory(99)
         })
       }).rejects.toThrow('Network error')
 
@@ -445,6 +460,9 @@ describe('useSavedInventories', () => {
       ]
 
       const apiCallMock = vi.fn().mockResolvedValue({
+        id: 10,
+        name: 'Test',
+        scope: 'global',
         conditions: flatConditions
       })
 
@@ -458,15 +476,15 @@ describe('useSavedInventories', () => {
         wrapper: createWrapper()
       })
 
-      let tree: ConditionTree | null = null
+      let loaded: LoadedInventoryData | null = null
       await act(async () => {
-        tree = await result.current.loadInventory('Test')
+        loaded = await result.current.loadInventory(10)
       })
-      
-      expect(tree).toBeDefined()
-      expect(tree!.type).toBe('root')
-      expect(tree!.internalLogic).toBe('AND')
-      expect(tree!.items).toHaveLength(2)
+
+      expect(loaded).not.toBeNull()
+      expect(loaded!.tree.type).toBe('root')
+      expect(loaded!.tree.internalLogic).toBe('AND')
+      expect(loaded!.tree.items).toHaveLength(2)
     })
   })
 })
