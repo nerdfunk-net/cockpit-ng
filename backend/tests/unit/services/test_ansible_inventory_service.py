@@ -631,77 +631,74 @@ class TestGraphQLQueryConstruction:
             assert variables.get("location_filter") == ["data"]
 
     @pytest.mark.asyncio
-    async def test_name_contains_builds_correct_query(self, mock_nautobot_service):
-        """Test that name filter with contains operator uses regex."""
-        # Arrange
+    async def test_name_contains_filters_in_memory(self, mock_nautobot_service):
+        """Test that name/contains uses in-memory filtering against the cached device list."""
         with patch(
             "service_factory.build_nautobot_service", return_value=mock_nautobot_service
         ):
             mock_nautobot_service.graphql_query = AsyncMock(
-                return_value={"data": {"devices": []}}
+                return_value={
+                    "data": {
+                        "devices": [
+                            {"id": "1", "name": "switch-01", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                            {"id": "2", "name": "router-01", "role": {"name": "core"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "RT", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                            {"id": "3", "name": "switch-02", "role": {"name": "access"}, "location": {"name": "DC2"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                        ]
+                    }
+                }
             )
 
             operations = [
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(
-                            field="name", operator="contains", value="switch"
-                        )
+                        LogicalCondition(field="name", operator="contains", value="switch")
                     ],
                 )
             ]
 
-            # Act
-            await self.service.preview_inventory(operations)
+            devices, _ = await self.service.preview_inventory(operations)
 
-            # Assert
-            call_args = mock_nautobot_service.graphql_query.call_args
-            query = call_args[0][0]
-            variables = call_args[0][1]
-
-            # Verify query uses case-insensitive regex filter
-            assert "name__ire:" in query or "__ire:" in query
-            assert variables.get("name_filter") == ["switch"]
+            # Should return both switch devices, not the router
+            assert len(devices) == 2
+            returned_names = {d.name for d in devices}
+            assert returned_names == {"switch-01", "switch-02"}
 
     @pytest.mark.asyncio
-    async def test_name_equals_builds_correct_query(self, mock_nautobot_service):
-        """Test that name filter with equals operator uses exact match."""
-        # Arrange
+    async def test_name_equals_filters_in_memory(self, mock_nautobot_service):
+        """Test that name/equals uses exact in-memory matching."""
         with patch(
             "service_factory.build_nautobot_service", return_value=mock_nautobot_service
         ):
             mock_nautobot_service.graphql_query = AsyncMock(
-                return_value={"data": {"devices": []}}
+                return_value={
+                    "data": {
+                        "devices": [
+                            {"id": "1", "name": "switch-01", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                            {"id": "2", "name": "switch-02", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                        ]
+                    }
+                }
             )
 
             operations = [
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(
-                            field="name", operator="equals", value="switch-01"
-                        )
+                        LogicalCondition(field="name", operator="equals", value="switch-01")
                     ],
                 )
             ]
 
-            # Act
-            await self.service.preview_inventory(operations)
+            devices, _ = await self.service.preview_inventory(operations)
 
-            # Assert
-            call_args = mock_nautobot_service.graphql_query.call_args
-            query = call_args[0][0]
-            variables = call_args[0][1]
-
-            # Verify query uses exact name match (not __ire)
-            assert "name:" in query and "name__ire:" not in query
-            assert variables.get("name_filter") == ["switch-01"]
+            assert len(devices) == 1
+            assert devices[0].name == "switch-01"
 
     @pytest.mark.asyncio
-    async def test_and_conditions_make_multiple_queries(self, mock_nautobot_service):
-        """Test that AND with multiple conditions makes separate GraphQL queries."""
-        # Arrange
+    async def test_and_conditions_location_live_others_cached(self, mock_nautobot_service):
+        """Test that AND with location+role+status makes 2 GraphQL calls:
+        one for location (always live) and one for all-devices fallback (role+status share it)."""
         with patch(
             "service_factory.build_nautobot_service", return_value=mock_nautobot_service
         ):
@@ -713,126 +710,111 @@ class TestGraphQLQueryConstruction:
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(
-                            field="location", operator="equals", value="DC1"
-                        ),
-                        LogicalCondition(
-                            field="role", operator="equals", value="access"
-                        ),
-                        LogicalCondition(
-                            field="status", operator="equals", value="Active"
-                        ),
+                        LogicalCondition(field="location", operator="equals", value="DC1"),
+                        LogicalCondition(field="role", operator="equals", value="access"),
+                        LogicalCondition(field="status", operator="equals", value="Active"),
                     ],
                 )
             ]
 
-            # Act
             await self.service.preview_inventory(operations)
 
-            # Assert - should make 3 separate GraphQL queries (one per condition)
-            assert mock_nautobot_service.graphql_query.call_count == 3
+            # location always calls Nautobot; role triggers one all-devices fallback;
+            # status reuses the warm per-instance cache → 2 total calls.
+            assert mock_nautobot_service.graphql_query.call_count == 2
 
     @pytest.mark.asyncio
-    async def test_role_filter_builds_correct_query(self, mock_nautobot_service):
-        """Test that role filter builds correct GraphQL query."""
-        # Arrange
+    async def test_role_filter_filters_in_memory(self, mock_nautobot_service):
+        """Test that role filter performs in-memory filtering on the cached device list."""
         with patch(
             "service_factory.build_nautobot_service", return_value=mock_nautobot_service
         ):
             mock_nautobot_service.graphql_query = AsyncMock(
-                return_value={"data": {"devices": []}}
+                return_value={
+                    "data": {
+                        "devices": [
+                            {"id": "1", "name": "sw-1", "role": {"name": "access-switch"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                            {"id": "2", "name": "rt-1", "role": {"name": "core"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "RT", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                        ]
+                    }
+                }
             )
 
             operations = [
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(
-                            field="role", operator="equals", value="access-switch"
-                        )
+                        LogicalCondition(field="role", operator="equals", value="access-switch")
                     ],
                 )
             ]
 
-            # Act
-            await self.service.preview_inventory(operations)
+            devices, _ = await self.service.preview_inventory(operations)
 
-            # Assert
-            call_args = mock_nautobot_service.graphql_query.call_args
-            query = call_args[0][0]
-            variables = call_args[0][1]
-
-            # Verify query uses role filter variable
-            assert "devices(role:" in query or "devices (role:" in query
-            assert variables.get("role_filter") == ["access-switch"]
+            assert len(devices) == 1
+            assert devices[0].role == "access-switch"
 
     @pytest.mark.asyncio
-    async def test_status_filter_builds_correct_query(self, mock_nautobot_service):
-        """Test that status filter builds correct GraphQL query."""
-        # Arrange
+    async def test_status_filter_filters_in_memory(self, mock_nautobot_service):
+        """Test that status filter performs in-memory filtering on the cached device list."""
         with patch(
             "service_factory.build_nautobot_service", return_value=mock_nautobot_service
         ):
             mock_nautobot_service.graphql_query = AsyncMock(
-                return_value={"data": {"devices": []}}
+                return_value={
+                    "data": {
+                        "devices": [
+                            {"id": "1", "name": "sw-1", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                            {"id": "2", "name": "sw-2", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Planned"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                        ]
+                    }
+                }
             )
 
             operations = [
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(
-                            field="status", operator="equals", value="Active"
-                        )
+                        LogicalCondition(field="status", operator="equals", value="Active")
                     ],
                 )
             ]
 
-            # Act
-            await self.service.preview_inventory(operations)
+            devices, _ = await self.service.preview_inventory(operations)
 
-            # Assert
-            call_args = mock_nautobot_service.graphql_query.call_args
-            query = call_args[0][0]
-            variables = call_args[0][1]
-
-            # Verify query uses status filter variable
-            assert "devices(status:" in query or "devices (status:" in query
-            assert variables.get("status_filter") == ["Active"]
+            assert len(devices) == 1
+            assert devices[0].status == "Active"
 
     @pytest.mark.asyncio
-    async def test_platform_filter_builds_correct_query(self, mock_nautobot_service):
-        """Test that platform filter builds correct GraphQL query."""
-        # Arrange
+    async def test_platform_filter_filters_in_memory(self, mock_nautobot_service):
+        """Test that platform filter performs in-memory filtering on the cached device list."""
         with patch(
             "service_factory.build_nautobot_service", return_value=mock_nautobot_service
         ):
             mock_nautobot_service.graphql_query = AsyncMock(
-                return_value={"data": {"devices": []}}
+                return_value={
+                    "data": {
+                        "devices": [
+                            {"id": "1", "name": "sw-1", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": {"name": "cisco_ios"}, "serial": None},
+                            {"id": "2", "name": "sw-2", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": {"name": "junos"}, "serial": None},
+                        ]
+                    }
+                }
             )
 
             operations = [
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(
-                            field="platform", operator="equals", value="cisco_ios"
-                        )
+                        LogicalCondition(field="platform", operator="equals", value="cisco_ios")
                     ],
                 )
             ]
 
-            # Act
-            await self.service.preview_inventory(operations)
+            devices, _ = await self.service.preview_inventory(operations)
 
-            # Assert
-            call_args = mock_nautobot_service.graphql_query.call_args
-            query = call_args[0][0]
-            variables = call_args[0][1]
-
-            # Verify query uses platform filter variable
-            assert "devices(platform:" in query or "devices (platform:" in query
-            assert variables.get("platform_filter") == ["cisco_ios"]
+            assert len(devices) == 1
+            assert devices[0].platform == "cisco_ios"
 
 
 # ==============================================================================

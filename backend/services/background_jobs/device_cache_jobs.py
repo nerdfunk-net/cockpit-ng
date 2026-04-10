@@ -71,6 +71,9 @@ def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
             platform {
               name
             }
+            tags {
+              name
+            }
             serial
             asset_tag
             comments
@@ -271,6 +274,7 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
               manufacturer { name }
             }
             platform { name }
+            tags { name }
             serial
             asset_tag
             comments

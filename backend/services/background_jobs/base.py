@@ -35,9 +35,13 @@ def extract_device_essentials(device: Dict[str, Any]) -> Dict[str, Optional[str]
     Returns:
         Dictionary with essential device fields
     """
+    tags_raw = device.get("tags") or []
+    tags = [t.get("name") for t in tags_raw if t.get("name")]
+
     return {
         "id": device.get("id"),
         "name": device.get("name"),
+        "serial": device.get("serial"),
         "role": device.get("role", {}).get("name") if device.get("role") else None,
         "location": device.get("location", {}).get("name")
         if device.get("location")
@@ -59,6 +63,7 @@ def extract_device_essentials(device: Dict[str, Any]) -> Dict[str, Optional[str]
         "platform": device.get("platform", {}).get("name")
         if device.get("platform")
         else None,
+        "tags": tags,
     }
 
 
