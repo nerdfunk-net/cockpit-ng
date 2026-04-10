@@ -1,5 +1,6 @@
 export type DeviceSource = 'nautobot' | 'checkmk' | 'both'
 export type SystemFilter = 'all' | 'both' | 'nautobot' | 'checkmk'
+export type ViewMode = 'nautobot_only' | 'combined' | null
 
 export interface DiffDevice {
   name: string
@@ -23,4 +24,11 @@ export interface DiffTaskResult {
   total_nautobot: number
   total_checkmk: number
   total_both: number
+}
+
+export interface DiffDataSnapshot {
+  devices: DiffDevice[]
+  totalNautobot: number
+  totalCheckmk: number
+  totalBoth: number
 }

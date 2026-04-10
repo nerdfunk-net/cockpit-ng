@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
-import { startDiffTask } from '../utils/diff-viewer.api'
+import { startDiffTask, fetchNautobotDevices } from '../utils/diff-viewer.api'
 import { useAuthStore } from '@/lib/auth-store'
-import type { DiffDevice, DiffTaskResult } from '../types'
+import type { DiffDevice, DiffTaskResult, DiffDataSnapshot } from '../types'
 import type { CeleryTaskStatus } from '../../sync-devices/types'
 
 const EMPTY_ARRAY: DiffDevice[] = []
@@ -91,6 +91,38 @@ export function useDiffDeviceLoader() {
     }
   }, [token, pollTask])
 
+  const loadNautobotDevices = useCallback(async () => {
+    if (!token) return
+    setState(prev => ({ ...prev, loading: true, error: null, taskStatus: null }))
+    try {
+      const { devices, total } = await fetchNautobotDevices(token)
+      setState({
+        devices,
+        totalNautobot: total,
+        totalCheckmk: 0,
+        totalBoth: 0,
+        loading: false,
+        error: null,
+        taskStatus: null,
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load Nautobot devices'
+      setState(prev => ({ ...prev, loading: false, error: message, taskStatus: null }))
+    }
+  }, [token])
+
+  const restoreData = useCallback((snapshot: DiffDataSnapshot) => {
+    setState({
+      devices: snapshot.devices,
+      totalNautobot: snapshot.totalNautobot,
+      totalCheckmk: snapshot.totalCheckmk,
+      totalBoth: snapshot.totalBoth,
+      loading: false,
+      error: null,
+      taskStatus: null,
+    })
+  }, [])
+
   return useMemo(() => ({
     devices: state.devices,
     totalNautobot: state.totalNautobot,
@@ -100,5 +132,7 @@ export function useDiffDeviceLoader() {
     error: state.error,
     taskStatus: state.taskStatus,
     runDiff,
-  }), [state, runDiff])
+    loadNautobotDevices,
+    restoreData,
+  }), [state, runDiff, loadNautobotDevices, restoreData])
 }

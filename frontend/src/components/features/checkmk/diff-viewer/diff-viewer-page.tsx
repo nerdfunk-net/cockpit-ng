@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
@@ -8,7 +8,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { DiffViewerHeader } from './components/diff-viewer-header'
-import { DiffStatsCards } from './components/diff-stats-cards'
 import { DiffDeviceTable } from './components/diff-device-table'
 import { useDiffDeviceLoader } from './hooks/use-diff-device-loader'
 import { useDiffFilters } from './hooks/use-diff-filters'
@@ -18,7 +17,7 @@ import { useDiffComparison } from '../shared/hooks/use-diff-comparison'
 import { StatusMessageCard } from '../shared/components/status-message-card'
 import { JobControlsPanel } from '../shared/components/job-controls-panel'
 import { DiffModal } from '../shared/components/diff-modal'
-import type { DiffDevice } from './types'
+import type { DiffDevice, ViewMode, DiffDataSnapshot } from './types'
 import type { Device, CeleryTaskResponse } from '../sync-devices/types'
 
 export default function DiffViewerPage() {
@@ -36,7 +35,14 @@ export default function DiffViewerPage() {
     loading,
     error,
     runDiff,
+    loadNautobotDevices,
+    restoreData,
   } = useDiffDeviceLoader()
+
+  // Mode state and per-mode data snapshots
+  const [mode, setMode] = useState<ViewMode>(null)
+  const nautobotSnapshotRef = useRef<DiffDataSnapshot | null>(null)
+  const combinedSnapshotRef = useRef<DiffDataSnapshot | null>(null)
 
   // Track overlaid comparison statuses (must be before callbacks that use it)
   const [comparisonOverlay, setComparisonOverlay] = useState<Map<string, string>>(new Map())
@@ -109,6 +115,35 @@ export default function DiffViewerPage() {
     activeFiltersCount,
     resetFilters,
   } = useDiffFilters(enrichedDevices)
+
+  // Capture a snapshot of loaded data the first time each mode loads successfully
+  useEffect(() => {
+    if (loading || devices.length === 0) return
+    if (mode === 'nautobot_only' && nautobotSnapshotRef.current === null) {
+      nautobotSnapshotRef.current = { devices, totalNautobot, totalCheckmk, totalBoth }
+    } else if (mode === 'combined' && combinedSnapshotRef.current === null) {
+      combinedSnapshotRef.current = { devices, totalNautobot, totalCheckmk, totalBoth }
+    }
+  }, [loading, devices, totalNautobot, totalCheckmk, totalBoth, mode])
+
+  // Handle mode selection
+  const handleModeChange = useCallback((newMode: ViewMode) => {
+    setMode(newMode)
+    resetFilters()
+    if (newMode === 'nautobot_only') {
+      if (nautobotSnapshotRef.current) {
+        restoreData(nautobotSnapshotRef.current)
+      } else {
+        loadNautobotDevices()
+      }
+    } else if (newMode === 'combined') {
+      if (combinedSnapshotRef.current) {
+        restoreData(combinedSnapshotRef.current)
+      } else {
+        runDiff()
+      }
+    }
+  }, [resetFilters, restoreData, loadNautobotDevices, runDiff])
 
   // Handle get diff for a device
   const handleGetDiff = useCallback(async (diffDevice: DiffDevice) => {
@@ -214,13 +249,6 @@ export default function DiffViewerPage() {
         </Card>
       )}
 
-      {/* Stats Cards */}
-      <DiffStatsCards
-        totalDevices={devices.length}
-        totalBoth={totalBoth}
-        totalNautobotOnly={totalNautobot - totalBoth}
-        totalCheckmkOnly={totalCheckmk - totalBoth}
-      />
 
       {/* Device Table */}
       <DiffDeviceTable
@@ -233,6 +261,9 @@ export default function DiffViewerPage() {
         systemFilter={systemFilter}
         diffStatusFilters={diffStatusFilters}
         filterOptions={filterOptions}
+        totalBoth={totalBoth}
+        totalNautobotOnly={totalNautobot - totalBoth}
+        totalCheckmkOnly={totalCheckmk - totalBoth}
         activeFiltersCount={activeFiltersCount}
         loading={loading}
         onDeviceNameFilterChange={setDeviceNameFilter}
@@ -245,6 +276,8 @@ export default function DiffViewerPage() {
         onGetDiff={handleGetDiff}
         onSync={handleSync}
         onRunDiff={runDiff}
+        mode={mode}
+        onModeChange={handleModeChange}
       />
 
       {/* Job Controls Panel */}

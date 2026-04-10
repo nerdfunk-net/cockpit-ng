@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select'
 import { DiffTableHeader } from './diff-table-header'
 import { DiffTableRow } from './diff-table-row'
-import type { DiffDevice, SystemFilter } from '../types'
+import type { DiffDevice, SystemFilter, ViewMode } from '../types'
 
 interface DiffDeviceTableProps {
   devices: DiffDevice[]
@@ -27,6 +27,9 @@ interface DiffDeviceTableProps {
     locations: Set<string>
     statuses: Set<string>
   }
+  totalBoth: number
+  totalNautobotOnly: number
+  totalCheckmkOnly: number
   activeFiltersCount: number
   loading: boolean
   onDeviceNameFilterChange: (value: string) => void
@@ -39,6 +42,8 @@ interface DiffDeviceTableProps {
   onGetDiff: (device: DiffDevice) => void
   onSync: (device: DiffDevice) => void
   onRunDiff: () => void
+  mode: ViewMode
+  onModeChange: (mode: ViewMode) => void
 }
 
 export function DiffDeviceTable({
@@ -51,6 +56,9 @@ export function DiffDeviceTable({
   systemFilter,
   diffStatusFilters,
   filterOptions,
+  totalBoth,
+  totalNautobotOnly,
+  totalCheckmkOnly,
   activeFiltersCount,
   loading,
   onDeviceNameFilterChange,
@@ -63,6 +71,8 @@ export function DiffDeviceTable({
   onGetDiff,
   onSync,
   onRunDiff,
+  mode,
+  onModeChange,
 }: DiffDeviceTableProps) {
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(25)
@@ -95,14 +105,25 @@ export function DiffDeviceTable({
             <ArrowLeftRight className="h-4 w-4" />
             <div>
               <h3 className="text-sm font-semibold">Device Inventory Comparison</h3>
-              {activeFiltersCount > 0 ? (
-                <p className="text-blue-100 text-xs">
-                  Showing {devices.length} of {totalDeviceCount} devices
-                  {` (${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} active)`}
-                </p>
+              {totalDeviceCount > 0 ? (
+                <div className="flex items-center gap-2 mt-0.5 text-xs text-blue-100">
+                  <span><span className="font-semibold text-white">{totalDeviceCount}</span> total</span>
+                  <span className="opacity-40">·</span>
+                  <span><span className="font-semibold text-white">{totalBoth}</span> both</span>
+                  <span className="opacity-40">·</span>
+                  <span><span className="font-semibold text-white">{totalNautobotOnly}</span> Nautobot</span>
+                  <span className="opacity-40">·</span>
+                  <span><span className="font-semibold text-white">{totalCheckmkOnly}</span> CheckMK</span>
+                  {activeFiltersCount > 0 && (
+                    <>
+                      <span className="opacity-40">·</span>
+                      <span className="opacity-70">{devices.length} shown</span>
+                    </>
+                  )}
+                </div>
               ) : (
-                <p className="text-blue-100 text-xs">
-                  Showing all {totalDeviceCount} devices
+                <p className="text-blue-100 text-xs mt-0.5">
+                  {mode === null ? 'Select a mode to load devices.' : 'Loading…'}
                 </p>
               )}
             </div>
@@ -124,20 +145,34 @@ export function DiffDeviceTable({
                 </Button>
               </>
             )}
-            <Button
-              onClick={onRunDiff}
-              variant="ghost"
-              size="sm"
-              disabled={loading}
-              className="text-white hover:bg-white/20"
+            <Select
+              value={mode ?? ''}
+              onValueChange={(val) => onModeChange((val || null) as ViewMode)}
             >
-              {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-              ) : (
-                <RotateCcw className="h-4 w-4 mr-2" />
-              )}
-              {loading ? 'Running...' : 'Run Diff'}
-            </Button>
+              <SelectTrigger className="h-7 w-[140px] text-xs bg-white text-blue-700 border-white/60 font-medium hover:bg-white/90 focus:ring-white/50">
+                <SelectValue placeholder="Select mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="nautobot_only">Nautobot only</SelectItem>
+                <SelectItem value="combined">Combined</SelectItem>
+              </SelectContent>
+            </Select>
+            {mode === 'combined' && (
+              <Button
+                onClick={onRunDiff}
+                variant="ghost"
+                size="sm"
+                disabled={loading}
+                className="text-white hover:bg-white/20"
+              >
+                {loading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                ) : (
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                )}
+                {loading ? 'Running...' : 'Run Diff'}
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -165,7 +200,11 @@ export function DiffDeviceTable({
               <tr>
                 <td colSpan={8} className="text-center py-8 text-muted-foreground">
                   {totalDeviceCount === 0
-                    ? 'No devices loaded. Click "Run Diff" to compare inventories.'
+                    ? mode === null
+                      ? 'Select a mode to load devices.'
+                      : mode === 'nautobot_only'
+                      ? 'Loading Nautobot devices...'
+                      : 'No devices loaded. Click "Run Diff" to compare inventories.'
                     : 'No devices match the current filters.'}
                 </td>
               </tr>
