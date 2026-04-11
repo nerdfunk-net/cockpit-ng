@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react'
 import { LayoutGrid, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
+import { useRackSaveMutation } from './hooks/use-rack-save-mutation'
 import { useLocationsQuery } from './hooks/use-locations-query'
 import { useRacksByLocationQuery } from './hooks/use-racks-by-location-query'
 import { useRackMetadataQuery } from './hooks/use-rack-metadata-query'
@@ -50,6 +51,7 @@ export function RacksPage() {
   const [selectedLocationId, setSelectedLocationId] = useState('')
   const [selectedRackId, setSelectedRackId] = useState('')
   const [mode, setMode] = useState<RackMode>('all')
+  const [overwriteLocation, setOverwriteLocation] = useState(false)
 
   // Local editable state
   const [localFront, setLocalFront] = useState<RackFaceAssignments>({})
@@ -60,6 +62,8 @@ export function RacksPage() {
   // Inline "add device" state
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null)
   const [deviceSearchQuery, setDeviceSearchQuery] = useState('')
+
+  const { saveRack, isSaving } = useRackSaveMutation()
 
   // Data queries
   const { locations } = useLocationsQuery()
@@ -132,15 +136,24 @@ export function RacksPage() {
   }, [originalFront, originalRear])
 
   const handleSave = useCallback(() => {
-    // Backend not yet implemented — stub
-    const payload = {
-      rackId: selectedRackId,
-      front: localFront,
-      rear: localRear,
-    }
-    // eslint-disable-next-line no-console
-    console.log('[RackSave] payload:', payload)
-  }, [selectedRackId, localFront, localRear])
+    saveRack(
+      {
+        rackId: selectedRackId,
+        locationId: selectedLocationId,
+        overwriteLocation,
+        localFront,
+        localRear,
+        originalFront,
+        originalRear,
+      },
+      {
+        onSuccess: () => {
+          setOriginalFront({ ...localFront })
+          setOriginalRear({ ...localRear })
+        },
+      }
+    )
+  }, [saveRack, selectedRackId, selectedLocationId, overwriteLocation, localFront, localRear, originalFront, originalRear])
 
   const hasChanges = useMemo(
     () =>
@@ -184,6 +197,8 @@ export function RacksPage() {
             mode={mode}
             onModeChange={setMode}
             isLoadingRacks={isLoadingRacks}
+            overwriteLocation={overwriteLocation}
+            onOverwriteLocationChange={setOverwriteLocation}
           />
         </div>
       </div>
@@ -232,6 +247,7 @@ export function RacksPage() {
                   hasChanges={hasChanges}
                   onSave={handleSave}
                   onCancel={handleCancel}
+                  isSaving={isSaving}
                 />
               </>
             )}

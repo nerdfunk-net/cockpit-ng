@@ -376,8 +376,11 @@ class DeviceUpdateService:
         ip_namespace = None
 
         for field, value in update_data.items():
-            # Skip empty values
-            if value is None or (isinstance(value, str) and not value.strip()):
+            # Skip empty values, but allow explicit None for rack-assignment fields
+            # so they can be sent as JSON null to Nautobot (clearing the assignment).
+            if value is None and field not in ("rack", "position", "face"):
+                continue
+            if isinstance(value, str) and not value.strip():
                 continue
 
             # Handle nested fields (e.g., "platform.name" → "platform")
@@ -440,8 +443,11 @@ class DeviceUpdateService:
                     validated[field] = value
 
             elif field == "rack":
-                # Resolve rack name to UUID, optionally filtered by location
-                if not self.common._is_valid_uuid(value):
+                # Resolve rack name to UUID, optionally filtered by location.
+                # None means explicit clear (send null to Nautobot).
+                if value is None:
+                    validated[field] = None
+                elif not self.common._is_valid_uuid(value):
                     rack_id = await self.common.resolve_rack_id(
                         value, location=rack_location
                     )
@@ -490,7 +496,12 @@ class DeviceUpdateService:
         # Nautobot requires "face" whenever "position" is set.  If "position" arrived
         # in the update data but "face" did not (or is empty), clear "position" to
         # avoid the "Must specify rack face when defining rack position" error.
-        if "position" in validated and not validated.get("face"):
+        # Exception: when position is None (explicit clear), both None is intentional.
+        if (
+            "position" in validated
+            and validated.get("position") is not None
+            and not validated.get("face")
+        ):
             logger.warning(
                 "Dropping 'position' from update data because 'face' is not set — "
                 "Nautobot requires both fields when specifying a rack position."

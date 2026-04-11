@@ -167,6 +167,12 @@ class UpdateDeviceRequest(BaseModel):
     tags: Optional[list[str]] = None
     # Custom fields (key-value pairs)
     custom_fields: Optional[dict[str, str]] = None
+    # Rack assignment
+    rack: Optional[str] = None
+    position: Optional[int] = None
+    face: Optional[str] = None
+    # Set to True to explicitly clear rack/position/face (send null to Nautobot)
+    clear_rack_assignment: bool = False
     # Prefix configuration
     add_prefix: bool = True
     default_prefix_length: str = "/24"

@@ -5,7 +5,7 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 
 ## Tech Stack
 
-**Frontend:** Next.js 15.5.12 (App Router), React 19, TypeScript 5, Tailwind CSS 4, Shadcn UI, TanStack Query v5, Zustand, Lucide Icons
+**Frontend:** Next.js 15.5.14 (App Router), React 19, TypeScript 5, Tailwind CSS 4, Shadcn UI, TanStack Query v5, Zustand, Lucide Icons
 **Backend:** FastAPI, Python 3.9+, PostgreSQL, SQLAlchemy, JWT auth, Celery/Beat, Netmiko, Ansible, GitPython
 **Integrations:** Nautobot API, CheckMK, OIDC multi-provider
 

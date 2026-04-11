@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -24,6 +25,8 @@ interface RackSelectorBarProps {
   mode: RackMode
   onModeChange: (mode: RackMode) => void
   isLoadingRacks: boolean
+  overwriteLocation: boolean
+  onOverwriteLocationChange: (val: boolean) => void
 }
 
 export function RackSelectorBar({
@@ -36,6 +39,8 @@ export function RackSelectorBar({
   mode,
   onModeChange,
   isLoadingRacks,
+  overwriteLocation,
+  onOverwriteLocationChange,
 }: RackSelectorBarProps) {
   const hierarchicalLocations = useMemo(
     () => buildLocationHierarchy(locations),
@@ -142,6 +147,20 @@ export function RackSelectorBar({
               ))}
             </SelectContent>
           </Select>
+        </div>
+      </div>
+
+      {/* Overwrite Location checkbox */}
+      <div className="flex items-end pb-1">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="overwrite-location"
+            checked={overwriteLocation}
+            onCheckedChange={(checked) => onOverwriteLocationChange(checked === true)}
+          />
+          <Label htmlFor="overwrite-location" className="text-xs font-medium cursor-pointer">
+            Overwrite Location
+          </Label>
         </div>
       </div>
     </div>

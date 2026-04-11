@@ -483,6 +483,14 @@ async def update_device(
         add_prefix = update_data.pop("add_prefix", True)
         default_prefix_length = update_data.pop("default_prefix_length", "/24")
 
+        # Handle rack assignment clearing: reintroduce explicit None values so
+        # they are sent as JSON null to Nautobot (model_dump strips None values)
+        clear_rack = update_data.pop("clear_rack_assignment", False)
+        if clear_rack:
+            update_data["rack"] = None
+            update_data["position"] = None
+            update_data["face"] = None
+
         # Prepare device identifier
         device_identifier = {"id": device_id}
 
