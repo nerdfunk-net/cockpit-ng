@@ -1,0 +1,243 @@
+'use client'
+
+import { useState, useCallback, useEffect, useMemo } from 'react'
+import { LayoutGrid, Loader2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+
+import { useLocationsQuery } from './hooks/use-locations-query'
+import { useRacksByLocationQuery } from './hooks/use-racks-by-location-query'
+import { useRackMetadataQuery } from './hooks/use-rack-metadata-query'
+import { useRackDevicesQuery } from './hooks/use-rack-devices-query'
+import { useDeviceSearchQuery } from './hooks/use-device-search-query'
+
+import { RackSelectorBar } from './components/rack-selector-bar'
+import { RackView } from './components/rack-view'
+import { RackActions } from './components/rack-actions'
+
+import type {
+  RackMode,
+  RackFaceAssignments,
+  ActiveSlot,
+  DeviceSearchResult,
+} from './types'
+
+function buildFaceAssignments(
+  devices: { id: string; name: string; position: number | null; face: 'front' | 'rear' | null }[],
+  face: 'front' | 'rear'
+): RackFaceAssignments {
+  const assignments: RackFaceAssignments = {}
+  for (const device of devices) {
+    if (device.face === face && device.position !== null) {
+      assignments[device.position] = { deviceId: device.id, deviceName: device.name }
+    }
+  }
+  return assignments
+}
+
+function assignmentsEqual(a: RackFaceAssignments, b: RackFaceAssignments): boolean {
+  const keysA = Object.keys(a)
+  const keysB = Object.keys(b)
+  if (keysA.length !== keysB.length) return false
+  for (const key of keysA) {
+    const aVal = a[Number(key)]
+    const bVal = b[Number(key)]
+    if (aVal?.deviceId !== bVal?.deviceId) return false
+  }
+  return true
+}
+
+export function RacksPage() {
+  const [selectedLocationId, setSelectedLocationId] = useState('')
+  const [selectedRackId, setSelectedRackId] = useState('')
+  const [mode, setMode] = useState<RackMode>('all')
+
+  // Local editable state
+  const [localFront, setLocalFront] = useState<RackFaceAssignments>({})
+  const [localRear, setLocalRear] = useState<RackFaceAssignments>({})
+  const [originalFront, setOriginalFront] = useState<RackFaceAssignments>({})
+  const [originalRear, setOriginalRear] = useState<RackFaceAssignments>({})
+
+  // Inline "add device" state
+  const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null)
+  const [deviceSearchQuery, setDeviceSearchQuery] = useState('')
+
+  // Data queries
+  const { locations } = useLocationsQuery()
+  const { racks, isLoading: isLoadingRacks } = useRacksByLocationQuery({
+    locationId: selectedLocationId || undefined,
+  })
+  const { rackMetadata, isLoading: isLoadingMetadata } = useRackMetadataQuery({
+    rackId: selectedRackId || undefined,
+  })
+  const { rackDevices, isLoading: isLoadingDevices } = useRackDevicesQuery({
+    rackId: selectedRackId || undefined,
+  })
+
+  // Device search for "add device" popover
+  const locationIdForSearch = mode === 'location' ? selectedLocationId : undefined
+  const { results: deviceSearchResults, isSearching } = useDeviceSearchQuery({
+    query: deviceSearchQuery,
+    locationId: locationIdForSearch || undefined,
+  })
+
+  // Sync rack devices from query into local state
+  useEffect(() => {
+    if (!selectedRackId) {
+      setLocalFront({})
+      setLocalRear({})
+      setOriginalFront({})
+      setOriginalRear({})
+      return
+    }
+    const front = buildFaceAssignments(rackDevices, 'front')
+    const rear = buildFaceAssignments(rackDevices, 'rear')
+    setLocalFront(front)
+    setLocalRear(rear)
+    setOriginalFront(front)
+    setOriginalRear(rear)
+  }, [rackDevices, selectedRackId])
+
+  // Reset rack when location changes
+  const handleSelectLocation = useCallback((id: string) => {
+    setSelectedLocationId(id)
+    setSelectedRackId('')
+    setActiveSlot(null)
+    setDeviceSearchQuery('')
+  }, [])
+
+  const handleSelectRack = useCallback((id: string) => {
+    setSelectedRackId(id)
+    setActiveSlot(null)
+    setDeviceSearchQuery('')
+  }, [])
+
+  const handleAdd = useCallback(
+    (position: number, face: 'front' | 'rear', device: DeviceSearchResult) => {
+      const setter = face === 'front' ? setLocalFront : setLocalRear
+      setter((prev) => ({ ...prev, [position]: { deviceId: device.id, deviceName: device.name } }))
+    },
+    []
+  )
+
+  const handleRemove = useCallback((position: number, face: 'front' | 'rear') => {
+    const setter = face === 'front' ? setLocalFront : setLocalRear
+    setter((prev) => ({ ...prev, [position]: null }))
+  }, [])
+
+  const handleCancel = useCallback(() => {
+    setLocalFront({ ...originalFront })
+    setLocalRear({ ...originalRear })
+    setActiveSlot(null)
+    setDeviceSearchQuery('')
+  }, [originalFront, originalRear])
+
+  const handleSave = useCallback(() => {
+    // Backend not yet implemented — stub
+    const payload = {
+      rackId: selectedRackId,
+      front: localFront,
+      rear: localRear,
+    }
+    // eslint-disable-next-line no-console
+    console.log('[RackSave] payload:', payload)
+  }, [selectedRackId, localFront, localRear])
+
+  const hasChanges = useMemo(
+    () =>
+      !assignmentsEqual(localFront, originalFront) ||
+      !assignmentsEqual(localRear, originalRear),
+    [localFront, localRear, originalFront, originalRear]
+  )
+
+  const selectedRack = racks.find((r) => r.id === selectedRackId)
+  const uHeight = rackMetadata?.u_height ?? 42
+  const isLoadingRackData = isLoadingMetadata || isLoadingDevices
+
+  return (
+    <div className="space-y-6">
+      {/* Page header */}
+      <div className="flex items-center gap-4">
+        <div className="bg-blue-100 p-2 rounded-lg">
+          <LayoutGrid className="h-6 w-6 text-blue-600" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Rack Management</h1>
+          <p className="text-muted-foreground mt-1">
+            Visualize and manage device placement in racks
+          </p>
+        </div>
+      </div>
+
+      {/* Selector bar */}
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center rounded-t-lg">
+          <span className="text-sm font-medium">Select Rack</span>
+        </div>
+        <div className="p-6 bg-gradient-to-b from-white to-gray-50 rounded-b-lg">
+          <RackSelectorBar
+            locations={locations}
+            selectedLocationId={selectedLocationId}
+            onSelectLocation={handleSelectLocation}
+            racks={racks}
+            selectedRackId={selectedRackId}
+            onSelectRack={handleSelectRack}
+            mode={mode}
+            onModeChange={setMode}
+            isLoadingRacks={isLoadingRacks}
+          />
+        </div>
+      </div>
+
+      {/* Rack view */}
+      {selectedRackId && (
+        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center gap-3 rounded-t-lg">
+            <span className="text-sm font-medium">
+              {rackMetadata?.name ?? selectedRack?.name ?? 'Rack'}
+            </span>
+            {rackMetadata && (
+              <>
+                <Badge className="bg-white/20 text-white text-xs border-0">
+                  {uHeight}U
+                </Badge>
+                {rackMetadata.status?.name && (
+                  <Badge className="bg-white/20 text-white text-xs border-0">
+                    {rackMetadata.status.name}
+                  </Badge>
+                )}
+              </>
+            )}
+          </div>
+          <div className="p-6 bg-gradient-to-b from-white to-gray-50 rounded-b-lg">
+            {isLoadingRackData ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                <RackView
+                  uHeight={uHeight}
+                  frontAssignments={localFront}
+                  rearAssignments={localRear}
+                  onAdd={handleAdd}
+                  onRemove={handleRemove}
+                  deviceSearchQuery={deviceSearchQuery}
+                  onDeviceSearchQueryChange={setDeviceSearchQuery}
+                  deviceSearchResults={deviceSearchResults}
+                  isSearching={isSearching}
+                  activeSlot={activeSlot}
+                  onSetActiveSlot={setActiveSlot}
+                />
+                <RackActions
+                  hasChanges={hasChanges}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

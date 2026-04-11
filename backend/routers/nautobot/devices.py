@@ -131,6 +131,8 @@ async def get_devices(
     offset: Optional[int] = None,
     filter_type: Optional[str] = None,
     filter_value: Optional[str] = None,
+    name_ic: Optional[str] = None,
+    location_id: Optional[str] = None,
     reload: bool = False,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     device_query_service: DeviceQueryService = Depends(get_device_query_service),
@@ -148,6 +150,8 @@ async def get_devices(
             - 'location': Filter by location name
             - 'prefix': Filter by IP prefix
         filter_value: Value to filter by
+        name_ic: Case-insensitive name contains filter (typeahead search)
+        location_id: Filter by location UUID (used with name_ic for rack device search)
         reload: If True, bypass cache and reload from Nautobot (default: False)
     """
     try:
@@ -156,6 +160,8 @@ async def get_devices(
             offset=offset,
             filter_type=filter_type,
             filter_value=filter_value,
+            name_ic=name_ic,
+            location_id=location_id,
             reload=reload,
         )
     except Exception as e:

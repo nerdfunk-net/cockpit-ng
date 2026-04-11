@@ -150,6 +150,14 @@ export const queryKeys = {
       filters
         ? ([...queryKeys.nautobot.all, 'rack-groups', filters] as const)
         : ([...queryKeys.nautobot.all, 'rack-groups'] as const),
+    rackMetadata: (rackId: string) =>
+      [...queryKeys.nautobot.all, 'rack-metadata', rackId] as const,
+    rackDevices: (rackId: string) =>
+      [...queryKeys.nautobot.all, 'rack-devices', rackId] as const,
+    deviceSearch: (filters?: { query?: string; location_id?: string }) =>
+      filters
+        ? ([...queryKeys.nautobot.all, 'device-search', filters] as const)
+        : ([...queryKeys.nautobot.all, 'device-search'] as const),
 
     // VM dropdowns (add-vm page)
     vmDropdowns: () => [...queryKeys.nautobot.all, 'vm-dropdowns'] as const,

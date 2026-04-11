@@ -232,3 +232,79 @@ export async function fetchDevicesDetailed(
     DEVICES_DETAILED
   )
 }
+
+// --- Rack queries ---
+
+/**
+ * GraphQL query to fetch rack metadata by ID
+ */
+export const RACK_METADATA_QUERY = (rackId: string) => `{
+  racks(id: "${rackId}") {
+    id
+    name
+    type
+    width
+    u_height
+    status {
+      id
+      name
+    }
+  }
+}`
+
+/**
+ * GraphQL query to fetch all devices assigned to a rack
+ */
+export const RACK_DEVICES_QUERY = (rackId: string) => `{
+  devices(rack: "${rackId}") {
+    id
+    name
+    position
+    face
+  }
+}`
+
+export interface GraphQLRackMetadata {
+  id: string
+  name: string
+  type: string | null
+  width: number
+  u_height: number
+  status: {
+    id: string
+    name: string
+  }
+}
+
+export interface GraphQLRackDevice {
+  id: string
+  name: string
+  position: number | null
+  face: string | null
+}
+
+/**
+ * Helper function to fetch rack metadata by ID
+ */
+export async function fetchRackMetadata(
+  apiCall: (path: string, options?: ApiOptions) => Promise<unknown>,
+  rackId: string
+): Promise<GraphQLResponse<{ racks: GraphQLRackMetadata[] }>> {
+  return executeNautobotQuery(
+    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ racks: GraphQLRackMetadata[] }>>,
+    RACK_METADATA_QUERY(rackId)
+  )
+}
+
+/**
+ * Helper function to fetch devices assigned to a rack
+ */
+export async function fetchRackDevices(
+  apiCall: (path: string, options?: ApiOptions) => Promise<unknown>,
+  rackId: string
+): Promise<GraphQLResponse<{ devices: GraphQLRackDevice[] }>> {
+  return executeNautobotQuery(
+    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ devices: GraphQLRackDevice[] }>>,
+    RACK_DEVICES_QUERY(rackId)
+  )
+}

@@ -261,6 +261,8 @@ class DeviceQueryService:
         offset: Optional[int] = None,
         filter_type: Optional[str] = None,
         filter_value: Optional[str] = None,
+        name_ic: Optional[str] = None,
+        location_id: Optional[str] = None,
         reload: bool = False,
     ) -> dict:
         """
@@ -271,12 +273,31 @@ class DeviceQueryService:
             offset: Number of devices to skip
             filter_type: Type of filter ('name', 'location', 'prefix', 'ip_addresses')
             filter_value: Value to filter by
+            name_ic: Case-insensitive name contains filter (typeahead search)
+            location_id: Filter by location UUID (combined with name_ic for rack search)
             reload: If True, bypass cache
 
         Returns:
             dict with devices list and pagination info
         """
-        # Check cache first
+        # Handle new-style name_ic + optional location_id params (used by rack device search)
+        if name_ic:
+            cache_key = get_device_list_cache_key(
+                f"name_ic+loc:{location_id}" if location_id else "name_ic",
+                name_ic,
+                limit,
+                offset,
+            )
+            if not reload:
+                cached_result = get_cached_device_list(cache_key)
+                if cached_result is not None:
+                    logger.debug("Cache hit for devices list: %s", cache_key)
+                    return cached_result
+            return await self._query_by_name_and_location(
+                name_ic, location_id, limit, offset, cache_key
+            )
+
+        # Check cache first (legacy filter_type/filter_value path)
         cache_key = get_device_list_cache_key(filter_type, filter_value, limit, offset)
 
         if not reload:
@@ -382,6 +403,78 @@ class DeviceQueryService:
             offset,
             cache_key,
             filter_type=filter_type_label,
+            filter_value=name_filter,
+        )
+
+    async def _query_by_name_and_location(
+        self,
+        name_filter: str,
+        location_id: Optional[str],
+        limit: Optional[int],
+        offset: Optional[int],
+        cache_key: str,
+    ) -> dict:
+        """Query devices by case-insensitive name with optional location UUID filter.
+
+        Used by the rack device search typeahead. Returns only id + name fields
+        for performance.
+        """
+        if location_id:
+            # Query through the location (by UUID) so we avoid needing the location name.
+            # Nautobot GraphQL does not support location_id on devices directly.
+            query = """
+            query devices_search(
+              $name_filter: [String],
+              $location_id: [String],
+              $limit: Int,
+              $offset: Int
+            ) {
+              locations(id: $location_id) {
+                devices(name__ic: $name_filter, limit: $limit, offset: $offset) {
+                  id
+                  name
+                }
+              }
+            }
+            """
+            variables: dict = {"name_filter": [name_filter], "location_id": [location_id]}
+        else:
+            query = """
+            query devices_search(
+              $name_filter: [String],
+              $limit: Int,
+              $offset: Int
+            ) {
+              devices(name__ic: $name_filter, limit: $limit, offset: $offset) {
+                id
+                name
+              }
+            }
+            """
+            variables = {"name_filter": [name_filter]}
+
+        if limit is not None:
+            variables["limit"] = limit
+        if offset is not None:
+            variables["offset"] = offset
+
+        result = await self._nb.graphql_query(query, variables)
+        if "errors" in result:
+            raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
+
+        if location_id:
+            devices = []
+            for loc in result["data"]["locations"]:
+                devices.extend(loc["devices"])
+        else:
+            devices = result["data"]["devices"]
+        return self._build_response(
+            devices,
+            len(devices),
+            limit,
+            offset,
+            cache_key,
+            filter_type="name_ic",
             filter_value=name_filter,
         )
 
