@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ChevronDown } from 'lucide-react'
 import {
   Select,
@@ -32,6 +33,9 @@ interface DiffTableHeaderProps {
     locations: Set<string>
     statuses: Set<string>
   }
+  isAllSelected: boolean
+  isIndeterminate: boolean
+  onSelectAll: (checked: boolean) => void
   onDeviceNameFilterChange: (value: string) => void
   onRoleFiltersChange: (value: Record<string, boolean>) => void
   onLocationChange: (value: string) => void
@@ -48,6 +52,9 @@ export function DiffTableHeader({
   systemFilter,
   diffStatusFilters,
   filterOptions,
+  isAllSelected,
+  isIndeterminate,
+  onSelectAll,
   onDeviceNameFilterChange,
   onRoleFiltersChange,
   onLocationChange,
@@ -58,6 +65,13 @@ export function DiffTableHeader({
   return (
     <thead>
       <tr className="border-b bg-gray-50">
+        <th className="pl-3 pr-1 py-3 w-10">
+          <Checkbox
+            checked={isIndeterminate ? 'indeterminate' : isAllSelected}
+            onCheckedChange={(checked) => onSelectAll(!!checked)}
+            aria-label="Select all devices"
+          />
+        </th>
         <th className="pl-4 pr-2 py-3 w-56 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>Device Name</div>

@@ -11,6 +11,7 @@ import { DiffViewerHeader } from './components/diff-viewer-header'
 import { DiffDeviceTable } from './components/diff-device-table'
 import { useDiffDeviceLoader } from './hooks/use-diff-device-loader'
 import { useDiffFilters } from './hooks/use-diff-filters'
+import { useDiffDeviceSelection } from './hooks/use-diff-device-selection'
 import { useStatusMessages } from '../shared/hooks/use-status-messages'
 import { useJobManagement } from '../shared/hooks/use-job-management'
 import { useDiffComparison } from '../shared/hooks/use-diff-comparison'
@@ -25,6 +26,8 @@ export default function DiffViewerPage() {
   const { apiCall } = useApi()
   const { statusMessage, showMessage, clearMessage } = useStatusMessages()
   const { confirmDialog, openConfirm } = useConfirmDialog()
+  const { selectedDevices, handleSelectDevice, handleSelectAll, clearSelection } = useDiffDeviceSelection()
+  const [isSyncingSelected, setIsSyncingSelected] = useState(false)
 
   // Diff loader
   const {
@@ -194,6 +197,33 @@ export default function DiffViewerPage() {
     }
   }, [apiCall, showMessage])
 
+  // Handle bulk sync of selected devices
+  const handleSyncSelected = useCallback(async () => {
+    const deviceIds = Array.from(selectedDevices)
+    if (deviceIds.length === 0) return
+
+    setIsSyncingSelected(true)
+    try {
+      showMessage(`Starting sync for ${deviceIds.length} device(s)...`, 'info')
+      const response = await apiCall<CeleryTaskResponse>('celery/tasks/sync-devices-to-checkmk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_ids: deviceIds, activate_changes_after_sync: true })
+      })
+      if (response?.task_id) {
+        showMessage(`Sync task started for ${deviceIds.length} device(s). Task ID: ${response.task_id}`, 'success')
+        clearSelection()
+      } else {
+        showMessage('Failed to queue bulk sync task', 'error')
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to sync selected devices'
+      showMessage(`Bulk sync failed: ${message}`, 'error')
+    } finally {
+      setIsSyncingSelected(false)
+    }
+  }, [selectedDevices, apiCall, showMessage, clearSelection])
+
   // Handle start new comparison job
   const handleStartNewJob = useCallback(async () => {
     const result = await jobManagement.startNewJob()
@@ -266,6 +296,11 @@ export default function DiffViewerPage() {
         totalCheckmkOnly={totalCheckmk - totalBoth}
         activeFiltersCount={activeFiltersCount}
         loading={loading}
+        selectedDevices={selectedDevices}
+        isSyncingSelected={isSyncingSelected}
+        onSelectDevice={handleSelectDevice}
+        onSelectAll={handleSelectAll}
+        onSyncSelected={handleSyncSelected}
         onDeviceNameFilterChange={setDeviceNameFilter}
         onRoleFiltersChange={setRoleFilters}
         onLocationChange={setSelectedLocation}

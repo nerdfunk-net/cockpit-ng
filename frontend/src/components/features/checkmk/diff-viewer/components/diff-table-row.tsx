@@ -1,21 +1,24 @@
 import { GitCompare, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { SystemBadge } from './system-badge'
 import type { DiffDevice } from '../types'
 
 interface DiffTableRowProps {
   device: DiffDevice
   index: number
+  isSelected: boolean
+  onSelectDevice: (nautobotId: string, checked: boolean) => void
   onGetDiff: (device: DiffDevice) => void
   onSync: (device: DiffDevice) => void
 }
 
-export function DiffTableRow({ device, index, onGetDiff, onSync }: DiffTableRowProps) {
+export function DiffTableRow({ device, index, isSelected, onSelectDevice, onGetDiff, onSync }: DiffTableRowProps) {
   const alternatingRowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
   const displayIp = device.ip_address || device.checkmk_ip || 'N/A'
   const canViewDiff = device.source === 'both' && !!device.nautobot_id
-  
+
   // Enable sync when: 1) Nautobot Only OR 2) Both Systems with Differ status
   const canSync = device.nautobot_id && (
     device.source === 'nautobot' ||
@@ -24,6 +27,16 @@ export function DiffTableRow({ device, index, onGetDiff, onSync }: DiffTableRowP
 
   return (
     <tr className={alternatingRowClass}>
+      <td className="pl-3 pr-1 py-3 w-10">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => {
+            if (device.nautobot_id) onSelectDevice(device.nautobot_id, !!checked)
+          }}
+          disabled={!device.nautobot_id}
+          aria-label={`Select ${device.name}`}
+        />
+      </td>
       <td className="pl-4 pr-2 py-3 w-56 text-sm font-medium text-gray-900">
         {device.name}
       </td>

@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, RotateCcw, ArrowLeftRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, RotateCcw, ArrowLeftRight, RefreshCw } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -32,6 +32,11 @@ interface DiffDeviceTableProps {
   totalCheckmkOnly: number
   activeFiltersCount: number
   loading: boolean
+  selectedDevices: Set<string>
+  isSyncingSelected: boolean
+  onSelectDevice: (nautobotId: string, checked: boolean) => void
+  onSelectAll: (devices: DiffDevice[], checked: boolean) => void
+  onSyncSelected: () => void
   onDeviceNameFilterChange: (value: string) => void
   onRoleFiltersChange: (value: Record<string, boolean>) => void
   onLocationChange: (value: string) => void
@@ -61,6 +66,11 @@ export function DiffDeviceTable({
   totalCheckmkOnly,
   activeFiltersCount,
   loading,
+  selectedDevices,
+  isSyncingSelected,
+  onSelectDevice,
+  onSelectAll,
+  onSyncSelected,
   onDeviceNameFilterChange,
   onRoleFiltersChange,
   onLocationChange,
@@ -84,6 +94,14 @@ export function DiffDeviceTable({
   }, [devices, currentPage, pageSize])
 
   const totalPages = Math.ceil(devices.length / pageSize)
+
+  // Selection state derived from current page
+  const selectableOnPage = useMemo(
+    () => paginatedDevices.filter(d => !!d.nautobot_id),
+    [paginatedDevices]
+  )
+  const isAllSelected = selectableOnPage.length > 0 && selectableOnPage.every(d => selectedDevices.has(d.nautobot_id!))
+  const isIndeterminate = !isAllSelected && selectableOnPage.some(d => selectedDevices.has(d.nautobot_id!))
 
   // Reset page when filters change
   const handlePageChange = useCallback((newPage: number) => {
@@ -129,6 +147,26 @@ export function DiffDeviceTable({
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            {selectedDevices.size > 0 && (
+              <Button
+                onClick={onSyncSelected}
+                disabled={isSyncingSelected}
+                size="sm"
+                className="bg-white text-blue-700 hover:bg-white/90 font-medium"
+              >
+                {isSyncingSelected ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2" />
+                    Syncing {selectedDevices.size}...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Sync Selected ({selectedDevices.size})
+                  </>
+                )}
+              </Button>
+            )}
             {activeFiltersCount > 0 && (
               <>
                 <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
@@ -149,7 +187,7 @@ export function DiffDeviceTable({
               value={mode ?? ''}
               onValueChange={(val) => onModeChange((val || null) as ViewMode)}
             >
-              <SelectTrigger className="h-7 w-[140px] text-xs bg-white text-blue-700 border-white/60 font-medium hover:bg-white/90 focus:ring-white/50">
+              <SelectTrigger className="h-7 w-[140px] text-xs bg-white/10 text-white border-white/40 font-medium hover:bg-white/20 focus:ring-white/30 [&>span]:text-white [&_svg]:text-white">
                 <SelectValue placeholder="Select mode" />
               </SelectTrigger>
               <SelectContent>
@@ -188,6 +226,9 @@ export function DiffDeviceTable({
             systemFilter={systemFilter}
             diffStatusFilters={diffStatusFilters}
             filterOptions={filterOptions}
+            isAllSelected={isAllSelected}
+            isIndeterminate={isIndeterminate}
+            onSelectAll={(checked) => onSelectAll(paginatedDevices, checked)}
             onDeviceNameFilterChange={(v) => { onDeviceNameFilterChange(v); setCurrentPage(0) }}
             onRoleFiltersChange={(v) => { onRoleFiltersChange(v); setCurrentPage(0) }}
             onLocationChange={(v) => { onLocationChange(v); setCurrentPage(0) }}
@@ -198,7 +239,7 @@ export function DiffDeviceTable({
           <tbody>
             {paginatedDevices.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-8 text-muted-foreground">
+                <td colSpan={9} className="text-center py-8 text-muted-foreground">
                   {totalDeviceCount === 0
                     ? mode === null
                       ? 'Select a mode to load devices.'
@@ -214,6 +255,8 @@ export function DiffDeviceTable({
                   key={`${device.name}-${device.source}`}
                   device={device}
                   index={index}
+                  isSelected={!!device.nautobot_id && selectedDevices.has(device.nautobot_id)}
+                  onSelectDevice={onSelectDevice}
                   onGetDiff={onGetDiff}
                   onSync={onSync}
                 />
