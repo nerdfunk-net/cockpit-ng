@@ -19,7 +19,7 @@ import { StatusMessageCard } from '../shared/components/status-message-card'
 import { JobControlsPanel } from '../shared/components/job-controls-panel'
 import { DiffModal } from '../shared/components/diff-modal'
 import type { DiffDevice, ViewMode, DiffDataSnapshot } from './types'
-import type { Device, CeleryTaskResponse } from '../sync-devices/types'
+import type { Device, CeleryTaskResponse } from '../shared/types'
 
 export default function DiffViewerPage() {
   const token = useAuthStore(state => state.token)

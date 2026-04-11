@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useApi } from '@/hooks/use-api'
 import { useCheckmkDiscoveryMutations } from '../hooks/use-checkmk-discovery-mutations'
-import type { Device } from '../../sync-devices/types'
+import type { Device } from '../../shared/types'
 
 const DISCOVERY_MODES = [
   { value: 'fix_all', label: 'Accept all' },

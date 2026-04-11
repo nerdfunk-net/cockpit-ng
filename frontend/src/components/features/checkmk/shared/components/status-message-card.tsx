@@ -1,7 +1,7 @@
 import { X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import type { StatusMessage } from '../../sync-devices/types'
+import type { StatusMessage } from '../types'
 
 interface StatusMessageCardProps {
   message: StatusMessage

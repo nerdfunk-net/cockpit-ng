@@ -1,5 +1,5 @@
 /**
- * API layer for CheckMK Sync Devices feature
+ * API layer for CheckMK shared operations
  */
 
 export interface Job {

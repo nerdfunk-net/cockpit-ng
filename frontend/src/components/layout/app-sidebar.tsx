@@ -96,7 +96,6 @@ const navigationSections: NavSection[] = [
   {
     title: 'CheckMK',
     items: [
-      { label: 'Sync Devices', href: '/checkmk/sync-devices', icon: RefreshCw },
       { label: 'Diff Viewer', href: '/checkmk/diff-viewer', icon: ArrowLeftRight },
       { label: 'Hosts & Inventory', href: '/checkmk/hosts-inventory', icon: Server },
       { label: 'Tools', href: '/checkmk/tools', icon: Wrench },

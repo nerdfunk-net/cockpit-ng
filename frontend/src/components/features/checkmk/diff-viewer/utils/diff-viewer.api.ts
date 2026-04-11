@@ -63,6 +63,6 @@ export const startDiffTask = async (token: string): Promise<{ task_id: string }>
   return response.json()
 }
 
-// Re-export from sync-devices API for job management
-export { fetchJobs, loadJobResults, clearResults, startComparisonJob } from '../../sync-devices/utils/sync-devices.api'
-export type { Job } from '../../sync-devices/utils/sync-devices.api'
+// Re-export from shared API for job management
+export { fetchJobs, loadJobResults, clearResults, startComparisonJob } from '../../shared/utils/api'
+export type { Job } from '../../shared/utils/api'

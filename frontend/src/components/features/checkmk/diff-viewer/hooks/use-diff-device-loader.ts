@@ -3,7 +3,7 @@ import { useApi } from '@/hooks/use-api'
 import { startDiffTask, fetchNautobotDevices } from '../utils/diff-viewer.api'
 import { useAuthStore } from '@/lib/auth-store'
 import type { DiffDevice, DiffTaskResult, DiffDataSnapshot } from '../types'
-import type { CeleryTaskStatus } from '../../sync-devices/types'
+import type { CeleryTaskStatus } from '../../shared/types'
 
 const EMPTY_ARRAY: DiffDevice[] = []
 

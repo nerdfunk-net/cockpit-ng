@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useApi } from '@/hooks/use-api'
-import type { Device, DiffResult } from '../../sync-devices/types'
-import { renderConfigComparison } from '../../sync-devices/utils/diff-helpers'
+import type { Device, DiffResult } from '../types'
+import { renderConfigComparison } from '../utils/diff-helpers'
 
 interface UseDiffComparisonProps {
   showMessage: (text: string, type: 'success' | 'error' | 'info') => void

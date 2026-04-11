@@ -44,7 +44,7 @@ export function formatValue(value: unknown): string {
 // Helper function to get row color based on diff results
 export function getRowColorClass(deviceId: string, diffResults: Record<string, 'equal' | 'diff' | 'host_not_found'>): string {
   const result = diffResults[deviceId]
-  if (!result) return '' // No test performed yet
+  if (!result) return ''
 
   switch (result) {
     case 'equal':
