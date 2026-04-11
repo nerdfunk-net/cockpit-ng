@@ -419,40 +419,22 @@ class DeviceQueryService:
         Used by the rack device search typeahead. Returns only id + name fields
         for performance.
         """
+        query = """
+        query devices_search(
+          $name_filter: [String],
+          $location_id: [String],
+          $limit: Int,
+          $offset: Int
+        ) {
+          devices(name__ic: $name_filter, location: $location_id, limit: $limit, offset: $offset) {
+            id
+            name
+          }
+        }
+        """
+        variables: dict = {"name_filter": [name_filter]}
         if location_id:
-            # Query through the location (by UUID) so we avoid needing the location name.
-            # Nautobot GraphQL does not support location_id on devices directly.
-            query = """
-            query devices_search(
-              $name_filter: [String],
-              $location_id: [String],
-              $limit: Int,
-              $offset: Int
-            ) {
-              locations(id: $location_id) {
-                devices(name__ic: $name_filter, limit: $limit, offset: $offset) {
-                  id
-                  name
-                }
-              }
-            }
-            """
-            variables: dict = {"name_filter": [name_filter], "location_id": [location_id]}
-        else:
-            query = """
-            query devices_search(
-              $name_filter: [String],
-              $limit: Int,
-              $offset: Int
-            ) {
-              devices(name__ic: $name_filter, limit: $limit, offset: $offset) {
-                id
-                name
-              }
-            }
-            """
-            variables = {"name_filter": [name_filter]}
-
+            variables["location_id"] = [location_id]
         if limit is not None:
             variables["limit"] = limit
         if offset is not None:
@@ -462,12 +444,7 @@ class DeviceQueryService:
         if "errors" in result:
             raise NautobotAPIError(f"GraphQL errors: {result['errors']}")
 
-        if location_id:
-            devices = []
-            for loc in result["data"]["locations"]:
-                devices.extend(loc["devices"])
-        else:
-            devices = result["data"]["devices"]
+        devices = result["data"]["devices"]
         return self._build_response(
             devices,
             len(devices),
