@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react'
 import { Input } from '@/components/ui/input'
-import { Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 import {
   RACK_UNIT_HEIGHT_PX,
   RACK_GUTTER_WIDTH_PX,
@@ -17,6 +17,7 @@ interface RackElevationProps {
   assignments: RackFaceAssignments
   onAdd: (position: number, device: DeviceSearchResult) => void
   onRemove: (position: number) => void
+  onMoveToUnpositioned: (position: number) => void
   deviceSearchQuery: string
   onDeviceSearchQueryChange: (q: string) => void
   deviceSearchResults: DeviceSearchResult[]
@@ -45,6 +46,7 @@ export function RackElevation({
   assignments,
   onAdd,
   onRemove,
+  onMoveToUnpositioned,
   deviceSearchQuery,
   onDeviceSearchQueryChange,
   deviceSearchResults,
@@ -74,89 +76,129 @@ export function RackElevation({
     return () => document.removeEventListener('mousedown', handleMouseDown)
   }, [popoverRef, onSetActiveSlot, onDeviceSearchQueryChange])
 
-  const totalWidth = RACK_GUTTER_WIDTH_PX + RACK_BODY_WIDTH_PX
-
   const rows = Array.from({ length: uHeight }, (_, i) => uHeight - i)
+  const bodyHeight = uHeight * RACK_UNIT_HEIGHT_PX
+
+  // Top pixel offset of unit u within the rack body (top = highest unit number)
+  const unitTop = (u: number) => (uHeight - u) * RACK_UNIT_HEIGHT_PX
+
+  // Precompute which units are occupied by a device (for skipping empty-slot buttons)
+  const occupiedUnits = new Set<number>()
+  for (const [posStr, assignment] of Object.entries(assignments)) {
+    if (!assignment) continue
+    const pos = Number(posStr)
+    const h = assignment.uHeight ?? 1
+    for (let k = 0; k < h; k++) {
+      occupiedUnits.add(pos + k)
+    }
+  }
 
   return (
-    <div
-      className="relative inline-block select-none"
-      style={{ width: totalWidth, fontFamily: 'monospace', fontSize: 10 }}
-    >
-      {/* Rack outer border */}
+    <div className="inline-flex select-none relative" style={{ fontFamily: 'monospace', fontSize: 10 }}>
+      {/* Rack frame — overlay with high z-index so background rows never cover it */}
       <div
-        className="absolute pointer-events-none border-[4px] border-black rounded-sm"
-        style={{
-          left: RACK_GUTTER_WIDTH_PX - 2,
-          top: -2,
-          width: RACK_BODY_WIDTH_PX + 4,
-          height: uHeight * RACK_UNIT_HEIGHT_PX + 4,
-        }}
+        className="absolute pointer-events-none border-2 border-black"
+        style={{ left: RACK_GUTTER_WIDTH_PX, top: 0, width: RACK_BODY_WIDTH_PX, height: bodyHeight, zIndex: 20 }}
       />
 
-      {rows.map((unitNumber) => {
-        const assignment = assignments[unitNumber] ?? null
-        const isActive =
-          activeSlot?.face === face && activeSlot?.position === unitNumber
-
-        return (
+      {/* Gutter: unit numbers — one fixed-height row per unit, always 1 to uHeight */}
+      <div className="shrink-0" style={{ width: RACK_GUTTER_WIDTH_PX }}>
+        {rows.map((u) => (
           <div
-            key={unitNumber}
-            className="flex"
-            style={{ height: RACK_UNIT_HEIGHT_PX }}
+            key={u}
+            className="flex items-center justify-end pr-1 text-gray-400"
+            style={{ height: RACK_UNIT_HEIGHT_PX, fontSize: 10 }}
           >
-            {/* Unit number gutter */}
-            <div
-              className="flex items-center justify-end pr-1 text-gray-400 shrink-0"
-              style={{ width: RACK_GUTTER_WIDTH_PX, fontSize: 10 }}
-            >
-              {unitNumber}
-            </div>
+            {u}
+          </div>
+        ))}
+      </div>
 
-            {/* Rack slot */}
+      {/* Rack body: position:relative so device blocks can span multiple units */}
+      <div
+        className="relative"
+        style={{ width: RACK_BODY_WIDTH_PX, height: bodyHeight }}
+      >
+        {/* Background grid: one row per unit, provides borders and empty-slot color */}
+        {rows.map((u) => (
+          <div
+            key={u}
+            className="absolute border-b border-gray-200"
+            style={{
+              top: unitTop(u),
+              left: 0,
+              right: 0,
+              height: RACK_UNIT_HEIGHT_PX,
+              backgroundColor: occupiedUnits.has(u) ? '#9e9e9e' : '#f7f7f7',
+            }}
+          />
+        ))}
+
+        {/* Device blocks: absolutely positioned, span full uHeight */}
+        {Object.entries(assignments).map(([posStr, assignment]) => {
+          if (!assignment) return null
+          const pos = Number(posStr)
+          const h = assignment.uHeight ?? 1
+          const top = unitTop(pos + h - 1)
+          const height = h * RACK_UNIT_HEIGHT_PX
+          return (
             <div
-              className={`relative flex items-center border border-gray-200 ${isActive ? 'overflow-visible' : 'overflow-hidden'}`}
-              style={{
-                width: RACK_BODY_WIDTH_PX,
-                height: RACK_UNIT_HEIGHT_PX,
-                backgroundColor: assignment ? '#9e9e9e' : '#f7f7f7',
-              }}
+              key={posStr}
+              className="absolute flex items-center overflow-hidden"
+              style={{ top, left: 0, right: 0, height, backgroundColor: '#9e9e9e', zIndex: 1 }}
             >
-              {assignment ? (
-                <>
-                  {/* Status color indicator */}
-                  <div
-                    className="shrink-0 h-full"
-                    style={{
-                      width: RACK_STATUS_INDICATOR_PX,
-                      backgroundColor: getStatusColor('active'),
-                    }}
-                  />
-                  {/* Device name */}
-                  <div
-                    className="flex-1 text-center text-white truncate px-1"
-                    style={{ fontSize: 10, textShadow: '1px 1px 2px black' }}
-                    title={assignment.deviceName}
-                  >
-                    {assignment.deviceName}
-                  </div>
-                  {/* Remove button */}
-                  <button
-                    type="button"
-                    className="shrink-0 h-full flex items-center justify-center text-red-300 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
-                    style={{ width: 18 }}
-                    title="Remove device"
-                    onClick={() => onRemove(unitNumber)}
-                  >
-                    <span style={{ fontSize: 14, lineHeight: 1 }}>−</span>
-                  </button>
-                </>
-              ) : isActive ? (
-                /* Active add-device input */
+              {/* Status color indicator */}
+              <div
+                className="shrink-0 h-full"
+                style={{ width: RACK_STATUS_INDICATOR_PX, backgroundColor: getStatusColor('active') }}
+              />
+              {/* Device name */}
+              <div
+                className="flex-1 text-center text-white truncate px-1"
+                style={{ fontSize: 10, textShadow: '1px 1px 2px black' }}
+                title={assignment.deviceName}
+              >
+                {assignment.deviceName}
+              </div>
+              {/* Move to unpositioned button */}
+              <button
+                type="button"
+                className="shrink-0 h-full flex items-center justify-center text-blue-300 hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
+                style={{ width: 18 }}
+                title="Move to unpositioned (keep rack)"
+                onClick={() => onMoveToUnpositioned(pos)}
+              >
+                <ArrowLeft style={{ width: 10, height: 10 }} />
+              </button>
+              {/* Remove button */}
+              <button
+                type="button"
+                className="shrink-0 h-full flex items-center justify-center text-red-300 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
+                style={{ width: 18 }}
+                title="Remove device from rack"
+                onClick={() => onRemove(pos)}
+              >
+                <span style={{ fontSize: 14, lineHeight: 1 }}>−</span>
+              </button>
+            </div>
+          )
+        })}
+
+        {/* Empty slot buttons: one per unoccupied unit */}
+        {rows.map((u) => {
+          if (occupiedUnits.has(u)) return null
+          const isActive = activeSlot?.face === face && activeSlot?.position === u
+          return (
+            <div
+              key={u}
+              className={`absolute ${isActive ? 'z-50' : 'z-10'}`}
+              style={{ top: unitTop(u), left: 0, right: 0, height: RACK_UNIT_HEIGHT_PX }}
+            >
+              {isActive ? (
                 <div
                   ref={(el) => setPopoverRef(el)}
-                  className="absolute z-50 left-0 top-0 w-full"
-                  style={{ minHeight: RACK_UNIT_HEIGHT_PX }}
+                  className="absolute left-0 top-0 w-full"
+                  style={{ minHeight: RACK_UNIT_HEIGHT_PX, zIndex: 50 }}
                 >
                   <div
                     className="flex items-center w-full bg-white border border-blue-400 shadow-sm"
@@ -177,7 +219,7 @@ export function RackElevation({
                         if (e.key === 'Enter' && deviceSearchResults.length > 0) {
                           const first = deviceSearchResults[0]
                           if (first) {
-                            onAdd(unitNumber, first)
+                            onAdd(u, first)
                             onSetActiveSlot(null)
                             onDeviceSearchQueryChange('')
                           }
@@ -188,7 +230,6 @@ export function RackElevation({
                       <Loader2 className="h-3 w-3 animate-spin text-muted-foreground mr-1 shrink-0" />
                     )}
                   </div>
-                  {/* Search results dropdown */}
                   {deviceSearchResults.length > 0 && (
                     <div className="absolute left-0 right-0 top-full bg-white border border-gray-200 shadow-lg max-h-40 overflow-y-auto z-50 rounded-b-md">
                       {deviceSearchResults.map((device) => (
@@ -197,7 +238,7 @@ export function RackElevation({
                           className="px-2 py-1 text-xs hover:bg-blue-50 cursor-pointer border-b last:border-b-0 text-gray-800"
                           onMouseDown={(e) => {
                             e.preventDefault()
-                            onAdd(unitNumber, device)
+                            onAdd(u, device)
                             onSetActiveSlot(null)
                             onDeviceSearchQueryChange('')
                           }}
@@ -218,12 +259,11 @@ export function RackElevation({
                     )}
                 </div>
               ) : (
-                /* Empty slot — add button, text always visible */
                 <button
                   type="button"
                   className="w-full h-full flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors cursor-pointer"
                   onClick={() => {
-                    onSetActiveSlot({ position: unitNumber, face })
+                    onSetActiveSlot({ position: u, face })
                     onDeviceSearchQueryChange('')
                   }}
                 >
@@ -231,9 +271,9 @@ export function RackElevation({
                 </button>
               )}
             </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }

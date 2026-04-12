@@ -14,22 +14,24 @@ import { useDeviceSearchQuery } from './hooks/use-device-search-query'
 import { RackSelectorBar } from './components/rack-selector-bar'
 import { RackView } from './components/rack-view'
 import { RackActions } from './components/rack-actions'
+import { UnpositionedDevicesPanel } from './components/unpositioned-devices-panel'
 
 import type {
   RackMode,
   RackFaceAssignments,
+  RackDevice,
   ActiveSlot,
   DeviceSearchResult,
 } from './types'
 
 function buildFaceAssignments(
-  devices: { id: string; name: string; position: number | null; face: 'front' | 'rear' | null }[],
+  devices: { id: string; name: string; position: number | null; face: 'front' | 'rear' | null; uHeight: number }[],
   face: 'front' | 'rear'
 ): RackFaceAssignments {
   const assignments: RackFaceAssignments = {}
   for (const device of devices) {
     if (device.face === face && device.position !== null) {
-      assignments[device.position] = { deviceId: device.id, deviceName: device.name }
+      assignments[device.position] = { deviceId: device.id, deviceName: device.name, uHeight: device.uHeight }
     }
   }
   return assignments
@@ -58,6 +60,10 @@ export function RacksPage() {
   const [localRear, setLocalRear] = useState<RackFaceAssignments>({})
   const [originalFront, setOriginalFront] = useState<RackFaceAssignments>({})
   const [originalRear, setOriginalRear] = useState<RackFaceAssignments>({})
+
+  // Devices moved to "unpositioned" locally (keep rack, clear position/face)
+  const [localUnpositioned, setLocalUnpositioned] = useState<RackDevice[]>([])
+  const [originalUnpositioned, setOriginalUnpositioned] = useState<RackDevice[]>([])
 
   // Inline "add device" state
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null)
@@ -91,6 +97,8 @@ export function RacksPage() {
       setLocalRear({})
       setOriginalFront({})
       setOriginalRear({})
+      setLocalUnpositioned([])
+      setOriginalUnpositioned([])
       return
     }
     const front = buildFaceAssignments(rackDevices, 'front')
@@ -99,6 +107,8 @@ export function RacksPage() {
     setLocalRear(rear)
     setOriginalFront(front)
     setOriginalRear(rear)
+    setLocalUnpositioned([])
+    setOriginalUnpositioned([])
   }, [rackDevices, selectedRackId])
 
   // Reset rack when location changes
@@ -118,7 +128,7 @@ export function RacksPage() {
   const handleAdd = useCallback(
     (position: number, face: 'front' | 'rear', device: DeviceSearchResult) => {
       const setter = face === 'front' ? setLocalFront : setLocalRear
-      setter((prev) => ({ ...prev, [position]: { deviceId: device.id, deviceName: device.name } }))
+      setter((prev) => ({ ...prev, [position]: { deviceId: device.id, deviceName: device.name, uHeight: device.uHeight ?? 1 } }))
     },
     []
   )
@@ -128,12 +138,33 @@ export function RacksPage() {
     setter((prev) => ({ ...prev, [position]: null }))
   }, [])
 
+  const handleMoveToUnpositioned = useCallback(
+    (position: number, face: 'front' | 'rear') => {
+      const assignments = face === 'front' ? localFront : localRear
+      const assignment = assignments[position]
+      if (!assignment) return
+
+      const setter = face === 'front' ? setLocalFront : setLocalRear
+      setter((prev) => ({ ...prev, [position]: null }))
+
+      setLocalUnpositioned((prev) => {
+        if (prev.some((d) => d.id === assignment.deviceId)) return prev
+        return [
+          ...prev,
+          { id: assignment.deviceId, name: assignment.deviceName, position: null, face: null, uHeight: assignment.uHeight },
+        ]
+      })
+    },
+    [localFront, localRear]
+  )
+
   const handleCancel = useCallback(() => {
     setLocalFront({ ...originalFront })
     setLocalRear({ ...originalRear })
+    setLocalUnpositioned([...originalUnpositioned])
     setActiveSlot(null)
     setDeviceSearchQuery('')
-  }, [originalFront, originalRear])
+  }, [originalFront, originalRear, originalUnpositioned])
 
   const handleSave = useCallback(() => {
     saveRack(
@@ -145,22 +176,45 @@ export function RacksPage() {
         localRear,
         originalFront,
         originalRear,
+        localUnpositioned,
+        originalUnpositioned,
       },
       {
         onSuccess: () => {
           setOriginalFront({ ...localFront })
           setOriginalRear({ ...localRear })
+          setOriginalUnpositioned([...localUnpositioned])
         },
       }
     )
-  }, [saveRack, selectedRackId, selectedLocationId, overwriteLocation, localFront, localRear, originalFront, originalRear])
+  }, [saveRack, selectedRackId, selectedLocationId, overwriteLocation, localFront, localRear, originalFront, originalRear, localUnpositioned, originalUnpositioned])
 
   const hasChanges = useMemo(
     () =>
       !assignmentsEqual(localFront, originalFront) ||
-      !assignmentsEqual(localRear, originalRear),
-    [localFront, localRear, originalFront, originalRear]
+      !assignmentsEqual(localRear, originalRear) ||
+      localUnpositioned.length !== originalUnpositioned.length,
+    [localFront, localRear, originalFront, originalRear, localUnpositioned, originalUnpositioned]
   )
+
+  const unpositionedDevices = useMemo(() => {
+    const assignedIds = new Set<string>()
+    for (const a of Object.values(localFront)) if (a) assignedIds.add(a.deviceId)
+    for (const a of Object.values(localRear)) if (a) assignedIds.add(a.deviceId)
+
+    // Server-side unpositioned devices not yet locally assigned
+    const serverUnpositioned = rackDevices.filter(
+      (d) => d.position === null && !assignedIds.has(d.id)
+    )
+
+    // Locally moved-to-unpositioned devices not yet re-assigned
+    const serverIds = new Set(serverUnpositioned.map((d) => d.id))
+    const locallyMoved = localUnpositioned.filter(
+      (d) => !assignedIds.has(d.id) && !serverIds.has(d.id)
+    )
+
+    return [...serverUnpositioned, ...locallyMoved]
+  }, [rackDevices, localFront, localRear, localUnpositioned])
 
   const selectedRack = racks.find((r) => r.id === selectedRackId)
   const uHeight = rackMetadata?.u_height ?? 42
@@ -230,19 +284,32 @@ export function RacksPage() {
               </div>
             ) : (
               <>
-                <RackView
-                  uHeight={uHeight}
-                  frontAssignments={localFront}
-                  rearAssignments={localRear}
-                  onAdd={handleAdd}
-                  onRemove={handleRemove}
-                  deviceSearchQuery={deviceSearchQuery}
-                  onDeviceSearchQueryChange={setDeviceSearchQuery}
-                  deviceSearchResults={deviceSearchResults}
-                  isSearching={isSearching}
-                  activeSlot={activeSlot}
-                  onSetActiveSlot={setActiveSlot}
-                />
+                <div className="flex gap-8 items-start">
+                  <UnpositionedDevicesPanel
+                    key={selectedRackId}
+                    devices={unpositionedDevices}
+                    uHeight={uHeight}
+                    frontAssignments={localFront}
+                    rearAssignments={localRear}
+                    onAdd={handleAdd}
+                  />
+                  <div className="flex-1">
+                    <RackView
+                      uHeight={uHeight}
+                      frontAssignments={localFront}
+                      rearAssignments={localRear}
+                      onAdd={handleAdd}
+                      onRemove={handleRemove}
+                      onMoveToUnpositioned={handleMoveToUnpositioned}
+                      deviceSearchQuery={deviceSearchQuery}
+                      onDeviceSearchQueryChange={setDeviceSearchQuery}
+                      deviceSearchResults={deviceSearchResults}
+                      isSearching={isSearching}
+                      activeSlot={activeSlot}
+                      onSetActiveSlot={setActiveSlot}
+                    />
+                  </div>
+                </div>
                 <RackActions
                   hasChanges={hasChanges}
                   onSave={handleSave}

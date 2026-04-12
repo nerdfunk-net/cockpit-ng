@@ -7,6 +7,7 @@ interface RackViewProps {
   rearAssignments: RackFaceAssignments
   onAdd: (position: number, face: 'front' | 'rear', device: DeviceSearchResult) => void
   onRemove: (position: number, face: 'front' | 'rear') => void
+  onMoveToUnpositioned: (position: number, face: 'front' | 'rear') => void
   deviceSearchQuery: string
   onDeviceSearchQueryChange: (q: string) => void
   deviceSearchResults: DeviceSearchResult[]
@@ -21,6 +22,7 @@ export function RackView({
   rearAssignments,
   onAdd,
   onRemove,
+  onMoveToUnpositioned,
   deviceSearchQuery,
   onDeviceSearchQueryChange,
   deviceSearchResults,
@@ -41,6 +43,7 @@ export function RackView({
           assignments={frontAssignments}
           onAdd={(pos, device) => onAdd(pos, 'front', device)}
           onRemove={(pos) => onRemove(pos, 'front')}
+          onMoveToUnpositioned={(pos) => onMoveToUnpositioned(pos, 'front')}
           deviceSearchQuery={activeSlot?.face === 'front' ? deviceSearchQuery : ''}
           onDeviceSearchQueryChange={onDeviceSearchQueryChange}
           deviceSearchResults={activeSlot?.face === 'front' ? deviceSearchResults : []}
@@ -61,6 +64,7 @@ export function RackView({
           assignments={rearAssignments}
           onAdd={(pos, device) => onAdd(pos, 'rear', device)}
           onRemove={(pos) => onRemove(pos, 'rear')}
+          onMoveToUnpositioned={(pos) => onMoveToUnpositioned(pos, 'rear')}
           deviceSearchQuery={activeSlot?.face === 'rear' ? deviceSearchQuery : ''}
           onDeviceSearchQueryChange={onDeviceSearchQueryChange}
           deviceSearchResults={activeSlot?.face === 'rear' ? deviceSearchResults : []}

@@ -253,14 +253,22 @@ export const RACK_METADATA_QUERY = (rackId: string) => `{
 }`
 
 /**
- * GraphQL query to fetch all devices assigned to a rack
+ * GraphQL query to fetch all devices assigned to a rack, including device type height
  */
 export const RACK_DEVICES_QUERY = (rackId: string) => `{
-  devices(rack: "${rackId}") {
+  racks(id: "${rackId}") {
     id
-    name
-    position
-    face
+    devices {
+      id
+      name
+      position
+      face
+      device_type {
+        id
+        model
+        u_height
+      }
+    }
   }
 }`
 
@@ -281,6 +289,11 @@ export interface GraphQLRackDevice {
   name: string
   position: number | null
   face: string | null
+  device_type: {
+    id: string
+    model: string
+    u_height: number
+  } | null
 }
 
 /**
@@ -297,14 +310,14 @@ export async function fetchRackMetadata(
 }
 
 /**
- * Helper function to fetch devices assigned to a rack
+ * Helper function to fetch devices assigned to a rack (with device type height)
  */
 export async function fetchRackDevices(
   apiCall: (path: string, options?: ApiOptions) => Promise<unknown>,
   rackId: string
-): Promise<GraphQLResponse<{ devices: GraphQLRackDevice[] }>> {
+): Promise<GraphQLResponse<{ racks: Array<{ id: string; devices: GraphQLRackDevice[] }> }>> {
   return executeNautobotQuery(
-    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ devices: GraphQLRackDevice[] }>>,
+    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ racks: Array<{ id: string; devices: GraphQLRackDevice[] }> }>>,
     RACK_DEVICES_QUERY(rackId)
   )
 }

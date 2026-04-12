@@ -15,11 +15,13 @@ export interface RackDevice {
   name: string
   position: number | null
   face: 'front' | 'rear' | null
+  uHeight: number
 }
 
 export interface RackSlotAssignment {
   deviceId: string
   deviceName: string
+  uHeight: number
 }
 
 /** position (1-based) → assignment or null for each face */
@@ -30,6 +32,7 @@ export type RackMode = 'all' | 'location'
 export interface DeviceSearchResult {
   id: string
   name: string
+  uHeight?: number
 }
 
 export interface ActiveSlot {

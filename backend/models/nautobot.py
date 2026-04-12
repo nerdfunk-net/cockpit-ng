@@ -173,6 +173,8 @@ class UpdateDeviceRequest(BaseModel):
     face: Optional[str] = None
     # Set to True to explicitly clear rack/position/face (send null to Nautobot)
     clear_rack_assignment: bool = False
+    # Set to True to clear only position and face, keeping rack assignment intact
+    clear_position_only: bool = False
     # Prefix configuration
     add_prefix: bool = True
     default_prefix_length: str = "/24"

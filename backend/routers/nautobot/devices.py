@@ -491,6 +491,12 @@ async def update_device(
             update_data["position"] = None
             update_data["face"] = None
 
+        # Handle position-only clearing: keeps rack, clears position and face
+        clear_position = update_data.pop("clear_position_only", False)
+        if clear_position:
+            update_data["position"] = None
+            update_data["face"] = None
+
         # Prepare device identifier
         device_identifier = {"id": device_id}
 

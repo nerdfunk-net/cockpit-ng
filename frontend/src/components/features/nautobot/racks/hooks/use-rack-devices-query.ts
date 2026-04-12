@@ -19,7 +19,8 @@ export function useRackDevicesQuery({ rackId }: UseRackDevicesQueryOptions = DEF
     queryFn: async (): Promise<RackDevice[]> => {
       if (!rackId) return EMPTY_RACK_DEVICES
       const response = await fetchRackDevices(apiCall, rackId)
-      const devices = response?.data?.devices
+      const racks = response?.data?.racks
+      const devices = Array.isArray(racks) && racks.length > 0 ? racks[0]?.devices : undefined
       if (!Array.isArray(devices)) return EMPTY_RACK_DEVICES
       return devices.map((d) => {
         // Nautobot may return face in different formats (lowercase, capitalized, or null).
@@ -35,6 +36,7 @@ export function useRackDevicesQuery({ rackId }: UseRackDevicesQueryOptions = DEF
           name: d.name,
           position: d.position,
           face: normalizedFace,
+          uHeight: d.device_type?.u_height ?? 1,
         }
       })
     },
