@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { CsvFieldMappingPanel } from './csv-field-mapping-panel'
+import { CsvFieldMappingPanel } from '../../../shared/csv/components/csv-field-mapping-panel'
+import { NAUTOBOT_UPDATE_FIELDS } from '../constants'
 import type { ObjectType } from '../types'
 
 interface CsvConfigureStepProps {
@@ -86,7 +87,7 @@ export function CsvConfigureStep({
 
       {/* 2. Field mapping table */}
       <CsvFieldMappingPanel
-        objectType={objectType}
+        fields={NAUTOBOT_UPDATE_FIELDS[objectType]}
         headers={headers}
         fieldMapping={fieldMapping}
         onFieldMappingChange={onFieldMappingChange}

@@ -15,6 +15,7 @@ import { RackSelectorBar } from './components/rack-selector-bar'
 import { RackView } from './components/rack-view'
 import { RackActions } from './components/rack-actions'
 import { UnpositionedDevicesPanel } from './components/unpositioned-devices-panel'
+import { ImportPositionsDialog } from './components/import-positions-dialog'
 
 import type {
   RackMode,
@@ -22,6 +23,7 @@ import type {
   RackDevice,
   ActiveSlot,
   DeviceSearchResult,
+  RackImportApplyPayload,
 } from './types'
 
 function buildFaceAssignments(
@@ -68,6 +70,9 @@ export function RacksPage() {
   // Inline "add device" state
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null)
   const [deviceSearchQuery, setDeviceSearchQuery] = useState('')
+
+  // CSV import dialog state
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
 
   const { saveRack, isSaving } = useRackSaveMutation()
 
@@ -156,6 +161,15 @@ export function RacksPage() {
       })
     },
     [localFront, localRear]
+  )
+
+  const handleImportApply = useCallback(
+    ({ newFront, newRear, newUnpositioned }: RackImportApplyPayload) => {
+      setLocalFront(newFront)
+      setLocalRear(newRear)
+      setLocalUnpositioned(newUnpositioned)
+    },
+    []
   )
 
   const handleCancel = useCallback(() => {
@@ -257,6 +271,21 @@ export function RacksPage() {
         </div>
       </div>
 
+      {/* CSV import dialog */}
+      {selectedRackId && (
+        <ImportPositionsDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+          selectedLocationId={selectedLocationId}
+          rackMetadata={rackMetadata ?? null}
+          locations={locations}
+          localFront={localFront}
+          localRear={localRear}
+          localUnpositioned={localUnpositioned}
+          onApply={handleImportApply}
+        />
+      )}
+
       {/* Rack view */}
       {selectedRackId && (
         <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
@@ -315,6 +344,7 @@ export function RacksPage() {
                   onSave={handleSave}
                   onCancel={handleCancel}
                   isSaving={isSaving}
+                  onImportPositions={() => setImportDialogOpen(true)}
                 />
               </>
             )}

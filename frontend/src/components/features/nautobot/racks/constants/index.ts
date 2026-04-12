@@ -22,6 +22,15 @@ export const MODE_OPTIONS: { value: RackMode; label: string }[] = [
 /** Minimum search query length before firing the device search */
 export const DEVICE_SEARCH_MIN_CHARS = 2
 
+/** Fields available for CSV-based rack position import */
+export const RACK_IMPORT_FIELDS = [
+  { key: 'rack',       label: 'Rack' },
+  { key: 'position',   label: 'Position' },
+  { key: 'face',       label: 'Face' },
+  { key: 'location',   label: 'Location' },
+  { key: 'rack_group', label: 'Rack Group' },
+] as const
+
 /** Stale times in milliseconds */
 export const RACK_STALE_TIMES = {
   STATIC: 5 * 60 * 1000,

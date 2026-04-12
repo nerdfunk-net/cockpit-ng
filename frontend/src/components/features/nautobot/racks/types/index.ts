@@ -39,3 +39,9 @@ export interface ActiveSlot {
   position: number
   face: 'front' | 'rear'
 }
+
+export interface RackImportApplyPayload {
+  newFront: RackFaceAssignments
+  newRear: RackFaceAssignments
+  newUnpositioned: RackDevice[]
+}
