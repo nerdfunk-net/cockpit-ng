@@ -72,19 +72,20 @@ export function ValidateNamesDialog({
   const [results, setResults] = useState<ValidationEntry[]>([])
   const [isValidating, setIsValidating] = useState(false)
 
-  // Collect unique devices across all rack faces and unpositioned list
+  // Collect unique devices across all rack faces and unpositioned list, excluding reservations
   const uniqueDevices = useMemo(() => {
+    const isReservation = (id: string) => id.startsWith('__reservation__::')
     const seen = new Map<string, { deviceId: string; deviceName: string }>()
     for (const slot of Object.values(localFront)) {
-      if (slot && !seen.has(slot.deviceId))
+      if (slot && !slot.isReservation && !isReservation(slot.deviceId) && !seen.has(slot.deviceId))
         seen.set(slot.deviceId, { deviceId: slot.deviceId, deviceName: slot.deviceName })
     }
     for (const slot of Object.values(localRear)) {
-      if (slot && !seen.has(slot.deviceId))
+      if (slot && !slot.isReservation && !isReservation(slot.deviceId) && !seen.has(slot.deviceId))
         seen.set(slot.deviceId, { deviceId: slot.deviceId, deviceName: slot.deviceName })
     }
     for (const d of localUnpositioned) {
-      if (!seen.has(d.id))
+      if (!d.isReservation && !isReservation(d.id) && !seen.has(d.id))
         seen.set(d.id, { deviceId: d.id, deviceName: d.name })
     }
     return [...seen.values()]

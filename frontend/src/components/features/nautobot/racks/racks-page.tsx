@@ -158,6 +158,22 @@ export function RacksPage() {
     setter((prev) => ({ ...prev, [position]: null }))
   }, [])
 
+  const handleAddSlotReservation = useCallback(
+    (position: number, face: 'front' | 'rear', description: string) => {
+      const setter = face === 'front' ? setLocalFront : setLocalRear
+      setter((prev) => ({
+        ...prev,
+        [position]: {
+          deviceId: `__reservation__::${description}`,
+          deviceName: description,
+          uHeight: 1,
+          isReservation: true,
+        },
+      }))
+    },
+    []
+  )
+
   const handleMoveToUnpositioned = useCallback(
     (position: number, face: 'front' | 'rear') => {
       const assignments = face === 'front' ? localFront : localRear
@@ -454,6 +470,7 @@ export function RacksPage() {
                       onAdd={handleAdd}
                       onRemove={handleRemove}
                       onMoveToUnpositioned={handleMoveToUnpositioned}
+                      onAddReservation={handleAddSlotReservation}
                       deviceSearchQuery={deviceSearchQuery}
                       onDeviceSearchQueryChange={setDeviceSearchQuery}
                       deviceSearchResults={deviceSearchResults}

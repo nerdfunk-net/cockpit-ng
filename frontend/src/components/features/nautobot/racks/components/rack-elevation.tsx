@@ -18,6 +18,7 @@ interface RackElevationProps {
   onAdd: (position: number, device: DeviceSearchResult) => void
   onRemove: (position: number) => void
   onMoveToUnpositioned: (position: number) => void
+  onAddReservation: (position: number, description: string) => void
   deviceSearchQuery: string
   onDeviceSearchQueryChange: (q: string) => void
   deviceSearchResults: DeviceSearchResult[]
@@ -47,6 +48,7 @@ export function RackElevation({
   onAdd,
   onRemove,
   onMoveToUnpositioned,
+  onAddReservation,
   deviceSearchQuery,
   onDeviceSearchQueryChange,
   deviceSearchResults,
@@ -57,24 +59,49 @@ export function RackElevation({
   const inputRef = useRef<HTMLInputElement>(null)
   const [popoverRef, setPopoverRef] = useState<HTMLDivElement | null>(null)
 
-  // Auto-focus input when a slot becomes active
+  // Reservation input state (local — no need to lift this up)
+  const resInputRef = useRef<HTMLInputElement>(null)
+  const [resPopoverRef, setResPopoverRef] = useState<HTMLDivElement | null>(null)
+  const [resSlot, setResSlot] = useState<number | null>(null)
+  const [resDesc, setResDesc] = useState('')
+
+  // Auto-focus device search input when a slot becomes active
   useEffect(() => {
     if (activeSlot?.face === face && inputRef.current) {
       inputRef.current.focus()
     }
   }, [activeSlot, face])
 
-  // Click-outside to close active slot
+  // Auto-focus reservation input when resSlot opens
+  useEffect(() => {
+    if (resSlot !== null && resInputRef.current) {
+      resInputRef.current.focus()
+    }
+  }, [resSlot])
+
+  // Clear resSlot when the device-search activeSlot opens on this face (mutually exclusive)
+  useEffect(() => {
+    if (activeSlot?.face === face && activeSlot.position !== null) {
+      setResSlot(null)
+      setResDesc('')
+    }
+  }, [activeSlot, face])
+
+  // Click-outside to close active slot and/or resSlot
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
-      if (popoverRef && !popoverRef.contains(e.target as Node)) {
+      const outsideDevicePopover = !popoverRef || !popoverRef.contains(e.target as Node)
+      const outsideResPopover = !resPopoverRef || !resPopoverRef.contains(e.target as Node)
+      if (outsideDevicePopover && outsideResPopover) {
         onSetActiveSlot(null)
         onDeviceSearchQueryChange('')
+        setResSlot(null)
+        setResDesc('')
       }
     }
     document.addEventListener('mousedown', handleMouseDown)
     return () => document.removeEventListener('mousedown', handleMouseDown)
-  }, [popoverRef, onSetActiveSlot, onDeviceSearchQueryChange])
+  }, [popoverRef, resPopoverRef, onSetActiveSlot, onDeviceSearchQueryChange])
 
   const rows = Array.from({ length: uHeight }, (_, i) => uHeight - i)
   const bodyHeight = uHeight * RACK_UNIT_HEIGHT_PX
@@ -205,13 +232,15 @@ export function RackElevation({
         {rows.map((u) => {
           if (occupiedUnits.has(u)) return null  // occupied (device or reservation)
           const isActive = activeSlot?.face === face && activeSlot?.position === u
+          const isResActive = resSlot === u
           return (
             <div
               key={u}
-              className={`absolute ${isActive ? 'z-50' : 'z-10'}`}
+              className={`absolute ${isActive || isResActive ? 'z-50' : 'z-10'}`}
               style={{ top: unitTop(u), left: 0, right: 0, height: RACK_UNIT_HEIGHT_PX }}
             >
               {isActive ? (
+                /* Device search popover */
                 <div
                   ref={(el) => setPopoverRef(el)}
                   className="absolute left-0 top-0 w-full"
@@ -275,17 +304,66 @@ export function RackElevation({
                       </div>
                     )}
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  className="w-full h-full flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors cursor-pointer"
-                  onClick={() => {
-                    onSetActiveSlot({ position: u, face })
-                    onDeviceSearchQueryChange('')
-                  }}
+              ) : isResActive ? (
+                /* Reservation description input */
+                <div
+                  ref={(el) => setResPopoverRef(el)}
+                  className="absolute left-0 top-0 w-full"
+                  style={{ zIndex: 50 }}
                 >
-                  <span style={{ fontSize: 9 }}>+ add device</span>
-                </button>
+                  <div
+                    className="flex items-center w-full bg-white border border-amber-400 shadow-sm"
+                    style={{ height: RACK_UNIT_HEIGHT_PX }}
+                  >
+                    <Input
+                      ref={resInputRef}
+                      value={resDesc}
+                      onChange={(e) => setResDesc(e.target.value)}
+                      placeholder="Reservation description…"
+                      className="h-full border-0 focus-visible:ring-0 text-xs px-1 py-0"
+                      style={{ fontSize: 10, height: RACK_UNIT_HEIGHT_PX }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setResSlot(null)
+                          setResDesc('')
+                        }
+                        if (e.key === 'Enter' && resDesc.trim()) {
+                          onAddReservation(u, resDesc.trim())
+                          setResSlot(null)
+                          setResDesc('')
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* Normal empty unit: add-device + (res) buttons */
+                <div className="flex items-center w-full h-full">
+                  <button
+                    type="button"
+                    className="flex-1 h-full flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors cursor-pointer"
+                    onClick={() => {
+                      onSetActiveSlot({ position: u, face })
+                      onDeviceSearchQueryChange('')
+                    }}
+                  >
+                    <span style={{ fontSize: 9 }}>+ add device</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="shrink-0 h-full flex items-center justify-center text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors cursor-pointer border-l border-gray-200"
+                    style={{ width: 32, fontSize: 9 }}
+                    title="Add reservation"
+                    onClick={() => {
+                      onSetActiveSlot(null)
+                      onDeviceSearchQueryChange('')
+                      setResSlot(u)
+                      setResDesc('')
+                    }}
+                  >
+                    (res)
+                  </button>
+                </div>
               )}
             </div>
           )

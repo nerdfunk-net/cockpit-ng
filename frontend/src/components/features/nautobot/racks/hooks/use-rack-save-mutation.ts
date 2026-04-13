@@ -50,6 +50,23 @@ export function useRackSaveMutation() {
       const movedToUnpositionedIds = new Set(localUnpositioned.map((d) => d.id))
       const originalUnpositionedIds = new Set(originalUnpositioned.map((d) => d.id))
 
+      // Pre-compute which device IDs will be assigned to a new position in any face.
+      // These must NOT also get a clear_position_only or removal — the assignment PATCH
+      // handles rack/position/face atomically, and a concurrent clear would race it.
+      const willBeAssignedIds = new Set<string>()
+      for (const faceName of ['front', 'rear'] as const) {
+        const local = faceName === 'front' ? localFront : localRear
+        const original = faceName === 'front' ? originalFront : originalRear
+        for (const [posStr, localSlot] of Object.entries(local)) {
+          if (!localSlot || localSlot.isReservation || isReservationId(localSlot.deviceId)) continue
+          const pos = Number(posStr)
+          const origSlot = original[pos]
+          if (!origSlot || origSlot.deviceId !== localSlot.deviceId) {
+            willBeAssignedIds.add(localSlot.deviceId)
+          }
+        }
+      }
+
       for (const faceName of ['front', 'rear'] as const) {
         const local = faceName === 'front' ? localFront : localRear
         const original = faceName === 'front' ? originalFront : originalRear
@@ -61,6 +78,9 @@ export function useRackSaveMutation() {
           const pos = Number(posStr)
           const localSlot = local[pos]
           if (!localSlot || localSlot.deviceId !== origSlot.deviceId) {
+            // If this device is being re-assigned to a new position/face, skip the clear —
+            // the assignment PATCH handles it. A concurrent clear would race the assignment.
+            if (willBeAssignedIds.has(origSlot.deviceId)) continue
             if (movedToUnpositionedIds.has(origSlot.deviceId)) {
               positionClears.push({ deviceId: origSlot.deviceId })
             } else {
