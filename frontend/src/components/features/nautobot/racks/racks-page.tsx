@@ -16,6 +16,7 @@ import { RackView } from './components/rack-view'
 import { RackActions } from './components/rack-actions'
 import { UnpositionedDevicesPanel } from './components/unpositioned-devices-panel'
 import { ImportPositionsDialog } from './components/import-positions-dialog'
+import { ValidateNamesDialog } from './components/validate-names-dialog'
 
 import type {
   RackMode,
@@ -24,6 +25,8 @@ import type {
   ActiveSlot,
   DeviceSearchResult,
   RackImportApplyPayload,
+  MatchingStrategy,
+  NameTransform,
 } from './types'
 
 function buildFaceAssignments(
@@ -73,6 +76,11 @@ export function RacksPage() {
 
   // CSV import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [validateDialogOpen, setValidateDialogOpen] = useState(false)
+
+  // Matching settings — shared between import wizard and validate feature
+  const [matchingStrategy, setMatchingStrategy] = useState<MatchingStrategy>('exact')
+  const [nameTransform, setNameTransform] = useState<NameTransform | null>(null)
 
   const { saveRack, isSaving } = useRackSaveMutation()
 
@@ -171,6 +179,30 @@ export function RacksPage() {
     },
     []
   )
+
+  const handleApplyNames = useCallback((renames: Map<string, string>) => {
+    setLocalFront(prev => {
+      const next = { ...prev }
+      for (const [pos, slot] of Object.entries(next)) {
+        if (slot && renames.has(slot.deviceId)) {
+          next[Number(pos)] = { ...slot, deviceName: renames.get(slot.deviceId)! }
+        }
+      }
+      return next
+    })
+    setLocalRear(prev => {
+      const next = { ...prev }
+      for (const [pos, slot] of Object.entries(next)) {
+        if (slot && renames.has(slot.deviceId)) {
+          next[Number(pos)] = { ...slot, deviceName: renames.get(slot.deviceId)! }
+        }
+      }
+      return next
+    })
+    setLocalUnpositioned(prev =>
+      prev.map(d => (renames.has(d.id) ? { ...d, name: renames.get(d.id)! } : d))
+    )
+  }, [])
 
   const handleCancel = useCallback(() => {
     setLocalFront({ ...originalFront })
@@ -282,7 +314,26 @@ export function RacksPage() {
           localFront={localFront}
           localRear={localRear}
           localUnpositioned={localUnpositioned}
+          matchingStrategy={matchingStrategy}
+          onMatchingStrategyChange={setMatchingStrategy}
+          nameTransform={nameTransform}
+          onNameTransformChange={setNameTransform}
           onApply={handleImportApply}
+        />
+      )}
+
+      {/* Validate names dialog */}
+      {selectedRackId && (
+        <ValidateNamesDialog
+          open={validateDialogOpen}
+          onOpenChange={setValidateDialogOpen}
+          localFront={localFront}
+          localRear={localRear}
+          localUnpositioned={localUnpositioned}
+          selectedLocationId={selectedLocationId}
+          matchingStrategy={matchingStrategy}
+          nameTransform={nameTransform}
+          onApplyNames={handleApplyNames}
         />
       )}
 
@@ -345,6 +396,7 @@ export function RacksPage() {
                   onCancel={handleCancel}
                   isSaving={isSaving}
                   onImportPositions={() => setImportDialogOpen(true)}
+                  onValidateNames={() => setValidateDialogOpen(true)}
                 />
               </>
             )}

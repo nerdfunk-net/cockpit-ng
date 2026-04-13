@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { Loader2, Save, Upload, X } from 'lucide-react'
+import { Loader2, Save, ShieldCheck, Upload, X } from 'lucide-react'
 
 interface RackActionsProps {
   hasChanges: boolean
@@ -7,6 +7,7 @@ interface RackActionsProps {
   onCancel: () => void
   isSaving?: boolean
   onImportPositions?: () => void
+  onValidateNames?: () => void
 }
 
 export function RackActions({
@@ -15,10 +16,11 @@ export function RackActions({
   onCancel,
   isSaving = false,
   onImportPositions,
+  onValidateNames,
 }: RackActionsProps) {
   return (
     <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
-      <div>
+      <div className="flex items-center gap-2">
         {onImportPositions && (
           <Button
             variant="outline"
@@ -28,6 +30,17 @@ export function RackActions({
           >
             <Upload className="h-4 w-4" />
             Import Positions
+          </Button>
+        )}
+        {onValidateNames && (
+          <Button
+            variant="outline"
+            onClick={onValidateNames}
+            disabled={isSaving}
+            className="gap-2"
+          >
+            <ShieldCheck className="h-4 w-4" />
+            Validate Names
           </Button>
         )}
       </div>

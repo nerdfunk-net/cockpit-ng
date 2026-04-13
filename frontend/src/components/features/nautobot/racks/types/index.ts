@@ -29,6 +29,15 @@ export type RackFaceAssignments = Record<number, RackSlotAssignment | null>
 
 export type RackMode = 'all' | 'location'
 
+export type MatchingStrategy = 'exact' | 'contains' | 'starts_with'
+export type NameTransformMode = 'regex' | 'replace'
+export interface NameTransform {
+  mode: NameTransformMode
+  pattern: string
+  /** Only used in replace mode. Empty string = delete the matched portion. */
+  replacement: string
+}
+
 export interface DeviceSearchResult {
   id: string
   name: string

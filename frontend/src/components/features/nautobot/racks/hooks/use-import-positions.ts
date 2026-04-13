@@ -3,8 +3,9 @@ import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/hooks/use-toast'
 import { parseCSVContent } from '../../shared/csv/utils/csv-parser'
 import { RACK_IMPORT_FIELDS } from '../constants'
+import { applyNameTransform } from '../utils/name-transform'
 import type { CSVConfig, ParsedCSVData } from '../../shared/csv/types'
-import type { RackMetadata, RackFaceAssignments, RackDevice, RackImportApplyPayload } from '../types'
+import type { RackMetadata, RackFaceAssignments, RackDevice, RackImportApplyPayload, MatchingStrategy, NameTransform } from '../types'
 import type { LocationItem } from '../../add-device/types'
 
 export type ImportStep = 'upload' | 'mapping' | 'properties' | 'resolve'
@@ -26,6 +27,10 @@ interface UseImportPositionsOptions {
   localFront: RackFaceAssignments
   localRear: RackFaceAssignments
   localUnpositioned: RackDevice[]
+  matchingStrategy: MatchingStrategy
+  onMatchingStrategyChange: (s: MatchingStrategy) => void
+  nameTransform: NameTransform | null
+  onNameTransformChange: (t: NameTransform | null) => void
   onApply: (payload: RackImportApplyPayload) => void
   onClose: () => void
 }
@@ -37,6 +42,10 @@ export function useImportPositions({
   localFront,
   localRear,
   localUnpositioned,
+  matchingStrategy,
+  onMatchingStrategyChange,
+  nameTransform,
+  onNameTransformChange,
   onApply,
   onClose,
 }: UseImportPositionsOptions) {
@@ -136,6 +145,20 @@ export function useImportPositions({
     [deviceNameColumn, parsedData.headers]
   )
 
+  const csvNameValues = useMemo(
+    () =>
+      nameColIdx >= 0
+        ? [
+            ...new Set(
+              parsedData.rows
+                .map(r => r[nameColIdx]?.trim())
+                .filter((n): n is string => Boolean(n))
+            ),
+          ]
+        : [],
+    [parsedData.rows, nameColIdx]
+  )
+
   const locationColIdx = useMemo(
     () => (locationColumn ? parsedData.headers.indexOf(locationColumn) : -1),
     [locationColumn, parsedData.headers]
@@ -210,7 +233,7 @@ export function useImportPositions({
         return true
       })
 
-      // 2. Collect unique device names
+      // 2. Collect unique CSV device names
       const uniqueNames = [
         ...new Set(
           matchedRows
@@ -219,13 +242,14 @@ export function useImportPositions({
         ),
       ]
 
-      // 3. Resolve device names → IDs in parallel
+      // 3. Resolve device names → IDs (applying transform + matching strategy)
       const nameToIdMap = new Map<string, string>()
       const notFoundNames: string[] = []
 
       await Promise.all(
-        uniqueNames.map(async name => {
-          const params = new URLSearchParams({ name_ic: name })
+        uniqueNames.map(async csvName => {
+          const lookupName = applyNameTransform(csvName, nameTransform)
+          const params = new URLSearchParams({ name_ic: lookupName })
           if (selectedLocationId) params.append('location_id', selectedLocationId)
           const result = await apiCall<NautobotDeviceListItem[] | { devices?: NautobotDeviceListItem[] }>(
             `nautobot/devices?${params.toString()}`
@@ -233,11 +257,20 @@ export function useImportPositions({
           const items = Array.isArray(result)
             ? result
             : (result as { devices?: NautobotDeviceListItem[] }).devices ?? []
-          const exact = items.find(d => d.name === name)
-          if (exact) {
-            nameToIdMap.set(name, exact.id)
+
+          let matched: NautobotDeviceListItem | undefined
+          if (matchingStrategy === 'exact') {
+            matched = items.find(d => d.name === lookupName)
+          } else if (matchingStrategy === 'contains') {
+            matched = items.find(d => d.name.includes(lookupName))
           } else {
-            notFoundNames.push(name)
+            matched = items.find(d => d.name.startsWith(lookupName))
+          }
+
+          if (matched) {
+            nameToIdMap.set(csvName, matched.id)
+          } else {
+            notFoundNames.push(csvName)
           }
         })
       )
@@ -307,6 +340,8 @@ export function useImportPositions({
     posColIdx,
     faceColIdx,
     clearRackBeforeImport,
+    matchingStrategy,
+    nameTransform,
     localFront,
     localRear,
     localUnpositioned,
@@ -345,6 +380,11 @@ export function useImportPositions({
       // Step 3
       clearRackBeforeImport,
       setClearRackBeforeImport,
+      matchingStrategy,
+      onMatchingStrategyChange,
+      nameTransform,
+      onNameTransformChange,
+      csvNameValues,
 
       // Step 4
       locationColumn,
@@ -375,6 +415,11 @@ export function useImportPositions({
       deviceNameColumn,
       fieldMapping,
       clearRackBeforeImport,
+      matchingStrategy,
+      onMatchingStrategyChange,
+      nameTransform,
+      onNameTransformChange,
+      csvNameValues,
       locationColumn,
       previewMatchCount,
       isResolving,

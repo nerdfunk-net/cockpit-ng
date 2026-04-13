@@ -276,7 +276,7 @@ export function DiffDeviceTable({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[10, 25, 50, 100, 200].map((size) => (
+                {[10, 25, 50, 100, 200, 250, 500].map((size) => (
                   <SelectItem key={size} value={String(size)}>
                     {size}
                   </SelectItem>

@@ -17,7 +17,7 @@ interface DiffTableRowProps {
 export function DiffTableRow({ device, index, isSelected, onSelectDevice, onGetDiff, onSync }: DiffTableRowProps) {
   const alternatingRowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
   const displayIp = device.ip_address || device.checkmk_ip || 'N/A'
-  const canViewDiff = device.source === 'both' && !!device.nautobot_id
+  const canViewDiff = !!device.nautobot_id
 
   // Enable sync when: 1) Nautobot Only OR 2) Both Systems with Differ status
   const canSync = device.nautobot_id && (
@@ -88,7 +88,7 @@ export function DiffTableRow({ device, index, isSelected, onSelectDevice, onGetD
             variant="ghost"
             onClick={() => onGetDiff(device)}
             disabled={!canViewDiff}
-            title={canViewDiff ? 'View Diff' : 'Only available for devices in both systems'}
+            title={canViewDiff ? 'View Diff' : 'Device has no Nautobot ID'}
             className="h-8 w-8 p-0"
           >
             <GitCompare className="h-4 w-4" />

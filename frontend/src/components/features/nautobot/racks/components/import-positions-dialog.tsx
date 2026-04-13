@@ -15,7 +15,7 @@ import { ImportPositionsStepUpload } from './import-positions-step-upload'
 import { ImportPositionsStepMapping } from './import-positions-step-mapping'
 import { ImportPositionsStepProperties } from './import-positions-step-properties'
 import { ImportPositionsStepResolve } from './import-positions-step-resolve'
-import type { RackMetadata, RackFaceAssignments, RackDevice, RackImportApplyPayload } from '../types'
+import type { RackMetadata, RackFaceAssignments, RackDevice, RackImportApplyPayload, MatchingStrategy, NameTransform } from '../types'
 import type { LocationItem } from '../../add-device/types'
 
 const STEPS = ['Upload', 'Map Columns', 'Properties', 'Confirm'] as const
@@ -68,6 +68,10 @@ interface ImportPositionsDialogProps {
   localFront: RackFaceAssignments
   localRear: RackFaceAssignments
   localUnpositioned: RackDevice[]
+  matchingStrategy: MatchingStrategy
+  onMatchingStrategyChange: (s: MatchingStrategy) => void
+  nameTransform: NameTransform | null
+  onNameTransformChange: (t: NameTransform | null) => void
   onApply: (payload: RackImportApplyPayload) => void
 }
 
@@ -80,6 +84,10 @@ export function ImportPositionsDialog({
   localFront,
   localRear,
   localUnpositioned,
+  matchingStrategy,
+  onMatchingStrategyChange,
+  nameTransform,
+  onNameTransformChange,
   onApply,
 }: ImportPositionsDialogProps) {
   const handleClose = useCallback(() => onOpenChange(false), [onOpenChange])
@@ -91,6 +99,10 @@ export function ImportPositionsDialog({
     localFront,
     localRear,
     localUnpositioned,
+    matchingStrategy,
+    onMatchingStrategyChange,
+    nameTransform,
+    onNameTransformChange,
     onApply,
     onClose: handleClose,
   })
@@ -138,6 +150,11 @@ export function ImportPositionsDialog({
           <ImportPositionsStepProperties
             clearRackBeforeImport={wizard.clearRackBeforeImport}
             onClearRackBeforeImportChange={wizard.setClearRackBeforeImport}
+            matchingStrategy={wizard.matchingStrategy}
+            onMatchingStrategyChange={wizard.onMatchingStrategyChange}
+            nameTransform={wizard.nameTransform}
+            onNameTransformChange={wizard.onNameTransformChange}
+            csvNameValues={wizard.csvNameValues}
           />
         )}
 
