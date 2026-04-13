@@ -49,8 +49,15 @@ export interface ActiveSlot {
   face: 'front' | 'rear'
 }
 
+export interface UnknownCsvDevice {
+  csvName: string
+  csvPosition: number | null
+  csvFace: 'front' | 'rear' | null
+}
+
 export interface RackImportApplyPayload {
   newFront: RackFaceAssignments
   newRear: RackFaceAssignments
   newUnpositioned: RackDevice[]
+  unknownCsvDevices: UnknownCsvDevice[]
 }

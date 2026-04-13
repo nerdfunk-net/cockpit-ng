@@ -15,6 +15,7 @@ import { RackSelectorBar } from './components/rack-selector-bar'
 import { RackView } from './components/rack-view'
 import { RackActions } from './components/rack-actions'
 import { UnpositionedDevicesPanel } from './components/unpositioned-devices-panel'
+import { UnknownCsvDevicesPanel } from './components/unknown-csv-devices-panel'
 import { ImportPositionsDialog } from './components/import-positions-dialog'
 import { ValidateNamesDialog } from './components/validate-names-dialog'
 
@@ -27,6 +28,7 @@ import type {
   RackImportApplyPayload,
   MatchingStrategy,
   NameTransform,
+  UnknownCsvDevice,
 } from './types'
 
 function buildFaceAssignments(
@@ -73,6 +75,9 @@ export function RacksPage() {
   // Inline "add device" state
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null)
   const [deviceSearchQuery, setDeviceSearchQuery] = useState('')
+
+  // Unknown CSV devices (not resolved during import)
+  const [unknownCsvDevices, setUnknownCsvDevices] = useState<UnknownCsvDevice[]>([])
 
   // CSV import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false)
@@ -130,12 +135,14 @@ export function RacksPage() {
     setSelectedRackId('')
     setActiveSlot(null)
     setDeviceSearchQuery('')
+    setUnknownCsvDevices([])
   }, [])
 
   const handleSelectRack = useCallback((id: string) => {
     setSelectedRackId(id)
     setActiveSlot(null)
     setDeviceSearchQuery('')
+    setUnknownCsvDevices([])
   }, [])
 
   const handleAdd = useCallback(
@@ -172,10 +179,30 @@ export function RacksPage() {
   )
 
   const handleImportApply = useCallback(
-    ({ newFront, newRear, newUnpositioned }: RackImportApplyPayload) => {
+    ({ newFront, newRear, newUnpositioned, unknownCsvDevices }: RackImportApplyPayload) => {
       setLocalFront(newFront)
       setLocalRear(newRear)
       setLocalUnpositioned(newUnpositioned)
+      setUnknownCsvDevices(unknownCsvDevices)
+    },
+    []
+  )
+
+  const handleMapUnknownDevice = useCallback(
+    (csvName: string, device: DeviceSearchResult, csvPosition: number | null, csvFace: 'front' | 'rear' | null) => {
+      setUnknownCsvDevices(prev => prev.filter(d => d.csvName !== csvName))
+      if (csvPosition !== null && csvFace !== null) {
+        const setter = csvFace === 'front' ? setLocalFront : setLocalRear
+        setter(prev => ({
+          ...prev,
+          [csvPosition]: { deviceId: device.id, deviceName: device.name, uHeight: device.uHeight ?? 1 },
+        }))
+      } else {
+        setLocalUnpositioned(prev => {
+          if (prev.some(d => d.id === device.id)) return prev
+          return [...prev, { id: device.id, name: device.name, position: null, face: null, uHeight: device.uHeight ?? 1 }]
+        })
+      }
     },
     []
   )
@@ -208,6 +235,7 @@ export function RacksPage() {
     setLocalFront({ ...originalFront })
     setLocalRear({ ...originalRear })
     setLocalUnpositioned([...originalUnpositioned])
+    setUnknownCsvDevices([])
     setActiveSlot(null)
     setDeviceSearchQuery('')
   }, [originalFront, originalRear, originalUnpositioned])
@@ -372,6 +400,11 @@ export function RacksPage() {
                     frontAssignments={localFront}
                     rearAssignments={localRear}
                     onAdd={handleAdd}
+                  />
+                  <UnknownCsvDevicesPanel
+                    devices={unknownCsvDevices}
+                    locationId={locationIdForSearch}
+                    onMapDevice={handleMapUnknownDevice}
                   />
                   <div className="flex-1">
                     <RackView

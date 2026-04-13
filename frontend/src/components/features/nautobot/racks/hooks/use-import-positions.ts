@@ -5,7 +5,7 @@ import { parseCSVContent } from '../../shared/csv/utils/csv-parser'
 import { RACK_IMPORT_FIELDS } from '../constants'
 import { applyNameTransform } from '../utils/name-transform'
 import type { CSVConfig, ParsedCSVData } from '../../shared/csv/types'
-import type { RackMetadata, RackFaceAssignments, RackDevice, RackImportApplyPayload, MatchingStrategy, NameTransform } from '../types'
+import type { RackMetadata, RackFaceAssignments, RackDevice, RackImportApplyPayload, MatchingStrategy, NameTransform, UnknownCsvDevice } from '../types'
 import type { LocationItem } from '../../add-device/types'
 
 export type ImportStep = 'upload' | 'mapping' | 'properties' | 'resolve'
@@ -305,10 +305,23 @@ export function useImportPositions({
         }
       }
 
-      // 5. Apply to rack state
-      onApply({ newFront, newRear, newUnpositioned })
+      // 5. Build unknown CSV devices list (not found in Nautobot) with their original position/face
+      const unknownCsvDevices: UnknownCsvDevice[] = notFoundNames.map(csvName => {
+        const row = matchedRows.find(r => r[nameColIdx]?.trim() === csvName)
+        const posRaw = row && posColIdx >= 0 ? row[posColIdx]?.trim() : undefined
+        const position = posRaw ? parseInt(posRaw, 10) : NaN
+        const faceRaw = (row && faceColIdx >= 0 ? row[faceColIdx]?.trim().toLowerCase() : '') ?? ''
+        return {
+          csvName,
+          csvPosition: !isNaN(position) && position > 0 ? position : null,
+          csvFace: faceRaw === 'rear' ? 'rear' : faceRaw === 'front' ? 'front' : null,
+        }
+      })
 
-      // 6. Warn about unresolved devices
+      // 6. Apply to rack state
+      onApply({ newFront, newRear, newUnpositioned, unknownCsvDevices })
+
+      // 7. Warn about unresolved devices
       if (notFoundNames.length > 0) {
         const preview = notFoundNames.slice(0, 3).join(', ')
         const suffix = notFoundNames.length > 3 ? ` and ${notFoundNames.length - 3} more` : ''
