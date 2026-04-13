@@ -132,7 +132,7 @@ background: #f7f7f7
 
 ---
 
-## REST Backend Endpoints Already Available
+## REST Backend Endpoints
 
 | Endpoint | Purpose |
 |----------|---------|
@@ -140,84 +140,58 @@ background: #f7f7f7
 | `GET /nautobot/racks?location={id}` | Racks for a location |
 | `POST /nautobot/graphql` | GraphQL proxy to Nautobot |
 | `GET /nautobot/devices?name_ic={q}&location={id}` | Device search for "add" popover |
+| `GET /nautobot/rack-reservation?rack={name}&location={name}` | Query existing rack reservations (GraphQL) |
+| `POST /nautobot/rack-reservation` | Create a rack reservation for unknown/placeholder devices |
+
+---
+
+## Rack Reservation Flow
+
+When importing positions via CSV, devices not found in Nautobot appear in the **Unresolved CSV Devices** panel. Each row has:
+- A text input to search and map the unknown device to a real Nautobot device
+- A `→` icon button to add the device as a **rack reservation** instead
+
+### Adding a reservation
+
+Clicking `→` moves the unknown device to the **Non-Racked Devices** panel as a reservation placeholder:
+- Synthetic device ID: `__reservation__::{csvName}` (never sent to Nautobot as a real device)
+- If the CSV row had a position, the Position dropdown is pre-filled
+- The row shows only a **(RES)** button (no F/R buttons)
+
+Clicking **(RES)** places the reservation into the rack's front face at the chosen position. It renders with:
+- Dark blue-gray background (`#455a64`) vs normal gray (`#9e9e9e`)
+- Amber left stripe (instead of the device status color)
+- Label prefix `[res]` before the device name
+
+### Saving reservations
+
+When the user clicks **Save**, `use-rack-save-mutation.ts` separates reservation slots from regular device slots:
+- **Regular devices**: `PATCH /nautobot/devices/{id}` with rack/position/face
+- **Reservation slots**: `POST /nautobot/rack-reservation` with `{ rack_id, units, description, location_id }`
+  - `description` = the unknown device name
+  - Multiple units with the same name are grouped into one reservation call
+
+### Backend endpoint: `POST /nautobot/rack-reservation`
+
+**File:** `backend/routers/nautobot/rack_reservations.py`
+
+```python
+class RackReservationCreate(BaseModel):
+    rack_id: str          # UUID of the rack
+    units: list[int]      # 1-based unit numbers
+    description: str      # Label (unknown device name)
+    location_id: str      # UUID of the location
+```
+
+The endpoint:
+1. Calls `GET /api/users/tokens/?key=<configured_token>` to resolve the Nautobot user UUID
+2. Calls `POST /dcim/rack-reservations/` with `{ rack, units, user, description, location }`
 
 ---
 
 ## What Is NOT Yet Implemented
 
-### 1. Add Device to Rack (backend)
-
-The frontend "add device" flow is complete: the user searches for a device, clicks it, and it appears in the rack unit locally. But there is **no backend call** to persist this to Nautobot.
-
-**What needs to happen:**
-When a device is assigned to a rack unit, Nautobot must be updated with:
-- `rack` = rack UUID
-- `position` = unit number (1-based from bottom)
-- `face` = `"front"` or `"rear"`
-
-This is a **PATCH** on the device in Nautobot:
-```
-PATCH /dcim/devices/{device-id}/
-Body: { "rack": "<rack-uuid>", "position": 10, "face": "front" }
-```
-
-A new backend endpoint is needed, e.g.:
-```
-PATCH /nautobot/devices/{device-id}/rack-assignment
-Body: { rack_id, position, face }
-```
-
-Or alternatively, the existing `PUT/PATCH /nautobot/devices/{id}` endpoint (if it exists).
-
-### 2. Remove Device from Rack (backend)
-
-Removing a device from a rack slot means clearing its rack assignment in Nautobot:
-```
-PATCH /dcim/devices/{device-id}/
-Body: { "rack": null, "position": null, "face": null }
-```
-
-Same new endpoint can handle this (pass `rack_id: null`).
-
-### 3. Save Rack (frontend wiring)
-
-`handleSave()` in `racks-page.tsx` currently just logs the payload:
-```typescript
-const handleSave = useCallback(() => {
-  const payload = { rackId: selectedRackId, front: localFront, rear: localRear }
-  console.log('[RackSave] payload:', payload)
-}, [selectedRackId, localFront, localRear])
-```
-
-**What needs to happen:**
-Compare `localFront` / `localRear` with `originalFront` / `originalRear` to find:
-- **Added assignments**: positions present in local but not in original → PATCH device to assign rack
-- **Removed assignments**: positions present in original but not in local → PATCH device to clear rack
-
-Then call the backend for each diff entry. A mutation hook is needed:
-
-```typescript
-// hooks/use-rack-save-mutation.ts
-export function useRackSaveMutation() {
-  const { apiCall } = useApi()
-  return useMutation({
-    mutationFn: async (changes: RackChange[]) => {
-      // changes: Array<{ deviceId, rack, position, face } | { deviceId, rack: null }>
-      await Promise.all(changes.map(c =>
-        apiCall(`nautobot/devices/${c.deviceId}/rack-assignment`, {
-          method: 'PATCH',
-          body: JSON.stringify(c),
-        })
-      ))
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.nautobot.rackDevices(rackId) })
-    },
-  })
-}
-```
-
-After save succeeds, update `originalFront`/`originalRear` to match local state so `hasChanges` resets to false.
+Rack reservations created in Nautobot are not loaded back into the rack elevation view on page reload. The view only loads `devices(rack: ...)` via GraphQL, which does not include `rack_reservations`. A future enhancement would fetch and display existing reservations in the rack elevation with the same dark-gray visual.
 
 ---
 

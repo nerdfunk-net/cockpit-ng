@@ -32,13 +32,13 @@ import type {
 } from './types'
 
 function buildFaceAssignments(
-  devices: { id: string; name: string; position: number | null; face: 'front' | 'rear' | null; uHeight: number }[],
+  devices: { id: string; name: string; position: number | null; face: 'front' | 'rear' | null; uHeight: number; isReservation?: boolean }[],
   face: 'front' | 'rear'
 ): RackFaceAssignments {
   const assignments: RackFaceAssignments = {}
   for (const device of devices) {
     if (device.face === face && device.position !== null) {
-      assignments[device.position] = { deviceId: device.id, deviceName: device.name, uHeight: device.uHeight }
+      assignments[device.position] = { deviceId: device.id, deviceName: device.name, uHeight: device.uHeight, isReservation: device.isReservation }
     }
   }
   return assignments
@@ -203,6 +203,44 @@ export function RacksPage() {
           return [...prev, { id: device.id, name: device.name, position: null, face: null, uHeight: device.uHeight ?? 1 }]
         })
       }
+    },
+    []
+  )
+
+  // Move an unknown CSV device to Non-Racked Devices as a rack reservation placeholder
+  const handleAddReservation = useCallback((device: UnknownCsvDevice) => {
+    setUnknownCsvDevices(prev => prev.filter(d => d.csvName !== device.csvName))
+    setLocalUnpositioned(prev => {
+      const id = `__reservation__::${device.csvName}`
+      if (prev.some(d => d.id === id)) return prev
+      return [
+        ...prev,
+        {
+          id,
+          name: device.csvName,
+          position: null,
+          face: null,
+          uHeight: 1,
+          isReservation: true,
+          defaultPosition: device.csvPosition ?? undefined,
+        },
+      ]
+    })
+  }, [])
+
+  // Place a reservation placeholder into the front face of the rack at the chosen position
+  const handleAddAsReservation = useCallback(
+    (position: number, device: DeviceSearchResult) => {
+      setLocalFront(prev => ({
+        ...prev,
+        [position]: {
+          deviceId: device.id,
+          deviceName: device.name,
+          uHeight: device.uHeight ?? 1,
+          isReservation: true,
+        },
+      }))
+      setLocalUnpositioned(prev => prev.filter(d => d.id !== device.id))
     },
     []
   )
@@ -400,11 +438,13 @@ export function RacksPage() {
                     frontAssignments={localFront}
                     rearAssignments={localRear}
                     onAdd={handleAdd}
+                    onAddAsReservation={handleAddAsReservation}
                   />
                   <UnknownCsvDevicesPanel
                     devices={unknownCsvDevices}
                     locationId={locationIdForSearch}
                     onMapDevice={handleMapUnknownDevice}
+                    onAddReservation={handleAddReservation}
                   />
                   <div className="flex-1">
                     <RackView

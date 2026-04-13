@@ -82,14 +82,14 @@ export function RackElevation({
   // Top pixel offset of unit u within the rack body (top = highest unit number)
   const unitTop = (u: number) => (uHeight - u) * RACK_UNIT_HEIGHT_PX
 
-  // Precompute which units are occupied by a device (for skipping empty-slot buttons)
-  const occupiedUnits = new Set<number>()
+  // Precompute which units are occupied (for background color + skipping empty-slot buttons)
+  const occupiedUnits = new Map<number, boolean>() // unit → isReservation
   for (const [posStr, assignment] of Object.entries(assignments)) {
     if (!assignment) continue
     const pos = Number(posStr)
     const h = assignment.uHeight ?? 1
     for (let k = 0; k < h; k++) {
-      occupiedUnits.add(pos + k)
+      occupiedUnits.set(pos + k, assignment.isReservation === true)
     }
   }
 
@@ -120,19 +120,24 @@ export function RackElevation({
         style={{ width: RACK_BODY_WIDTH_PX, height: bodyHeight }}
       >
         {/* Background grid: one row per unit, provides borders and empty-slot color */}
-        {rows.map((u) => (
-          <div
-            key={u}
-            className="absolute border-b border-gray-200"
-            style={{
-              top: unitTop(u),
-              left: 0,
-              right: 0,
-              height: RACK_UNIT_HEIGHT_PX,
-              backgroundColor: occupiedUnits.has(u) ? '#9e9e9e' : '#f7f7f7',
-            }}
-          />
-        ))}
+        {rows.map((u) => {
+          const isOccupied = occupiedUnits.has(u)
+          const isReservationUnit = occupiedUnits.get(u) === true
+          const bgColor = isReservationUnit ? '#455a64' : isOccupied ? '#9e9e9e' : '#f7f7f7'
+          return (
+            <div
+              key={u}
+              className="absolute border-b border-gray-200"
+              style={{
+                top: unitTop(u),
+                left: 0,
+                right: 0,
+                height: RACK_UNIT_HEIGHT_PX,
+                backgroundColor: bgColor,
+              }}
+            />
+          )
+        })}
 
         {/* Device blocks: absolutely positioned, span full uHeight */}
         {Object.entries(assignments).map(([posStr, assignment]) => {
@@ -141,41 +146,53 @@ export function RackElevation({
           const h = assignment.uHeight ?? 1
           const top = unitTop(pos + h - 1)
           const height = h * RACK_UNIT_HEIGHT_PX
+          const isReservation = assignment.isReservation === true
+          const bgColor = isReservation ? '#455a64' : '#9e9e9e'
           return (
             <div
               key={posStr}
               className="absolute flex items-center overflow-hidden"
-              style={{ top, left: 0, right: 0, height, backgroundColor: '#9e9e9e', zIndex: 1 }}
+              style={{ top, left: 0, right: 0, height, backgroundColor: bgColor, zIndex: 1 }}
             >
-              {/* Status color indicator */}
-              <div
-                className="shrink-0 h-full"
-                style={{ width: RACK_STATUS_INDICATOR_PX, backgroundColor: getStatusColor('active') }}
-              />
-              {/* Device name */}
+              {isReservation ? (
+                /* Reservation: amber left stripe instead of status color */
+                <div
+                  className="shrink-0 h-full"
+                  style={{ width: RACK_STATUS_INDICATOR_PX, backgroundColor: '#f59e0b' }}
+                />
+              ) : (
+                /* Normal device: status color indicator */
+                <div
+                  className="shrink-0 h-full"
+                  style={{ width: RACK_STATUS_INDICATOR_PX, backgroundColor: getStatusColor('active') }}
+                />
+              )}
+              {/* Device / reservation name */}
               <div
                 className="flex-1 text-center text-white truncate px-1"
                 style={{ fontSize: 10, textShadow: '1px 1px 2px black' }}
-                title={assignment.deviceName}
+                title={isReservation ? `Reserved: ${assignment.deviceName}` : assignment.deviceName}
               >
-                {assignment.deviceName}
+                {isReservation ? `[res] ${assignment.deviceName}` : assignment.deviceName}
               </div>
-              {/* Move to unpositioned button */}
-              <button
-                type="button"
-                className="shrink-0 h-full flex items-center justify-center text-blue-300 hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
-                style={{ width: 18 }}
-                title="Move to unpositioned (keep rack)"
-                onClick={() => onMoveToUnpositioned(pos)}
-              >
-                <ArrowLeft style={{ width: 10, height: 10 }} />
-              </button>
+              {/* Move to unpositioned button — hidden for reservations */}
+              {!isReservation && (
+                <button
+                  type="button"
+                  className="shrink-0 h-full flex items-center justify-center text-blue-300 hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
+                  style={{ width: 18 }}
+                  title="Move to unpositioned (keep rack)"
+                  onClick={() => onMoveToUnpositioned(pos)}
+                >
+                  <ArrowLeft style={{ width: 10, height: 10 }} />
+                </button>
+              )}
               {/* Remove button */}
               <button
                 type="button"
                 className="shrink-0 h-full flex items-center justify-center text-red-300 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
                 style={{ width: 18 }}
-                title="Remove device from rack"
+                title={isReservation ? 'Remove reservation' : 'Remove device from rack'}
                 onClick={() => onRemove(pos)}
               >
                 <span style={{ fontSize: 14, lineHeight: 1 }}>−</span>
@@ -186,7 +203,7 @@ export function RackElevation({
 
         {/* Empty slot buttons: one per unoccupied unit */}
         {rows.map((u) => {
-          if (occupiedUnits.has(u)) return null
+          if (occupiedUnits.has(u)) return null  // occupied (device or reservation)
           const isActive = activeSlot?.face === face && activeSlot?.position === u
           return (
             <div

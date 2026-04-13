@@ -269,6 +269,11 @@ export const RACK_DEVICES_QUERY = (rackId: string) => `{
         u_height
       }
     }
+    rack_reservations {
+      id
+      description
+      units
+    }
   }
 }`
 
@@ -296,6 +301,12 @@ export interface GraphQLRackDevice {
   } | null
 }
 
+export interface GraphQLRackReservation {
+  id: string
+  description: string
+  units: number[]
+}
+
 /**
  * Helper function to fetch rack metadata by ID
  */
@@ -315,9 +326,9 @@ export async function fetchRackMetadata(
 export async function fetchRackDevices(
   apiCall: (path: string, options?: ApiOptions) => Promise<unknown>,
   rackId: string
-): Promise<GraphQLResponse<{ racks: Array<{ id: string; devices: GraphQLRackDevice[] }> }>> {
+): Promise<GraphQLResponse<{ racks: Array<{ id: string; devices: GraphQLRackDevice[]; rack_reservations: GraphQLRackReservation[] }> }>> {
   return executeNautobotQuery(
-    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ racks: Array<{ id: string; devices: GraphQLRackDevice[] }> }>>,
+    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ racks: Array<{ id: string; devices: GraphQLRackDevice[]; rack_reservations: GraphQLRackReservation[] }> }>>,
     RACK_DEVICES_QUERY(rackId)
   )
 }

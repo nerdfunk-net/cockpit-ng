@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Input } from '@/components/ui/input'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ArrowRight } from 'lucide-react'
 import { useDeviceSearchQuery } from '../hooks/use-device-search-query'
 import type { UnknownCsvDevice, DeviceSearchResult } from '../types'
 
@@ -15,15 +15,17 @@ interface UnknownCsvDevicesPanelProps {
     csvPosition: number | null,
     csvFace: 'front' | 'rear' | null
   ) => void
+  onAddReservation: (device: UnknownCsvDevice) => void
 }
 
 interface UnknownDeviceRowProps {
   device: UnknownCsvDevice
   locationId: string | undefined
   onMapDevice: UnknownCsvDevicesPanelProps['onMapDevice']
+  onAddReservation: UnknownCsvDevicesPanelProps['onAddReservation']
 }
 
-function UnknownDeviceRow({ device, locationId, onMapDevice }: UnknownDeviceRowProps) {
+function UnknownDeviceRow({ device, locationId, onMapDevice, onAddReservation }: UnknownDeviceRowProps) {
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -63,6 +65,14 @@ function UnknownDeviceRow({ device, locationId, onMapDevice }: UnknownDeviceRowP
             {isSearching && (
               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground mr-1 shrink-0" />
             )}
+            <button
+              type="button"
+              title="Add as rack reservation (no Nautobot device needed)"
+              className="shrink-0 mr-1 text-amber-500 hover:text-amber-700 transition-colors cursor-pointer"
+              onClick={() => onAddReservation(device)}
+            >
+              <ArrowRight className="h-3 w-3" />
+            </button>
           </div>
           {results.length > 0 && (
             <div className="absolute left-0 right-0 top-full bg-white border border-gray-200 shadow-lg max-h-40 overflow-y-auto z-50 rounded-b-md">
@@ -95,6 +105,7 @@ export function UnknownCsvDevicesPanel({
   devices,
   locationId,
   onMapDevice,
+  onAddReservation,
 }: UnknownCsvDevicesPanelProps) {
   if (devices.length === 0) return null
 
@@ -108,7 +119,10 @@ export function UnknownCsvDevicesPanel({
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-2 py-1.5 text-left font-medium text-gray-600">Name</th>
-              <th className="px-2 py-1.5 text-left font-medium text-gray-600">Mapped Name</th>
+              <th className="px-2 py-1.5 text-left font-medium text-gray-600">
+                Mapped Name
+                <span className="ml-1 text-amber-500" title="Use the → button to add as reservation instead">→</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -118,6 +132,7 @@ export function UnknownCsvDevicesPanel({
                 device={device}
                 locationId={locationId}
                 onMapDevice={onMapDevice}
+                onAddReservation={onAddReservation}
               />
             ))}
           </tbody>

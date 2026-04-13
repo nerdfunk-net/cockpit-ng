@@ -106,7 +106,7 @@ class NautobotService:
             raise
 
     async def rest_request(
-        self, endpoint: str, method: str = "GET", data: dict[str, Any] | None = None
+        self, endpoint: str, method: str = "GET", data: dict[str, Any] | list[Any] | None = None
     ) -> dict[str, Any]:
         """Execute a REST API request against Nautobot."""
         config = self._get_config()
@@ -170,7 +170,7 @@ class NautobotService:
         self,
         method: str,
         url: str,
-        data: dict | None,
+        data: dict | list | None,
         headers: dict,
         timeout: int,
     ) -> httpx.Response:

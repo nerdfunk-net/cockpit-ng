@@ -16,12 +16,18 @@ export interface RackDevice {
   position: number | null
   face: 'front' | 'rear' | null
   uHeight: number
+  /** True when this device is a rack reservation for an unknown CSV device. */
+  isReservation?: boolean
+  /** Pre-fill the position selector in UnpositionedDevicesPanel (from CSV position). */
+  defaultPosition?: number
 }
 
 export interface RackSlotAssignment {
   deviceId: string
   deviceName: string
   uHeight: number
+  /** True when this slot represents a rack reservation for an unknown CSV device. */
+  isReservation?: boolean
 }
 
 /** position (1-based) → assignment or null for each face */

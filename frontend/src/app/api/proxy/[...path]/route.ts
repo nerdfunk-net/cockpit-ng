@@ -74,7 +74,7 @@ async function handleRequest(
     
     // Get request body for methods that can have one
     let body = undefined
-    if (['POST', 'PUT', 'PATCH'].includes(method)) {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       try {
         body = await request.text()
       } catch {

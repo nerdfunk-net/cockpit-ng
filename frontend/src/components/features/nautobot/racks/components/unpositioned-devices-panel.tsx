@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -19,6 +19,7 @@ interface UnpositionedDevicesPanelProps {
   frontAssignments: RackFaceAssignments
   rearAssignments: RackFaceAssignments
   onAdd: (position: number, face: 'front' | 'rear', device: DeviceSearchResult) => void
+  onAddAsReservation: (position: number, device: DeviceSearchResult) => void
 }
 
 export function UnpositionedDevicesPanel({
@@ -27,8 +28,24 @@ export function UnpositionedDevicesPanel({
   frontAssignments,
   rearAssignments,
   onAdd,
+  onAddAsReservation,
 }: UnpositionedDevicesPanelProps) {
   const [selectedPositions, setSelectedPositions] = useState<Record<string, string>>({})
+
+  // Pre-fill position selector for devices that have a defaultPosition (e.g. from CSV import)
+  useEffect(() => {
+    setSelectedPositions((prev) => {
+      let changed = false
+      const next = { ...prev }
+      for (const device of devices) {
+        if (device.defaultPosition !== undefined && !next[device.id]) {
+          next[device.id] = String(device.defaultPosition)
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [devices])
 
   const occupiedPositions = useMemo(() => {
     const s = new Set<number>()
@@ -61,6 +78,16 @@ export function UnpositionedDevicesPanel({
       onAdd(position, face, { id: device.id, name: device.name, uHeight: device.uHeight })
     },
     [selectedPositions, onAdd]
+  )
+
+  const handleAssignReservation = useCallback(
+    (device: RackDevice) => {
+      const posStr = selectedPositions[device.id]
+      if (!posStr || posStr === UNSET_VALUE) return
+      const position = Number(posStr)
+      onAddAsReservation(position, { id: device.id, name: device.name, uHeight: device.uHeight })
+    },
+    [selectedPositions, onAddAsReservation]
   )
 
   if (devices.length === 0) return null
@@ -112,26 +139,41 @@ export function UnpositionedDevicesPanel({
                   </td>
                   <td className="px-2 py-1.5">
                     <div className="flex gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-xs font-semibold"
-                        title="Assign to front face"
-                        disabled={!isPositionSet}
-                        onClick={() => handleAssign(device, 'front')}
-                      >
-                        F
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-xs font-semibold"
-                        title="Assign to rear face"
-                        disabled={!isPositionSet}
-                        onClick={() => handleAssign(device, 'rear')}
-                      >
-                        R
-                      </Button>
+                      {device.isReservation ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 px-1.5 text-xs font-semibold text-amber-600 border-amber-400 hover:bg-amber-50"
+                          title="Place as rack reservation"
+                          disabled={!isPositionSet}
+                          onClick={() => handleAssignReservation(device)}
+                        >
+                          RES
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-xs font-semibold"
+                            title="Assign to front face"
+                            disabled={!isPositionSet}
+                            onClick={() => handleAssign(device, 'front')}
+                          >
+                            F
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-xs font-semibold"
+                            title="Assign to rear face"
+                            disabled={!isPositionSet}
+                            onClick={() => handleAssign(device, 'rear')}
+                          >
+                            R
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
