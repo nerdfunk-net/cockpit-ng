@@ -202,3 +202,50 @@ class BackupRepository:
 
         except Exception:
             return []
+
+    async def get_filter_options(self) -> dict:
+        """
+        Get all unique filter values for device filter dropdowns.
+
+        Queries Nautobot entity types directly (roles, locations, device_types,
+        statuses) instead of iterating all devices. This is orders of magnitude
+        faster for large inventories.
+        """
+        import service_factory
+
+        nautobot_service = service_factory.build_nautobot_service()
+
+        query = """
+        query {
+            roles { name }
+            locations { name }
+            device_types { model }
+            statuses(content_types: "dcim.device") { name }
+        }
+        """
+
+        try:
+            result = await nautobot_service.graphql_query(query)
+            data = result.get("data", {})
+        except Exception:
+            data = {}
+
+        roles = sorted(
+            {r["name"] for r in data.get("roles", []) if r.get("name")}
+        )
+        locations = sorted(
+            {loc["name"] for loc in data.get("locations", []) if loc.get("name")}
+        )
+        device_types = sorted(
+            {dt["model"] for dt in data.get("device_types", []) if dt.get("model")}
+        )
+        statuses = sorted(
+            {s["name"] for s in data.get("statuses", []) if s.get("name")}
+        )
+
+        return {
+            "roles": roles,
+            "locations": locations,
+            "device_types": device_types,
+            "statuses": statuses,
+        }

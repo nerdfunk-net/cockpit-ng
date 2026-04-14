@@ -149,6 +149,19 @@ class BackupService:
             logger.error("Error getting backup history: %s", e, exc_info=True)
             return []
 
+    async def get_filter_options(self) -> dict:
+        """
+        Get all unique filter values across all devices.
+
+        Returns:
+            Dict with roles, locations, device_types, and statuses lists
+        """
+        try:
+            return await self.repository.get_filter_options()
+        except Exception as e:
+            logger.error("Error getting filter options: %s", e, exc_info=True)
+            return {"roles": [], "locations": [], "device_types": [], "statuses": []}
+
     async def download_backup(
         self, db: Session, device_id: str, backup_id: str
     ) -> bytes:

@@ -3,10 +3,10 @@ import type { Device, BackupHistoryEntry, FilterOptions } from '../types'
 export const EMPTY_DEVICES: Device[] = []
 export const EMPTY_HISTORY: BackupHistoryEntry[] = []
 export const EMPTY_FILTER_OPTIONS: FilterOptions = {
-  roles: new Set(),
-  locations: new Set(),
-  deviceTypes: new Set(),
-  statuses: new Set(),
+  roles: [],
+  locations: [],
+  deviceTypes: [],
+  statuses: [],
 }
 
 export const DEFAULT_PAGE_SIZE = 50

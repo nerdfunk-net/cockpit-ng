@@ -176,6 +176,8 @@ export const queryKeys = {
       filters
         ? ([...queryKeys.network.all, 'backup-devices', filters] as const)
         : ([...queryKeys.network.all, 'backup-devices'] as const),
+    backupFilterOptions: () =>
+      [...queryKeys.network.all, 'backup-filter-options'] as const,
     backupHistory: (deviceId: string) =>
       [...queryKeys.network.all, 'backup-history', deviceId] as const,
   },

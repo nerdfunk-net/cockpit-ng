@@ -124,7 +124,7 @@ export function BackupDevicesTable({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Roles</SelectItem>
-                          {Array.from(filterOptions.roles).sort().map(role => (
+                          {[...filterOptions.roles].sort().map(role => (
                             <SelectItem key={`backup-role-${role}`} value={role}>{role}</SelectItem>
                           ))}
                         </SelectContent>
@@ -148,7 +148,7 @@ export function BackupDevicesTable({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Locations</SelectItem>
-                          {Array.from(filterOptions.locations).sort().map(location => (
+                          {[...filterOptions.locations].sort().map(location => (
                             <SelectItem key={`backup-location-${location}`} value={location}>{location}</SelectItem>
                           ))}
                         </SelectContent>
@@ -172,7 +172,7 @@ export function BackupDevicesTable({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Types</SelectItem>
-                          {Array.from(filterOptions.deviceTypes).sort().map(deviceType => (
+                          {[...filterOptions.deviceTypes].sort().map(deviceType => (
                             <SelectItem key={`backup-devicetype-${deviceType}`} value={deviceType}>{deviceType}</SelectItem>
                           ))}
                         </SelectContent>
@@ -196,7 +196,7 @@ export function BackupDevicesTable({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Statuses</SelectItem>
-                          {Array.from(filterOptions.statuses).sort().map(status => (
+                          {[...filterOptions.statuses].sort().map(status => (
                             <SelectItem key={`backup-status-${status}`} value={status}>{status}</SelectItem>
                           ))}
                         </SelectContent>

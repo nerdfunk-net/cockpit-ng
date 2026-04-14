@@ -39,8 +39,8 @@ export interface BackupSorting {
 }
 
 export interface FilterOptions {
-  roles: Set<string>
-  locations: Set<string>
-  deviceTypes: Set<string>
-  statuses: Set<string>
+  roles: string[]
+  locations: string[]
+  deviceTypes: string[]
+  statuses: string[]
 }

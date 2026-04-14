@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Save, RotateCcw } from 'lucide-react'
-import { useBackupDevices } from './hooks/use-backup-devices'
+import { useBackupDevices, useBackupFilterOptions } from './hooks/use-backup-devices'
 import { useBackupMutations } from './hooks/use-backup-mutations'
 import { BackupFilters } from './components/backup-filters'
 import { BackupDevicesTable } from './components/backup-devices-table'
 import { BackupHistoryDialog } from './components/backup-history-dialog'
-import { DEFAULT_PAGE_SIZE } from './utils/constants'
+import { DEFAULT_PAGE_SIZE, EMPTY_FILTER_OPTIONS } from './utils/constants'
 import type { Device, DeviceFilters, BackupSorting } from './types'
 
 const EMPTY_FILTERS: DeviceFilters = {}
@@ -35,9 +35,21 @@ export default function BackupPage() {
     return cleanFilters
   }, [filters])
 
+  // Debounce name filter to avoid an API call on every keystroke
+  const [debouncedName, setDebouncedName] = useState<string | undefined>(undefined)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedName(sanitizedFilters.name), 300)
+    return () => clearTimeout(timer)
+  }, [sanitizedFilters.name])
+
+  const queryFilters = useMemo(
+    () => ({ ...sanitizedFilters, name: debouncedName }),
+    [sanitizedFilters, debouncedName]
+  )
+
   // TanStack Query - replaces ALL manual state management
-  const { data, isLoading, error } = useBackupDevices({
-    filters: sanitizedFilters,
+  const { data, isLoading, isFetching, error } = useBackupDevices({
+    filters: queryFilters,
     pagination: {
       limit: pageSize,
       offset: currentPage * pageSize
@@ -47,28 +59,13 @@ export default function BackupPage() {
 
   const { triggerBulkBackup } = useBackupMutations()
 
+  // Filter options from backend — covers all devices, not just the current page
+  const { data: filterOptionsData } = useBackupFilterOptions()
+  const filterOptions = filterOptionsData ?? EMPTY_FILTER_OPTIONS
+
   // Memoize devices to prevent re-render loops
   const devices = useMemo(() => data?.devices || [], [data?.devices])
   const total = data?.total || 0
-
-  // Derived state (use useMemo, not useState)
-  const filterOptions = useMemo(() => {
-    const options = {
-      roles: new Set<string>(),
-      locations: new Set<string>(),
-      deviceTypes: new Set<string>(),
-      statuses: new Set<string>(),
-    }
-
-    devices.forEach(device => {
-      if (device.role?.name) options.roles.add(device.role.name)
-      if (device.location?.name) options.locations.add(device.location.name)
-      if (device.device_type?.model) options.deviceTypes.add(device.device_type.model)
-      if (device.status?.name) options.statuses.add(device.status.name)
-    })
-
-    return options
-  }, [devices])
 
   const activeFiltersCount = useMemo(() => {
     return Object.values(filters).filter(Boolean).length
@@ -154,9 +151,9 @@ export default function BackupPage() {
           <Button
             onClick={() => window.location.reload()}
             variant="outline"
-            disabled={isLoading}
+            disabled={isFetching}
           >
-            {isLoading ? (
+            {isFetching ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2" />
             ) : (
               <RotateCcw className="h-4 w-4 mr-2" />

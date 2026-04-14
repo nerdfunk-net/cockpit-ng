@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import { STALE_TIME, EMPTY_DEVICES, EMPTY_HISTORY } from '../utils/constants'
-import type { Device, DeviceFilters, BackupPagination, BackupSorting, BackupHistoryEntry } from '../types'
+import { STALE_TIME, EMPTY_DEVICES, EMPTY_HISTORY, EMPTY_FILTER_OPTIONS } from '../utils/constants'
+import type { Device, DeviceFilters, BackupPagination, BackupSorting, BackupHistoryEntry, FilterOptions } from '../types'
 
 interface UseBackupDevicesOptions {
   filters?: DeviceFilters
@@ -57,6 +57,35 @@ export function useBackupDevices(options: UseBackupDevicesOptions = DEFAULT_DEVI
     },
     enabled,
     staleTime: STALE_TIME.DEVICES,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useBackupFilterOptions() {
+  const { apiCall } = useApi()
+
+  return useQuery({
+    queryKey: queryKeys.network.backupFilterOptions(),
+    queryFn: async () => {
+      const response = await apiCall<{
+        roles: string[]
+        locations: string[]
+        device_types: string[]
+        statuses: string[]
+      }>('network/configs/backup/filter-options')
+
+      if (!response) return EMPTY_FILTER_OPTIONS
+
+      const options: FilterOptions = {
+        roles: response.roles || [],
+        locations: response.locations || [],
+        deviceTypes: response.device_types || [],
+        statuses: response.statuses || [],
+      }
+      return options
+    },
+    staleTime: STALE_TIME.FILTER_OPTIONS,
+    placeholderData: keepPreviousData,
   })
 }
 

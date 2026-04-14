@@ -183,6 +183,26 @@ async def trigger_bulk_backup(
 
 
 @router.get(
+    "/filter-options",
+    dependencies=[Depends(require_permission("network.backup", "read"))],
+)
+async def get_filter_options(
+    user: dict = Depends(verify_token),
+):
+    """
+    Get all unique filter values for device filter dropdowns.
+
+    Returns the complete set of roles, locations, device types, and statuses
+    across all devices — not limited to the current page.
+    """
+    try:
+        return await backup_service.get_filter_options()
+    except Exception as e:
+        logger.error("Error getting filter options: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
     "/history/{device_id}",
     dependencies=[Depends(require_permission("network.backup", "read"))],
 )
