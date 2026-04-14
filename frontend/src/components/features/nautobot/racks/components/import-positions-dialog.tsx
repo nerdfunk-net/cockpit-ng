@@ -150,6 +150,8 @@ export function ImportPositionsDialog({
           <ImportPositionsStepProperties
             clearRackBeforeImport={wizard.clearRackBeforeImport}
             onClearRackBeforeImportChange={wizard.setClearRackBeforeImport}
+            useMappingFromDb={wizard.useMappingFromDb}
+            onUseMappingFromDbChange={wizard.setUseMappingFromDb}
             matchingStrategy={wizard.matchingStrategy}
             onMatchingStrategyChange={wizard.onMatchingStrategyChange}
             nameTransform={wizard.nameTransform}

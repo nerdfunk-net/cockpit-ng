@@ -158,6 +158,8 @@ export const queryKeys = {
       filters
         ? ([...queryKeys.nautobot.all, 'device-search', filters] as const)
         : ([...queryKeys.nautobot.all, 'device-search'] as const),
+    rackMappings: (filters: { rack_name: string; location_id: string }) =>
+      [...queryKeys.nautobot.all, 'rack-mappings', filters] as const,
 
     // VM dropdowns (add-vm page)
     vmDropdowns: () => [...queryKeys.nautobot.all, 'vm-dropdowns'] as const,

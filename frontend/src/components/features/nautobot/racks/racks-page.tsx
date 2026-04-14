@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { LayoutGrid, Loader2 } from 'lucide-react'
+import { LayoutGrid, Loader2, Map } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 import { useRackSaveMutation } from './hooks/use-rack-save-mutation'
 import { useLocationsQuery } from './hooks/use-locations-query'
@@ -18,6 +19,7 @@ import { UnpositionedDevicesPanel } from './components/unpositioned-devices-pane
 import { UnknownCsvDevicesPanel } from './components/unknown-csv-devices-panel'
 import { ImportPositionsDialog } from './components/import-positions-dialog'
 import { ValidateNamesDialog } from './components/validate-names-dialog'
+import { RackMappingsDialog } from './components/rack-mappings-dialog'
 
 import type {
   RackMode,
@@ -30,6 +32,7 @@ import type {
   NameTransform,
   UnknownCsvDevice,
 } from './types'
+import type { PendingMapping } from './hooks/use-rack-save-mutation'
 
 function buildFaceAssignments(
   devices: { id: string; name: string; position: number | null; face: 'front' | 'rear' | null; uHeight: number; isReservation?: boolean }[],
@@ -82,6 +85,10 @@ export function RacksPage() {
   // CSV import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [validateDialogOpen, setValidateDialogOpen] = useState(false)
+  const [mappingsDialogOpen, setMappingsDialogOpen] = useState(false)
+
+  // Device name mappings accumulated during this session (saved on rack save)
+  const [pendingMappings, setPendingMappings] = useState<PendingMapping[]>([])
 
   // Matching settings — shared between import wizard and validate feature
   const [matchingStrategy, setMatchingStrategy] = useState<MatchingStrategy>('exact')
@@ -136,6 +143,7 @@ export function RacksPage() {
     setActiveSlot(null)
     setDeviceSearchQuery('')
     setUnknownCsvDevices([])
+    setPendingMappings([])
   }, [])
 
   const handleSelectRack = useCallback((id: string) => {
@@ -143,6 +151,7 @@ export function RacksPage() {
     setActiveSlot(null)
     setDeviceSearchQuery('')
     setUnknownCsvDevices([])
+    setPendingMappings([])
   }, [])
 
   const handleAdd = useCallback(
@@ -225,6 +234,11 @@ export function RacksPage() {
   const handleMapUnknownDevice = useCallback(
     (csvName: string, device: DeviceSearchResult, csvPosition: number | null, csvFace: 'front' | 'rear' | null) => {
       setUnknownCsvDevices(prev => prev.filter(d => d.csvName !== csvName))
+      // Record the mapping so it can be persisted when the rack is saved
+      setPendingMappings(prev => [
+        ...prev.filter(m => m.csvName !== csvName),
+        { csvName, nautobotName: device.name },
+      ])
       if (csvPosition !== null && csvFace !== null) {
         const setter = csvFace === 'front' ? setLocalFront : setLocalRear
         setter(prev => ({
@@ -308,6 +322,7 @@ export function RacksPage() {
     setLocalRear({ ...originalRear })
     setLocalUnpositioned([...originalUnpositioned])
     setUnknownCsvDevices([])
+    setPendingMappings([])
     setActiveSlot(null)
     setDeviceSearchQuery('')
   }, [originalFront, originalRear, originalUnpositioned])
@@ -324,16 +339,19 @@ export function RacksPage() {
         originalRear,
         localUnpositioned,
         originalUnpositioned,
+        pendingMappings,
+        rackName: rackMetadata?.name,
       },
       {
         onSuccess: () => {
           setOriginalFront({ ...localFront })
           setOriginalRear({ ...localRear })
           setOriginalUnpositioned([...localUnpositioned])
+          setPendingMappings([])
         },
       }
     )
-  }, [saveRack, selectedRackId, selectedLocationId, overwriteLocation, localFront, localRear, originalFront, originalRear, localUnpositioned, originalUnpositioned])
+  }, [saveRack, selectedRackId, selectedLocationId, overwriteLocation, localFront, localRear, originalFront, originalRear, localUnpositioned, originalUnpositioned, pendingMappings, rackMetadata?.name])
 
   const hasChanges = useMemo(
     () =>
@@ -437,6 +455,16 @@ export function RacksPage() {
         />
       )}
 
+      {/* Mappings dialog */}
+      {selectedRackId && (
+        <RackMappingsDialog
+          open={mappingsDialogOpen}
+          onOpenChange={setMappingsDialogOpen}
+          rackName={rackMetadata?.name ?? ''}
+          locationId={selectedLocationId}
+        />
+      )}
+
       {/* Rack view */}
       {selectedRackId && (
         <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
@@ -456,6 +484,15 @@ export function RacksPage() {
                 )}
               </>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto text-white hover:bg-white/20 hover:text-white gap-1.5 h-7 px-2 text-xs"
+              onClick={() => setMappingsDialogOpen(true)}
+            >
+              <Map className="h-3.5 w-3.5" />
+              Show Mappings
+            </Button>
           </div>
           <div className="p-6 bg-gradient-to-b from-white to-gray-50 rounded-b-lg">
             {isLoadingRackData ? (

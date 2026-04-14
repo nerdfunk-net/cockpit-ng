@@ -4,6 +4,11 @@ import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
 import type { RackFaceAssignments, RackDevice } from '../types'
 
+export interface PendingMapping {
+  csvName: string
+  nautobotName: string
+}
+
 interface SaveRackInput {
   rackId: string
   locationId: string
@@ -14,6 +19,10 @@ interface SaveRackInput {
   originalRear: RackFaceAssignments
   localUnpositioned: RackDevice[]
   originalUnpositioned: RackDevice[]
+  /** Device name mappings to persist after a successful save. */
+  pendingMappings?: PendingMapping[]
+  /** Rack name used as key when saving mappings. */
+  rackName?: string
 }
 
 export function useRackSaveMutation() {
@@ -32,6 +41,8 @@ export function useRackSaveMutation() {
       originalRear,
       localUnpositioned,
       originalUnpositioned,
+      pendingMappings,
+      rackName,
     }: SaveRackInput) => {
       const isReservationId = (id: string) => id.startsWith('__reservation__::')
 
@@ -164,6 +175,22 @@ export function useRackSaveMutation() {
       }
 
       await Promise.all([
+        // Persist new device name mappings (fire alongside rack saves)
+        ...(pendingMappings && pendingMappings.length > 0 && rackName
+          ? [
+              apiCall('nautobot/rack-mappings', {
+                method: 'POST',
+                body: JSON.stringify({
+                  rack_name: rackName,
+                  location_id: locationId,
+                  mappings: pendingMappings.map(m => ({
+                    origin_name: m.csvName,
+                    mapped_name: m.nautobotName,
+                  })),
+                }),
+              }),
+            ]
+          : []),
         ...removals.map(({ deviceId }) =>
           apiCall(`nautobot/devices/${deviceId}`, {
             method: 'PATCH',
@@ -207,10 +234,15 @@ export function useRackSaveMutation() {
       ])
     },
 
-    onSuccess: (_data, { rackId }) => {
+    onSuccess: (_data, { rackId, rackName, locationId }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.nautobot.rackDevices(rackId),
       })
+      if (rackName && locationId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.nautobot.rackMappings({ rack_name: rackName, location_id: locationId }),
+        })
+      }
       toast({ title: 'Rack saved', description: 'Device assignments updated successfully.' })
     },
 

@@ -61,6 +61,7 @@ export function useImportPositions({
   const [fieldMapping, setFieldMapping] = useState<Record<string, string | null>>({})
   const [locationColumn, setLocationColumn] = useState<string | null>(null)
   const [clearRackBeforeImport, setClearRackBeforeImport] = useState(true)
+  const [useMappingFromDb, setUseMappingFromDb] = useState(true)
   const [isResolving, setIsResolving] = useState(false)
 
   const selectedLocation = useMemo(
@@ -211,6 +212,7 @@ export function useImportPositions({
     setFieldMapping({})
     setLocationColumn(null)
     setClearRackBeforeImport(true)
+    setUseMappingFromDb(true)
     setIsResolving(false)
   }, [])
 
@@ -242,13 +244,33 @@ export function useImportPositions({
         ),
       ]
 
+      // 2.5. Fetch DB mappings for auto-resolution (if enabled)
+      const dbMappingMap = new Map<string, string>() // csvName → mappedNautobotName
+      if (useMappingFromDb) {
+        try {
+          const dbMappings = await apiCall<{ origin_name: string; mapped_name: string }[]>(
+            `nautobot/rack-mappings?rack_name=${encodeURIComponent(rackMetadata.name)}&location_id=${encodeURIComponent(selectedLocationId)}`
+          )
+          for (const m of dbMappings) {
+            dbMappingMap.set(m.origin_name, m.mapped_name)
+          }
+        } catch {
+          // Non-fatal: proceed without DB mappings if the fetch fails
+        }
+      }
+
       // 3. Resolve device names → IDs (applying transform + matching strategy)
       const nameToIdMap = new Map<string, string>()
       const notFoundNames: string[] = []
 
       await Promise.all(
         uniqueNames.map(async csvName => {
-          const lookupName = applyNameTransform(csvName, nameTransform)
+          // DB mapping takes priority: use mapped name with exact match, bypass transform
+          const hasDbMapping = useMappingFromDb && dbMappingMap.has(csvName)
+          const lookupName = hasDbMapping
+            ? dbMappingMap.get(csvName)!
+            : applyNameTransform(csvName, nameTransform)
+
           const params = new URLSearchParams({ name_ic: lookupName })
           if (selectedLocationId) params.append('location_id', selectedLocationId)
           const result = await apiCall<NautobotDeviceListItem[] | { devices?: NautobotDeviceListItem[] }>(
@@ -259,7 +281,10 @@ export function useImportPositions({
             : (result as { devices?: NautobotDeviceListItem[] }).devices ?? []
 
           let matched: NautobotDeviceListItem | undefined
-          if (matchingStrategy === 'exact') {
+          if (hasDbMapping) {
+            // DB-mapped names are stored as exact Nautobot device names
+            matched = items.find(d => d.name === lookupName)
+          } else if (matchingStrategy === 'exact') {
             matched = items.find(d => d.name === lookupName)
           } else if (matchingStrategy === 'contains') {
             matched = items.find(d => d.name.includes(lookupName))
@@ -353,6 +378,7 @@ export function useImportPositions({
     posColIdx,
     faceColIdx,
     clearRackBeforeImport,
+    useMappingFromDb,
     matchingStrategy,
     nameTransform,
     localFront,
@@ -393,6 +419,8 @@ export function useImportPositions({
       // Step 3
       clearRackBeforeImport,
       setClearRackBeforeImport,
+      useMappingFromDb,
+      setUseMappingFromDb,
       matchingStrategy,
       onMatchingStrategyChange,
       nameTransform,
@@ -428,6 +456,7 @@ export function useImportPositions({
       deviceNameColumn,
       fieldMapping,
       clearRackBeforeImport,
+      useMappingFromDb,
       matchingStrategy,
       onMatchingStrategyChange,
       nameTransform,

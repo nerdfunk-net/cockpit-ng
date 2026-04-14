@@ -24,6 +24,7 @@ from .interfaces import router as dcim_interfaces_router
 from .clusters import router as clusters_router
 from .virtual_chassis import router as virtual_chassis_router
 from .rack_reservations import router as rack_reservations_router
+from .rack_mappings import router as rack_mappings_router
 
 # Create main Nautobot router
 router = APIRouter(prefix="/api/nautobot")
@@ -38,3 +39,4 @@ router.include_router(dcim_interfaces_router)
 router.include_router(clusters_router)
 router.include_router(virtual_chassis_router)
 router.include_router(rack_reservations_router)
+router.include_router(rack_mappings_router)

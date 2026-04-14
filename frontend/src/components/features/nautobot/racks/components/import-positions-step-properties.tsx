@@ -8,6 +8,7 @@ import {
   ArrowRight,
   AlertTriangle,
   Trash2,
+  Database,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -80,6 +81,8 @@ const MATCHING_STRATEGY_OPTIONS: {
 interface ImportPositionsStepPropertiesProps {
   clearRackBeforeImport: boolean
   onClearRackBeforeImportChange: (value: boolean) => void
+  useMappingFromDb: boolean
+  onUseMappingFromDbChange: (value: boolean) => void
   matchingStrategy: MatchingStrategy
   onMatchingStrategyChange: (strategy: MatchingStrategy) => void
   nameTransform: NameTransform | null
@@ -90,6 +93,8 @@ interface ImportPositionsStepPropertiesProps {
 export function ImportPositionsStepProperties({
   clearRackBeforeImport,
   onClearRackBeforeImportChange,
+  useMappingFromDb,
+  onUseMappingFromDbChange,
   matchingStrategy,
   onMatchingStrategyChange,
   nameTransform,
@@ -368,6 +373,31 @@ export function ImportPositionsStepProperties({
             <p className="text-xs text-muted-foreground">
               When enabled, all devices are removed from the rack before the CSV data is applied.
               When disabled, CSV assignments are overlaid on top of the existing rack layout.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Use Mapping from DB */}
+      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-4">
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="use-mapping-db"
+            checked={useMappingFromDb}
+            onCheckedChange={checked => onUseMappingFromDbChange(checked === true)}
+            className="mt-0.5"
+          />
+          <div className="space-y-1">
+            <Label
+              htmlFor="use-mapping-db"
+              className="text-sm font-medium cursor-pointer flex items-center gap-2"
+            >
+              <Database className="h-4 w-4 text-gray-500" />
+              Use Mapping from DB
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              When enabled, previously saved name mappings are applied automatically to
+              resolve CSV device names that cannot be found directly in Nautobot.
             </p>
           </div>
         </div>
