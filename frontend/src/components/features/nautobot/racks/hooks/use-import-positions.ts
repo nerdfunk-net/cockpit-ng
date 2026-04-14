@@ -259,8 +259,10 @@ export function useImportPositions({
         }
       }
 
-      // 3. Resolve device names → IDs (applying transform + matching strategy)
+      // 3. Resolve device names → IDs and display names (applying transform + matching strategy)
       const nameToIdMap = new Map<string, string>()
+      // Stores the resolved Nautobot device name so the rack shows the canonical name, not the CSV name
+      const nameToDisplayMap = new Map<string, string>()
       const notFoundNames: string[] = []
 
       await Promise.all(
@@ -294,6 +296,7 @@ export function useImportPositions({
 
           if (matched) {
             nameToIdMap.set(csvName, matched.id)
+            nameToDisplayMap.set(csvName, matched.name)
           } else {
             notFoundNames.push(csvName)
           }
@@ -306,10 +309,12 @@ export function useImportPositions({
       const newUnpositioned: RackDevice[] = clearRackBeforeImport ? [] : [...localUnpositioned]
 
       for (const row of matchedRows) {
-        const deviceName = row[nameColIdx]?.trim()
-        if (!deviceName) continue
-        const deviceId = nameToIdMap.get(deviceName)
+        const csvName = row[nameColIdx]?.trim()
+        if (!csvName) continue
+        const deviceId = nameToIdMap.get(csvName)
         if (!deviceId) continue
+        // Use the canonical Nautobot name as the display name (falls back to CSV name if not resolved)
+        const deviceName = nameToDisplayMap.get(csvName) ?? csvName
 
         const posRaw = posColIdx >= 0 ? row[posColIdx]?.trim() : undefined
         const position = posRaw ? parseInt(posRaw, 10) : NaN
