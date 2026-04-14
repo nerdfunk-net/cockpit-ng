@@ -8,6 +8,7 @@ interface RackViewProps {
   onAdd: (position: number, face: 'front' | 'rear', device: DeviceSearchResult) => void
   onRemove: (position: number, face: 'front' | 'rear') => void
   onMoveToUnpositioned: (position: number, face: 'front' | 'rear') => void
+  onMoveReservationToUnknown: (position: number, face: 'front' | 'rear') => void
   onAddReservation: (position: number, face: 'front' | 'rear', description: string) => void
   deviceSearchQuery: string
   onDeviceSearchQueryChange: (q: string) => void
@@ -24,6 +25,7 @@ export function RackView({
   onAdd,
   onRemove,
   onMoveToUnpositioned,
+  onMoveReservationToUnknown,
   onAddReservation,
   deviceSearchQuery,
   onDeviceSearchQueryChange,
@@ -46,6 +48,7 @@ export function RackView({
           onAdd={(pos, device) => onAdd(pos, 'front', device)}
           onRemove={(pos) => onRemove(pos, 'front')}
           onMoveToUnpositioned={(pos) => onMoveToUnpositioned(pos, 'front')}
+          onMoveReservationToUnknown={(pos) => onMoveReservationToUnknown(pos, 'front')}
           onAddReservation={(pos, desc) => onAddReservation(pos, 'front', desc)}
           deviceSearchQuery={activeSlot?.face === 'front' ? deviceSearchQuery : ''}
           onDeviceSearchQueryChange={onDeviceSearchQueryChange}
@@ -68,6 +71,7 @@ export function RackView({
           onAdd={(pos, device) => onAdd(pos, 'rear', device)}
           onRemove={(pos) => onRemove(pos, 'rear')}
           onMoveToUnpositioned={(pos) => onMoveToUnpositioned(pos, 'rear')}
+          onMoveReservationToUnknown={(pos) => onMoveReservationToUnknown(pos, 'rear')}
           onAddReservation={(pos, desc) => onAddReservation(pos, 'rear', desc)}
           deviceSearchQuery={activeSlot?.face === 'rear' ? deviceSearchQuery : ''}
           onDeviceSearchQueryChange={onDeviceSearchQueryChange}

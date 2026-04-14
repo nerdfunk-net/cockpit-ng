@@ -18,6 +18,7 @@ interface RackElevationProps {
   onAdd: (position: number, device: DeviceSearchResult) => void
   onRemove: (position: number) => void
   onMoveToUnpositioned: (position: number) => void
+  onMoveReservationToUnknown: (position: number) => void
   onAddReservation: (position: number, description: string) => void
   deviceSearchQuery: string
   onDeviceSearchQueryChange: (q: string) => void
@@ -48,6 +49,7 @@ export function RackElevation({
   onAdd,
   onRemove,
   onMoveToUnpositioned,
+  onMoveReservationToUnknown,
   onAddReservation,
   deviceSearchQuery,
   onDeviceSearchQueryChange,
@@ -202,8 +204,18 @@ export function RackElevation({
               >
                 {isReservation ? `[res] ${assignment.deviceName}` : assignment.deviceName}
               </div>
-              {/* Move to unpositioned button — hidden for reservations */}
-              {!isReservation && (
+              {/* Move button — to unpositioned for devices, to Unresolved CSV for reservations */}
+              {isReservation ? (
+                <button
+                  type="button"
+                  className="shrink-0 h-full flex items-center justify-center text-amber-300 hover:bg-amber-600 hover:text-white transition-colors cursor-pointer"
+                  style={{ width: 18 }}
+                  title="Move back to Unresolved CSV Devices"
+                  onClick={() => onMoveReservationToUnknown(pos)}
+                >
+                  <ArrowLeft style={{ width: 10, height: 10 }} />
+                </button>
+              ) : (
                 <button
                   type="button"
                   className="shrink-0 h-full flex items-center justify-center text-blue-300 hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"

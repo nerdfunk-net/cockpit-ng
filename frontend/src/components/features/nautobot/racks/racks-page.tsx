@@ -194,6 +194,24 @@ export function RacksPage() {
     [localFront, localRear]
   )
 
+  const handleMoveReservationToUnknown = useCallback(
+    (position: number, face: 'front' | 'rear') => {
+      const assignments = face === 'front' ? localFront : localRear
+      const assignment = assignments[position]
+      if (!assignment?.isReservation) return
+
+      const setter = face === 'front' ? setLocalFront : setLocalRear
+      setter((prev) => ({ ...prev, [position]: null }))
+
+      const csvName = assignment.deviceId.replace('__reservation__::', '')
+      setUnknownCsvDevices((prev) => {
+        if (prev.some((d) => d.csvName === csvName)) return prev
+        return [...prev, { csvName, csvPosition: position, csvFace: face }]
+      })
+    },
+    [localFront, localRear]
+  )
+
   const handleImportApply = useCallback(
     ({ newFront, newRear, newUnpositioned, unknownCsvDevices }: RackImportApplyPayload) => {
       setLocalFront(newFront)
@@ -447,21 +465,23 @@ export function RacksPage() {
             ) : (
               <>
                 <div className="flex gap-8 items-start">
-                  <UnpositionedDevicesPanel
-                    key={selectedRackId}
-                    devices={unpositionedDevices}
-                    uHeight={uHeight}
-                    frontAssignments={localFront}
-                    rearAssignments={localRear}
-                    onAdd={handleAdd}
-                    onAddAsReservation={handleAddAsReservation}
-                  />
-                  <UnknownCsvDevicesPanel
-                    devices={unknownCsvDevices}
-                    locationId={locationIdForSearch}
-                    onMapDevice={handleMapUnknownDevice}
-                    onAddReservation={handleAddReservation}
-                  />
+                  <div className="flex flex-col gap-4 shrink-0">
+                    <UnpositionedDevicesPanel
+                      key={selectedRackId}
+                      devices={unpositionedDevices}
+                      uHeight={uHeight}
+                      frontAssignments={localFront}
+                      rearAssignments={localRear}
+                      onAdd={handleAdd}
+                      onAddAsReservation={handleAddAsReservation}
+                    />
+                    <UnknownCsvDevicesPanel
+                      devices={unknownCsvDevices}
+                      locationId={locationIdForSearch}
+                      onMapDevice={handleMapUnknownDevice}
+                      onAddReservation={handleAddReservation}
+                    />
+                  </div>
                   <div className="flex-1">
                     <RackView
                       uHeight={uHeight}
@@ -470,6 +490,7 @@ export function RacksPage() {
                       onAdd={handleAdd}
                       onRemove={handleRemove}
                       onMoveToUnpositioned={handleMoveToUnpositioned}
+                      onMoveReservationToUnknown={handleMoveReservationToUnknown}
                       onAddReservation={handleAddSlotReservation}
                       deviceSearchQuery={deviceSearchQuery}
                       onDeviceSearchQueryChange={setDeviceSearchQuery}
