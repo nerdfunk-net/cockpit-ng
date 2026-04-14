@@ -86,6 +86,10 @@ class DeviceConfigService:
               id
               name
               description
+              location_type {
+                id
+                name
+              }
             }
           }
         }

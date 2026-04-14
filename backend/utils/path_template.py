@@ -12,6 +12,60 @@ from typing import Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 
+def _resolve_location_type_filter(
+    device_data: Dict[str, Any], field_path: str, filter_value: str
+) -> Optional[str]:
+    """Find the first location in the hierarchy matching location_type and return its field.
+
+    Traverses device.location → .parent → .parent.parent → ...
+    Returns the target field (e.g. 'name') from the first location whose
+    location_type.name matches filter_value (case-insensitive).
+
+    Args:
+        device_data: Device data dictionary from Nautobot.
+        field_path: Field path such as "location.name" (root key + target field).
+        filter_value: Location type name to match, e.g. "City".
+
+    Returns:
+        Field value from the matching location, or None if no match found.
+    """
+    parts = field_path.split(".")
+    if len(parts) < 2:
+        logger.debug(
+            "_resolve_location_type_filter: field_path '%s' too short, need at least 2 parts",
+            field_path,
+        )
+        return None
+
+    root_key = parts[0]       # e.g. "location"
+    target_field = parts[-1]  # e.g. "name"
+
+    location = device_data.get(root_key)
+    filter_lower = filter_value.lower()
+
+    while location and isinstance(location, dict):
+        location_type = location.get("location_type") or {}
+        type_name = (
+            location_type.get("name", "") if isinstance(location_type, dict) else ""
+        )
+        if type_name.lower() == filter_lower:
+            value = location.get(target_field)
+            logger.debug(
+                "_resolve_location_type_filter: matched location_type='%s', %s='%s'",
+                type_name,
+                target_field,
+                value,
+            )
+            return str(value) if value is not None else ""
+        location = location.get("parent")
+
+    logger.debug(
+        "_resolve_location_type_filter: no location with location_type='%s' found in hierarchy",
+        filter_value,
+    )
+    return None
+
+
 def replace_template_variables(template: str, device_data: Dict[str, Any]) -> str:
     """
     Replace template variables in a path template with device attributes from Nautobot.
@@ -42,6 +96,29 @@ def replace_template_variables(template: str, device_data: Dict[str, Any]) -> st
     result = template
     for match in matches:
         variable_path = match.strip()
+
+        # Handle filter syntax: "{location.name | location_type:City}"
+        if " | " in variable_path:
+            field_part, filter_part = variable_path.split(" | ", 1)
+            filter_part = filter_part.strip()
+            if ":" in filter_part:
+                filter_method, filter_value = filter_part.split(":", 1)
+                filter_method = filter_method.strip()
+                filter_value = filter_value.strip()
+                if filter_method == "location_type":
+                    value = _resolve_location_type_filter(
+                        device_data, field_part.strip(), filter_value
+                    )
+                    resolved = str(value) if value is not None else ""
+                    result = result.replace(f"{{{match}}}", resolved)
+                    logger.debug("Replaced {%s} with '%s'", match, resolved)
+                else:
+                    logger.warning(
+                        "Unsupported filter method '%s' in variable '%s', keeping as-is",
+                        filter_method,
+                        match,
+                    )
+            continue
 
         # Get the value from device_data
         value = _get_nested_value(device_data, variable_path)

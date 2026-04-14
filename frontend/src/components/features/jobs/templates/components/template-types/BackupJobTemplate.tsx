@@ -63,6 +63,9 @@ export function BackupJobTemplate({
             Location: {"{location.name}"}, {"{location.parent.name}"}, {"{location.parent.parent.name}"}
           </p>
           <p className="text-xs text-amber-700 leading-relaxed">
+            Modifier: use <span className="font-mono">{"| location_type:Value"}</span> to filter by location type — e.g. <span className="font-mono">{"| location_type:City"}</span>
+          </p>
+          <p className="text-xs text-amber-700 leading-relaxed">
             Platform: {"{platform.name}"}, {"{platform.manufacturer.name}"}, {"{device_type.model}"}
           </p>
           <p className="text-xs text-amber-700 leading-relaxed">

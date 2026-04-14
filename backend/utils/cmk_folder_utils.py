@@ -10,6 +10,60 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 
+def _resolve_location_type_filter(
+    device_data: Dict[str, Any], field_path: str, filter_value: str
+) -> str:
+    """Find the first location in the hierarchy matching location_type and return its field.
+
+    Traverses device.location → .parent → .parent.parent → ...
+    Returns the target field (e.g. 'name') from the first location whose
+    location_type.name matches filter_value (case-insensitive).
+
+    Args:
+        device_data: Device data dictionary from Nautobot.
+        field_path: Field path such as "location.name" (root key + target field).
+        filter_value: Location type name to match, e.g. "City".
+
+    Returns:
+        Field value from the matching location, or "" if none found.
+    """
+    parts = field_path.split(".")
+    if len(parts) < 2:
+        logger.debug(
+            "_resolve_location_type_filter: field_path '%s' too short, need at least 2 parts",
+            field_path,
+        )
+        return ""
+
+    root_key = parts[0]       # e.g. "location"
+    target_field = parts[-1]  # e.g. "name"
+
+    location = device_data.get(root_key)
+    filter_lower = filter_value.lower()
+
+    while location and isinstance(location, dict):
+        location_type = location.get("location_type") or {}
+        type_name = (
+            location_type.get("name", "") if isinstance(location_type, dict) else ""
+        )
+        if type_name.lower() == filter_lower:
+            value = location.get(target_field, "")
+            logger.debug(
+                "_resolve_location_type_filter: matched location_type='%s', %s='%s'",
+                type_name,
+                target_field,
+                value,
+            )
+            return str(value) if value else ""
+        location = location.get("parent")
+
+    logger.debug(
+        "_resolve_location_type_filter: no location with location_type='%s' found in hierarchy",
+        filter_value,
+    )
+    return ""
+
+
 def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str:
     """Parse folder template variables and return the processed folder path.
 
@@ -39,6 +93,27 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
     for var in template_vars:
         logger.debug("parse_folder_value: Processing variable '%s'", var)
         actual_value = ""
+
+        # Handle filter syntax: "{location.name | location_type:City}"
+        if " | " in var:
+            field_part, filter_part = var.split(" | ", 1)
+            filter_part = filter_part.strip()
+            if ":" in filter_part:
+                filter_method, filter_value = filter_part.split(":", 1)
+                filter_method = filter_method.strip()
+                filter_value = filter_value.strip()
+                if filter_method == "location_type":
+                    actual_value = _resolve_location_type_filter(
+                        device_data, field_part.strip(), filter_value
+                    )
+                else:
+                    logger.warning(
+                        "parse_folder_value: unsupported filter method '%s' in variable '%s'",
+                        filter_method,
+                        var,
+                    )
+            folder_path = folder_path.replace(f"{{{var}}}", str(actual_value))
+            continue
 
         if var.startswith("_custom_field_data."):
             # Handle custom field data: {_custom_field_data.net}

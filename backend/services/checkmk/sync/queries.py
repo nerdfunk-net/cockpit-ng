@@ -136,8 +136,20 @@ class DeviceQueryService:
                     }
                     location {
                       name
+                      location_type {
+                        name
+                      }
                       parent {
                         name
+                        location_type {
+                          name
+                        }
+                        parent {
+                          name
+                          location_type {
+                            name
+                          }
+                        }
                       }
                     }
                     role {

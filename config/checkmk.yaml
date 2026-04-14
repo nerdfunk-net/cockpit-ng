@@ -17,9 +17,9 @@ monitored_site:
 
 folders:
   server:
-    default: "/server/{_custom_field_data.net}/{location.name}"
+    default: "/server/{_custom_field_data.net}/{location.name | location_type:City}"
   default:
-    default: "/network/{_custom_field_data.net}/{location.name}"
+    default: "/network/{_custom_field_data.net}/{location.name | location_type:City}"
 
     # use folders to statically map folders to a checkmk device
     by_location:
@@ -27,7 +27,7 @@ folders:
     by_ip:
       # the order is first match!
       192.168.179.0/24: /testfolder/subfolder
-      0.0.0.0/0: "/network/{_custom_field_data.net}/{location.name}"
+      0.0.0.0/0: "/network/{_custom_field_data.net}/{location.name | location_type:City}"
     by_name:
       lab-2: /testfolder
 
