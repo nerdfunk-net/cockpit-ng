@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Users } from 'lucide-react'
 import { useClientDevicesQuery, useClientDataQuery } from '@/hooks/queries/use-clients-query'
 import { DeviceList } from './device-list'
@@ -22,25 +22,40 @@ const INITIAL_FILTERS: ColumnFilters = {
   hostname: '',
 }
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay)
+    return () => clearTimeout(timer)
+  }, [value, delay])
+
+  return debouncedValue
+}
+
 export function ClientsPage() {
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>(INITIAL_FILTERS)
+  // Track if filters changed so we can reset page only on filter change, not debounce tick
+  const filterChangedRef = useRef(false)
+
+  const debouncedFilters = useDebounce(columnFilters, 300)
 
   const devicesQuery = useClientDevicesQuery()
 
   const queryFilters = useMemo(
     () => ({
       deviceName: selectedDevice ?? undefined,
-      ipAddress: columnFilters.ipAddress || undefined,
-      macAddress: columnFilters.macAddress || undefined,
-      port: columnFilters.port || undefined,
-      vlan: columnFilters.vlan || undefined,
-      hostname: columnFilters.hostname || undefined,
+      ipAddress: debouncedFilters.ipAddress || undefined,
+      macAddress: debouncedFilters.macAddress || undefined,
+      port: debouncedFilters.port || undefined,
+      vlan: debouncedFilters.vlan || undefined,
+      hostname: debouncedFilters.hostname || undefined,
       page,
       pageSize: 50,
     }),
-    [selectedDevice, columnFilters, page]
+    [selectedDevice, debouncedFilters, page]
   )
 
   const dataQuery = useClientDataQuery(queryFilters)
@@ -52,11 +67,19 @@ export function ClientsPage() {
 
   const handleFilterChange = useCallback(
     (key: keyof ColumnFilters, value: string) => {
+      filterChangedRef.current = true
       setColumnFilters((prev) => ({ ...prev, [key]: value }))
-      setPage(1)
     },
     []
   )
+
+  // Reset to page 1 when debounced filters settle after a user change
+  useEffect(() => {
+    if (filterChangedRef.current) {
+      filterChangedRef.current = false
+      setPage(1)
+    }
+  }, [debouncedFilters])
 
   const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage)
@@ -104,6 +127,7 @@ export function ClientsPage() {
             pageSize={50}
             filters={columnFilters}
             isLoading={dataQuery.isLoading}
+            isFetching={dataQuery.isFetching}
             onFilterChange={handleFilterChange}
             onPageChange={handlePageChange}
             selectedDevice={selectedDevice}

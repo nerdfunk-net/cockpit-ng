@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 
@@ -98,5 +98,6 @@ export function useClientDataQuery(filters: ClientDataFilters = DEFAULT_FILTERS)
       return response ?? { items: [], total: 0, page, page_size: pageSize }
     },
     staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
   })
 }

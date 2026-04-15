@@ -21,6 +21,7 @@ interface ClientsTableProps {
   pageSize: number
   filters: ColumnFilters
   isLoading: boolean
+  isFetching?: boolean
   onFilterChange: (key: keyof ColumnFilters, value: string) => void
   onPageChange: (page: number) => void
   selectedDevice: string | null
@@ -33,6 +34,7 @@ export function ClientsTable({
   pageSize,
   filters,
   isLoading,
+  isFetching = false,
   onFilterChange,
   onPageChange,
   selectedDevice,
@@ -56,6 +58,9 @@ export function ClientsTable({
           <span className="text-sm font-medium">
             {selectedDevice ? `Clients — ${selectedDevice}` : 'All Clients'}
           </span>
+          {isFetching && !isLoading && (
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white opacity-70" />
+          )}
         </div>
         <div className="text-xs text-blue-100">
           {total > 0 ? `${startRow}–${endRow} of ${total}` : '0 entries'}

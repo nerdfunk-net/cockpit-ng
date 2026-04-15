@@ -407,6 +407,9 @@ def execute_get_client_data(
         mac_count = repo.bulk_insert_mac_addresses(all_mac_rows)
         hostname_count = repo.bulk_insert_hostnames(all_hostname_rows)
 
+        # Keep only the 5 most recent sessions to prevent unbounded table growth
+        repo.delete_old_sessions(keep=5)
+
         logger.info("=" * 80)
         logger.info("GET CLIENT DATA COMPLETE")
         logger.info("Session ID: %s", session_id)
