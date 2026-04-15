@@ -40,9 +40,13 @@ async def compare_device_config(
 ):
     """Compare normalized Nautobot device config with CheckMK host config."""
     try:
+        logger.info("=" * 80)
         logger.info("[ROUTER] Compare request for device ID: %s", device_id)
+        logger.info("=" * 80)
         result = await nb2cmk_service.compare_device_config(device_id)
+        logger.info("=" * 80)
         logger.info("[ROUTER] Compare successful for device ID: %s", device_id)
+        logger.info("=" * 80)
         return result.model_dump()
     except HTTPException as http_exc:
         # Re-raise HTTP exceptions with additional logging

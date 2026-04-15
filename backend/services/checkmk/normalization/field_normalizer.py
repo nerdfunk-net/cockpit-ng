@@ -4,6 +4,7 @@ import logging
 from typing import Dict, Any
 
 from models.nb2cmk import DeviceExtensions
+from utils.cmk_folder_utils import _resolve_location_type_filter
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,42 @@ class FieldNormalizer:
             if mapping_config:
                 for nautobot_field, checkmk_attribute in mapping_config.items():
                     try:
-                        value = self.extract_field_value(device_data, nautobot_field)
+                        # Handle modifier syntax: "location.name__location_type=City"
+                        # The __ separator indicates a filter modifier; strip it before lookup
+                        if "__" in nautobot_field:
+                            field_path, modifier = nautobot_field.split("__", 1)
+                            field_path = field_path.strip()
+                            if "=" in modifier:
+                                filter_method, filter_value = modifier.split("=", 1)
+                                filter_method = filter_method.strip()
+                                filter_value = filter_value.strip()
+                                if filter_method == "location_type":
+                                    raw = _resolve_location_type_filter(
+                                        device_data, field_path, filter_value
+                                    )
+                                    value = raw if raw else None
+                                    logger.info(
+                                        "Resolved modifier mapping '%s' (location_type=%s) for device '%s': %s",
+                                        nautobot_field,
+                                        filter_value,
+                                        device_name,
+                                        value,
+                                    )
+                                else:
+                                    logger.warning(
+                                        "Unsupported filter method '%s' in mapping key '%s', skipping",
+                                        filter_method,
+                                        nautobot_field,
+                                    )
+                                    continue
+                            else:
+                                logger.warning(
+                                    "Invalid modifier format in mapping key '%s' (expected 'method=value'), skipping",
+                                    nautobot_field,
+                                )
+                                continue
+                        else:
+                            value = self.extract_field_value(device_data, nautobot_field)
 
                         # Add the mapped attribute if value exists and is not empty
                         if value is not None and value != "":

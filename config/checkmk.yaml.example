@@ -82,6 +82,23 @@ mapping:
   # this is a simple key value mapping. The key is the name of the nautobot attribute
   # the value is the name in checkmk
   # Look at the custom host attributes in checkmk to add additional checkmk attributes
+  #
+  # Modifier syntax: <field_path>__<filter_method>=<filter_value>
+  # Use __ to apply a filter when resolving hierarchical fields.
+  # The modifier is stripped before the field is looked up.
+  #
+  # Available modifiers:
+  #   location_type=<type_name>
+  #     Traverses the location hierarchy (location → parent → parent.parent → ...)
+  #     and returns the field value from the first location whose location_type.name
+  #     matches <type_name> (case-insensitive).
+  #
+  # Example: devices are placed in rooms/racks but you want to map the city to
+  # the checkmk "location" attribute instead of the immediate location name.
+  # The key "location.name__location_type=City" will walk up the location tree
+  # until it finds a location of type "City" and use its name:
+  #
+  # location.name__location_type=City: location
   name: alias
   location.name: location
   location.parent.name: city

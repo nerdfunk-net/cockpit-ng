@@ -66,8 +66,8 @@ mapping:
   # Look at the custom host attributes in checkmk to add additional checkmk attributes
   name: alias
   #location.name: location
-  location.name__location_type=city: location
-  location.parent.name: city
+  location.name__location_type=City: location
+  location.parent.name__location_type=City: city
   _custom_field_data.free_textfield: textfeld
 
 compare:

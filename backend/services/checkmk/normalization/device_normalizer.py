@@ -55,6 +55,9 @@ class DeviceNormalizationService:
             logger.debug(
                 "[NORMALIZATION] Device data keys: %s", list(device_data.keys())
             )
+            logger.info("=" * 80)
+            logger.info("[SECTION] BEGIN DEVICE NORMALIZATION")
+            logger.info("=" * 80)
 
             # Force load the configuration on service initialization
             try:
@@ -152,6 +155,9 @@ class DeviceNormalizationService:
 
             # Set site using utility function
             try:
+                logger.info("-" * 80)
+                logger.info("[PROCESSING] site determination")
+                logger.info("-" * 80)
                 extensions.attributes["site"] = get_monitored_site(device_data, None)
                 logger.info(
                     "[NORMALIZATION] Determined site for device %s: %s",
@@ -173,6 +179,9 @@ class DeviceNormalizationService:
 
             # Set folder using utility function
             try:
+                logger.info("-" * 80)
+                logger.info("[PROCESSING] folder determination")
+                logger.info("-" * 80)
                 extensions.folder = get_device_folder(device_data, None)
                 logger.info(
                     "[NORMALIZATION] Determined folder for device %s: %s",
@@ -194,6 +203,9 @@ class DeviceNormalizationService:
 
             # Set IP address from primary_ip4 (remove CIDR netmask for CheckMK compatibility)
             try:
+                logger.info("-" * 80)
+                logger.info("[PROCESSING] IP address mapping")
+                logger.info("-" * 80)
                 self.ip_normalizer.process_ip_address(device_data, extensions)
                 logger.debug(
                     "[NORMALIZATION] Device %s IP address: %s",
@@ -215,13 +227,24 @@ class DeviceNormalizationService:
 
             # Process various configuration mappings
             try:
+                logger.info("-" * 80)
+                logger.info("[PROCESSING] SNMP configuration")
+                logger.info("-" * 80)
                 self.snmp_normalizer.process_snmp_config(device_data, extensions)
+
+                logger.info("-" * 80)
+                logger.info("[PROCESSING] tags and host tag group mappings")
+                logger.info("-" * 80)
                 self.tag_normalizer.process_additional_attributes(
                     device_data, extensions
                 )
                 self.tag_normalizer.process_cf2htg_mappings(device_data, extensions)
                 self.tag_normalizer.process_tags2htg_mappings(device_data, extensions)
                 self.tag_normalizer.process_attr2htg_mappings(device_data, extensions)
+
+                logger.info("-" * 80)
+                logger.info("[PROCESSING] field mappings")
+                logger.info("-" * 80)
                 self.field_normalizer.process_field_mappings(device_data, extensions)
 
                 logger.info(
@@ -237,6 +260,9 @@ class DeviceNormalizationService:
                     device_name,
                     extensions.folder,
                 )
+                logger.info("=" * 80)
+                logger.info("[SECTION] NORMALIZATION COMPLETE")
+                logger.info("=" * 80)
             except Exception as e:
                 logger.error(
                     "[NORMALIZATION ERROR] Failed to process configuration mappings for %s: %s",

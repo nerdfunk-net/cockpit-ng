@@ -166,7 +166,9 @@ class DeviceComparisonService:
         """
         try:
             # Get normalized config
-            logger.info("[COMPARE] Starting comparison for device ID: %s", device_id)
+            logger.info("=" * 80)
+            logger.info("[COMPARE START] device ID: %s", device_id)
+            logger.info("=" * 80)
             try:
                 normalized_config = await self.query_service.get_device_normalized(
                     device_id
@@ -175,6 +177,9 @@ class DeviceComparisonService:
                     "[COMPARE] Successfully retrieved normalized config for device %s",
                     device_id,
                 )
+                logger.info("--" * 40)
+                logger.info("[SECTION] NORMALIZATION COMPLETE")
+                logger.info("--" * 40)
             except Exception as norm_error:
                 error_msg = f"Failed to normalize device config for device {device_id}: {str(norm_error)}"
                 logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
@@ -208,6 +213,9 @@ class DeviceComparisonService:
                 from checkmk.client import CheckMKAPIError
 
                 try:
+                    logger.info("=" * 80)
+                    logger.info("[SECTION] FETCH CHECKMK DATA")
+                    logger.info("=" * 80)
                     logger.debug(
                         "[COMPARE] Fetching CheckMK data for host: %s", hostname
                     )
@@ -292,6 +300,9 @@ class DeviceComparisonService:
                 )
 
                 # Compare the configurations
+                logger.info("+" * 80)
+                logger.info("[SECTION] ATTRIBUTE COMPARISON")
+                logger.info("+" * 80)
                 logger.info(
                     "[COMPARE] Starting configuration comparison for %s", hostname
                 )
@@ -304,6 +315,9 @@ class DeviceComparisonService:
                     hostname,
                 )
 
+                logger.info("#" * 80)
+                logger.info("[SECTION] COMPARISON RESULT")
+                logger.info("#" * 80)
             except Exception as e:
                 error_msg = f"Error processing configurations for comparison of {hostname}: {str(e)}"
                 logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
@@ -370,6 +384,7 @@ class DeviceComparisonService:
         for compare_key in compare_keys:
             try:
                 if compare_key == "attributes":
+                    logger.info(">> Comparing attributes")
                     # Special handling for attributes (compare nested values)
                     nb_attributes = nb_config.get("attributes", {})
                     cmk_attributes = cmk_config.get("attributes", {})
@@ -483,6 +498,7 @@ class DeviceComparisonService:
 
                 else:
                     # Direct comparison for other keys (like folder)
+                    logger.info("<< Comparing %s", compare_key)
                     try:
                         nb_value = nb_config.get(compare_key)
                         cmk_value = cmk_config.get(compare_key)

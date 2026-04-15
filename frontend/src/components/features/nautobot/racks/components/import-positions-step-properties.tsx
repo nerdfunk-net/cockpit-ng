@@ -80,6 +80,8 @@ const MATCHING_STRATEGY_OPTIONS: {
   },
 ]
 
+const EMPTY_LOCATION_TYPES: unknown[] = []
+
 interface ImportPositionsStepPropertiesProps {
   clearRackBeforeImport: boolean
   onClearRackBeforeImportChange: (value: boolean) => void
@@ -108,7 +110,7 @@ export function ImportPositionsStepProperties({
   csvNameValues,
 }: ImportPositionsStepPropertiesProps) {
   const [tryModalOpen, setTryModalOpen] = useState(false)
-  const { data: locationTypes = [] } = useLocationTypesQuery()
+  const { data: locationTypes = EMPTY_LOCATION_TYPES } = useLocationTypesQuery()
   const locationTypeOptions = useMemo(() => buildLocationTypeOptions(locationTypes), [locationTypes])
 
   const tryResults = useMemo(() => {
