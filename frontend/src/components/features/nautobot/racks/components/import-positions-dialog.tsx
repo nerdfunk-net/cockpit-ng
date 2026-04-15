@@ -152,6 +152,8 @@ export function ImportPositionsDialog({
             onClearRackBeforeImportChange={wizard.setClearRackBeforeImport}
             useMappingFromDb={wizard.useMappingFromDb}
             onUseMappingFromDbChange={wizard.setUseMappingFromDb}
+            loadDevicesUpToLocationTypeId={wizard.loadDevicesUpToLocationTypeId}
+            onLoadDevicesUpToChange={wizard.setLoadDevicesUpToLocationTypeId}
             matchingStrategy={wizard.matchingStrategy}
             onMatchingStrategyChange={wizard.onMatchingStrategyChange}
             nameTransform={wizard.nameTransform}

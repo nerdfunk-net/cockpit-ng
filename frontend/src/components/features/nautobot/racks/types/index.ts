@@ -67,3 +67,9 @@ export interface RackImportApplyPayload {
   newUnpositioned: RackDevice[]
   unknownCsvDevices: UnknownCsvDevice[]
 }
+
+export interface LocationType {
+  id: string
+  name: string
+  parent: { id: string; name: string } | null
+}

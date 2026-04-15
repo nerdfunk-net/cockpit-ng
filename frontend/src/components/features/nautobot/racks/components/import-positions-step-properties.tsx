@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Trash2,
   Database,
+  MapPin,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -27,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useLocationTypesQuery, buildLocationTypeOptions } from '../hooks/use-location-types-query'
 import type { MatchingStrategy, NameTransform, NameTransformMode } from '../types'
 
 /**
@@ -83,6 +85,8 @@ interface ImportPositionsStepPropertiesProps {
   onClearRackBeforeImportChange: (value: boolean) => void
   useMappingFromDb: boolean
   onUseMappingFromDbChange: (value: boolean) => void
+  loadDevicesUpToLocationTypeId: string | null
+  onLoadDevicesUpToChange: (id: string | null) => void
   matchingStrategy: MatchingStrategy
   onMatchingStrategyChange: (strategy: MatchingStrategy) => void
   nameTransform: NameTransform | null
@@ -95,6 +99,8 @@ export function ImportPositionsStepProperties({
   onClearRackBeforeImportChange,
   useMappingFromDb,
   onUseMappingFromDbChange,
+  loadDevicesUpToLocationTypeId,
+  onLoadDevicesUpToChange,
   matchingStrategy,
   onMatchingStrategyChange,
   nameTransform,
@@ -102,6 +108,8 @@ export function ImportPositionsStepProperties({
   csvNameValues,
 }: ImportPositionsStepPropertiesProps) {
   const [tryModalOpen, setTryModalOpen] = useState(false)
+  const { data: locationTypes = [] } = useLocationTypesQuery()
+  const locationTypeOptions = useMemo(() => buildLocationTypeOptions(locationTypes), [locationTypes])
 
   const tryResults = useMemo(() => {
     if (!tryModalOpen || !nameTransform?.pattern) return []
@@ -185,6 +193,37 @@ export function ImportPositionsStepProperties({
             </label>
           ))}
         </div>
+      </div>
+
+      {/* Load devices up to */}
+      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <MapPin className="h-4 w-4 text-blue-500" />
+          <h3 className="text-sm font-semibold text-gray-800">Load devices up to</h3>
+        </div>
+        <p className="text-xs text-gray-500">
+          Widen the device search to include all devices at this level of the location hierarchy or
+          below. Use this when a device&apos;s Nautobot location is a parent of the rack&apos;s
+          location.
+        </p>
+        <Select
+          value={loadDevicesUpToLocationTypeId ?? '__none__'}
+          onValueChange={v => onLoadDevicesUpToChange(v === '__none__' ? null : v)}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__" className="text-xs text-gray-500">
+              Rack location only
+            </SelectItem>
+            {locationTypeOptions.map(opt => (
+              <SelectItem key={opt.id} value={opt.id} className="text-xs">
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Customize Name */}

@@ -62,6 +62,7 @@ export function useImportPositions({
   const [locationColumn, setLocationColumn] = useState<string | null>(null)
   const [clearRackBeforeImport, setClearRackBeforeImport] = useState(true)
   const [useMappingFromDb, setUseMappingFromDb] = useState(true)
+  const [loadDevicesUpToLocationTypeId, setLoadDevicesUpToLocationTypeId] = useState<string | null>(null)
   const [isResolving, setIsResolving] = useState(false)
 
   const selectedLocation = useMemo(
@@ -213,6 +214,7 @@ export function useImportPositions({
     setLocationColumn(null)
     setClearRackBeforeImport(true)
     setUseMappingFromDb(true)
+    setLoadDevicesUpToLocationTypeId(null)
     setIsResolving(false)
   }, [])
 
@@ -259,7 +261,24 @@ export function useImportPositions({
         }
       }
 
-      // 3. Resolve device names → IDs and display names (applying transform + matching strategy)
+      // 3a. Resolve effective location ID (may be an ancestor when "Load devices up to" is set)
+      let effectiveLocationId = selectedLocationId
+      if (loadDevicesUpToLocationTypeId && selectedLocationId) {
+        try {
+          const parentParams = new URLSearchParams({
+            location_id: selectedLocationId,
+            location_type_id: loadDevicesUpToLocationTypeId,
+          })
+          const parentResult = await apiCall<{ location_id: string }>(
+            `nautobot/parent-locations?${parentParams.toString()}`
+          )
+          effectiveLocationId = parentResult.location_id
+        } catch {
+          // Non-fatal: fall back to rack's own location
+        }
+      }
+
+      // 3b. Resolve device names → IDs and display names (applying transform + matching strategy)
       const nameToIdMap = new Map<string, string>()
       // Stores the resolved Nautobot device name so the rack shows the canonical name, not the CSV name
       const nameToDisplayMap = new Map<string, string>()
@@ -274,7 +293,7 @@ export function useImportPositions({
             : applyNameTransform(csvName, nameTransform)
 
           const params = new URLSearchParams({ name_ic: lookupName })
-          if (selectedLocationId) params.append('location_id', selectedLocationId)
+          if (effectiveLocationId) params.append('location_id', effectiveLocationId)
           const result = await apiCall<NautobotDeviceListItem[] | { devices?: NautobotDeviceListItem[] }>(
             `nautobot/devices?${params.toString()}`
           )
@@ -384,6 +403,7 @@ export function useImportPositions({
     faceColIdx,
     clearRackBeforeImport,
     useMappingFromDb,
+    loadDevicesUpToLocationTypeId,
     matchingStrategy,
     nameTransform,
     localFront,
@@ -426,6 +446,8 @@ export function useImportPositions({
       setClearRackBeforeImport,
       useMappingFromDb,
       setUseMappingFromDb,
+      loadDevicesUpToLocationTypeId,
+      setLoadDevicesUpToLocationTypeId,
       matchingStrategy,
       onMatchingStrategyChange,
       nameTransform,
@@ -462,6 +484,7 @@ export function useImportPositions({
       fieldMapping,
       clearRackBeforeImport,
       useMappingFromDb,
+      loadDevicesUpToLocationTypeId,
       matchingStrategy,
       onMatchingStrategyChange,
       nameTransform,
