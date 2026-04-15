@@ -17,6 +17,24 @@ monitored_site:
 
 folders:
   server:
+    # if you want to use a modifier like {location.name | location_type:City}
+    # you have to adjust your normalization query and have to add the parent to the query
+    # device(id: $deviceId) {
+    # ....
+    # parent {
+    #        name
+    #        location_type {
+    #          name
+    #        }
+    #        parent {
+    #          name
+    #          location_type {
+    #            name
+    #          }
+    #        }
+    #      }
+    # ....
+    # }
     default: "/server/{_custom_field_data.net}/{location.name}"
   default:
     default: "/network/{_custom_field_data.net}/{location.name}"

@@ -65,7 +65,8 @@ mapping:
   # the value is the name in checkmk
   # Look at the custom host attributes in checkmk to add additional checkmk attributes
   name: alias
-  location.name: location
+  #location.name: location
+  location.name__location_type=city: location
   location.parent.name: city
   _custom_field_data.free_textfield: textfeld
 
