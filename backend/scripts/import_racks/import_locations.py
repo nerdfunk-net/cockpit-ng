@@ -247,7 +247,9 @@ class LocationImporter:
         """Extract integer rack width from a value like '19 inches' or 19."""
         return int(str(width_value).split()[0])
 
-    async def resolve_rack_id(self, rack_name: str, location_name: str) -> Optional[str]:
+    async def resolve_rack_id(
+        self, rack_name: str, location_name: str
+    ) -> Optional[str]:
         """Check whether a rack with this name and location already exists in Nautobot."""
         response = await self.nautobot.rest_request(
             f"dcim/racks/?name={rack_name}&location={location_name}", method="GET"

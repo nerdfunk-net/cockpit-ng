@@ -31,6 +31,7 @@ from models.celery import (
     CsvImportRequest,
     DeployAgentRequest,
     ExportDevicesRequest,
+    GetClientDataRequest,
     ImportDevicesRequest,
     OnboardDeviceRequest,
     PreviewExportRequest,
@@ -1355,3 +1356,79 @@ async def check_ip_task_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to start check IP task: {str(exc)}",
         )
+
+
+# ============================================================================
+# Get Client Data
+# ============================================================================
+
+
+@router.post("/tasks/get-client-data", response_model=TaskWithJobResponse)
+@handle_celery_errors("get client data")
+async def trigger_get_client_data(
+    request: GetClientDataRequest,
+    current_user: dict = Depends(require_permission("devices", "read")),
+):
+    """
+    Collect ARP table, MAC address table, and DNS hostnames from network devices.
+
+    This task:
+    1. Connects to each device in the inventory via SSH (Netmiko)
+    2. Runs 'show ip arp' and/or 'show mac address-table' with TextFSM parsing
+    3. DNS-resolves collected IP addresses (if collect_hostname=True)
+    4. Stores results in client_ip_addresses, client_mac_addresses, client_hostnames tables
+
+    All rows from the same run share a session_id (UUID) as the cross-table join key.
+    MAC addresses link ARP entries to MAC table entries. IP addresses link ARP entries
+    to hostname entries.
+
+    Request Body:
+        inventory: List of Nautobot device UUIDs (empty list = all devices)
+        credential_id: SSH credential ID for device authentication
+        collect_ip_address: Collect ARP table entries (default: true)
+        collect_mac_address: Collect MAC address table entries (default: true)
+        collect_hostname: DNS-resolve collected IPs (default: true)
+
+    Returns:
+        TaskWithJobResponse with task_id and job_id for tracking progress
+    """
+    from tasks.get_client_data_task import get_client_data_task
+
+    username = current_user.get("username", "unknown")
+    device_count = len(request.inventory) if request.inventory else 0
+
+    job_run = job_run_manager.create_job_run(
+        job_name="Get Client Data",
+        job_type="get_client_data",
+        triggered_by="manual",
+        target_devices=request.inventory or [],
+        executed_by=username,
+    )
+    job_run_id = job_run.get("id") if job_run else None
+
+    task = get_client_data_task.apply_async(
+        kwargs=dict(
+            schedule_id=None,
+            credential_id=request.credential_id,
+            job_parameters={
+                "collect_ip_address": request.collect_ip_address,
+                "collect_mac_address": request.collect_mac_address,
+                "collect_hostname": request.collect_hostname,
+            },
+            target_devices=request.inventory or [],
+            template=None,
+            job_run_id=job_run_id,
+        ),
+        queue="network",
+    )
+
+    if job_run_id:
+        job_run_manager.mark_started(job_run_id, task.id)
+
+    target_desc = f"{device_count} devices" if device_count else "all devices"
+    return TaskWithJobResponse(
+        task_id=task.id,
+        job_id=str(job_run_id) if job_run_id else None,
+        status="queued",
+        message=f"Get Client Data task queued for {target_desc}",
+    )

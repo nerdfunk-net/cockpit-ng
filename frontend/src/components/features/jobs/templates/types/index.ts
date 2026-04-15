@@ -75,6 +75,10 @@ export interface JobTemplate {
   // Set Primary IP (set_primary_ip type)
   set_primary_ip_strategy?: string | null
   set_primary_ip_agent_id?: string | null
+  // Get Client Data (get_client_data type)
+  collect_ip_address?: boolean
+  collect_mac_address?: boolean
+  collect_hostname?: boolean
   is_global: boolean
   user_id?: number
   created_by?: string

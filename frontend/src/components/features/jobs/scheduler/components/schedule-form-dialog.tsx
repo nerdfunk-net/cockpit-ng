@@ -104,7 +104,9 @@ export function ScheduleFormDialog({
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
 
   const requiresCredential = selectedTemplate &&
-    (selectedTemplate.job_type === 'backup' || selectedTemplate.job_type === 'run_commands')
+    (selectedTemplate.job_type === 'backup' ||
+     selectedTemplate.job_type === 'run_commands' ||
+     selectedTemplate.job_type === 'get_client_data')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

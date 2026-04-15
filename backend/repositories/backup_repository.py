@@ -230,9 +230,7 @@ class BackupRepository:
         except Exception:
             data = {}
 
-        roles = sorted(
-            {r["name"] for r in data.get("roles", []) if r.get("name")}
-        )
+        roles = sorted({r["name"] for r in data.get("roles", []) if r.get("name")})
         locations = sorted(
             {loc["name"] for loc in data.get("locations", []) if loc.get("name")}
         )

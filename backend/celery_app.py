@@ -120,6 +120,7 @@ celery_app.conf.update(
         "tasks.ping_network_task": {"queue": "network"},
         "tasks.scan_prefixes_task": {"queue": "network"},
         "tasks.check_ip_task": {"queue": "network"},
+        "tasks.get_client_data_task": {"queue": "network"},
         # Heavy/bulk tasks go to 'heavy' queue (if configured in UI)
         "tasks.bulk_onboard_devices_task": {"queue": "heavy"},
         "tasks.update_devices_from_csv_task": {"queue": "heavy"},

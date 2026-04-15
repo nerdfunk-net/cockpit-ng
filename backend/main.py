@@ -82,6 +82,9 @@ from routers.jobs import (
 # certificates_router is now part of routers.tools package
 from health import router as health_router
 
+# Clients router (query collected ARP/MAC/hostname data)
+from routers.clients import router as clients_router
+
 # General routers
 from routers.general import logs_router
 
@@ -202,6 +205,7 @@ app.include_router(certificates_router)
 app.include_router(tools_router)
 app.include_router(cockpit_agent_router)
 app.include_router(agents_deploy_router)
+app.include_router(clients_router)
 app.include_router(logs_router)
 app.include_router(health_router)
 

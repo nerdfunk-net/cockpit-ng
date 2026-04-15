@@ -48,6 +48,7 @@ import { MaintainIPAddressesJobTemplate } from './template-types/MaintainIPAddre
 import { CsvImportJobTemplate } from './template-types/CsvImportJobTemplate'
 import { CsvExportJobTemplate } from './template-types/CsvExportJobTemplate'
 import { SetPrimaryIpJobTemplate } from './template-types/SetPrimaryIpJobTemplate'
+import { GetClientDataJobTemplate } from './template-types/GetClientDataJobTemplate'
 import { CsvImportMappingDialog } from './template-types/CsvImportMappingDialog'
 import { CsvImportDefaultsPanel } from './csv-import-defaults-panel'
 import type { DeployTemplateEntryData } from './template-types/DeployTemplateEntry'
@@ -174,6 +175,10 @@ export function TemplateFormDialog({
   // Set Primary IP
   const [formSetPrimaryIpStrategy, setFormSetPrimaryIpStrategy] = useState('')
   const [formSetPrimaryIpAgentId, setFormSetPrimaryIpAgentId] = useState('')
+  // Get Client Data
+  const [formCollectIpAddress, setFormCollectIpAddress] = useState(true)
+  const [formCollectMacAddress, setFormCollectMacAddress] = useState(true)
+  const [formCollectHostname, setFormCollectHostname] = useState(true)
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
   const { data: ipStatuses = EMPTY_IP_STATUSES, isLoading: loadingIpStatuses } =
@@ -300,6 +305,9 @@ export function TemplateFormDialog({
     setFormIsGlobal(false)
     setFormSetPrimaryIpStrategy('')
     setFormSetPrimaryIpAgentId('')
+    setFormCollectIpAddress(true)
+    setFormCollectMacAddress(true)
+    setFormCollectHostname(true)
   }, [])
 
   // Load editing template data
@@ -423,6 +431,9 @@ export function TemplateFormDialog({
       setFormCsvExportIncludeHeaders(editingTemplate.csv_export_include_headers ?? true)
       setFormSetPrimaryIpStrategy(editingTemplate.set_primary_ip_strategy || '')
       setFormSetPrimaryIpAgentId(editingTemplate.set_primary_ip_agent_id || '')
+      setFormCollectIpAddress(editingTemplate.collect_ip_address ?? true)
+      setFormCollectMacAddress(editingTemplate.collect_mac_address ?? true)
+      setFormCollectHostname(editingTemplate.collect_hostname ?? true)
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
@@ -673,6 +684,12 @@ export function TemplateFormDialog({
         formJobType === 'set_primary_ip'
           ? formSetPrimaryIpAgentId || undefined
           : undefined,
+      collect_ip_address:
+        formJobType === 'get_client_data' ? formCollectIpAddress : undefined,
+      collect_mac_address:
+        formJobType === 'get_client_data' ? formCollectMacAddress : undefined,
+      collect_hostname:
+        formJobType === 'get_client_data' ? formCollectHostname : undefined,
       is_global: formIsGlobal,
     }
 
@@ -945,6 +962,17 @@ export function TemplateFormDialog({
               setFormStrategy={setFormSetPrimaryIpStrategy}
               formAgentId={formSetPrimaryIpAgentId}
               setFormAgentId={setFormSetPrimaryIpAgentId}
+            />
+          )}
+
+          {formJobType === 'get_client_data' && (
+            <GetClientDataJobTemplate
+              collectIpAddress={formCollectIpAddress}
+              setCollectIpAddress={setFormCollectIpAddress}
+              collectMacAddress={formCollectMacAddress}
+              setCollectMacAddress={setFormCollectMacAddress}
+              collectHostname={formCollectHostname}
+              setCollectHostname={setFormCollectHostname}
             />
           )}
         </div>

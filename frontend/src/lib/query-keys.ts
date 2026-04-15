@@ -375,6 +375,25 @@ export const queryKeys = {
         : ([...queryKeys.general.all, 'logs'] as const),
   },
 
+  // Clients (collected ARP/MAC/hostname data)
+  clients: {
+    all: ['clients'] as const,
+    devices: () => [...queryKeys.clients.all, 'devices'] as const,
+    data: (filters?: {
+      device_name?: string
+      ip_address?: string
+      mac_address?: string
+      port?: string
+      vlan?: string
+      hostname?: string
+      page?: number
+      page_size?: number
+    }) =>
+      filters
+        ? ([...queryKeys.clients.all, 'data', filters] as const)
+        : ([...queryKeys.clients.all, 'data'] as const),
+  },
+
   // Templates
   templates: {
     all: ['templates'] as const,

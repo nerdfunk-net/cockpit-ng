@@ -33,7 +33,11 @@ logger = logging.getLogger(__name__)
 class InventoryService:
     """Thin orchestration facade for Ansible inventory operations."""
 
-    def __init__(self, persistence_service: "InventoryPersistenceService" = None, cache_service=None):
+    def __init__(
+        self,
+        persistence_service: "InventoryPersistenceService" = None,
+        cache_service=None,
+    ):
         self.query_service = InventoryQueryService(cache_service=cache_service)
         self.evaluator = InventoryEvaluator(self.query_service)
         self.metadata_service = InventoryMetadataService()

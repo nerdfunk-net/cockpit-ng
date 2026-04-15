@@ -640,9 +640,51 @@ class TestGraphQLQueryConstruction:
                 return_value={
                     "data": {
                         "devices": [
-                            {"id": "1", "name": "switch-01", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
-                            {"id": "2", "name": "router-01", "role": {"name": "core"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "RT", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
-                            {"id": "3", "name": "switch-02", "role": {"name": "access"}, "location": {"name": "DC2"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                            {
+                                "id": "1",
+                                "name": "switch-01",
+                                "role": {"name": "access"},
+                                "location": {"name": "DC1"},
+                                "status": {"name": "Active"},
+                                "device_type": {
+                                    "model": "SW",
+                                    "manufacturer": {"name": "Cisco"},
+                                },
+                                "primary_ip4": None,
+                                "tags": [],
+                                "platform": None,
+                                "serial": None,
+                            },
+                            {
+                                "id": "2",
+                                "name": "router-01",
+                                "role": {"name": "core"},
+                                "location": {"name": "DC1"},
+                                "status": {"name": "Active"},
+                                "device_type": {
+                                    "model": "RT",
+                                    "manufacturer": {"name": "Cisco"},
+                                },
+                                "primary_ip4": None,
+                                "tags": [],
+                                "platform": None,
+                                "serial": None,
+                            },
+                            {
+                                "id": "3",
+                                "name": "switch-02",
+                                "role": {"name": "access"},
+                                "location": {"name": "DC2"},
+                                "status": {"name": "Active"},
+                                "device_type": {
+                                    "model": "SW",
+                                    "manufacturer": {"name": "Cisco"},
+                                },
+                                "primary_ip4": None,
+                                "tags": [],
+                                "platform": None,
+                                "serial": None,
+                            },
                         ]
                     }
                 }
@@ -652,7 +694,9 @@ class TestGraphQLQueryConstruction:
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(field="name", operator="contains", value="switch")
+                        LogicalCondition(
+                            field="name", operator="contains", value="switch"
+                        )
                     ],
                 )
             ]
@@ -674,8 +718,36 @@ class TestGraphQLQueryConstruction:
                 return_value={
                     "data": {
                         "devices": [
-                            {"id": "1", "name": "switch-01", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
-                            {"id": "2", "name": "switch-02", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                            {
+                                "id": "1",
+                                "name": "switch-01",
+                                "role": {"name": "access"},
+                                "location": {"name": "DC1"},
+                                "status": {"name": "Active"},
+                                "device_type": {
+                                    "model": "SW",
+                                    "manufacturer": {"name": "Cisco"},
+                                },
+                                "primary_ip4": None,
+                                "tags": [],
+                                "platform": None,
+                                "serial": None,
+                            },
+                            {
+                                "id": "2",
+                                "name": "switch-02",
+                                "role": {"name": "access"},
+                                "location": {"name": "DC1"},
+                                "status": {"name": "Active"},
+                                "device_type": {
+                                    "model": "SW",
+                                    "manufacturer": {"name": "Cisco"},
+                                },
+                                "primary_ip4": None,
+                                "tags": [],
+                                "platform": None,
+                                "serial": None,
+                            },
                         ]
                     }
                 }
@@ -685,7 +757,9 @@ class TestGraphQLQueryConstruction:
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(field="name", operator="equals", value="switch-01")
+                        LogicalCondition(
+                            field="name", operator="equals", value="switch-01"
+                        )
                     ],
                 )
             ]
@@ -696,7 +770,9 @@ class TestGraphQLQueryConstruction:
             assert devices[0].name == "switch-01"
 
     @pytest.mark.asyncio
-    async def test_and_conditions_location_live_others_cached(self, mock_nautobot_service):
+    async def test_and_conditions_location_live_others_cached(
+        self, mock_nautobot_service
+    ):
         """Test that AND with location+role+status makes 2 GraphQL calls:
         one for location (always live) and one for all-devices fallback (role+status share it)."""
         with patch(
@@ -710,9 +786,15 @@ class TestGraphQLQueryConstruction:
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(field="location", operator="equals", value="DC1"),
-                        LogicalCondition(field="role", operator="equals", value="access"),
-                        LogicalCondition(field="status", operator="equals", value="Active"),
+                        LogicalCondition(
+                            field="location", operator="equals", value="DC1"
+                        ),
+                        LogicalCondition(
+                            field="role", operator="equals", value="access"
+                        ),
+                        LogicalCondition(
+                            field="status", operator="equals", value="Active"
+                        ),
                     ],
                 )
             ]
@@ -733,8 +815,36 @@ class TestGraphQLQueryConstruction:
                 return_value={
                     "data": {
                         "devices": [
-                            {"id": "1", "name": "sw-1", "role": {"name": "access-switch"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
-                            {"id": "2", "name": "rt-1", "role": {"name": "core"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "RT", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                            {
+                                "id": "1",
+                                "name": "sw-1",
+                                "role": {"name": "access-switch"},
+                                "location": {"name": "DC1"},
+                                "status": {"name": "Active"},
+                                "device_type": {
+                                    "model": "SW",
+                                    "manufacturer": {"name": "Cisco"},
+                                },
+                                "primary_ip4": None,
+                                "tags": [],
+                                "platform": None,
+                                "serial": None,
+                            },
+                            {
+                                "id": "2",
+                                "name": "rt-1",
+                                "role": {"name": "core"},
+                                "location": {"name": "DC1"},
+                                "status": {"name": "Active"},
+                                "device_type": {
+                                    "model": "RT",
+                                    "manufacturer": {"name": "Cisco"},
+                                },
+                                "primary_ip4": None,
+                                "tags": [],
+                                "platform": None,
+                                "serial": None,
+                            },
                         ]
                     }
                 }
@@ -744,7 +854,9 @@ class TestGraphQLQueryConstruction:
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(field="role", operator="equals", value="access-switch")
+                        LogicalCondition(
+                            field="role", operator="equals", value="access-switch"
+                        )
                     ],
                 )
             ]
@@ -764,8 +876,36 @@ class TestGraphQLQueryConstruction:
                 return_value={
                     "data": {
                         "devices": [
-                            {"id": "1", "name": "sw-1", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
-                            {"id": "2", "name": "sw-2", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Planned"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": None, "serial": None},
+                            {
+                                "id": "1",
+                                "name": "sw-1",
+                                "role": {"name": "access"},
+                                "location": {"name": "DC1"},
+                                "status": {"name": "Active"},
+                                "device_type": {
+                                    "model": "SW",
+                                    "manufacturer": {"name": "Cisco"},
+                                },
+                                "primary_ip4": None,
+                                "tags": [],
+                                "platform": None,
+                                "serial": None,
+                            },
+                            {
+                                "id": "2",
+                                "name": "sw-2",
+                                "role": {"name": "access"},
+                                "location": {"name": "DC1"},
+                                "status": {"name": "Planned"},
+                                "device_type": {
+                                    "model": "SW",
+                                    "manufacturer": {"name": "Cisco"},
+                                },
+                                "primary_ip4": None,
+                                "tags": [],
+                                "platform": None,
+                                "serial": None,
+                            },
                         ]
                     }
                 }
@@ -775,7 +915,9 @@ class TestGraphQLQueryConstruction:
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(field="status", operator="equals", value="Active")
+                        LogicalCondition(
+                            field="status", operator="equals", value="Active"
+                        )
                     ],
                 )
             ]
@@ -795,8 +937,36 @@ class TestGraphQLQueryConstruction:
                 return_value={
                     "data": {
                         "devices": [
-                            {"id": "1", "name": "sw-1", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": {"name": "cisco_ios"}, "serial": None},
-                            {"id": "2", "name": "sw-2", "role": {"name": "access"}, "location": {"name": "DC1"}, "status": {"name": "Active"}, "device_type": {"model": "SW", "manufacturer": {"name": "Cisco"}}, "primary_ip4": None, "tags": [], "platform": {"name": "junos"}, "serial": None},
+                            {
+                                "id": "1",
+                                "name": "sw-1",
+                                "role": {"name": "access"},
+                                "location": {"name": "DC1"},
+                                "status": {"name": "Active"},
+                                "device_type": {
+                                    "model": "SW",
+                                    "manufacturer": {"name": "Cisco"},
+                                },
+                                "primary_ip4": None,
+                                "tags": [],
+                                "platform": {"name": "cisco_ios"},
+                                "serial": None,
+                            },
+                            {
+                                "id": "2",
+                                "name": "sw-2",
+                                "role": {"name": "access"},
+                                "location": {"name": "DC1"},
+                                "status": {"name": "Active"},
+                                "device_type": {
+                                    "model": "SW",
+                                    "manufacturer": {"name": "Cisco"},
+                                },
+                                "primary_ip4": None,
+                                "tags": [],
+                                "platform": {"name": "junos"},
+                                "serial": None,
+                            },
                         ]
                     }
                 }
@@ -806,7 +976,9 @@ class TestGraphQLQueryConstruction:
                 LogicalOperation(
                     operation_type="AND",
                     conditions=[
-                        LogicalCondition(field="platform", operator="equals", value="cisco_ios")
+                        LogicalCondition(
+                            field="platform", operator="equals", value="cisco_ios"
+                        )
                     ],
                 )
             ]

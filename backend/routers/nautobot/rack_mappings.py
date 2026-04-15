@@ -62,7 +62,10 @@ async def get_rack_mappings(
         .order_by(RackDeviceMapping.origin_name)
         .all()
     )
-    return [RackMappingItem(origin_name=r.origin_name, mapped_name=r.mapped_name) for r in rows]
+    return [
+        RackMappingItem(origin_name=r.origin_name, mapped_name=r.mapped_name)
+        for r in rows
+    ]
 
 
 @router.post(

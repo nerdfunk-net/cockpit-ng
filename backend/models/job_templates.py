@@ -20,6 +20,7 @@ JobTemplateType = Literal[
     "csv_export",
     "ping_agent",
     "set_primary_ip",
+    "get_client_data",
 ]
 
 # Inventory source options
@@ -322,6 +323,19 @@ class JobTemplateBase(BaseModel):
         max_length=255,
         description="Cockpit agent ID used for reachability ping (set_primary_ip type)",
     )
+    # Get Client Data (get_client_data type)
+    collect_ip_address: Optional[bool] = Field(
+        True,
+        description="Collect IP addresses from ARP table (only applies to get_client_data type)",
+    )
+    collect_mac_address: Optional[bool] = Field(
+        True,
+        description="Collect MAC addresses from MAC address table (only applies to get_client_data type)",
+    )
+    collect_hostname: Optional[bool] = Field(
+        True,
+        description="Resolve hostnames via DNS for collected IP addresses (only applies to get_client_data type)",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -400,6 +414,10 @@ class JobTemplateUpdate(BaseModel):
     # Set Primary IP
     set_primary_ip_strategy: Optional[str] = Field(None, max_length=50)
     set_primary_ip_agent_id: Optional[str] = Field(None, max_length=255)
+    # Get Client Data
+    collect_ip_address: Optional[bool] = None
+    collect_mac_address: Optional[bool] = None
+    collect_hostname: Optional[bool] = None
     is_global: Optional[bool] = None
 
 

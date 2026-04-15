@@ -100,8 +100,6 @@ async def get_location_types(
     The response is a flat list; the client builds the display hierarchy.
     """
     try:
-        from settings_manager import settings_manager
-
         cache_key = "nautobot:location-types:list"
         cached = cache_service.get(cache_key)
         if cached is not None:
@@ -158,7 +156,8 @@ async def get_parent_location(
     original_location_id = location_id
 
     for _ in range(10):  # guard against unexpectedly deep hierarchies
-        query = """
+        query = (
+            """
         {
           locations(id: "%s") {
             id
@@ -177,7 +176,9 @@ async def get_parent_location(
             }
           }
         }
-        """ % current_id
+        """
+            % current_id
+        )
 
         result = await nautobot_service.graphql_query(query)
 

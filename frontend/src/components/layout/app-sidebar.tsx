@@ -48,6 +48,7 @@ import {
   Activity,
   ScrollText,
   LayoutGrid,
+  Users,
 } from 'lucide-react'
 
 interface NavItem {
@@ -137,6 +138,7 @@ const navigationSections: NavSection[] = [
         ],
       },
       { label: 'Compliance Check', href: '/compliance', icon: CheckCircle },
+      { label: 'Clients', href: '/clients', icon: Users },
     ],
   },
   {

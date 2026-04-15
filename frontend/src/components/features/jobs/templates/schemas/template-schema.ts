@@ -151,6 +151,27 @@ const csvExportTemplateSchema = baseTemplateSchema.extend({
   csv_export_include_headers: z.boolean(),
 })
 
+// Get Client Data job type schema
+const getClientDataTemplateSchema = baseTemplateSchema
+  .extend({
+    job_type: z.literal('get_client_data'),
+    collect_ip_address: z.boolean(),
+    collect_mac_address: z.boolean(),
+    collect_hostname: z.boolean(),
+  })
+  .refine(
+    data => {
+      if (data.inventory_source === 'inventory' && !data.inventory_name) {
+        return false
+      }
+      return true
+    },
+    {
+      message: 'Please select a saved inventory',
+      path: ['inventory_name'],
+    }
+  )
+
 // Discriminated union for all job types
 export const jobTemplateSchema = z.discriminatedUnion('job_type', [
   backupTemplateSchema,
@@ -160,6 +181,7 @@ export const jobTemplateSchema = z.discriminatedUnion('job_type', [
   cacheDevicesTemplateSchema,
   scanPrefixesTemplateSchema,
   csvExportTemplateSchema,
+  getClientDataTemplateSchema,
 ])
 
 export type JobTemplateFormData = z.infer<typeof jobTemplateSchema>

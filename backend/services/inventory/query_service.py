@@ -262,9 +262,7 @@ class InventoryQueryService:
 
         all_devices = await self._get_all_devices_cached()
         result = [d for d in all_devices if d.status == status_filter]
-        logger.info(
-            "Cache filter status='%s': %s devices", status_filter, len(result)
-        )
+        logger.info("Cache filter status='%s': %s devices", status_filter, len(result))
         return result
 
     async def _query_devices_by_tag(self, tag_filter: str) -> List[DeviceInfo]:

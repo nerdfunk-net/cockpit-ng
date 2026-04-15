@@ -87,7 +87,9 @@ class FieldNormalizer:
                                 )
                                 continue
                         else:
-                            value = self.extract_field_value(device_data, nautobot_field)
+                            value = self.extract_field_value(
+                                device_data, nautobot_field
+                            )
 
                         # Add the mapped attribute if value exists and is not empty
                         if value is not None and value != "":

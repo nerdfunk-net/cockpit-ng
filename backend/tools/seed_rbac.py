@@ -319,6 +319,7 @@ def seed_permissions(verbose: bool = True):
         ("network.templates", "delete", "Delete templates"),
         ("network.netmiko", "execute", "Execute Netmiko commands"),
         ("network.ping", "execute", "Execute network ping operations"),
+        ("network.clients", "read", "View collected client data (ARP/MAC/hostname)"),
         # Snapshot permissions
         ("snapshots", "read", "View network snapshots"),
         ("snapshots", "write", "Create/execute network snapshots"),
@@ -479,6 +480,7 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "general.inventory:write",
         # Network
         "network.templates:read",
+        "network.clients:read",
         # Snapshots
         "snapshots:read",
         "snapshots:write",
@@ -544,6 +546,7 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "network.templates:delete",
         "network.netmiko:execute",
         "network.ping:execute",
+        "network.clients:read",
         # Snapshots (full access)
         "snapshots:read",
         "snapshots:write",

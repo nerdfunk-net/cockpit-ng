@@ -65,6 +65,9 @@ from .import_or_update_from_csv_task import import_or_update_from_csv_task
 # Import CSV export task
 from .csv_export_task import csv_export_task
 
+# Import get client data task
+from .get_client_data_task import get_client_data_task
+
 # Import background job tasks (outside tasks package)
 from services.background_jobs import (  # noqa: F401
     cache_all_devices_task,
@@ -108,6 +111,8 @@ __all__ = [
     "import_or_update_from_csv_task",
     # CSV export to git repo
     "csv_export_task",
+    # Get client data
+    "get_client_data_task",
     # Periodic tasks
     "worker_health_check",
     "load_cache_schedules_task",

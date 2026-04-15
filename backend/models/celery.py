@@ -374,3 +374,13 @@ class CsvExportRequest(BaseModel):
     quote_char: str = '"'
     include_headers: bool = True
     template_id: Optional[int] = None
+
+
+class GetClientDataRequest(BaseModel):
+    """Request model for collecting ARP, MAC table, and DNS hostname data from devices."""
+
+    inventory: List[str]  # List of Nautobot device UUIDs (empty = all devices)
+    credential_id: int  # SSH credential ID
+    collect_ip_address: bool = True  # Collect ARP table entries
+    collect_mac_address: bool = True  # Collect MAC address table entries
+    collect_hostname: bool = True  # DNS-resolve collected IP addresses

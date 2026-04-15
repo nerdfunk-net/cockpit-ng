@@ -78,6 +78,9 @@ def create_job_template(
     ping_agent_id: Optional[str] = None,
     set_primary_ip_strategy: Optional[str] = None,
     set_primary_ip_agent_id: Optional[str] = None,
+    collect_ip_address: bool = True,
+    collect_mac_address: bool = True,
+    collect_hostname: bool = True,
     is_global: bool = False,
 ) -> Dict[str, Any]:
     """Create a new job template"""
@@ -172,6 +175,9 @@ def create_job_template(
         ping_agent_id=ping_agent_id,
         set_primary_ip_strategy=set_primary_ip_strategy,
         set_primary_ip_agent_id=set_primary_ip_agent_id,
+        collect_ip_address=collect_ip_address,
+        collect_mac_address=collect_mac_address,
+        collect_hostname=collect_hostname,
         is_global=is_global,
         user_id=user_id if not is_global else None,
         created_by=created_by,
@@ -280,6 +286,9 @@ def update_job_template(
     ping_agent_id: Optional[str] = None,
     set_primary_ip_strategy: Optional[str] = None,
     set_primary_ip_agent_id: Optional[str] = None,
+    collect_ip_address: Optional[bool] = None,
+    collect_mac_address: Optional[bool] = None,
+    collect_hostname: Optional[bool] = None,
     is_global: Optional[bool] = None,
     user_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
@@ -414,6 +423,12 @@ def update_job_template(
         update_data["set_primary_ip_strategy"] = set_primary_ip_strategy
     if set_primary_ip_agent_id is not None:
         update_data["set_primary_ip_agent_id"] = set_primary_ip_agent_id
+    if collect_ip_address is not None:
+        update_data["collect_ip_address"] = collect_ip_address
+    if collect_mac_address is not None:
+        update_data["collect_mac_address"] = collect_mac_address
+    if collect_hostname is not None:
+        update_data["collect_hostname"] = collect_hostname
     if is_global is not None:
         update_data["is_global"] = is_global
         if is_global:
@@ -523,6 +538,11 @@ def get_job_types() -> List[Dict[str, str]]:
             "label": "Set Primary IP",
             "description": "Set the primary IP address of devices based on reachability or interface name",
         },
+        {
+            "value": "get_client_data",
+            "label": "Get Client Data",
+            "description": "Collect ARP table, MAC address table, and DNS hostnames from network devices",
+        },
     ]
 
 
@@ -626,6 +646,9 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "ping_agent_id": template.ping_agent_id,
         "set_primary_ip_strategy": template.set_primary_ip_strategy,
         "set_primary_ip_agent_id": template.set_primary_ip_agent_id,
+        "collect_ip_address": template.collect_ip_address,
+        "collect_mac_address": template.collect_mac_address,
+        "collect_hostname": template.collect_hostname,
         "is_global": template.is_global,
         "user_id": template.user_id,
         "created_by": template.created_by,

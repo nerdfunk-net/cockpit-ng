@@ -37,7 +37,7 @@ def _resolve_location_type_filter(
         )
         return None
 
-    root_key = parts[0]       # e.g. "location"
+    root_key = parts[0]  # e.g. "location"
     target_field = parts[-1]  # e.g. "name"
 
     location = device_data.get(root_key)

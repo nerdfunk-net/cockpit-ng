@@ -109,6 +109,15 @@ async def create_job_template(
             ping_agent_id=template_data.ping_agent_id,
             set_primary_ip_strategy=template_data.set_primary_ip_strategy,
             set_primary_ip_agent_id=template_data.set_primary_ip_agent_id,
+            collect_ip_address=template_data.collect_ip_address
+            if template_data.collect_ip_address is not None
+            else True,
+            collect_mac_address=template_data.collect_mac_address
+            if template_data.collect_mac_address is not None
+            else True,
+            collect_hostname=template_data.collect_hostname
+            if template_data.collect_hostname is not None
+            else True,
             is_global=template_data.is_global,
         )
 
@@ -290,6 +299,9 @@ async def update_job_template(
             ping_agent_id=update_data.ping_agent_id,
             set_primary_ip_strategy=update_data.set_primary_ip_strategy,
             set_primary_ip_agent_id=update_data.set_primary_ip_agent_id,
+            collect_ip_address=update_data.collect_ip_address,
+            collect_mac_address=update_data.collect_mac_address,
+            collect_hostname=update_data.collect_hostname,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

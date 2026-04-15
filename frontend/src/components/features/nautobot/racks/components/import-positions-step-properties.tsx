@@ -29,7 +29,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useLocationTypesQuery, buildLocationTypeOptions } from '../hooks/use-location-types-query'
-import type { MatchingStrategy, NameTransform, NameTransformMode } from '../types'
+import type { LocationType, MatchingStrategy, NameTransform, NameTransformMode } from '../types'
 
 /**
  * Client-side mirror of the name transform logic.
@@ -80,7 +80,7 @@ const MATCHING_STRATEGY_OPTIONS: {
   },
 ]
 
-const EMPTY_LOCATION_TYPES: unknown[] = []
+const EMPTY_LOCATION_TYPES: LocationType[] = []
 
 interface ImportPositionsStepPropertiesProps {
   clearRackBeforeImport: boolean
