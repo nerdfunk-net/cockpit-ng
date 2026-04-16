@@ -318,3 +318,129 @@ class ClientDataRepository:
             for row in rows
         ]
         return items, total
+
+    def get_client_history(
+        self,
+        ip_address: Optional[str] = None,
+        mac_address: Optional[str] = None,
+        hostname: Optional[str] = None,
+    ) -> dict:
+        """Return historical observations across all sessions for the given identifiers.
+
+        Each tab queries a different source table so results are independent.
+        Returns dict with keys: ip_history, mac_history, hostname_history.
+        """
+        result: dict = {
+            "ip_history": [],
+            "mac_history": [],
+            "hostname_history": [],
+        }
+
+        with get_db_session() as session:
+            if ip_address:
+                rows = session.execute(
+                    text(
+                        """
+                        SELECT DISTINCT ON (i.session_id, i.device_name)
+                            i.ip_address,
+                            i.mac_address,
+                            COALESCE(m.port, i.interface) AS port,
+                            m.vlan,
+                            i.device_name,
+                            i.collected_at
+                        FROM client_ip_addresses i
+                        LEFT JOIN client_mac_addresses m
+                            ON m.mac_address = i.mac_address
+                           AND m.device_name  = i.device_name
+                           AND m.session_id   = i.session_id
+                        WHERE i.ip_address = :ip_address
+                        ORDER BY i.session_id, i.device_name, i.collected_at DESC
+                        """
+                    ),
+                    {"ip_address": ip_address},
+                ).fetchall()
+                result["ip_history"] = sorted(
+                    [
+                        {
+                            "ip_address": row[0],
+                            "mac_address": row[1],
+                            "port": row[2],
+                            "vlan": row[3],
+                            "device_name": row[4],
+                            "collected_at": row[5].isoformat() if row[5] else None,
+                        }
+                        for row in rows
+                    ],
+                    key=lambda x: x["collected_at"] or "",
+                    reverse=True,
+                )
+
+            if mac_address:
+                rows = session.execute(
+                    text(
+                        """
+                        SELECT DISTINCT ON (m.session_id, m.device_name)
+                            m.mac_address,
+                            m.port,
+                            m.vlan,
+                            m.device_name,
+                            m.collected_at,
+                            i.ip_address
+                        FROM client_mac_addresses m
+                        LEFT JOIN client_ip_addresses i
+                            ON i.mac_address = m.mac_address
+                           AND i.device_name  = m.device_name
+                           AND i.session_id   = m.session_id
+                        WHERE m.mac_address = :mac_address
+                        ORDER BY m.session_id, m.device_name, m.collected_at DESC
+                        """
+                    ),
+                    {"mac_address": mac_address},
+                ).fetchall()
+                result["mac_history"] = sorted(
+                    [
+                        {
+                            "mac_address": row[0],
+                            "port": row[1],
+                            "vlan": row[2],
+                            "device_name": row[3],
+                            "collected_at": row[4].isoformat() if row[4] else None,
+                            "ip_address": row[5],
+                        }
+                        for row in rows
+                    ],
+                    key=lambda x: x["collected_at"] or "",
+                    reverse=True,
+                )
+
+            if hostname:
+                rows = session.execute(
+                    text(
+                        """
+                        SELECT DISTINCT ON (h.session_id, h.ip_address)
+                            h.hostname,
+                            h.ip_address,
+                            h.device_name,
+                            h.collected_at
+                        FROM client_hostnames h
+                        WHERE h.hostname = :hostname
+                        ORDER BY h.session_id, h.ip_address, h.collected_at DESC
+                        """
+                    ),
+                    {"hostname": hostname},
+                ).fetchall()
+                result["hostname_history"] = sorted(
+                    [
+                        {
+                            "hostname": row[0],
+                            "ip_address": row[1],
+                            "device_name": row[2],
+                            "collected_at": row[3].isoformat() if row[3] else None,
+                        }
+                        for row in rows
+                    ],
+                    key=lambda x: x["collected_at"] or "",
+                    reverse=True,
+                )
+
+        return result

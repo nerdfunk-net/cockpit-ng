@@ -392,6 +392,8 @@ export const queryKeys = {
       filters
         ? ([...queryKeys.clients.all, 'data', filters] as const)
         : ([...queryKeys.clients.all, 'data'] as const),
+    history: (params: { ip_address?: string; mac_address?: string; hostname?: string }) =>
+      [...queryKeys.clients.all, 'history', params] as const,
   },
 
   // Templates

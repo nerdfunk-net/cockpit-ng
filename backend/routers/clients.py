@@ -60,3 +60,24 @@ async def get_client_data(
         "page": page,
         "page_size": page_size,
     }
+
+
+@router.get("/history")
+async def get_client_history(
+    ip_address: Optional[str] = Query(None, description="IP address to look up"),
+    mac_address: Optional[str] = Query(None, description="MAC address to look up"),
+    hostname: Optional[str] = Query(None, description="Hostname to look up"),
+    _: dict = Depends(require_permission("network.clients", "read")),
+) -> dict:
+    """Return full cross-session history for an IP address, MAC address, or hostname.
+
+    At least one of the three parameters must be provided.  Each is queried
+    independently so the three result arrays reflect the raw source tables.
+    """
+    if not any([ip_address, mac_address, hostname]):
+        return {"ip_history": [], "mac_history": [], "hostname_history": []}
+    return _repo.get_client_history(
+        ip_address=ip_address,
+        mac_address=mac_address,
+        hostname=hostname,
+    )

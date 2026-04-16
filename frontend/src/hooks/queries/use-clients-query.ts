@@ -150,3 +150,76 @@ export function useNautobotDevicesSearchQuery(params: {
     placeholderData: keepPreviousData,
   })
 }
+
+// ---------------------------------------------------------------------------
+// History
+// ---------------------------------------------------------------------------
+
+export interface IpHistoryEntry {
+  ip_address: string
+  mac_address: string | null
+  port: string | null
+  vlan: string | null
+  device_name: string
+  collected_at: string | null
+}
+
+export interface MacHistoryEntry {
+  mac_address: string
+  ip_address: string | null
+  port: string | null
+  vlan: string | null
+  device_name: string
+  collected_at: string | null
+}
+
+export interface HostnameHistoryEntry {
+  hostname: string
+  ip_address: string | null
+  device_name: string
+  collected_at: string | null
+}
+
+export interface ClientHistoryResponse {
+  ip_history: IpHistoryEntry[]
+  mac_history: MacHistoryEntry[]
+  hostname_history: HostnameHistoryEntry[]
+}
+
+export interface ClientHistoryParams {
+  ip_address?: string | null
+  mac_address?: string | null
+  hostname?: string | null
+}
+
+const EMPTY_HISTORY: ClientHistoryResponse = {
+  ip_history: [],
+  mac_history: [],
+  hostname_history: [],
+}
+
+export function useClientHistoryQuery(params: ClientHistoryParams, enabled: boolean) {
+  const { apiCall } = useApi()
+  const { ip_address, mac_address, hostname } = params
+
+  return useQuery({
+    queryKey: queryKeys.clients.history({
+      ip_address: ip_address ?? undefined,
+      mac_address: mac_address ?? undefined,
+      hostname: hostname ?? undefined,
+    }),
+    queryFn: async () => {
+      const p = new URLSearchParams()
+      if (ip_address) p.set('ip_address', ip_address)
+      if (mac_address) p.set('mac_address', mac_address)
+      if (hostname) p.set('hostname', hostname)
+      const res = await apiCall<ClientHistoryResponse>(
+        `/api/clients/history?${p.toString()}`,
+        { method: 'GET' }
+      )
+      return res ?? EMPTY_HISTORY
+    },
+    enabled,
+    staleTime: 30 * 1000,
+  })
+}

@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
-import { Users } from 'lucide-react'
+import { Users, Calendar } from 'lucide-react'
 import { useNautobotDevicesSearchQuery, useClientDataQuery, type NautobotDevice } from '@/hooks/queries/use-clients-query'
 import { DeviceList } from './components/device-list'
 import { ClientsTable } from './components/clients-table'
 import { LiveStatusDialog } from './components/live-status-dialog'
+import { ClientHistoryDialog } from './components/client-history-dialog'
+import type { ClientDataItem } from './types'
 
 interface ColumnFilters {
   ipAddress: string
@@ -124,8 +126,19 @@ export function ClientsPage() {
     setDevicePage(1)
   }, [])
 
-  const items = dataQuery.data?.items ?? []
+  const items = useMemo(
+    () => dataQuery.data?.items ?? [],
+    [dataQuery.data]
+  )
   const total = dataQuery.data?.total ?? 0
+
+  const latestCollectedAt = useMemo(() => {
+    const timestamps = items
+      .map((item) => item.collected_at)
+      .filter((ts): ts is string => ts !== null)
+    if (timestamps.length === 0) return null
+    return timestamps.reduce((max, ts) => (ts > max ? ts : max))
+  }, [items])
   const deviceObjects = useMemo(
     () => nautobotDevicesQuery.data?.devices ?? [],
     [nautobotDevicesQuery.data]
@@ -134,6 +147,7 @@ export function ClientsPage() {
   const deviceTotal = nautobotDevicesQuery.data?.count ?? 0
 
   const [liveStatusDevice, setLiveStatusDevice] = useState<NautobotDevice | null>(null)
+  const [historyItem, setHistoryItem] = useState<ClientDataItem | null>(null)
 
   const handleLiveStatusClick = useCallback((device: NautobotDevice) => {
     setLiveStatusDevice(device)
@@ -152,6 +166,12 @@ export function ClientsPage() {
             <p className="text-muted-foreground mt-2">
               Browse correlated client data collected from network devices
             </p>
+            {latestCollectedAt && (
+              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                <Calendar className="h-3.5 w-3.5" />
+                Collected: {new Date(latestCollectedAt).toLocaleString()}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -191,6 +211,7 @@ export function ClientsPage() {
             onPageChange={handlePageChange}
             onPageSizeChange={handleTablePageSizeChange}
             selectedDevice={selectedDevice}
+            onHistoryClick={setHistoryItem}
           />
         </div>
       </div>
@@ -198,6 +219,11 @@ export function ClientsPage() {
       <LiveStatusDialog
         device={liveStatusDevice}
         onClose={() => setLiveStatusDevice(null)}
+      />
+
+      <ClientHistoryDialog
+        item={historyItem}
+        onClose={() => setHistoryItem(null)}
       />
     </div>
   )

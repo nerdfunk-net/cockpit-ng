@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback } from 'react'
-import { TableIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { TableIcon, ChevronLeft, ChevronRight, History } from 'lucide-react'
+import type { ClientDataItem } from '../types'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { ClientDataItem } from '../types'
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200, 500] as const
 
@@ -36,6 +36,7 @@ interface ClientsTableProps {
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
   selectedDevice: string | null
+  onHistoryClick: (item: ClientDataItem) => void
 }
 
 export function ClientsTable({
@@ -50,6 +51,7 @@ export function ClientsTable({
   onPageChange,
   onPageSizeChange,
   selectedDevice,
+  onHistoryClick,
 }: ClientsTableProps) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const startRow = total === 0 ? 0 : (page - 1) * pageSize + 1
@@ -182,7 +184,17 @@ export function ClientsTable({
                         className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                       >
                         <td className="px-4 py-2 font-mono text-xs text-gray-800">
-                          {item.ip_address ?? '—'}
+                          <span className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => onHistoryClick(item)}
+                              className="text-gray-400 hover:text-blue-600 transition-colors shrink-0"
+                              title="Show history"
+                            >
+                              <History className="h-3.5 w-3.5" />
+                            </button>
+                            {item.ip_address ?? '—'}
+                          </span>
                         </td>
                         <td className="px-4 py-2 font-mono text-xs text-gray-800">
                           {item.mac_address ?? '—'}
