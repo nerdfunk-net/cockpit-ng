@@ -12,6 +12,7 @@ interface ColumnFilters {
   port: string
   vlan: string
   hostname: string
+  deviceName: string
 }
 
 const INITIAL_FILTERS: ColumnFilters = {
@@ -20,6 +21,7 @@ const INITIAL_FILTERS: ColumnFilters = {
   port: '',
   vlan: '',
   hostname: '',
+  deviceName: '',
 }
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -46,7 +48,8 @@ export function ClientsPage() {
 
   const queryFilters = useMemo(
     () => ({
-      deviceName: selectedDevice ?? undefined,
+      // Sidebar selection (exact device) takes priority over the column filter
+      deviceName: selectedDevice ?? (debouncedFilters.deviceName || undefined),
       ipAddress: debouncedFilters.ipAddress || undefined,
       macAddress: debouncedFilters.macAddress || undefined,
       port: debouncedFilters.port || undefined,

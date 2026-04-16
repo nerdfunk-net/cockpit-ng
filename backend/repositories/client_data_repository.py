@@ -17,6 +17,25 @@ from core.models import ClientHostname, ClientIpAddress, ClientMacAddress
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Latest-session sub-query (reused across several methods).
+# Unions both tables so the correct session is found even when one table is
+# empty (e.g. collect_mac_address=False or collect_ip_address=False).
+# ---------------------------------------------------------------------------
+_LATEST_SESSION_SUBQUERY = """
+    SELECT session_id
+    FROM (
+        SELECT session_id, MAX(collected_at) AS ts
+          FROM client_mac_addresses GROUP BY session_id
+        UNION ALL
+        SELECT session_id, MAX(collected_at) AS ts
+          FROM client_ip_addresses  GROUP BY session_id
+    ) _combined_sessions
+    GROUP BY session_id
+    ORDER BY MAX(ts) DESC
+    LIMIT 1
+"""
+
 
 class ClientDataRepository:
     """Bulk insert operations for the three client data tables."""
@@ -52,21 +71,25 @@ class ClientDataRepository:
         return len(records)
 
     def get_device_names(self) -> List[str]:
-        """Return distinct device names from the latest collection session, sorted alphabetically."""
+        """Return distinct device names from the latest collection session.
+
+        Queries both client_mac_addresses and client_ip_addresses so that
+        Layer-2-only devices (which have no ARP entries) are included.
+        """
         with get_db_session() as session:
             rows = session.execute(
                 text(
-                    """
-                    SELECT DISTINCT i.device_name
-                    FROM client_ip_addresses i
-                    JOIN (
-                        SELECT session_id
-                        FROM client_ip_addresses
-                        GROUP BY session_id
-                        ORDER BY MAX(collected_at) DESC
-                        LIMIT 1
-                    ) ls ON i.session_id = ls.session_id
-                    ORDER BY i.device_name
+                    f"""
+                    SELECT DISTINCT device_name
+                    FROM (
+                        SELECT device_name, session_id FROM client_mac_addresses
+                        UNION
+                        SELECT device_name, session_id
+                          FROM client_ip_addresses
+                         WHERE mac_address IS NOT NULL
+                    ) all_devices
+                    WHERE session_id = ({_LATEST_SESSION_SUBQUERY})
+                    ORDER BY device_name
                     """
                 )
             ).fetchall()
@@ -75,13 +98,17 @@ class ClientDataRepository:
     def delete_old_sessions(self, keep: int = 5) -> None:
         """Delete rows from sessions beyond the most recent *keep* runs.
 
-        Runs after a successful collection to prevent unbounded table growth.
-        Old session data is preserved up to *keep* runs for audit purposes.
+        Anchors on the union of both tables so that sessions that only
+        collected MAC data (no ARP) are counted correctly.
         """
         keep_subquery = (
-            "SELECT session_id FROM client_ip_addresses "
-            "GROUP BY session_id ORDER BY MAX(collected_at) DESC "
-            f"LIMIT {keep}"
+            f"SELECT session_id FROM ("
+            f"  SELECT session_id, MAX(collected_at) AS ts"
+            f"    FROM client_mac_addresses GROUP BY session_id"
+            f"  UNION ALL"
+            f"  SELECT session_id, MAX(collected_at) AS ts"
+            f"    FROM client_ip_addresses  GROUP BY session_id"
+            f") _keep_sessions GROUP BY session_id ORDER BY MAX(ts) DESC LIMIT {keep}"
         )
         with get_db_session() as session:
             session.execute(
@@ -115,78 +142,157 @@ class ClientDataRepository:
     ) -> Tuple[List[dict], int]:
         """Return correlated client data with pagination.
 
-        Joins client_ip_addresses → client_mac_addresses (via mac+session)
-        and client_ip_addresses → client_hostnames (via ip+session).
-        Applies ILIKE filters on each column. Returns (rows, total_count).
+        Query strategy (MAC-centric, one row per MAC+device observation):
+
+        1. mac_table_entries  — one row per (mac, device) from the MAC address
+           table; provides port and VLAN.
+        2. arp_entries        — one row per (mac, device) from ARP; provides
+           the IP seen by *that* device.
+        3. best_ip_for_mac    — single best IP per MAC across ALL devices; used
+           as cross-device fallback so that Layer-2-only devices (no ARP) still
+           show an IP obtained from a neighbouring L3 device.
+        4. hostname_for_ip    — one hostname per IP from DNS resolution.
+        5. all_device_mac_pairs — UNION of the MAC table and ARP universes; this
+           is the driving set that ensures L2-only devices are visible.
+        6. combined           — joins everything; ip_address is
+           COALESCE(same-device ARP, cross-device ARP).
+
+        Filters are applied on the outer combined result so ILIKE can operate on
+        the computed ip_address column.  Returns (rows, total_count).
         """
         conditions = []
         params: dict = {}
 
         if device_name:
-            conditions.append("i.device_name = :device_name")
-            params["device_name"] = device_name
+            conditions.append(
+                "device_name ILIKE '%' || :device_name_filter || '%'"
+            )
+            params["device_name_filter"] = device_name
 
         if ip_address:
-            conditions.append("i.ip_address ILIKE :ip_address")
-            params["ip_address"] = f"%{ip_address}%"
+            conditions.append(
+                "ip_address ILIKE '%' || :ip_address || '%'"
+            )
+            params["ip_address"] = ip_address
 
         if mac_address:
             conditions.append(
-                "(i.mac_address ILIKE :mac_address OR m.mac_address ILIKE :mac_address)"
+                "mac_address ILIKE '%' || :mac_address || '%'"
             )
-            params["mac_address"] = f"%{mac_address}%"
+            params["mac_address"] = mac_address
 
         if port:
-            conditions.append("m.port ILIKE :port")
-            params["port"] = f"%{port}%"
+            conditions.append("port ILIKE '%' || :port || '%'")
+            params["port"] = port
 
         if vlan:
-            conditions.append("m.vlan ILIKE :vlan")
-            params["vlan"] = f"%{vlan}%"
+            conditions.append("vlan ILIKE '%' || :vlan || '%'")
+            params["vlan"] = vlan
 
         if hostname:
-            conditions.append("h.hostname ILIKE :hostname")
-            params["hostname"] = f"%{hostname}%"
+            conditions.append(
+                "hostname ILIKE '%' || :hostname || '%'"
+            )
+            params["hostname"] = hostname
 
         where_clause = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
-        cte = """
+        cte = f"""
             WITH latest_session AS (
-                SELECT session_id
-                FROM client_ip_addresses
-                GROUP BY session_id
-                ORDER BY MAX(collected_at) DESC
-                LIMIT 1
+                {_LATEST_SESSION_SUBQUERY}
+            ),
+            mac_table_entries AS (
+                SELECT DISTINCT ON (m.mac_address, m.device_name)
+                    m.mac_address,
+                    m.vlan,
+                    m.port,
+                    m.device_name,
+                    m.session_id,
+                    m.collected_at
+                FROM client_mac_addresses m
+                JOIN latest_session ls ON m.session_id = ls.session_id
+                ORDER BY m.mac_address, m.device_name, m.collected_at DESC
+            ),
+            arp_entries AS (
+                SELECT DISTINCT ON (i.mac_address, i.device_name)
+                    i.mac_address,
+                    i.ip_address,
+                    i.device_name,
+                    i.session_id,
+                    i.collected_at
+                FROM client_ip_addresses i
+                JOIN latest_session ls ON i.session_id = ls.session_id
+                WHERE i.mac_address IS NOT NULL
+                ORDER BY i.mac_address, i.device_name, i.collected_at DESC
+            ),
+            best_ip_for_mac AS (
+                SELECT DISTINCT ON (i.mac_address)
+                    i.mac_address,
+                    i.ip_address
+                FROM client_ip_addresses i
+                JOIN latest_session ls ON i.session_id = ls.session_id
+                WHERE i.mac_address IS NOT NULL
+                ORDER BY i.mac_address, i.collected_at DESC
+            ),
+            hostname_for_ip AS (
+                SELECT DISTINCT ON (h.ip_address)
+                    h.ip_address,
+                    h.hostname
+                FROM client_hostnames h
+                JOIN latest_session ls ON h.session_id = ls.session_id
+                ORDER BY h.ip_address, h.collected_at DESC
+            ),
+            all_device_mac_pairs AS (
+                SELECT mac_address, device_name, session_id
+                  FROM mac_table_entries
+                UNION
+                SELECT mac_address, device_name, session_id
+                  FROM arp_entries
+            ),
+            combined AS (
+                SELECT
+                    p.mac_address,
+                    p.device_name,
+                    mt.port,
+                    mt.vlan,
+                    COALESCE(ae.ip_address, bim.ip_address) AS ip_address,
+                    hfi.hostname,
+                    p.session_id,
+                    COALESCE(mt.collected_at, ae.collected_at) AS collected_at
+                FROM all_device_mac_pairs p
+                LEFT JOIN mac_table_entries mt
+                    ON p.mac_address = mt.mac_address
+                   AND p.device_name  = mt.device_name
+                LEFT JOIN arp_entries ae
+                    ON p.mac_address = ae.mac_address
+                   AND p.device_name  = ae.device_name
+                LEFT JOIN best_ip_for_mac bim
+                    ON p.mac_address = bim.mac_address
+                LEFT JOIN hostname_for_ip hfi
+                    ON COALESCE(ae.ip_address, bim.ip_address) = hfi.ip_address
             )
         """
 
-        base_query = f"""
-            FROM client_ip_addresses i
-            JOIN latest_session ls ON i.session_id = ls.session_id
-            LEFT JOIN client_mac_addresses m
-                ON i.mac_address = m.mac_address AND i.session_id = m.session_id
-            LEFT JOIN client_hostnames h
-                ON i.ip_address = h.ip_address AND i.session_id = h.session_id
-            {where_clause}
-        """
-
-        count_sql = text(f"{cte} SELECT COUNT(*) {base_query}")
+        count_sql = text(
+            f"{cte} SELECT COUNT(*) FROM combined {where_clause}"
+        )
         data_sql = text(
             f"""
             {cte}
             SELECT
-                i.ip_address,
-                COALESCE(i.mac_address, m.mac_address) AS mac_address,
-                m.port,
-                m.vlan,
-                h.hostname,
-                i.device_name,
-                i.session_id,
-                i.collected_at
-            {base_query}
-            ORDER BY i.ip_address
+                mac_address,
+                port,
+                vlan,
+                ip_address,
+                hostname,
+                device_name,
+                session_id,
+                collected_at
+            FROM combined
+            {where_clause}
+            ORDER BY ip_address NULLS LAST, mac_address, device_name
             LIMIT :limit OFFSET :offset
-        """
+            """
         )
 
         offset = (page - 1) * page_size
@@ -199,10 +305,10 @@ class ClientDataRepository:
 
         items = [
             {
-                "ip_address": row[0],
-                "mac_address": row[1],
-                "port": row[2],
-                "vlan": row[3],
+                "mac_address": row[0],
+                "port": row[1],
+                "vlan": row[2],
+                "ip_address": row[3],
                 "hostname": row[4],
                 "device_name": row[5],
                 "session_id": row[6],

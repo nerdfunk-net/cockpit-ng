@@ -12,6 +12,7 @@ interface ColumnFilters {
   port: string
   vlan: string
   hostname: string
+  deviceName: string
 }
 
 interface ClientsTableProps {
@@ -95,6 +96,9 @@ export function ClientsTable({
                     <th className="text-left px-4 py-2 font-medium text-gray-700 whitespace-nowrap">
                       Hostname
                     </th>
+                    <th className="text-left px-4 py-2 font-medium text-gray-700 whitespace-nowrap">
+                      Device
+                    </th>
                   </tr>
                   {/* Filter row */}
                   <tr className="border-b border-gray-200">
@@ -138,12 +142,20 @@ export function ClientsTable({
                         className="h-7 text-xs"
                       />
                     </th>
+                    <th className="px-2 py-1.5">
+                      <Input
+                        placeholder="Filter..."
+                        value={filters.deviceName}
+                        onChange={handleFilterChange('deviceName')}
+                        className="h-7 text-xs"
+                      />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="text-center py-12 text-gray-500">
+                      <td colSpan={6} className="text-center py-12 text-gray-500">
                         <p className="text-base font-medium">No entries found</p>
                         <p className="text-xs mt-1">
                           {total === 0
@@ -172,6 +184,9 @@ export function ClientsTable({
                         </td>
                         <td className="px-4 py-2 text-xs text-gray-700">
                           {item.hostname ?? '—'}
+                        </td>
+                        <td className="px-4 py-2 text-xs text-gray-700">
+                          {item.device_name}
                         </td>
                       </tr>
                     ))
