@@ -3,8 +3,8 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Users } from 'lucide-react'
 import { useNautobotDevicesSearchQuery, useClientDataQuery } from '@/hooks/queries/use-clients-query'
-import { DeviceList } from './device-list'
-import { ClientsTable } from './clients-table'
+import { DeviceList } from './components/device-list'
+import { ClientsTable } from './components/clients-table'
 
 interface ColumnFilters {
   ipAddress: string
