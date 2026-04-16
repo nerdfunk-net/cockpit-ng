@@ -158,6 +158,10 @@ const getClientDataTemplateSchema = baseTemplateSchema
     collect_ip_address: z.boolean(),
     collect_mac_address: z.boolean(),
     collect_hostname: z.boolean(),
+    parallel_tasks: z
+      .number()
+      .min(1, 'Must be at least 1')
+      .max(50, 'Too many parallel tasks'),
   })
   .refine(
     data => {

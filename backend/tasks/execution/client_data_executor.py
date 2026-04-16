@@ -8,7 +8,8 @@ Moved here to follow the same executor pattern as command_executor.py.
 import logging
 import socket
 import uuid
-from typing import Any, Dict, List, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +50,9 @@ def execute_get_client_data(
         dict: Summary with session_id and row counts
     """
     import asyncio
-
     import credentials_manager
     import service_factory
     from repositories.client_data_repository import ClientDataRepository
-    from services.network.automation.netmiko import NetmikoService
 
     # -------------------------------------------------------------------------
     # Determine collect_* flags (job_parameters > template > True default)
@@ -70,6 +69,7 @@ def execute_get_client_data(
     collect_hostname = params.get(
         "collect_hostname", tmpl.get("collect_hostname", True)
     )
+    parallel_tasks = max(1, min(50, int(params.get("parallel_tasks", tmpl.get("parallel_tasks", 1)) or 1)))
 
     credential_info: Dict[str, Any] = {
         "credential_id": credential_id,
@@ -89,6 +89,7 @@ def execute_get_client_data(
             collect_mac_address,
             collect_hostname,
         )
+        logger.info("Parallel tasks: %s", parallel_tasks)
         logger.info(
             "Target devices: %s", len(target_devices) if target_devices else "all"
         )
@@ -197,8 +198,6 @@ def execute_get_client_data(
         session_id = str(uuid.uuid4())
         logger.info("Session ID: %s", session_id)
 
-        nautobot_service = service_factory.build_nautobot_service()
-        netmiko_service = NetmikoService()
         repo = ClientDataRepository()
 
         total_devices = len(device_ids)
@@ -219,14 +218,22 @@ def execute_get_client_data(
         )
 
         # -------------------------------------------------------------------------
-        # Per-device loop
+        # Per-device collection — sequential or parallel based on parallel_tasks
         # -------------------------------------------------------------------------
-        for idx, device_id in enumerate(device_ids, 1):
-            device_name = device_id  # fallback if Nautobot fetch fails
-            device_type = "cisco_ios"
+        def _collect_device(
+            device_id: str, idx: int
+        ) -> Tuple[str, bool, List[dict], List[dict], List[dict]]:
+            """Collect data from a single device. Returns (device_name, success, arp, mac, hostname)."""
+            import asyncio as _asyncio
+
+            import service_factory as _sf
+            from services.network.automation.netmiko import NetmikoService as _NM
+
+            _nautobot = _sf.build_nautobot_service()
+            _netmiko = _NM()
+            device_name = device_id  # fallback
 
             try:
-                # Fetch device details from Nautobot via GraphQL
                 query = """
                     query getDevice($deviceId: ID!) {
                       device(id: $deviceId) {
@@ -241,8 +248,8 @@ def execute_get_client_data(
                       }
                     }
                 """
-                device_data = asyncio.run(
-                    nautobot_service.graphql_query(query, {"deviceId": device_id})
+                device_data = _asyncio.run(
+                    _nautobot.graphql_query(query, {"deviceId": device_id})
                 )
 
                 if (
@@ -256,8 +263,7 @@ def execute_get_client_data(
                         total_devices,
                         device_id,
                     )
-                    failed_devices.append(device_id)
-                    continue
+                    return device_id, False, [], [], []
 
                 device = device_data["data"]["device"]
                 device_name = device.get("name", device_id)
@@ -271,9 +277,6 @@ def execute_get_client_data(
 
                 platform_obj = device.get("platform") or {}
                 platform_slug = platform_obj.get("network_driver") or ""
-                device_type = netmiko_service._map_platform_to_device_type(
-                    platform_slug
-                )
 
                 if not host_ip:
                     logger.warning(
@@ -282,38 +285,19 @@ def execute_get_client_data(
                         total_devices,
                         device_name,
                     )
-                    failed_devices.append(device_name)
-                    continue
+                    return device_name, False, [], [], []
 
                 logger.info(
-                    "[%s/%s] Connecting to %s (%s) type=%s",
+                    "[%s/%s] Connecting to %s (%s)",
                     idx,
                     total_devices,
                     device_name,
                     host_ip,
-                    device_type,
                 )
 
-                # Update progress
-                progress = 10 + int((idx / total_devices) * 80)
-                task_context.update_state(
-                    state="PROGRESS",
-                    meta={
-                        "current": progress,
-                        "total": 100,
-                        "status": f"[{idx}/{total_devices}] {device_name}…",
-                    },
-                )
-
-                # Execute commands via Netmiko
-                _session_id, results = asyncio.run(
-                    netmiko_service.execute_commands(
-                        devices=[
-                            {
-                                "ip": host_ip,
-                                "platform": platform_slug,
-                            }
-                        ],
+                _session_id, results = _asyncio.run(
+                    _netmiko.execute_commands(
+                        devices=[{"ip": host_ip, "platform": platform_slug}],
                         commands=commands,
                         username=username,
                         password=password,
@@ -323,66 +307,62 @@ def execute_get_client_data(
 
                 if not results:
                     logger.warning(
-                        "[%s/%s] No results returned for %s",
-                        idx,
-                        total_devices,
-                        device_name,
+                        "[%s/%s] No results for %s", idx, total_devices, device_name
                     )
-                    failed_devices.append(device_name)
-                    continue
+                    return device_name, False, [], [], []
 
                 device_result = results[0]
                 if not device_result.get("success", False):
                     err = device_result.get("error", "unknown error")
                     logger.warning(
-                        "[%s/%s] Failed on %s: %s", idx, total_devices, device_name, err
+                        "[%s/%s] Failed on %s: %s",
+                        idx,
+                        total_devices,
+                        device_name,
+                        err,
                     )
-                    failed_devices.append(device_name)
-                    continue
+                    return device_name, False, [], [], []
 
                 command_outputs = device_result.get("command_outputs", {})
+                arp_rows: List[dict] = []
+                mac_rows: List[dict] = []
+                hostname_rows: List[dict] = []
 
-                # Parse ARP output
                 if collect_ip_address and CMD_SHOW_IP_ARP in command_outputs:
-                    arp_output = command_outputs[CMD_SHOW_IP_ARP]
                     arp_rows = _parse_arp_output(
-                        arp_output, device_name, host_ip, session_id, idx, total_devices
+                        command_outputs[CMD_SHOW_IP_ARP],
+                        device_name,
+                        host_ip,
+                        session_id,
+                        idx,
+                        total_devices,
                     )
-                    all_arp_rows.extend(arp_rows)
 
-                # Parse MAC table output
                 if collect_mac_address and CMD_SHOW_MAC_TABLE in command_outputs:
-                    mac_output = command_outputs[CMD_SHOW_MAC_TABLE]
                     mac_rows = _parse_mac_output(
-                        mac_output, device_name, host_ip, session_id, idx, total_devices
+                        command_outputs[CMD_SHOW_MAC_TABLE],
+                        device_name,
+                        host_ip,
+                        session_id,
+                        idx,
+                        total_devices,
                     )
-                    all_mac_rows.extend(mac_rows)
 
-                # DNS resolve IPs collected from this device
-                if collect_hostname and all_arp_rows:
-                    device_arp_rows = [
-                        r
-                        for r in all_arp_rows
-                        if r["device_name"] == device_name
-                        and r["session_id"] == session_id
-                    ]
-                    unique_ips = {
-                        r["ip_address"] for r in device_arp_rows if r.get("ip_address")
-                    }
+                if collect_hostname and arp_rows:
+                    unique_ips = {r["ip_address"] for r in arp_rows if r.get("ip_address")}
                     hostname_rows = _resolve_hostnames(
                         unique_ips, device_name, host_ip, session_id
                     )
-                    all_hostname_rows.extend(hostname_rows)
 
-                successful_devices.append(device_name)
                 logger.info(
                     "[%s/%s] ✓ %s — ARP: %s, MAC: %s",
                     idx,
                     total_devices,
                     device_name,
-                    len([r for r in all_arp_rows if r["device_name"] == device_name]),
-                    len([r for r in all_mac_rows if r["device_name"] == device_name]),
+                    len(arp_rows),
+                    len(mac_rows),
                 )
+                return device_name, True, arp_rows, mac_rows, hostname_rows
 
             except Exception as exc:
                 logger.warning(
@@ -393,7 +373,57 @@ def execute_get_client_data(
                     exc,
                     exc_info=True,
                 )
-                failed_devices.append(device_name)
+                return device_name, False, [], [], []
+
+        if parallel_tasks > 1:
+            logger.info("Using parallel execution with %s workers", parallel_tasks)
+            completed = 0
+            with ThreadPoolExecutor(max_workers=parallel_tasks) as executor:
+                future_map = {
+                    executor.submit(_collect_device, device_id, idx): device_id
+                    for idx, device_id in enumerate(device_ids, 1)
+                }
+                for future in as_completed(future_map):
+                    completed += 1
+                    device_name, success, arp_rows, mac_rows, hostname_rows = future.result()
+                    if success:
+                        all_arp_rows.extend(arp_rows)
+                        all_mac_rows.extend(mac_rows)
+                        all_hostname_rows.extend(hostname_rows)
+                        successful_devices.append(device_name)
+                    else:
+                        failed_devices.append(device_name)
+                    progress = 10 + int((completed / total_devices) * 80)
+                    task_context.update_state(
+                        state="PROGRESS",
+                        meta={
+                            "current": progress,
+                            "total": 100,
+                            "status": f"[{completed}/{total_devices}] collecting…",
+                        },
+                    )
+        else:
+            logger.info("Using sequential execution (parallel_tasks=1)")
+            for idx, device_id in enumerate(device_ids, 1):
+                device_name, success, arp_rows, mac_rows, hostname_rows = _collect_device(
+                    device_id, idx
+                )
+                if success:
+                    all_arp_rows.extend(arp_rows)
+                    all_mac_rows.extend(mac_rows)
+                    all_hostname_rows.extend(hostname_rows)
+                    successful_devices.append(device_name)
+                else:
+                    failed_devices.append(device_name)
+                progress = 10 + int((idx / total_devices) * 80)
+                task_context.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "current": progress,
+                        "total": 100,
+                        "status": f"[{idx}/{total_devices}] {device_name}…",
+                    },
+                )
 
         # -------------------------------------------------------------------------
         # Bulk insert all collected data

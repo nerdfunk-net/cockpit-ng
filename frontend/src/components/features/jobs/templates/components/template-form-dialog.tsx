@@ -541,7 +541,10 @@ export function TemplateFormDialog({
         formJobType === 'backup' && formWriteTimestampToCustomField
           ? formTimestampCustomFieldName
           : undefined,
-      parallel_tasks: formJobType === 'backup' ? formParallelTasks : undefined,
+      parallel_tasks:
+        formJobType === 'backup' || formJobType === 'get_client_data'
+          ? formParallelTasks
+          : undefined,
       activate_changes_after_sync:
         formJobType === 'sync_devices' ? formActivateChangesAfterSync : undefined,
       scan_resolve_dns:
@@ -973,6 +976,8 @@ export function TemplateFormDialog({
               setCollectMacAddress={setFormCollectMacAddress}
               collectHostname={formCollectHostname}
               setCollectHostname={setFormCollectHostname}
+              parallelTasks={formParallelTasks}
+              setParallelTasks={setFormParallelTasks}
             />
           )}
         </div>

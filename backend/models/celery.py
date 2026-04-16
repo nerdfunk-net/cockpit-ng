@@ -384,3 +384,4 @@ class GetClientDataRequest(BaseModel):
     collect_ip_address: bool = True  # Collect ARP table entries
     collect_mac_address: bool = True  # Collect MAC address table entries
     collect_hostname: bool = True  # DNS-resolve collected IP addresses
+    parallel_tasks: int = 1  # Number of parallel SSH workers (1 = sequential)

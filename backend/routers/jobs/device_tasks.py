@@ -1414,6 +1414,7 @@ async def trigger_get_client_data(
                 "collect_ip_address": request.collect_ip_address,
                 "collect_mac_address": request.collect_mac_address,
                 "collect_hostname": request.collect_hostname,
+                "parallel_tasks": request.parallel_tasks,
             },
             target_devices=request.inventory or [],
             template=None,
