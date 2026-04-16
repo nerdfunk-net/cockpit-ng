@@ -1,29 +1,79 @@
 'use client'
 
-import { Server } from 'lucide-react'
+import { Search, Server, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200, 500] as const
 
 interface DeviceListProps {
   devices: string[]
+  total: number
   selectedDevice: string | null
   onSelect: (device: string | null) => void
   isLoading: boolean
+  search: string
+  onSearchChange: (value: string) => void
+  page: number
+  pageSize: number
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
 }
 
-export function DeviceList({ devices, selectedDevice, onSelect, isLoading }: DeviceListProps) {
+export function DeviceList({
+  devices,
+  total,
+  selectedDevice,
+  onSelect,
+  isLoading,
+  search,
+  onSearchChange,
+  page,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+}: DeviceListProps) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const startRow = total === 0 ? 0 : (page - 1) * pageSize + 1
+  const endRow = Math.min(page * pageSize, total)
+
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+    <div className="shadow-lg border-0 p-0 bg-white rounded-lg flex flex-col">
+      {/* Header */}
       <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <Server className="h-4 w-4" />
           <span className="text-sm font-medium">Devices</span>
         </div>
         {!isLoading && (
-          <div className="text-xs text-blue-100">{devices.length} device{devices.length !== 1 ? 's' : ''}</div>
+          <div className="text-xs text-blue-100">
+            {total} device{total !== 1 ? 's' : ''}
+          </div>
         )}
       </div>
 
-      <div className="bg-gradient-to-b from-white to-gray-50 rounded-b-lg">
+      {/* Search input */}
+      <div className="px-3 py-2 border-b border-gray-100">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <Input
+            placeholder="Search devices..."
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-7 h-7 text-xs"
+          />
+        </div>
+      </div>
+
+      {/* Device list */}
+      <div className="bg-gradient-to-b from-white to-gray-50 flex-1">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500" />
@@ -64,11 +114,53 @@ export function DeviceList({ devices, selectedDevice, onSelect, isLoading }: Dev
 
             {devices.length === 0 && (
               <li className="px-4 py-6 text-center text-sm text-gray-400">
-                No data collected yet
+                {search ? 'No matching devices' : 'No devices found'}
               </li>
             )}
           </ul>
         )}
+      </div>
+
+      {/* Pagination footer */}
+      <div className="border-t border-gray-200 px-3 py-2 rounded-b-lg bg-white">
+        <div className="flex items-center justify-between gap-1">
+          <p className="text-xs text-gray-400 whitespace-nowrap">
+            {total > 0 ? `${startRow}–${endRow} / ${total}` : '0'}
+          </p>
+          <div className="flex items-center gap-1">
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => onPageSizeChange(Number(v))}
+            >
+              <SelectTrigger className="h-6 w-16 text-xs px-1.5">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <SelectItem key={size} value={String(size)} className="text-xs">
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <button
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1}
+              className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4 text-gray-600" />
+            </button>
+            <button
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= totalPages}
+              className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-4 w-4 text-gray-600" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

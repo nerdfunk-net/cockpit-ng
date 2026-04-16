@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Users } from 'lucide-react'
-import { useClientDevicesQuery, useClientDataQuery } from '@/hooks/queries/use-clients-query'
+import { useNautobotDevicesSearchQuery, useClientDataQuery } from '@/hooks/queries/use-clients-query'
 import { DeviceList } from './device-list'
 import { ClientsTable } from './clients-table'
 
@@ -38,13 +38,25 @@ function useDebounce<T>(value: T, delay: number): T {
 export function ClientsPage() {
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [tablePageSize, setTablePageSize] = useState(50)
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>(INITIAL_FILTERS)
   // Track if filters changed so we can reset page only on filter change, not debounce tick
   const filterChangedRef = useRef(false)
 
-  const debouncedFilters = useDebounce(columnFilters, 300)
+  // Device list state
+  const [deviceSearch, setDeviceSearch] = useState('')
+  const [devicePage, setDevicePage] = useState(1)
+  const [devicePageSize, setDevicePageSize] = useState(25)
+  const deviceSearchChangedRef = useRef(false)
 
-  const devicesQuery = useClientDevicesQuery()
+  const debouncedFilters = useDebounce(columnFilters, 300)
+  const debouncedDeviceSearch = useDebounce(deviceSearch, 300)
+
+  const nautobotDevicesQuery = useNautobotDevicesSearchQuery({
+    search: debouncedDeviceSearch,
+    page: devicePage,
+    pageSize: devicePageSize,
+  })
 
   const queryFilters = useMemo(
     () => ({
@@ -56,9 +68,9 @@ export function ClientsPage() {
       vlan: debouncedFilters.vlan || undefined,
       hostname: debouncedFilters.hostname || undefined,
       page,
-      pageSize: 50,
+      pageSize: tablePageSize,
     }),
-    [selectedDevice, debouncedFilters, page]
+    [selectedDevice, debouncedFilters, page, tablePageSize]
   )
 
   const dataQuery = useClientDataQuery(queryFilters)
@@ -76,7 +88,12 @@ export function ClientsPage() {
     []
   )
 
-  // Reset to page 1 when debounced filters settle after a user change
+  const handleDeviceSearchChange = useCallback((value: string) => {
+    deviceSearchChangedRef.current = true
+    setDeviceSearch(value)
+  }, [])
+
+  // Reset table to page 1 when debounced filters settle after a user change
   useEffect(() => {
     if (filterChangedRef.current) {
       filterChangedRef.current = false
@@ -84,13 +101,35 @@ export function ClientsPage() {
     }
   }, [debouncedFilters])
 
+  // Reset device list to page 1 when search changes
+  useEffect(() => {
+    if (deviceSearchChangedRef.current) {
+      deviceSearchChangedRef.current = false
+      setDevicePage(1)
+    }
+  }, [debouncedDeviceSearch])
+
   const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage)
   }, [])
 
+  const handleTablePageSizeChange = useCallback((size: number) => {
+    setTablePageSize(size)
+    setPage(1)
+  }, [])
+
+  const handleDevicePageSizeChange = useCallback((size: number) => {
+    setDevicePageSize(size)
+    setDevicePage(1)
+  }, [])
+
   const items = dataQuery.data?.items ?? []
   const total = dataQuery.data?.total ?? 0
-  const devices = devicesQuery.data ?? []
+  const devices = useMemo(
+    () => (nautobotDevicesQuery.data?.devices ?? []).map((d) => d.name),
+    [nautobotDevicesQuery.data]
+  )
+  const deviceTotal = nautobotDevicesQuery.data?.count ?? 0
 
   return (
     <div className="space-y-6">
@@ -115,9 +154,16 @@ export function ClientsPage() {
         <div className="lg:col-span-1">
           <DeviceList
             devices={devices}
+            total={deviceTotal}
             selectedDevice={selectedDevice}
             onSelect={handleDeviceSelect}
-            isLoading={devicesQuery.isLoading}
+            isLoading={nautobotDevicesQuery.isLoading}
+            search={deviceSearch}
+            onSearchChange={handleDeviceSearchChange}
+            page={devicePage}
+            pageSize={devicePageSize}
+            onPageChange={setDevicePage}
+            onPageSizeChange={handleDevicePageSizeChange}
           />
         </div>
 
@@ -127,12 +173,13 @@ export function ClientsPage() {
             items={items}
             total={total}
             page={page}
-            pageSize={50}
+            pageSize={tablePageSize}
             filters={columnFilters}
             isLoading={dataQuery.isLoading}
             isFetching={dataQuery.isFetching}
             onFilterChange={handleFilterChange}
             onPageChange={handlePageChange}
+            onPageSizeChange={handleTablePageSizeChange}
             selectedDevice={selectedDevice}
           />
         </div>

@@ -406,7 +406,7 @@ Feature components: `frontend/src/components/features/network/clients/`
 ### Layout
 
 A two-column layout with:
-- **Left column** (`DeviceList`) — shows "All" + one button per device from the latest session. Selecting a device filters the table. Shows "No data collected yet" when the device list is empty.
+- **Left column** (`DeviceList`) — device picker sourced from Nautobot (`GET /api/nautobot/devices`). Shows "All" + one button per device on the current page. Selecting a device filters the right table. Includes a search input at the top and a pagination bar at the bottom.
 - **Right columns** (`ClientsTable`) — the main data table with filters and pagination.
 
 ### Data Table
@@ -424,22 +424,33 @@ Six visible columns:
 
 A second header row below the column names contains inline filter `<Input>` fields for each column. Filters are debounced by 300 ms before triggering an API call. Changing any filter resets the table to page 1.
 
-Pagination shows "startRow–endRow of total" with **Previous** / **Next** buttons.
+Pagination shows "startRow–endRow of total" with a **page-size selector** (10 / 25 / 50 / 100 / 200 / 500) and **Previous** / **Next** buttons. Changing the page size resets the table to page 1.
 
 Empty states:
 - No data collected: "Run a Get Client Data job to collect data"
 - Filters return nothing: "Try clearing the filters"
 
+### DeviceList Controls
+
+The left panel sources its device list directly from Nautobot (not from the collected client data):
+
+- **Search input** — debounced 300 ms; queries `GET /api/nautobot/devices?filter_type=name__ic&filter_value=<text>`. Changing the search resets to page 1.
+- **Page-size selector** — values 10 / 25 / 50 / 100 / 200 / 500 (default 25). Changing resets to page 1.
+- **`<` / `>` navigation buttons** — move between pages; disabled at boundaries.
+- **Count label** — shows `startRow–endRow / total` in the footer.
+
+Selecting a device from the list filters the right table to that device's client data. Selecting "All" removes the device filter.
+
 ### TanStack Query Hooks — `use-clients-query.ts`
 
 | Hook | Endpoint | `staleTime` | Notes |
 |------|----------|-------------|-------|
-| `useClientDevicesQuery()` | `GET /api/clients/devices` | 60 s | |
+| `useNautobotDevicesSearchQuery(params)` | `GET /api/nautobot/devices` | 30 s | `keepPreviousData`; params: `search`, `page`, `pageSize`; uses `filter_type=name__ic` |
 | `useClientDataQuery(filters)` | `GET /api/clients/data?...` | 30 s | `keepPreviousData` — no flash on page change |
 
 Query keys:
 ```typescript
-queryKeys.clients.devices()           // ['clients', 'devices']
+['nautobot', 'clients-device-search', { search, page, pageSize }]
 queryKeys.clients.data(filters)       // ['clients', 'data', filters]
 ```
 
@@ -466,6 +477,12 @@ interface ClientDataFilters {
   hostname?: string
   page?: number
   pageSize?: number
+}
+
+interface NautobotDevicesSearchResponse {
+  devices: Array<{ id: string; name: string }>
+  count: number
+  has_more: boolean
 }
 ```
 

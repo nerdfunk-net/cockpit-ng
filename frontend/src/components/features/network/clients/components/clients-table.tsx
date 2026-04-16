@@ -4,7 +4,16 @@ import { useCallback } from 'react'
 import { TableIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { ClientDataItem } from '../types'
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200, 500] as const
 
 interface ColumnFilters {
   ipAddress: string
@@ -25,6 +34,7 @@ interface ClientsTableProps {
   isFetching?: boolean
   onFilterChange: (key: keyof ColumnFilters, value: string) => void
   onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
   selectedDevice: string | null
 }
 
@@ -38,6 +48,7 @@ export function ClientsTable({
   isFetching = false,
   onFilterChange,
   onPageChange,
+  onPageSizeChange,
   selectedDevice,
 }: ClientsTableProps) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
@@ -202,6 +213,21 @@ export function ClientsTable({
                   Page {page} of {totalPages}
                 </p>
                 <div className="flex items-center gap-2">
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(v) => onPageSizeChange(Number(v))}
+                  >
+                    <SelectTrigger className="h-7 w-28 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAGE_SIZE_OPTIONS.map((size) => (
+                        <SelectItem key={size} value={String(size)} className="text-xs">
+                          {size} / page
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     variant="outline"
                     size="sm"

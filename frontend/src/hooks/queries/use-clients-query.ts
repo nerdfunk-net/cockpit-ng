@@ -3,6 +3,17 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 
+interface NautobotDevice {
+  id: string
+  name: string
+}
+
+export interface NautobotDevicesSearchResponse {
+  devices: NautobotDevice[]
+  count: number
+  has_more: boolean
+}
+
 export interface ClientDataItem {
   ip_address: string | null
   mac_address: string | null
@@ -34,6 +45,12 @@ export interface ClientDataFilters {
 
 const EMPTY_DEVICES: string[] = []
 const DEFAULT_FILTERS: ClientDataFilters = {}
+
+const EMPTY_NAUTOBOT_RESPONSE: NautobotDevicesSearchResponse = {
+  devices: [],
+  count: 0,
+  has_more: false,
+}
 
 export function useClientDevicesQuery() {
   const { apiCall } = useApi()
@@ -96,6 +113,36 @@ export function useClientDataQuery(filters: ClientDataFilters = DEFAULT_FILTERS)
         { method: 'GET' }
       )
       return response ?? { items: [], total: 0, page, page_size: pageSize }
+    },
+    staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useNautobotDevicesSearchQuery(params: {
+  search: string
+  page: number
+  pageSize: number
+}) {
+  const { apiCall } = useApi()
+  const { search, page, pageSize } = params
+  const offset = (page - 1) * pageSize
+
+  return useQuery({
+    queryKey: ['nautobot', 'clients-device-search', { search, page, pageSize }],
+    queryFn: async () => {
+      const p = new URLSearchParams()
+      if (search) {
+        p.set('filter_type', 'name__ic')
+        p.set('filter_value', search)
+      }
+      p.set('limit', String(pageSize))
+      p.set('offset', String(offset))
+      const res = await apiCall<NautobotDevicesSearchResponse>(
+        `nautobot/devices?${p.toString()}`,
+        { method: 'GET' }
+      )
+      return res ?? EMPTY_NAUTOBOT_RESPONSE
     },
     staleTime: 30 * 1000,
     placeholderData: keepPreviousData,
