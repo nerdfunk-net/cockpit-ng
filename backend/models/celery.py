@@ -67,6 +67,9 @@ class CelerySettingsRequest(BaseModel):
     cleanup_enabled: Optional[bool] = None
     cleanup_interval_hours: Optional[int] = None
     cleanup_age_hours: Optional[int] = None
+    client_data_cleanup_enabled: Optional[bool] = None
+    client_data_cleanup_interval_hours: Optional[int] = None
+    client_data_cleanup_age_hours: Optional[int] = None
     result_expires_hours: Optional[int] = None
     queues: Optional[List[CeleryQueue]] = None
 

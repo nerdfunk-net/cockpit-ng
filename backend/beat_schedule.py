@@ -44,6 +44,15 @@ CELERY_BEAT_SCHEDULE = {
             "expires": 3600,  # Task expires after 1 hour if not picked up
         },
     },
+    # Client data cleanup - runs every 24 hours by default
+    # Controlled by client_data_cleanup_* settings in database
+    "cleanup-client-data": {
+        "task": "tasks.cleanup_client_data",
+        "schedule": crontab(hour="*/24", minute=0),  # Every 24 hours
+        "options": {
+            "expires": 3600,  # Task expires after 1 hour if not picked up
+        },
+    },
     # Stale job detection - runs every 10 minutes
     # Marks crashed/orphaned jobs as failed
     "check-stale-jobs": {

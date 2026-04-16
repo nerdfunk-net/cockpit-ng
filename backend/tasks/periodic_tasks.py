@@ -305,6 +305,85 @@ def cleanup_celery_data_task() -> dict:
         return {"success": False, "error": str(e)}
 
 
+@shared_task(name="tasks.cleanup_client_data")
+def cleanup_client_data_task() -> dict:
+    """
+    Cleanup old client data from ARP, MAC address, and hostname tables.
+
+    This task:
+    1. Reads client_data_cleanup_age_hours from Celery settings
+    2. Removes rows from client_ip_addresses, client_mac_addresses, and
+       client_hostnames that are older than the configured retention period
+
+    Returns:
+        dict: Cleanup results with counts of removed rows per table
+    """
+    try:
+        from settings_manager import settings_manager
+        from datetime import datetime, timezone, timedelta
+        from core.database import get_db_session
+        from sqlalchemy import text
+
+        celery_settings = settings_manager.get_celery_settings()
+
+        if not celery_settings.get("client_data_cleanup_enabled", True):
+            return {
+                "success": True,
+                "message": "Client data cleanup is disabled",
+                "removed_ip_addresses": 0,
+                "removed_mac_addresses": 0,
+                "removed_hostnames": 0,
+            }
+
+        age_hours = celery_settings.get("client_data_cleanup_age_hours", 168)
+        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=age_hours)
+
+        logger.info(
+            "Starting client data cleanup: removing data older than %s hours",
+            age_hours,
+        )
+
+        with get_db_session() as session:
+            r_ip = session.execute(
+                text("DELETE FROM client_ip_addresses WHERE collected_at < :cutoff"),
+                {"cutoff": cutoff_time},
+            )
+            r_mac = session.execute(
+                text("DELETE FROM client_mac_addresses WHERE collected_at < :cutoff"),
+                {"cutoff": cutoff_time},
+            )
+            r_host = session.execute(
+                text("DELETE FROM client_hostnames WHERE collected_at < :cutoff"),
+                {"cutoff": cutoff_time},
+            )
+            session.commit()
+
+        removed_ip = r_ip.rowcount
+        removed_mac = r_mac.rowcount
+        removed_host = r_host.rowcount
+
+        logger.info(
+            "Client data cleanup completed: %s IP, %s MAC, %s hostname rows removed",
+            removed_ip,
+            removed_mac,
+            removed_host,
+        )
+
+        return {
+            "success": True,
+            "message": "Client data cleanup completed",
+            "client_data_cleanup_age_hours": age_hours,
+            "cutoff_time": cutoff_time.isoformat(),
+            "removed_ip_addresses": removed_ip,
+            "removed_mac_addresses": removed_mac,
+            "removed_hostnames": removed_host,
+        }
+
+    except Exception as e:
+        logger.error("Client data cleanup task failed: %s", e)
+        return {"success": False, "error": str(e)}
+
+
 @shared_task(name="tasks.check_stale_jobs")
 def check_stale_jobs_task() -> dict:
     """

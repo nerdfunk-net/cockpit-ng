@@ -103,6 +103,9 @@ class CelerySettings:
     cleanup_enabled: bool = True  # Enable automatic cleanup
     cleanup_interval_hours: int = 6  # Run cleanup every 6 hours
     cleanup_age_hours: int = 24  # Remove data older than 24 hours
+    client_data_cleanup_enabled: bool = True
+    client_data_cleanup_interval_hours: int = 24
+    client_data_cleanup_age_hours: int = 168  # Remove client data older than 7 days
     result_expires_hours: int = 24  # Celery result expiry
     queues: List[Dict[str, Any]] = field(
         default_factory=lambda: [
@@ -415,6 +418,9 @@ class SettingsManager:
                     "cleanup_enabled": settings.cleanup_enabled,
                     "cleanup_interval_hours": settings.cleanup_interval_hours,
                     "cleanup_age_hours": settings.cleanup_age_hours,
+                    "client_data_cleanup_enabled": settings.client_data_cleanup_enabled,
+                    "client_data_cleanup_interval_hours": settings.client_data_cleanup_interval_hours,
+                    "client_data_cleanup_age_hours": settings.client_data_cleanup_age_hours,
                     "result_expires_hours": settings.result_expires_hours,
                     "queues": queues,
                 }
@@ -448,6 +454,15 @@ class SettingsManager:
                 ),
                 "cleanup_age_hours": settings.get(
                     "cleanup_age_hours", self.default_celery.cleanup_age_hours
+                ),
+                "client_data_cleanup_enabled": settings.get(
+                    "client_data_cleanup_enabled", self.default_celery.client_data_cleanup_enabled
+                ),
+                "client_data_cleanup_interval_hours": settings.get(
+                    "client_data_cleanup_interval_hours", self.default_celery.client_data_cleanup_interval_hours
+                ),
+                "client_data_cleanup_age_hours": settings.get(
+                    "client_data_cleanup_age_hours", self.default_celery.client_data_cleanup_age_hours
                 ),
                 "result_expires_hours": settings.get(
                     "result_expires_hours", self.default_celery.result_expires_hours

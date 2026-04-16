@@ -64,6 +64,32 @@ export function useCeleryMutations() {
     }
   })
 
+  // Trigger client data cleanup
+  const triggerClientDataCleanup = useMutation({
+    mutationFn: async () => {
+      const response = await apiCall<CeleryActionResponse>('/api/celery/client-data-cleanup', {
+        method: 'POST'
+      })
+      if (!response?.task_id) {
+        throw new Error(response?.message || 'Failed to trigger client data cleanup')
+      }
+      return response
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Success',
+        description: data.task_id ? `Client data cleanup task started: ${data.task_id}` : 'Client data cleanup started',
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to trigger client data cleanup: ${error.message}`,
+        variant: 'destructive'
+      })
+    }
+  })
+
   // Submit test task
   const submitTestTask = useMutation({
     mutationFn: async (message: string) => {
@@ -149,8 +175,9 @@ export function useCeleryMutations() {
   return useMemo(() => ({
     saveSettings,
     triggerCleanup,
+    triggerClientDataCleanup,
     submitTestTask,
     purgeQueue,
     purgeAllQueues,
-  }), [saveSettings, triggerCleanup, submitTestTask, purgeQueue, purgeAllQueues])
+  }), [saveSettings, triggerCleanup, triggerClientDataCleanup, submitTestTask, purgeQueue, purgeAllQueues])
 }

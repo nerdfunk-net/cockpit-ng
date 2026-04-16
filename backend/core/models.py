@@ -1127,6 +1127,14 @@ class CelerySetting(Base):
     cleanup_age_hours = Column(
         Integer, nullable=False, default=24
     )  # Remove data older than 24 hours
+    # Client data cleanup settings
+    client_data_cleanup_enabled = Column(Boolean, nullable=False, default=True)
+    client_data_cleanup_interval_hours = Column(
+        Integer, nullable=False, default=24
+    )  # Run cleanup every 24 hours
+    client_data_cleanup_age_hours = Column(
+        Integer, nullable=False, default=168
+    )  # Remove client data older than 7 days
     # Result expiry
     result_expires_hours = Column(Integer, nullable=False, default=24)
     # Queue configuration - stores list of configured queues as JSON

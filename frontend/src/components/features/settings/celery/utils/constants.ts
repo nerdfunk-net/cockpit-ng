@@ -26,6 +26,9 @@ export const DEFAULT_CELERY_SETTINGS: CelerySettings = {
   cleanup_enabled: true,
   cleanup_interval_hours: 6,
   cleanup_age_hours: 24,
+  client_data_cleanup_enabled: true,
+  client_data_cleanup_interval_hours: 24,
+  client_data_cleanup_age_hours: 168,
   result_expires_hours: 24,
   queues: DEFAULT_QUEUES
 }

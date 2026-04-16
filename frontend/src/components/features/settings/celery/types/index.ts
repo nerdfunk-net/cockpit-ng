@@ -61,6 +61,9 @@ export interface CelerySettings {
   cleanup_enabled: boolean
   cleanup_interval_hours: number
   cleanup_age_hours: number
+  client_data_cleanup_enabled: boolean
+  client_data_cleanup_interval_hours: number
+  client_data_cleanup_age_hours: number
   result_expires_hours: number
   queues: CeleryQueue[]
 }

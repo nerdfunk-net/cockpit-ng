@@ -6,6 +6,7 @@ import { Server, Database, CheckCircle, XCircle, Activity, Clock } from 'lucide-
 import { useCeleryStatus } from './hooks/use-celery-queries'
 import { CeleryStatusOverview } from './components/celery-status-overview'
 import { CelerySettingsForm } from './components/celery-settings-form'
+import { CeleryCleanupJobs } from './components/celery-cleanup-jobs'
 import { CeleryWorkersList } from './components/celery-workers-list'
 import { CeleryQueuesList } from './components/celery-queues-list'
 import { CelerySchedulesList } from './components/celery-schedules-list'
@@ -107,6 +108,7 @@ export function CelerySettingsPage() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="cleanup-jobs">Cleanup Jobs</TabsTrigger>
           <TabsTrigger value="workers">Workers</TabsTrigger>
           <TabsTrigger value="queues">Queues</TabsTrigger>
           <TabsTrigger value="schedules">Schedules</TabsTrigger>
@@ -119,6 +121,10 @@ export function CelerySettingsPage() {
 
         <TabsContent value="settings">
           <CelerySettingsForm />
+        </TabsContent>
+
+        <TabsContent value="cleanup-jobs">
+          <CeleryCleanupJobs />
         </TabsContent>
 
         <TabsContent value="workers">

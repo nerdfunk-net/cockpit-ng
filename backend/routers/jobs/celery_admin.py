@@ -432,3 +432,24 @@ async def get_cleanup_stats_endpoint(
     """Get statistics about data that would be cleaned up."""
     stats = get_cleanup_stats()
     return {"success": True, "stats": stats}
+
+
+@router.post("/client-data-cleanup", response_model=TaskResponse)
+@handle_celery_errors("trigger client data cleanup task")
+async def trigger_client_data_cleanup(
+    current_user: dict = Depends(require_permission("settings.celery", "write")),
+):
+    """
+    Manually trigger the client data cleanup task.
+
+    This removes old rows from client_ip_addresses, client_mac_addresses, and
+    client_hostnames based on the configured client_data_cleanup_age_hours.
+    """
+    from tasks.periodic_tasks import cleanup_client_data_task
+
+    task = cleanup_client_data_task.delay()
+    return TaskResponse(
+        task_id=task.id,
+        status="queued",
+        message=f"Client data cleanup task triggered: {task.id}",
+    )
