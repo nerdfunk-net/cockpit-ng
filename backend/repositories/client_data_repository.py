@@ -217,6 +217,7 @@ class ClientDataRepository:
                 SELECT DISTINCT ON (i.mac_address, i.device_name)
                     i.mac_address,
                     i.ip_address,
+                    i.interface,
                     i.device_name,
                     i.session_id,
                     i.collected_at
@@ -253,7 +254,7 @@ class ClientDataRepository:
                 SELECT
                     p.mac_address,
                     p.device_name,
-                    mt.port,
+                    COALESCE(mt.port, ae.interface) AS port,
                     mt.vlan,
                     COALESCE(ae.ip_address, bim.ip_address) AS ip_address,
                     hfi.hostname,
