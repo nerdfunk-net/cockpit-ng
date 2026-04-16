@@ -2,7 +2,7 @@
 
 ## Context
 
-`routers/checkmk/main.py` is 2,168 lines containing 63 endpoints across 9 domains. It violates every
+`routers/checkmk/main.py` is 2,168 lines containing 57 endpoints across 9 domains. It violates every
 project standard: business logic embedded in route handlers, URL parsing duplicated in 5+ places,
 folder-path conversion (`/` → `~`) duplicated in 6+ places, three inconsistent client-construction
 approaches, and settings loading scattered across 3+ call sites.
@@ -10,6 +10,75 @@ approaches, and settings loading scattered across 3+ call sites.
 **Goal:** Decompose the monolith into thin domain routers (HTTP plumbing only) backed by proper
 service classes (business logic), all sharing a single client factory. `backend/main.py` requires
 **zero changes** — the public `checkmk_router` surface is preserved.
+
+## Non-Negotiable Compatibility Contract
+
+This refactor is behavior-preserving. Every migrated endpoint MUST keep the same external contract.
+
+### Contract Rules
+
+1. HTTP method and path must remain unchanged.
+2. Permission resource/action (`require_permission(...)`) must remain unchanged.
+3. `response_model` type and response envelope shape must remain unchanged.
+4. Existing status-code behavior for known exception paths must remain unchanged.
+5. Existing payload key names must remain unchanged.
+6. Existing side effects (for example activation enqueueing semantics) must remain unchanged.
+
+### Allowed Changes
+
+- Internal file/module structure.
+- Internal service boundaries.
+- Removal of duplicated logic.
+- Logging message wording (without losing error context).
+
+### Not Allowed
+
+- Endpoint renaming.
+- Permission broadening/narrowing.
+- Silent status-code normalization to generic `400`/`500`.
+- Converting async handlers to blocking behavior.
+
+---
+
+## Phase 0 — Baseline Capture (Required Before Phase 1)
+
+Capture a machine-checkable baseline so parity can be proven after cutover.
+
+### 0.1 Route Inventory Snapshot
+
+Generate and save a route inventory from `routers/checkmk/main.py`:
+
+```bash
+rg -n "@router\.(get|post|put|patch|delete)\(" backend/routers/checkmk/main.py
+rg -n "require_permission\(" backend/routers/checkmk/main.py
+rg -n "response_model=" backend/routers/checkmk/main.py
+```
+
+Store outputs in `doc/refactoring/checkmk-baseline/` as:
+
+- `routes.txt`
+- `permissions.txt`
+- `response-models.txt`
+
+### 0.2 Status-Code Baseline
+
+Capture all explicit status codes and exception branches:
+
+```bash
+rg -n "status_code=status\." backend/routers/checkmk/main.py
+```
+
+Store as `doc/refactoring/checkmk-baseline/status-codes.txt`.
+
+### 0.3 OpenAPI Baseline
+
+Start backend, export OpenAPI schema, and save a pre-refactor copy:
+
+```bash
+curl -s http://127.0.0.1:8000/openapi.json > doc/refactoring/checkmk-baseline/openapi.before.json
+```
+
+This file is used in Phase 7 parity diff.
 
 ---
 
@@ -19,7 +88,9 @@ service classes (business logic), all sharing a single client factory. `backend/
 
 | File | Lines | Endpoints |
 |------|-------|-----------|
-| `routers/checkmk/main.py` | 2,168 | 63 |
+| `routers/checkmk/main.py` | 2,168 | 57 |
+
+Baseline extraction confirms 57 route decorators. The earlier "63" figure was an estimate made before baseline capture. The baseline artifacts in `doc/refactoring/checkmk-baseline/` are the source of truth for migration parity.
 
 ### Existing Services (anemic — need enriching)
 
@@ -29,8 +100,17 @@ service classes (business logic), all sharing a single client factory. `backend/
 | `services/checkmk/host_service.py` | `CheckMKHostService` | `delete_host()` only |
 | `services/checkmk/folder.py` | `CheckMKFolderService` | `create_path()` only |
 | `services/checkmk/exceptions.py` | `CheckMKClientError`, `HostNotFoundError` | — |
-| `services/checkmk/normalization.py` | normalization logic | keep as-is |
+| `services/checkmk/normalization.py` | normalization helpers | keep as-is |
+| `services/checkmk/normalization/` | `DeviceNormalizer`, field/IP/SNMP/tag normalizers | keep as-is — out of scope |
+| `services/checkmk/config.py` | `ConfigService` | YAML loader for `checkmk.yaml`, `snmp_mapping.yaml`, `checkmk_queries.yaml` — **out of scope, do not touch** |
+| `services/checkmk/sync/` | sync pipeline (7 files) | `comparison.py`, `operations.py`, etc. — **out of scope, do not touch** |
 | `checkmk/client.py` | `CheckMKClient` | 60+ API methods (keep as-is) |
+
+**Note on `config.py`:** `ConfigService` loads YAML files for the Nautobot↔CheckMK sync pipeline. It is completely unrelated to `CheckMKConfig` (the new dataclass in `base.py` which holds API connection credentials). The name proximity is coincidental; they serve different purposes.
+
+**Note on `services/checkmk/sync/`:** `comparison.py` and `operations.py` call `CheckMKClient.get_host()` and `.delete_host()` directly. These files are not part of this refactor and must not be modified here.
+
+**Note on `CheckMKAPIError`:** This exception class is defined in `checkmk/client.py` (not in `services/checkmk/exceptions.py`). Currently `main.py` imports it inline (`from checkmk.client import CheckMKAPIError`) in 6 places. Before Phase 1, decide: move it to `services/checkmk/exceptions.py` (recommended — single exception module) or keep it in `checkmk/client.py` and import from there in all new service files. This decision must be made and recorded here before implementation starts. The recommended approach is to **move `CheckMKAPIError` to `exceptions.py`** in Phase 1 alongside creating `base.py`.
 
 ### Known Duplication
 
@@ -234,6 +314,8 @@ async def wait_for_activation_completion(self, activation_id: str) -> dict[str, 
 async def get_running_activations(self) -> dict[str, Any]
 ```
 
+**Route ordering fix (existing bug):** In `main.py` the route `GET /activation/{activation_id}` (line 1368) is registered *before* `GET /activation/running` (line 1422). FastAPI evaluates routes in registration order, so `/activation/running` is currently unreachable — it matches `activation_id="running"` instead. The new `activation.py` router **must** register `/activation/running` before `/activation/{activation_id}`. This is the only intentional behavioral fix in the refactor; it is permitted under the contract because it corrects a broken endpoint, not a working one.
+
 ### 2.7 `CheckMKFolderService` — extend `services/checkmk/folder.py`
 
 Replace `import service_factory` inside `create_path()` with `CheckMKClientFactory`. Add:
@@ -297,6 +379,16 @@ def get_checkmk_host_group_service() -> "CheckMKHostGroupService": ...
 def get_checkmk_tag_group_service() -> "CheckMKTagGroupService": ...
 ```
 
+### Pydantic models
+
+All request/response Pydantic models already live in `models/checkmk.py`. Service files and router files import from there:
+
+```python
+from models.checkmk import CheckMKHostCreateRequest, CheckMKOperationResponse  # etc.
+```
+
+Do not define models inline in router or service files.
+
 ### Router template
 
 ```python
@@ -310,7 +402,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from dependencies import get_checkmk_<domain>_service
-from services.checkmk.exceptions import CheckMKClientError
+from services.checkmk.exceptions import CheckMKClientError, CheckMKAPIError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkmk"])
@@ -322,9 +414,13 @@ async def handler_name(
     current_user: dict = Depends(require_permission("checkmk.devices", "read")),
     service=Depends(get_checkmk_<domain>_service),
 ):
+    # IMPORTANT: do NOT apply this template blindly. Consult
+    # doc/refactoring/checkmk-baseline/exception-status-mapping.md for the
+    # correct status code for every exception type this endpoint can raise.
     try:
         return await service.method(...)
     except CheckMKClientError as e:
+        # Do not default to 400 for every case; apply endpoint-specific mapping.
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
@@ -350,6 +446,47 @@ async def handler_name(
 | `host_groups.py` | 7 | ~140 |
 | `tag_groups.py` | 5 | ~100 |
 | `__init__.py` | — | ~40 |
+
+### Endpoint Mapping Matrix
+
+`doc/refactoring/checkmk-baseline/endpoint-mapping.md` is **fully populated** — all 57 rows are present with domain, method, path, old handler, new router, new service method, permission, response model, status mapping reference, and test ID. No further population work is required.
+
+Required columns for reference:
+
+| Domain | Method | Path | Old handler | New router | New service method | Permission | Response model | Status mapping reference | Test ID |
+|--------|--------|------|-------------|------------|--------------------|------------|----------------|--------------------------|---------|
+
+---
+
+## Exception and Status-Code Mapping Rules
+
+Do not flatten all service errors into generic router responses.
+
+### Required Mapping File
+
+Create `doc/refactoring/checkmk-baseline/exception-status-mapping.md` and map each endpoint to explicit behavior.
+
+At minimum include:
+
+1. `HostNotFoundError` -> `404 Not Found` where current behavior is 404.
+2. `CheckMKAPIError` with code `428` (precondition) -> `428 Precondition Required` for move operations.
+3. Upstream HTTP communication failures that currently return `502` must keep returning `502`.
+4. Availability checks currently returning `503` must keep returning `503`.
+5. Validation/client configuration errors currently returning `400` must keep returning `400`.
+
+Any endpoint-specific deviations must be documented in that mapping file before migration.
+
+---
+
+## Async and I/O Safety Requirements
+
+Several extracted code paths include blocking HTTP calls.
+
+Rules:
+
+1. Service methods invoked by async routers MUST NOT block the event loop.
+2. Any retained blocking HTTP calls (for example `requests`) must be isolated via threadpool or replaced with async client usage.
+3. Add one regression test that executes concurrent requests for an endpoint with upstream calls to ensure no severe throughput collapse.
 
 ---
 
@@ -391,15 +528,51 @@ Removed from public exports: `get_host`, `delete_host`, `_get_checkmk_client`.
 
 Each phase is independently verifiable. Never leave broken imports between phases.
 
-### Phase 1 — Create `services/checkmk/base.py`
+### Gate Rule (applies to every phase)
 
-**Files:** `services/checkmk/base.py` (new), `dependencies.py` (+`get_checkmk_config`),
+A phase is complete only if all checks below pass:
+
+1. Imports/compile checks pass for modified modules.
+2. Focused tests for modified domain pass.
+3. No unresolved TODO/FIXME markers introduced.
+4. Baseline parity artifacts are updated if contract files changed.
+
+### Phase 1 — Create `services/checkmk/base.py` + consolidate exceptions
+
+**Files:** `services/checkmk/exceptions.py` (add `CheckMKAPIError`),
+`services/checkmk/base.py` (new), `dependencies.py` (+`get_checkmk_config`),
 `service_factory.py` (update `build_checkmk_client` to delegate to factory)
+
+**Exception consolidation (do this first):** Move `CheckMKAPIError` from `checkmk/client.py` into `services/checkmk/exceptions.py`. Add a re-export in `checkmk/client.py` so existing imports keep working:
+
+```python
+# checkmk/client.py — add after class definition is removed
+from services.checkmk.exceptions import CheckMKAPIError  # re-export for backwards compat
+```
+
+After Phase 8, the re-export can be removed. All new service files import `CheckMKAPIError` from `services.checkmk.exceptions`.
+
+**Mock boundary for tests (applies to Phases 1–4):** Unit tests must mock at the `CheckMKClientFactory.build_client_from_settings` boundary — not at the HTTP layer. The pattern:
+
+```python
+from unittest.mock import MagicMock, patch
+
+@patch("services.checkmk.base.CheckMKClientFactory.build_client_from_settings")
+def test_something(mock_factory):
+    mock_client = MagicMock()
+    mock_factory.return_value = mock_client
+    mock_client.some_method.return_value = {"result": "ok"}
+    # ... assert service behavior
+```
+
+This keeps tests fast and deterministic without requiring a live CheckMK instance.
 
 **Verify:**
 ```bash
+python -c "from services.checkmk.exceptions import CheckMKClientError, HostNotFoundError, CheckMKAPIError"
 python -c "from services.checkmk.base import get_checkmk_config, slash_to_tilde, CheckMKClientFactory"
 python -c "from service_factory import build_checkmk_client; print('ok')"
+pytest backend/tests/services/checkmk/ -k "base or config or factory"
 pytest backend/tests/
 ```
 
@@ -409,12 +582,22 @@ Remove `_get_client()`, switch to `CheckMKClientFactory`. Add all 10 new methods
 
 **Verify:** `DELETE /api/checkmk/hosts/{hostname}` still works end-to-end.
 
+Add tests:
+
+- preserve existing status code for host-not-found path
+- preserve existing status code for successful delete path
+
 ### Phase 3 — Enrich `folder.py`
 
 Replace `import service_factory` inside `create_path()`. Add all 8 folder methods using
 `slash_to_tilde` from `base.py`.
 
 **Verify:** No `service_factory` import in `services/checkmk/folder.py`.
+
+Add tests:
+
+- `slash_to_tilde()` edge cases (`""`, `"/"`, `"//a//b/"`, `"/a/b"`)
+- folder move uses normalized source and destination
 
 ### Phase 4 — Create 6 new service files
 
@@ -426,18 +609,38 @@ For each: add factory function to `service_factory.py` + dependency provider to 
 
 **Verify:** Import each in a Python REPL. Full test suite green.
 
+Also verify:
+
+```bash
+python -m py_compile backend/services/checkmk/*.py
+```
+
 ### Phase 5 — Rename and extend `client.py` (`CheckMKConnectionService`)
 
 Rename class. Add `get_stats`, `get_version`, `get_host_inventory`. Update shims.
 
 **Verify:** `POST /api/checkmk/test` still works.
 
+Also verify that old class import paths still resolve where currently used until all references are migrated.
+
 ### Phase 6 — Create the 9 thin router files
 
 Create all files under `routers/checkmk/`. Do **not** wire into `__init__.py` yet.
 `main.py` remains the live router.
 
+**Activation route ordering (fix existing bug):** In `activation.py`, register `GET /activation/running` **before** `GET /activation/{activation_id}`. The monolith has this reversed, making `/activation/running` unreachable. Correct order:
+
+```python
+@router.get("/activation/running", ...)          # static — must come first
+async def get_running_activations(...): ...
+
+@router.get("/activation/{activation_id}", ...)  # parameterized — after static
+async def get_activation_status(...): ...
+```
+
 **Verify:** `python -m py_compile routers/checkmk/<each_file>.py`
+
+Do not switch traffic yet; these files are dark until Phase 7.
 
 ### Phase 7 — Wire new `__init__.py` (switch-over)
 
@@ -446,14 +649,18 @@ Replace `routers/checkmk/__init__.py`. `main.py` becomes dead code.
 **Verify:**
 ```bash
 python start.py  # starts without error
-# Check /docs: all 63 endpoints present with correct paths
+# Check /docs: all 57 endpoints present with correct paths
 # Smoke test one endpoint per domain (9 curl/httpx requests)
+curl -s http://127.0.0.1:8000/openapi.json > doc/refactoring/checkmk-baseline/openapi.after.json
+# Compare openapi.before.json and openapi.after.json for checkmk paths, methods, response schemas
 ```
 
 ### Phase 8 — Delete `main.py` content
 
-Remove the `router` object and all 63 handler functions. Update any test that patches
+Remove the `router` object and all 57 handler functions. Update any test that patches
 `routers.checkmk.main.get_host` → `routers.checkmk.hosts.get_host`.
+
+Also remove the `CheckMKAPIError` re-export shim from `checkmk/client.py` added in Phase 1, and confirm no remaining import of `CheckMKAPIError` from `checkmk.client`.
 
 **Verify:**
 ```bash
@@ -477,6 +684,18 @@ grep -rn "urlparse" backend/services/checkmk/ backend/routers/checkmk/
 grep -rn 'replace.*"/", "~"' backend/routers/checkmk/
 # Should show zero results
 ```
+
+### Phase 10 — Cutover Hardening and Rollback Drill
+
+Before merge:
+
+1. Execute all smoke tests listed in `endpoint-mapping.md` test IDs.
+2. Validate permissions parity by checking each migrated endpoint still uses original `require_permission` tuple.
+3. Run a rollback drill:
+    - revert `routers/checkmk/__init__.py` to old import wiring
+    - verify startup succeeds
+    - restore new wiring
+4. Document rollback steps in PR description.
 
 ---
 
@@ -556,3 +775,18 @@ and docstrings replace inline duplication while eliminating all duplicated patte
 | `dependencies.py` | Touched every phase — add `Depends()` providers per service |
 | `routers/checkmk/__init__.py` | Public interface — must preserve `checkmk_router` |
 | `backend/main.py` | Must remain unchanged |
+
+---
+
+## Definition of Done
+
+Refactor is complete only when all statements are true:
+
+1. All CheckMK endpoints are served by split routers (no live handlers left in `routers/checkmk/main.py`).
+2. No imports of `routers.checkmk.main` remain in backend code or tests.
+3. URL parsing exists only in `services/checkmk/base.py`.
+4. Slash-to-tilde conversion exists only in shared utility from `services/checkmk/base.py`.
+5. Endpoint mapping matrix is fully populated and every row has a passing test ID.
+6. OpenAPI parity for CheckMK paths/methods/response models is validated against baseline.
+7. Permissions parity is validated for every endpoint.
+8. Smoke tests pass for all 9 domains.
