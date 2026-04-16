@@ -3,9 +3,11 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 
-interface NautobotDevice {
+export interface NautobotDevice {
   id: string
   name: string
+  primary_ip4?: { address?: string }
+  platform?: { name?: string }
 }
 
 export interface NautobotDevicesSearchResponse {

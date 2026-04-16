@@ -2,9 +2,10 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Users } from 'lucide-react'
-import { useNautobotDevicesSearchQuery, useClientDataQuery } from '@/hooks/queries/use-clients-query'
+import { useNautobotDevicesSearchQuery, useClientDataQuery, type NautobotDevice } from '@/hooks/queries/use-clients-query'
 import { DeviceList } from './components/device-list'
 import { ClientsTable } from './components/clients-table'
+import { LiveStatusDialog } from './components/live-status-dialog'
 
 interface ColumnFilters {
   ipAddress: string
@@ -125,11 +126,18 @@ export function ClientsPage() {
 
   const items = dataQuery.data?.items ?? []
   const total = dataQuery.data?.total ?? 0
-  const devices = useMemo(
-    () => (nautobotDevicesQuery.data?.devices ?? []).map((d) => d.name),
+  const deviceObjects = useMemo(
+    () => nautobotDevicesQuery.data?.devices ?? [],
     [nautobotDevicesQuery.data]
   )
+  const devices = useMemo(() => deviceObjects.map((d) => d.name), [deviceObjects])
   const deviceTotal = nautobotDevicesQuery.data?.count ?? 0
+
+  const [liveStatusDevice, setLiveStatusDevice] = useState<NautobotDevice | null>(null)
+
+  const handleLiveStatusClick = useCallback((device: NautobotDevice) => {
+    setLiveStatusDevice(device)
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -164,6 +172,8 @@ export function ClientsPage() {
             pageSize={devicePageSize}
             onPageChange={setDevicePage}
             onPageSizeChange={handleDevicePageSizeChange}
+            deviceObjects={deviceObjects}
+            onLiveStatusClick={handleLiveStatusClick}
           />
         </div>
 
@@ -184,6 +194,11 @@ export function ClientsPage() {
           />
         </div>
       </div>
+
+      <LiveStatusDialog
+        device={liveStatusDevice}
+        onClose={() => setLiveStatusDevice(null)}
+      />
     </div>
   )
 }

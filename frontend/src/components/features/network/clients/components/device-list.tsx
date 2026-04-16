@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Server, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Server, ChevronLeft, ChevronRight, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import {
@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import type { NautobotDevice } from '@/hooks/queries/use-clients-query'
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200, 500] as const
 
@@ -25,6 +26,8 @@ interface DeviceListProps {
   pageSize: number
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
+  deviceObjects?: NautobotDevice[]
+  onLiveStatusClick?: (device: NautobotDevice) => void
 }
 
 export function DeviceList({
@@ -39,6 +42,8 @@ export function DeviceList({
   pageSize,
   onPageChange,
   onPageSizeChange,
+  deviceObjects,
+  onLiveStatusClick,
 }: DeviceListProps) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const startRow = total === 0 ? 0 : (page - 1) * pageSize + 1
@@ -95,22 +100,41 @@ export function DeviceList({
               </button>
             </li>
 
-            {devices.map((device) => (
-              <li key={device}>
-                <button
-                  onClick={() => onSelect(device)}
-                  className={cn(
-                    'w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-blue-50 truncate',
-                    selectedDevice === device
-                      ? 'bg-blue-50 text-blue-700 font-medium'
-                      : 'text-gray-700'
+            {devices.map((device) => {
+              const deviceObj = deviceObjects?.find((d) => d.name === device)
+              return (
+                <li key={device} className="group flex items-center">
+                  <button
+                    onClick={() => onSelect(device)}
+                    className={cn(
+                      'flex-1 min-w-0 text-left px-4 py-2.5 text-sm transition-colors hover:bg-blue-50 truncate',
+                      selectedDevice === device
+                        ? 'bg-blue-50 text-blue-700 font-medium'
+                        : 'text-gray-700'
+                    )}
+                    title={device}
+                  >
+                    {device}
+                  </button>
+                  {onLiveStatusClick && deviceObj && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onLiveStatusClick(deviceObj)
+                      }}
+                      title="Get live status"
+                      className={cn(
+                        'shrink-0 mr-2 p-1 rounded transition-colors',
+                        'opacity-0 group-hover:opacity-100 focus:opacity-100',
+                        'text-gray-400 hover:text-blue-500 hover:bg-blue-50'
+                      )}
+                    >
+                      <Activity className="h-3.5 w-3.5" />
+                    </button>
                   )}
-                  title={device}
-                >
-                  {device}
-                </button>
-              </li>
-            ))}
+                </li>
+              )
+            })}
 
             {devices.length === 0 && (
               <li className="px-4 py-6 text-center text-sm text-gray-400">
