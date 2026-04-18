@@ -40,7 +40,7 @@ async def seed_rbac() -> Dict[str, Any]:
     This should be run after database migrations that add new tables.
     """
     try:
-        import seed_rbac
+        from tools import seed_rbac as seed_rbac_module
         from io import StringIO
         import sys
 
@@ -51,7 +51,7 @@ async def seed_rbac() -> Dict[str, Any]:
 
         try:
             # Run the seed script with verbose output
-            seed_rbac.main(verbose=True)
+            seed_rbac_module.main(verbose=True)
 
             # Get the captured output
             output = captured_output.getvalue()

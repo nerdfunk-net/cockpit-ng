@@ -7,9 +7,9 @@ from __future__ import annotations
 
 def get_settings():
     """Get application settings."""
-    from config import get_config
+    from config import settings
 
-    return get_config()
+    return settings
 
 
 def get_nautobot_service():

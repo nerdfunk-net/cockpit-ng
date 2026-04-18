@@ -429,3 +429,6 @@ class RenderService:
             top_level_vars.add(top_var)
 
         return sorted(list(top_level_vars))
+
+
+render_service = RenderService()

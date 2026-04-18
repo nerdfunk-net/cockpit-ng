@@ -190,13 +190,13 @@ class SnapshotRepository:
         finally:
             db.close()
 
-    def increment_failed_count(self, snapshot_id: int) -> None:
+    def increment_failed_count(self, snapshot_id: int, count: int = 1) -> None:
         """Increment failed count for a snapshot."""
         db = get_db_session()
         try:
             snapshot = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
             if snapshot:
-                snapshot.failed_count += 1
+                snapshot.failed_count += count
                 db.commit()
         finally:
             db.close()

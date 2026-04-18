@@ -388,23 +388,25 @@ def sync_devices_to_checkmk_task(
                 error_detail = str(e)
 
                 # Try to extract JSON error details from HTTPException or CheckMKAPIError
-                if isinstance(e, CheckMKAPIError) and e.response_data:
-                    # Direct CheckMKAPIError - extract detailed error
-                    error_info = {
-                        "error": str(e),
-                        "status_code": e.status_code,
-                    }
+                if isinstance(e, CheckMKAPIError):
+                    cmk_error: CheckMKAPIError = e
+                    if cmk_error.response_data:
+                        # Direct CheckMKAPIError - extract detailed error
+                        error_info = {
+                            "error": str(cmk_error),
+                            "status_code": cmk_error.status_code,
+                        }
 
-                    # Include the full response data for detailed error analysis
-                    if "detail" in e.response_data:
-                        error_info["detail"] = e.response_data["detail"]
-                    if "fields" in e.response_data:
-                        error_info["fields"] = e.response_data["fields"]
-                    if "title" in e.response_data:
-                        error_info["title"] = e.response_data["title"]
+                        # Include the full response data for detailed error analysis
+                        if "detail" in cmk_error.response_data:
+                            error_info["detail"] = cmk_error.response_data["detail"]
+                        if "fields" in cmk_error.response_data:
+                            error_info["fields"] = cmk_error.response_data["fields"]
+                        if "title" in cmk_error.response_data:
+                            error_info["title"] = cmk_error.response_data["title"]
 
-                    # Keep as dict - will be properly serialized when results are returned
-                    error_detail = error_info
+                        # Keep as dict - will be properly serialized when results are returned
+                        error_detail = error_info
                 elif isinstance(e, HTTPException):
                     # HTTPException - the detail field may already be properly formatted JSON
                     detail = e.detail

@@ -22,5 +22,4 @@ __all__ = [
     "get_current_username",
     "verify_password",
     "get_password_hash",
-    "logger",
 ]

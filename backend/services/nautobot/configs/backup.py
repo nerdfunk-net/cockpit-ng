@@ -93,9 +93,9 @@ class DeviceBackupService:
                 "Repository %s not found in database" % config_repository_id
             )
 
-        logger.info("✓ Repository: %s", repository.name)
-        logger.info("  - URL: %s", repository.url)
-        logger.info("  - Branch: %s", repository.branch or "main")
+        logger.info("\u2713 Repository: %s", repository.get("name"))
+        logger.info("  - URL: %s", repository.get("url"))
+        logger.info("  - Branch: %s", repository.get("branch") or "main")
 
         # Validate credentials
         if not credential_id:

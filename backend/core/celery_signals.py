@@ -75,9 +75,10 @@ def init_worker_process(**kwargs):
     # Also dispose SessionLocal if it exists
     if hasattr(database, "SessionLocal") and database.SessionLocal is not None:
         try:
-            database.SessionLocal.close_all()
+            # Reset the session factory; engine.dispose() above handles connection cleanup
+            database.SessionLocal.configure(bind=None)
         except Exception as e:
-            logger.warning("[Worker Init] Error closing sessions: %s", e)
+            logger.warning("[Worker Init] Error resetting session factory: %s", e)
 
     # Create new engine with fresh connection pool for this worker process
     logger.info(
@@ -185,9 +186,10 @@ def init_worker(**kwargs):
 
     if hasattr(database, "SessionLocal") and database.SessionLocal is not None:
         try:
-            database.SessionLocal.close_all()
+            # Reset the session factory; engine.dispose() above handles connection cleanup
+            database.SessionLocal.configure(bind=None)
         except Exception as e:
-            logger.warning("[Worker Main] Error closing sessions: %s", e)
+            logger.warning("[Worker Main] Error resetting session factory: %s", e)
 
     logger.info(
         "[Worker Main] Worker child processes will initialize their own database engines"

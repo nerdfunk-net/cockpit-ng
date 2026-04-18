@@ -37,10 +37,10 @@ class Migration(BaseMigration):
         indexes_created = results.get("indexes_created", 0)
         if columns_added > 0:
             self.log_info(
-                "Added %s column(s) to client_ip_addresses", columns_added
+                f"Added {columns_added} column(s) to client_ip_addresses"
             )
         if indexes_created > 0:
-            self.log_info("Created %s index(es)", indexes_created)
+            self.log_info(f"Created {indexes_created} index(es)")
         if columns_added == 0 and indexes_created == 0:
             self.log_debug("mac_address column and index already exist")
         return results

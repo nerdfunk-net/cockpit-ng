@@ -314,8 +314,8 @@ def backup_devices_task(
         credential_name = credential.get("name")
 
         # Update tracking objects
-        git_status.repository_url = repository.url
-        git_status.branch = repository.branch or "main"
+        git_status.repository_url = repository["url"]
+        git_status.branch = repository.get("branch") or "main"
         credential_info.credential_name = credential_name
         credential_info.username = username
 
@@ -347,7 +347,7 @@ def backup_devices_task(
 
         # Use central git_service for repository operations
         logger.info("Opening or cloning repository using git_service...")
-        logger.info("  - Auth type: %s", repository.auth_type or "token")
+        logger.info("  - Auth type: %s", repository.get("auth_type") or "token")
 
         try:
             git_repo = git_service.open_or_clone(dict(repository))
@@ -362,7 +362,7 @@ def backup_devices_task(
             logger.info("  - Latest commit: %s", git_repo.head.commit.hexsha[:8])
 
             # Pull latest changes
-            logger.info("Pulling latest changes from %s...", repository.url)
+            logger.info("Pulling latest changes from %s...", repository["url"])
             pull_result = git_service.pull(dict(repository), repo=git_repo)
 
             if pull_result.success:
@@ -506,14 +506,14 @@ def backup_devices_task(
             if backed_up_devices:
                 commit_message = f"Backup config {current_date}"
                 logger.info("Committing and pushing with message: '%s'", commit_message)
-                logger.info("  - Auth type: %s", repository.auth_type or "token")
+                logger.info("  - Auth type: %s", repository.get("auth_type") or "token")
 
                 result = git_service.commit_and_push(
                     repository=dict(repository),
                     message=commit_message,
                     repo=git_repo,
                     add_all=True,
-                    branch=repository.branch or "main",
+                    branch=repository.get("branch") or "main",
                 )
 
                 git_commit_status.files_changed = result.files_changed
@@ -553,19 +553,13 @@ def backup_devices_task(
             }
 
         # Step 5: Update Nautobot custom fields with backup timestamp (if enabled)
-        timestamp_update_status = backup_service.update_nautobot_timestamps(
-            backed_up_devices=backed_up_devices,
-            write_timestamp_to_custom_field=write_timestamp_to_custom_field,
-            timestamp_custom_field_name=timestamp_custom_field_name,
-            progress_callback=lambda msg: self.update_state(
-                state="PROGRESS",
-                meta={
-                    "current": 95,
-                    "total": 100,
-                    "status": msg,
-                },
-            ),
-        )
+        if write_timestamp_to_custom_field and timestamp_custom_field_name:
+            timestamp_update_status = backup_service.update_nautobot_timestamps(
+                devices=backed_up_devices,
+                custom_field_name=timestamp_custom_field_name,
+            )
+        else:
+            timestamp_update_status = TimestampUpdateStatus(enabled=False)
 
         # Prepare final result
         result = backup_service.prepare_backup_result(
@@ -575,7 +569,7 @@ def backup_devices_task(
             git_commit_status=git_commit_status,
             credential_info=credential_info,
             timestamp_update_status=timestamp_update_status,
-            repository_name=repository.name,
+            repository_name=repository.get("name"),
             commit_date=current_date,
         )
 
