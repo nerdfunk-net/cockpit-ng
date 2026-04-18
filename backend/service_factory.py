@@ -20,8 +20,15 @@ if TYPE_CHECKING:
     from services.inventory.inventory import InventoryService
     from services.inventory.persistence_service import InventoryPersistenceService
     from services.nautobot.devices.query import DeviceQueryService
-    from services.checkmk.client import CheckMKService
+    from services.checkmk.client import CheckMKConnectionService, CheckMKService
     from services.checkmk.host_service import CheckMKHostService
+    from services.checkmk.monitoring_service import CheckMKMonitoringService
+    from services.checkmk.discovery_service import CheckMKDiscoveryService
+    from services.checkmk.problems_service import CheckMKProblemsService
+    from services.checkmk.activation_service import CheckMKActivationService
+    from services.checkmk.folder import CheckMKFolderService
+    from services.checkmk.host_group_service import CheckMKHostGroupService
+    from services.checkmk.tag_group_service import CheckMKTagGroupService
     from checkmk.client import CheckMKClient
     from services.agents.deployment_service import AgentDeploymentService
     from services.agents.template_render_service import AgentTemplateRenderService
@@ -43,39 +50,9 @@ def build_nautobot_service() -> "NautobotService":
 
 def build_checkmk_client(site_name: Optional[str] = None) -> "CheckMKClient":
     """Create a CheckMK client from database settings."""
-    from urllib.parse import urlparse
-    from checkmk.client import CheckMKClient
-    from services.checkmk.exceptions import CheckMKClientError
-    from settings_manager import settings_manager
+    from services.checkmk.base import CheckMKClientFactory
 
-    db_settings = settings_manager.get_checkmk_settings()
-    if not db_settings or not all(
-        key in db_settings for key in ["url", "site", "username", "password"]
-    ):
-        raise CheckMKClientError(
-            "CheckMK settings not configured. Please configure CheckMK settings first."
-        )
-
-    url = db_settings["url"].rstrip("/")
-    if url.startswith(("http://", "https://")):
-        parsed_url = urlparse(url)
-        protocol = parsed_url.scheme
-        host = parsed_url.netloc
-    else:
-        protocol = "https"
-        host = url
-
-    effective_site = site_name or db_settings["site"]
-
-    return CheckMKClient(
-        host=host,
-        site_name=effective_site,
-        username=db_settings["username"],
-        password=db_settings["password"],
-        protocol=protocol,
-        verify_ssl=db_settings.get("verify_ssl", True),
-        timeout=30,
-    )
+    return CheckMKClientFactory.build_client_from_settings(site_name=site_name)
 
 
 def build_inventory_persistence_service() -> "InventoryPersistenceService":
@@ -103,11 +80,11 @@ def build_device_query_service() -> "DeviceQueryService":
     return DeviceQueryService()
 
 
-def build_checkmk_service() -> "CheckMKService":
-    """Create a new CheckMKService instance."""
-    from services.checkmk.client import CheckMKService
+def build_checkmk_service() -> "CheckMKConnectionService":
+    """Create a new CheckMKConnectionService instance."""
+    from services.checkmk.client import CheckMKConnectionService
 
-    return CheckMKService()
+    return CheckMKConnectionService()
 
 
 def build_checkmk_host_service() -> "CheckMKHostService":
@@ -115,6 +92,48 @@ def build_checkmk_host_service() -> "CheckMKHostService":
     from services.checkmk.host_service import CheckMKHostService
 
     return CheckMKHostService()
+
+
+def build_checkmk_monitoring_service() -> "CheckMKMonitoringService":
+    """Create a new CheckMKMonitoringService instance."""
+    from services.checkmk.monitoring_service import CheckMKMonitoringService
+
+    return CheckMKMonitoringService()
+
+
+def build_checkmk_discovery_service() -> "CheckMKDiscoveryService":
+    """Create a new CheckMKDiscoveryService instance."""
+    from services.checkmk.discovery_service import CheckMKDiscoveryService
+
+    return CheckMKDiscoveryService()
+
+
+def build_checkmk_problems_service() -> "CheckMKProblemsService":
+    """Create a new CheckMKProblemsService instance."""
+    from services.checkmk.problems_service import CheckMKProblemsService
+
+    return CheckMKProblemsService()
+
+
+def build_checkmk_activation_service() -> "CheckMKActivationService":
+    """Create a new CheckMKActivationService instance."""
+    from services.checkmk.activation_service import CheckMKActivationService
+
+    return CheckMKActivationService()
+
+
+def build_checkmk_host_group_service() -> "CheckMKHostGroupService":
+    """Create a new CheckMKHostGroupService instance."""
+    from services.checkmk.host_group_service import CheckMKHostGroupService
+
+    return CheckMKHostGroupService()
+
+
+def build_checkmk_tag_group_service() -> "CheckMKTagGroupService":
+    """Create a new CheckMKTagGroupService instance."""
+    from services.checkmk.tag_group_service import CheckMKTagGroupService
+
+    return CheckMKTagGroupService()
 
 
 def build_nautobot_metadata_service() -> "NautobotMetadataService":

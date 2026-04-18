@@ -130,6 +130,8 @@ class TestCheckMKAPIResponseStructure:
         }
         mock_config.get_comparison_keys.return_value = ["attributes", "folder"]
         mock_config.get_ignore_attributes.return_value = ["tag_address_family"]
+        mock_client = MagicMock()
+        mock_client.get_host.return_value = mock_checkmk_response
         with (
             patch(
                 "service_factory.build_nautobot_service", return_value=mock_nb_service
@@ -137,10 +139,8 @@ class TestCheckMKAPIResponseStructure:
             patch(
                 "service_factory.build_checkmk_config_service", return_value=mock_config
             ),
-            patch("routers.checkmk.main.get_host") as mock_get_host,
+            patch("service_factory.build_checkmk_client", return_value=mock_client),
         ):
-            # Mock CheckMK response
-            mock_get_host.return_value = AsyncMock(data=mock_checkmk_response)
 
             # Perform comparison
             result = await service.compare_device_config(

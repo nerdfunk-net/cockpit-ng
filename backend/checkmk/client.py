@@ -12,18 +12,11 @@ from typing import Dict, List
 import requests
 from urllib.parse import urljoin
 
+from services.checkmk.exceptions import CheckMKAPIError  # re-export for backwards compat
+
 logger = logging.getLogger(__name__)
 
-
-class CheckMKAPIError(Exception):
-    """Custom exception for CheckMK API errors"""
-
-    def __init__(
-        self, message: str, status_code: int = None, response_data: dict = None
-    ):
-        super().__init__(message)
-        self.status_code = status_code
-        self.response_data = response_data
+__all__ = ["CheckMKAPIError", "CheckMKClient"]
 
 
 class CheckMKClient:

@@ -11,38 +11,6 @@ from celery import shared_task
 logger = logging.getLogger(__name__)
 
 
-def _get_checkmk_client():
-    """Create CheckMK client from database settings."""
-    from settings_manager import settings_manager
-    from checkmk.client import CheckMKClient
-    from urllib.parse import urlparse
-
-    db_settings = settings_manager.get_checkmk_settings()
-    if not db_settings or not all(
-        key in db_settings for key in ["url", "site", "username", "password"]
-    ):
-        raise ValueError("CheckMK settings not configured")
-
-    url = db_settings["url"].rstrip("/")
-    if url.startswith(("http://", "https://")):
-        parsed_url = urlparse(url)
-        protocol = parsed_url.scheme
-        host = parsed_url.netloc
-    else:
-        protocol = "https"
-        host = url
-
-    return CheckMKClient(
-        host=host,
-        site_name=db_settings["site"],
-        username=db_settings["username"],
-        password=db_settings["password"],
-        protocol=protocol,
-        verify_ssl=db_settings.get("verify_ssl", True),
-        timeout=30,
-    )
-
-
 async def _fetch_nautobot_devices() -> List[Dict[str, Any]]:
     """Fetch all devices from Nautobot."""
     import service_factory
@@ -55,7 +23,8 @@ async def _fetch_nautobot_devices() -> List[Dict[str, Any]]:
 
 def _fetch_checkmk_hosts() -> List[Dict[str, Any]]:
     """Fetch all hosts from CheckMK."""
-    client = _get_checkmk_client()
+    import service_factory
+    client = service_factory.build_checkmk_client()
     response = client.get_all_hosts()
     return response.get("value", [])
 
