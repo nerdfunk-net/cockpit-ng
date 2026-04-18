@@ -248,7 +248,14 @@ export function RacksPage() {
       } else {
         setLocalUnpositioned(prev => {
           if (prev.some(d => d.id === device.id)) return prev
-          return [...prev, { id: device.id, name: device.name, position: null, face: null, uHeight: device.uHeight ?? 1 }]
+          return [...prev, {
+            id: device.id,
+            name: device.name,
+            position: null,
+            face: null,
+            uHeight: device.uHeight ?? 1,
+            ...(csvPosition !== null ? { defaultPosition: csvPosition } : {}),
+          }]
         })
       }
     },

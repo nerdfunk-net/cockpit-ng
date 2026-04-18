@@ -198,6 +198,51 @@ const EMPTY_HISTORY: ClientHistoryResponse = {
   hostname_history: [],
 }
 
+export interface DeviceFilter {
+  role?: string
+  status?: string
+  device_type?: string
+  location?: string
+}
+
+export interface FilteredDeviceItem {
+  id: string
+  name: string
+  role?: { id: string; name: string }
+  status?: { id: string; name: string }
+  location?: { id: string; name: string }
+  device_type?: { id: string; model: string; manufacturer?: { id: string; name: string } }
+}
+
+export interface FilteredDevicesResponse {
+  devices: FilteredDeviceItem[]
+  count: number
+}
+
+const EMPTY_FILTERED_RESPONSE: FilteredDevicesResponse = { devices: [], count: 0 }
+
+export function useFilteredDevicesQuery(filter: DeviceFilter | null) {
+  const { apiCall } = useApi()
+
+  return useQuery({
+    queryKey: ['nautobot', 'devices-filter', filter],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (filter?.role) params.set('role', filter.role)
+      if (filter?.status) params.set('device_status', filter.status)
+      if (filter?.device_type) params.set('device_type', filter.device_type)
+      if (filter?.location) params.set('location', filter.location)
+      const res = await apiCall<FilteredDevicesResponse>(
+        `nautobot/devices/use-filter?${params.toString()}`,
+        { method: 'GET' }
+      )
+      return res ?? EMPTY_FILTERED_RESPONSE
+    },
+    enabled: filter !== null,
+    staleTime: 30 * 1000,
+  })
+}
+
 export function useClientHistoryQuery(params: ClientHistoryParams, enabled: boolean) {
   const { apiCall } = useApi()
   const { ip_address, mac_address, hostname } = params

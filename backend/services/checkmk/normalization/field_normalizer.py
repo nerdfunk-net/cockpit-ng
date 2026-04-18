@@ -4,7 +4,7 @@ import logging
 from typing import Dict, Any
 
 from models.nb2cmk import DeviceExtensions
-from utils.cmk_folder_utils import _resolve_location_type_filter
+from utils.cmk_folder_utils import _resolve_location_type_filter, _resolve_plain_field
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,18 @@ class FieldNormalizer:
                                     raw = _resolve_location_type_filter(
                                         device_data, field_path, filter_value
                                     )
-                                    value = raw if raw else None
+                                    if raw:
+                                        value = raw
+                                    else:
+                                        # Fallback: use base field without modifier
+                                        value = _resolve_plain_field(device_data, field_path) or None
+                                        logger.info(
+                                            "Mapping '%s': location_type filter '%s' found no match, falling back to base field '%s': %s",
+                                            nautobot_field,
+                                            filter_value,
+                                            field_path,
+                                            value,
+                                        )
                                     logger.info(
                                         "Resolved modifier mapping '%s' (location_type=%s) for device '%s': %s",
                                         nautobot_field,

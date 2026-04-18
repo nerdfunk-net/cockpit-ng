@@ -2,11 +2,18 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Users, Calendar } from 'lucide-react'
-import { useNautobotDevicesSearchQuery, useClientDataQuery, type NautobotDevice } from '@/hooks/queries/use-clients-query'
+import {
+  useNautobotDevicesSearchQuery,
+  useClientDataQuery,
+  useFilteredDevicesQuery,
+  type NautobotDevice,
+  type DeviceFilter,
+} from '@/hooks/queries/use-clients-query'
 import { DeviceList } from './components/device-list'
 import { ClientsTable } from './components/clients-table'
 import { LiveStatusDialog } from './components/live-status-dialog'
 import { ClientHistoryDialog } from './components/client-history-dialog'
+import { DeviceFilterDialog } from './components/device-filter-dialog'
 import type { ClientDataItem } from './types'
 
 interface ColumnFilters {
@@ -139,12 +146,33 @@ export function ClientsPage() {
     if (timestamps.length === 0) return null
     return timestamps.reduce((max, ts) => (ts > max ? ts : max))
   }, [items])
+
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false)
+  const [deviceFilter, setDeviceFilter] = useState<DeviceFilter | null>(null)
+
+  const filteredDevicesQuery = useFilteredDevicesQuery(deviceFilter)
+
+  const handleApplyFilter = useCallback((filter: DeviceFilter) => {
+    const hasAnyValue = Object.values(filter).some(Boolean)
+    setDeviceFilter(hasAnyValue ? filter : null)
+    setDevicePage(1)
+    setSelectedDevice(null)
+  }, [])
+
   const deviceObjects = useMemo(
-    () => nautobotDevicesQuery.data?.devices ?? [],
-    [nautobotDevicesQuery.data]
+    () =>
+      deviceFilter
+        ? (filteredDevicesQuery.data?.devices ?? [])
+        : (nautobotDevicesQuery.data?.devices ?? []),
+    [deviceFilter, filteredDevicesQuery.data, nautobotDevicesQuery.data]
   )
   const devices = useMemo(() => deviceObjects.map((d) => d.name), [deviceObjects])
-  const deviceTotal = nautobotDevicesQuery.data?.count ?? 0
+  const deviceTotal = deviceFilter
+    ? (filteredDevicesQuery.data?.count ?? 0)
+    : (nautobotDevicesQuery.data?.count ?? 0)
+  const isDeviceLoading = deviceFilter
+    ? filteredDevicesQuery.isLoading
+    : nautobotDevicesQuery.isLoading
 
   const [liveStatusDevice, setLiveStatusDevice] = useState<NautobotDevice | null>(null)
   const [historyItem, setHistoryItem] = useState<ClientDataItem | null>(null)
@@ -185,7 +213,7 @@ export function ClientsPage() {
             total={deviceTotal}
             selectedDevice={selectedDevice}
             onSelect={handleDeviceSelect}
-            isLoading={nautobotDevicesQuery.isLoading}
+            isLoading={isDeviceLoading}
             search={deviceSearch}
             onSearchChange={handleDeviceSearchChange}
             page={devicePage}
@@ -194,6 +222,8 @@ export function ClientsPage() {
             onPageSizeChange={handleDevicePageSizeChange}
             deviceObjects={deviceObjects}
             onLiveStatusClick={handleLiveStatusClick}
+            onFilterClick={() => setFilterDialogOpen(true)}
+            filterActive={deviceFilter !== null}
           />
         </div>
 
@@ -215,6 +245,12 @@ export function ClientsPage() {
           />
         </div>
       </div>
+
+      <DeviceFilterDialog
+        open={filterDialogOpen}
+        onOpenChange={setFilterDialogOpen}
+        onApply={handleApplyFilter}
+      />
 
       <LiveStatusDialog
         device={liveStatusDevice}

@@ -125,6 +125,68 @@ async def test_current_nautobot_connection(
         )
 
 
+@router.get("/devices/use-filter", summary="🔷 GraphQL: List Devices with Filters")
+async def get_devices_with_filter(
+    role: Optional[str] = None,
+    device_status: Optional[str] = None,
+    device_type: Optional[str] = None,
+    location: Optional[str] = None,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+):
+    """Get list of devices from Nautobot filtered by role, status, device type, and/or location.
+
+    **🔷 This endpoint uses GraphQL** to query Nautobot with optional filter parameters.
+    All parameters are optional; omitting all returns all devices.
+    Query param `device_status` maps to GraphQL `status` filter.
+    """
+    try:
+        filter_args: dict[str, str] = {}
+        if role:
+            filter_args["role"] = role
+        if device_status:
+            filter_args["status"] = device_status
+        if device_type:
+            filter_args["device_type"] = device_type
+        if location:
+            filter_args["location"] = location
+
+        filter_str = ", ".join(f'{k}: "{v}"' for k, v in filter_args.items())
+        devices_selector = f"devices({filter_str})" if filter_str else "devices"
+
+        query = f"""
+        {{
+          {devices_selector} {{
+            id
+            name
+            role {{ id name }}
+            status {{ id name }}
+            location {{ id name }}
+            device_type {{ id model manufacturer {{ id name }} }}
+          }}
+        }}
+        """
+
+        result = await nautobot_service.graphql_query(query)
+
+        if "errors" in result:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"GraphQL errors: {result['errors']}",
+            )
+
+        devices = result.get("data", {}).get("devices", [])
+        return {"devices": devices, "count": len(devices)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error fetching filtered devices: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch filtered devices: {str(e)}",
+        )
+
+
 @router.get("/devices", summary="🔷 GraphQL: List Devices")
 async def get_devices(
     limit: Optional[int] = None,

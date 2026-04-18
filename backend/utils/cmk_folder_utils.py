@@ -64,6 +64,18 @@ def _resolve_location_type_filter(
     return ""
 
 
+def _resolve_plain_field(device_data: Dict[str, Any], field_path: str) -> str:
+    """Resolve a dot-notation field path from device_data without any modifier."""
+    parts = field_path.split(".")
+    current: Any = device_data
+    for part in parts:
+        if isinstance(current, dict) and part in current:
+            current = current[part]
+        else:
+            return ""
+    return str(current) if current is not None else ""
+
+
 def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str:
     """Parse folder template variables and return the processed folder path.
 
@@ -106,6 +118,14 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
                     actual_value = _resolve_location_type_filter(
                         device_data, field_part.strip(), filter_value
                     )
+                    if not actual_value:
+                        # Fallback: resolve the base field without the modifier
+                        logger.debug(
+                            "parse_folder_value: location_type filter '%s' yielded no value for '%s', falling back to base field",
+                            filter_value,
+                            field_part.strip(),
+                        )
+                        actual_value = _resolve_plain_field(device_data, field_part.strip())
                 else:
                     logger.warning(
                         "parse_folder_value: unsupported filter method '%s' in variable '%s'",

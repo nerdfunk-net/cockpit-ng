@@ -48,6 +48,7 @@ export function useRackSaveMutation() {
 
       const removals: Array<{ deviceId: string }> = []
       const positionClears: Array<{ deviceId: string }> = []
+      const rackOnlyAssignments: Array<{ deviceId: string }> = []
       const assignments: Array<{
         deviceId: string
         rackId: string
@@ -145,7 +146,9 @@ export function useRackSaveMutation() {
       for (const device of localUnpositioned) {
         if (device.isReservation) continue // reservations don't have real device IDs
         if (!originalUnpositionedIds.has(device.id) && !alreadyHandledIds.has(device.id)) {
-          positionClears.push({ deviceId: device.id })
+          // Device is newly in unpositioned (e.g. from CSV import) — assign it to the rack
+          // without a position or face so it appears as a non-racked device in Nautobot.
+          rackOnlyAssignments.push({ deviceId: device.id })
         }
       }
 
@@ -210,6 +213,15 @@ export function useRackSaveMutation() {
               rack: rid,
               position,
               face,
+              ...(overwriteLocation && locationId ? { location: locationId } : {}),
+            }),
+          })
+        ),
+        ...rackOnlyAssignments.map(({ deviceId }) =>
+          apiCall(`nautobot/devices/${deviceId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              rack: rackId,
               ...(overwriteLocation && locationId ? { location: locationId } : {}),
             }),
           })

@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Server, ChevronLeft, ChevronRight, Activity } from 'lucide-react'
+import { Search, Server, ChevronLeft, ChevronRight, Activity, Filter } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import {
@@ -28,6 +28,8 @@ interface DeviceListProps {
   onPageSizeChange: (size: number) => void
   deviceObjects?: NautobotDevice[]
   onLiveStatusClick?: (device: NautobotDevice) => void
+  onFilterClick?: () => void
+  filterActive?: boolean
 }
 
 export function DeviceList({
@@ -44,6 +46,8 @@ export function DeviceList({
   onPageSizeChange,
   deviceObjects,
   onLiveStatusClick,
+  onFilterClick,
+  filterActive,
 }: DeviceListProps) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const startRow = total === 0 ? 0 : (page - 1) * pageSize + 1
@@ -57,11 +61,20 @@ export function DeviceList({
           <Server className="h-4 w-4" />
           <span className="text-sm font-medium">Devices</span>
         </div>
-        {!isLoading && (
-          <div className="text-xs text-blue-100">
-            {total} device{total !== 1 ? 's' : ''}
-          </div>
-        )}
+        <button
+          onClick={onFilterClick}
+          className={cn(
+            'flex items-center gap-1 text-xs transition-colors',
+            filterActive
+              ? 'text-yellow-200 hover:text-white'
+              : 'text-blue-100 hover:text-white'
+          )}
+          aria-label="Filter devices"
+        >
+          <Filter className="h-3.5 w-3.5" />
+          Filter
+          {filterActive && <span className="h-1.5 w-1.5 rounded-full bg-yellow-300" />}
+        </button>
       </div>
 
       {/* Search input */}
