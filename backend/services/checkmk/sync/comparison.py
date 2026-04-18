@@ -209,8 +209,7 @@ class DeviceComparisonService:
             # Get CheckMK host config using service layer
             try:
                 import service_factory
-                from services.checkmk.exceptions import HostNotFoundError
-                from checkmk.client import CheckMKAPIError
+                from services.checkmk.exceptions import HostNotFoundError, CheckMKAPIError
 
                 try:
                     logger.info("=" * 80)

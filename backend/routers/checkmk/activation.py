@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from core.auth import require_permission
 from dependencies import get_checkmk_activation_service
 from models.checkmk import CheckMKActivateChangesRequest, CheckMKOperationResponse
-from services.checkmk.exceptions import CheckMKClientError
+from services.checkmk.exceptions import CheckMKClientError, CheckMKAPIError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkmk"])

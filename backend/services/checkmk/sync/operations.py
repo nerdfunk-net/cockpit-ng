@@ -71,7 +71,7 @@ class DeviceSyncOperations:
 
             # Create host in CheckMK using site-aware client
             import service_factory
-            from checkmk.client import CheckMKAPIError
+            from services.checkmk.exceptions import CheckMKAPIError
 
             try:
                 client = service_factory.build_checkmk_client()
@@ -236,7 +236,7 @@ class DeviceSyncOperations:
 
             # Get current CheckMK host config to compare folder
             import service_factory
-            from checkmk.client import CheckMKAPIError
+            from services.checkmk.exceptions import CheckMKAPIError
 
             try:
                 # Create CheckMK client with device-specific site

@@ -13,6 +13,7 @@ import requests
 from urllib.parse import urljoin
 
 from services.checkmk.base import slash_to_tilde
+from services.checkmk.exceptions import CheckMKAPIError
 
 logger = logging.getLogger(__name__)
 
