@@ -11,7 +11,7 @@ from celery import shared_task
 from fastapi import HTTPException
 
 from services.checkmk.sync.database import JobStatus as NB2CMKJobStatus
-from checkmk.client import CheckMKAPIError
+from services.checkmk.exceptions import CheckMKAPIError
 
 logger = logging.getLogger(__name__)
 

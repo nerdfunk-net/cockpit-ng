@@ -12,11 +12,11 @@ from typing import Dict, List
 import requests
 from urllib.parse import urljoin
 
-from services.checkmk.exceptions import CheckMKAPIError  # re-export for backwards compat
+from services.checkmk.base import slash_to_tilde
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["CheckMKAPIError", "CheckMKClient"]
+__all__ = ["CheckMKClient"]
 
 
 class CheckMKClient:
@@ -824,8 +824,7 @@ class CheckMKClient:
 
         Endpoint: GET /objects/folder_config/{folder}
         """
-        # Convert path separators to tildes for URL
-        folder_url = folder_path.replace("/", "~").replace("\\", "~")
+        folder_url = slash_to_tilde(folder_path)
         params = {"show_hosts": show_hosts}
 
         response = self._make_request(
@@ -869,8 +868,7 @@ class CheckMKClient:
 
         Endpoint: PUT /objects/folder_config/{folder}
         """
-        # Convert path separators to tildes for URL
-        folder_url = folder_path.replace("/", "~").replace("\\", "~")
+        folder_url = slash_to_tilde(folder_path)
 
         if etag is None:
             etag = self.get_folder_etag(folder_path)
@@ -894,8 +892,7 @@ class CheckMKClient:
 
         Endpoint: DELETE /objects/folder_config/{folder}
         """
-        # Convert path separators to tildes for URL
-        folder_url = folder_path.replace("/", "~").replace("\\", "~")
+        folder_url = slash_to_tilde(folder_path)
         params = {"delete_mode": delete_mode}
 
         response = self._make_request(
@@ -910,8 +907,7 @@ class CheckMKClient:
 
         Endpoint: POST /objects/folder_config/{folder}/actions/move/invoke
         """
-        # Convert path separators to tildes for URL
-        folder_url = folder_path.replace("/", "~").replace("\\", "~")
+        folder_url = slash_to_tilde(folder_path)
 
         if etag is None:
             etag = self.get_folder_etag(folder_path)
@@ -949,8 +945,7 @@ class CheckMKClient:
 
         Endpoint: GET /objects/folder_config/{folder}/collections/hosts
         """
-        # Convert path separators to tildes for URL
-        folder_url = folder_path.replace("/", "~").replace("\\", "~")
+        folder_url = slash_to_tilde(folder_path)
         params = {"effective_attributes": effective_attributes}
 
         response = self._make_request(
@@ -962,8 +957,7 @@ class CheckMKClient:
 
     def get_folder_etag(self, folder_path: str) -> str:
         """Get ETag for a folder (used for updates)"""
-        # Convert path separators to tildes for URL
-        folder_url = folder_path.replace("/", "~").replace("\\", "~")
+        folder_url = slash_to_tilde(folder_path)
 
         response = self._make_request("GET", f"objects/folder_config/{folder_url}")
 

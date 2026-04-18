@@ -150,7 +150,7 @@ def checkmk_test_devices(real_checkmk_client):
 
     Yields the list of created device names, then cleans them up.
     """
-    from checkmk.client import CheckMKAPIError
+    from services.checkmk.exceptions import CheckMKAPIError
 
     # Define test devices
     test_devices = [
@@ -573,7 +573,7 @@ class MockCheckMKService:
     def get_host(self, hostname: str, effective_attributes: bool = False) -> dict:
         """Get mock host data."""
         if hostname not in self.hosts:
-            from checkmk.client import CheckMKAPIError
+            from services.checkmk.exceptions import CheckMKAPIError
 
             raise CheckMKAPIError(f"Host {hostname} not found", 404)
 
