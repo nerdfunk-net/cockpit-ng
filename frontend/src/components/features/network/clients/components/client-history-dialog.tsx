@@ -70,9 +70,9 @@ function IpHistoryTab({ rows, isLoading }: { rows: IpHistoryEntry[]; isLoading: 
           ) : rows.length === 0 ? (
             <EmptyState message="No IP address history found" />
           ) : (
-            rows.map((row, idx) => (
+            rows.map((row) => (
               <tr
-                key={idx}
+                key={`${row.collected_at}-${row.device_name}-${row.ip_address}`}
                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
               >
                 <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">
@@ -112,9 +112,9 @@ function MacHistoryTab({ rows, isLoading }: { rows: MacHistoryEntry[]; isLoading
           ) : rows.length === 0 ? (
             <EmptyState message="No MAC address history found" />
           ) : (
-            rows.map((row, idx) => (
+            rows.map((row) => (
               <tr
-                key={idx}
+                key={`${row.collected_at}-${row.device_name}-${row.mac_address}`}
                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
               >
                 <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">
@@ -158,9 +158,9 @@ function HostnameHistoryTab({
           ) : rows.length === 0 ? (
             <EmptyState message="No hostname history found" />
           ) : (
-            rows.map((row, idx) => (
+            rows.map((row) => (
               <tr
-                key={idx}
+                key={`${row.collected_at}-${row.device_name}-${row.hostname}`}
                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
               >
                 <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">

@@ -48,6 +48,7 @@ import {
   Activity,
   ScrollText,
   LayoutGrid,
+  Layers,
   Users,
 } from 'lucide-react'
 
@@ -89,6 +90,7 @@ const navigationSections: NavSection[] = [
           { label: 'Check IP & Names', href: '/nautobot/tools/check-ip', icon: Search },
           { label: 'Bulk Edit', href: '/nautobot/tools/bulk-edit', icon: Edit },
           { label: 'CSV Updates', href: '/nautobot/tools/csv-updates', icon: FileSpreadsheet },
+          { label: 'Stacks', href: '/nautobot/tools/stacks', icon: Layers },
         ],
       },
       { label: 'Export', href: '/nautobot-export', icon: Download },

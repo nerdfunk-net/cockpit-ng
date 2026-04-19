@@ -445,8 +445,8 @@ function ArpTable({ rows }: { rows: ArpEntry[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {rows.map((row, i) => (
-            <tr key={i} className="hover:bg-gray-50 transition-colors">
+          {rows.map((row) => (
+            <tr key={`${row.ip_address}-${row.interface}`} className="hover:bg-gray-50 transition-colors">
               <td className="px-3 py-2 font-mono text-gray-800">{row.ip_address}</td>
               <td className="px-3 py-2 font-mono text-gray-600">{row.mac_address}</td>
               <td className="px-3 py-2 text-gray-600">
@@ -484,8 +484,8 @@ function MacTable({ rows }: { rows: MacEntry[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {rows.map((row, i) => (
-            <tr key={i} className="hover:bg-gray-50 transition-colors">
+          {rows.map((row) => (
+            <tr key={`${row.destination_address}-${row.vlan_id}`} className="hover:bg-gray-50 transition-colors">
               <td className="px-3 py-2 font-mono text-gray-800">{row.destination_address}</td>
               <td className="px-3 py-2 text-gray-600">{row.vlan_id}</td>
               <td className="px-3 py-2">

@@ -39,11 +39,15 @@ from .clusters import router as clusters_router
 from .virtual_chassis import router as virtual_chassis_router
 from .rack_reservations import router as rack_reservations_router
 from .rack_mappings import router as rack_mappings_router
+from .stacks import router as stacks_router
 
 # Create main Nautobot router
 router = APIRouter(prefix="/api/nautobot")
 
 # Include all sub-routers
+# stacks_router must come before devices_router to prevent /devices/{device_id}
+# wildcard from capturing the static /devices/stacks path
+router.include_router(stacks_router)
 router.include_router(devices_router)
 router.include_router(locations_router)
 router.include_router(taxonomy_router)

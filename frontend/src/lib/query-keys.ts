@@ -162,6 +162,9 @@ export const queryKeys = {
       [...queryKeys.nautobot.all, 'rack-mappings', filters] as const,
     locationTypes: () => [...queryKeys.nautobot.all, 'location-types'] as const,
 
+    // Stacks (devices with multiple serial numbers)
+    stackDevices: () => [...queryKeys.nautobot.all, 'stack-devices'] as const,
+
     // VM dropdowns (add-vm page)
     vmDropdowns: () => [...queryKeys.nautobot.all, 'vm-dropdowns'] as const,
 

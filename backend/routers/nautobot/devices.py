@@ -131,14 +131,16 @@ async def get_devices_with_filter(
     device_status: Optional[str] = None,
     device_type: Optional[str] = None,
     location: Optional[str] = None,
+    serial_ic: Optional[str] = None,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
 ):
-    """Get list of devices from Nautobot filtered by role, status, device type, and/or location.
+    """Get list of devices from Nautobot filtered by role, status, device type, location, and/or serial.
 
     **🔷 This endpoint uses GraphQL** to query Nautobot with optional filter parameters.
     All parameters are optional; omitting all returns all devices.
     Query param `device_status` maps to GraphQL `status` filter.
+    Query param `serial_ic` maps to GraphQL `serial__ic` filter (contains, case-insensitive).
     """
     try:
         filter_args: dict[str, str] = {}
@@ -150,6 +152,8 @@ async def get_devices_with_filter(
             filter_args["device_type"] = device_type
         if location:
             filter_args["location"] = location
+        if serial_ic is not None:
+            filter_args["serial__ic"] = serial_ic
 
         filter_str = ", ".join(f'{k}: "{v}"' for k, v in filter_args.items())
         devices_selector = f"devices({filter_str})" if filter_str else "devices"
