@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from services.checkmk.activation_service import CheckMKActivationService
     from services.checkmk.host_group_service import CheckMKHostGroupService
     from services.checkmk.tag_group_service import CheckMKTagGroupService
-    from checkmk.client import CheckMKClient
+    from services.checkmk.client import CheckMKClient
     from services.agents.deployment_service import AgentDeploymentService
     from services.agents.template_render_service import AgentTemplateRenderService
     from template_manager import TemplateManager

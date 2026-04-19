@@ -280,7 +280,7 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
         dict: Activation result
     """
     from settings_manager import settings_manager
-    from checkmk.client import CheckMKClient
+    from services.checkmk.client import CheckMKClient
 
     logger.info("[ACTIVATION] Starting CheckMK change activation...")
 

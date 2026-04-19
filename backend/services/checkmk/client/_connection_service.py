@@ -27,10 +27,6 @@ class CheckMKConnectionService:
     def __init__(self):
         pass
 
-    # ------------------------------------------------------------------
-    # Kept for POST /test (explicit credentials from request body)
-    # ------------------------------------------------------------------
-
     async def test_connection(
         self, url: str, site: str, username: str, password: str, verify_ssl: bool = True
     ) -> Tuple[bool, str]:
@@ -100,10 +96,6 @@ class CheckMKConnectionService:
 
         return await asyncio.to_thread(_run)
 
-    # ------------------------------------------------------------------
-    # GET /test — uses saved settings
-    # ------------------------------------------------------------------
-
     async def test_connection_from_settings(self) -> Dict[str, Any]:
         """Test connection using database-stored settings."""
         config = get_checkmk_config()
@@ -117,10 +109,6 @@ class CheckMKConnectionService:
             "checkmk_url": url,
             "connection_source": "database",
         }
-
-    # ------------------------------------------------------------------
-    # GET /stats
-    # ------------------------------------------------------------------
 
     async def get_stats(self, cache_service) -> Dict[str, Any]:
         """Get CheckMK host statistics with 10-minute Redis caching."""
@@ -145,18 +133,10 @@ class CheckMKConnectionService:
         cache_service.set(cache_key, stats, cache_ttl)
         return stats
 
-    # ------------------------------------------------------------------
-    # GET /version
-    # ------------------------------------------------------------------
-
     async def get_version(self) -> Dict[str, Any]:
         """Get CheckMK version information."""
         client = CheckMKClientFactory.build_client_from_settings()
         return await asyncio.to_thread(client.get_version)
-
-    # ------------------------------------------------------------------
-    # GET /inventory/{hostname}
-    # ------------------------------------------------------------------
 
     async def get_host_inventory(self, hostname: str) -> Dict[str, Any]:
         """Get inventory data for a specific host via the CheckMK inventory API."""
@@ -194,5 +174,5 @@ class CheckMKConnectionService:
         return response.json()
 
 
-# Backwards-compatible alias used by legacy service_factory shim
+# Backwards-compatible alias
 CheckMKService = CheckMKConnectionService

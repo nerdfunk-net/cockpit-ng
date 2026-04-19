@@ -7,7 +7,7 @@ Tests the client against the actual CheckMK API.
 
 import sys
 import logging
-from checkmk.client import CheckMKClient, CheckMKAPIError
+from services.checkmk.client import CheckMKClient, CheckMKAPIError
 
 # Setup logging
 logging.basicConfig(

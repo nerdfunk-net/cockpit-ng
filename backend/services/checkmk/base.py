@@ -75,7 +75,7 @@ def slash_to_tilde(path: str) -> str:
 class CheckMKClientFactory:
     @staticmethod
     def build_client(config: CheckMKConfig) -> "CheckMKClient":
-        from checkmk.client import CheckMKClient
+        from services.checkmk.client import CheckMKClient
 
         return CheckMKClient(
             host=config.host,

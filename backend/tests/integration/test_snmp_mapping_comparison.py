@@ -107,7 +107,7 @@ def mock_checkmk_client():
 @pytest.fixture(scope="module")
 def real_checkmk_client():
     """Create real CheckMK client for integration tests."""
-    from checkmk.client import CheckMKClient
+    from services.checkmk.client import CheckMKClient
     from settings_manager import settings_manager
     from urllib.parse import urlparse
 

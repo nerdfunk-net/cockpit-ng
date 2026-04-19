@@ -599,7 +599,7 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
         Dictionary with activation result
     """
     from settings_manager import settings_manager
-    from checkmk.client import CheckMKClient
+    from services.checkmk.client import CheckMKClient
     from urllib.parse import urlparse
 
     db_settings = settings_manager.get_checkmk_settings()
