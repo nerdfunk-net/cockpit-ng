@@ -4,7 +4,14 @@ Nautobot router for device management and API interactions.
 This router aggregates all Nautobot-related endpoints by including specialized sub-routers.
 Each sub-router handles a specific domain:
 - devices: Core device management and operations
-- metadata: Lookup data (locations, roles, platforms, tags, etc.)
+- locations: Location hierarchy (locations, location-types, parent-locations)
+- taxonomy: Device taxonomy (platforms, device-types, manufacturers, roles)
+- statuses: Status lookups by content type
+- tags: Tag and custom field lookups
+- ipam: IPAM metadata (namespaces, VLANs, software versions/image files)
+- infrastructure: Racks, rack groups, interface types, secret groups
+- device_ops: Device details, delete, offboard
+- utils: Stats, health-check, job results
 - ipam_prefixes: IPAM prefix CRUD operations
 - ipam_addresses: IPAM IP address CRUD operations
 - ipam_ip_address_to_interface: IP address to interface assignments
@@ -16,7 +23,14 @@ from fastapi import APIRouter
 
 # Import sub-routers from new feature-based structure
 from .devices import router as devices_router
-from .metadata import router as metadata_router
+from .locations import router as locations_router
+from .taxonomy import router as taxonomy_router
+from .statuses import router as statuses_router
+from .tags import router as tags_router
+from .ipam import router as ipam_metadata_router
+from .infrastructure import router as infrastructure_router
+from .device_ops import router as device_ops_router
+from .utils import router as nautobot_utils_router
 from .prefixes import router as ipam_prefixes_router
 from .ip_addresses import router as ipam_addresses_router
 from .ip_interface_mapping import router as ipam_ip_address_to_interface_router
@@ -31,7 +45,14 @@ router = APIRouter(prefix="/api/nautobot")
 
 # Include all sub-routers
 router.include_router(devices_router)
-router.include_router(metadata_router)
+router.include_router(locations_router)
+router.include_router(taxonomy_router)
+router.include_router(statuses_router)
+router.include_router(tags_router)
+router.include_router(ipam_metadata_router)
+router.include_router(infrastructure_router)
+router.include_router(device_ops_router)
+router.include_router(nautobot_utils_router)
 router.include_router(ipam_prefixes_router)
 router.include_router(ipam_addresses_router)
 router.include_router(ipam_ip_address_to_interface_router)

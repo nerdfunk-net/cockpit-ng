@@ -74,7 +74,13 @@ from routers.jobs import (
     schedules_router as job_schedules_router,
     runs_router as job_runs_router,
     celery_admin_router,
-    device_tasks_router,
+    onboarding_router,
+    device_backup_router,
+    agent_deploy_router,
+    export_router as device_export_router,
+    import_update_router,
+    check_ip_router,
+    client_data_router,
     sync_tasks_router,
     network_tasks_router,
 )
@@ -188,7 +194,13 @@ app.include_router(scan_and_add_router)
 app.include_router(cache_router)
 app.include_router(profile_router)
 app.include_router(celery_admin_router)
-app.include_router(device_tasks_router)
+app.include_router(onboarding_router)
+app.include_router(device_backup_router)
+app.include_router(agent_deploy_router)
+app.include_router(device_export_router)
+app.include_router(import_update_router)
+app.include_router(check_ip_router)
+app.include_router(client_data_router)
 app.include_router(sync_tasks_router)
 app.include_router(network_tasks_router)
 # git_repositories_router removed - already included via git_router

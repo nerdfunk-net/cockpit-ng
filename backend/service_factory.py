@@ -337,3 +337,37 @@ def build_device_creation_service():
     from services.nautobot.devices.creation import DeviceCreationService
 
     return DeviceCreationService()
+
+
+# ---------------------------------------------------------------------------
+# Template services
+# ---------------------------------------------------------------------------
+
+
+def build_template_scan_service():
+    """Create a TemplateScanService using the default contributing-data directory."""
+    from services.templates.scan_service import TemplateScanService
+
+    return TemplateScanService()
+
+
+def build_template_import_service():
+    """Create a TemplateImportService backed by the global template_manager."""
+    from template_manager import template_manager
+    from services.templates.import_service import TemplateImportService
+
+    return TemplateImportService(template_manager=template_manager)
+
+
+def build_template_render_orchestrator():
+    """Create a TemplateRenderOrchestrator with all required dependencies."""
+    from template_manager import template_manager
+    from services.templates.render_orchestrator import TemplateRenderOrchestrator
+
+    return TemplateRenderOrchestrator(
+        device_query_service=build_device_query_service(),
+        checkmk_config_service=build_checkmk_config_service(),
+        render_service=build_render_service(),
+        inventory_service=build_inventory_service(),
+        template_manager=template_manager,
+    )

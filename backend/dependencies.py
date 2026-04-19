@@ -235,3 +235,23 @@ def get_render_service():
 def get_device_creation_service():
     """Provide the DeviceCreationService."""
     return service_factory.build_device_creation_service()
+
+
+# ---------------------------------------------------------------------------
+# Template services
+# ---------------------------------------------------------------------------
+
+
+def get_template_scan_service():
+    """Provide the TemplateScanService."""
+    return service_factory.build_template_scan_service()
+
+
+def get_template_import_service():
+    """Provide the TemplateImportService."""
+    return service_factory.build_template_import_service()
+
+
+def get_template_render_orchestrator():
+    """Provide the TemplateRenderOrchestrator."""
+    return service_factory.build_template_render_orchestrator()

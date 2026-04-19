@@ -454,6 +454,29 @@ class JobRunRepository(BaseRepository[JobRun]):
         finally:
             session.close()
 
+    def get_all_by_type_and_statuses(
+        self,
+        job_type: str,
+        statuses: List[str],
+    ) -> List[Dict[str, Any]]:
+        """Get all job runs for a given type filtered by a list of statuses, ordered by completed_at DESC."""
+        from core.database import get_db_session
+
+        session = get_db_session()
+        try:
+            items = (
+                session.query(self.model)
+                .filter(
+                    self.model.job_type == job_type,
+                    self.model.status.in_(statuses),
+                )
+                .order_by(desc(self.model.completed_at))
+                .all()
+            )
+            return [_to_dict(item) for item in items]
+        finally:
+            session.close()
+
     def get_distinct_templates(self) -> List[Dict[str, Any]]:
         """Get distinct templates used in job runs."""
         from core.database import get_db_session
