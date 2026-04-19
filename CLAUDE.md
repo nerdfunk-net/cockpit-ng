@@ -54,7 +54,8 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 - **Models**: `PascalCase` (`JobTemplate`, `UserProfile`)
 
 ### Database Requirements
-- ✅ Define tables as SQLAlchemy models in `/backend/core/models.py`
+- ✅ Define tables as SQLAlchemy models in `/backend/core/models/` (one file per domain)
+- ✅ Export all models from `/backend/core/models/__init__.py`
 - ✅ Add indexes, foreign keys, timestamps (`created_at`, `updated_at`)
 - ✅ Use repository pattern (BaseRepository in `/backend/repositories/base.py`)
 - ❌ NEVER use SQLite or raw SQL queries
@@ -63,7 +64,23 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 ## Key File Locations
 
 **Backend Core:**
-- `/backend/core/models.py` - All SQLAlchemy table definitions
+- `/backend/core/models/` - SQLAlchemy table definitions (one file per domain)
+  - `agents.py` - `CockpitAgentCommand`
+  - `audit.py` - `AuditLog`
+  - `client_data.py` - `ClientHostname`, `ClientIpAddress`, `ClientMacAddress`
+  - `compliance.py` - `ComplianceCheck`, `ComplianceRule`, `RegexPattern`
+  - `credentials.py` - `Credential`, `LoginCredential`, `SNMPMapping`
+  - `git.py` - `GitRepository`
+  - `inventory.py` - `Inventory`
+  - `jobs.py` - `Job`, `JobRun`, `JobSchedule`, `JobTemplate`
+  - `nb2cmk.py` - `NB2CMKJob`, `NB2CMKJobResult`, `NB2CMKSync`
+  - `rack.py` - `RackDeviceMapping`
+  - `rbac.py` - `Permission`, `Role`, `RolePermission`, `UserPermission`, `UserRole`
+  - `settings.py` - `AgentsSetting`, `CacheSetting`, `CelerySetting`, `CheckMKSetting`, `GitSetting`, `NautobotDefault`, `NautobotSetting`, `Setting`, `SettingsMetadata`
+  - `snapshots.py` - `Snapshot`, `SnapshotCommand`, `SnapshotCommandTemplate`, `SnapshotResult`
+  - `templates.py` - `Template`, `TemplateVersion`
+  - `users.py` - `User`, `UserProfile`
+  - `__init__.py` - Re-exports all models
 - `/backend/core/database.py` - DB session, get_db() dependency
 - `/backend/core/auth.py` - verify_token, require_permission, verify_admin_token
 - `/backend/main.py` - FastAPI app, router registration
@@ -471,7 +488,7 @@ PORT=3000
 ## Common Tasks
 
 ### Adding New Backend Endpoint
-1. Define SQLAlchemy model in `/backend/core/models.py`
+1. Define SQLAlchemy model in `/backend/core/models/{domain}.py` and export it from `/backend/core/models/__init__.py`
 2. Create Pydantic models in `/backend/models/{domain}.py`
 3. Create repository in `/backend/repositories/{domain}_repository.py`
 4. Create service in `/backend/services/{domain}_service.py`
@@ -666,7 +683,7 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 **Database:**
 - Single PostgreSQL database
 - use complete migration framework to migrate database (./doc/MIGRATION_SYSTEM.md)
-- All models in `/backend/core/models.py`
+- Models split by domain in `/backend/core/models/` (all exported from `__init__.py`)
 - Connection pooling + health checks
 
 **Authentication:**
