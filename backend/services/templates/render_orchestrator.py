@@ -60,9 +60,12 @@ class TemplateRenderOrchestrator:
             context.update(request.user_variables)
 
         if category == "netmiko":
-            context, pre_run_output, pre_run_parsed, warnings = (
-                await self._build_netmiko_context(request, context, warnings)
-            )
+            (
+                context,
+                pre_run_output,
+                pre_run_parsed,
+                warnings,
+            ) = await self._build_netmiko_context(request, context, warnings)
         elif category == "agent":
             context, warnings = await self._build_agent_context(
                 request, context, warnings
@@ -175,7 +178,9 @@ class TemplateRenderOrchestrator:
     ) -> Tuple[Dict[str, Any], List[str]]:
         if request.inventory_id:
             try:
-                from utils.inventory_converter import convert_saved_inventory_to_operations
+                from utils.inventory_converter import (
+                    convert_saved_inventory_to_operations,
+                )
                 import service_factory as _sf
 
                 persistence = _sf.build_inventory_persistence_service()
@@ -209,7 +214,9 @@ class TemplateRenderOrchestrator:
                             )
                             device_details[device.name] = data
                         except Exception as exc:
-                            msg = f"Failed to fetch details for device {device.id}: {exc}"
+                            msg = (
+                                f"Failed to fetch details for device {device.id}: {exc}"
+                            )
                             logger.warning(msg)
                             warnings.append(msg)
                     context["device_details"] = device_details
@@ -252,9 +259,7 @@ class TemplateRenderOrchestrator:
 
         template_content = self._tm.get_template_content(request.template_id)
         if not template_content:
-            raise ValueError(
-                f"Template content for ID {request.template_id} not found"
-            )
+            raise ValueError(f"Template content for ID {request.template_id} not found")
 
         rendered_outputs: Dict[str, str] = {}
         parsed_updates: List[Dict[str, Any]] = []
@@ -287,7 +292,9 @@ class TemplateRenderOrchestrator:
 
             except Exception as exc:
                 errors.append(f"Device {device_id}: Template rendering failed: {exc}")
-                logger.error("Error rendering template for device %s: %s", device_id, exc)
+                logger.error(
+                    "Error rendering template for device %s: %s", device_id, exc
+                )
 
         if request.dry_run:
             return TemplateExecuteAndSyncResponse(
@@ -393,10 +400,14 @@ def _parse_rendered_output(
                     parsed[key.strip()] = value.strip()
             if len(parsed) > 1:
                 return parsed, errors
-            errors.append(f"Device {device_id}: No key-value pairs found in text output")
+            errors.append(
+                f"Device {device_id}: No key-value pairs found in text output"
+            )
             return None, errors
 
-        errors.append(f"Device {device_id}: Unsupported output format '{output_format}'")
+        errors.append(
+            f"Device {device_id}: Unsupported output format '{output_format}'"
+        )
         return None, errors
 
     except json.JSONDecodeError as exc:

@@ -4,7 +4,7 @@ CheckMK host tag group management service.
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from services.checkmk.base import CheckMKClientFactory
 
@@ -53,7 +53,9 @@ class CheckMKTagGroupService:
 
     async def update_host_tag_group(self, name: str, request: Any) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        tags = [tag.dict() for tag in request.tags] if request.tags is not None else None
+        tags = (
+            [tag.dict() for tag in request.tags] if request.tags is not None else None
+        )
         return await asyncio.to_thread(
             lambda: client.update_host_tag_group(
                 name=name,

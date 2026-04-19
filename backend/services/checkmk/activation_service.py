@@ -57,7 +57,9 @@ class CheckMKActivationService:
             lambda: client.get_activation_status(activation_id)
         )
 
-    async def wait_for_activation_completion(self, activation_id: str) -> Dict[str, Any]:
+    async def wait_for_activation_completion(
+        self, activation_id: str
+    ) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
         return await asyncio.to_thread(
             lambda: client.wait_for_activation_completion(activation_id)

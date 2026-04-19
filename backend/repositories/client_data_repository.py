@@ -164,21 +164,15 @@ class ClientDataRepository:
         params: dict = {}
 
         if device_name:
-            conditions.append(
-                "device_name ILIKE '%' || :device_name_filter || '%'"
-            )
+            conditions.append("device_name ILIKE '%' || :device_name_filter || '%'")
             params["device_name_filter"] = device_name
 
         if ip_address:
-            conditions.append(
-                "ip_address ILIKE '%' || :ip_address || '%'"
-            )
+            conditions.append("ip_address ILIKE '%' || :ip_address || '%'")
             params["ip_address"] = ip_address
 
         if mac_address:
-            conditions.append(
-                "mac_address ILIKE '%' || :mac_address || '%'"
-            )
+            conditions.append("mac_address ILIKE '%' || :mac_address || '%'")
             params["mac_address"] = mac_address
 
         if port:
@@ -190,9 +184,7 @@ class ClientDataRepository:
             params["vlan"] = vlan
 
         if hostname:
-            conditions.append(
-                "hostname ILIKE '%' || :hostname || '%'"
-            )
+            conditions.append("hostname ILIKE '%' || :hostname || '%'")
             params["hostname"] = hostname
 
         where_clause = ("WHERE " + " AND ".join(conditions)) if conditions else ""
@@ -274,9 +266,7 @@ class ClientDataRepository:
             )
         """
 
-        count_sql = text(
-            f"{cte} SELECT COUNT(*) FROM combined {where_clause}"
-        )
+        count_sql = text(f"{cte} SELECT COUNT(*) FROM combined {where_clause}")
         data_sql = text(
             f"""
             {cte}

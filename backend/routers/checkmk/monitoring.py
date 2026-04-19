@@ -1,6 +1,7 @@
 """
 CheckMK monitoring router — 4 endpoints.
 """
+
 from __future__ import annotations
 
 import logging
@@ -113,7 +114,9 @@ async def show_service(
     """Show specific service details."""
     try:
         columns = request.columns if request else None
-        result = await monitoring_service.show_service(hostname, service, columns=columns)
+        result = await monitoring_service.show_service(
+            hostname, service, columns=columns
+        )
         return CheckMKOperationResponse(
             success=True,
             message=f"Retrieved service {service} details for host {hostname} successfully",
@@ -124,7 +127,9 @@ async def show_service(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error showing service %s for host %s: %s", service, hostname, str(e))
+        logger.error(
+            "Error showing service %s for host %s: %s", service, hostname, str(e)
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to show service {service} for host {hostname}: {str(e)}",

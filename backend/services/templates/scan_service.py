@@ -60,7 +60,9 @@ class TemplateScanService:
                     category=props.get("category", "default"),
                     source=props.get("source", "file"),
                     file_path=str(yaml_file.absolute()),
-                    template_type=props.get("type", props.get("template_type", "jinja2")),
+                    template_type=props.get(
+                        "type", props.get("template_type", "jinja2")
+                    ),
                 )
 
             return ImportableTemplateInfo(

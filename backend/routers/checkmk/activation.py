@@ -5,6 +5,7 @@ IMPORTANT: GET /activation/running is registered BEFORE GET /activation/{activat
 to fix a route-ordering bug present in the original main.py where the static path
 "/activation/running" was unreachable because the parameterised path matched first.
 """
+
 from __future__ import annotations
 
 import logging
@@ -14,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from core.auth import require_permission
 from dependencies import get_checkmk_activation_service
 from models.checkmk import CheckMKActivateChangesRequest, CheckMKOperationResponse
-from services.checkmk.exceptions import CheckMKClientError, CheckMKAPIError
+from services.checkmk.exceptions import CheckMKClientError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkmk"])
@@ -98,6 +99,7 @@ async def activate_changes_with_etag(
 
 # Static path MUST come before parameterised path (fixes main.py route ordering bug)
 
+
 @router.get("/activation/running", response_model=CheckMKOperationResponse)
 async def get_running_activations(
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
@@ -142,7 +144,9 @@ async def get_activation_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting activation status for %s: %s", activation_id, str(e))
+        logger.error(
+            "Error getting activation status for %s: %s", activation_id, str(e)
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get activation status for {activation_id}: {str(e)}",

@@ -141,7 +141,6 @@ class TestCheckMKAPIResponseStructure:
             ),
             patch("service_factory.build_checkmk_client", return_value=mock_client),
         ):
-
             # Perform comparison
             result = await service.compare_device_config(
                 "71cd69db-dca1-425b-a1d8-46952ef2c8e9"

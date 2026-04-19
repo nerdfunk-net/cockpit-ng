@@ -1,6 +1,7 @@
 """
 CheckMK connection router — 5 endpoints.
 """
+
 from __future__ import annotations
 
 import logging
@@ -15,7 +16,11 @@ from models.checkmk import (
     CheckMKVersionResponse,
     CheckMKOperationResponse,
 )
-from services.checkmk.exceptions import CheckMKClientError, CheckMKAPIError, HostNotFoundError
+from services.checkmk.exceptions import (
+    CheckMKClientError,
+    CheckMKAPIError,
+    HostNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkmk"])

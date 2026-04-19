@@ -4,6 +4,7 @@ CheckMK hosts router — 11 endpoints.
 Route ordering note: static paths (bulk-*, create) are registered before
 parameterised {hostname} paths to prevent FastAPI path-matching conflicts.
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,7 +24,11 @@ from models.checkmk import (
     CheckMKHostListResponse,
     CheckMKOperationResponse,
 )
-from services.checkmk.exceptions import CheckMKAPIError, CheckMKClientError, HostNotFoundError
+from services.checkmk.exceptions import (
+    CheckMKAPIError,
+    CheckMKClientError,
+    HostNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkmk"])
@@ -58,6 +63,7 @@ async def get_all_hosts(
 
 
 # Static POST paths before parameterised /{hostname}/... paths
+
 
 @router.post("/hosts/create", response_model=CheckMKOperationResponse)
 async def create_host_v2(
@@ -225,7 +231,9 @@ async def get_host(
     except CheckMKAPIError as e:
         logger.error(
             "CheckMK API error getting host %s: %s (status: %s)",
-            hostname, str(e), e.status_code,
+            hostname,
+            str(e),
+            e.status_code,
         )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -312,7 +320,9 @@ async def move_host(
                 detail=f"Cannot move host '{hostname}' - CheckMK changes need to be activated first",
             )
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST if e.status_code == 400 else status.HTTP_502_BAD_GATEWAY,
+            status_code=status.HTTP_400_BAD_REQUEST
+            if e.status_code == 400
+            else status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to move host '{hostname}': {str(e)}",
         )
     except CheckMKClientError as e:

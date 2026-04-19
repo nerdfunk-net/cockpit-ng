@@ -69,7 +69,12 @@ class FieldNormalizer:
                                         value = raw
                                     else:
                                         # Fallback: use base field without modifier
-                                        value = _resolve_plain_field(device_data, field_path) or None
+                                        value = (
+                                            _resolve_plain_field(
+                                                device_data, field_path
+                                            )
+                                            or None
+                                        )
                                         logger.info(
                                             "Mapping '%s': location_type filter '%s' found no match, falling back to base field '%s': %s",
                                             nautobot_field,

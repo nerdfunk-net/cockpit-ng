@@ -30,9 +30,7 @@ class Migration(BaseMigration):
         Returns:
             dict: Statistics (columns_added)
         """
-        self.log_info(
-            "Adding client data cleanup columns to celery_settings table..."
-        )
+        self.log_info("Adding client data cleanup columns to celery_settings table...")
 
         try:
             with self.engine.connect() as conn:
@@ -59,9 +57,7 @@ class Migration(BaseMigration):
                 )
                 conn.commit()
 
-                self.log_info(
-                    "Successfully added client data cleanup columns"
-                )
+                self.log_info("Successfully added client data cleanup columns")
 
                 return {
                     "columns_added": 3,

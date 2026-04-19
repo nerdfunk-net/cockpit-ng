@@ -125,7 +125,9 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
                             filter_value,
                             field_part.strip(),
                         )
-                        actual_value = _resolve_plain_field(device_data, field_part.strip())
+                        actual_value = _resolve_plain_field(
+                            device_data, field_part.strip()
+                        )
                 else:
                     logger.warning(
                         "parse_folder_value: unsupported filter method '%s' in variable '%s'",

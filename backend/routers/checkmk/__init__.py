@@ -1,4 +1,5 @@
 """CheckMK integration routers."""
+
 from fastapi import APIRouter
 
 from .connection import router as _connection_router

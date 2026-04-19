@@ -69,7 +69,10 @@ def execute_get_client_data(
     collect_hostname = params.get(
         "collect_hostname", tmpl.get("collect_hostname", True)
     )
-    parallel_tasks = max(1, min(50, int(params.get("parallel_tasks", tmpl.get("parallel_tasks", 1)) or 1)))
+    parallel_tasks = max(
+        1,
+        min(50, int(params.get("parallel_tasks", tmpl.get("parallel_tasks", 1)) or 1)),
+    )
 
     credential_info: Dict[str, Any] = {
         "credential_id": credential_id,
@@ -349,7 +352,9 @@ def execute_get_client_data(
                     )
 
                 if collect_hostname and arp_rows:
-                    unique_ips = {r["ip_address"] for r in arp_rows if r.get("ip_address")}
+                    unique_ips = {
+                        r["ip_address"] for r in arp_rows if r.get("ip_address")
+                    }
                     hostname_rows = _resolve_hostnames(
                         unique_ips, device_name, host_ip, session_id
                     )
@@ -385,7 +390,9 @@ def execute_get_client_data(
                 }
                 for future in as_completed(future_map):
                     completed += 1
-                    device_name, success, arp_rows, mac_rows, hostname_rows = future.result()
+                    device_name, success, arp_rows, mac_rows, hostname_rows = (
+                        future.result()
+                    )
                     if success:
                         all_arp_rows.extend(arp_rows)
                         all_mac_rows.extend(mac_rows)
@@ -405,8 +412,8 @@ def execute_get_client_data(
         else:
             logger.info("Using sequential execution (parallel_tasks=1)")
             for idx, device_id in enumerate(device_ids, 1):
-                device_name, success, arp_rows, mac_rows, hostname_rows = _collect_device(
-                    device_id, idx
+                device_name, success, arp_rows, mac_rows, hostname_rows = (
+                    _collect_device(device_id, idx)
                 )
                 if success:
                     all_arp_rows.extend(arp_rows)

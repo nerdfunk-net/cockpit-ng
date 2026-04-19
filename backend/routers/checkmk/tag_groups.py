@@ -1,6 +1,7 @@
 """
 CheckMK host tag groups router — 5 endpoints.
 """
+
 from __future__ import annotations
 
 import logging

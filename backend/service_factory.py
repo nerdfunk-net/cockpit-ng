@@ -20,13 +20,12 @@ if TYPE_CHECKING:
     from services.inventory.inventory import InventoryService
     from services.inventory.persistence_service import InventoryPersistenceService
     from services.nautobot.devices.query import DeviceQueryService
-    from services.checkmk.client import CheckMKConnectionService, CheckMKService
+    from services.checkmk.client import CheckMKConnectionService
     from services.checkmk.host_service import CheckMKHostService
     from services.checkmk.monitoring_service import CheckMKMonitoringService
     from services.checkmk.discovery_service import CheckMKDiscoveryService
     from services.checkmk.problems_service import CheckMKProblemsService
     from services.checkmk.activation_service import CheckMKActivationService
-    from services.checkmk.folder import CheckMKFolderService
     from services.checkmk.host_group_service import CheckMKHostGroupService
     from services.checkmk.tag_group_service import CheckMKTagGroupService
     from checkmk.client import CheckMKClient

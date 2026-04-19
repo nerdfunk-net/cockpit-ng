@@ -7,7 +7,10 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from services.checkmk.base import CheckMKClientFactory, slash_to_tilde
-from services.checkmk.exceptions import CheckMKAPIError, CheckMKClientError, HostNotFoundError
+from services.checkmk.exceptions import (
+    CheckMKAPIError,
+    HostNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +69,9 @@ class CheckMKHostService:
             )
         except CheckMKAPIError as e:
             if e.status_code == 404:
-                raise HostNotFoundError(f"Host '{hostname}' not found in CheckMK") from e
+                raise HostNotFoundError(
+                    f"Host '{hostname}' not found in CheckMK"
+                ) from e
             raise
 
     # ------------------------------------------------------------------
@@ -95,9 +100,15 @@ class CheckMKHostService:
 
         if start_discovery:
             try:
-                logger.info("Starting service discovery (%s) for host %s", discovery_mode, hostname)
+                logger.info(
+                    "Starting service discovery (%s) for host %s",
+                    discovery_mode,
+                    hostname,
+                )
                 disc_result = await asyncio.to_thread(
-                    lambda: client.start_service_discovery(hostname, mode=discovery_mode)
+                    lambda: client.start_service_discovery(
+                        hostname, mode=discovery_mode
+                    )
                 )
                 response_data["discovery"] = {
                     "started": True,
@@ -163,7 +174,9 @@ class CheckMKHostService:
     async def move_host(self, hostname: str, target_folder: str) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
         checkmk_folder = slash_to_tilde(target_folder)
-        return await asyncio.to_thread(lambda: client.move_host(hostname, checkmk_folder))
+        return await asyncio.to_thread(
+            lambda: client.move_host(hostname, checkmk_folder)
+        )
 
     # ------------------------------------------------------------------
     # POST /hosts/{hostname}/rename
@@ -195,7 +208,10 @@ class CheckMKHostService:
 
     async def bulk_update_hosts(self, entries: Dict[str, Any]) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        hosts = {hostname: {"attributes": req.attributes} for hostname, req in entries.items()}
+        hosts = {
+            hostname: {"attributes": req.attributes}
+            for hostname, req in entries.items()
+        }
         return await asyncio.to_thread(lambda: client.bulk_update_hosts(hosts))
 
     # ------------------------------------------------------------------

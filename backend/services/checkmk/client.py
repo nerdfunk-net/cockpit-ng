@@ -5,10 +5,18 @@ CheckMK connection service for API interactions and system-level operations.
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
-from services.checkmk.base import CheckMKClientFactory, get_checkmk_config, parse_url_str
-from services.checkmk.exceptions import CheckMKAPIError, CheckMKClientError, HostNotFoundError
+from services.checkmk.base import (
+    CheckMKClientFactory,
+    get_checkmk_config,
+    parse_url_str,
+)
+from services.checkmk.exceptions import (
+    CheckMKAPIError,
+    CheckMKClientError,
+    HostNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +53,13 @@ class CheckMKConnectionService:
                 if client.test_connection():
                     try:
                         version_info = client.get_version()
-                        version = version_info.get("versions", {}).get("checkmk", "Unknown")
-                        return True, f"Connection successful! CheckMK version: {version}"
+                        version = version_info.get("versions", {}).get(
+                            "checkmk", "Unknown"
+                        )
+                        return (
+                            True,
+                            f"Connection successful! CheckMK version: {version}",
+                        )
                     except CheckMKAPIError:
                         return True, "Connection successful!"
                 else:
@@ -56,7 +69,10 @@ class CheckMKConnectionService:
                     )
             except CheckMKAPIError as e:
                 if e.status_code == 401:
-                    return False, "Authentication failed. Please check your username and password."
+                    return (
+                        False,
+                        "Authentication failed. Please check your username and password.",
+                    )
                 elif e.status_code == 404:
                     return (
                         False,
@@ -66,11 +82,20 @@ class CheckMKConnectionService:
             except Exception as e:
                 err = str(e).lower()
                 if "ssl" in err:
-                    return False, "SSL certificate verification failed. You may need to disable SSL verification for self-signed certificates."
+                    return (
+                        False,
+                        "SSL certificate verification failed. You may need to disable SSL verification for self-signed certificates.",
+                    )
                 elif "timeout" in err or "timed out" in err:
-                    return False, "Connection timeout. Please check if the server is reachable."
+                    return (
+                        False,
+                        "Connection timeout. Please check if the server is reachable.",
+                    )
                 elif "connection" in err or "network" in err:
-                    return False, "Connection failed. Please check the server URL and network connectivity."
+                    return (
+                        False,
+                        "Connection failed. Please check the server URL and network connectivity.",
+                    )
                 return False, f"Connection test failed: {str(e)}"
 
         return await asyncio.to_thread(_run)
@@ -155,7 +180,9 @@ class CheckMKConnectionService:
         try:
             response = await asyncio.to_thread(_fetch)
         except Exception as e:
-            raise CheckMKClientError(f"Failed to connect to CheckMK inventory API: {str(e)}") from e
+            raise CheckMKClientError(
+                f"Failed to connect to CheckMK inventory API: {str(e)}"
+            ) from e
 
         if response.status_code == 404:
             raise HostNotFoundError(f"Inventory data not found for host '{hostname}'")

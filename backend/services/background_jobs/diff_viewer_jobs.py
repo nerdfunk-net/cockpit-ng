@@ -24,6 +24,7 @@ async def _fetch_nautobot_devices() -> List[Dict[str, Any]]:
 def _fetch_checkmk_hosts() -> List[Dict[str, Any]]:
     """Fetch all hosts from CheckMK."""
     import service_factory
+
     client = service_factory.build_checkmk_client()
     response = client.get_all_hosts()
     return response.get("value", [])

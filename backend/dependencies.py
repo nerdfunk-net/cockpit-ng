@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from services.inventory.inventory import InventoryService
     from services.inventory.persistence_service import InventoryPersistenceService
     from services.nautobot.devices.query import DeviceQueryService
-    from services.checkmk.client import CheckMKConnectionService, CheckMKService
+    from services.checkmk.client import CheckMKConnectionService
     from services.checkmk.host_service import CheckMKHostService
     from services.checkmk.monitoring_service import CheckMKMonitoringService
     from services.checkmk.discovery_service import CheckMKDiscoveryService

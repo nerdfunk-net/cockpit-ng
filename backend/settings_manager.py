@@ -456,13 +456,16 @@ class SettingsManager:
                     "cleanup_age_hours", self.default_celery.cleanup_age_hours
                 ),
                 "client_data_cleanup_enabled": settings.get(
-                    "client_data_cleanup_enabled", self.default_celery.client_data_cleanup_enabled
+                    "client_data_cleanup_enabled",
+                    self.default_celery.client_data_cleanup_enabled,
                 ),
                 "client_data_cleanup_interval_hours": settings.get(
-                    "client_data_cleanup_interval_hours", self.default_celery.client_data_cleanup_interval_hours
+                    "client_data_cleanup_interval_hours",
+                    self.default_celery.client_data_cleanup_interval_hours,
                 ),
                 "client_data_cleanup_age_hours": settings.get(
-                    "client_data_cleanup_age_hours", self.default_celery.client_data_cleanup_age_hours
+                    "client_data_cleanup_age_hours",
+                    self.default_celery.client_data_cleanup_age_hours,
                 ),
                 "result_expires_hours": settings.get(
                     "result_expires_hours", self.default_celery.result_expires_hours

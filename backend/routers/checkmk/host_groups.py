@@ -4,6 +4,7 @@ CheckMK host groups router — 7 endpoints.
 Route ordering note: static paths (bulk-update, bulk-delete) are registered before
 parameterised /{name} paths to prevent FastAPI path-matching conflicts.
 """
+
 from __future__ import annotations
 
 import logging
@@ -75,6 +76,7 @@ async def create_host_group(
 
 
 # Static paths before parameterised /{name}
+
 
 @router.put("/host-groups/bulk-update", response_model=CheckMKOperationResponse)
 async def bulk_update_host_groups(

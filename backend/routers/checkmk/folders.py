@@ -4,6 +4,7 @@ CheckMK folders router — 8 endpoints.
 Route ordering note: PUT /folders/bulk-update is registered before
 PUT /folders/{folder_path} to prevent FastAPI capturing "bulk-update" as folder_path.
 """
+
 from __future__ import annotations
 
 import logging
@@ -44,7 +45,9 @@ async def get_all_folders(
         )
     except CheckMKAPIError as e:
         logger.error(
-            "CheckMK API error getting folders: status=%s, parent=%s", e.status_code, parent
+            "CheckMK API error getting folders: status=%s, parent=%s",
+            e.status_code,
+            parent,
         )
         if e.status_code == 400:
             checkmk_detail = "Invalid folder request"
@@ -83,6 +86,7 @@ async def get_all_folders(
 
 
 # Static PUT path before parameterised PUT /{folder_path}
+
 
 @router.put("/folders/bulk-update", response_model=CheckMKOperationResponse)
 async def bulk_update_folders(
@@ -127,7 +131,11 @@ async def create_folder(
     except CheckMKAPIError as e:
         detail = str(e)
         validation_errors = []
-        if hasattr(e, "response_data") and e.response_data and isinstance(e.response_data, dict):
+        if (
+            hasattr(e, "response_data")
+            and e.response_data
+            and isinstance(e.response_data, dict)
+        ):
             rd = e.response_data
             if "detail" in rd:
                 detail = rd["detail"]
@@ -144,7 +152,9 @@ async def create_folder(
             detail = f"{detail} - {'; '.join(validation_errors)}"
         logger.error("CheckMK folder creation failed: %s", detail)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST if e.status_code == 400 else status.HTTP_502_BAD_GATEWAY,
+            status_code=status.HTTP_400_BAD_REQUEST
+            if e.status_code == 400
+            else status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to create folder: {detail}",
         )
     except HTTPException:
@@ -180,7 +190,9 @@ async def get_folder(
             )
         logger.error(
             "CheckMK API error getting folder %s: %s (status: %s)",
-            folder_path, str(e), e.status_code,
+            folder_path,
+            str(e),
+            e.status_code,
         )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

@@ -36,9 +36,7 @@ class Migration(BaseMigration):
         columns_added = results.get("columns_added", 0)
         indexes_created = results.get("indexes_created", 0)
         if columns_added > 0:
-            self.log_info(
-                f"Added {columns_added} column(s) to client_ip_addresses"
-            )
+            self.log_info(f"Added {columns_added} column(s) to client_ip_addresses")
         if indexes_created > 0:
             self.log_info(f"Created {indexes_created} index(es)")
         if columns_added == 0 and indexes_created == 0:
