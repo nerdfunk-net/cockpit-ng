@@ -37,9 +37,14 @@ from routers.settings import (
     git_router,
     common_router as settings_router,
     cache_router,
+    cache_settings_router,
     credentials_router,
     templates_router,
     rbac_router,
+    nautobot_settings_router,
+    git_settings_router,
+    checkmk_settings_router,
+    agents_settings_router,
     compliance_router,
     config_router,
 )
@@ -186,6 +191,11 @@ app.include_router(file_compare_router)  # Minimal - only compare endpoint
 app.include_router(backup_router)  # Configuration backup management
 app.include_router(config_router)
 app.include_router(settings_router)
+app.include_router(nautobot_settings_router)
+app.include_router(git_settings_router)
+app.include_router(checkmk_settings_router)
+app.include_router(agents_settings_router)
+app.include_router(cache_settings_router)
 app.include_router(templates_router)
 app.include_router(inventory_ops_router)
 app.include_router(inventory_crud_router)
