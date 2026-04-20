@@ -90,7 +90,6 @@ const navigationSections: NavSection[] = [
           { label: 'Check IP & Names', href: '/nautobot/tools/check-ip', icon: Search },
           { label: 'Bulk Edit', href: '/nautobot/tools/bulk-edit', icon: Edit },
           { label: 'CSV Updates', href: '/nautobot/tools/csv-updates', icon: FileSpreadsheet },
-          { label: 'Stacks', href: '/nautobot/tools/stacks', icon: Layers },
         ],
       },
       { label: 'Export', href: '/nautobot-export', icon: Download },
@@ -137,6 +136,7 @@ const navigationSections: NavSection[] = [
         icon: Wrench,
         children: [
           { label: 'Ping', href: '/tools/ping', icon: Wifi },
+          { label: 'Stacks', href: '/network/tools/stacks', icon: Layers },
         ],
       },
       { label: 'Compliance Check', href: '/compliance', icon: CheckCircle },

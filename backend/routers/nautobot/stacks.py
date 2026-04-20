@@ -171,6 +171,8 @@ def _build_add_request(
     tags = [t["id"] for t in (device.get("tags") or [])]
     rack = device.get("rack") or {}
 
+    platform = device.get("platform") or {}
+
     return AddDeviceRequest(
         name=new_name,
         device_type=device["device_type"]["id"],
@@ -178,6 +180,7 @@ def _build_add_request(
         location=device["location"]["id"],
         status=device["status"]["id"],
         serial=serial,
+        platform=platform.get("id") or None,
         custom_fields=custom_fields or None,
         tags=tags or None,
         rack=rack.get("id") or None,
@@ -201,6 +204,7 @@ async def _fetch_device_full(
         status {{ id name }}
         location {{ id name }}
         device_type {{ id model manufacturer {{ id name }} }}
+        platform {{ id name }}
         _custom_field_data
         tags {{ id name }}
         rack {{ id name }}
