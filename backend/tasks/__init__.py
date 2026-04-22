@@ -1,9 +1,52 @@
 """
 Celery tasks package.
-Tasks are organized by function:
-- scheduling: Schedule checking and job dispatching
-- execution: Job type executors
-- utils: Helper functions
+
+## Two invocation paths
+
+### Path A — direct Celery tasks  (tasks/*.py)
+Each file in this package root defines one or more ``@shared_task`` functions
+that Celery registers by name.  Callers dispatch them directly:
+
+    onboard_device_task.delay(ip_address=..., location_id=...)
+    backup_single_device_task.s(device_id=...).apply_async()
+
+These tasks own the Celery machinery: progress state updates
+(``self.update_state``), retries, and chord/group orchestration.  Their
+business logic should live in the service layer
+(``services/``) — the task itself is a thin wrapper.
+
+### Path B — job-template dispatcher  (tasks/scheduling/ + tasks/execution/)
+When a user configures a Job Template and it fires (manually or via schedule),
+the call chain is:
+
+    check_job_schedules_task
+        → dispatch_job          (tasks/scheduling/job_dispatcher.py)
+            → execute_job_type  (tasks/execution/base_executor.py)
+                → execute_<name>(tasks/execution/<name>_executor.py)
+
+``dispatch_job`` is the only ``@shared_task`` in this path; executors are
+plain functions — no Celery decorators — which makes them easy to unit-test.
+
+## Rule: executors must not reimplement logic that already exists in Path A
+
+When a job type (e.g. ``backup``) also has a standalone Celery task
+(``backup_devices_task``), the executor **must** delegate to that task or to
+the shared service layer it uses.  Never copy-paste the logic.
+
+Correct patterns:
+  - ``csv_export_executor`` → calls ``tasks.csv_export_task._run_csv_export``
+  - ``get_client_data_task`` → calls ``tasks.execution.client_data_executor``
+
+Known violation (needs fixing):
+  - ``backup_executor.execute_backup`` sequential path (~line 414) contains
+    ~500 lines that duplicate the logic in ``backup_devices_task`` and
+    ``DeviceBackupService``.  It should call
+    ``DeviceBackupService.backup_single_device()`` instead.
+
+## Sub-packages
+- scheduling/  schedule polling (check_job_schedules_task) and dispatch_job
+- execution/   one executor per job type; routed by base_executor.execute_job_type
+- utils/       pure helper functions shared across tasks
 """
 
 # Import scheduling tasks

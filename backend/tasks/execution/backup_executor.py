@@ -2,7 +2,19 @@
 Backup configurations job executor.
 Backs up device configurations to repository.
 
-Moved from job_tasks.py to improve code organization.
+Invoked by tasks/scheduling/job_dispatcher.py → execute_job_type() for
+job-template-triggered runs (Path B).  Standalone / API-triggered backups use
+backup_devices_task in tasks/backup_tasks.py (Path A) directly.
+
+KNOWN DUPLICATION — needs fixing:
+  The parallel execution path (parallel_tasks > 1) correctly delegates to
+  backup_single_device_task and finalize_backup_task from backup_tasks.py.
+
+  The sequential path (parallel_tasks == 1, ~line 414) re-implements the same
+  logic using raw Netmiko + GraphQL instead of calling DeviceBackupService.
+  It should be replaced with the same DeviceBackupService.backup_single_device()
+  calls that backup_devices_task uses, following the same pattern as
+  csv_export_executor (which calls tasks.csv_export_task._run_csv_export).
 """
 
 import logging
