@@ -37,12 +37,6 @@ Correct patterns:
   - ``csv_export_executor`` → calls ``tasks.csv_export_task._run_csv_export``
   - ``get_client_data_task`` → calls ``tasks.execution.client_data_executor``
 
-Known violation (needs fixing):
-  - ``backup_executor.execute_backup`` sequential path (~line 414) contains
-    ~500 lines that duplicate the logic in ``backup_devices_task`` and
-    ``DeviceBackupService``.  It should call
-    ``DeviceBackupService.backup_single_device()`` instead.
-
 ## Sub-packages
 - scheduling/  schedule polling (check_job_schedules_task) and dispatch_job
 - execution/   one executor per job type; routed by base_executor.execute_job_type
