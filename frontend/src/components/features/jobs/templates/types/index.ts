@@ -20,6 +20,8 @@ export interface JobTemplate {
   write_timestamp_to_custom_field?: boolean
   timestamp_custom_field_name?: string
   activate_changes_after_sync?: boolean
+  use_last_compare_run?: boolean
+  sync_not_found_devices?: boolean
   scan_resolve_dns?: boolean
   scan_ping_count?: number
   scan_timeout_ms?: number

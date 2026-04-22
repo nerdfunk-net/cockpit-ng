@@ -96,6 +96,14 @@ class JobTemplateBase(BaseModel):
         True,
         description="Whether to activate CheckMK changes after sync_devices job completes (only applies to sync_devices type)",
     )
+    use_last_compare_run: bool = Field(
+        True,
+        description="Filter sync device list using the last compare job results (only applies to sync_devices type)",
+    )
+    sync_not_found_devices: bool = Field(
+        False,
+        description="Sync devices not present in the last compare run (only applies to sync_devices type)",
+    )
     scan_resolve_dns: bool = Field(
         False,
         description="Whether to resolve DNS names during network scanning (only applies to scan_prefixes type)",
@@ -363,6 +371,8 @@ class JobTemplateUpdate(BaseModel):
     write_timestamp_to_custom_field: Optional[bool] = None
     timestamp_custom_field_name: Optional[str] = Field(None, max_length=255)
     activate_changes_after_sync: Optional[bool] = None
+    use_last_compare_run: Optional[bool] = None
+    sync_not_found_devices: Optional[bool] = None
     scan_resolve_dns: Optional[bool] = None
     scan_ping_count: Optional[int] = Field(None, ge=1, le=10)
     scan_timeout_ms: Optional[int] = Field(None, ge=100, le=30000)

@@ -87,6 +87,32 @@ def execute_sync_devices(
                 "failed_count": 0,
             }
 
+        # Apply compare-run filtering if enabled
+        use_last_compare_run = template.get("use_last_compare_run", True) if template else True
+        sync_not_found_devices = template.get("sync_not_found_devices", False) if template else False
+
+        original_count = len(device_ids)
+        if use_last_compare_run:
+            logger.info("Use Last Compare Run is enabled — filtering device list")
+            device_ids = _filter_by_last_compare_run(
+                device_ids, sync_not_found_devices, task_context
+            )
+        else:
+            logger.info("Use Last Compare Run is disabled — syncing all %s devices", original_count)
+
+        skipped_count = original_count - len(device_ids)
+
+        if not device_ids:
+            return {
+                "success": True,
+                "message": "No devices require sync after compare-run filtering",
+                "total": original_count,
+                "success_count": 0,
+                "failed_count": 0,
+                "skipped_count": skipped_count,
+                "results": [],
+            }
+
         total_devices = len(device_ids)
         success_count = 0
         failed_count = 0
@@ -258,9 +284,10 @@ def execute_sync_devices(
         return {
             "success": True,
             "message": f"Synced {success_count}/{total_devices} devices",
-            "total": total_devices,
+            "total": original_count,
             "success_count": success_count,
             "failed_count": failed_count,
+            "skipped_count": skipped_count,
             "results": results,
             "activation": activation_result,
         }
@@ -269,6 +296,64 @@ def execute_sync_devices(
         error_msg = str(e)
         logger.error("Sync devices job failed: %s", error_msg, exc_info=True)
         return {"success": False, "error": error_msg}
+
+
+def _filter_by_last_compare_run(
+    device_ids: list,
+    sync_not_found_devices: bool,
+    task_context,
+) -> list:
+    """
+    Filter device_ids using the results of the most recent completed compare job.
+
+    - Devices not in compare results: included only if sync_not_found_devices is True
+    - Devices with status != 'equal' (diff, host_not_found, error): included
+    - Devices with status == 'equal': skipped
+    """
+    from repositories.checkmk.nb2cmk_repository import (
+        NB2CMKJobRepository,
+        NB2CMKJobResultRepository,
+    )
+
+    job_repo = NB2CMKJobRepository()
+    result_repo = NB2CMKJobResultRepository()
+
+    latest_job = job_repo.get_latest_compare_job()
+    if not latest_job:
+        logger.info(
+            "No completed compare job found — syncing all %s devices", len(device_ids)
+        )
+        return device_ids
+
+    logger.info("Filtering against compare job %s", latest_job.job_id)
+    task_context.update_state(
+        state="PROGRESS",
+        meta={"current": 8, "total": 100, "status": "Applying compare-run filter..."},
+    )
+
+    results = result_repo.get_by_job_id(latest_job.job_id)
+    compare_map = {r.device_id: r.checkmk_status for r in results}
+
+    filtered = []
+    skipped = 0
+    for device_id in device_ids:
+        status = compare_map.get(device_id)
+        if status is None:
+            if sync_not_found_devices:
+                filtered.append(device_id)
+            else:
+                skipped += 1
+        elif status == "equal":
+            skipped += 1
+        else:
+            filtered.append(device_id)
+
+    logger.info(
+        "Compare filter: %s devices to sync, %s skipped (equal or not in compare run)",
+        len(filtered),
+        skipped,
+    )
+    return filtered
 
 
 def _activate_checkmk_changes() -> Dict[str, Any]:

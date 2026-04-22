@@ -107,6 +107,8 @@ export function TemplateFormDialog({
   const [formTimestampCustomFieldName, setFormTimestampCustomFieldName] = useState('')
   const [formParallelTasks, setFormParallelTasks] = useState(1)
   const [formActivateChangesAfterSync, setFormActivateChangesAfterSync] = useState(true)
+  const [formUseLastCompareRun, setFormUseLastCompareRun] = useState(true)
+  const [formSyncNotFoundDevices, setFormSyncNotFoundDevices] = useState(false)
   const [formScanResolveDns, setFormScanResolveDns] = useState(false)
   const [formScanPingCount, setFormScanPingCount] = useState('')
   const [formScanTimeoutMs, setFormScanTimeoutMs] = useState('')
@@ -330,6 +332,8 @@ export function TemplateFormDialog({
       setFormActivateChangesAfterSync(
         editingTemplate.activate_changes_after_sync ?? true
       )
+      setFormUseLastCompareRun(editingTemplate.use_last_compare_run ?? true)
+      setFormSyncNotFoundDevices(editingTemplate.sync_not_found_devices ?? false)
       setFormScanResolveDns(editingTemplate.scan_resolve_dns ?? false)
       setFormScanPingCount(editingTemplate.scan_ping_count?.toString() || '')
       setFormScanTimeoutMs(editingTemplate.scan_timeout_ms?.toString() || '')
@@ -547,6 +551,10 @@ export function TemplateFormDialog({
           : undefined,
       activate_changes_after_sync:
         formJobType === 'sync_devices' ? formActivateChangesAfterSync : undefined,
+      use_last_compare_run:
+        formJobType === 'sync_devices' ? formUseLastCompareRun : undefined,
+      sync_not_found_devices:
+        formJobType === 'sync_devices' ? formSyncNotFoundDevices : undefined,
       scan_resolve_dns:
         formJobType === 'scan_prefixes' ? formScanResolveDns : undefined,
       scan_ping_count:
@@ -818,6 +826,10 @@ export function TemplateFormDialog({
             <SyncDevicesJobTemplate
               formActivateChangesAfterSync={formActivateChangesAfterSync}
               setFormActivateChangesAfterSync={setFormActivateChangesAfterSync}
+              formUseLastCompareRun={formUseLastCompareRun}
+              setFormUseLastCompareRun={setFormUseLastCompareRun}
+              formSyncNotFoundDevices={formSyncNotFoundDevices}
+              setFormSyncNotFoundDevices={setFormSyncNotFoundDevices}
             />
           )}
 

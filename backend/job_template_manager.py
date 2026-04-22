@@ -31,6 +31,8 @@ def create_job_template(
     write_timestamp_to_custom_field: bool = False,
     timestamp_custom_field_name: Optional[str] = None,
     activate_changes_after_sync: bool = True,
+    use_last_compare_run: bool = True,
+    sync_not_found_devices: bool = False,
     scan_resolve_dns: bool = False,
     scan_ping_count: Optional[int] = None,
     scan_timeout_ms: Optional[int] = None,
@@ -128,6 +130,8 @@ def create_job_template(
         write_timestamp_to_custom_field=write_timestamp_to_custom_field,
         timestamp_custom_field_name=timestamp_custom_field_name,
         activate_changes_after_sync=activate_changes_after_sync,
+        use_last_compare_run=use_last_compare_run,
+        sync_not_found_devices=sync_not_found_devices,
         scan_resolve_dns=scan_resolve_dns,
         scan_ping_count=scan_ping_count,
         scan_timeout_ms=scan_timeout_ms,
@@ -239,6 +243,8 @@ def update_job_template(
     write_timestamp_to_custom_field: Optional[bool] = None,
     timestamp_custom_field_name: Optional[str] = None,
     activate_changes_after_sync: Optional[bool] = None,
+    use_last_compare_run: Optional[bool] = None,
+    sync_not_found_devices: Optional[bool] = None,
     scan_resolve_dns: Optional[bool] = None,
     scan_ping_count: Optional[int] = None,
     scan_timeout_ms: Optional[int] = None,
@@ -326,6 +332,10 @@ def update_job_template(
         update_data["timestamp_custom_field_name"] = timestamp_custom_field_name
     if activate_changes_after_sync is not None:
         update_data["activate_changes_after_sync"] = activate_changes_after_sync
+    if use_last_compare_run is not None:
+        update_data["use_last_compare_run"] = use_last_compare_run
+    if sync_not_found_devices is not None:
+        update_data["sync_not_found_devices"] = sync_not_found_devices
     if scan_resolve_dns is not None:
         update_data["scan_resolve_dns"] = scan_resolve_dns
     if scan_ping_count is not None:
@@ -581,6 +591,8 @@ def _model_to_dict(template) -> Dict[str, Any]:
         "write_timestamp_to_custom_field": template.write_timestamp_to_custom_field,
         "timestamp_custom_field_name": template.timestamp_custom_field_name,
         "activate_changes_after_sync": template.activate_changes_after_sync,
+        "use_last_compare_run": template.use_last_compare_run,
+        "sync_not_found_devices": template.sync_not_found_devices,
         "scan_resolve_dns": template.scan_resolve_dns,
         "scan_ping_count": template.scan_ping_count,
         "scan_timeout_ms": template.scan_timeout_ms,

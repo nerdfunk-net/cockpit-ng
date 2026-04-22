@@ -79,6 +79,22 @@ class NB2CMKJobRepository(BaseRepository[NB2CMKJob]):
         finally:
             db.close()
 
+    def get_latest_compare_job(self) -> Optional[NB2CMKJob]:
+        """Get the most recently completed compare job."""
+        db = get_db_session()
+        try:
+            return (
+                db.query(self.model)
+                .filter(
+                    self.model.job_id.like("scheduled_compare_%"),
+                    self.model.status == "completed",
+                )
+                .order_by(desc(self.model.created_at))
+                .first()
+            )
+        finally:
+            db.close()
+
     def get_jobs_older_than(self, days: int) -> List[NB2CMKJob]:
         """Get jobs older than specified days."""
         cutoff_date = datetime.now() - timedelta(days=days)

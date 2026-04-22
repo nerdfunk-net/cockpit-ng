@@ -78,6 +78,12 @@ class JobTemplate(Base):
     activate_changes_after_sync = Column(
         Boolean, nullable=False, default=True
     )  # Whether to activate CheckMK changes after sync_devices job completes
+    use_last_compare_run = Column(
+        Boolean, nullable=False, default=True
+    )  # Filter sync device list using the last compare job results (sync_devices type)
+    sync_not_found_devices = Column(
+        Boolean, nullable=False, default=False
+    )  # Sync devices not present in the last compare run (sync_devices type)
     scan_resolve_dns = Column(
         Boolean, nullable=False, default=False
     )  # Whether to resolve DNS names during network scanning (scan_prefixes type)

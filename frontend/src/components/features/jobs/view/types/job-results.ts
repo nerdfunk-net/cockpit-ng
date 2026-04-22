@@ -119,7 +119,8 @@ export interface SyncJobResult {
   total: number
   success_count: number
   failed_count: number
-  results: SyncJobDeviceResult[]
+  skipped_count?: number
+  results?: SyncJobDeviceResult[]
   activation?: SyncJobActivation | null
   // Index signature for compatibility with Record<string, unknown>
   [key: string]: unknown
@@ -459,7 +460,8 @@ export function isSyncJobResult(
 ): result is SyncJobResult {
   return (
     'activation' in result ||
-    ('success_count' in result && 'results' in result && Array.isArray(result.results))
+    ('success_count' in result && 'results' in result && Array.isArray(result.results)) ||
+    ('success_count' in result && 'failed_count' in result && 'skipped_count' in result)
   )
 }
 

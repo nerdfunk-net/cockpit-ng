@@ -30,7 +30,7 @@ export function SyncJobResultView({ result }: SyncJobResultProps) {
   return (
     <div className="space-y-4">
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div className="bg-gray-50 rounded-lg p-3 text-center">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
           <p className={`text-lg font-semibold ${result.success ? 'text-green-600' : 'text-red-600'}`}>
@@ -55,6 +55,10 @@ export function SyncJobResultView({ result }: SyncJobResultProps) {
             <p className="text-lg font-semibold text-red-700">{String(result.failed_count)}</p>
           </div>
         )}
+        <div className="bg-yellow-50 rounded-lg p-3 text-center">
+          <p className="text-xs text-yellow-600 uppercase tracking-wide">Skipped</p>
+          <p className="text-lg font-semibold text-yellow-700">{String(result.skipped_count ?? 0)}</p>
+        </div>
       </div>
 
       {/* Message */}
@@ -70,7 +74,19 @@ export function SyncJobResultView({ result }: SyncJobResultProps) {
           <RefreshCw className="h-4 w-4" />
           CheckMK Activation Status
         </h4>
-        {result.activation === null || result.activation === undefined ? (
+        {result.activation === undefined ? (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-gray-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Not Needed</p>
+              <p className="text-xs text-gray-500">
+                No devices were synced, activation was not required
+              </p>
+            </div>
+          </div>
+        ) : result.activation === null ? (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
             <div className="flex-shrink-0">
               <AlertCircle className="h-5 w-5 text-gray-400" />
