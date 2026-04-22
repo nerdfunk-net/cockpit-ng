@@ -178,9 +178,9 @@ export function ClientsTable({
                       </td>
                     </tr>
                   ) : (
-                    items.map((item, index) => (
+                    items.map((item) => (
                       <tr
-                        key={`${item.session_id}-${item.ip_address}-${item.device_name}-${index}`}
+                        key={`${item.session_id}-${item.device_name}-${item.mac_address}-${item.ip_address}-${item.port}`}
                         className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                       >
                         <td className="px-4 py-2 font-mono text-xs text-gray-800">
