@@ -307,7 +307,7 @@ def build_oidc_service():
 
 def build_scan_service():
     """Create a fresh ScanService instance."""
-    from services.network.scanning.scan import ScanService
+    from services.network.scanning.service import ScanService
 
     return ScanService()
 

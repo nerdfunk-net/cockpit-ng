@@ -378,6 +378,14 @@ class NetworkScanService:
 
         return alive_ips
 
+    async def fping_hosts(self, ip_list: List[str]) -> Set[str]:
+        """Bulk-ping a list of IPs via fping. Returns the set of alive IPs."""
+        return await asyncio.to_thread(self._fping_networks, ip_list)
+
+    async def ping_host(self, ip: str) -> bool:
+        """Ping a single host. Returns True if alive."""
+        return await asyncio.to_thread(self._ping_host, ip)
+
     def _is_valid_ip(self, ip_str: str) -> bool:
         """Validate if string is a valid IP address."""
         try:
