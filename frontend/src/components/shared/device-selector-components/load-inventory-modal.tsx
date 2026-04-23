@@ -1,85 +1,227 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useState, useMemo } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { LogicalCondition } from '@/types/shared/device-selector'
-import { Loader2 } from 'lucide-react'
+import { Loader2, FileText, ChevronDown, ChevronRight } from 'lucide-react'
+import { LogicalCondition, ConditionTree, ConditionItem } from '@/types/shared/device-selector'
+import { GroupTreePanel } from './group-tree-panel'
+import { generateConditionTreeAscii } from './group-utils'
+
+interface SavedInventoryItem {
+  id: number
+  name: string
+  description?: string
+  conditions: Array<LogicalCondition | { version: number; tree: ConditionTree }>
+  scope: string
+  group_path?: string | null
+  created_by: string
+}
 
 interface LoadInventoryModalProps {
-    isOpen: boolean
-    onClose: () => void
-    savedInventories: Array<{
-        id: number
-        name: string
-        description?: string
-        conditions: LogicalCondition[]
-        scope: string
-        created_by: string
-    }>
-    isLoading: boolean
-    onLoad: (id: number) => void
+  isOpen: boolean
+  onClose: () => void
+  savedInventories: SavedInventoryItem[]
+  isLoading: boolean
+  onLoad: (id: number) => void
+}
+
+function parseInventoryTree(
+  conditions: Array<LogicalCondition | { version: number; tree: ConditionTree }>
+): ConditionTree | null {
+  if (!conditions || conditions.length === 0) return null
+  const first = conditions[0]
+  if (first && typeof first === 'object' && 'version' in first && first.version === 2) {
+    return first.tree
+  }
+  // Legacy flat format → build simple tree
+  const items = (conditions as LogicalCondition[])
+    .filter(c => c.field && c.value)
+    .map((c): ConditionItem => ({
+      id: `${c.field}-${c.value}`,
+      field: c.field,
+      operator: c.operator,
+      value: c.value,
+    }))
+  return { type: 'root', internalLogic: 'AND', items }
 }
 
 export function LoadInventoryModal({
-    isOpen,
-    onClose,
-    savedInventories,
-    isLoading,
-    onLoad
+  isOpen,
+  onClose,
+  savedInventories,
+  isLoading,
+  onLoad,
 }: LoadInventoryModalProps) {
-    return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>Load Saved Inventory</DialogTitle>
-                </DialogHeader>
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
+  const [selectedInventoryId, setSelectedInventoryId] = useState<number | null>(null)
+  const [showTree, setShowTree] = useState(false)
 
-                {isLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                        <span className="ml-2">Loading inventories...</span>
-                    </div>
-                ) : savedInventories.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                        No saved inventories found.
-                    </div>
+  const inventoriesInGroup = useMemo(
+    () => savedInventories.filter(inv => (inv.group_path ?? '') === (selectedGroup ?? '')),
+    [savedInventories, selectedGroup]
+  )
+
+  const selectedInventory = useMemo(
+    () => savedInventories.find(inv => inv.id === selectedInventoryId) ?? null,
+    [savedInventories, selectedInventoryId]
+  )
+
+  const selectedTree = useMemo(
+    () => (selectedInventory ? parseInventoryTree(selectedInventory.conditions) : null),
+    [selectedInventory]
+  )
+
+  const treeAscii = useMemo(
+    () => (selectedTree ? generateConditionTreeAscii(selectedTree) : ''),
+    [selectedTree]
+  )
+
+  const handleLoad = () => {
+    if (selectedInventoryId !== null) {
+      onLoad(selectedInventoryId)
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
+      <DialogContent className="max-w-5xl sm:max-w-5xl max-h-[88vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+          <DialogTitle>Load Saved Inventory</DialogTitle>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <span className="ml-2 text-sm text-muted-foreground">Loading inventories...</span>
+          </div>
+        ) : savedInventories.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center py-16">
+            <p className="text-muted-foreground text-sm">No saved inventories found.</p>
+          </div>
+        ) : (
+          <>
+            {/* Main area: group tree (left) + files (right) */}
+            <div className="flex flex-1 min-h-0" style={{ minHeight: '280px', maxHeight: '360px' }}>
+              {/* Left: Group tree */}
+              <div className="w-56 flex-shrink-0 border-r p-3 overflow-y-auto">
+                <GroupTreePanel
+                  inventories={savedInventories}
+                  selectedGroup={selectedGroup}
+                  onSelectGroup={group => {
+                    setSelectedGroup(group)
+                    setSelectedInventoryId(null)
+                    setShowTree(false)
+                  }}
+                />
+              </div>
+
+              {/* Right: inventory files */}
+              <div className="flex-1 overflow-y-auto p-3">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Inventories in{' '}
+                  <span className="text-blue-600">{selectedGroup ?? 'Root'}</span>
+                </div>
+                {inventoriesInGroup.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No inventories in this group
+                  </p>
                 ) : (
-                    <div className="flex-1 pr-4 max-h-[60vh] overflow-y-auto">
-                        <div className="space-y-2">
-                            {savedInventories.map((inventory) => (
-                                <div
-                                    key={inventory.id}
-                                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                                    onDoubleClick={() => onLoad(inventory.id)}
-                                >
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <h4 className="font-medium text-sm">{inventory.name}</h4>
-                                            <Badge variant="secondary" className="text-xs">
-                                                {inventory.scope}
-                                            </Badge>
-                                        </div>
-                                        {inventory.description && (
-                                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                                                {inventory.description}
-                                            </p>
-                                        )}
-                                        <div className="text-xs text-gray-400 mt-2">
-                                            Created by {inventory.created_by}
-                                        </div>
-                                    </div>
-                                    <Button
-                                        onClick={() => onLoad(inventory.id)}
-                                        size="sm"
-                                        className="ml-4"
-                                    >
-                                        Load
-                                    </Button>
-                                </div>
-                            ))}
+                  <div className="space-y-1">
+                    {inventoriesInGroup.map(inv => {
+                      const isSelected = selectedInventoryId === inv.id
+                      return (
+                        <div
+                          key={inv.id}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer text-sm transition-colors ${
+                            isSelected
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                              : 'hover:bg-gray-50 border border-transparent'
+                          }`}
+                          onClick={() => {
+                            setSelectedInventoryId(inv.id)
+                            setShowTree(false)
+                          }}
+                          onDoubleClick={() => {
+                            setSelectedInventoryId(inv.id)
+                            onLoad(inv.id)
+                          }}
+                        >
+                          <FileText className={`h-4 w-4 flex-shrink-0 ${isSelected ? 'text-blue-500' : 'text-gray-400'}`} />
+                          <span className="flex-1 truncate font-medium">{inv.name}</span>
+                          <Badge variant="secondary" className="text-xs flex-shrink-0">
+                            {inv.scope}
+                          </Badge>
+                          <span className="text-xs text-gray-400 flex-shrink-0">{inv.created_by}</span>
                         </div>
-                    </div>
+                      )
+                    })}
+                  </div>
                 )}
-            </DialogContent>
-        </Dialog>
-    )
+              </div>
+            </div>
+
+            {/* General panel — fixed height per state so clicking an inventory never shifts the layout */}
+            <div
+              className="border-t p-4 space-y-2 overflow-y-auto flex-shrink-0"
+              style={{ height: showTree ? '260px' : '110px' }}
+            >
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                General
+              </div>
+              {selectedInventory ? (
+                <>
+                  {selectedInventory.description ? (
+                    <p className="text-sm text-gray-700">{selectedInventory.description}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No description</p>
+                  )}
+                  {selectedTree && (
+                    <>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                        onClick={() => setShowTree(v => !v)}
+                      >
+                        {showTree
+                          ? <ChevronDown className="h-3.5 w-3.5" />
+                          : <ChevronRight className="h-3.5 w-3.5" />}
+                        {showTree ? 'Hide' : 'Show'} condition tree
+                      </button>
+                      {showTree && (
+                        <div className="bg-slate-900 text-slate-50 p-3 rounded-md overflow-x-auto font-mono text-xs whitespace-pre max-h-40 overflow-y-auto">
+                          {treeAscii}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">
+                  Select an inventory to see its details
+                </p>
+              )}
+            </div>
+          </>
+        )}
+
+        <DialogFooter className="px-6 py-4 border-t">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleLoad}
+            disabled={selectedInventoryId === null || isLoading}
+          >
+            Load
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }

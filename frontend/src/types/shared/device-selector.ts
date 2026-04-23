@@ -64,6 +64,7 @@ export interface BackendConditionsResponse {
   description?: string
   conditions: Array<LogicalCondition | { version: number; tree: ConditionTree }>
   scope: string
+  group_path?: string | null
   created_by: string
   created_at?: string
   updated_at?: string

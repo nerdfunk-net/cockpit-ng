@@ -11,6 +11,7 @@ export interface LoadedInventoryData {
     name: string
     description?: string
     scope: string
+    group_path?: string | null
 }
 import {
     useSavedInventoriesQuery,
@@ -49,7 +50,8 @@ export function useSavedInventories() {
         scope: string,
         conditionTree: ConditionTree,
         isUpdate: boolean = false,
-        existingId?: number
+        existingId?: number,
+        group_path?: string | null
     ) => {
         setIsSavingInventory(true)
         try {
@@ -66,6 +68,7 @@ export function useSavedInventories() {
                     data: {
                         description: description || undefined,
                         conditions: [treeData], // Wrap in array for backend compatibility
+                        group_path: group_path ?? null,
                     }
                 })
             } else {
@@ -74,7 +77,8 @@ export function useSavedInventories() {
                     name: name,
                     description: description || undefined,
                     conditions: [treeData], // Wrap in array for backend compatibility
-                    scope: scope
+                    scope: scope,
+                    group_path: group_path ?? null,
                 })
             }
 
@@ -116,6 +120,7 @@ export function useSavedInventories() {
                 name: string
                 description?: string
                 scope: string
+                group_path?: string | null
                 conditions: LogicalCondition[] | Array<{ version: number; tree: ConditionTree }>
             }>(`inventory/${inventoryId}`)
 
@@ -145,6 +150,7 @@ export function useSavedInventories() {
                 name: response.name,
                 description: response.description,
                 scope: response.scope,
+                group_path: response.group_path ?? null,
             }
         } catch (error) {
             console.error('Error loading inventory:', error)
@@ -152,13 +158,24 @@ export function useSavedInventories() {
         }
     }
 
-    const updateInventoryDetails = async (inventoryId: number, name: string, description: string, scope: string) => {
+    const updateInventoryDetails = async (
+        inventoryId: number,
+        name: string,
+        description: string,
+        scope: string,
+        group_path?: string | null
+    ) => {
         try {
-            // Only send name, description, and scope - don't send conditions
-            const updateData: { name: string; description: string | undefined; scope: string } = {
+            const updateData: {
+                name: string
+                description: string | undefined
+                scope: string
+                group_path?: string | null
+            } = {
                 name,
                 description: description || undefined,
                 scope,
+                group_path: group_path ?? null,
             }
 
             await updateInventoryMutation({

@@ -143,7 +143,7 @@ export function DeviceSelector({
   const [showHelpModal, setShowHelpModal] = useState(false)
 
   // Track the currently loaded inventory for Save / Save as
-  const [loadedInventory, setLoadedInventory] = useState<Pick<LoadedInventoryData, 'id' | 'name' | 'description' | 'scope'> | null>(null)
+  const [loadedInventory, setLoadedInventory] = useState<Pick<LoadedInventoryData, 'id' | 'name' | 'description' | 'scope' | 'group_path'> | null>(null)
 
   // -- EFFECTS --
 
@@ -176,9 +176,9 @@ export function DeviceSelector({
     setShowManageModal(true)
   }
 
-  const handleSaveInventory = async (name: string, description: string, scope: string, isUpdate: boolean, existingId?: number) => {
+  const handleSaveInventory = async (name: string, description: string, scope: string, isUpdate: boolean, existingId?: number, group_path?: string | null) => {
     try {
-      const success = await saveInventory(name, description, scope, conditionTree, isUpdate, existingId)
+      const success = await saveInventory(name, description, scope, conditionTree, isUpdate, existingId, group_path)
       return success
     } catch (e) {
       alert('Error saving inventory: ' + (e as Error).message)
@@ -191,7 +191,7 @@ export function DeviceSelector({
       const result = await loadInventory(id)
       if (result) {
         setConditionTree(result.tree)
-        setLoadedInventory({ id: result.id, name: result.name, description: result.description, scope: result.scope })
+        setLoadedInventory({ id: result.id, name: result.name, description: result.description, scope: result.scope, group_path: result.group_path })
         setShowPreviewResults(false)
         setShowLoadModal(false)
         // Notify parent component that an inventory was loaded
@@ -211,7 +211,8 @@ export function DeviceSelector({
         loadedInventory.scope,
         conditionTree,
         true,
-        loadedInventory.id
+        loadedInventory.id,
+        loadedInventory.group_path
       )
     } catch (e) {
       alert('Error saving inventory: ' + (e as Error).message)
@@ -319,8 +320,10 @@ export function DeviceSelector({
         onSave={handleSaveInventory}
         isSaving={isSavingInventory}
         savedInventories={savedInventories}
+        currentConditionTree={conditionTree}
         initialName={loadedInventory?.name}
         initialDescription={loadedInventory?.description}
+        initialGroupPath={loadedInventory?.group_path}
       />
 
       <LoadInventoryModal

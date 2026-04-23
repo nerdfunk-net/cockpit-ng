@@ -73,6 +73,7 @@ class InventoryPersistenceService:
                 template_category=inventory_data.get("template_category"),
                 template_name=inventory_data.get("template_name"),
                 scope=inventory_data.get("scope", "global"),
+                group_path=inventory_data.get("group_path") or None,
                 created_by=inventory_data["created_by"],
                 is_active=True,
             )
@@ -194,6 +195,7 @@ class InventoryPersistenceService:
                     "template_name", current["template_name"]
                 ),
                 "scope": inventory_data.get("scope", current["scope"]),
+                "group_path": inventory_data.get("group_path", current.get("group_path")) or None,
             }
 
             self.repository.update(inventory_id, **update_kwargs)
@@ -290,6 +292,7 @@ class InventoryPersistenceService:
             "template_category": inventory.template_category,
             "template_name": inventory.template_name,
             "scope": inventory.scope,
+            "group_path": inventory.group_path,
             "created_by": inventory.created_by,
             "is_active": bool(inventory.is_active),
             "created_at": (

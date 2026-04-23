@@ -18,6 +18,7 @@ class Inventory(Base):
     scope = Column(
         String(50), nullable=False, default="global"
     )  # 'global' or 'private'
+    group_path = Column(String(1000), nullable=True, default=None)  # e.g. "group_a/sub_b"
     created_by = Column(String(255), nullable=False, index=True)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(
@@ -33,4 +34,5 @@ class Inventory(Base):
     __table_args__ = (
         Index("idx_inventory_scope_created_by", "scope", "created_by"),
         Index("idx_inventory_active_scope", "is_active", "scope"),
+        Index("idx_inventory_group_path", "group_path"),
     )

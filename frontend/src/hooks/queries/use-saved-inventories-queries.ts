@@ -25,12 +25,15 @@ interface SaveInventoryPayload {
   description?: string
   conditions: unknown[] // Tree structure wrapped in array
   scope: string
+  group_path?: string | null
 }
 
 interface UpdateInventoryPayload {
   description?: string
   conditions?: unknown[] // Tree structure wrapped in array
   name?: string
+  scope?: string
+  group_path?: string | null
 }
 
 /**

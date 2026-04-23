@@ -25,6 +25,7 @@ class CreateInventoryRequest(BaseModel):
     )
     template_name: Optional[str] = Field(None, description="Template name (optional)")
     scope: str = Field(default="global", description="Scope: 'global' or 'private'")
+    group_path: Optional[str] = Field(None, description="Slash-separated group path, e.g. 'group_a/sub_b'")
 
 
 class UpdateInventoryRequest(BaseModel):
@@ -38,6 +39,7 @@ class UpdateInventoryRequest(BaseModel):
     template_category: Optional[str] = Field(None, description="Template category")
     template_name: Optional[str] = Field(None, description="Template name")
     scope: Optional[str] = Field(None, description="Scope: 'global' or 'private'")
+    group_path: Optional[str] = Field(None, description="Slash-separated group path; null moves to root")
 
 
 class InventoryResponse(BaseModel):
@@ -50,6 +52,7 @@ class InventoryResponse(BaseModel):
     template_category: Optional[str]
     template_name: Optional[str]
     scope: str
+    group_path: Optional[str] = None
     created_by: str
     is_active: bool
     created_at: Optional[str]

@@ -63,6 +63,7 @@ async def create_inventory(
             "template_category": request.template_category,
             "template_name": request.template_name,
             "scope": request.scope,
+            "group_path": request.group_path or None,
             "created_by": username,
         }
 
@@ -256,6 +257,9 @@ async def update_inventory(
             update_data["template_name"] = request.template_name
         if request.scope is not None:
             update_data["scope"] = request.scope
+        # group_path uses model_fields_set so null (move-to-root) is handled correctly
+        if "group_path" in request.model_fields_set:
+            update_data["group_path"] = request.group_path or None
 
         persistence.update_inventory(inventory_id, update_data, username)
 
