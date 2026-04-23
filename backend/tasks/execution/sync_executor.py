@@ -116,6 +116,7 @@ def execute_sync_devices(
         total_devices = len(device_ids)
         success_count = 0
         failed_count = 0
+        skipped_no_ip_count = 0
         results = []
 
         logger.info("Starting sync of %s devices to CheckMK", total_devices)
@@ -135,6 +136,29 @@ def execute_sync_devices(
                         "failed": failed_count,
                     },
                 )
+
+                # Check if device has a primary IPv4 address before syncing.
+                # Devices without an IP address cannot be monitored by CheckMK.
+                normalized_data = asyncio.run(nb2cmk_service.get_device_normalized(device_id))
+                ip_address = normalized_data.get("attributes", {}).get("ipaddress", "")
+                if not ip_address:
+                    hostname = normalized_data.get("internal", {}).get("hostname", device_id)
+                    logger.info(
+                        "Skipping device %s (%s): no primary IPv4 address configured",
+                        device_id,
+                        hostname,
+                    )
+                    skipped_no_ip_count += 1
+                    results.append(
+                        {
+                            "device_id": device_id,
+                            "hostname": hostname,
+                            "operation": "skip",
+                            "success": False,
+                            "message": "Skipped: no primary IPv4 address",
+                        }
+                    )
+                    continue
 
                 # Sync device - try update first, then add if not found
                 try:
@@ -205,10 +229,11 @@ def execute_sync_devices(
         )
 
         logger.info(
-            "Sync completed: %s/%s devices synced, %s failed",
+            "Sync completed: %s/%s devices synced, %s failed, %s skipped (no IPv4)",
             success_count,
             total_devices,
             failed_count,
+            skipped_no_ip_count,
         )
 
         # Activate CheckMK changes if configured and at least one device synced successfully
@@ -288,6 +313,7 @@ def execute_sync_devices(
             "success_count": success_count,
             "failed_count": failed_count,
             "skipped_count": skipped_count,
+            "skipped_no_ip_count": skipped_no_ip_count,
             "results": results,
             "activation": activation_result,
         }
