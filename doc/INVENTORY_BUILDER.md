@@ -51,6 +51,7 @@ The Inventory Builder is a sophisticated device selection and filtering system t
 │    │   ├── ConditionTreeBuilder                             │
 │    │   ├── DeviceTable                                      │
 │    │   └── Save/Load/Manage Modals                          │
+│    │       └── GroupTreePanel (group navigation)            │
 │    │                                                        │
 │    └── InventoryGenerationTab                               │
 │        ├── Template Selection                               │
@@ -154,8 +155,11 @@ DeviceSelector
     ├── ConditionTreeBuilder    → Build conditions UI
     ├── DeviceTable             → Display preview results
     ├── SaveInventoryModal
+    │   └── GroupTreePanel      → Group navigation + creation
     ├── LoadInventoryModal
+    │   └── GroupTreePanel      → Group navigation (read-only)
     ├── ManageInventoryModal
+    │   └── GroupTreePanel      → Group navigation (read-only)
     ├── LogicalTreeModal        → Visualize condition tree
     └── HelpModal
 ```
@@ -466,7 +470,52 @@ loadPreview() {
 }
 ```
 
-#### 4. useSavedInventories() - Persistence
+#### 4. GroupTreePanel - Group Navigation
+
+**Location:** `/frontend/src/components/shared/device-selector-components/group-tree-panel.tsx`
+
+**Purpose:** Renders a collapsible directory-tree of inventory groups. Used in all three modals.
+
+**Props:**
+```typescript
+interface GroupTreePanelProps {
+  inventories: Array<{ group_path?: string | null }>
+  selectedGroup: string | null     // null = root
+  onSelectGroup: (path: string | null) => void
+  allowCreate?: boolean            // enables "New Group" button
+  onCreateGroup?: (parentPath: string | null, name: string) => void
+}
+```
+
+**Behavior:**
+- Derives the tree via `buildGroupTree(inventories)` (memoized)
+- Renders "Root" as the top node — always visible
+- Expand/collapse per node via internal `Set<string>` state
+- Highlights the selected group with a blue background
+- When `allowCreate=true`: shows a **[+ New Group]** button below the selected node; clicking reveals an inline `<Input>` with Enter/Escape handling
+- Group names must not contain `/` (validated inline)
+- Calls `onCreateGroup(selectedGroup, newName)` — the parent computes the full path and updates `selectedGroup`
+
+**Utilities:** `/frontend/src/components/shared/device-selector-components/group-utils.ts`
+
+```typescript
+// Group tree node
+interface GroupTreeNode {
+  name: string
+  path: string | null   // null for root
+  children: GroupTreeNode[]
+}
+
+// Build tree from flat group_path strings
+buildGroupTree(inventories: Array<{ group_path?: string | null }>): GroupTreeNode
+
+// Generates ASCII art of a condition tree for the "Show Tree" toggle
+generateConditionTreeAscii(tree: ConditionTree): string
+```
+
+**Algorithm for `buildGroupTree`:** Collect all unique non-null `group_path` values. For each path, also add its parent prefixes. Build the recursive tree by splitting on `/`.
+
+#### 5. useSavedInventories() - Persistence
 
 **Location:** `/frontend/src/hooks/shared/device-selector/use-saved-inventories.ts`
 
@@ -511,19 +560,28 @@ Version 1 (Legacy Flat Format):
 **Key Methods:**
 
 ```typescript
-// Save new or update existing inventory
+// Save new or update existing inventory (group_path places it in a folder)
 async saveInventory(
   name: string,
   description: string,
   conditionTree: ConditionTree,
-  isUpdate: boolean
+  isUpdate: boolean,
+  existingId?: number,
+  group_path?: string | null
 ): Promise<void>
 
-// Load inventory by name → returns ConditionTree
-async loadInventory(inventoryName: string): Promise<ConditionTree | null>
+// Load inventory by name → returns ConditionTree + group_path
+async loadInventory(inventoryName: string): Promise<LoadedInventoryData | null>
+// LoadedInventoryData: { tree: ConditionTree; group_path?: string | null }
 
-// Update metadata only (name, description)
-async updateInventoryDetails(id: number, name: string, description: string)
+// Update metadata (name, description, scope, group_path)
+async updateInventoryDetails(
+  id: number,
+  name: string,
+  description: string,
+  scope: string,
+  group_path?: string | null
+)
 
 // Delete inventory
 async deleteInventory(id: number): Promise<void>
@@ -1087,6 +1145,27 @@ interface LocationItem {
   parent?: { id: string, name: string }
   hierarchicalPath: string  // Computed: "Europe → Germany → Berlin"
 }
+
+// Saved inventory (from API)
+interface SavedInventory {
+  id: number
+  name: string
+  description?: string | null
+  conditions: object[]
+  scope: string
+  group_path?: string | null   // slash-separated path, e.g. "groupA/subB"
+  created_by: string
+  is_active: boolean
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+// Group tree node (built from group_path values by buildGroupTree)
+interface GroupTreeNode {
+  name: string
+  path: string | null   // null for root
+  children: GroupTreeNode[]
+}
 ```
 
 ### Backend Models
@@ -1094,8 +1173,43 @@ interface LocationItem {
 **Location:** `/backend/models/inventory.py`
 
 ```python
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
+
+class CreateInventoryRequest(BaseModel):
+    """Request for creating a new inventory."""
+    name: str
+    description: Optional[str] = None
+    conditions: List[dict]
+    template_category: Optional[str] = None
+    template_name: Optional[str] = None
+    scope: str = "global"
+    group_path: Optional[str] = None  # e.g. "groupA/subB"
+
+class UpdateInventoryRequest(BaseModel):
+    """Request for updating an inventory."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    conditions: Optional[List[dict]] = None
+    template_category: Optional[str] = None
+    template_name: Optional[str] = None
+    scope: Optional[str] = None
+    group_path: Optional[str] = None  # null moves the inventory to root
+
+class InventoryResponse(BaseModel):
+    """Response model for a saved inventory."""
+    id: int
+    name: str
+    description: Optional[str] = None
+    conditions: List[dict]
+    template_category: Optional[str] = None
+    template_name: Optional[str] = None
+    scope: str
+    group_path: Optional[str] = None
+    created_by: str
+    is_active: bool
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
 class LogicalCondition(BaseModel):
     """Single filter condition"""
@@ -1142,7 +1256,7 @@ class FieldValuesResponse(BaseModel):
 
 ### Database Schema
 
-**Location:** `/backend/core/models.py`
+**Location:** `/backend/core/models/inventory.py`
 
 ```python
 class Inventory(Base):
@@ -1155,17 +1269,21 @@ class Inventory(Base):
     template_category = Column(String(255))
     template_name = Column(String(255))
     scope = Column(String(50), default="global")  # "global" or "private"
+    group_path = Column(String(1000), nullable=True, default=None)  # e.g. "groupA/subB"
     created_by = Column(String(255), nullable=False, index=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Indexes
     __table_args__ = (
         Index('idx_inventory_scope_created_by', 'scope', 'created_by'),
         Index('idx_inventory_active_scope', 'is_active', 'scope'),
+        Index('idx_inventory_group_path', 'group_path'),
     )
 ```
+
+**Migration:** `030_add_inventory_group_path` — adds the `group_path VARCHAR(1000)` column and the `idx_inventory_group_path` index. Idempotent (checks `information_schema.columns` before `ALTER TABLE`). Includes a `downgrade()` that drops the column.
 
 **conditions Column Format:**
 
@@ -1495,8 +1613,10 @@ if condition.field.startswith("cf_"):
 #### Save Flow
 
 ```typescript
-// User clicks "Save Inventory"
-// Modal prompts for name and description
+// User opens Save modal
+// Left panel: GroupTreePanel for navigating/creating groups
+// User navigates to (or creates) group "networking/dc1"
+// Right panel: read-only list of existing inventories in that group
 
 const conditionTree = {
   type: 'root',
@@ -1507,12 +1627,14 @@ const conditionTree = {
   ]
 }
 
-// User submits modal
+// User fills in name, description, scope, then clicks Save
 useSavedInventories.saveInventory(
   "DC1-Routers",           // name
   "All routers in DC1",    // description
   conditionTree,           // tree
-  false                    // isUpdate
+  false,                   // isUpdate
+  undefined,               // existingId
+  "networking/dc1"         // group_path
 )
 
 // Convert to storage format
@@ -1526,14 +1648,15 @@ POST /api/proxy/inventory
 {
   "name": "DC1-Routers",
   "description": "All routers in DC1",
-  "conditions": [treeData],  // Array for backward compatibility
+  "conditions": [treeData],
   "scope": "global",
+  "group_path": "networking/dc1",
   "created_by": "admin"
 }
 
 // Backend saves to database
-INSERT INTO inventories (name, description, conditions, scope, created_by, ...)
-VALUES ('DC1-Routers', 'All routers in DC1', '[{"version": 2, "tree": {...}}]', 'global', 'admin', ...)
+INSERT INTO inventories (name, description, conditions, scope, group_path, created_by, ...)
+VALUES ('DC1-Routers', 'All routers in DC1', '[{"version": 2, "tree": {...}}]', 'global', 'networking/dc1', 'admin', ...)
 
 // Success → Invalidate cache
 queryClient.invalidateQueries({ queryKey: queryKeys.inventory.list() })
@@ -1545,10 +1668,11 @@ toast({ title: 'Success', description: 'Inventory saved!' })
 #### Load Flow
 
 ```typescript
-// User clicks "Load Inventory"
-// Modal shows list of saved inventories
-
-// User selects "DC1-Routers"
+// User opens Load modal
+// Left panel: GroupTreePanel shows all groups derived from saved inventories
+// User navigates to "networking/dc1" → right panel shows inventories in that group
+// User clicks "DC1-Routers" → General panel shows description + "Show Tree" toggle
+// Double-click (or click Load button) loads the inventory
 useSavedInventories.loadInventory("DC1-Routers")
 
 // Fetch from backend
@@ -1559,6 +1683,7 @@ GET /api/proxy/inventory/by-name/DC1-Routers
   "id": 123,
   "name": "DC1-Routers",
   "description": "All routers in DC1",
+  "group_path": "networking/dc1",
   "conditions": [
     {
       "version": 2,
@@ -1815,6 +1940,7 @@ custom_field_types_cache: Dict[str, str] = {}
 3. **Database Indexes:**
    - `idx_inventory_scope_created_by`: Quick user access
    - `idx_inventory_active_scope`: Filter active inventories
+   - `idx_inventory_group_path`: Fast group-based filtering
 
 **Bottlenecks:**
 1. **Negation Queries:** Require fetching ALL devices → expensive
@@ -1948,11 +2074,17 @@ logger.debug(f"Device IDs: {device_ids}")
 
 ```sql
 -- Check saved inventories
-SELECT id, name, created_by, scope, is_active,
+SELECT id, name, created_by, scope, group_path, is_active,
        LEFT(conditions, 100) as conditions_preview
 FROM inventories
 WHERE created_by = 'username'
 ORDER BY created_at DESC;
+
+-- List inventories in a specific group
+SELECT id, name, scope, group_path, created_at
+FROM inventories
+WHERE group_path = 'networking/dc1'
+   OR group_path LIKE 'networking/dc1/%';
 
 -- Check specific inventory
 SELECT conditions
@@ -2148,7 +2280,8 @@ Save new inventory.
       }
     }
   ],
-  "scope": "global"
+  "scope": "global",
+  "group_path": "networking/dc1"
 }
 ```
 
@@ -2168,10 +2301,17 @@ Load inventory by name.
     }
   ],
   "scope": "global",
+  "group_path": "networking/dc1",
   "created_by": "admin",
   "created_at": "2026-01-31T12:00:00Z"
 }
 ```
+
+#### GET /api/inventory
+List all inventories. Each item includes `group_path` for client-side group filtering.
+
+#### PUT /api/inventory/{id}
+Update an existing inventory. Accepts `group_path` to move the inventory to a different group (set to `null` to move to root).
 
 ---
 
@@ -2182,15 +2322,19 @@ The Inventory Builder is a complex feature with:
 - **Frontend:** Tree-based condition builder with shared DeviceSelector component
 - **Backend:** Recursive operation execution with GraphQL queries
 - **Data Flow:** Tree → Operations → GraphQL → Devices
-- **Persistence:** Save/load inventories with version migration
+- **Persistence:** Save/load inventories with version migration; inventories organised into slash-separated groups
+- **Grouping:** `group_path` field (e.g. `"networking/dc1"`) allows inventories to be organised into a hierarchical folder-like structure navigated via `GroupTreePanel`
 - **Caching:** TanStack Query for frontend, in-memory for backend
 
 **Key Files:**
 - Frontend: `/frontend/src/components/shared/device-selector.tsx`
+- Group utilities: `/frontend/src/components/shared/device-selector-components/group-utils.ts`
+- Group panel: `/frontend/src/components/shared/device-selector-components/group-tree-panel.tsx`
 - Hooks: `/frontend/src/hooks/shared/device-selector/*`
 - Backend: `/backend/services/inventory/inventory.py`
 - Models: `/backend/models/inventory.py`
 - Database: `inventories` table
+- Migration: `/backend/migrations/versions/030_add_inventory_group_path.py`
 
 **Integration Points:**
 - Nautobot GraphQL API (device queries)

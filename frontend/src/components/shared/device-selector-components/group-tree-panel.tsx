@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronDown, ChevronRight, Folder, FolderOpen, FolderPlus, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Folder, FolderOpen, FolderPlus, Pencil, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,7 @@ interface GroupTreePanelProps {
   allowCreate?: boolean
   allowContextCreate?: boolean
   onCreateGroup?: (parentPath: string | null, name: string) => void
+  onRenameGroup?: (oldPath: string, newName: string) => void
   extraPaths?: string[]
 }
 
@@ -27,6 +28,7 @@ export function GroupTreePanel({
   allowCreate = false,
   allowContextCreate = false,
   onCreateGroup,
+  onRenameGroup,
   extraPaths = EMPTY_EXTRA,
 }: GroupTreePanelProps) {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set([ROOT_KEY]))
@@ -34,8 +36,11 @@ export function GroupTreePanel({
   const [creatingUnderPath, setCreatingUnderPath] = useState<string | null>(null)
   const [newGroupName, setNewGroupName] = useState('')
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; path: string | null } | null>(null)
+  const [renamingPath, setRenamingPath] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
   const newGroupInputRef = useRef<HTMLInputElement>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
+  const renameInputRef = useRef<HTMLInputElement>(null)
 
   const allInventories = useMemo(() => {
     const extra = extraPaths.map(p => ({ group_path: p }))
@@ -49,6 +54,13 @@ export function GroupTreePanel({
       newGroupInputRef.current.focus()
     }
   }, [isCreatingGroup])
+
+  useEffect(() => {
+    if (renamingPath !== null && renameInputRef.current) {
+      renameInputRef.current.focus()
+      renameInputRef.current.select()
+    }
+  }, [renamingPath])
 
   // Auto-expand the tree down to the selected group
   useEffect(() => {
@@ -126,6 +138,33 @@ export function GroupTreePanel({
     if (e.key === 'Escape') handleNewGroupCancel()
   }
 
+  const startRenaming = (path: string, currentName: string) => {
+    setRenamingPath(path)
+    setRenameValue(currentName)
+    setContextMenu(null)
+  }
+
+  const handleRenameConfirm = () => {
+    const trimmed = renameValue.trim()
+    if (!trimmed || trimmed.includes('/') || renamingPath === null) {
+      handleRenameCancel()
+      return
+    }
+    onRenameGroup?.(renamingPath, trimmed)
+    setRenamingPath(null)
+    setRenameValue('')
+  }
+
+  const handleRenameCancel = () => {
+    setRenamingPath(null)
+    setRenameValue('')
+  }
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleRenameConfirm()
+    if (e.key === 'Escape') handleRenameCancel()
+  }
+
   const renderNode = (node: GroupTreeNode, depth: number) => {
     const key = node.path ?? ROOT_KEY
     const isSelected = selectedGroup === node.path
@@ -167,7 +206,19 @@ export function GroupTreePanel({
             ? <FolderOpen className="h-3.5 w-3.5 flex-shrink-0" />
             : <Folder className="h-3.5 w-3.5 flex-shrink-0" />
           }
-          <span className="flex-1 truncate">{node.name}</span>
+          {renamingPath === node.path ? (
+            <Input
+              ref={renameInputRef}
+              className="h-6 text-xs px-1 py-0 flex-1"
+              value={renameValue}
+              onChange={e => setRenameValue(e.target.value)}
+              onKeyDown={handleRenameKeyDown}
+              onBlur={handleRenameCancel}
+              onClick={e => e.stopPropagation()}
+            />
+          ) : (
+            <span className="flex-1 truncate">{node.name}</span>
+          )}
           {invCount > 0 && (
             <span className="text-xs text-gray-400 flex-shrink-0 tabular-nums">{invCount}</span>
           )}
@@ -261,6 +312,20 @@ export function GroupTreePanel({
             <FolderPlus className="h-3.5 w-3.5 text-blue-500" />
             New subgroup here
           </button>
+          {contextMenu.path !== null && (
+            <button
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 flex items-center gap-2"
+              onMouseDown={e => {
+                e.preventDefault()
+                const nodePath = contextMenu.path!
+                const nodeName = nodePath.split('/').at(-1) ?? nodePath
+                startRenaming(nodePath, nodeName)
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5 text-gray-500" />
+              Rename Group
+            </button>
+          )}
         </div>,
         document.body
       )}

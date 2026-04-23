@@ -36,6 +36,16 @@ interface UpdateInventoryPayload {
   group_path?: string | null
 }
 
+interface RenameGroupPayload {
+  old_path: string
+  new_name: string
+}
+
+interface RenameGroupResponse {
+  updated_count: number
+  new_path: string
+}
+
 /**
  * Hook for fetching saved inventories
  *
@@ -271,4 +281,34 @@ export function useDeleteInventoryMutation() {
   })
 }
 
-export type { SavedInventory, SavedInventoriesResponse, SaveInventoryPayload, UpdateInventoryPayload }
+export function useRenameGroupMutation() {
+  const { apiCall } = useApi()
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (payload: RenameGroupPayload): Promise<RenameGroupResponse> => {
+      return apiCall<RenameGroupResponse>('inventory/rename-group', {
+        method: 'POST',
+        body: payload,
+      })
+    },
+    onSuccess: (data: RenameGroupResponse) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.list() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.groups() })
+      toast({
+        title: 'Success',
+        description: `Group renamed (${data.updated_count} ${data.updated_count === 1 ? 'inventory' : 'inventories'} updated)`,
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to rename group',
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+export type { SavedInventory, SavedInventoriesResponse, SaveInventoryPayload, UpdateInventoryPayload, RenameGroupPayload, RenameGroupResponse }

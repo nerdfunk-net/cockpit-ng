@@ -66,6 +66,12 @@ class ListInventoriesResponse(BaseModel):
     total: int
 
 
+class GroupsResponse(BaseModel):
+    """Response with all unique inventory group paths."""
+
+    groups: List[str]
+
+
 class InventoryDeleteResponse(BaseModel):
     """Response after deleting an inventory."""
 
@@ -224,3 +230,17 @@ class InventoryAnalysisResponse(BaseModel):
         default_factory=list, description="Distinct list of role names"
     )
     device_count: int = Field(..., description="Total number of devices analyzed")
+
+
+class RenameGroupRequest(BaseModel):
+    """Request body for bulk-renaming a group path."""
+
+    old_path: str = Field(..., description="Current group path to rename (must not be empty/root)")
+    new_name: str = Field(..., description="New name for the last segment only")
+
+
+class RenameGroupResponse(BaseModel):
+    """Response after bulk-renaming a group path."""
+
+    updated_count: int = Field(..., description="Number of inventory rows updated")
+    new_path: str = Field(..., description="Resulting full group path after rename")

@@ -57,6 +57,7 @@ class InventoryRepository(BaseRepository[Inventory]):
         username: str,
         active_only: bool = True,
         scope: Optional[str] = None,
+        group_path_filter: Optional[str] = None,
     ) -> List[Inventory]:
         """
         List inventories accessible to a user.
@@ -69,6 +70,9 @@ class InventoryRepository(BaseRepository[Inventory]):
             username: Username to filter by
             active_only: Only return active inventories
             scope: Filter by scope ('global', 'private', or None for both)
+            group_path_filter: When set, return only inventories whose group_path
+                               matches exactly or is a descendant (e.g. 'net' also
+                               matches 'net/dc1').
 
         Returns:
             List of Inventory instances
@@ -95,7 +99,84 @@ class InventoryRepository(BaseRepository[Inventory]):
             if active_only:
                 query = query.filter(self.model.is_active)
 
+            if group_path_filter is not None:
+                query = query.filter(
+                    (self.model.group_path == group_path_filter)
+                    | (self.model.group_path.like(f"{group_path_filter}/%"))
+                )
+
             return query.order_by(self.model.updated_at.desc()).all()
+        finally:
+            db.close()
+
+    def get_distinct_group_paths(self, username: str) -> List[str]:
+        """
+        Return all distinct non-null group_path values accessible to a user.
+
+        Args:
+            username: Username for access control
+
+        Returns:
+            List of distinct group_path strings (unsorted, without derived ancestors)
+        """
+        from sqlalchemy import distinct
+
+        db = get_db_session()
+        try:
+            rows = (
+                db.query(distinct(self.model.group_path))
+                .filter(
+                    self.model.is_active,
+                    self.model.group_path.isnot(None),
+                    (self.model.scope == "global")
+                    | (
+                        (self.model.scope == "private")
+                        & (self.model.created_by == username)
+                    ),
+                )
+                .all()
+            )
+            return [row[0] for row in rows]
+        finally:
+            db.close()
+
+    def rename_group(self, old_path: str, new_path: str, username: str) -> int:
+        """
+        Bulk-update group_path for inventories in old_path (exact match or descendants).
+
+        Only updates global inventories or private inventories owned by username.
+
+        Args:
+            old_path: The existing group path prefix to replace
+            new_path: The replacement prefix
+            username: Username for private-inventory access control
+
+        Returns:
+            Number of rows updated
+        """
+        db = get_db_session()
+        try:
+            inventories = (
+                db.query(self.model)
+                .filter(
+                    (self.model.group_path == old_path)
+                    | self.model.group_path.like(old_path + "/%"),
+                    self.model.is_active == True,
+                    (self.model.scope == "global")
+                    | (
+                        (self.model.scope == "private")
+                        & (self.model.created_by == username)
+                    ),
+                )
+                .all()
+            )
+            for inv in inventories:
+                if inv.group_path == old_path:
+                    inv.group_path = new_path
+                else:
+                    inv.group_path = new_path + inv.group_path[len(old_path):]
+            db.commit()
+            return len(inventories)
         finally:
             db.close()
 

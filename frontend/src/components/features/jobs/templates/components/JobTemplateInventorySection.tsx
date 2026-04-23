@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -7,7 +8,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { HardDrive, Globe, FileText, Loader2, Lock } from 'lucide-react'
+import { HardDrive, Globe, FileText, Loader2, Lock, Folder } from 'lucide-react'
+import { useInventoryGroups } from '../hooks/use-template-queries'
 
 interface SavedInventory {
   id: number
@@ -15,6 +17,7 @@ interface SavedInventory {
   description?: string
   scope: string
   created_by: string
+  group_path?: string | null
 }
 
 interface JobTemplateInventorySectionProps {
@@ -28,6 +31,8 @@ interface JobTemplateInventorySectionProps {
   inventoryRequired?: boolean
 }
 
+const EMPTY_GROUPS: string[] = []
+
 export function JobTemplateInventorySection({
   formInventorySource,
   setFormInventorySource,
@@ -37,6 +42,24 @@ export function JobTemplateInventorySection({
   loadingInventories,
   inventoryRequired = false,
 }: JobTemplateInventorySectionProps) {
+  const [selectedGroup, setSelectedGroup] = useState<string>('all')
+  const { data: groups = EMPTY_GROUPS } = useInventoryGroups()
+
+  const filteredInventories = useMemo(() => {
+    if (selectedGroup === 'all') return savedInventories
+    return savedInventories.filter(inv => {
+      if (!inv.group_path) return false
+      return inv.group_path === selectedGroup || inv.group_path.startsWith(selectedGroup + '/')
+    })
+  }, [savedInventories, selectedGroup])
+
+  const handleSourceChange = (value: 'all' | 'inventory') => {
+    setFormInventorySource(value)
+    if (value === 'all') {
+      setSelectedGroup('all')
+    }
+  }
+
   return (
     <div className="rounded-lg border border-emerald-200 bg-emerald-50/30 p-4 space-y-3">
       <div className="flex items-center gap-2">
@@ -96,14 +119,14 @@ export function JobTemplateInventorySection({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="inventory-source" className="text-xs text-emerald-700">
                 Source
               </Label>
               <Select
                 value={formInventorySource}
-                onValueChange={v => setFormInventorySource(v as 'all' | 'inventory')}
+                onValueChange={v => handleSourceChange(v as 'all' | 'inventory')}
               >
                 <SelectTrigger
                   id="inventory-source"
@@ -124,6 +147,43 @@ export function JobTemplateInventorySection({
                       <span>Use Saved Inventory</span>
                     </div>
                   </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="inventory-group" className="text-xs text-emerald-700">
+                Group
+              </Label>
+              <Select
+                value={selectedGroup}
+                onValueChange={value => {
+                  setSelectedGroup(value)
+                  setFormInventoryName('')
+                }}
+                disabled={formInventorySource === 'all'}
+              >
+                <SelectTrigger
+                  id="inventory-group"
+                  className="h-9 bg-white border-emerald-200 disabled:opacity-50"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <div className="flex items-center gap-2">
+                      <Folder className="h-4 w-4 text-emerald-500" />
+                      <span>All</span>
+                    </div>
+                  </SelectItem>
+                  {groups.map(group => (
+                    <SelectItem key={group} value={group}>
+                      <div className="flex items-center gap-2">
+                        <Folder className="h-4 w-4 text-emerald-400" />
+                        <span>{group}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -152,7 +212,7 @@ export function JobTemplateInventorySection({
                     <SelectValue placeholder="Select inventory" />
                   </SelectTrigger>
                   <SelectContent>
-                    {savedInventories.map(inv => (
+                    {filteredInventories.map(inv => (
                       <SelectItem key={inv.id} value={inv.name}>
                         <div className="flex items-center gap-2">
                           <span>{inv.name}</span>
@@ -172,12 +232,15 @@ export function JobTemplateInventorySection({
           </div>
 
           {formInventorySource === 'inventory' &&
-            savedInventories.length === 0 &&
+            filteredInventories.length === 0 &&
             !loadingInventories && (
               <p className="text-xs text-emerald-600">
-                No saved inventories found. Create one in{' '}
-                <strong>Network → Automation → Inventory</strong> or{' '}
-                <strong>Netmiko</strong>.
+                {selectedGroup === 'all'
+                  ? <>No saved inventories found. Create one in{' '}
+                    <strong>Network → Automation → Inventory</strong> or{' '}
+                    <strong>Netmiko</strong>.</>
+                  : <>No inventories found in group <strong>{selectedGroup}</strong>. Select a different group or <strong>All</strong>.</>
+                }
               </p>
             )}
         </>

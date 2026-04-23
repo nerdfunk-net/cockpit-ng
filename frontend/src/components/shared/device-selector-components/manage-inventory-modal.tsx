@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,7 @@ import {
 import { cn } from '@/lib/utils'
 import { LogicalCondition, ConditionTree, ConditionItem } from '@/types/shared/device-selector'
 import { GroupTreePanel } from './group-tree-panel'
+import { useRenameGroupMutation } from '@/hooks/queries/use-saved-inventories-queries'
 import { generateConditionTreeAscii } from './group-utils'
 
 interface SavedInventoryFull {
@@ -160,11 +161,29 @@ export function ManageInventoryModal({
     setEditingId(null)
   }
 
-  const handleCreateGroup = (parentPath: string | null, groupName: string) => {
+  const handleCreateGroup = useCallback((parentPath: string | null, groupName: string) => {
     const newPath = parentPath ? `${parentPath}/${groupName}` : groupName
     setLocalGroupPaths(prev => [...prev, newPath])
     setSelectedGroup(newPath)
-  }
+  }, [])
+
+  const renameGroupMutation = useRenameGroupMutation()
+
+  const handleRenameGroup = useCallback(async (oldPath: string, newName: string) => {
+    const result = await renameGroupMutation.mutateAsync({ old_path: oldPath, new_name: newName })
+    if (selectedGroup === oldPath) {
+      setSelectedGroup(result.new_path)
+    } else if (selectedGroup?.startsWith(oldPath + '/')) {
+      setSelectedGroup(result.new_path + selectedGroup.slice(oldPath.length))
+    }
+    setLocalGroupPaths(prev =>
+      prev.map(p => {
+        if (p === oldPath) return result.new_path
+        if (p.startsWith(oldPath + '/')) return result.new_path + p.slice(oldPath.length)
+        return p
+      })
+    )
+  }, [renameGroupMutation, selectedGroup])
 
   const saveEdit = async (id: number) => {
     if (!editName.trim()) return
@@ -258,6 +277,7 @@ export function ManageInventoryModal({
                   }}
                   allowContextCreate
                   onCreateGroup={handleCreateGroup}
+                  onRenameGroup={handleRenameGroup}
                   extraPaths={localGroupPaths}
                 />
               </div>

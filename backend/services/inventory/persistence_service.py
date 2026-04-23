@@ -139,6 +139,7 @@ class InventoryPersistenceService:
         username: str,
         active_only: bool = True,
         scope: Optional[str] = None,
+        group_path_filter: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """List inventories accessible to a user.
 
@@ -146,21 +147,92 @@ class InventoryPersistenceService:
         """
         try:
             inventories = self.repository.list_inventories(
-                username=username, active_only=active_only, scope=scope
+                username=username,
+                active_only=active_only,
+                scope=scope,
+                group_path_filter=group_path_filter,
             )
 
             results = [self._model_to_dict(inv) for inv in inventories]
             logger.info(
-                "Listed %s inventories for user %s (scope=%s)",
+                "Listed %s inventories for user %s (scope=%s, group_path_filter=%s)",
                 len(results),
                 username,
                 scope,
+                group_path_filter,
             )
             return results
 
         except Exception as e:
             logger.error("Error listing inventories: %s", e)
             return []
+
+    def get_all_groups(self, username: str) -> List[str]:
+        """Return all unique group paths (including ancestor paths) accessible to a user.
+
+        For example, if inventories use 'networking/dc1' and 'security', this returns
+        ['networking', 'networking/dc1', 'security'].
+        """
+        try:
+            raw_paths = self.repository.get_distinct_group_paths(username)
+
+            all_paths: set[str] = set()
+            for path in raw_paths:
+                segments = path.split("/")
+                for i in range(1, len(segments) + 1):
+                    all_paths.add("/".join(segments[:i]))
+
+            return sorted(all_paths)
+
+        except Exception as e:
+            logger.error("Error fetching inventory groups: %s", e)
+            return []
+
+    def rename_group(self, old_path: str, new_name: str, username: str) -> dict:
+        """Rename the last segment of old_path to new_name across all matching inventories.
+
+        Args:
+            old_path: Full path of the group to rename (e.g. 'networking/dc1')
+            new_name: New leaf segment name (e.g. 'datacenter1')
+            username: Authenticated user performing the rename
+
+        Returns:
+            Dict with 'updated_count' and 'new_path'
+
+        Raises:
+            ValueError: If old_path is empty, new_name is empty, or new_name contains '/'
+        """
+        if not old_path:
+            raise ValueError("Cannot rename the root group")
+        if not new_name or not new_name.strip():
+            raise ValueError("New group name must not be empty")
+        if "/" in new_name:
+            raise ValueError("Group name must not contain '/'")
+
+        new_name = new_name.strip()
+        segments = old_path.split("/")
+        segments[-1] = new_name
+        new_path = "/".join(segments)
+
+        if new_path == old_path:
+            logger.info(
+                "rename_group: old_path == new_path ('%s'), skipping update", old_path
+            )
+            return {"updated_count": 0, "new_path": new_path}
+
+        try:
+            updated_count = self.repository.rename_group(old_path, new_path, username)
+            logger.info(
+                "Renamed group '%s' -> '%s': %s rows updated by %s",
+                old_path,
+                new_path,
+                updated_count,
+                username,
+            )
+            return {"updated_count": updated_count, "new_path": new_path}
+        except Exception as e:
+            logger.error("Error renaming group '%s': %s", old_path, e)
+            raise
 
     def update_inventory(
         self, inventory_id: int, inventory_data: Dict[str, Any], username: str

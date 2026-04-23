@@ -21,6 +21,7 @@ export const EMPTY_IP_STATUSES: IpAddressStatus[] = []
 export const EMPTY_IP_TAGS: IpAddressTag[] = []
 export const EMPTY_CSV_FILES: CsvRepoFile[] = []
 export const EMPTY_HEADERS: string[] = []
+export const EMPTY_GROUPS: string[] = []
 
 export const JOB_TYPE_LABELS: Record<string, string> = {
   backup: 'Backup',

@@ -108,6 +108,7 @@ export interface SavedInventory {
   description?: string
   scope: string
   created_by: string
+  group_path?: string | null
 }
 
 export interface CommandTemplate {

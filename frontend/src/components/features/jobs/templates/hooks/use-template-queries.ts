@@ -25,6 +25,7 @@ import {
   EMPTY_IP_TAGS,
   EMPTY_CSV_FILES,
   EMPTY_HEADERS,
+  EMPTY_GROUPS,
 } from '../utils/constants'
 
 interface UseQueryOptions {
@@ -135,6 +136,26 @@ export function useSavedInventories(options: UseQueryOptions = DEFAULT_OPTIONS) 
     },
     enabled,
     staleTime: STALE_TIME.INVENTORIES,
+  })
+}
+
+/**
+ * Fetch all unique inventory group paths for the group filter dropdown
+ */
+export function useInventoryGroups(options: UseQueryOptions = DEFAULT_OPTIONS) {
+  const { apiCall } = useApi()
+  const { enabled = true } = options
+
+  return useQuery({
+    queryKey: queryKeys.inventory.groups(),
+    queryFn: async () => {
+      const response = await apiCall<{ groups: string[] }>('/inventory/get-all-groups', {
+        method: 'GET',
+      })
+      return response?.groups ?? EMPTY_GROUPS
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000,
   })
 }
 

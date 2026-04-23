@@ -17,8 +17,11 @@ from dependencies import (
     get_device_query_service,
 )
 from models.inventory import (
+    GroupsResponse,
     InventoryPreviewRequest,
     InventoryPreviewResponse,
+    RenameGroupRequest,
+    RenameGroupResponse,
 )
 from services.inventory.inventory import InventoryService
 from services.inventory.persistence_service import InventoryPersistenceService
@@ -26,6 +29,74 @@ from services.nautobot.devices.query import DeviceQueryService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/inventory", tags=["inventory"])
+
+
+@router.get("/get-all-groups", response_model=GroupsResponse)
+async def get_all_groups(
+    current_user: dict = Depends(require_permission("general.inventory", "read")),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
+) -> GroupsResponse:
+    """Return all unique inventory group paths (including ancestor paths) accessible to the user."""
+    try:
+        username = current_user.get("username")
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Username not found in token",
+            )
+        groups = persistence.get_all_groups(username)
+        return GroupsResponse(groups=groups)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error fetching inventory groups: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch inventory groups: {str(e)}",
+        )
+
+
+@router.post("/rename-group", response_model=RenameGroupResponse)
+async def rename_group(
+    request: RenameGroupRequest,
+    current_user: dict = Depends(require_permission("general.inventory", "write")),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
+) -> RenameGroupResponse:
+    """Bulk-rename a group path across all matching inventories.
+
+    Requires general.inventory:write permission.
+    """
+    try:
+        username = current_user.get("username")
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Username not found in token",
+            )
+        result = persistence.rename_group(
+            old_path=request.old_path,
+            new_name=request.new_name,
+            username=username,
+        )
+        return RenameGroupResponse(
+            updated_count=result["updated_count"],
+            new_path=result["new_path"],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error renaming group: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to rename group: {str(e)}",
+        )
 
 
 @router.post("/preview", response_model=InventoryPreviewResponse)

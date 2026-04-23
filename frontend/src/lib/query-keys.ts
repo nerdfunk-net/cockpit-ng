@@ -209,6 +209,7 @@ export const queryKeys = {
     customFields: () => [...queryKeys.inventory.all, 'custom-fields'] as const,
     devicesDetailed: (inventoryId: number | null) =>
       [...queryKeys.inventory.all, 'devices-detailed', inventoryId] as const,
+    groups: () => [...queryKeys.inventory.all, 'groups'] as const,
   },
 
   // Compliance

@@ -102,6 +102,7 @@ async def create_inventory(
 async def list_inventories(
     scope: Optional[str] = None,
     active_only: bool = True,
+    group_path: Optional[str] = None,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
     persistence: InventoryPersistenceService = Depends(
         get_inventory_persistence_service
@@ -112,6 +113,9 @@ async def list_inventories(
     Returns:
     - Global inventories (scope='global')
     - Private inventories owned by the user (scope='private' AND created_by=username)
+
+    Optional filter:
+    - group_path: Return only inventories in this group or its descendants.
 
     Requires general.inventory:read permission.
     """
@@ -124,7 +128,10 @@ async def list_inventories(
             )
 
         inventories = persistence.list_inventories(
-            username=username, active_only=active_only, scope=scope
+            username=username,
+            active_only=active_only,
+            scope=scope,
+            group_path_filter=group_path or None,
         )
 
         return ListInventoriesResponse(
