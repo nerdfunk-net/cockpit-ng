@@ -14,10 +14,14 @@ export const STATUS_OPTIONS: readonly FilterOption[] = [
   { value: "cancelled", label: "Cancelled" },
 ] as const
 
+// Job types hidden from the jobs view (too noisy)
+export const HIDDEN_JOB_TYPES: readonly string[] = [
+  'cache_devices',
+  'cache_locations',
+] as const
+
 export const JOB_TYPE_OPTIONS: readonly FilterOption[] = [
   { value: "backup", label: "Backup" },
-  { value: "cache_devices", label: "Cache Devices" },
-  { value: "cache_locations", label: "Cache Locations" },
   { value: "cache_git_commits", label: "Cache Git Commits" },
   { value: "compare_devices", label: "Compare Devices" },
   { value: "csv_export", label: "CSV Export" },

@@ -178,6 +178,7 @@ class JobRunRepository(BaseRepository[JobRun]):
         page_size: int = 25,
         status: Optional[List[str]] = None,
         job_type: Optional[List[str]] = None,
+        exclude_job_type: Optional[List[str]] = None,
         triggered_by: Optional[List[str]] = None,
         schedule_id: Optional[int] = None,
         template_id: Optional[List[int]] = None,
@@ -199,6 +200,8 @@ class JobRunRepository(BaseRepository[JobRun]):
                     query = query.filter(self.model.job_type == job_type[0])
                 else:
                     query = query.filter(self.model.job_type.in_(job_type))
+            if exclude_job_type:
+                query = query.filter(self.model.job_type.notin_(exclude_job_type))
             if triggered_by:
                 if len(triggered_by) == 1:
                     query = query.filter(self.model.triggered_by == triggered_by[0])

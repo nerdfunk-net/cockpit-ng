@@ -7,6 +7,7 @@ export interface JobSearchParams {
   page_size?: number
   status?: string | string[]
   job_type?: string | string[]
+  exclude_job_type?: string | string[]
   triggered_by?: string | string[]
   template_id?: string | string[]
 }

@@ -2,7 +2,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import type { PaginatedResponse, JobSearchParams } from '../types'
-import { STALE_TIME, JOB_POLL_INTERVAL } from '../utils/constants'
+import { STALE_TIME, JOB_POLL_INTERVAL, HIDDEN_JOB_TYPES } from '../utils/constants'
 
 interface UseJobsQueryOptions {
   params?: JobSearchParams
@@ -45,6 +45,12 @@ export function useJobsQuery(options: UseJobsQueryOptions = DEFAULT_OPTIONS) {
         const templateArr = Array.isArray(params.template_id) ? params.template_id : [params.template_id]
         if (templateArr.length > 0) searchParams.append('template_id', templateArr.join(','))
       }
+
+      // Always exclude noisy system cache job types
+      const excludeTypes = params?.exclude_job_type
+        ? Array.isArray(params.exclude_job_type) ? params.exclude_job_type : [params.exclude_job_type]
+        : [...HIDDEN_JOB_TYPES]
+      if (excludeTypes.length > 0) searchParams.append('exclude_job_type', excludeTypes.join(','))
 
       const queryString = searchParams.toString()
       const endpoint = queryString ? `job-runs?${queryString}` : 'job-runs'
