@@ -91,11 +91,11 @@ export function useDiffDeviceLoader() {
     }
   }, [token, pollTask])
 
-  const loadNautobotDevices = useCallback(async () => {
+  const loadNautobotDevices = useCallback(async (reload = false) => {
     if (!token) return
     setState(prev => ({ ...prev, loading: true, error: null, taskStatus: null }))
     try {
-      const { devices, total } = await fetchNautobotDevices(token)
+      const { devices, total } = await fetchNautobotDevices(token, reload)
       setState({
         devices,
         totalNautobot: total,

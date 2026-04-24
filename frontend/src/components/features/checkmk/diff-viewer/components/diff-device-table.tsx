@@ -47,6 +47,7 @@ interface DiffDeviceTableProps {
   onGetDiff: (device: DiffDevice) => void
   onSync: (device: DiffDevice) => void
   onRunDiff: () => void
+  onRefresh: () => void
   mode: ViewMode
   onModeChange: (mode: ViewMode) => void
 }
@@ -81,6 +82,7 @@ export function DiffDeviceTable({
   onGetDiff,
   onSync,
   onRunDiff,
+  onRefresh,
   mode,
   onModeChange,
 }: DiffDeviceTableProps) {
@@ -195,6 +197,23 @@ export function DiffDeviceTable({
                 <SelectItem value="combined">Combined</SelectItem>
               </SelectContent>
             </Select>
+            {mode === 'nautobot_only' && (
+              <Button
+                onClick={onRefresh}
+                variant="ghost"
+                size="sm"
+                disabled={loading}
+                className="text-white hover:bg-white/20"
+                title="Reload devices from Nautobot (bypass cache)"
+              >
+                {loading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                {loading ? 'Loading...' : 'Refresh'}
+              </Button>
+            )}
             {mode === 'combined' && (
               <Button
                 onClick={onRunDiff}

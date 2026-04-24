@@ -18,9 +18,11 @@ interface NautobotDeviceRaw {
  * Fetch all devices from Nautobot and convert to DiffDevice format
  */
 export async function fetchNautobotDevices(
-  token: string
+  token: string,
+  reload = false
 ): Promise<{ devices: DiffDevice[]; total: number }> {
-  const response = await fetch('/api/proxy/nautobot/devices?limit=10000', {
+  const url = `/api/proxy/nautobot/devices?limit=10000${reload ? '&reload=true' : ''}`
+  const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) {

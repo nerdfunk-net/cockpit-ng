@@ -129,6 +129,12 @@ export default function DiffViewerPage() {
     }
   }, [loading, devices, totalNautobot, totalCheckmk, totalBoth, mode])
 
+  // Handle refresh: clear snapshot so it re-captures fresh data, then reload bypassing cache
+  const handleRefreshNautobot = useCallback(() => {
+    nautobotSnapshotRef.current = null
+    loadNautobotDevices(true)
+  }, [loadNautobotDevices])
+
   // Handle mode selection
   const handleModeChange = useCallback((newMode: ViewMode) => {
     setMode(newMode)
@@ -311,6 +317,7 @@ export default function DiffViewerPage() {
         onGetDiff={handleGetDiff}
         onSync={handleSync}
         onRunDiff={runDiff}
+        onRefresh={handleRefreshNautobot}
         mode={mode}
         onModeChange={handleModeChange}
       />
