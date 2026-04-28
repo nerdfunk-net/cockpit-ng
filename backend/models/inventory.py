@@ -25,7 +25,9 @@ class CreateInventoryRequest(BaseModel):
     )
     template_name: Optional[str] = Field(None, description="Template name (optional)")
     scope: str = Field(default="global", description="Scope: 'global' or 'private'")
-    group_path: Optional[str] = Field(None, description="Slash-separated group path, e.g. 'group_a/sub_b'")
+    group_path: Optional[str] = Field(
+        None, description="Slash-separated group path, e.g. 'group_a/sub_b'"
+    )
 
 
 class UpdateInventoryRequest(BaseModel):
@@ -39,7 +41,9 @@ class UpdateInventoryRequest(BaseModel):
     template_category: Optional[str] = Field(None, description="Template category")
     template_name: Optional[str] = Field(None, description="Template name")
     scope: Optional[str] = Field(None, description="Scope: 'global' or 'private'")
-    group_path: Optional[str] = Field(None, description="Slash-separated group path; null moves to root")
+    group_path: Optional[str] = Field(
+        None, description="Slash-separated group path; null moves to root"
+    )
 
 
 class InventoryResponse(BaseModel):
@@ -235,7 +239,9 @@ class InventoryAnalysisResponse(BaseModel):
 class RenameGroupRequest(BaseModel):
     """Request body for bulk-renaming a group path."""
 
-    old_path: str = Field(..., description="Current group path to rename (must not be empty/root)")
+    old_path: str = Field(
+        ..., description="Current group path to rename (must not be empty/root)"
+    )
     new_name: str = Field(..., description="New name for the last segment only")
 
 

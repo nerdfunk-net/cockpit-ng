@@ -54,7 +54,9 @@ async def list_job_runs(
         # Parse comma-separated values into lists
         status_list = status.split(",") if status else None
         job_type_list = job_type.split(",") if job_type else None
-        exclude_job_type_list = exclude_job_type.split(",") if exclude_job_type else None
+        exclude_job_type_list = (
+            exclude_job_type.split(",") if exclude_job_type else None
+        )
         triggered_by_list = triggered_by.split(",") if triggered_by else None
         template_id_list = (
             [int(t) for t in template_id.split(",") if t.isdigit()]

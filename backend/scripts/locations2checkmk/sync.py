@@ -69,9 +69,7 @@ class Locations2CheckMKSyncer:
 
     async def fetch_locations(self) -> List[Dict[str, str]]:
         """Query Nautobot for all locations of the configured type."""
-        query = (
-            '{ locations(location_type: "%s") { id name } }' % self.location_type
-        )
+        query = '{ locations(location_type: "%s") { id name } }' % self.location_type
         result = await self.nautobot.graphql_query(query)
         if "errors" in result:
             raise RuntimeError("GraphQL error: %s" % result["errors"])
@@ -123,9 +121,7 @@ class Locations2CheckMKSyncer:
 
         existing_tags: List[Dict] = existing.get("extensions", {}).get("tags", [])
         existing_ids = {t["id"] for t in existing_tags}
-        print(
-            "Tag group '%s' exists with %d tags" % (self.htg_name, len(existing_ids))
-        )
+        print("Tag group '%s' exists with %d tags" % (self.htg_name, len(existing_ids)))
 
         additions = [
             name for name in location_names if slugify(name) not in existing_ids

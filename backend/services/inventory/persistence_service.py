@@ -267,7 +267,10 @@ class InventoryPersistenceService:
                     "template_name", current["template_name"]
                 ),
                 "scope": inventory_data.get("scope", current["scope"]),
-                "group_path": inventory_data.get("group_path", current.get("group_path")) or None,
+                "group_path": inventory_data.get(
+                    "group_path", current.get("group_path")
+                )
+                or None,
             }
 
             self.repository.update(inventory_id, **update_kwargs)

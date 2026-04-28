@@ -18,7 +18,9 @@ class Inventory(Base):
     scope = Column(
         String(50), nullable=False, default="global"
     )  # 'global' or 'private'
-    group_path = Column(String(1000), nullable=True, default=None)  # e.g. "group_a/sub_b"
+    group_path = Column(
+        String(1000), nullable=True, default=None
+    )  # e.g. "group_a/sub_b"
     created_by = Column(String(255), nullable=False, index=True)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(

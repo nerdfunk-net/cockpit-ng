@@ -23,7 +23,9 @@ async def authenticate(
         if cisco_result:
             return {"device_type": "cisco", **cisco_result}
 
-        linux_result = await SshAuthenticator().authenticate_linux(ip, username, password)
+        linux_result = await SshAuthenticator().authenticate_linux(
+            ip, username, password
+        )
         if linux_result:
             return {"device_type": "linux", **linux_result}
 

@@ -120,7 +120,9 @@ class ScanService:
 
         async def worker(ip: str) -> None:
             async with semaphore:
-                await self._process_ip(job, ip, credentials, parser_templates, alive_ips)
+                await self._process_ip(
+                    job, ip, credentials, parser_templates, alive_ips
+                )
 
         try:
             await asyncio.gather(*[worker(ip) for ip in targets])
@@ -154,9 +156,14 @@ class ScanService:
         for tid in parser_template_ids:
             try:
                 t = template_manager.get_template(tid)
-                if t and t.get("category") == "parser" and t.get("template_type") in (
-                    "textfsm",
-                    "text",
+                if (
+                    t
+                    and t.get("category") == "parser"
+                    and t.get("template_type")
+                    in (
+                        "textfsm",
+                        "text",
+                    )
                 ):
                     content = template_manager.get_template_content(tid)
                     if content:
@@ -172,9 +179,7 @@ class ScanService:
         logger.info("Total parser templates loaded: %s", len(templates))
         return templates
 
-    async def _discover_alive_hosts(
-        self, job: ScanJob, targets: List[str]
-    ) -> Set[str]:
+    async def _discover_alive_hosts(self, job: ScanJob, targets: List[str]) -> Set[str]:
         if job.ping_mode != "fping":
             logger.info("Using individual ping mode for host discovery")
             return set()
@@ -268,9 +273,7 @@ class ScanService:
         job.auth_failed += 1
         job.scanned += 1
 
-    async def _check_liveness(
-        self, job: ScanJob, ip: str, alive_ips: Set[str]
-    ) -> bool:
+    async def _check_liveness(self, job: ScanJob, ip: str, alive_ips: Set[str]) -> bool:
         if job.ping_mode == "fping":
             alive = ip in alive_ips
             if alive:

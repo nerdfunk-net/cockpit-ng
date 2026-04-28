@@ -161,7 +161,7 @@ class InventoryRepository(BaseRepository[Inventory]):
                 .filter(
                     (self.model.group_path == old_path)
                     | self.model.group_path.like(old_path + "/%"),
-                    self.model.is_active == True,
+                    self.model.is_active,
                     (self.model.scope == "global")
                     | (
                         (self.model.scope == "private")
@@ -174,7 +174,7 @@ class InventoryRepository(BaseRepository[Inventory]):
                 if inv.group_path == old_path:
                     inv.group_path = new_path
                 else:
-                    inv.group_path = new_path + inv.group_path[len(old_path):]
+                    inv.group_path = new_path + inv.group_path[len(old_path) :]
             db.commit()
             return len(inventories)
         finally:

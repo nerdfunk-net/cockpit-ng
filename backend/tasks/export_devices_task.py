@@ -3,193 +3,26 @@ Celery task for exporting Nautobot devices to YAML or CSV format.
 Results are stored as files and can be downloaded from the Jobs/View interface.
 """
 
-from celery_app import celery_app
 import asyncio
 import logging
-from typing import Optional, List, Dict, Any
-import yaml
-import csv
-import io
-from datetime import datetime, timezone
 import os
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+from celery_app import celery_app
+
+from tasks.export_devices.filters import filter_device_properties
+from tasks.export_devices.formatters.csv import export_to_csv
+from tasks.export_devices.formatters.yaml import export_to_yaml
+from tasks.export_devices.graphql import build_graphql_query
+
+# Backward-compatible aliases (csv_export_task imports these names)
+_build_graphql_query = build_graphql_query
+_filter_device_properties = filter_device_properties
+_export_to_csv = export_to_csv
+_export_to_yaml = export_to_yaml
 
 logger = logging.getLogger(__name__)
-
-# Valid Nautobot interface types
-VALID_INTERFACE_TYPES = [
-    "virtual",
-    "bridge",
-    "lag",
-    "tunnel",
-    "100base-fx",
-    "100base-lfx",
-    "100base-tx",
-    "100base-t1",
-    "1000base-t",
-    "2.5gbase-t",
-    "5gbase-t",
-    "10gbase-t",
-    "10gbase-cx4",
-    "1000base-x-gbic",
-    "1000base-x-sfp",
-    "10gbase-x-sfpp",
-    "10gbase-x-xfp",
-    "10gbase-x-xenpak",
-    "10gbase-x-x2",
-    "25gbase-x-sfp28",
-    "50gbase-x-sfp56",
-    "40gbase-x-qsfpp",
-    "50gbase-x-sfp28",
-    "100gbase-x-cfp",
-    "100gbase-x-cfp2",
-    "200gbase-x-cfp2",
-    "400gbase-x-cfp2",
-    "100gbase-x-cfp4",
-    "100gbase-x-cpak",
-    "100gbase-x-qsfp28",
-    "100gbase-x-cxp",
-    "100gbase-x-qsfpdd",
-    "100gbase-x-dsfp",
-    "100gbase-x-sfpdd",
-    "200gbase-x-qsfp56",
-    "200gbase-x-qsfpdd",
-    "400gbase-x-qsfp112",
-    "400gbase-x-qsfpdd",
-    "400gbase-x-osfp",
-    "400gbase-x-osfp-rhs",
-    "400gbase-x-cdfp",
-    "400gbase-x-cfp8",
-    "800gbase-x-qsfpdd",
-    "800gbase-x-osfp",
-    "800gbase-x-osfp-xd",
-    "1600gbase-x-osfp",
-    "1600gbase-x-osfp-xd",
-    "1000base-kx",
-    "10gbase-kr",
-    "10gbase-kx4",
-    "25gbase-kr",
-    "40gbase-kr4",
-    "50gbase-kr",
-    "100gbase-kp4",
-    "100gbase-kr2",
-    "100gbase-kr4",
-    "ieee802.11a",
-    "ieee802.11g",
-    "ieee802.11n",
-    "ieee802.11ac",
-    "ieee802.11ad",
-    "ieee802.11ax",
-    "ieee802.11ay",
-    "ieee802.15.1",
-    "other-wireless",
-    "gsm",
-    "cdma",
-    "lte",
-    "sonet-oc3",
-    "sonet-oc12",
-    "sonet-oc48",
-    "sonet-oc192",
-    "sonet-oc768",
-    "sonet-oc1920",
-    "sonet-oc3840",
-    "1gfc-sfp",
-    "2gfc-sfp",
-    "4gfc-sfp",
-    "8gfc-sfpp",
-    "16gfc-sfpp",
-    "32gfc-sfp28",
-    "32gfc-sfpp",
-    "64gfc-qsfpp",
-    "64gfc-sfpdd",
-    "64gfc-sfpp",
-    "128gfc-sfp28",
-    "infiniband-sdr",
-    "infiniband-ddr",
-    "infiniband-qdr",
-    "infiniband-fdr10",
-    "infiniband-fdr",
-    "infiniband-edr",
-    "infiniband-hdr",
-    "infiniband-ndr",
-    "infiniband-xdr",
-    "t1",
-    "e1",
-    "t3",
-    "e3",
-    "da15",
-    "da26",
-    "da31",
-    "db25",
-    "db44",
-    "db60",
-    "dc37",
-    "dc62",
-    "dc79",
-    "dd50",
-    "dd78",
-    "dd100",
-    "de9",
-    "de15",
-    "de19",
-    "df104",
-    "xdsl",
-    "docsis",
-    "gpon",
-    "xg-pon",
-    "xgs-pon",
-    "ng-pon2",
-    "epon",
-    "10g-epon",
-    "cisco-stackwise",
-    "cisco-stackwise-plus",
-    "cisco-flexstack",
-    "cisco-flexstack-plus",
-    "cisco-stackwise-80",
-    "cisco-stackwise-160",
-    "cisco-stackwise-320",
-    "cisco-stackwise-480",
-    "cisco-stackwise-1t",
-    "juniper-vcp",
-    "extreme-summitstack",
-    "extreme-summitstack-128",
-    "extreme-summitstack-256",
-    "extreme-summitstack-512",
-    "other",
-]
-
-
-def normalize_interface_type(interface_type: str) -> str:
-    """
-    Normalize interface type to match Nautobot's valid interface types.
-
-    Handles cases like:
-    - A_1000BASE_T -> 1000base-t
-    - VIRTUAL -> virtual
-    - A_100BASE_TX -> 100base-tx
-
-    Args:
-        interface_type: Raw interface type string (may have prefix, uppercase)
-
-    Returns:
-        Normalized interface type matching Nautobot's list, or "other" if no match
-    """
-    if not interface_type:
-        return "other"
-
-    # Convert to lowercase and replace underscores with dashes for comparison
-    normalized_input = str(interface_type).lower().replace("_", "-")
-
-    # Check if any valid interface type is a substring of the normalized input
-    for valid_type in VALID_INTERFACE_TYPES:
-        if valid_type in normalized_input:
-            logger.debug(
-                "Normalized interface type: %s -> %s", interface_type, valid_type
-            )
-            return valid_type
-
-    # No match found, return "other"
-    logger.warning("Unknown interface type '%s', defaulting to 'other'", interface_type)
-    return "other"
 
 
 @celery_app.task(name="tasks.export_devices", bind=True)
@@ -197,30 +30,17 @@ def export_devices_task(
     self,
     device_ids: List[str],
     properties: List[str],
-    export_format: str = "yaml",  # "yaml" or "csv"
+    export_format: str = "yaml",
     csv_options: Optional[Dict[str, Any]] = None,
 ) -> dict:
     """
-    Task: Export Nautobot device data to YAML or CSV format.
+    Export Nautobot device data to YAML or CSV format.
 
-    This task:
     1. Fetches device data from Nautobot using GraphQL
     2. Filters to selected properties
     3. Exports to specified format (YAML or CSV)
     4. Stores the exported file
     5. Returns file path for download
-
-    Args:
-        device_ids: List of Nautobot device IDs to export
-        properties: List of properties to include in export
-        export_format: Export format ("yaml" or "csv")
-        csv_options: Optional CSV formatting options:
-            - delimiter: Field delimiter (default: ",")
-            - quoteChar: Quote character (default: '"')
-            - includeHeaders: Include header row (default: True)
-
-    Returns:
-        dict: Export results including file path
     """
     try:
         logger.info("=" * 80)
@@ -233,24 +53,14 @@ def export_devices_task(
 
         self.update_state(
             state="PROGRESS",
-            meta={
-                "current": 0,
-                "total": 100,
-                "status": "Initializing export...",
-            },
+            meta={"current": 0, "total": 100, "status": "Initializing export..."},
         )
 
         if not device_ids:
-            return {
-                "success": False,
-                "error": "No devices specified for export",
-            }
+            return {"success": False, "error": "No devices specified for export"}
 
         if not properties:
-            return {
-                "success": False,
-                "error": "No properties specified for export",
-            }
+            return {"success": False, "error": "No properties specified for export"}
 
         # STEP 1: Fetch device data from Nautobot
         logger.info("-" * 80)
@@ -266,17 +76,14 @@ def export_devices_task(
             },
         )
 
-        # Create GraphQL query with requested properties
-        query = _build_graphql_query(properties)
+        query = build_graphql_query(properties)
         logger.info("GraphQL query built with %s properties", len(properties))
 
         import service_factory
 
         nautobot_client = service_factory.build_nautobot_service()
 
-        all_devices = []
-
-        # Fetch devices in batches (GraphQL can handle large queries, but we'll batch for safety)
+        all_devices: List[Dict[str, Any]] = []
         batch_size = 100
         total_batches = (len(device_ids) + batch_size - 1) // batch_size
 
@@ -302,8 +109,6 @@ def export_devices_task(
                 },
             )
 
-            # Execute GraphQL query for this batch
-            # Note: device_ids are UUIDs, so we filter by id, not name
             variables = {"id_filter": batch_device_ids}
             result = asyncio.run(nautobot_client.graphql_query(query, variables))
 
@@ -331,7 +136,6 @@ def export_devices_task(
         logger.info("STEP 2: FILTERING DEVICES BY REQUIREMENTS")
         logger.info("-" * 80)
 
-        # If primary_ip4 is requested, exclude devices without it
         if "primary_ip4" in properties:
             devices_before = len(all_devices)
             all_devices = [
@@ -360,7 +164,7 @@ def export_devices_task(
             },
         )
 
-        filtered_devices = _filter_device_properties(all_devices, properties)
+        filtered_devices = filter_device_properties(all_devices, properties)
         logger.info(
             "✓ Filtered %s devices to %s properties",
             len(filtered_devices),
@@ -381,14 +185,13 @@ def export_devices_task(
             },
         )
 
-        # Normalize export_format by stripping whitespace and underscores
         export_format = export_format.strip().rstrip("_")
 
         if export_format == "yaml":
-            export_content = _export_to_yaml(filtered_devices)
+            export_content = export_to_yaml(filtered_devices)
             file_extension = "yaml"
         elif export_format == "csv":
-            export_content = _export_to_csv(filtered_devices, csv_options or {})
+            export_content = export_to_csv(filtered_devices, csv_options or {})
             file_extension = "csv"
         else:
             return {
@@ -402,23 +205,16 @@ def export_devices_task(
             len(export_content),
         )
 
-        # STEP 4: Save file
+        # STEP 5: Save file
         logger.info("-" * 80)
-        logger.info("STEP 4: SAVING EXPORT FILE")
+        logger.info("STEP 5: SAVING EXPORT FILE")
         logger.info("-" * 80)
 
         self.update_state(
             state="PROGRESS",
-            meta={
-                "current": 90,
-                "total": 100,
-                "status": "Saving export file...",
-            },
+            meta={"current": 90, "total": 100, "status": "Saving export file..."},
         )
 
-        # Create exports directory if it doesn't exist
-        # Use centralized data_directory from config to ensure consistent paths
-        # in both development and production environments
         from config import settings
 
         export_dir = os.path.join(settings.data_directory, "exports")
@@ -430,25 +226,18 @@ def export_devices_task(
             os.path.abspath(export_dir),
         )
 
-        # Generate filename with timestamp
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         filename = f"nautobot_devices_{timestamp}.{file_extension}"
         file_path = os.path.join(export_dir, filename)
 
-        # Write file
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(export_content)
 
         logger.info("✓ File saved: %s", file_path)
 
-        # STEP 5: Complete
         self.update_state(
             state="PROGRESS",
-            meta={
-                "current": 100,
-                "total": 100,
-                "status": "Export completed",
-            },
+            meta={"current": 100, "total": 100, "status": "Export completed"},
         )
 
         logger.info("=" * 80)
@@ -467,7 +256,6 @@ def export_devices_task(
             "file_size_bytes": len(export_content),
         }
 
-        # Update job run status if this task is tracked
         try:
             import job_run_manager
 
@@ -486,12 +274,8 @@ def export_devices_task(
         logger.error("=" * 80)
         logger.error("Exception: %s", e, exc_info=True)
 
-        error_result = {
-            "success": False,
-            "error": str(e),
-        }
+        error_result = {"success": False, "error": str(e)}
 
-        # Update job run status to failed if tracked
         try:
             import job_run_manager
 
@@ -503,590 +287,3 @@ def export_devices_task(
             logger.warning("Failed to update job run status: %s", job_error)
 
         return error_result
-
-
-def _build_graphql_query(properties: List[str]) -> str:
-    """
-    Build GraphQL query based on requested properties.
-
-    This query fetches all device data but EXCLUDES UUIDs (id fields) since they are
-    instance-specific and not portable between Nautobot instances.
-    """
-    # Comprehensive query WITHOUT UUIDs - only portable/meaningful data
-    query = """
-    query Devices($id_filter: [String])
-    {
-      devices(id: $id_filter)
-      {
-        name
-        asset_tag
-        config_context
-        _custom_field_data
-        position
-        face
-        serial
-        local_config_context_data
-        primary_ip4
-        {
-          description
-          ip_version
-          address
-          host
-          mask_length
-          dns_name
-          parent {
-            prefix
-            namespace {
-              name
-            }
-          }
-          status {
-            name
-          }
-          interfaces {
-            name
-          }
-        }
-        role {
-          name
-        }
-        device_type
-        {
-          model
-          manufacturer
-          {
-            name
-          }
-        }
-        platform
-        {
-          name
-          manufacturer {
-            name
-          }
-        }
-        tags
-        {
-          name
-          content_types {
-            app_label
-            model
-          }
-        }
-        tenant
-        {
-            name
-            tenant_group {
-              name
-            }
-        }
-        rack
-        {
-          name
-          rack_group
-          {
-            name
-          }
-        }
-        location
-        {
-          name
-          description
-          location_type
-          {
-            name
-          }
-          parent
-          {
-            name
-            description
-            location_type
-            {
-              name
-            }
-          }
-        }
-        status
-        {
-          name
-        }
-        vrfs
-        {
-          name
-          namespace
-          {
-            name
-          }
-          rd
-          description
-        }
-        interfaces
-        {
-          name
-          description
-          enabled
-          mac_address
-          type
-          mode
-          mtu
-          parent_interface
-          {
-            name
-          }
-          bridged_interfaces
-          {
-            name
-          }
-          status {
-            name
-          }
-          lag {
-            name
-            enabled
-          }
-          member_interfaces {
-            name
-          }
-          vrf
-          {
-            name
-            namespace
-            {
-              name
-            }
-          }
-          ip_addresses {
-            address
-            status {
-              name
-            }
-            role
-            {
-              name
-            }
-            tags {
-              name
-            }
-            parent {
-              network
-              prefix
-              prefix_length
-              namespace {
-                name
-              }
-            }
-          }
-          connected_circuit_termination
-          {
-            circuit
-            {
-              cid
-              commit_rate
-              provider
-              {
-                name
-              }
-            }
-          }
-          tagged_vlans
-          {
-            name
-            vid
-          }
-          untagged_vlan
-          {
-            name
-            vid
-          }
-          cable
-          {
-            termination_a_type
-            status
-            {
-              name
-            }
-            color
-          }
-          tags
-          {
-            name
-            content_types
-            {
-              app_label
-              model
-            }
-          }
-        }
-        parent_bay
-        {
-          name
-        }
-        device_bays
-        {
-          name
-        }
-      }
-    }
-    """
-    return query
-
-
-def _filter_device_properties(
-    devices: List[Dict[str, Any]], properties: List[str]
-) -> List[Dict[str, Any]]:
-    """
-    Filter devices to only include specified properties.
-
-    Args:
-        devices: Full device data from GraphQL
-        properties: List of property names to include
-
-    Returns:
-        List of devices with only requested properties
-    """
-    filtered_devices = []
-
-    for device in devices:
-        filtered_device = {}
-        for prop in properties:
-            if prop == "namespace":
-                # Namespace is nested: primary_ip4 -> parent -> namespace -> name
-                namespace_name = None
-                primary_ip4 = device.get("primary_ip4")
-                if isinstance(primary_ip4, dict):
-                    parent = primary_ip4.get("parent")
-                    if isinstance(parent, dict):
-                        ns = parent.get("namespace")
-                        if isinstance(ns, dict):
-                            namespace_name = ns.get("name")
-                filtered_device["namespace"] = namespace_name
-            elif prop in device:
-                filtered_device[prop] = device[prop]
-            else:
-                # Property might be nested or missing
-                filtered_device[prop] = None
-
-        filtered_devices.append(filtered_device)
-
-    return filtered_devices
-
-
-def _export_to_yaml(devices: List[Dict[str, Any]]) -> str:
-    """
-    Export devices to YAML format.
-
-    Args:
-        devices: List of device dictionaries
-
-    Returns:
-        YAML string
-    """
-    return yaml.dump(
-        devices, default_flow_style=False, allow_unicode=True, sort_keys=False
-    )
-
-
-def _export_to_csv(devices: List[Dict[str, Any]], csv_options: Dict[str, Any]) -> str:
-    """
-    Export devices to import-compatible CSV format.
-
-    This format is compatible with the Nautobot Add Device CSV import feature:
-    - Semicolon-delimited by default (configurable)
-    - One row per interface (devices with multiple interfaces = multiple rows)
-    - Device fields: name, serial, asset_tag, role, status, location, device_type, platform, software_version, tags
-    - Custom fields: prefixed with cf_ (e.g., cf_net)
-    - Interface fields: prefixed with interface_ (e.g., interface_name, interface_ip_address, interface_type)
-    - Nested objects flattened to name-only values
-
-    Args:
-        devices: List of device dictionaries from GraphQL
-        csv_options: CSV formatting options
-            - delimiter: Field delimiter (default: ";")
-            - quoteChar: Quote character (default: '"')
-            - includeHeaders: Include header row (default: True)
-
-    Returns:
-        Import-compatible CSV string
-    """
-    if not devices:
-        return ""
-
-    delimiter = csv_options.get(
-        "delimiter", ";"
-    )  # Default to semicolon for import compatibility
-    quotechar = csv_options.get("quoteChar", '"')
-    include_headers = csv_options.get("includeHeaders", True)
-
-    # Build flattened rows (one per interface)
-    flattened_rows = []
-
-    for device in devices:
-        # Extract device-level fields
-        device_fields = _extract_device_fields(device)
-
-        # Get interfaces
-        interfaces = device.get("interfaces", [])
-
-        if interfaces:
-            # One row per interface
-            for interface in interfaces:
-                row = device_fields.copy()
-                row.update(_extract_interface_fields(interface, device))
-                flattened_rows.append(row)
-        else:
-            # No interfaces - single row with device data only
-            flattened_rows.append(device_fields)
-
-    if not flattened_rows:
-        return ""
-
-    # Determine all unique column names across all rows
-    all_columns = set()
-    for row in flattened_rows:
-        all_columns.update(row.keys())
-
-    # Order columns: device fields first, then interface fields, then custom fields
-    device_cols = [
-        "name",
-        "device_type",
-        "ip_address",
-        "serial",
-        "asset_tag",
-        "role",
-        "status",
-        "location",
-        "platform",
-        "namespace",
-        "software_version",
-        "tags",
-    ]
-    interface_cols = [
-        col for col in sorted(all_columns) if col.startswith("interface_")
-    ]
-    custom_cols = [col for col in sorted(all_columns) if col.startswith("cf_")]
-    other_cols = [
-        col
-        for col in sorted(all_columns)
-        if col not in device_cols
-        and col not in interface_cols
-        and col not in custom_cols
-    ]
-
-    # Final column order
-    ordered_columns = []
-    for col in device_cols:
-        if col in all_columns:
-            ordered_columns.append(col)
-    ordered_columns.extend(interface_cols)
-    ordered_columns.extend(custom_cols)
-    ordered_columns.extend(other_cols)
-
-    # Create CSV in memory
-    output = io.StringIO()
-    writer = csv.DictWriter(
-        output,
-        fieldnames=ordered_columns,
-        delimiter=delimiter,
-        quotechar=quotechar,
-        quoting=csv.QUOTE_MINIMAL,
-        extrasaction="ignore",
-    )
-
-    if include_headers:
-        writer.writeheader()
-
-    # Write rows
-    for row in flattened_rows:
-        # Fill in missing columns with empty strings
-        complete_row = {col: row.get(col, "") for col in ordered_columns}
-        writer.writerow(complete_row)
-
-    csv_content = output.getvalue()
-    output.close()
-
-    return csv_content
-
-
-def _extract_device_fields(device: Dict[str, Any]) -> Dict[str, str]:
-    """
-    Extract and flatten device-level fields for CSV export.
-
-    Returns a dict with import-compatible field names and string values.
-    """
-    fields = {}
-
-    # Direct string/number fields
-    if device.get("name"):
-        fields["name"] = str(device["name"])
-
-    if device.get("serial"):
-        fields["serial"] = str(device["serial"])
-
-    if device.get("asset_tag"):
-        fields["asset_tag"] = str(device["asset_tag"])
-
-    if device.get("software_version"):
-        fields["software_version"] = str(device["software_version"])
-
-    # Nested object fields - extract name only
-    if device.get("role") and isinstance(device["role"], dict):
-        fields["role"] = str(device["role"].get("name", ""))
-    elif device.get("role"):
-        fields["role"] = str(device["role"])
-
-    if device.get("status") and isinstance(device["status"], dict):
-        fields["status"] = str(device["status"].get("name", ""))
-    elif device.get("status"):
-        fields["status"] = str(device["status"])
-
-    if device.get("location") and isinstance(device["location"], dict):
-        fields["location"] = str(device["location"].get("name", ""))
-    elif device.get("location"):
-        fields["location"] = str(device["location"])
-
-    if device.get("device_type") and isinstance(device["device_type"], dict):
-        fields["device_type"] = str(device["device_type"].get("model", ""))
-    elif device.get("device_type"):
-        fields["device_type"] = str(device["device_type"])
-
-    if device.get("platform") and isinstance(device["platform"], dict):
-        fields["platform"] = str(device["platform"].get("name", ""))
-    elif device.get("platform"):
-        fields["platform"] = str(device["platform"])
-
-    # Tags - comma-separated list of tag names
-    if device.get("tags") and isinstance(device["tags"], list):
-        tag_names = [
-            tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag)
-            for tag in device["tags"]
-        ]
-        if tag_names:
-            fields["tags"] = ",".join(tag_names)
-
-    # Primary IPv4 address - extract address from primary_ip4 object
-    if device.get("primary_ip4") and isinstance(device["primary_ip4"], dict):
-        primary_addr = device["primary_ip4"].get("address")
-        if primary_addr:
-            fields["ip_address"] = str(primary_addr)
-
-        # Extract namespace from primary IP's parent prefix
-        if device["primary_ip4"].get("parent") and isinstance(
-            device["primary_ip4"]["parent"], dict
-        ):
-            parent = device["primary_ip4"]["parent"]
-            if parent.get("namespace") and isinstance(parent["namespace"], dict):
-                namespace_name = parent["namespace"].get("name")
-                if namespace_name:
-                    fields["namespace"] = str(namespace_name)
-
-    # Custom fields - prefix with cf_
-    if device.get("_custom_field_data") and isinstance(
-        device["_custom_field_data"], dict
-    ):
-        for cf_key, cf_value in device["_custom_field_data"].items():
-            if cf_value is not None:
-                fields[f"cf_{cf_key}"] = str(cf_value)
-
-    return fields
-
-
-def _extract_interface_fields(
-    interface: Dict[str, Any], device: Dict[str, Any]
-) -> Dict[str, str]:
-    """
-    Extract and flatten interface-level fields for CSV export.
-
-    All interface fields are prefixed with 'interface_' for import compatibility.
-    Returns a dict with import-compatible field names and string values.
-    """
-    fields = {}
-
-    # Interface name (required)
-    if interface.get("name"):
-        fields["interface_name"] = str(interface["name"])
-
-    # Interface type (required) - normalize to match Nautobot's valid types
-    if interface.get("type"):
-        raw_type = str(interface["type"])
-        fields["interface_type"] = normalize_interface_type(raw_type)
-
-    # Interface status
-    if interface.get("status") and isinstance(interface["status"], dict):
-        fields["interface_status"] = str(interface["status"].get("name", ""))
-    elif interface.get("status"):
-        fields["interface_status"] = str(interface["status"])
-
-    # Interface description
-    if interface.get("description"):
-        fields["interface_description"] = str(interface["description"])
-
-    # MAC address
-    if interface.get("mac_address"):
-        fields["interface_mac_address"] = str(interface["mac_address"])
-
-    # MTU
-    if interface.get("mtu"):
-        fields["interface_mtu"] = str(interface["mtu"])
-
-    # Mode
-    if interface.get("mode"):
-        fields["interface_mode"] = str(interface["mode"])
-
-    # Enabled
-    if interface.get("enabled") is not None:
-        fields["interface_enabled"] = str(interface["enabled"]).lower()
-
-    # IP addresses - find the first one and check if it's primary
-    if (
-        interface.get("ip_addresses")
-        and isinstance(interface["ip_addresses"], list)
-        and len(interface["ip_addresses"]) > 0
-    ):
-        first_ip = interface["ip_addresses"][0]
-        if first_ip.get("address"):
-            fields["interface_ip_address"] = str(first_ip["address"])
-
-            # Check if this IP matches the device's primary_ip4
-            if device.get("primary_ip4") and isinstance(device["primary_ip4"], dict):
-                primary_addr = device["primary_ip4"].get("address")
-                if primary_addr == first_ip.get("address"):
-                    fields["set_primary_ipv4"] = "true"
-                else:
-                    fields["set_primary_ipv4"] = "false"
-
-    # Parent interface
-    if interface.get("parent_interface") and isinstance(
-        interface["parent_interface"], dict
-    ):
-        fields["interface_parent_interface"] = str(
-            interface["parent_interface"].get("name", "")
-        )
-
-    # LAG
-    if interface.get("lag") and isinstance(interface["lag"], dict):
-        fields["interface_lag"] = str(interface["lag"].get("name", ""))
-
-    # VLANs
-    if interface.get("untagged_vlan") and isinstance(interface["untagged_vlan"], dict):
-        fields["interface_untagged_vlan"] = str(
-            interface["untagged_vlan"].get("name", "")
-        )
-
-    if interface.get("tagged_vlans") and isinstance(interface["tagged_vlans"], list):
-        vlan_names = [
-            vlan.get("name", str(vlan)) if isinstance(vlan, dict) else str(vlan)
-            for vlan in interface["tagged_vlans"]
-        ]
-        if vlan_names:
-            fields["interface_tagged_vlans"] = ",".join(vlan_names)
-
-    # Interface tags
-    if interface.get("tags") and isinstance(interface["tags"], list):
-        tag_names = [
-            tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag)
-            for tag in interface["tags"]
-        ]
-        if tag_names:
-            fields["interface_tags"] = ",".join(tag_names)
-
-    return fields

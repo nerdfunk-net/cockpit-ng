@@ -6,7 +6,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from services.checkmk.client import CheckMKClient
 from urllib.parse import urlparse
 
 from services.checkmk.exceptions import CheckMKClientError
@@ -74,7 +77,7 @@ def slash_to_tilde(path: str) -> str:
 
 class CheckMKClientFactory:
     @staticmethod
-    def build_client(config: CheckMKConfig) -> "CheckMKClient":
+    def build_client(config: CheckMKConfig) -> CheckMKClient:
         from services.checkmk.client import CheckMKClient
 
         return CheckMKClient(
@@ -88,6 +91,6 @@ class CheckMKClientFactory:
         )
 
     @staticmethod
-    def build_client_from_settings(site_name: Optional[str] = None) -> "CheckMKClient":
+    def build_client_from_settings(site_name: Optional[str] = None) -> CheckMKClient:
         config = get_checkmk_config(site_name=site_name)
         return CheckMKClientFactory.build_client(config)

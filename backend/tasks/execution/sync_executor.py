@@ -88,8 +88,12 @@ def execute_sync_devices(
             }
 
         # Apply compare-run filtering if enabled
-        use_last_compare_run = template.get("use_last_compare_run", True) if template else True
-        sync_not_found_devices = template.get("sync_not_found_devices", False) if template else False
+        use_last_compare_run = (
+            template.get("use_last_compare_run", True) if template else True
+        )
+        sync_not_found_devices = (
+            template.get("sync_not_found_devices", False) if template else False
+        )
 
         original_count = len(device_ids)
         if use_last_compare_run:
@@ -98,7 +102,10 @@ def execute_sync_devices(
                 device_ids, sync_not_found_devices, task_context
             )
         else:
-            logger.info("Use Last Compare Run is disabled — syncing all %s devices", original_count)
+            logger.info(
+                "Use Last Compare Run is disabled — syncing all %s devices",
+                original_count,
+            )
 
         skipped_count = original_count - len(device_ids)
 
@@ -139,10 +146,14 @@ def execute_sync_devices(
 
                 # Check if device has a primary IPv4 address before syncing.
                 # Devices without an IP address cannot be monitored by CheckMK.
-                normalized_data = asyncio.run(nb2cmk_service.get_device_normalized(device_id))
+                normalized_data = asyncio.run(
+                    nb2cmk_service.get_device_normalized(device_id)
+                )
                 ip_address = normalized_data.get("attributes", {}).get("ipaddress", "")
                 if not ip_address:
-                    hostname = normalized_data.get("internal", {}).get("hostname", device_id)
+                    hostname = normalized_data.get("internal", {}).get(
+                        "hostname", device_id
+                    )
                     logger.info(
                         "Skipping device %s (%s): no primary IPv4 address configured",
                         device_id,

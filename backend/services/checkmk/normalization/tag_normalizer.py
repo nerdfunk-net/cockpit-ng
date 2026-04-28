@@ -189,7 +189,9 @@ class TagNormalizer:
                                     )
                                     if not attr_value:
                                         attr_value = (
-                                            _resolve_plain_field(device_data, field_path)
+                                            _resolve_plain_field(
+                                                device_data, field_path
+                                            )
                                             or None
                                         )
                                         logger.info(

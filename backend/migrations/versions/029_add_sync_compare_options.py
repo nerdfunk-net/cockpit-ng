@@ -21,7 +21,9 @@ class Migration(BaseMigration):
         return "Add use_last_compare_run and sync_not_found_devices columns to job_templates for compare-run-based sync filtering"
 
     def upgrade(self) -> dict:
-        self.log_info("Adding use_last_compare_run and sync_not_found_devices columns to job_templates...")
+        self.log_info(
+            "Adding use_last_compare_run and sync_not_found_devices columns to job_templates..."
+        )
 
         columns_added = 0
 
@@ -88,7 +90,9 @@ class Migration(BaseMigration):
             raise
 
     def downgrade(self) -> dict:
-        self.log_info("Removing use_last_compare_run and sync_not_found_devices columns from job_templates...")
+        self.log_info(
+            "Removing use_last_compare_run and sync_not_found_devices columns from job_templates..."
+        )
 
         columns_removed = 0
 

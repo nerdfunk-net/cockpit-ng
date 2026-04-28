@@ -31,6 +31,11 @@ from .exceptions import (
     handle_already_exists_error,
 )
 
+from .interface_types import (
+    VALID_INTERFACE_TYPES,
+    normalize_interface_type,
+)
+
 __all__ = [
     # Validators
     "is_valid_uuid",
@@ -52,4 +57,7 @@ __all__ = [
     "NautobotAPIError",
     "is_duplicate_error",
     "handle_already_exists_error",
+    # Interface types
+    "VALID_INTERFACE_TYPES",
+    "normalize_interface_type",
 ]

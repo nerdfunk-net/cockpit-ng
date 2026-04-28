@@ -8,8 +8,6 @@ splitting them into separate devices, and building Virtual Chassis groups.
 from __future__ import annotations
 
 import logging
-import re
-from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -19,7 +17,6 @@ from core.auth import require_permission
 from dependencies import get_nautobot_service
 from models.nautobot import AddDeviceRequest
 from services.nautobot.client import NautobotService
-from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.devices.creation import DeviceCreationService
 from services.nautobot.devices.update import DeviceUpdateService
 
@@ -366,9 +363,7 @@ async def process_stacks(
                     logger.info("Created device %s (serial: %s)", new_name, serial)
                 else:
                     step = response.get("workflow_status", {}).get("step1_device", {})
-                    error_message = (
-                        f"Failed to create {new_name}: {step.get('message', 'unknown error')}"
-                    )
+                    error_message = f"Failed to create {new_name}: {step.get('message', 'unknown error')}"
                     logger.error(error_message)
             except Exception as exc:
                 error_message = f"Failed to create {new_name}: {exc}"
@@ -408,7 +403,9 @@ async def process_stacks(
             if fetched:
                 all_members.append(fetched[0])
             else:
-                logger.warning("Could not find device by name '%s' after creation", name)
+                logger.warning(
+                    "Could not find device by name '%s' after creation", name
+                )
 
         if not all_members:
             results.append(
@@ -474,9 +471,7 @@ async def process_stacks(
                 )
             )
         except Exception as exc:
-            logger.error(
-                "Error building Virtual Chassis for '%s': %s", canon_name, exc
-            )
+            logger.error("Error building Virtual Chassis for '%s': %s", canon_name, exc)
             results.append(
                 DeviceResult(
                     device_id=device_id,

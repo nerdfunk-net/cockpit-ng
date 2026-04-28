@@ -18,7 +18,9 @@ class Migration(BaseMigration):
 
     @property
     def description(self) -> str:
-        return "Add group_path column to inventories for slash-separated group hierarchy"
+        return (
+            "Add group_path column to inventories for slash-separated group hierarchy"
+        )
 
     def upgrade(self) -> dict:
         self.log_info("Adding group_path column to inventories...")
@@ -107,9 +109,7 @@ class Migration(BaseMigration):
                     )
                 )
                 if result.fetchone() is not None:
-                    conn.execute(
-                        text("ALTER TABLE inventories DROP COLUMN group_path")
-                    )
+                    conn.execute(text("ALTER TABLE inventories DROP COLUMN group_path"))
                     columns_removed += 1
                     self.log_info("✓ group_path column removed successfully")
                 else:

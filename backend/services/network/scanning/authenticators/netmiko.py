@@ -87,7 +87,9 @@ class NetmikoAuthenticator:
         try:
             if device_type.startswith("linux"):
                 return self._detect_linux(connection, ip)
-            return self._detect_network_device(connection, ip, device_type, debug_enabled)
+            return self._detect_network_device(
+                connection, ip, device_type, debug_enabled
+            )
         finally:
             try:
                 connection.disconnect()
