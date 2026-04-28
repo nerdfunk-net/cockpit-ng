@@ -7,6 +7,7 @@ import logging
 from typing import Dict, Any
 
 from models.nb2cmk import DeviceExtensions
+from utils.cmk_folder_utils import _resolve_location_type_filter, _resolve_plain_field
 
 if TYPE_CHECKING:
     from .field_normalizer import FieldNormalizer
@@ -175,10 +176,47 @@ class TagNormalizer:
 
                 for nautobot_attr, host_tag_group_name in attr2htg_config.items():
                     try:
-                        # Use existing extract_field_value to handle dot notation
-                        attr_value = self.field_normalizer.extract_field_value(
-                            device_data, nautobot_attr
-                        )
+                        if "__" in nautobot_attr:
+                            field_path, modifier = nautobot_attr.split("__", 1)
+                            field_path = field_path.strip()
+                            if "=" in modifier:
+                                filter_method, filter_value = modifier.split("=", 1)
+                                filter_method = filter_method.strip()
+                                filter_value = filter_value.strip()
+                                if filter_method == "location_type":
+                                    attr_value = _resolve_location_type_filter(
+                                        device_data, field_path, filter_value
+                                    )
+                                    if not attr_value:
+                                        attr_value = (
+                                            _resolve_plain_field(device_data, field_path)
+                                            or None
+                                        )
+                                        logger.info(
+                                            "attr2htg '%s': location_type filter '%s' found no match, "
+                                            "falling back to base field '%s': %s",
+                                            nautobot_attr,
+                                            filter_value,
+                                            field_path,
+                                            attr_value,
+                                        )
+                                else:
+                                    logger.warning(
+                                        "Unsupported filter method '%s' in attr2htg key '%s', skipping",
+                                        filter_method,
+                                        nautobot_attr,
+                                    )
+                                    continue
+                            else:
+                                logger.warning(
+                                    "Invalid modifier format in attr2htg key '%s' (expected 'method=value'), skipping",
+                                    nautobot_attr,
+                                )
+                                continue
+                        else:
+                            attr_value = self.field_normalizer.extract_field_value(
+                                device_data, nautobot_attr
+                            )
 
                         if attr_value is not None and attr_value != "":
                             # Handle nested objects (extract name if it's a dict)

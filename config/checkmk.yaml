@@ -35,6 +35,7 @@ attr2htg:
   # use attr2htg to map nautobot attributes like status to checkmk host tag groups
   # name_of_nautboot_attr: name_of_checkmk_host_tag_group
   status.name: status
+  location.parent.name__location_type=City: location
 
 cf2htg:
   # use cf2htg to map custom fields to checkmk host tag groups
@@ -65,9 +66,9 @@ mapping:
   # the value is the name in checkmk
   # Look at the custom host attributes in checkmk to add additional checkmk attributes
   name: alias
-  #location.name: location
-  location.name__location_type=City: location
-  location.parent.name__location_type=City: city
+  # location.name: location
+  # location.name__location_type=City: location
+  # location.parent.name__location_type=City: city
   _custom_field_data.free_textfield: textfeld
 
 compare:
