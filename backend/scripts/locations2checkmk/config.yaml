@@ -1,3 +1,5 @@
 ---
-location_type: City
 nautobot_htg: location
+nautobot_filter: "location_type=Room"
+checkmk_id: "{location.name}"
+value: "{location.name} {location.name | location_type:City}"
