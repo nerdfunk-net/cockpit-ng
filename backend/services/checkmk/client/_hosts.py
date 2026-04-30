@@ -68,7 +68,7 @@ class _HostsMixin:
             params=params,
             json_data=json_data,
         )
-        return self._handle_response(response)
+        return self._handle_response(response, request_body=json_data)
 
     def update_host(self, hostname: str, attributes: Dict, etag: str = None) -> Dict:
         if etag is None:
@@ -79,7 +79,7 @@ class _HostsMixin:
         response = self._make_request(
             "PUT", f"objects/host_config/{hostname}", json_data=json_data, etag=etag
         )
-        return self._handle_response(response)
+        return self._handle_response(response, request_body=json_data)
 
     def delete_host(self, hostname: str) -> bool:
         response = self._make_request("DELETE", f"objects/host_config/{hostname}")

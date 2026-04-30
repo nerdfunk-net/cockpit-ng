@@ -10,6 +10,21 @@ from services.checkmk.exceptions import CheckMKAPIError
 logger = logging.getLogger(__name__)
 
 
+def _extract_validation_errors(error_data: dict) -> List[str]:
+    """Return concise per-field messages from a CheckMK 400 attributes error."""
+    messages = []
+    attributes = error_data.get("fields", {}).get("attributes", {})
+    for field, errors in attributes.items():
+        if isinstance(errors, list):
+            specific = [e for e in errors if e.startswith("Invalid value for")]
+            chosen = specific[0] if specific else (errors[0] if errors else "")
+            if chosen:
+                messages.append(f"{field}: {chosen}")
+        elif isinstance(errors, str):
+            messages.append(f"{field}: {errors}")
+    return messages
+
+
 class _CheckMKBase:
     def __init__(
         self,
@@ -88,13 +103,23 @@ class _CheckMKBase:
                         "Response Text (first 500 chars): %s", response.text[:500]
                     )
 
+            if response.status_code >= 400 and json_data:
+                self.logger.error(
+                    "Request sent to CheckMK (%s %s):\n%s",
+                    method,
+                    url,
+                    json.dumps(json_data, indent=2, default=str),
+                )
+
             return response
 
         except requests.exceptions.RequestException as e:
             self.logger.error("Request exception: %s", str(e))
             raise CheckMKAPIError(f"Request failed: {str(e)}")
 
-    def _handle_response(self, response: requests.Response) -> Dict:
+    def _handle_response(
+        self, response: requests.Response, request_body: Dict = None
+    ) -> Dict:
         try:
             if response.status_code in [200, 201, 204]:
                 if response.content:
@@ -112,6 +137,17 @@ class _CheckMKBase:
                 self.logger.error("Status Code: %s", response.status_code)
                 self.logger.error("Response Text: %s", response.text[:500])
                 self.logger.error("Error Data: %s", error_data)
+
+                validation_errors = _extract_validation_errors(error_data)
+                if validation_errors:
+                    self.logger.error(
+                        "Validation errors:\n%s",
+                        "\n".join(f"  - {e}" for e in validation_errors),
+                    )
+                    error_data["validation_summary"] = validation_errors
+
+                if request_body:
+                    error_data["request"] = request_body
 
                 error_msg = f"API request failed: {response.status_code}"
                 if error_data:

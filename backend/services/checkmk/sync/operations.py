@@ -171,6 +171,10 @@ class DeviceSyncOperations:
                         error_detail["fields"] = e.response_data["fields"]
                     if "title" in e.response_data:
                         error_detail["title"] = e.response_data["title"]
+                    if "validation_summary" in e.response_data:
+                        error_detail["validation_summary"] = e.response_data["validation_summary"]
+                    if "request" in e.response_data:
+                        error_detail["request"] = e.response_data["request"]
 
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -344,6 +348,10 @@ class DeviceSyncOperations:
                         error_detail["fields"] = e.response_data["fields"]
                     if "title" in e.response_data:
                         error_detail["title"] = e.response_data["title"]
+                    if "validation_summary" in e.response_data:
+                        error_detail["validation_summary"] = e.response_data["validation_summary"]
+                    if "request" in e.response_data:
+                        error_detail["request"] = e.response_data["request"]
 
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

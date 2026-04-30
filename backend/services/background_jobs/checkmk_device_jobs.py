@@ -404,6 +404,10 @@ def sync_devices_to_checkmk_task(
                             error_info["fields"] = cmk_error.response_data["fields"]
                         if "title" in cmk_error.response_data:
                             error_info["title"] = cmk_error.response_data["title"]
+                        if "validation_summary" in cmk_error.response_data:
+                            error_info["validation_summary"] = cmk_error.response_data["validation_summary"]
+                        if "request" in cmk_error.response_data:
+                            error_info["request"] = cmk_error.response_data["request"]
 
                         # Keep as dict - will be properly serialized when results are returned
                         error_detail = error_info
@@ -445,6 +449,18 @@ def sync_devices_to_checkmk_task(
                 else:
                     # Generic exception - keep as string
                     error_detail = str(e)
+
+                if (
+                    isinstance(error_detail, dict)
+                    and "validation_summary" in error_detail
+                ):
+                    logger.error(
+                        "Attribute validation errors for device %s:\n%s",
+                        device_name,
+                        "\n".join(
+                            f"  - {msg}" for msg in error_detail["validation_summary"]
+                        ),
+                    )
 
                 # Store failure result in database with detailed error
                 # Convert to JSON string for database storage
