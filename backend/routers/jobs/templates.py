@@ -15,6 +15,7 @@ from models.job_templates import (
     JobTemplateListResponse,
 )
 import logging
+from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +122,21 @@ async def create_job_template(
             if template_data.collect_hostname is not None
             else True,
             is_global=template_data.is_global,
+        )
+
+        audit_log_repo.create_log(
+            username=current_user.get("username"),
+            user_id=current_user.get("user_id"),
+            event_type="job-template-created",
+            message=f"Job template '{template_data.name}' created",
+            resource_type="job_template",
+            resource_id=str(template.get("id")) if template else None,
+            resource_name=template_data.name,
+            severity="info",
+            extra_data={
+                "job_type": template_data.job_type,
+                "is_global": template_data.is_global,
+            },
         )
 
         return JobTemplateResponse(**template)
@@ -315,6 +331,21 @@ async def update_job_template(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
             )
 
+        audit_log_repo.create_log(
+            username=current_user.get("username"),
+            user_id=current_user.get("user_id"),
+            event_type="job-template-updated",
+            message=f"Job template '{updated_template.get('name')}' updated",
+            resource_type="job_template",
+            resource_id=str(template_id),
+            resource_name=updated_template.get("name"),
+            severity="info",
+            extra_data={
+                "job_type": updated_template.get("job_type"),
+                "is_global": updated_template.get("is_global"),
+            },
+        )
+
         return JobTemplateResponse(**updated_template)
 
     except ValueError as e:
@@ -365,6 +396,21 @@ async def delete_job_template(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
             )
+
+        audit_log_repo.create_log(
+            username=current_user.get("username"),
+            user_id=current_user.get("user_id"),
+            event_type="job-template-deleted",
+            message=f"Job template '{template.get('name')}' deleted",
+            resource_type="job_template",
+            resource_id=str(template_id),
+            resource_name=template.get("name"),
+            severity="info",
+            extra_data={
+                "job_type": template.get("job_type"),
+                "is_global": template.get("is_global"),
+            },
+        )
 
         return {"message": "Job template deleted successfully"}
 

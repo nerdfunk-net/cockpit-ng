@@ -172,7 +172,9 @@ class DeviceSyncOperations:
                     if "title" in e.response_data:
                         error_detail["title"] = e.response_data["title"]
                     if "validation_summary" in e.response_data:
-                        error_detail["validation_summary"] = e.response_data["validation_summary"]
+                        error_detail["validation_summary"] = e.response_data[
+                            "validation_summary"
+                        ]
                     if "request" in e.response_data:
                         error_detail["request"] = e.response_data["request"]
 
@@ -349,7 +351,9 @@ class DeviceSyncOperations:
                     if "title" in e.response_data:
                         error_detail["title"] = e.response_data["title"]
                     if "validation_summary" in e.response_data:
-                        error_detail["validation_summary"] = e.response_data["validation_summary"]
+                        error_detail["validation_summary"] = e.response_data[
+                            "validation_summary"
+                        ]
                     if "request" in e.response_data:
                         error_detail["request"] = e.response_data["request"]
 

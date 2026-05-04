@@ -15,6 +15,7 @@ from models.jobs import (
     JobExecutionRequest,
 )
 import logging
+from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,22 @@ async def create_job_schedule(
             user_id=job_data.user_id,
             credential_id=job_data.credential_id,
             job_parameters=job_data.job_parameters,
+        )
+
+        audit_log_repo.create_log(
+            username=current_user.get("username"),
+            user_id=current_user.get("user_id"),
+            event_type="job-schedule-created",
+            message=f"Job schedule '{job_data.job_identifier}' created for template ID {job_data.job_template_id}",
+            resource_type="job_schedule",
+            resource_id=str(job_schedule.get("id")) if job_schedule else None,
+            resource_name=job_data.job_identifier,
+            severity="info",
+            extra_data={
+                "job_template_id": job_data.job_template_id,
+                "schedule_type": job_data.schedule_type,
+                "is_global": job_data.is_global,
+            },
         )
 
         return JobScheduleResponse(**job_schedule)
@@ -243,6 +260,22 @@ async def delete_job_schedule(job_id: int, current_user: dict = Depends(verify_t
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to delete job schedule",
             )
+
+        audit_log_repo.create_log(
+            username=current_user.get("username"),
+            user_id=current_user.get("user_id"),
+            event_type="job-schedule-deleted",
+            message=f"Job schedule '{job.get('job_identifier')}' deleted",
+            resource_type="job_schedule",
+            resource_id=str(job_id),
+            resource_name=job.get("job_identifier"),
+            severity="info",
+            extra_data={
+                "job_template_id": job.get("job_template_id"),
+                "schedule_type": job.get("schedule_type"),
+                "is_global": job.get("is_global"),
+            },
+        )
 
         return {"message": "Job schedule deleted successfully"}
 

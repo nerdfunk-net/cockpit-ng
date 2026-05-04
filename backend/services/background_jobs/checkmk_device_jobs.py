@@ -405,7 +405,9 @@ def sync_devices_to_checkmk_task(
                         if "title" in cmk_error.response_data:
                             error_info["title"] = cmk_error.response_data["title"]
                         if "validation_summary" in cmk_error.response_data:
-                            error_info["validation_summary"] = cmk_error.response_data["validation_summary"]
+                            error_info["validation_summary"] = cmk_error.response_data[
+                                "validation_summary"
+                            ]
                         if "request" in cmk_error.response_data:
                             error_info["request"] = cmk_error.response_data["request"]
 

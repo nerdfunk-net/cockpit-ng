@@ -103,7 +103,7 @@ class Locations2CheckMKSyncer:
 
     @staticmethod
     def _build_locations_map(
-        all_locations: List[Dict[str, Any]]
+        all_locations: List[Dict[str, Any]],
     ) -> Dict[str, Dict[str, Any]]:
         """Build an id→location dict for O(1) hierarchy traversal."""
         return {loc["id"]: loc for loc in all_locations}
@@ -132,7 +132,8 @@ class Locations2CheckMKSyncer:
         if "location_type" in filter_dict:
             target = filter_dict["location_type"].lower()
             result = [
-                loc for loc in result
+                loc
+                for loc in result
                 if (loc.get("location_type") or {}).get("name", "").lower() == target
             ]
         return result
@@ -195,9 +196,7 @@ class Locations2CheckMKSyncer:
                 continue
 
             if checkmk_id_template:
-                tag_id = slugify(
-                    parse_folder_value(checkmk_id_template, ctx).strip()
-                )
+                tag_id = slugify(parse_folder_value(checkmk_id_template, ctx).strip())
             else:
                 tag_id = slugify(title)
 
@@ -244,7 +243,8 @@ class Locations2CheckMKSyncer:
             )
         elif self.location_type:
             target_locations = [
-                loc for loc in all_locations
+                loc
+                for loc in all_locations
                 if (loc.get("location_type") or {}).get("name", "").lower()
                 == self.location_type.lower()
             ]
@@ -254,14 +254,18 @@ class Locations2CheckMKSyncer:
             )
         else:
             target_locations = all_locations
-            print("No filter configured — syncing all %d locations" % len(all_locations))
+            print(
+                "No filter configured — syncing all %d locations" % len(all_locations)
+            )
 
         existing = self._get_existing_tag_group()
 
         if existing is None:
             print("Tag group '%s' not found — will create" % self.htg_name)
             new_tags = self._resolve_tag_entries(
-                target_locations, self.value_template, locations_map,
+                target_locations,
+                self.value_template,
+                locations_map,
                 self.checkmk_id_template,
             )
             for tag in new_tags:
@@ -280,7 +284,9 @@ class Locations2CheckMKSyncer:
         print("Tag group '%s' exists with %d tags" % (self.htg_name, len(existing_ids)))
 
         all_new_tags = self._resolve_tag_entries(
-            target_locations, self.value_template, locations_map,
+            target_locations,
+            self.value_template,
+            locations_map,
             self.checkmk_id_template,
         )
         additions = [tag for tag in all_new_tags if tag["id"] not in existing_ids]
