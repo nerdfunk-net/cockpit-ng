@@ -1,9 +1,5 @@
-"""
-Application settings services.
+"""Application settings services."""
 
-This package contains services for:
-- Cache management
-- Git repository operations
-"""
+from services.settings.manager import SettingsManager
 
-__all__ = []
+__all__ = ["SettingsManager"]
