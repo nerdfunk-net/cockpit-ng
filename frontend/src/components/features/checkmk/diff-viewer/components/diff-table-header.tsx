@@ -19,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu'
-import type { SystemFilter } from '../types'
+import type { IpAddressFilter, SystemFilter } from '../types'
 
 interface DiffTableHeaderProps {
   deviceNameFilter: string
@@ -27,6 +27,7 @@ interface DiffTableHeaderProps {
   selectedLocation: string
   statusFilter: string
   systemFilter: SystemFilter
+  ipAddressFilter: IpAddressFilter
   diffStatusFilters: Record<string, boolean>
   filterOptions: {
     roles: Set<string>
@@ -41,6 +42,7 @@ interface DiffTableHeaderProps {
   onLocationChange: (value: string) => void
   onStatusFilterChange: (value: string) => void
   onSystemFilterChange: (value: SystemFilter) => void
+  onIpAddressFilterChange: (value: IpAddressFilter) => void
   onDiffStatusFiltersChange: (value: Record<string, boolean>) => void
 }
 
@@ -50,6 +52,7 @@ export function DiffTableHeader({
   selectedLocation,
   statusFilter,
   systemFilter,
+  ipAddressFilter,
   diffStatusFilters,
   filterOptions,
   isAllSelected,
@@ -60,6 +63,7 @@ export function DiffTableHeader({
   onLocationChange,
   onStatusFilterChange,
   onSystemFilterChange,
+  onIpAddressFilterChange,
   onDiffStatusFiltersChange,
 }: DiffTableHeaderProps) {
   return (
@@ -86,7 +90,16 @@ export function DiffTableHeader({
         <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>IP Address</div>
-            <div className="h-8" />
+            <Select value={ipAddressFilter} onValueChange={(v) => onIpAddressFilterChange(v as IpAddressFilter)}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Show All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Show All</SelectItem>
+                <SelectItem value="has_ip">Has IP Address</SelectItem>
+                <SelectItem value="no_ip">Has No IP Address</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </th>
         <th className="px-4 py-3 w-40 text-left text-xs font-medium text-gray-600 uppercase">

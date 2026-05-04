@@ -111,6 +111,8 @@ export default function DiffViewerPage() {
     setStatusFilter,
     systemFilter,
     setSystemFilter,
+    ipAddressFilter,
+    setIpAddressFilter,
     diffStatusFilters,
     setDiffStatusFilters,
     filterOptions,
@@ -295,6 +297,7 @@ export default function DiffViewerPage() {
         selectedLocation={selectedLocation}
         statusFilter={statusFilter}
         systemFilter={systemFilter}
+        ipAddressFilter={ipAddressFilter}
         diffStatusFilters={diffStatusFilters}
         filterOptions={filterOptions}
         totalBoth={totalBoth}
@@ -312,6 +315,7 @@ export default function DiffViewerPage() {
         onLocationChange={setSelectedLocation}
         onStatusFilterChange={setStatusFilter}
         onSystemFilterChange={setSystemFilter}
+        onIpAddressFilterChange={setIpAddressFilter}
         onDiffStatusFiltersChange={setDiffStatusFilters}
         onResetFilters={resetFilters}
         onGetDiff={handleGetDiff}

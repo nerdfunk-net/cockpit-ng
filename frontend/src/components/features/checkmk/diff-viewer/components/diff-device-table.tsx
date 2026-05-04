@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select'
 import { DiffTableHeader } from './diff-table-header'
 import { DiffTableRow } from './diff-table-row'
-import type { DiffDevice, SystemFilter, ViewMode } from '../types'
+import type { DiffDevice, IpAddressFilter, SystemFilter, ViewMode } from '../types'
 
 interface DiffDeviceTableProps {
   devices: DiffDevice[]
@@ -21,6 +21,7 @@ interface DiffDeviceTableProps {
   selectedLocation: string
   statusFilter: string
   systemFilter: SystemFilter
+  ipAddressFilter: IpAddressFilter
   diffStatusFilters: Record<string, boolean>
   filterOptions: {
     roles: Set<string>
@@ -42,6 +43,7 @@ interface DiffDeviceTableProps {
   onLocationChange: (value: string) => void
   onStatusFilterChange: (value: string) => void
   onSystemFilterChange: (value: SystemFilter) => void
+  onIpAddressFilterChange: (value: IpAddressFilter) => void
   onDiffStatusFiltersChange: (value: Record<string, boolean>) => void
   onResetFilters: () => void
   onGetDiff: (device: DiffDevice) => void
@@ -60,6 +62,7 @@ export function DiffDeviceTable({
   selectedLocation,
   statusFilter,
   systemFilter,
+  ipAddressFilter,
   diffStatusFilters,
   filterOptions,
   totalBoth,
@@ -77,6 +80,7 @@ export function DiffDeviceTable({
   onLocationChange,
   onStatusFilterChange,
   onSystemFilterChange,
+  onIpAddressFilterChange,
   onDiffStatusFiltersChange,
   onResetFilters,
   onGetDiff,
@@ -243,6 +247,7 @@ export function DiffDeviceTable({
             selectedLocation={selectedLocation}
             statusFilter={statusFilter}
             systemFilter={systemFilter}
+            ipAddressFilter={ipAddressFilter}
             diffStatusFilters={diffStatusFilters}
             filterOptions={filterOptions}
             isAllSelected={isAllSelected}
@@ -253,6 +258,7 @@ export function DiffDeviceTable({
             onLocationChange={(v) => { onLocationChange(v); setCurrentPage(0) }}
             onStatusFilterChange={(v) => { onStatusFilterChange(v); setCurrentPage(0) }}
             onSystemFilterChange={(v) => { onSystemFilterChange(v); setCurrentPage(0) }}
+            onIpAddressFilterChange={(v) => { onIpAddressFilterChange(v); setCurrentPage(0) }}
             onDiffStatusFiltersChange={(v) => { onDiffStatusFiltersChange(v); setCurrentPage(0) }}
           />
           <tbody>

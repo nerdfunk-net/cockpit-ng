@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import type { DiffDevice, SystemFilter } from '../types'
+import type { DiffDevice, IpAddressFilter, SystemFilter } from '../types'
 
 interface FilterOptions {
   roles: Set<string>
@@ -22,6 +22,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
   const [selectedLocation, setSelectedLocation] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [systemFilter, setSystemFilter] = useState<SystemFilter>('all')
+  const [ipAddressFilter, setIpAddressFilter] = useState<IpAddressFilter>('all')
   const [diffStatusFilters, setDiffStatusFilters] = useState<Record<string, boolean>>(EMPTY_DIFF_STATUS_FILTERS)
 
   // Build filter options from device data
@@ -96,6 +97,13 @@ export function useDiffFilters(devices: DiffDevice[]) {
       result = result.filter(d => d.status === statusFilter)
     }
 
+    // IP address filter
+    if (ipAddressFilter === 'has_ip') {
+      result = result.filter(d => !!(d.ip_address || d.checkmk_ip))
+    } else if (ipAddressFilter === 'no_ip') {
+      result = result.filter(d => !d.ip_address && !d.checkmk_ip)
+    }
+
     // CheckMK Diff Status filter
     // Always apply - effectiveDiffStatusFilters defaults to all selected if empty
     if (Object.keys(effectiveDiffStatusFilters).length > 0) {
@@ -122,7 +130,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
     }
     
     return result
-  }, [devices, systemFilter, deviceNameFilter, roleFilters, selectedLocation, statusFilter, effectiveDiffStatusFilters])
+  }, [devices, systemFilter, deviceNameFilter, roleFilters, selectedLocation, statusFilter, ipAddressFilter, effectiveDiffStatusFilters])
 
   // Count active filters
   const activeFiltersCount = useMemo(() => {
@@ -132,12 +140,13 @@ export function useDiffFilters(devices: DiffDevice[]) {
     if (selectedLocation !== 'all') count++
     if (statusFilter !== 'all') count++
     if (systemFilter !== 'all') count++
+    if (ipAddressFilter !== 'all') count++
     // Add count for diff status filters (if any are deselected from the default "all selected")
     const allDiffStatusSelected = Object.keys(effectiveDiffStatusFilters).length === 4 &&
       Object.values(effectiveDiffStatusFilters).every(v => v === true)
     if (!allDiffStatusSelected) count++
     return count
-  }, [deviceNameFilter, roleFilters, selectedLocation, statusFilter, systemFilter, effectiveDiffStatusFilters])
+  }, [deviceNameFilter, roleFilters, selectedLocation, statusFilter, systemFilter, ipAddressFilter, effectiveDiffStatusFilters])
 
   const resetFilters = useCallback(() => {
     setDeviceNameFilter('')
@@ -145,6 +154,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
     setSelectedLocation('all')
     setStatusFilter('all')
     setSystemFilter('all')
+    setIpAddressFilter('all')
     // Reset to all selected
     setDiffStatusFilters({
       match: true,
@@ -165,6 +175,8 @@ export function useDiffFilters(devices: DiffDevice[]) {
     setStatusFilter,
     systemFilter,
     setSystemFilter,
+    ipAddressFilter,
+    setIpAddressFilter,
     diffStatusFilters,
     setDiffStatusFilters,
     filterOptions,
@@ -177,6 +189,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
     selectedLocation,
     statusFilter,
     systemFilter,
+    ipAddressFilter,
     diffStatusFilters,
     filterOptions,
     filteredDevices,
