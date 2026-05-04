@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
+from repositories.audit_log_repository import audit_log_repo
 from models.celery import (
     SyncDevicesToCheckmkRequest,
     TaskResponse,
@@ -151,6 +152,19 @@ async def trigger_sync_devices_to_checkmk(
         request.device_ids, request.activate_changes_after_sync
     )
     job_id = f"sync_devices_{task.id}"
+
+    try:
+        audit_log_repo.create_log(
+            username=current_user.get("username", "unknown"),
+            user_id=current_user.get("user_id"),
+            event_type="checkmk_sync",
+            message=f"Sync job queued for {len(request.device_ids)} device(s) - Task ID: {task.id}",
+            resource_type="device",
+            severity="info",
+            extra_data={"device_ids": request.device_ids, "task_id": task.id},
+        )
+    except Exception as e:
+        logger.error("Failed to create audit log for sync job: %s", e)
 
     return TaskWithJobResponse(
         task_id=task.id,

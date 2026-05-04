@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Card, CardContent } from '@/components/ui/card'
@@ -24,6 +25,7 @@ import type { Device, CeleryTaskResponse } from '../shared/types'
 export default function DiffViewerPage() {
   const token = useAuthStore(state => state.token)
   const { apiCall } = useApi()
+  const { toast } = useToast()
   const { statusMessage, showMessage, clearMessage } = useStatusMessages()
   const { confirmDialog, openConfirm } = useConfirmDialog()
   const { selectedDevices, handleSelectDevice, handleSelectAll, clearSelection } = useDiffDeviceSelection()
@@ -181,8 +183,8 @@ export default function DiffViewerPage() {
     }
 
     try {
-      showMessage(`Starting sync for ${diffDevice.name}...`, 'info')
-      
+      toast({ title: 'Sync Started', description: `Starting sync for ${diffDevice.name}...` })
+
       const response = await apiCall<CeleryTaskResponse>(`celery/tasks/sync-devices-to-checkmk`, {
         method: 'POST',
         headers: {
@@ -195,15 +197,15 @@ export default function DiffViewerPage() {
       })
 
       if (response?.task_id) {
-        showMessage(`Sync task started for ${diffDevice.name}. Task ID: ${response.task_id}`, 'success')
+        toast({ title: 'Success', description: `Sync task started for ${diffDevice.name}. Task ID: ${response.task_id}` })
       } else {
-        showMessage(`Failed to queue sync task for ${diffDevice.name}`, 'error')
+        toast({ title: 'Error', description: `Failed to queue sync task for ${diffDevice.name}`, variant: 'destructive' })
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to sync device'
-      showMessage(`Failed to sync ${diffDevice.name}: ${message}`, 'error')
+      toast({ title: 'Error', description: `Failed to sync ${diffDevice.name}: ${message}`, variant: 'destructive' })
     }
-  }, [apiCall, showMessage])
+  }, [apiCall, toast])
 
   // Handle bulk sync of selected devices
   const handleSyncSelected = useCallback(async () => {
@@ -212,25 +214,25 @@ export default function DiffViewerPage() {
 
     setIsSyncingSelected(true)
     try {
-      showMessage(`Starting sync for ${deviceIds.length} device(s)...`, 'info')
+      toast({ title: 'Sync Started', description: `Starting sync for ${deviceIds.length} device(s)...` })
       const response = await apiCall<CeleryTaskResponse>('celery/tasks/sync-devices-to-checkmk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ device_ids: deviceIds, activate_changes_after_sync: true })
       })
       if (response?.task_id) {
-        showMessage(`Sync task started for ${deviceIds.length} device(s). Task ID: ${response.task_id}`, 'success')
+        toast({ title: 'Success', description: `Sync task started for ${deviceIds.length} device(s). Task ID: ${response.task_id}` })
         clearSelection()
       } else {
-        showMessage('Failed to queue bulk sync task', 'error')
+        toast({ title: 'Error', description: 'Failed to queue bulk sync task', variant: 'destructive' })
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to sync selected devices'
-      showMessage(`Bulk sync failed: ${message}`, 'error')
+      toast({ title: 'Error', description: `Bulk sync failed: ${message}`, variant: 'destructive' })
     } finally {
       setIsSyncingSelected(false)
     }
-  }, [selectedDevices, apiCall, showMessage, clearSelection])
+  }, [selectedDevices, apiCall, toast, clearSelection])
 
   // Handle start new comparison job
   const handleStartNewJob = useCallback(async () => {
