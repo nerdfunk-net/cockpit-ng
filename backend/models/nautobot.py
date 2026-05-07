@@ -4,7 +4,7 @@ Nautobot-related Pydantic models.
 
 from __future__ import annotations
 from pydantic import BaseModel, field_validator
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 
 class CheckIPRequest(BaseModel):
@@ -52,6 +52,12 @@ class OffboardDeviceRequest(BaseModel):
     remove_primary_ip: bool = True
     remove_interface_ips: bool = True
     remove_from_checkmk: bool = True
+    # Virtual chassis fields — only set when the device is part of a VC
+    virtual_chassis_action: Optional[Literal["remove_all", "remove_single"]] = None
+    virtual_chassis_id: Optional[str] = None
+    chassis_member_ids: Optional[List[str]] = None
+    new_master_id: Optional[str] = None
+    new_master_name: Optional[str] = None
 
 
 class IpAddressData(BaseModel):
@@ -316,3 +322,33 @@ class VirtualChassisResponse(BaseModel):
     name: str
     master: Optional[dict] = None
     domain: Optional[str] = None
+
+
+class VirtualChassisMember(BaseModel):
+    """A single member device of a virtual chassis."""
+
+    id: str
+    name: str
+
+
+class VirtualChassisInfo(BaseModel):
+    """Virtual chassis details returned by the VC status check."""
+
+    id: str
+    name: str
+    members: List[VirtualChassisMember]
+    master: Optional[VirtualChassisMember] = None
+
+
+class DeviceVirtualChassisStatus(BaseModel):
+    """Whether a device belongs to a virtual chassis and whether it is the master."""
+
+    is_in_chassis: bool
+    is_master: bool
+    virtual_chassis: Optional[VirtualChassisInfo] = None
+
+
+class UpdateVirtualChassisRequest(BaseModel):
+    """Request model for updating the master of a virtual chassis."""
+
+    new_master_id: str

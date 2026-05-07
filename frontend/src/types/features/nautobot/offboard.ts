@@ -1,3 +1,32 @@
+// Virtual chassis types
+export interface VirtualChassisMember {
+  id: string
+  name: string
+}
+
+export interface VirtualChassisInfo {
+  id: string
+  name: string
+  members: VirtualChassisMember[]
+  master: VirtualChassisMember | null
+}
+
+export interface DeviceVirtualChassisStatus {
+  is_in_chassis: boolean
+  is_master: boolean
+  virtual_chassis: VirtualChassisInfo | null
+}
+
+export type VirtualChassisAction = 'remove_all' | 'remove_single'
+
+export interface VirtualChassisDecision {
+  action: VirtualChassisAction
+  virtual_chassis_id: string
+  chassis_member_ids?: string[]
+  new_master_id?: string
+  new_master_name?: string
+}
+
 // Device types
 export interface Device {
   id: string

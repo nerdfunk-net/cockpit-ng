@@ -3,7 +3,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
-import type { OffboardSummary } from '@/types/features/nautobot/offboard'
+import type {
+  DeviceVirtualChassisStatus,
+  OffboardSummary,
+  VirtualChassisDecision,
+} from '@/types/features/nautobot/offboard'
 
 // Custom hooks
 import { useDeviceLoader } from './hooks/use-device-loader'
@@ -20,6 +24,13 @@ import { OffboardPanel } from './components/offboard-panel'
 import { DeviceTable } from './components/device-table'
 import { ConfirmationModal } from './components/confirmation-modal'
 import { ResultsModal } from './components/results-modal'
+import { VirtualChassisModal } from './components/virtual-chassis-modal'
+
+interface VCQueueItem {
+  deviceId: string
+  deviceName: string
+  status: DeviceVirtualChassisStatus
+}
 
 export function OffboardDevicePage() {
   // Auth
@@ -85,6 +96,8 @@ export function OffboardDevicePage() {
     offboardProperties,
     setOffboardProperties,
     handleOffboardDevices,
+    checkVCStatus,
+    setVcDecision,
   } = useOffboardOperations({ showMessage })
 
   // URL params
@@ -94,6 +107,10 @@ export function OffboardDevicePage() {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
   const [showResultsModal, setShowResultsModal] = useState(false)
   const [offboardSummary, setOffboardSummary] = useState<OffboardSummary | null>(null)
+
+  // Virtual chassis pre-check state
+  const [vcDevicesQueue, setVcDevicesQueue] = useState<VCQueueItem[]>([])
+  const [isCheckingVC, setIsCheckingVC] = useState(false)
 
   // Check authentication
   useEffect(() => {
@@ -130,13 +147,69 @@ export function OffboardDevicePage() {
     }
   }, [reloadDevices, showMessage])
 
-  const confirmOffboard = useCallback(() => {
+  const confirmOffboard = useCallback(async () => {
     if (selectedDevices.size === 0) {
       showMessage('Please select at least one device to offboard', 'error')
       return
     }
-    setShowConfirmationModal(true)
-  }, [selectedDevices.size, showMessage])
+
+    setIsCheckingVC(true)
+    showMessage('Checking virtual chassis membership...', 'info')
+
+    const queue: VCQueueItem[] = []
+    try {
+      for (const deviceId of selectedDevices) {
+        const vcStatus = await checkVCStatus(deviceId)
+        if (vcStatus.is_in_chassis) {
+          const deviceName = devices.find(d => d.id === deviceId)?.name || deviceId
+          queue.push({ deviceId, deviceName, status: vcStatus })
+        }
+      }
+    } catch (error) {
+      showMessage(
+        `Failed to check virtual chassis status: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'error'
+      )
+      setIsCheckingVC(false)
+      return
+    }
+
+    setIsCheckingVC(false)
+
+    if (queue.length > 0) {
+      setVcDevicesQueue(queue)
+    } else {
+      setShowConfirmationModal(true)
+    }
+  }, [selectedDevices, devices, checkVCStatus, showMessage])
+
+  const handleVCDecide = useCallback(
+    (deviceId: string, decision: VirtualChassisDecision) => {
+      setVcDecision(deviceId, decision)
+
+      setVcDevicesQueue(prev => {
+        // If remove_all, remove any other queue items from the same VC
+        const vcId = decision.virtual_chassis_id
+        const filtered =
+          decision.action === 'remove_all'
+            ? prev.filter(
+                item => item.status.virtual_chassis?.id !== vcId || item.deviceId === deviceId
+              )
+            : prev
+
+        const remaining = filtered.slice(1)
+        if (remaining.length === 0) {
+          setShowConfirmationModal(true)
+        }
+        return remaining
+      })
+    },
+    [setVcDecision]
+  )
+
+  const handleVCCancel = useCallback(() => {
+    setVcDevicesQueue([])
+  }, [])
 
   const handleConfirmRemove = useCallback(async () => {
     setShowConfirmationModal(false)
@@ -168,6 +241,8 @@ export function OffboardDevicePage() {
     )
   }
 
+  const currentVCItem = vcDevicesQueue[0]
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -178,7 +253,7 @@ export function OffboardDevicePage() {
         <div className="lg:col-span-1">
           <OffboardPanel
             selectedCount={selectedDevices.size}
-            isSubmitting={isSubmitting}
+            isSubmitting={isSubmitting || isCheckingVC}
             offboardProperties={offboardProperties}
             onOffboardPropertiesChange={props =>
               setOffboardProperties(prev => ({ ...prev, ...props }))
@@ -216,6 +291,18 @@ export function OffboardDevicePage() {
           />
         </div>
       </div>
+
+      {/* Virtual Chassis Decision Modal */}
+      {currentVCItem && (
+        <VirtualChassisModal
+          isOpen={vcDevicesQueue.length > 0}
+          deviceId={currentVCItem.deviceId}
+          deviceName={currentVCItem.deviceName}
+          status={currentVCItem.status}
+          onDecide={decision => handleVCDecide(currentVCItem.deviceId, decision)}
+          onCancel={handleVCCancel}
+        />
+      )}
 
       {/* Confirmation Modal */}
       <ConfirmationModal

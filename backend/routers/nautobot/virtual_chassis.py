@@ -8,11 +8,15 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from core.auth import require_permission
 from dependencies import get_nautobot_service
-from models.nautobot import CreateVirtualChassisRequest, VirtualChassisResponse
+from models.nautobot import (
+    CreateVirtualChassisRequest,
+    UpdateVirtualChassisRequest,
+    VirtualChassisResponse,
+)
 from services.nautobot.client import NautobotService
 from services.nautobot.common.exceptions import NautobotAPIError
 
@@ -82,4 +86,113 @@ async def create_virtual_chassis(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create virtual chassis: {exc}",
+        )
+
+
+@router.delete(
+    "/virtual-chassis/{vc_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    summary="🔶 REST: Delete Virtual Chassis",
+)
+async def delete_virtual_chassis(
+    vc_id: str,
+    current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+) -> Response:
+    """
+    Delete a virtual chassis from Nautobot DCIM.
+
+    **🔶 This endpoint uses REST API** via Nautobot's `DELETE /dcim/virtual-chassis/{id}/`.
+
+    **Required Permission:** `nautobot.devices:delete`
+
+    This removes the virtual chassis object but does NOT delete member devices.
+    Remove the chassis before deleting member devices during offboarding.
+
+    **Raises:**
+    - `404`: Virtual chassis not found
+    - `500`: Nautobot API error
+    """
+    try:
+        await nautobot_service.rest_request(
+            f"dcim/virtual-chassis/{vc_id}/",
+            method="DELETE",
+        )
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except NautobotAPIError as exc:
+        error_msg = str(exc)
+        logger.error("Failed to delete virtual chassis %s: %s", vc_id, error_msg, exc_info=True)
+        if "404" in error_msg or "Not Found" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Virtual chassis {vc_id} not found",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete virtual chassis: {error_msg}",
+        )
+    except Exception as exc:
+        logger.error("Failed to delete virtual chassis %s: %s", vc_id, exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete virtual chassis: {exc}",
+        )
+
+
+@router.patch(
+    "/virtual-chassis/{vc_id}",
+    response_model=VirtualChassisResponse,
+    summary="🔶 REST: Update Virtual Chassis Master",
+)
+async def update_virtual_chassis(
+    vc_id: str,
+    request: UpdateVirtualChassisRequest,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+) -> dict:
+    """
+    Update the master device of a virtual chassis.
+
+    **🔶 This endpoint uses REST API** via Nautobot's `PATCH /dcim/virtual-chassis/{id}/`.
+
+    **Required Permission:** `nautobot.devices:write`
+
+    **Request Body:**
+    - `new_master_id`: UUID of the device to become the new master
+
+    **Raises:**
+    - `400`: Invalid request
+    - `404`: Virtual chassis not found
+    - `500`: Nautobot API error
+    """
+    try:
+        result = await nautobot_service.rest_request(
+            f"dcim/virtual-chassis/{vc_id}/",
+            method="PATCH",
+            data={"master": {"id": request.new_master_id}},
+        )
+        return result
+    except NautobotAPIError as exc:
+        error_msg = str(exc)
+        logger.error("Failed to update virtual chassis %s: %s", vc_id, error_msg, exc_info=True)
+        if "404" in error_msg or "Not Found" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Virtual chassis {vc_id} not found",
+            )
+        if "400" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update virtual chassis: {error_msg}",
+        )
+    except Exception as exc:
+        logger.error("Failed to update virtual chassis %s: %s", vc_id, exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update virtual chassis: {exc}",
         )

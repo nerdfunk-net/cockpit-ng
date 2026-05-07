@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from services.nautobot.common.exceptions import NautobotNotFoundError
-from models.nautobot import OffboardDeviceRequest
+from models.nautobot import DeviceVirtualChassisStatus, OffboardDeviceRequest
 from dependencies import (
     get_nautobot_service,
     get_offboarding_service,
@@ -18,10 +18,29 @@ from dependencies import (
 from services.nautobot.client import NautobotService
 from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.offboarding.service import OffboardingService
+from services.nautobot.offboarding.virtual_chassis_cleanup import VirtualChassisCleanupManager
 from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-device-ops"])
+
+
+@router.get(
+    "/devices/is-virtual-chassis/{device_id}",
+    response_model=DeviceVirtualChassisStatus,
+    summary="🔷 GraphQL: Check Virtual Chassis Status",
+)
+async def check_virtual_chassis_status(
+    device_id: str,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+):
+    """Check whether a device is part of a virtual chassis and whether it is the master.
+
+    **🔷 This endpoint uses GraphQL** to fetch virtual chassis membership.
+    """
+    vc_manager = VirtualChassisCleanupManager(nautobot_service)
+    return await vc_manager.get_status(device_id)
 
 
 @router.get(
