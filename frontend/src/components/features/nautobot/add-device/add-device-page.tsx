@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useToast } from '@/hooks/use-toast'
 import { FieldErrors, useWatch } from 'react-hook-form'
 import { Server, Loader2 } from 'lucide-react'
 
 // TanStack Query Hooks
-import { useNautobotDropdownsQuery, useDeviceMutations } from './hooks/queries'
+import { useNautobotDropdownsQuery, useDeviceMutations, useVirtualChassisQuery } from './hooks/queries'
 
 // Custom Hooks
 import { useDeviceForm } from './hooks/use-device-form'
@@ -13,6 +14,7 @@ import { useSearchableDropdown } from './hooks/use-searchable-dropdown'
 import { useTagsManager } from './hooks/use-tags-manager'
 import { useCustomFieldsManager } from './hooks/use-custom-fields-manager'
 import { useRackManager } from './hooks/use-rack-manager'
+import { useVirtualChassisManager } from './hooks/use-virtual-chassis-manager'
 import { usePropertiesModal } from './hooks/use-properties-modal'
 import { useCsvImport } from './hooks/use-csv-import'
 import type { FormDefaults } from './hooks/use-csv-import'
@@ -25,7 +27,6 @@ import {
   PrefixConfiguration,
   InterfaceList,
   PageHeader,
-  StatusAlert,
   FormActions,
 } from './components'
 import {
@@ -33,6 +34,7 @@ import {
   TagsModal,
   CustomFieldsModal,
   RackModal,
+  VirtualChassisModal,
   CsvImportWizard,
   ErrorModal,
   ValidationErrorModal,
@@ -47,12 +49,13 @@ import {
   EMPTY_DEVICE_TYPES,
   EMPTY_SOFTWARE_VERSIONS,
   EMPTY_PLATFORMS,
+  EMPTY_VIRTUAL_CHASSIS_LIST,
 } from './constants'
-import type { StatusMessage, LocationItem, DeviceType, SoftwareVersion } from './types'
+import type { LocationItem, DeviceType, SoftwareVersion } from './types'
 import type { DeviceFormValues } from './utils/validation'
 
 export function AddDevicePage() {
-  const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null)
+  const { toast } = useToast()
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [errorModalMessage, setErrorModalMessage] = useState<string>('')
   const [showValidationModal, setShowValidationModal] = useState(false)
@@ -141,7 +144,20 @@ export function AddDevicePage() {
   const tagsManager = useTagsManager()
   const customFieldsManager = useCustomFieldsManager()
   const rackManager = useRackManager()
+  const vcManager = useVirtualChassisManager()
+  const { data: virtualChassisList = EMPTY_VIRTUAL_CHASSIS_LIST, isLoading: isLoadingVirtualChassis } = useVirtualChassisQuery()
   const propertiesModal = usePropertiesModal()
+
+  // Keep selectedVirtualChassisId in form state so Zod can see it during validation.
+  // When VC is selected, clear interfaces so the interfaceSchema field validations don't
+  // fire on the default empty interface (Zod runs field schemas before superRefine).
+  useEffect(() => {
+    const id = vcManager.selectedVcId || undefined
+    form.setValue('selectedVirtualChassisId', id)
+    if (id) {
+      form.setValue('interfaces', [])
+    }
+  }, [vcManager.selectedVcId, form])
 
   // Build form defaults for CSV import wizard — useWatch creates reactive subscriptions
   const [
@@ -287,14 +303,10 @@ export function AddDevicePage() {
     }
   }, [])
 
-  // Handle manual validation
   // Form submission
   const onSubmit = useCallback(
     async (data: DeviceFormValues) => {
-      setStatusMessage({
-        type: 'info',
-        message: 'Starting device addition workflow...',
-      })
+      toast({ title: 'Adding device', description: 'Starting device addition workflow...' })
 
       form.setValue('selectedTags', tagsManager.selectedTags)
       form.setValue('customFieldValues', customFieldsManager.customFieldValues)
@@ -306,6 +318,7 @@ export function AddDevicePage() {
         selectedRack: rackManager.selectedRack || undefined,
         selectedFace: rackManager.selectedFace || undefined,
         rackPosition: rackManager.position !== '' ? rackManager.position : undefined,
+        selectedVirtualChassisId: vcManager.selectedVcId || undefined,
       })
       const result = await createDevice.mutateAsync(submissionData)
 
@@ -313,17 +326,14 @@ export function AddDevicePage() {
         setErrorModalMessage(result.message)
         setShowErrorModal(true)
       } else {
-        setStatusMessage({
-          type: result.messageType,
-          message: result.message,
+        toast({
+          title: result.success ? 'Device added' : 'Warning',
+          description: result.message,
+          variant: 'default',
         })
-
-        if (result.success) {
-          setTimeout(() => setStatusMessage(null), 3000)
-        }
       }
     },
-    [createDevice, form, tagsManager, customFieldsManager, rackManager]
+    [createDevice, form, tagsManager, customFieldsManager, rackManager, vcManager, toast]
   )
 
   const handleClearForm = useCallback(() => {
@@ -331,8 +341,8 @@ export function AddDevicePage() {
     tagsManager.clearSelectedTags()
     customFieldsManager.clearFieldValues()
     rackManager.clearRack()
-    setStatusMessage(null)
-  }, [reset, tagsManager, customFieldsManager, rackManager])
+    vcManager.clearSelection()
+  }, [reset, tagsManager, customFieldsManager, rackManager, vcManager])
 
   // Loading state
   if (isLoadingDropdowns) {
@@ -369,8 +379,6 @@ export function AddDevicePage() {
       />
 
       <form onSubmit={formHandleSubmit(onSubmit, onInvalid)} className="space-y-6">
-        <StatusAlert statusMessage={statusMessage} />
-
         <ErrorModal
           open={showErrorModal}
           onOpenChange={setShowErrorModal}
@@ -386,6 +394,8 @@ export function AddDevicePage() {
           isLoading={createDevice.isPending}
           onOpenTags={tagsManager.openModal}
           onOpenCustomFields={customFieldsManager.openModal}
+          onOpenStack={vcManager.openModal}
+          isStackConfigured={vcManager.isConfigured}
           onOpenRack={() => rackManager.openModal(watch('selectedLocation') || undefined)}
           selectedTagsCount={tagsManager.selectedTags.length}
           isRackConfigured={rackManager.isConfigured}
@@ -454,6 +464,16 @@ export function AddDevicePage() {
           position={rackManager.position}
           onSetPosition={rackManager.setPosition}
           isLoading={rackManager.isLoading}
+        />
+
+        <VirtualChassisModal
+          show={vcManager.showModal}
+          onClose={vcManager.closeModal}
+          items={virtualChassisList}
+          isLoading={isLoadingVirtualChassis}
+          selectedVcId={vcManager.selectedVcId}
+          onSelect={vcManager.selectVirtualChassis}
+          onClear={vcManager.clearSelection}
         />
 
         <CsvImportWizard

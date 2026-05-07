@@ -31,7 +31,7 @@ export const interfaceSchema = z.object({
   name: z.string().min(1, 'Interface name is required'),
   type: z.string().min(1, 'Interface type is required'),
   status: z.string().min(1, 'Interface status is required'),
-  ip_addresses: z.array(ipAddressSchema).min(1, 'At least one IP address is required'),
+  ip_addresses: z.array(ipAddressSchema),
   enabled: z.boolean().optional(),
   mgmt_only: z.boolean().optional(),
   description: z.string().optional(),
@@ -81,9 +81,35 @@ export const deviceFormSchema = z.object({
   selectedRack: z.string().optional(),
   selectedFace: z.string().optional(),
   rackPosition: z.number().optional(),
+  selectedVirtualChassisId: z.string().optional(),
   addPrefix: z.boolean(),
   defaultPrefixLength: z.string(),
-  interfaces: z.array(interfaceSchema).min(1, 'At least one interface is required'),
+  interfaces: z.array(interfaceSchema),
+}).superRefine((data, ctx) => {
+  const hasVC = !!data.selectedVirtualChassisId
+
+  if (hasVC) {
+    return
+  }
+
+  if (data.interfaces.length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'At least one interface is required',
+      path: ['interfaces'],
+    })
+    return
+  }
+
+  data.interfaces.forEach((iface, index) => {
+    if (iface.ip_addresses.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'At least one IP address is required',
+        path: ['interfaces', index, 'ip_addresses'],
+      })
+    }
+  })
 })
 
 // ============================================================================

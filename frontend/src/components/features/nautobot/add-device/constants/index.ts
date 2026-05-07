@@ -14,6 +14,7 @@ import type {
   VlanItem,
   RackItem,
   RackGroupItem,
+  VirtualChassisItem,
 } from '../types'
 
 // ============================================================================
@@ -31,6 +32,7 @@ export const EMPTY_STRING_ARRAY: string[] = []
 export const EMPTY_VLANS: VlanItem[] = []
 export const EMPTY_RACKS: RackItem[] = []
 export const EMPTY_RACK_GROUPS: RackGroupItem[] = []
+export const EMPTY_VIRTUAL_CHASSIS_LIST: VirtualChassisItem[] = []
 export const EMPTY_OBJECT: Record<string, string> = {}
 
 // ============================================================================

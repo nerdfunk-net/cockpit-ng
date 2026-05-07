@@ -205,7 +205,7 @@ export default function DiffViewerPage() {
       const message = err instanceof Error ? err.message : 'Failed to sync device'
       toast({ title: 'Error', description: `Failed to sync ${diffDevice.name}: ${message}`, variant: 'destructive' })
     }
-  }, [apiCall, toast])
+  }, [apiCall, toast, showMessage])
 
   // Handle bulk sync of selected devices
   const handleSyncSelected = useCallback(async () => {

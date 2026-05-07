@@ -36,47 +36,51 @@ export function useValidateDevice(form: UseFormReturn<DeviceFormValues>) {
     const deviceType = !!values.selectedDeviceType
     const location = !!values.selectedLocation
 
+    const hasVirtualChassis = !!values.selectedVirtualChassisId
+
     const interfaces = values.interfaces || []
     let interfaceIssues = 0
     let allInterfacesValid = true
     let ipAddressIssues = 0
     let allIpAddressesValid = true
 
-    interfaces.forEach(iface => {
-      if (!iface.name || !iface.name.trim()) {
-        allInterfacesValid = false
-        interfaceIssues++
-      }
-      if (!iface.type) {
-        allInterfacesValid = false
-        interfaceIssues++
-      }
-      if (!iface.status) {
-        allInterfacesValid = false
-        interfaceIssues++
-      }
-
-      const ipAddresses = iface.ip_addresses || []
-      ipAddresses.forEach(ip => {
-        if (!ip.address || !ip.address.trim()) {
-          allIpAddressesValid = false
-          ipAddressIssues++
-          return
+    if (!hasVirtualChassis) {
+      interfaces.forEach(iface => {
+        if (!iface.name || !iface.name.trim()) {
+          allInterfacesValid = false
+          interfaceIssues++
+        }
+        if (!iface.type) {
+          allInterfacesValid = false
+          interfaceIssues++
+        }
+        if (!iface.status) {
+          allInterfacesValid = false
+          interfaceIssues++
         }
 
-        const isValidCidr =
-          IPV4_CIDR_REGEX.test(ip.address) || IPV6_CIDR_REGEX.test(ip.address)
-        if (!isValidCidr) {
-          allIpAddressesValid = false
-          ipAddressIssues++
-        }
+        const ipAddresses = iface.ip_addresses || []
+        ipAddresses.forEach(ip => {
+          if (!ip.address || !ip.address.trim()) {
+            allIpAddressesValid = false
+            ipAddressIssues++
+            return
+          }
 
-        if (!ip.namespace || !ip.namespace.trim()) {
-          allIpAddressesValid = false
-          ipAddressIssues++
-        }
+          const isValidCidr =
+            IPV4_CIDR_REGEX.test(ip.address) || IPV6_CIDR_REGEX.test(ip.address)
+          if (!isValidCidr) {
+            allIpAddressesValid = false
+            ipAddressIssues++
+          }
+
+          if (!ip.namespace || !ip.namespace.trim()) {
+            allIpAddressesValid = false
+            ipAddressIssues++
+          }
+        })
       })
-    })
+    }
 
     const isValid =
       deviceName &&
@@ -84,8 +88,7 @@ export function useValidateDevice(form: UseFormReturn<DeviceFormValues>) {
       deviceStatus &&
       deviceType &&
       location &&
-      allInterfacesValid &&
-      allIpAddressesValid
+      (hasVirtualChassis || (allInterfacesValid && allIpAddressesValid))
 
     setValidationResults({
       isValid,

@@ -147,6 +147,8 @@ class AddDeviceRequest(BaseModel):
     # Prefix configuration
     add_prefix: bool = True
     default_prefix_length: str = "/24"
+    # Virtual chassis membership (optional)
+    virtual_chassis_id: Optional[str] = None
     # Interfaces array
     interfaces: list[InterfaceData] = []
     # Dry run: validate without creating
@@ -306,6 +308,13 @@ class AddVirtualInterfaceRequest(BaseModel):
     untagged_vlan: Optional[str] = None  # VLAN UUID
     tagged_vlans: Optional[list[str]] = None  # List of VLAN UUIDs
     tags: Optional[list[str]] = None  # List of tag UUIDs
+
+
+class VirtualChassisListItem(BaseModel):
+    """A single virtual chassis entry returned by the list endpoint."""
+
+    id: str
+    name: str
 
 
 class CreateVirtualChassisRequest(BaseModel):

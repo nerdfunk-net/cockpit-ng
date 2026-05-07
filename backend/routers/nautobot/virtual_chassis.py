@@ -15,6 +15,7 @@ from dependencies import get_nautobot_service
 from models.nautobot import (
     CreateVirtualChassisRequest,
     UpdateVirtualChassisRequest,
+    VirtualChassisListItem,
     VirtualChassisResponse,
 )
 from services.nautobot.client import NautobotService
@@ -23,6 +24,43 @@ from services.nautobot.common.exceptions import NautobotAPIError
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["nautobot-devices"])
+
+
+@router.get(
+    "/virtual-chassis",
+    response_model=list[VirtualChassisListItem],
+    summary="🔷 GraphQL: List all Virtual Chassis",
+)
+async def list_virtual_chassis(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+) -> list[dict]:
+    """
+    List all Virtual Chassis configured in Nautobot.
+
+    **🔷 This endpoint uses GraphQL** to query all virtual chassis objects.
+
+    **Required Permission:** `nautobot.devices:read`
+
+    **Returns:**
+    - List of `{ id, name }` objects for each configured Virtual Chassis
+    """
+    query = "{ virtual_chassis { id name } }"
+    try:
+        result = await nautobot_service.graphql_query(query)
+        return result["data"]["virtual_chassis"]
+    except NautobotAPIError as exc:
+        logger.error("Failed to list virtual chassis: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list virtual chassis: {exc}",
+        )
+    except Exception as exc:
+        logger.error("Failed to list virtual chassis: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list virtual chassis: {exc}",
+        )
 
 
 @router.post(

@@ -49,6 +49,7 @@ export function formatDeviceSubmissionData(formData: DeviceFormValues): DeviceSu
     rack: formData.selectedRack || undefined,
     face: formData.selectedFace || undefined,
     position: formData.rackPosition ?? undefined,
+    virtual_chassis_id: formData.selectedVirtualChassisId || undefined,
     interfaces: formData.interfaces,
     add_prefix: formData.addPrefix,
     default_prefix_length: formData.defaultPrefixLength,

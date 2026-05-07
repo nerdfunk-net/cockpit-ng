@@ -126,6 +126,11 @@ export interface TagItem {
   color?: string
 }
 
+export interface VirtualChassisItem {
+  id: string
+  name: string
+}
+
 export interface RackGroupItem {
   id: string
   name: string
@@ -206,6 +211,7 @@ export interface DeviceSubmissionData {
   rack?: string
   face?: string
   position?: number
+  virtual_chassis_id?: string
   interfaces: InterfaceData[]
   add_prefix: boolean
   default_prefix_length: string
