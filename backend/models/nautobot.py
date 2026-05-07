@@ -349,6 +349,42 @@ class VirtualChassisInfo(BaseModel):
     master: Optional[VirtualChassisMember] = None
 
 
+class VcDeviceType(BaseModel):
+    """Device type info within a virtual chassis detail."""
+
+    id: str
+    model: str
+
+
+class VcSoftwareVersion(BaseModel):
+    """Software version info within a virtual chassis detail."""
+
+    id: str
+    version: str
+
+
+class VcMaster(BaseModel):
+    """Master device details within a virtual chassis detail response."""
+
+    id: str
+    name: str
+    location: Optional[VirtualChassisMember] = None
+    role: Optional[VirtualChassisMember] = None
+    status: Optional[VirtualChassisMember] = None
+    platform: Optional[VirtualChassisMember] = None
+    device_type: Optional[VcDeviceType] = None
+    software_version: Optional[VcSoftwareVersion] = None
+
+
+class VirtualChassisDetailResponse(BaseModel):
+    """Detailed virtual chassis response including master device attributes."""
+
+    id: str
+    name: str
+    members: List[VirtualChassisMember] = []
+    master: Optional[VcMaster] = None
+
+
 class DeviceVirtualChassisStatus(BaseModel):
     """Whether a device belongs to a virtual chassis and whether it is the master."""
 

@@ -151,6 +151,8 @@ export const queryKeys = {
         ? ([...queryKeys.nautobot.all, 'rack-groups', filters] as const)
         : ([...queryKeys.nautobot.all, 'rack-groups'] as const),
     virtualChassis: () => [...queryKeys.nautobot.all, 'virtual-chassis'] as const,
+    virtualChassisDetail: (vcId: string) =>
+      [...queryKeys.nautobot.all, 'virtual-chassis', 'detail', vcId] as const,
     rackMetadata: (rackId: string) =>
       [...queryKeys.nautobot.all, 'rack-metadata', rackId] as const,
     rackDevices: (rackId: string) =>

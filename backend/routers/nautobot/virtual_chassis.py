@@ -15,6 +15,7 @@ from dependencies import get_nautobot_service
 from models.nautobot import (
     CreateVirtualChassisRequest,
     UpdateVirtualChassisRequest,
+    VirtualChassisDetailResponse,
     VirtualChassisListItem,
     VirtualChassisResponse,
 )
@@ -60,6 +61,79 @@ async def list_virtual_chassis(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list virtual chassis: {exc}",
+        )
+
+
+VIRTUAL_CHASSIS_DETAIL_QUERY = """
+{{
+  virtual_chassis(id: "{vc_id}") {{
+    id
+    name
+    members {{ id name }}
+    master {{
+      id
+      name
+      location {{ id name }}
+      role {{ id name }}
+      status {{ id name }}
+      platform {{ id name }}
+      device_type {{ id model }}
+      software_version {{ id version }}
+    }}
+  }}
+}}
+"""
+
+
+@router.get(
+    "/virtual-chassis/{vc_id}",
+    response_model=VirtualChassisDetailResponse,
+    summary="🔷 GraphQL: Get Virtual Chassis Detail",
+)
+async def get_virtual_chassis_detail(
+    vc_id: str,
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+) -> dict:
+    """
+    Get detailed information for a single Virtual Chassis, including master device attributes.
+
+    **🔷 This endpoint uses GraphQL** to query the virtual chassis and its master device.
+
+    **Required Permission:** `nautobot.devices:read`
+
+    **Returns:**
+    - `id`, `name`: Virtual chassis identity
+    - `members`: List of member devices `{ id, name }`
+    - `master`: Master device with `location`, `role`, `status`, `platform`, `device_type`, `software_version`
+
+    **Raises:**
+    - `404`: Virtual chassis not found
+    - `500`: Nautobot API error
+    """
+    query = VIRTUAL_CHASSIS_DETAIL_QUERY.format(vc_id=vc_id)
+    try:
+        result = await nautobot_service.graphql_query(query)
+        items = result["data"]["virtual_chassis"]
+        if not items:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Virtual chassis {vc_id} not found",
+            )
+        return items[0]
+    except HTTPException:
+        raise
+    except NautobotAPIError as exc:
+        logger.error("Failed to get virtual chassis detail %s: %s", vc_id, exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get virtual chassis detail: {exc}",
+        )
+    except Exception as exc:
+        logger.error("Failed to get virtual chassis detail %s: %s", vc_id, exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get virtual chassis detail: {exc}",
         )
 
 

@@ -131,6 +131,39 @@ export interface VirtualChassisItem {
   name: string
 }
 
+export interface VirtualChassisNameId {
+  id: string
+  name: string
+}
+
+export interface VirtualChassisDeviceType {
+  id: string
+  model: string
+}
+
+export interface VirtualChassisSoftwareVersion {
+  id: string
+  version: string
+}
+
+export interface VirtualChassisMaster {
+  id: string
+  name: string
+  location?: VirtualChassisNameId
+  role?: VirtualChassisNameId
+  status?: VirtualChassisNameId
+  platform?: VirtualChassisNameId
+  device_type?: VirtualChassisDeviceType
+  software_version?: VirtualChassisSoftwareVersion
+}
+
+export interface VirtualChassisDetail {
+  id: string
+  name: string
+  members: VirtualChassisNameId[]
+  master?: VirtualChassisMaster
+}
+
 export interface RackGroupItem {
   id: string
   name: string
