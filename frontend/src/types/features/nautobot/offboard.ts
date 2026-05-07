@@ -1,3 +1,25 @@
+// IP assignment types
+export interface IpInterfaceAssignment {
+  is_standby: boolean
+  is_default: boolean
+  is_destination: boolean
+  interface: {
+    name: string
+    description: string
+    type: string
+    status: { name: string }
+    device: { name: string }
+    child_interfaces: unknown[]
+  }
+}
+
+export interface IpAddressMultipleAssignmentWarning {
+  deviceId: string
+  deviceName: string
+  ipAddress: string
+  assignments: IpInterfaceAssignment[]
+}
+
 // Virtual chassis types
 export interface VirtualChassisMember {
   id: string

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import type {
   DeviceVirtualChassisStatus,
+  IpAddressMultipleAssignmentWarning,
   OffboardSummary,
   VirtualChassisDecision,
 } from '@/types/features/nautobot/offboard'
@@ -23,6 +24,7 @@ import { OffboardHeader } from './components/offboard-header'
 import { OffboardPanel } from './components/offboard-panel'
 import { DeviceTable } from './components/device-table'
 import { ConfirmationModal } from './components/confirmation-modal'
+import { IpAssignmentWarningModal } from './components/ip-assignment-warning-modal'
 import { ResultsModal } from './components/results-modal'
 import { VirtualChassisModal } from './components/virtual-chassis-modal'
 
@@ -98,6 +100,9 @@ export function OffboardDevicePage() {
     handleOffboardDevices,
     checkVCStatus,
     setVcDecision,
+    checkIpAssignments,
+    ipRemovalDecisions,
+    setIpRemovalDecision,
   } = useOffboardOperations({ showMessage })
 
   // URL params
@@ -111,6 +116,11 @@ export function OffboardDevicePage() {
   // Virtual chassis pre-check state
   const [vcDevicesQueue, setVcDevicesQueue] = useState<VCQueueItem[]>([])
   const [isCheckingVC, setIsCheckingVC] = useState(false)
+
+  // IP assignment warning state
+  const [ipWarnings, setIpWarnings] = useState<IpAddressMultipleAssignmentWarning[]>([])
+  const [showIpWarningModal, setShowIpWarningModal] = useState(false)
+  const [isCheckingIp, setIsCheckingIp] = useState(false)
 
   // Check authentication
   useEffect(() => {
@@ -133,6 +143,33 @@ export function OffboardDevicePage() {
     }
     loadInitialData()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const proceedToConfirmation = useCallback(async () => {
+    if (!offboardProperties.removePrimaryIp) {
+      setShowConfirmationModal(true)
+      return
+    }
+
+    setIsCheckingIp(true)
+    try {
+      const selectedDeviceList = devices.filter(d => selectedDevices.has(d.id))
+      const warnings = await checkIpAssignments(selectedDeviceList)
+      if (warnings.length > 0) {
+        setIpWarnings(warnings)
+        setShowIpWarningModal(true)
+      } else {
+        setShowConfirmationModal(true)
+      }
+    } catch (error) {
+      showMessage(
+        `Failed to check IP assignments: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'error'
+      )
+      setShowConfirmationModal(true)
+    } finally {
+      setIsCheckingIp(false)
+    }
+  }, [offboardProperties.removePrimaryIp, devices, selectedDevices, checkIpAssignments, showMessage])
 
   // Handlers
   const handleReloadDevices = useCallback(async () => {
@@ -179,9 +216,9 @@ export function OffboardDevicePage() {
     if (queue.length > 0) {
       setVcDevicesQueue(queue)
     } else {
-      setShowConfirmationModal(true)
+      await proceedToConfirmation()
     }
-  }, [selectedDevices, devices, checkVCStatus, showMessage])
+  }, [selectedDevices, devices, checkVCStatus, showMessage, proceedToConfirmation])
 
   const handleVCDecide = useCallback(
     (deviceId: string, decision: VirtualChassisDecision) => {
@@ -199,12 +236,12 @@ export function OffboardDevicePage() {
 
         const remaining = filtered.slice(1)
         if (remaining.length === 0) {
-          setShowConfirmationModal(true)
+          proceedToConfirmation()
         }
         return remaining
       })
     },
-    [setVcDecision]
+    [setVcDecision, proceedToConfirmation]
   )
 
   const handleVCCancel = useCallback(() => {
@@ -253,7 +290,7 @@ export function OffboardDevicePage() {
         <div className="lg:col-span-1">
           <OffboardPanel
             selectedCount={selectedDevices.size}
-            isSubmitting={isSubmitting || isCheckingVC}
+            isSubmitting={isSubmitting || isCheckingVC || isCheckingIp}
             offboardProperties={offboardProperties}
             onOffboardPropertiesChange={props =>
               setOffboardProperties(prev => ({ ...prev, ...props }))
@@ -303,6 +340,22 @@ export function OffboardDevicePage() {
           onCancel={handleVCCancel}
         />
       )}
+
+      {/* IP Assignment Warning Modal */}
+      <IpAssignmentWarningModal
+        isOpen={showIpWarningModal}
+        warnings={ipWarnings}
+        decisions={ipRemovalDecisions}
+        onDecision={setIpRemovalDecision}
+        onConfirm={() => {
+          setShowIpWarningModal(false)
+          setShowConfirmationModal(true)
+        }}
+        onCancel={() => {
+          setShowIpWarningModal(false)
+          setIpWarnings([])
+        }}
+      />
 
       {/* Confirmation Modal */}
       <ConfirmationModal

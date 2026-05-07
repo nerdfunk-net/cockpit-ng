@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { useApi } from '@/hooks/use-api'
 import type {
   DeviceVirtualChassisStatus,
+  IpAddressMultipleAssignmentWarning,
   OffboardProperties,
   OffboardResult,
   OffboardSummary,
@@ -26,6 +27,7 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
     DEFAULT_OFFBOARD_PROPERTIES
   )
   const [vcDecisions, setVcDecisions] = useState<Record<string, VirtualChassisDecision>>({})
+  const [ipRemovalDecisions, setIpRemovalDecisions] = useState<Record<string, boolean>>({})
 
   const checkVCStatus = useCallback(
     async (deviceId: string): Promise<DeviceVirtualChassisStatus> => {
@@ -44,6 +46,49 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
   const setVcDecision = useCallback((deviceId: string, decision: VirtualChassisDecision) => {
     setVcDecisions(prev => ({ ...prev, [deviceId]: decision }))
   }, [])
+
+  const setIpRemovalDecision = useCallback((deviceId: string, remove: boolean) => {
+    setIpRemovalDecisions(prev => ({ ...prev, [deviceId]: remove }))
+  }, [])
+
+  const resetIpRemovalDecisions = useCallback(() => {
+    setIpRemovalDecisions({})
+  }, [])
+
+  const checkIpAssignments = useCallback(
+    async (devicesToCheck: Device[]): Promise<IpAddressMultipleAssignmentWarning[]> => {
+      if (!offboardProperties.removePrimaryIp) return []
+
+      const warnings: IpAddressMultipleAssignmentWarning[] = []
+
+      for (const device of devicesToCheck) {
+        const ip = device.primary_ip4?.address
+        if (!ip) continue
+
+        try {
+          const ipOnly = ip.split('/')[0] ?? ip
+          const response = await apiCall<{ count: number; ip_addresses: Array<{ interface_assignments?: Array<unknown> }> }>(
+            `nautobot/ipam/ip-addresses/detailed?address=${encodeURIComponent(ipOnly)}&get_interface_assignments=true`,
+            { method: 'GET' }
+          )
+          const assignments = response?.ip_addresses?.[0]?.interface_assignments ?? []
+          if (assignments.length > 1) {
+            warnings.push({
+              deviceId: device.id,
+              deviceName: device.name,
+              ipAddress: ip,
+              assignments: assignments as IpAddressMultipleAssignmentWarning['assignments'],
+            })
+          }
+        } catch {
+          // Skip devices where the IP check fails — proceed with the global setting
+        }
+      }
+
+      return warnings
+    },
+    [apiCall, offboardProperties.removePrimaryIp]
+  )
 
   const handleOffboardDevices = useCallback(
     async (deviceIds: string[], devices: Device[]): Promise<OffboardSummary> => {
@@ -94,7 +139,7 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
             )
 
             const requestBody: Record<string, unknown> = {
-              remove_primary_ip: offboardProperties.removePrimaryIp,
+              remove_primary_ip: ipRemovalDecisions[deviceId] ?? offboardProperties.removePrimaryIp,
               remove_interface_ips: offboardProperties.removeInterfaceIps,
               remove_from_checkmk: offboardProperties.removeFromCheckMK,
             }
@@ -182,8 +227,9 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
           )
         }
 
-        // Clear VC decisions after the operation completes
+        // Clear decisions after the operation completes
         setVcDecisions({})
+        setIpRemovalDecisions({})
 
         return summary
       } catch (error) {
@@ -196,7 +242,7 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
         setIsSubmitting(false)
       }
     },
-    [apiCall, offboardProperties, vcDecisions, showMessage]
+    [apiCall, offboardProperties, vcDecisions, ipRemovalDecisions, showMessage]
   )
 
   return {
@@ -206,5 +252,9 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
     handleOffboardDevices,
     checkVCStatus,
     setVcDecision,
+    checkIpAssignments,
+    ipRemovalDecisions,
+    setIpRemovalDecision,
+    resetIpRemovalDecisions,
   }
 }
