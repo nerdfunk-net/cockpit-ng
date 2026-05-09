@@ -108,8 +108,20 @@ class OffboardingService:
                 continue
 
             if request.remove_interface_ips:
+                member_cleanup_details = member_details
+                if not request.remove_primary_ip:
+                    member_primary_ip4 = member_details.get("primary_ip4")
+                    if member_primary_ip4 and member_primary_ip4.get("id"):
+                        logger.info(
+                            "Excluding primary IP %s from interface cleanup for chassis member %s (user chose to keep it)",
+                            member_primary_ip4.get("address"),
+                            member_name,
+                        )
+                        member_cleanup_details = self._exclude_ip_from_device_details(
+                            member_cleanup_details, member_primary_ip4["id"]
+                        )
                 ips_removed = await self._ip_cleanup.remove_interface_ips(
-                    member_id, member_details, results
+                    member_id, member_cleanup_details, results
                 )
             else:
                 ips_removed = []
@@ -193,11 +205,19 @@ class OffboardingService:
         # 5. Interface IP cleanup (excluding transferred IP so it is not deleted from IPAM)
         interface_ips_removed: List[Dict[str, Any]] = []
         if request.remove_interface_ips:
-            cleanup_details = (
-                self._exclude_ip_from_device_details(device_details, transferred_ip_id)
-                if transferred_ip_id
-                else device_details
-            )
+            cleanup_details = device_details
+            if transferred_ip_id:
+                cleanup_details = self._exclude_ip_from_device_details(cleanup_details, transferred_ip_id)
+            if not request.remove_primary_ip:
+                primary_ip4 = device_details.get("primary_ip4")
+                if primary_ip4 and primary_ip4.get("id"):
+                    logger.info(
+                        "Excluding primary IP %s from interface cleanup (user chose to keep it)",
+                        primary_ip4.get("address"),
+                    )
+                    cleanup_details = self._exclude_ip_from_device_details(
+                        cleanup_details, primary_ip4["id"]
+                    )
             interface_ips_removed = await self._ip_cleanup.remove_interface_ips(
                 device_id, cleanup_details, results
             )
