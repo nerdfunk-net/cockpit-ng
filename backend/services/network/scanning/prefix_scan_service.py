@@ -46,7 +46,8 @@ class PrefixScanService:
         try:
             if job_run_id is None and task_context:
                 job_run = job_run_manager.create_job_run(
-                    job_name="Scan Prefixes (%s=%s)" % (custom_field_name, custom_field_value),
+                    job_name="Scan Prefixes (%s=%s)"
+                    % (custom_field_name, custom_field_value),
                     job_type="scan_prefixes",
                     triggered_by="manual",
                     executed_by=executed_by,
@@ -72,7 +73,8 @@ class PrefixScanService:
                     task_context.update_state(
                         state="PROGRESS",
                         meta={
-                            "status": "Fetching prefixes with %s=%s..." % (custom_field_name, custom_field_value),
+                            "status": "Fetching prefixes with %s=%s..."
+                            % (custom_field_name, custom_field_value),
                             "current": 0,
                             "total": 1,
                         },
@@ -105,7 +107,9 @@ class PrefixScanService:
                 try:
                     net = ipaddress.ip_network(cidr, strict=False)
                     count = (
-                        net.num_addresses - 2 if net.prefixlen < 31 else net.num_addresses
+                        net.num_addresses - 2
+                        if net.prefixlen < 31
+                        else net.num_addresses
                     )
                     if count < 0:
                         count = 0
@@ -127,7 +131,8 @@ class PrefixScanService:
                             current_subnets = [net]
 
                             while any(
-                                sn.num_addresses > scan_max_ips for sn in current_subnets
+                                sn.num_addresses > scan_max_ips
+                                for sn in current_subnets
                             ):
                                 next_subnets = []
                                 for sn in current_subnets:
@@ -177,7 +182,8 @@ class PrefixScanService:
                     task_context.update_state(
                         state="PROGRESS",
                         meta={
-                            "status": "Splitting job: %s IPs > %s max..." % (total_ips_count, scan_max_ips),
+                            "status": "Splitting job: %s IPs > %s max..."
+                            % (total_ips_count, scan_max_ips),
                             "current": 0,
                             "total": 1,
                         },
@@ -201,7 +207,9 @@ class PrefixScanService:
                 if current_batch:
                     batches.append(current_batch)
 
-                logger.info("Split %s prefixes into %s sub-tasks", len(cidrs), len(batches))
+                logger.info(
+                    "Split %s prefixes into %s sub-tasks", len(cidrs), len(batches)
+                )
 
                 sub_task_ids = []
                 from tasks.scan_prefixes_task import scan_prefixes_task
@@ -230,7 +238,8 @@ class PrefixScanService:
 
                 result = {
                     "success": True,
-                    "message": "Job split into %s sub-tasks due to IP limit" % len(batches),
+                    "message": "Job split into %s sub-tasks due to IP limit"
+                    % len(batches),
                     "total_prefixes": len(original_cidrs),
                     "prefixes": original_cidrs,
                     "total_ips_to_scan": total_ips_count,
@@ -277,7 +286,11 @@ class PrefixScanService:
                     },
                 )
 
-            from tasks.ping_network_task import _fping_networks, _resolve_dns, _condense_ip_ranges
+            from tasks.ping_network_task import (
+                _fping_networks,
+                _resolve_dns,
+                _condense_ip_ranges,
+            )
 
             alive_ips = _fping_networks(
                 all_ips,
@@ -287,7 +300,9 @@ class PrefixScanService:
                 interval=interval_ms,
             )
             logger.info(
-                "fping found %s alive hosts out of %s targets", len(alive_ips), len(all_ips)
+                "fping found %s alive hosts out of %s targets",
+                len(alive_ips),
+                len(all_ips),
             )
 
             prefix_results: List[Dict[str, Any]] = []
@@ -297,7 +312,8 @@ class PrefixScanService:
                     task_context.update_state(
                         state="PROGRESS",
                         meta={
-                            "status": "Processing prefix %s/%s..." % (idx + 1, len(cidrs)),
+                            "status": "Processing prefix %s/%s..."
+                            % (idx + 1, len(cidrs)),
                             "current": idx + 1,
                             "total": len(cidrs),
                         },
@@ -340,7 +356,9 @@ class PrefixScanService:
                     try:
                         self._update_prefix_last_scan(cidr)
                     except Exception as e:
-                        logger.error("Failed to update prefix %s last_scan: %s", cidr, e)
+                        logger.error(
+                            "Failed to update prefix %s last_scan: %s", cidr, e
+                        )
 
                 prefix_results.append(
                     {
@@ -379,6 +397,7 @@ class PrefixScanService:
             logger.error("Scan prefixes task failed: %s", e, exc_info=True)
 
             import job_run_manager as _jrm
+
             if created_job_run and job_run_id:
                 _jrm.mark_failed(job_run_id, error_message=str(e))
 
@@ -405,7 +424,9 @@ class PrefixScanService:
         cf_{custom_field_name}
       }}
     }}
-    """.format(custom_field_name=custom_field_name, custom_field_value=custom_field_value)
+    """.format(
+            custom_field_name=custom_field_name, custom_field_value=custom_field_value
+        )
 
         try:
             logger.info(
@@ -465,7 +486,9 @@ class PrefixScanService:
 
             if results:
                 ip_id = results[0].get("id")
-                update_data = {"custom_fields": {response_custom_field_name: current_date}}
+                update_data = {
+                    "custom_fields": {response_custom_field_name: current_date}
+                }
 
                 if set_active:
                     status_response = requests.get(
@@ -495,7 +518,11 @@ class PrefixScanService:
 
                 response.raise_for_status()
 
-                log_msg = "Updated IP %s - %s=%s" % (ip_address, response_custom_field_name, current_date)
+                log_msg = "Updated IP %s - %s=%s" % (
+                    ip_address,
+                    response_custom_field_name,
+                    current_date,
+                )
                 if set_active:
                     log_msg += ", status=Active"
                 logger.info(log_msg)
@@ -512,7 +539,9 @@ class PrefixScanService:
                 prefixes = response.json().get("results", [])
 
                 if not prefixes:
-                    logger.error("No parent prefix found for IP %s in Nautobot", ip_address)
+                    logger.error(
+                        "No parent prefix found for IP %s in Nautobot", ip_address
+                    )
                     return False
 
                 def get_prefix_len(p):
@@ -542,7 +571,9 @@ class PrefixScanService:
 
                 parent_prefix_cidr = best_prefix.get("prefix", "")
                 prefix_length = (
-                    parent_prefix_cidr.split("/")[1] if "/" in parent_prefix_cidr else "32"
+                    parent_prefix_cidr.split("/")[1]
+                    if "/" in parent_prefix_cidr
+                    else "32"
                 )
 
                 ip_with_netmask = "%s/%s" % (ip_address, prefix_length)
@@ -619,7 +650,9 @@ class PrefixScanService:
 
             prefixes = response.json().get("results", [])
             if not prefixes:
-                logger.debug("Prefix %s not found, searching by containment", prefix_cidr)
+                logger.debug(
+                    "Prefix %s not found, searching by containment", prefix_cidr
+                )
                 network_addr = prefix_cidr.split("/")[0]
                 response = requests.get(
                     "%s/api/ipam/prefixes/" % base_url,

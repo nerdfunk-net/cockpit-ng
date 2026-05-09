@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import requests
 
@@ -54,7 +54,9 @@ class DeviceOnboardingService:
                 device_count,
                 ", ".join(ip_list),
             )
-            logger.info("Audit logging info: username=%s, user_id=%s", username, user_id)
+            logger.info(
+                "Audit logging info: username=%s, user_id=%s", username, user_id
+            )
 
             updater = ProgressUpdater(task_instance)
 
@@ -120,7 +122,8 @@ class DeviceOnboardingService:
 
                 updater.update(
                     "processing_devices",
-                    "Processing device %s/%s: %s" % (device_num, device_count, single_ip),
+                    "Processing device %s/%s: %s"
+                    % (device_num, device_count, single_ip),
                     current_progress,
                     job_id=job_id,
                     job_url=job_url,
@@ -157,20 +160,31 @@ class DeviceOnboardingService:
 
             if is_multi_device:
                 if all_success:
-                    message = "All %s devices successfully onboarded, configured, and synced" % device_count
+                    message = (
+                        "All %s devices successfully onboarded, configured, and synced"
+                        % device_count
+                    )
                     stage = "completed"
                 elif partial_success:
                     message = "%s/%s devices onboarded successfully, %s failed" % (
-                        successful_devices, device_count, failed_devices
+                        successful_devices,
+                        device_count,
+                        failed_devices,
                     )
                     stage = "partial_success"
                 else:
-                    message = "All %s devices failed to complete post-onboarding steps" % device_count
+                    message = (
+                        "All %s devices failed to complete post-onboarding steps"
+                        % device_count
+                    )
                     stage = "all_failed"
             else:
                 result = device_results[0]
                 if result.get("success"):
-                    message = "Device %s successfully onboarded, configured, and synced" % result.get("device_name", "unknown")
+                    message = (
+                        "Device %s successfully onboarded, configured, and synced"
+                        % result.get("device_name", "unknown")
+                    )
                     stage = "completed"
                 else:
                     message = result.get("error", "Device processing failed")
@@ -232,7 +246,9 @@ class DeviceOnboardingService:
             }
         }
 
-        job_url = "%s/api/extras/jobs/Sync%%20Devices%%20From%%20Network/run/" % nautobot_url
+        job_url = (
+            "%s/api/extras/jobs/Sync%%20Devices%%20From%%20Network/run/" % nautobot_url
+        )
         headers = get_nautobot_headers(nautobot_token)
 
         response = requests.post(job_url, json=job_data, headers=headers, timeout=30)
@@ -284,16 +300,13 @@ class DeviceOnboardingService:
                     status,
                 )
 
-                progress_percentage = min(
-                    30 + int((elapsed / max_wait) * 30), 59
-                )
+                progress_percentage = min(30 + int((elapsed / max_wait) * 30), 59)
                 task_instance.update_state(
                     state="PROGRESS",
                     meta={
                         "stage": "waiting",
-                        "status": "Waiting for onboarding job (check #%s, %ss elapsed, status: %s)" % (
-                            check_count, elapsed, status
-                        ),
+                        "status": "Waiting for onboarding job (check #%s, %ss elapsed, status: %s)"
+                        % (check_count, elapsed, status),
                         "progress": progress_percentage,
                         "job_id": job_id,
                     },
@@ -310,7 +323,9 @@ class DeviceOnboardingService:
                 time.sleep(2)
 
             except Exception as e:
-                logger.warning("Error checking job status (attempt %s): %s", check_count, e)
+                logger.warning(
+                    "Error checking job status (attempt %s): %s", check_count, e
+                )
                 check_count += 1
                 elapsed = int(time.time() - start_time)
 
@@ -319,9 +334,8 @@ class DeviceOnboardingService:
                     state="PROGRESS",
                     meta={
                         "stage": "waiting",
-                        "status": "Checking onboarding job status (attempt #%s, %ss elapsed)" % (
-                            check_count, elapsed
-                        ),
+                        "status": "Checking onboarding job status (attempt #%s, %ss elapsed)"
+                        % (check_count, elapsed),
                         "progress": progress_percentage,
                         "job_id": job_id,
                     },
@@ -331,7 +345,8 @@ class DeviceOnboardingService:
 
         return (
             False,
-            "Job timeout - exceeded %s seconds after %s status checks" % (max_wait, check_count),
+            "Job timeout - exceeded %s seconds after %s status checks"
+            % (max_wait, check_count),
         )
 
     def _get_device_id_from_ip(self, ip_address: str) -> tuple:
@@ -472,11 +487,16 @@ class DeviceOnboardingService:
                 }
             }
 
-            job_url = "%s/api/extras/jobs/Sync%%20Network%%20Data%%20From%%20Network/run/" % nautobot_url
+            job_url = (
+                "%s/api/extras/jobs/Sync%%20Network%%20Data%%20From%%20Network/run/"
+                % nautobot_url
+            )
             headers = get_nautobot_headers(nautobot_token)
 
             logger.info("Triggering network data sync job for device %s", device_id)
-            response = requests.post(job_url, json=job_data, headers=headers, timeout=30)
+            response = requests.post(
+                job_url, json=job_data, headers=headers, timeout=30
+            )
 
             if response.status_code in [200, 201, 202]:
                 result = response.json()
@@ -487,7 +507,8 @@ class DeviceOnboardingService:
                     "success": True,
                     "message": "Network data sync job started successfully",
                     "job_id": sync_job_id,
-                    "job_url": "%s/extras/job-results/%s/" % (nautobot_url, sync_job_id),
+                    "job_url": "%s/extras/job-results/%s/"
+                    % (nautobot_url, sync_job_id),
                     "sync_options": {
                         "cables": "cables" in sync_options,
                         "software": "software" in sync_options,
@@ -597,7 +618,9 @@ class DeviceOnboardingService:
             all_updates_success = all(r.get("success", False) for r in update_results)
 
             if update_results and not all_updates_success:
-                failed_updates = [r for r in update_results if not r.get("success", False)]
+                failed_updates = [
+                    r for r in update_results if not r.get("success", False)
+                ]
                 logger.warning(
                     "Some updates failed for %s: %s", device_name, failed_updates
                 )
@@ -630,7 +653,8 @@ class DeviceOnboardingService:
                 logger.info("Audit log created for device %s", device_name)
             else:
                 logger.warning(
-                    "No username provided, skipping audit log for device %s", device_name
+                    "No username provided, skipping audit log for device %s",
+                    device_name,
                 )
 
             return {
@@ -648,6 +672,7 @@ class DeviceOnboardingService:
             logger.error(error_msg, exc_info=True)
 
             from utils.audit_logger import log_device_onboarding
+
             if username:
                 log_device_onboarding(
                     username=username or "unknown",

@@ -1,7 +1,7 @@
 """Celery task for CSV import — thin entry point."""
 
 from celery_app import celery_app
-from services.nautobot.import.csv_import_service import CsvImportService
+from services.nautobot.imports.csv_import_service import CsvImportService
 
 _csv_import_service = CsvImportService()
 

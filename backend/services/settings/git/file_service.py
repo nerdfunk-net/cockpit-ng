@@ -7,7 +7,7 @@ import fnmatch
 import io
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import yaml
 from fastapi import HTTPException, status
@@ -91,6 +91,7 @@ class GitFileService:
                         filtered_files.append(file_info)
 
             if query:
+
                 def sort_key(item):
                     name_lower = item["name"].lower()
                     item["path"].lower()
@@ -153,7 +154,8 @@ class GitFileService:
                 except KeyError:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
-                        detail="File '%s' not found in commit %s" % (file_path, commit_hash[:8]),
+                        detail="File '%s' not found in commit %s"
+                        % (file_path, commit_hash[:8]),
                     )
 
             files = []
@@ -162,6 +164,7 @@ class GitFileService:
                     files.append(item.path)
 
             from config import settings
+
             config_extensions = settings.allowed_file_extensions
             config_files = [
                 f for f in files if any(f.endswith(ext) for ext in config_extensions)
@@ -239,7 +242,11 @@ class GitFileService:
             repo = get_git_repo_by_id(repo_id)
 
             repo_scope = "repo:%s" % repo_id
-            cache_key = "%s:filehistory:%s:%s" % (repo_scope, from_commit or "HEAD", file_path)
+            cache_key = "%s:filehistory:%s:%s" % (
+                repo_scope,
+                from_commit or "HEAD",
+                file_path,
+            )
             if cache_enabled and cache_service:
                 cached = cache_service.get(cache_key)
                 if cached is not None:
@@ -450,7 +457,9 @@ class GitFileService:
                 raise HTTPException(status_code=404, detail="File not found: %s" % path)
 
             if not os.path.isfile(file_path_resolved):
-                raise HTTPException(status_code=400, detail="Path is not a file: %s" % path)
+                raise HTTPException(
+                    status_code=400, detail="Path is not a file: %s" % path
+                )
 
             try:
                 with open(file_path_resolved, "r", encoding="utf-8") as f:
@@ -538,7 +547,9 @@ class GitFileService:
                 try:
                     items = os.listdir(dir_path)
                 except PermissionError:
-                    logger.warning("Permission denied accessing directory: %s", dir_path)
+                    logger.warning(
+                        "Permission denied accessing directory: %s", dir_path
+                    )
                     return None
 
                 dirs = []
@@ -674,7 +685,9 @@ class GitFileService:
                                 "email": last_commit.author.email,
                             },
                             "date": last_commit.committed_datetime.isoformat(),
-                            "timestamp": int(last_commit.committed_datetime.timestamp()),
+                            "timestamp": int(
+                                last_commit.committed_datetime.timestamp()
+                            ),
                         }
                     else:
                         commit_info = {
@@ -686,7 +699,9 @@ class GitFileService:
                             "timestamp": 0,
                         }
                 except Exception as e:
-                    logger.warning("Failed to get commit info for %s: %s", file_rel_path, e)
+                    logger.warning(
+                        "Failed to get commit info for %s: %s", file_rel_path, e
+                    )
                     commit_info = {
                         "hash": "",
                         "short_hash": "",
@@ -767,7 +782,9 @@ class GitFileService:
             if query:
                 q = query.lower()
                 csv_files = [
-                    f for f in csv_files if q in f["name"].lower() or q in f["path"].lower()
+                    f
+                    for f in csv_files
+                    if q in f["name"].lower() or q in f["path"].lower()
                 ]
 
             csv_files.sort(key=lambda x: x["path"])
@@ -819,7 +836,9 @@ class GitFileService:
                 raise HTTPException(status_code=404, detail="File not found: %s" % path)
 
             if not os.path.isfile(file_path_resolved):
-                raise HTTPException(status_code=400, detail="Path is not a file: %s" % path)
+                raise HTTPException(
+                    status_code=400, detail="Path is not a file: %s" % path
+                )
 
             try:
                 with open(file_path_resolved, "r", encoding="utf-8") as f:

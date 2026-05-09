@@ -3,7 +3,7 @@
 from celery_app import celery_app
 from typing import Optional, Dict, Any
 
-from services.nautobot.import.prefix_update_service import PrefixUpdateService
+from services.nautobot.imports.prefix_update_service import PrefixUpdateService
 
 _prefix_update_service = PrefixUpdateService()
 

@@ -159,9 +159,8 @@ class CsvImportService:
             if import_type not in _ENDPOINT_MAP:
                 return {
                     "success": False,
-                    "error": "Unsupported import type '%s'. Must be one of: %s" % (
-                        import_type, list(_ENDPOINT_MAP.keys())
-                    ),
+                    "error": "Unsupported import type '%s'. Must be one of: %s"
+                    % (import_type, list(_ENDPOINT_MAP.keys())),
                 }
 
             primary_key = primary_key.strip().lstrip("﻿").strip()
@@ -209,7 +208,9 @@ class CsvImportService:
                 abs_file_resolved = os.path.realpath(abs_file)
 
                 if not abs_file_resolved.startswith(repo_dir_resolved):
-                    logger.error("Security error: file path is outside repository: %s", fp)
+                    logger.error(
+                        "Security error: file path is outside repository: %s", fp
+                    )
                     failures.append(
                         {
                             "file": fp,
@@ -220,7 +221,9 @@ class CsvImportService:
 
                 if not os.path.exists(abs_file_resolved):
                     logger.error("CSV file not found: %s", fp)
-                    failures.append({"file": fp, "error": "CSV file not found: %s" % fp})
+                    failures.append(
+                        {"file": fp, "error": "CSV file not found: %s" % fp}
+                    )
                     continue
 
                 task_context.update_state(
@@ -228,7 +231,8 @@ class CsvImportService:
                     meta={
                         "current": int((file_idx - 1) / total_files * 90),
                         "total": 100,
-                        "status": "Parsing file %s/%s: %s" % (file_idx, total_files, fp),
+                        "status": "Parsing file %s/%s: %s"
+                        % (file_idx, total_files, fp),
                     },
                 )
 
@@ -237,7 +241,10 @@ class CsvImportService:
                         content = f.read()
                 except UnicodeDecodeError:
                     failures.append(
-                        {"file": fp, "error": "File is not a valid UTF-8 text file: %s" % fp}
+                        {
+                            "file": fp,
+                            "error": "File is not a valid UTF-8 text file: %s" % fp,
+                        }
                     )
                     continue
 
@@ -249,7 +256,9 @@ class CsvImportService:
                     )
                     rows = list(reader)
                 except Exception as e:
-                    failures.append({"file": fp, "error": "Failed to parse CSV: %s" % str(e)})
+                    failures.append(
+                        {"file": fp, "error": "Failed to parse CSV: %s" % str(e)}
+                    )
                     continue
 
                 if not rows:
@@ -311,8 +320,13 @@ class CsvImportService:
                                 meta={
                                     "current": progress,
                                     "total": 100,
-                                    "status": "File %s/%s: row %s/%s: %s" % (
-                                        file_idx, total_files, idx, total_rows, identifier
+                                    "status": "File %s/%s: row %s/%s: %s"
+                                    % (
+                                        file_idx,
+                                        total_files,
+                                        idx,
+                                        total_rows,
+                                        identifier,
                                     ),
                                     "created": len(created),
                                     "updated": len(updated),
@@ -419,7 +433,9 @@ class CsvImportService:
             try:
                 import job_run_manager
 
-                job_run = job_run_manager.get_job_run_by_celery_id(task_context.request.id)
+                job_run = job_run_manager.get_job_run_by_celery_id(
+                    task_context.request.id
+                )
                 if job_run:
                     job_run_manager.mark_completed(job_run["id"], result=result)
             except Exception as job_error:
@@ -436,7 +452,9 @@ class CsvImportService:
             try:
                 import job_run_manager
 
-                job_run = job_run_manager.get_job_run_by_celery_id(task_context.request.id)
+                job_run = job_run_manager.get_job_run_by_celery_id(
+                    task_context.request.id
+                )
                 if job_run:
                     job_run_manager.mark_failed(job_run["id"], error_msg)
             except Exception as job_error:
@@ -459,7 +477,9 @@ class CsvImportService:
         """Create or update a single Nautobot object based on whether it already exists."""
         if import_type == "devices":
             if iface_config is None:
-                nautobot_data, iface_config = self._extract_interface_config(nautobot_data)
+                nautobot_data, iface_config = self._extract_interface_config(
+                    nautobot_data
+                )
 
             if ctx.add_prefixes and ctx.default_prefix_length:
                 iface_config = self._apply_default_prefix_length(
@@ -469,7 +489,10 @@ class CsvImportService:
             if existing_id:
                 if not update_existing:
                     logger.info(
-                        "File %s row %s: %s already exists, skipping", fp, idx, identifier
+                        "File %s row %s: %s already exists, skipping",
+                        fp,
+                        idx,
+                        identifier,
                     )
                     ctx.skipped.append(
                         {
@@ -516,7 +539,12 @@ class CsvImportService:
                 if ctx.dry_run:
                     logger.info("[DRY RUN] Would create device %s", identifier)
                     ctx.created.append(
-                        {"file": fp, "row": idx, "identifier": identifier, "dry_run": True}
+                        {
+                            "file": fp,
+                            "row": idx,
+                            "identifier": identifier,
+                            "dry_run": True,
+                        }
                     )
                 else:
                     result = asyncio.run(
@@ -535,7 +563,10 @@ class CsvImportService:
             if existing_id:
                 if not update_existing:
                     logger.info(
-                        "File %s row %s: %s already exists, skipping", fp, idx, identifier
+                        "File %s row %s: %s already exists, skipping",
+                        fp,
+                        idx,
+                        identifier,
                     )
                     ctx.skipped.append(
                         {
@@ -580,16 +611,25 @@ class CsvImportService:
                 if ctx.dry_run:
                     logger.info("[DRY RUN] Would create %s %s", import_type, identifier)
                     ctx.created.append(
-                        {"file": fp, "row": idx, "identifier": identifier, "dry_run": True}
+                        {
+                            "file": fp,
+                            "row": idx,
+                            "identifier": identifier,
+                            "dry_run": True,
+                        }
                     )
                 else:
                     result = asyncio.run(
                         ctx.nautobot_service.rest_request(
-                            _ENDPOINT_MAP[import_type], method="POST", data=nautobot_data
+                            _ENDPOINT_MAP[import_type],
+                            method="POST",
+                            data=nautobot_data,
                         )
                     )
                     new_id = result.get("id") if isinstance(result, dict) else None
-                    logger.info("Created %s %s (id=%s)", import_type, identifier, new_id)
+                    logger.info(
+                        "Created %s %s (id=%s)", import_type, identifier, new_id
+                    )
                     ctx.created.append(
                         {"file": fp, "row": idx, "identifier": identifier, "id": new_id}
                     )
@@ -630,9 +670,8 @@ class CsvImportService:
                     meta={
                         "current": progress,
                         "total": 100,
-                        "status": "File %s/%s: device %s/%s: %s" % (
-                            file_idx, total_files, dev_idx, total_devices, identifier
-                        ),
+                        "status": "File %s/%s: device %s/%s: %s"
+                        % (file_idx, total_files, dev_idx, total_devices, identifier),
                         "created": len(ctx.created),
                         "updated": len(ctx.updated),
                         "skipped": len(ctx.skipped),
@@ -721,7 +760,7 @@ class CsvImportService:
             if key in _INTERFACE_FIELD_MAP:
                 iface_fields[_INTERFACE_FIELD_MAP[key]] = value
             elif key.startswith("interface_"):
-                iface_fields[key[len("interface_"):]] = value
+                iface_fields[key[len("interface_") :]] = value
             else:
                 device_data[key] = value
 

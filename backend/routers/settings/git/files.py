@@ -57,6 +57,7 @@ async def get_file_complete_history(
     cache_service=Depends(get_cache_service),
 ):
     from settings_manager import settings_manager
+
     cache_cfg = settings_manager.get_cache_settings()
     return _git_file_service.get_file_history(
         repo_id,

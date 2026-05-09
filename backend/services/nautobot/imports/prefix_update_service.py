@@ -7,7 +7,7 @@ import csv
 import io
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import service_factory
 
@@ -106,7 +106,8 @@ class PrefixUpdateService:
             if prefix_col not in headers:
                 return {
                     "success": False,
-                    "error": "CSV is missing required column '%s' (mapped from 'prefix')" % prefix_col,
+                    "error": "CSV is missing required column '%s' (mapped from 'prefix')"
+                    % prefix_col,
                 }
 
             logger.info("✓ Required column '%s' found", prefix_col)
@@ -114,7 +115,8 @@ class PrefixUpdateService:
             if namespace_col not in headers:
                 return {
                     "success": False,
-                    "error": "CSV is missing required column '%s' (mapped from 'namespace')" % namespace_col,
+                    "error": "CSV is missing required column '%s' (mapped from 'namespace')"
+                    % namespace_col,
                 }
 
             logger.info("✓ Required column '%s' found", namespace_col)
@@ -142,7 +144,9 @@ class PrefixUpdateService:
                 prefix_value = row.get(prefix_col, "").strip()
                 namespace_value = row.get(namespace_col, "").strip()
                 csv_uuid = (
-                    row.get(id_col, "").strip() if (not ignore_uuid and id_col) else None
+                    row.get(id_col, "").strip()
+                    if (not ignore_uuid and id_col)
+                    else None
                 )
 
                 if not namespace_value:
@@ -177,7 +181,8 @@ class PrefixUpdateService:
                         meta={
                             "current": progress,
                             "total": 100,
-                            "status": "Updating prefix %s/%s: %s" % (idx, total_prefixes, prefix_value),
+                            "status": "Updating prefix %s/%s: %s"
+                            % (idx, total_prefixes, prefix_value),
                             "successes": len(successes),
                             "failures": len(failures),
                             "skipped": len(skipped),
@@ -223,7 +228,8 @@ class PrefixUpdateService:
                                     "row": idx,
                                     "prefix": prefix_value,
                                     "namespace": namespace_value,
-                                    "error": "Prefix not found in namespace '%s'" % namespace_value,
+                                    "error": "Prefix not found in namespace '%s'"
+                                    % namespace_value,
                                 }
                             )
                             continue
@@ -246,7 +252,8 @@ class PrefixUpdateService:
                                         "row": idx,
                                         "prefix": prefix_value,
                                         "uuid": prefix_uuid,
-                                        "error": "Prefix with UUID '%s' not found" % prefix_uuid,
+                                        "error": "Prefix with UUID '%s' not found"
+                                        % prefix_uuid,
                                     }
                                 )
                                 continue
@@ -268,7 +275,9 @@ class PrefixUpdateService:
                     )
 
                     if not update_data:
-                        logger.info("No update data for prefix %s, skipping", identifier)
+                        logger.info(
+                            "No update data for prefix %s, skipping", identifier
+                        )
                         skipped.append(
                             {
                                 "row": idx,
@@ -309,11 +318,15 @@ class PrefixUpdateService:
                                 logger.info("    • %s:", field)
                                 for cf_key, cf_diff in diff.items():
                                     logger.info("        %s:", cf_key)
-                                    logger.info("          Current: %s", cf_diff["current"])
+                                    logger.info(
+                                        "          Current: %s", cf_diff["current"]
+                                    )
                                     logger.info("          New:     %s", cf_diff["new"])
                             elif field == "tags":
                                 logger.info("    • %s:", field)
-                                logger.info("        Current: %s", diff.get("current", []))
+                                logger.info(
+                                    "        Current: %s", diff.get("current", [])
+                                )
                                 logger.info("        New:     %s", diff.get("new", []))
                                 if "added" in diff and diff["added"]:
                                     logger.info("        Added:   %s", diff["added"])
@@ -326,7 +339,8 @@ class PrefixUpdateService:
 
                         if comparison["unchanged"]:
                             logger.info(
-                                "  Unchanged fields: %s", ", ".join(comparison["unchanged"])
+                                "  Unchanged fields: %s",
+                                ", ".join(comparison["unchanged"]),
                             )
 
                         logger.info("  Summary: %s", comparison["summary"])
@@ -349,7 +363,9 @@ class PrefixUpdateService:
                         logger.info("    Method: PATCH")
                         logger.info("    Payload: %s", update_data)
 
-                        result = self._update_prefix(nautobot_client, prefix_uuid, update_data)
+                        result = self._update_prefix(
+                            nautobot_client, prefix_uuid, update_data
+                        )
 
                         if result["success"]:
                             successes.append(
@@ -436,10 +452,14 @@ class PrefixUpdateService:
             try:
                 import job_run_manager
 
-                job_run = job_run_manager.get_job_run_by_celery_id(task_context.request.id)
+                job_run = job_run_manager.get_job_run_by_celery_id(
+                    task_context.request.id
+                )
                 if job_run:
                     job_run_manager.mark_completed(job_run["id"], result=result)
-                    logger.info("✓ Updated job run %s status to completed", job_run["id"])
+                    logger.info(
+                        "✓ Updated job run %s status to completed", job_run["id"]
+                    )
             except Exception as job_error:
                 logger.warning("Failed to update job run status: %s", job_error)
 
@@ -457,7 +477,9 @@ class PrefixUpdateService:
             try:
                 import job_run_manager
 
-                job_run = job_run_manager.get_job_run_by_celery_id(task_context.request.id)
+                job_run = job_run_manager.get_job_run_by_celery_id(
+                    task_context.request.id
+                )
                 if job_run:
                     job_run_manager.mark_failed(job_run["id"], error_msg)
                     logger.info("✓ Updated job run %s status to failed", job_run["id"])
@@ -517,13 +539,17 @@ class PrefixUpdateService:
             result = asyncio.run(nautobot_client.graphql_query(query, variables))
 
             if not result or "data" not in result:
-                logger.warning("No data returned from GraphQL query for prefix: %s", prefix)
+                logger.warning(
+                    "No data returned from GraphQL query for prefix: %s", prefix
+                )
                 return None, None
 
             prefixes = result.get("data", {}).get("prefixes", [])
 
             if not prefixes:
-                logger.warning("Prefix '%s' not found in namespace '%s'", prefix, namespace)
+                logger.warning(
+                    "Prefix '%s' not found in namespace '%s'", prefix, namespace
+                )
                 return None, None
 
             if len(prefixes) > 1:
@@ -571,7 +597,9 @@ class PrefixUpdateService:
             logger.error(
                 "[API CALL] ✗ Failed to update prefix %s: %s", prefix_uuid, error_msg
             )
-            logger.error("[API CALL]   - Update data that caused error: %s", update_data)
+            logger.error(
+                "[API CALL]   - Update data that caused error: %s", update_data
+            )
             return {"success": False, "error": error_msg}
 
     @staticmethod
@@ -604,11 +632,14 @@ class PrefixUpdateService:
         custom_fields = {}
 
         logger.info(
-            "[_prepare_prefix_update_data] selected_columns parameter: %s", selected_columns
+            "[_prepare_prefix_update_data] selected_columns parameter: %s",
+            selected_columns,
         )
         logger.info("[_prepare_prefix_update_data] CSV headers: %s", headers)
 
-        columns_to_process = selected_columns if selected_columns is not None else headers
+        columns_to_process = (
+            selected_columns if selected_columns is not None else headers
+        )
 
         logger.info(
             "[_prepare_prefix_update_data] Columns to process for update: %s",
@@ -625,7 +656,9 @@ class PrefixUpdateService:
                 if not value:
                     if tags_mode == "replace":
                         update_data[field] = []
-                        logger.debug("Replace mode: clearing all tags (empty value in CSV)")
+                        logger.debug(
+                            "Replace mode: clearing all tags (empty value in CSV)"
+                        )
                     continue
 
                 csv_tags = [tag.strip() for tag in value.split(",") if tag.strip()]
@@ -699,7 +732,8 @@ class PrefixUpdateService:
                     for field, value in update_data.items()
                 },
                 "unchanged": [],
-                "summary": "%s fields will be updated (no current data available)" % len(update_data),
+                "summary": "%s fields will be updated (no current data available)"
+                % len(update_data),
             }
 
         changes = {}
@@ -724,7 +758,9 @@ class PrefixUpdateService:
                 if changed_custom_fields:
                     changes["custom_fields"] = changed_custom_fields
                 if unchanged_custom_fields:
-                    unchanged.append("custom_fields.%s" % ",".join(unchanged_custom_fields))
+                    unchanged.append(
+                        "custom_fields.%s" % ",".join(unchanged_custom_fields)
+                    )
 
             elif field == "tags":
                 current_tags = existing_prefix.get("tags", [])
@@ -770,7 +806,8 @@ class PrefixUpdateService:
             summary = "No changes (all values match current data)"
         else:
             summary = "%s field(s) will change, %s will remain unchanged" % (
-                change_count, unchanged_count
+                change_count,
+                unchanged_count,
             )
 
         return {
