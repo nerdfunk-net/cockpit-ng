@@ -29,9 +29,12 @@ export function buildLocationHierarchy(locations: LocationItem[]): LocationItem[
 }
 
 /**
- * Converts DeviceFormValues to DeviceSubmissionData
+ * Converts DeviceFormValues to DeviceSubmissionData.
+ * Accepts an optional newVirtualChassisName override for inline stack creation.
  */
-export function formatDeviceSubmissionData(formData: DeviceFormValues): DeviceSubmissionData {
+export function formatDeviceSubmissionData(
+  formData: DeviceFormValues & { newVirtualChassisName?: string }
+): DeviceSubmissionData {
   return {
     name: formData.deviceName,
     serial: formData.serialNumber || undefined,
@@ -50,6 +53,7 @@ export function formatDeviceSubmissionData(formData: DeviceFormValues): DeviceSu
     face: formData.selectedFace || undefined,
     position: formData.rackPosition ?? undefined,
     virtual_chassis_id: formData.selectedVirtualChassisId || undefined,
+    new_virtual_chassis_name: formData.newVirtualChassisName || undefined,
     interfaces: formData.interfaces,
     add_prefix: formData.addPrefix,
     default_prefix_length: formData.defaultPrefixLength,

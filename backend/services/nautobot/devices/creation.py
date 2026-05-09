@@ -6,6 +6,7 @@ Handles the orchestrated workflow for creating devices with interfaces.
 
 import logging
 import ipaddress
+import re
 from typing import Optional, List, Dict, Any
 from models.nautobot import AddDeviceRequest, InterfaceData
 from services.nautobot.common.exceptions import NautobotAPIError
@@ -89,9 +90,13 @@ class DeviceCreationService:
         )
 
         # Step 1.5a: Assign device to virtual chassis if requested
-        if request.virtual_chassis_id:
+        if request.new_virtual_chassis_name:
+            await self._step1_5a_create_and_join_virtual_chassis(
+                device_id, request.new_virtual_chassis_name, workflow_status
+            )
+        elif request.virtual_chassis_id:
             await self._step1_5a_join_virtual_chassis(
-                device_id, request.virtual_chassis_id, workflow_status
+                device_id, request.virtual_chassis_id, request.name, workflow_status
             )
 
         # Step 1.5: Create prefixes if needed
@@ -455,29 +460,66 @@ class DeviceCreationService:
 
         return device_id, device_response
 
+    @staticmethod
+    def _extract_vc_position_from_name(device_name: str) -> Optional[int]:
+        """
+        Extract a VC position from the device name when it contains a ':'.
+
+        Examples:
+            "lab-004:4"          -> 4
+            "lab-004:4.local.zz" -> 4  (only the leading integer after ':')
+            "router1"            -> None (no ':')
+            "router:abc"         -> None (no leading integer after ':')
+        """
+        if ":" not in device_name:
+            return None
+        suffix = device_name.split(":", 1)[1]
+        match = re.match(r"^(\d+)", suffix)
+        if match:
+            return int(match.group(1))
+        return None
+
     async def _step1_5a_join_virtual_chassis(
-        self, device_id: str, vc_id: str, workflow_status: dict
+        self, device_id: str, vc_id: str, device_name: str, workflow_status: dict
     ) -> None:
         """
         Step 1.5a: Add the newly created device to an existing virtual chassis.
 
         In Nautobot, VC membership is set on the device itself via
         PATCH /dcim/devices/{id}/ with virtual_chassis and vc_position.
-        The next available position is determined by querying the current members.
+
+        Position resolution (in order of priority):
+        1. Leading integer after ':' in device_name (e.g. "lab-004:4" -> 4)
+        2. max(existing_positions) + 1 as fallback
         """
         logger.info(
             "Step 1.5a: Adding device %s to virtual chassis %s", device_id, vc_id
         )
         try:
-            members_resp = await self._nb.rest_request(
-                f"dcim/devices/?virtual_chassis={vc_id}&limit=100"
-            )
-            positions = [
-                m.get("vc_position")
-                for m in members_resp.get("results", [])
-                if m.get("vc_position") is not None
-            ]
-            next_position = (max(positions) + 1) if positions else 1
+            name_position = self._extract_vc_position_from_name(device_name)
+
+            if name_position is not None:
+                next_position = name_position
+                logger.info(
+                    "Using position %s extracted from device name '%s'",
+                    next_position,
+                    device_name,
+                )
+            else:
+                members_resp = await self._nb.rest_request(
+                    f"dcim/devices/?virtual_chassis={vc_id}&limit=100"
+                )
+                positions = [
+                    m.get("vc_position")
+                    for m in members_resp.get("results", [])
+                    if m.get("vc_position") is not None
+                ]
+                next_position = (max(positions) + 1) if positions else 1
+                logger.info(
+                    "Using auto-calculated position %s for device '%s'",
+                    next_position,
+                    device_name,
+                )
 
             await self._nb.rest_request(
                 f"dcim/devices/{device_id}/",
@@ -503,6 +545,58 @@ class DeviceCreationService:
             # Non-fatal: device was created successfully; log the warning in workflow status
             workflow_status["step1_device"]["message"] += (
                 f" (Warning: could not join virtual chassis: {exc})"
+            )
+
+    async def _step1_5a_create_and_join_virtual_chassis(
+        self, device_id: str, vc_name: str, workflow_status: dict
+    ) -> None:
+        """
+        Step 1.5a (new VC): Create a new virtual chassis and add the device as master at position 1.
+
+        Three sub-steps:
+        1. POST /dcim/virtual-chassis/ to create the VC
+        2. PATCH /dcim/devices/{id}/ to assign the device to the VC at position 1
+        3. PATCH /dcim/virtual-chassis/{id}/ to set the device as master
+        """
+        logger.info(
+            "Step 1.5a: Creating new virtual chassis '%s' with device %s as master",
+            vc_name,
+            device_id,
+        )
+        try:
+            vc = await self._nb.rest_request(
+                "dcim/virtual-chassis/",
+                method="POST",
+                data={"name": vc_name},
+            )
+            vc_id = vc["id"]
+
+            await self._nb.rest_request(
+                f"dcim/devices/{device_id}/",
+                method="PATCH",
+                data={"virtual_chassis": {"id": vc_id}, "vc_position": 1},
+            )
+
+            await self._nb.rest_request(
+                f"dcim/virtual-chassis/{vc_id}/",
+                method="PATCH",
+                data={"master": {"id": device_id}},
+            )
+            logger.info(
+                "Created virtual chassis '%s' (%s) with device %s as master",
+                vc_name,
+                vc_id,
+                device_id,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Failed to create virtual chassis '%s' for device %s: %s",
+                vc_name,
+                device_id,
+                exc,
+            )
+            workflow_status["step1_device"]["message"] += (
+                f" (Warning: could not create virtual chassis '{vc_name}': {exc})"
             )
 
     async def _step1_5_create_prefixes(

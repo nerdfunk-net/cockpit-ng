@@ -245,6 +245,7 @@ export interface DeviceSubmissionData {
   face?: string
   position?: number
   virtual_chassis_id?: string
+  new_virtual_chassis_name?: string
   interfaces: InterfaceData[]
   add_prefix: boolean
   default_prefix_length: string

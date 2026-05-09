@@ -333,6 +333,7 @@ export function AddDevicePage() {
         selectedFace: rackManager.selectedFace || undefined,
         rackPosition: rackManager.position !== '' ? rackManager.position : undefined,
         selectedVirtualChassisId: vcManager.selectedVcId || undefined,
+        newVirtualChassisName: vcManager.newVcName.trim() || undefined,
       })
       const result = await createDevice.mutateAsync(submissionData)
 
@@ -486,7 +487,10 @@ export function AddDevicePage() {
           items={virtualChassisList}
           isLoading={isLoadingVirtualChassis}
           selectedVcId={vcManager.selectedVcId}
+          newVcName={vcManager.newVcName}
+          mode={vcManager.mode}
           onSelect={vcManager.selectVirtualChassis}
+          onNewVcNameChange={vcManager.updateNewVcName}
           onClear={vcManager.clearSelection}
         />
 

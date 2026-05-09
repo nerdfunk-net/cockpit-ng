@@ -149,6 +149,8 @@ class AddDeviceRequest(BaseModel):
     default_prefix_length: str = "/24"
     # Virtual chassis membership (optional)
     virtual_chassis_id: Optional[str] = None
+    # Create a new virtual chassis and join it as master (mutually exclusive with virtual_chassis_id)
+    new_virtual_chassis_name: Optional[str] = None
     # Interfaces array
     interfaces: list[InterfaceData] = []
     # Dry run: validate without creating
