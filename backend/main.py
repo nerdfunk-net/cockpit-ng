@@ -391,9 +391,8 @@ async def _startup_services():
 
     # Initialize next_run for job schedules that don't have one
     try:
-        import jobs_manager
-
-        result = jobs_manager.initialize_schedule_next_runs()
+        import service_factory
+        result = service_factory.build_job_schedule_service().initialize_schedule_next_runs()
         if result["initialized_count"] > 0:
             logger.info(
                 "Initialized next_run for %s job schedules", result["initialized_count"]

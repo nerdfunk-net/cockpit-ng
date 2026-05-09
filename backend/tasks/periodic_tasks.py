@@ -159,7 +159,8 @@ def dispatch_cache_task(self, cache_type: str, task_name: str) -> dict:
         task_name: Celery task name string (cache_all_devices, cache_all_locations)
     """
     try:
-        import job_run_manager
+        import service_factory
+        _jrs = service_factory.build_job_run_service()
         from services.background_jobs import (
             cache_all_devices_task,
             cache_all_locations_task,
@@ -176,7 +177,7 @@ def dispatch_cache_task(self, cache_type: str, task_name: str) -> dict:
             return {"success": False, "error": "Unknown task: %s" % task_name}
 
         # Create job run record before dispatching
-        job_run = job_run_manager.create_job_run(
+        job_run = _jrs.create_job_run(
             job_name="Cache %s" % cache_type.replace("_", " ").title(),
             job_type="cache_%s" % cache_type,
             triggered_by="system",
@@ -187,7 +188,7 @@ def dispatch_cache_task(self, cache_type: str, task_name: str) -> dict:
         async_result = celery_task.apply_async(kwargs={"job_run_id": job_run_id})
 
         # Mark started with the REAL task ID
-        job_run_manager.mark_started(job_run_id, async_result.id)
+        _jrs.mark_started(job_run_id, async_result.id)
 
         logger.info(
             "Dispatched %s cache task (job_run=%s, celery_task=%s)",
@@ -280,10 +281,10 @@ def cleanup_celery_data_task() -> dict:
         # Remove old job runs from database
         removed_job_runs = 0
         try:
-            import job_run_manager
-
+            import service_factory
+            _jrs = service_factory.build_job_run_service()
             # Use the hours-based cleanup function
-            removed_job_runs = job_run_manager.cleanup_old_runs_hours(cleanup_age_hours)
+            removed_job_runs = _jrs.cleanup_old_runs_hours(cleanup_age_hours)
         except Exception as e:
             logger.warning("Error cleaning up job runs: %s", e)
 
@@ -400,12 +401,13 @@ def check_stale_jobs_task() -> dict:
     Runs every 10 minutes.
     """
     try:
-        import job_run_manager
+        import service_factory
+        _jrs = service_factory.build_job_run_service()
         from celery_app import celery_app
 
         # Get all running/pending jobs
-        running_jobs = job_run_manager.get_recent_runs(limit=500, status="running")
-        pending_jobs = job_run_manager.get_recent_runs(limit=500, status="pending")
+        running_jobs = _jrs.get_recent_runs(limit=500, status="running")
+        pending_jobs = _jrs.get_recent_runs(limit=500, status="pending")
 
         # Get active Celery tasks
         inspect = celery_app.control.inspect()
@@ -439,7 +441,7 @@ def check_stale_jobs_task() -> dict:
             if running_duration > 7200:  # 2 hours
                 # Check if task still exists in Celery
                 if celery_task_id not in active_task_ids:
-                    job_run_manager.mark_failed(
+                    _jrs.mark_failed(
                         job["id"],
                         "Job marked as failed - exceeded maximum runtime (2 hours) and not found in active tasks",
                     )
@@ -470,7 +472,7 @@ def check_stale_jobs_task() -> dict:
             # Job pending for more than 1 hour
             pending_duration = (now - queued_at).total_seconds()
             if pending_duration > 3600:  # 1 hour
-                job_run_manager.mark_failed(
+                _jrs.mark_failed(
                     job["id"],
                     "Job marked as failed - stuck in pending state for over 1 hour",
                 )

@@ -290,3 +290,23 @@ def get_credentials_service():
 def get_profile_service():
     """Provide the profile_service module."""
     return service_factory.build_profile_service()
+
+
+# ---------------------------------------------------------------------------
+# Jobs
+# ---------------------------------------------------------------------------
+
+
+def get_job_template_service():
+    """Provide a JobTemplateService instance."""
+    return service_factory.build_job_template_service()
+
+
+def get_job_schedule_service():
+    """Provide a JobScheduleService instance."""
+    return service_factory.build_job_schedule_service()
+
+
+def get_job_run_service():
+    """Provide a JobRunService instance."""
+    return service_factory.build_job_run_service()

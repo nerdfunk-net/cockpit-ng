@@ -48,9 +48,11 @@ def dispatch_job(
     Returns:
         dict: Job execution results
     """
-    import job_run_manager
-    import job_template_manager
+    import service_factory
     from tasks.utils.device_helpers import get_target_devices
+
+    _jrs = service_factory.build_job_run_service()
+    _template_svc = service_factory.build_job_template_service()
     from tasks.execution.base_executor import execute_job_type
 
     job_run = None
@@ -66,7 +68,7 @@ def dispatch_job(
 
         # Get template details if needed
         if template_id:
-            template = job_template_manager.get_job_template(template_id)
+            template = _template_svc.get_job_template(template_id)
             logger.info(
                 "[DISPATCH] Template ID %s loaded: %s",
                 template_id,
@@ -85,7 +87,7 @@ def dispatch_job(
             logger.info("[DISPATCH] No template_id provided")
 
         # Create job run record
-        job_run = job_run_manager.create_job_run(
+        job_run = _jrs.create_job_run(
             job_name=job_name,
             job_type=job_type or "unknown",
             triggered_by=triggered_by,
@@ -97,7 +99,7 @@ def dispatch_job(
         job_run_id = job_run["id"]
 
         # Mark as started
-        job_run_manager.mark_started(job_run_id, self.request.id)
+        _jrs.mark_started(job_run_id, self.request.id)
 
         # Execute the appropriate task based on job_type
         result = execute_job_type(
@@ -120,11 +122,11 @@ def dispatch_job(
                 job_name,
             )
         elif result.get("success") or result_status == "completed":
-            job_run_manager.mark_completed(job_run_id, result=result)
+            _jrs.mark_completed(job_run_id, result=result)
             logger.info("Job %s completed successfully", job_name)
         else:
             error_msg = result.get("error", result.get("message", "Unknown error"))
-            job_run_manager.mark_failed(job_run_id, error_msg)
+            _jrs.mark_failed(job_run_id, error_msg)
             logger.warning("Job %s failed: %s", job_name, error_msg)
 
         return result
@@ -137,7 +139,7 @@ def dispatch_job(
 
         # Update job run if we created one
         if job_run:
-            job_run_manager.mark_failed(job_run["id"], error_msg)
+            _jrs.mark_failed(job_run["id"], error_msg)
 
         return {
             "success": False,

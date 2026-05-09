@@ -8,7 +8,7 @@ import logging
 
 from fastapi import APIRouter, Depends
 
-import job_run_manager
+import service_factory
 from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
 from models.celery import GetClientDataRequest, TaskWithJobResponse
@@ -28,7 +28,8 @@ async def trigger_get_client_data(
     username = current_user.get("username", "unknown")
     device_count = len(request.inventory) if request.inventory else 0
 
-    job_run = job_run_manager.create_job_run(
+    _jrs = service_factory.build_job_run_service()
+    job_run = _jrs.create_job_run(
         job_name="Get Client Data",
         job_type="get_client_data",
         triggered_by="manual",
@@ -55,7 +56,7 @@ async def trigger_get_client_data(
     )
 
     if job_run_id:
-        job_run_manager.mark_started(job_run_id, task.id)
+        _jrs.mark_started(job_run_id, task.id)
 
     target_desc = f"{device_count} devices" if device_count else "all devices"
     return TaskWithJobResponse(

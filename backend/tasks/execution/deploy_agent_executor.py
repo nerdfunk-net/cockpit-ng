@@ -52,17 +52,18 @@ def execute_deploy_agent(
         logger.info("Schedule ID: %s", schedule_id)
         logger.info("Job run ID: %s", job_run_id)
 
-        # Import required managers
-        import job_template_manager
-        import jobs_manager
+        import service_factory
+
+        _schedule_svc = service_factory.build_job_schedule_service()
+        _template_svc = service_factory.build_job_template_service()
 
         # Resolve template if not provided directly
         if not template and schedule_id:
-            schedule = jobs_manager.get_job_schedule(schedule_id)
+            schedule = _schedule_svc.get_job_schedule(schedule_id)
             if schedule:
                 template_id = schedule.get("job_template_id")
                 if template_id:
-                    template = job_template_manager.get_job_template(template_id)
+                    template = _template_svc.get_job_template(template_id)
 
         if not template:
             return {

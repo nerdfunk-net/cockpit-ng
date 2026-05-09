@@ -251,7 +251,8 @@ class TemplateRenderOrchestrator:
     ) -> TemplateExecuteAndSyncResponse:
         """Render template per device, parse output, queue Celery update task."""
         from tasks.update_devices_task import update_devices_task
-        import job_run_manager
+        import service_factory
+        _jrs = service_factory.build_job_run_service()
 
         template = self._tm.get_template(request.template_id)
         if not template:
@@ -331,13 +332,13 @@ class TemplateRenderOrchestrator:
         task = update_devices_task.delay(devices=parsed_updates, dry_run=False)
 
         job_name = f"Sync to Nautobot from template '{template['name']}'"
-        job_run = job_run_manager.create_job_run(
+        job_run = _jrs.create_job_run(
             job_name=job_name,
             job_type="template_execute_and_sync",
             triggered_by="manual",
             executed_by=username,
         )
-        job_run_manager.mark_started(job_run["id"], task.id)
+        _jrs.mark_started(job_run["id"], task.id)
 
         return TemplateExecuteAndSyncResponse(
             success=True,

@@ -8,7 +8,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.auth import require_permission
-import job_run_manager
+from dependencies import get_job_run_service
+from services.jobs.job_run_service import JobRunService
 from models.jobs import JobRunResponse, JobRunListResponse
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ async def list_job_runs(
         None, description="Filter by template ID (comma-separated for multiple)"
     ),
     current_user: dict = Depends(require_permission("jobs", "read")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     List job runs with pagination and optional filters.
@@ -64,7 +66,7 @@ async def list_job_runs(
             else None
         )
 
-        result = job_run_manager.list_job_runs(
+        result = job_run_service.list_job_runs(
             page=page,
             page_size=page_size,
             status=status_list,
@@ -83,12 +85,13 @@ async def list_job_runs(
 @router.get("/templates")
 async def get_distinct_templates(
     current_user: dict = Depends(require_permission("jobs", "read")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Get distinct templates used in job runs (for filter dropdown).
     """
     try:
-        templates = job_run_manager.get_distinct_templates()
+        templates = job_run_service.get_distinct_templates()
         return {"templates": templates}
     except Exception as e:
         logger.error("Error getting templates: %s", e, exc_info=True)
@@ -101,12 +104,13 @@ async def get_recent_runs(
     status: Optional[str] = Query(None, description="Filter by status"),
     job_type: Optional[str] = Query(None, description="Filter by job type"),
     current_user: dict = Depends(require_permission("jobs", "read")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Get recent job runs (simplified endpoint for dashboard).
     """
     try:
-        runs = job_run_manager.get_recent_runs(
+        runs = job_run_service.get_recent_runs(
             limit=limit, status=status, job_type=job_type
         )
         return runs
@@ -118,6 +122,7 @@ async def get_recent_runs(
 @router.get("/stats")
 async def get_job_stats(
     current_user: dict = Depends(require_permission("jobs", "read")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Get job queue statistics.
@@ -125,7 +130,7 @@ async def get_job_stats(
     Returns counts of running and pending jobs.
     """
     try:
-        stats = job_run_manager.get_queue_stats()
+        stats = job_run_service.get_queue_stats()
         return stats
     except Exception as e:
         logger.error("Error getting job stats: %s", e, exc_info=True)
@@ -135,6 +140,7 @@ async def get_job_stats(
 @router.get("/dashboard/stats")
 async def get_dashboard_stats(
     current_user: dict = Depends(require_permission("jobs", "read")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Get dashboard statistics for job runs.
@@ -144,7 +150,7 @@ async def get_dashboard_stats(
     - Backup device statistics (total devices backed up, success, failed)
     """
     try:
-        stats = job_run_manager.get_dashboard_stats()
+        stats = job_run_service.get_dashboard_stats()
         return stats
     except Exception as e:
         logger.error("Error getting dashboard stats: %s", e, exc_info=True)
@@ -154,6 +160,7 @@ async def get_dashboard_stats(
 @router.get("/dashboard/compare-devices")
 async def get_latest_compare_devices_result(
     current_user: dict = Depends(require_permission("jobs", "read")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Get the latest compare_devices job result for dashboard.
@@ -164,7 +171,7 @@ async def get_latest_compare_devices_result(
     """
     try:
         # Get the most recent completed compare_devices job
-        runs = job_run_manager.get_recent_runs(
+        runs = job_run_service.get_recent_runs(
             limit=1, status="completed", job_type="compare_devices"
         )
 
@@ -204,6 +211,7 @@ async def get_latest_compare_devices_result(
 @router.get("/dashboard/ip-addresses")
 async def get_latest_ip_addresses_result(
     current_user: dict = Depends(require_permission("jobs", "read")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Get the latest ip_addresses job result for dashboard.
@@ -216,7 +224,7 @@ async def get_latest_ip_addresses_result(
     - completed_at: when the job completed
     """
     try:
-        runs = job_run_manager.get_recent_runs(
+        runs = job_run_service.get_recent_runs(
             limit=10, status="completed", job_type="ip_addresses"
         )
 
@@ -255,6 +263,7 @@ async def get_latest_ip_addresses_result(
 @router.get("/dashboard/scan-prefix")
 async def get_latest_scan_prefix_result(
     current_user: dict = Depends(require_permission("jobs", "read")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Get the latest scan_prefix job result for dashboard.
@@ -275,7 +284,7 @@ async def get_latest_scan_prefix_result(
             hour=0, minute=0, second=0, microsecond=0
         )
 
-        runs = job_run_manager.get_runs_since(
+        runs = job_run_service.get_runs_since(
             since=today_midnight, status="completed", job_type="scan_prefixes"
         )
 
@@ -338,7 +347,7 @@ async def get_latest_scan_prefix_result(
 
             # Fetch sub-tasks directly by their celery_task_ids
             # This ensures we get all sub-tasks even if they're not in the recent runs
-            sub_task_runs = job_run_manager.get_job_runs_by_celery_ids(sub_task_ids)
+            sub_task_runs = job_run_service.get_job_runs_by_celery_ids(sub_task_ids)
 
             for sub_run in sub_task_runs:
                 sub_result = sub_run.get("result", {})
@@ -389,13 +398,15 @@ async def get_latest_scan_prefix_result(
 
 @router.get("/{run_id}", response_model=JobRunResponse)
 async def get_job_run(
-    run_id: int, current_user: dict = Depends(require_permission("jobs", "read"))
+    run_id: int,
+    current_user: dict = Depends(require_permission("jobs", "read")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Get a specific job run by ID.
     """
     try:
-        run = job_run_manager.get_job_run(run_id)
+        run = job_run_service.get_job_run(run_id)
         if not run:
             raise HTTPException(status_code=404, detail=f"Job run {run_id} not found")
         return run
@@ -408,7 +419,9 @@ async def get_job_run(
 
 @router.get("/{run_id}/progress")
 async def get_job_progress(
-    run_id: int, current_user: dict = Depends(require_permission("jobs", "read"))
+    run_id: int,
+    current_user: dict = Depends(require_permission("jobs", "read")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Get progress information for a running backup job.
@@ -419,7 +432,7 @@ async def get_job_progress(
         from celery_app import celery_app
 
         # Get job run to check status
-        run = job_run_manager.get_job_run(run_id)
+        run = job_run_service.get_job_run(run_id)
         if not run:
             raise HTTPException(status_code=404, detail=f"Job run {run_id} not found")
 
@@ -477,12 +490,13 @@ async def get_schedule_runs(
     schedule_id: int,
     limit: int = Query(50, ge=1, le=200, description="Number of runs to return"),
     current_user: dict = Depends(require_permission("jobs", "read")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Get job runs for a specific schedule.
     """
     try:
-        runs = job_run_manager.get_schedule_runs(schedule_id, limit=limit)
+        runs = job_run_service.get_schedule_runs(schedule_id, limit=limit)
         return runs
     except Exception as e:
         logger.error(
@@ -493,7 +507,9 @@ async def get_schedule_runs(
 
 @router.post("/{run_id}/cancel")
 async def cancel_job_run(
-    run_id: int, current_user: dict = Depends(require_permission("jobs", "write"))
+    run_id: int,
+    current_user: dict = Depends(require_permission("jobs", "write")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Cancel a pending or running job.
@@ -501,7 +517,7 @@ async def cancel_job_run(
     Note: This marks the job as cancelled but may not stop a running Celery task.
     """
     try:
-        run = job_run_manager.get_job_run(run_id)
+        run = job_run_service.get_job_run(run_id)
         if not run:
             raise HTTPException(status_code=404, detail=f"Job run {run_id} not found")
 
@@ -520,7 +536,7 @@ async def cancel_job_run(
             except Exception as e:
                 logger.warning("Could not revoke Celery task: %s", e)
 
-        updated = job_run_manager.mark_cancelled(run_id)
+        updated = job_run_service.mark_cancelled(run_id)
         if updated:
             return {"message": f"Job run {run_id} cancelled", "job_run": updated}
 
@@ -539,12 +555,13 @@ async def cleanup_old_runs(
         30, ge=1, le=365, description="Delete runs older than this many days"
     ),
     current_user: dict = Depends(require_permission("jobs", "delete")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Clean up old job runs (admin only).
     """
     try:
-        count = job_run_manager.cleanup_old_runs(days=days)
+        count = job_run_service.cleanup_old_runs(days=days)
         return {"message": f"Cleaned up {count} old job runs", "deleted_count": count}
     except Exception as e:
         logger.error("Error cleaning up job runs: %s", e, exc_info=True)
@@ -554,12 +571,13 @@ async def cleanup_old_runs(
 @router.delete("/clear-all")
 async def clear_all_runs(
     current_user: dict = Depends(require_permission("jobs", "write")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Clear all job run history.
     """
     try:
-        count = job_run_manager.clear_all_runs()
+        count = job_run_service.clear_all_runs()
         return {"message": f"Cleared {count} job runs", "deleted_count": count}
     except Exception as e:
         logger.error("Error clearing job runs: %s", e, exc_info=True)
@@ -581,6 +599,7 @@ async def clear_filtered_runs(
         None, description="Filter by template ID (comma-separated for multiple)"
     ),
     current_user: dict = Depends(require_permission("jobs", "write")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Clear job runs matching the specified filters.
@@ -598,7 +617,7 @@ async def clear_filtered_runs(
             else None
         )
 
-        count = job_run_manager.clear_filtered_runs(
+        count = job_run_service.clear_filtered_runs(
             status=status_list,
             job_type=job_type_list,
             triggered_by=triggered_by_list,
@@ -631,13 +650,15 @@ async def clear_filtered_runs(
 
 @router.delete("/{run_id}")
 async def delete_job_run(
-    run_id: int, current_user: dict = Depends(require_permission("jobs", "write"))
+    run_id: int,
+    current_user: dict = Depends(require_permission("jobs", "write")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Delete a single job run from history.
     """
     try:
-        run = job_run_manager.get_job_run(run_id)
+        run = job_run_service.get_job_run(run_id)
         if not run:
             raise HTTPException(status_code=404, detail=f"Job run {run_id} not found")
 
@@ -648,7 +669,7 @@ async def delete_job_run(
                 detail=f"Cannot delete job with status: {run['status']}. Cancel it first.",
             )
 
-        deleted = job_run_manager.delete_job_run(run_id)
+        deleted = job_run_service.delete_job_run(run_id)
         if deleted:
             return {"message": f"Job run {run_id} deleted", "deleted": True}
 
@@ -663,19 +684,21 @@ async def delete_job_run(
 
 @router.post("/execute/{schedule_id}")
 async def execute_job_manually(
-    schedule_id: int, current_user: dict = Depends(require_permission("jobs", "write"))
+    schedule_id: int,
+    current_user: dict = Depends(require_permission("jobs", "write")),
+    job_run_service: JobRunService = Depends(get_job_run_service),
 ):
     """
     Execute a job schedule manually (trigger immediate run).
     """
     try:
-        import jobs_manager
-        import job_template_manager
+        import service_factory
         from tasks import dispatch_job
 
         # Get the schedule
         logger.info("Executing schedule %s manually", schedule_id)
-        schedule = jobs_manager.get_job_schedule(schedule_id)
+        _schedule_svc = service_factory.build_job_schedule_service()
+        schedule = _schedule_svc.get_job_schedule(schedule_id)
         if not schedule:
             logger.error("Schedule %s not found", schedule_id)
             raise HTTPException(
@@ -698,7 +721,8 @@ async def execute_job_manually(
             )
 
         logger.info("Template ID: %s", template_id)
-        template = job_template_manager.get_job_template(template_id)
+        _template_svc = service_factory.build_job_template_service()
+        template = _template_svc.get_job_template(template_id)
         if not template:
             logger.error("Template %s not found in database", template_id)
             raise HTTPException(

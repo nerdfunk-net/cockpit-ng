@@ -15,7 +15,6 @@ import service_factory
 from celery_app import celery_app
 from services.settings.manager import SettingsManager as _SM
 settings_manager = _SM()
-import job_run_manager
 
 logger = logging.getLogger(__name__)
 
@@ -327,9 +326,10 @@ def check_ip_task(
 
         # Update job run with completion status and results
         try:
-            job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
+            _jrs = service_factory.build_job_run_service()
+            job_run = _jrs.get_job_run_by_celery_id(self.request.id)
             if job_run:
-                job_run_manager.mark_completed(job_run["id"], result=result_data)
+                _jrs.mark_completed(job_run["id"], result=result_data)
                 logger.info("Job run %s marked as completed", job_run["id"])
         except Exception as e:
             logger.error("Error updating job run: %s", str(e))
@@ -342,9 +342,10 @@ def check_ip_task(
 
         # Update job run with failure status
         try:
-            job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
+            _jrs = service_factory.build_job_run_service()
+            job_run = _jrs.get_job_run_by_celery_id(self.request.id)
             if job_run:
-                job_run_manager.mark_failed(job_run["id"], error_message=str(e))
+                _jrs.mark_failed(job_run["id"], error_message=str(e))
         except Exception as update_error:
             logger.error("Error updating job run on failure: %s", str(update_error))
 

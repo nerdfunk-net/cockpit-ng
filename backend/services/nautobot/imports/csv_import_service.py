@@ -431,13 +431,11 @@ class CsvImportService:
             }
 
             try:
-                import job_run_manager
-
-                job_run = job_run_manager.get_job_run_by_celery_id(
-                    task_context.request.id
-                )
+                import service_factory
+                _jrs = service_factory.build_job_run_service()
+                job_run = _jrs.get_job_run_by_celery_id(task_context.request.id)
                 if job_run:
-                    job_run_manager.mark_completed(job_run["id"], result=result)
+                    _jrs.mark_completed(job_run["id"], result=result)
             except Exception as job_error:
                 logger.warning("Failed to update job run status: %s", job_error)
 
@@ -450,13 +448,11 @@ class CsvImportService:
             error_result = {"success": False, "error": error_msg}
 
             try:
-                import job_run_manager
-
-                job_run = job_run_manager.get_job_run_by_celery_id(
-                    task_context.request.id
-                )
+                import service_factory
+                _jrs = service_factory.build_job_run_service()
+                job_run = _jrs.get_job_run_by_celery_id(task_context.request.id)
                 if job_run:
-                    job_run_manager.mark_failed(job_run["id"], error_msg)
+                    _jrs.mark_failed(job_run["id"], error_msg)
             except Exception as job_error:
                 logger.warning("Failed to update job run status: %s", job_error)
 

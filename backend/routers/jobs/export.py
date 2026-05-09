@@ -11,7 +11,7 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 
-import job_run_manager
+import service_factory
 from celery_app import celery_app
 from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
@@ -164,14 +164,15 @@ async def trigger_export_devices(
         csv_options=csv_options,
     )
 
-    job_run = job_run_manager.create_job_run(
+    _jrs = service_factory.build_job_run_service()
+    job_run = _jrs.create_job_run(
         job_name=f"Export {len(request.device_ids)} devices to {request.export_format.upper()}",
         job_type="export_devices",
         triggered_by="manual",
         target_devices=request.device_ids,
         executed_by=current_user.get("username"),
     )
-    job_run_manager.mark_started(job_run["id"], task.id)
+    _jrs.mark_started(job_run["id"], task.id)
 
     return TaskWithJobResponse(
         task_id=task.id,
@@ -266,7 +267,8 @@ async def trigger_csv_export(
 ):
     from tasks.csv_export_task import csv_export_task
 
-    job_run = job_run_manager.create_job_run(
+    _jrs = service_factory.build_job_run_service()
+    job_run = _jrs.create_job_run(
         job_name="CSV Export",
         job_type="csv_export",
         triggered_by="manual",
@@ -285,7 +287,7 @@ async def trigger_csv_export(
         job_run_id=job_run["id"],
     )
 
-    job_run_manager.mark_started(job_run["id"], task.id)
+    _jrs.mark_started(job_run["id"], task.id)
 
     return TaskWithJobResponse(
         task_id=task.id,

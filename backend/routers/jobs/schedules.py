@@ -7,7 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
 from datetime import datetime, timezone
 from core.auth import verify_token, require_permission
-import jobs_manager
+from dependencies import get_job_schedule_service
+from services.jobs.job_schedule_service import JobScheduleService
 from models.jobs import (
     JobScheduleCreate,
     JobScheduleUpdate,
@@ -24,7 +25,9 @@ router = APIRouter(prefix="/api/job-schedules", tags=["job-schedules"])
 
 @router.post("", response_model=JobScheduleResponse)
 async def create_job_schedule(
-    job_data: JobScheduleCreate, current_user: dict = Depends(verify_token)
+    job_data: JobScheduleCreate,
+    current_user: dict = Depends(verify_token),
+    job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
 ):
     """
     Create a new job schedule
@@ -52,7 +55,7 @@ async def create_job_schedule(
             job_data.user_id = current_user["user_id"]
 
         # Create the job schedule
-        job_schedule = jobs_manager.create_job_schedule(
+        job_schedule = job_schedule_service.create_job_schedule(
             job_identifier=job_data.job_identifier,
             job_template_id=job_data.job_template_id,
             schedule_type=job_data.schedule_type,
@@ -98,6 +101,7 @@ async def list_job_schedules(
     is_global: Optional[bool] = None,
     is_active: Optional[bool] = None,
     current_user: dict = Depends(verify_token),
+    job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
 ):
     """
     List all job schedules accessible to the current user
@@ -108,7 +112,7 @@ async def list_job_schedules(
     """
     try:
         # Get jobs accessible to this user
-        jobs = jobs_manager.get_user_job_schedules(current_user["user_id"])
+        jobs = job_schedule_service.get_user_job_schedules(current_user["user_id"])
 
         # Apply additional filters if provided
         if is_global is not None:
@@ -128,10 +132,14 @@ async def list_job_schedules(
 
 
 @router.get("/{job_id}", response_model=JobScheduleResponse)
-async def get_job_schedule(job_id: int, current_user: dict = Depends(verify_token)):
+async def get_job_schedule(
+    job_id: int,
+    current_user: dict = Depends(verify_token),
+    job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
+):
     """Get a specific job schedule by ID"""
     try:
-        job = jobs_manager.get_job_schedule(job_id)
+        job = job_schedule_service.get_job_schedule(job_id)
 
         if not job:
             raise HTTPException(
@@ -162,11 +170,12 @@ async def update_job_schedule(
     job_id: int,
     job_update: JobScheduleUpdate,
     current_user: dict = Depends(verify_token),
+    job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
 ):
     """Update a job schedule"""
     try:
         # Get existing job
-        job = jobs_manager.get_job_schedule(job_id)
+        job = job_schedule_service.get_job_schedule(job_id)
 
         if not job:
             raise HTTPException(
@@ -196,7 +205,7 @@ async def update_job_schedule(
                 )
 
         # Update the job
-        updated_job = jobs_manager.update_job_schedule(
+        updated_job = job_schedule_service.update_job_schedule(
             job_id=job_id,
             job_identifier=job_update.job_identifier,
             schedule_type=job_update.schedule_type,
@@ -222,11 +231,15 @@ async def update_job_schedule(
 
 
 @router.delete("/{job_id}")
-async def delete_job_schedule(job_id: int, current_user: dict = Depends(verify_token)):
+async def delete_job_schedule(
+    job_id: int,
+    current_user: dict = Depends(verify_token),
+    job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
+):
     """Delete a job schedule"""
     try:
         # Get existing job
-        job = jobs_manager.get_job_schedule(job_id)
+        job = job_schedule_service.get_job_schedule(job_id)
 
         if not job:
             raise HTTPException(
@@ -256,7 +269,7 @@ async def delete_job_schedule(job_id: int, current_user: dict = Depends(verify_t
                 )
 
         # Delete the job
-        deleted = jobs_manager.delete_job_schedule(job_id)
+        deleted = job_schedule_service.delete_job_schedule(job_id)
 
         if not deleted:
             raise HTTPException(
@@ -294,7 +307,9 @@ async def delete_job_schedule(job_id: int, current_user: dict = Depends(verify_t
 
 @router.post("/execute")
 async def execute_job(
-    execution_request: JobExecutionRequest, current_user: dict = Depends(verify_token)
+    execution_request: JobExecutionRequest,
+    current_user: dict = Depends(verify_token),
+    job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
 ):
     """
     Execute a job immediately
@@ -304,7 +319,7 @@ async def execute_job(
     """
     try:
         # Get the job schedule
-        job = jobs_manager.get_job_schedule(execution_request.job_schedule_id)
+        job = job_schedule_service.get_job_schedule(execution_request.job_schedule_id)
 
         if not job:
             raise HTTPException(
@@ -318,7 +333,7 @@ async def execute_job(
                 detail="Access denied: You cannot execute this private job",
             )
 
-        import job_template_manager
+        import service_factory
         from tasks import dispatch_job
 
         template_id = job.get("job_template_id")
@@ -328,7 +343,8 @@ async def execute_job(
                 detail="Schedule has no associated template. Please edit the schedule and select a job template.",
             )
 
-        template = job_template_manager.get_job_template(template_id)
+        _template_svc = service_factory.build_job_template_service()
+        template = _template_svc.get_job_template(template_id)
         if not template:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -379,7 +395,10 @@ async def execute_job(
 
 
 @router.get("/debug/scheduler-status")
-async def get_scheduler_debug_status(current_user: dict = Depends(verify_token)):
+async def get_scheduler_debug_status(
+    current_user: dict = Depends(verify_token),
+    job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
+):
     """
     Get detailed scheduler debug information.
 
@@ -394,7 +413,7 @@ async def get_scheduler_debug_status(current_user: dict = Depends(verify_token))
         now_local = datetime.now()
 
         # Get all schedules
-        all_schedules = jobs_manager.list_job_schedules()
+        all_schedules = job_schedule_service.list_job_schedules()
         active_schedules = [s for s in all_schedules if s.get("is_active")]
 
         # Check which schedules are due
@@ -490,13 +509,14 @@ async def get_scheduler_debug_status(current_user: dict = Depends(verify_token))
 @router.post("/debug/recalculate-next-runs")
 async def recalculate_all_next_runs(
     current_user: dict = Depends(require_permission("jobs", "write")),
+    job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
 ):
     """
     Recalculate next_run for all active schedules.
     Useful when schedules seem stuck or out of sync.
     """
     try:
-        result = jobs_manager.initialize_schedule_next_runs()
+        result = job_schedule_service.initialize_schedule_next_runs()
 
         return {
             "success": True,

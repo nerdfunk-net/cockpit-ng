@@ -349,10 +349,11 @@ def bulk_onboard_devices_task(
 
     # Update job run in database (for Jobs/View)
     try:
-        import job_run_manager
+        import service_factory
+        _jrs = service_factory.build_job_run_service()
 
         # Find job run by celery task ID
-        job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
+        job_run = _jrs.get_job_run_by_celery_id(self.request.id)
         if job_run:
             run_id = job_run.get("id")
             result_data = {
@@ -363,10 +364,10 @@ def bulk_onboard_devices_task(
             }
 
             if all_success or partial_success:
-                job_run_manager.mark_completed(run_id, result=result_data)
+                _jrs.mark_completed(run_id, result=result_data)
                 logger.info("Marked job run %s as completed", run_id)
             else:
-                job_run_manager.mark_failed(run_id, message)
+                _jrs.mark_failed(run_id, message)
                 logger.info("Marked job run %s as failed", run_id)
     except Exception as e:
         logger.warning("Failed to update job run status: %s", e)

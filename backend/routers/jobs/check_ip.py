@@ -6,7 +6,7 @@ import logging
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
-import job_run_manager
+import service_factory
 from celery_app import celery_app
 from core.auth import require_permission
 from models.celery import TaskResponse
@@ -54,7 +54,8 @@ async def check_ip_task_endpoint(
             args=[csv_string, delimiter, quote_char],
         )
 
-        job_run = job_run_manager.create_job_run(
+        _jrs = service_factory.build_job_run_service()
+        job_run = _jrs.create_job_run(
             job_name="Check IP Addresses",
             job_type="check_ip",
             triggered_by="manual",
@@ -62,7 +63,7 @@ async def check_ip_task_endpoint(
         )
 
         if job_run:
-            job_run_manager.mark_started(job_run["id"], task.id)
+            _jrs.mark_started(job_run["id"], task.id)
 
         logger.info("Started check IP task %s for file %s", task.id, csv_file.filename)
 

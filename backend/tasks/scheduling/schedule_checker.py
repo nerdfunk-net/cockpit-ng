@@ -29,16 +29,18 @@ def check_job_schedules_task() -> Dict[str, Any]:
     try:
         logger.debug("Checking for due job schedules...")
 
-        import jobs_manager
-        import job_template_manager
+        import service_factory
         from .job_dispatcher import dispatch_job
+
+        _schedule_svc = service_factory.build_job_schedule_service()
+        _template_svc = service_factory.build_job_template_service()
 
         now = datetime.now(timezone.utc)
         dispatched = []
         errors = []
 
         # Get all active schedules
-        schedules = jobs_manager.list_job_schedules(is_active=True)
+        schedules = _schedule_svc.list_job_schedules(is_active=True)
 
         for schedule in schedules:
             try:
@@ -63,7 +65,7 @@ def check_job_schedules_task() -> Dict[str, Any]:
                     )
                     continue
 
-                template = job_template_manager.get_job_template(template_id)
+                template = _template_svc.get_job_template(template_id)
                 if not template:
                     logger.warning(
                         "Template %s not found for schedule %s",
@@ -94,7 +96,7 @@ def check_job_schedules_task() -> Dict[str, Any]:
                 )
 
                 # Update next_run for the schedule
-                jobs_manager.calculate_and_update_next_run(schedule["id"])
+                _schedule_svc.calculate_and_update_next_run(schedule["id"])
 
             except Exception as e:
                 error_msg = f"Error dispatching schedule {schedule.get('id')}: {str(e)}"

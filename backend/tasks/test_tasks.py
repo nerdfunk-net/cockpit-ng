@@ -84,7 +84,8 @@ def debug_wait_task(self, duration: int = 60, job_run_id: int = None) -> dict:
     Returns:
         dict: Result with success status
     """
-    import job_run_manager
+    import service_factory
+    _jrs = service_factory.build_job_run_service()
 
     logger.info(
         "DEBUG wait task started (duration=%ss, job_run_id=%s)", duration, job_run_id
@@ -92,7 +93,7 @@ def debug_wait_task(self, duration: int = 60, job_run_id: int = None) -> dict:
 
     try:
         if job_run_id:
-            job_run_manager.mark_started(job_run_id, self.request.id)
+            _jrs.mark_started(job_run_id, self.request.id)
 
         for i in range(duration):
             self.update_state(
@@ -112,7 +113,7 @@ def debug_wait_task(self, duration: int = 60, job_run_id: int = None) -> dict:
         }
 
         if job_run_id:
-            job_run_manager.mark_completed(job_run_id, result=result)
+            _jrs.mark_completed(job_run_id, result=result)
 
         logger.info("DEBUG wait task finished (job_run_id=%s)", job_run_id)
         return result
@@ -122,6 +123,6 @@ def debug_wait_task(self, duration: int = 60, job_run_id: int = None) -> dict:
         logger.error("DEBUG wait task failed: %s", error_msg)
 
         if job_run_id:
-            job_run_manager.mark_failed(job_run_id, error_msg)
+            _jrs.mark_failed(job_run_id, error_msg)
 
         return {"success": False, "error": error_msg}

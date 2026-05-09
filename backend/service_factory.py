@@ -422,3 +422,32 @@ def build_profile_service():
     import services.auth.profile_service as profile_service
 
     return profile_service
+
+
+# ---------------------------------------------------------------------------
+# Jobs services
+# ---------------------------------------------------------------------------
+
+
+def build_job_template_service():
+    """Create a fresh JobTemplateService instance."""
+    from services.jobs.job_template_service import JobTemplateService
+
+    return JobTemplateService()
+
+
+def build_job_schedule_service():
+    """Create a fresh JobScheduleService instance (with JobTemplateService injected)."""
+    from services.jobs.job_schedule_service import JobScheduleService
+
+    return JobScheduleService(template_service=build_job_template_service())
+
+
+def build_job_run_service():
+    """Create a fresh JobRunService instance (with schedule and template services injected)."""
+    from services.jobs.job_run_service import JobRunService
+
+    return JobRunService(
+        schedule_service=build_job_schedule_service(),
+        template_service=build_job_template_service(),
+    )

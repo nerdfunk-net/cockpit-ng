@@ -9,7 +9,7 @@ import math
 
 from fastapi import APIRouter, Depends
 
-import job_run_manager
+import service_factory
 from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
 from models.celery import (
@@ -89,7 +89,8 @@ async def trigger_bulk_onboard_devices(
 
         ip_addresses = [d.get("ip_address", "unknown") for d in devices_data]
         try:
-            job_run = job_run_manager.create_job_run(
+            _jrs = service_factory.build_job_run_service()
+            job_run = _jrs.create_job_run(
                 job_name=f"Bulk Onboard {device_count} Devices (CSV)",
                 job_type="bulk_onboard",
                 triggered_by="manual",
@@ -98,7 +99,7 @@ async def trigger_bulk_onboard_devices(
             )
             job_run_id = job_run.get("id")
             if job_run_id:
-                job_run_manager.mark_started(job_run_id, task.id)
+                _jrs.mark_started(job_run_id, task.id)
                 logger.info(
                     "Created job run %s for bulk onboard task %s", job_run_id, task.id
                 )
@@ -133,7 +134,8 @@ async def trigger_bulk_onboard_devices(
 
         ip_addresses = [d.get("ip_address", "unknown") for d in batch_devices]
         try:
-            job_run = job_run_manager.create_job_run(
+            _jrs = service_factory.build_job_run_service()
+            job_run = _jrs.create_job_run(
                 job_name=f"Bulk Onboard Batch {batch_num + 1}/{parallel_jobs} ({len(batch_devices)} devices)",
                 job_type="bulk_onboard",
                 triggered_by="manual",
@@ -142,7 +144,7 @@ async def trigger_bulk_onboard_devices(
             )
             job_run_id = job_run.get("id")
             if job_run_id:
-                job_run_manager.mark_started(job_run_id, task.id)
+                _jrs.mark_started(job_run_id, task.id)
                 logger.info(
                     "Created job run %s for batch %s task %s",
                     job_run_id,

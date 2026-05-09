@@ -82,8 +82,8 @@ def execute_backup(
         git_service = service_factory.build_git_service()
         git_auth_service = service_factory.build_git_auth_service()
         credentials_manager = service_factory.build_credentials_service()
-        import jobs_manager
-        import job_template_manager
+        _schedule_svc = service_factory.build_job_schedule_service()
+        _template_svc = service_factory.build_job_template_service()
 
         # Get config_repository_id and backup paths from job_parameters or template
         config_repository_id = None
@@ -102,13 +102,13 @@ def execute_backup(
         # If not in job_parameters, try to get from template via schedule
         if not config_repository_id and schedule_id:
             logger.info("Fetching template from schedule %s...", schedule_id)
-            schedule = jobs_manager.get_job_schedule(schedule_id)
+            schedule = _schedule_svc.get_job_schedule(schedule_id)
             if schedule:
                 template_id = schedule.get("job_template_id")
                 logger.info("Schedule has template ID: %s", template_id)
 
                 if template_id:
-                    template = job_template_manager.get_job_template(template_id)
+                    template = _template_svc.get_job_template(template_id)
                     if template:
                         config_repository_id = template.get("config_repository_id")
                         backup_running_config_path = template.get(

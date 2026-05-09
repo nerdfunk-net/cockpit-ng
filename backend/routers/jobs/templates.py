@@ -6,7 +6,8 @@ API endpoints for managing job templates
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Optional
 from core.auth import verify_token
-import job_template_manager
+from dependencies import get_job_template_service
+from services.jobs.job_template_service import JobTemplateService
 from models.job_templates import (
     JobTemplateCreate,
     JobTemplateUpdate,
@@ -23,7 +24,9 @@ router = APIRouter(prefix="/api/job-templates", tags=["job-templates"])
 
 @router.post("", response_model=JobTemplateResponse)
 async def create_job_template(
-    template_data: JobTemplateCreate, current_user: dict = Depends(verify_token)
+    template_data: JobTemplateCreate,
+    current_user: dict = Depends(verify_token),
+    job_template_service: JobTemplateService = Depends(get_job_template_service),
 ):
     """
     Create a new job template
@@ -46,7 +49,7 @@ async def create_job_template(
                 )
 
         # Create the template
-        template = job_template_manager.create_job_template(
+        template = job_template_service.create_job_template(
             name=template_data.name,
             job_type=template_data.job_type,
             user_id=current_user["user_id"],
@@ -154,7 +157,9 @@ async def create_job_template(
 
 @router.get("", response_model=JobTemplateListResponse)
 async def list_job_templates(
-    job_type: Optional[str] = None, current_user: dict = Depends(verify_token)
+    job_type: Optional[str] = None,
+    current_user: dict = Depends(verify_token),
+    job_template_service: JobTemplateService = Depends(get_job_template_service),
 ):
     """
     List all job templates accessible to the current user
@@ -164,7 +169,7 @@ async def list_job_templates(
     - User's private templates
     """
     try:
-        templates = job_template_manager.get_user_job_templates(
+        templates = job_template_service.get_user_job_templates(
             current_user["user_id"], job_type
         )
 
@@ -182,18 +187,23 @@ async def list_job_templates(
 
 
 @router.get("/types")
-async def get_job_types(current_user: dict = Depends(verify_token)):
+async def get_job_types(
+    current_user: dict = Depends(verify_token),
+    job_template_service: JobTemplateService = Depends(get_job_template_service),
+):
     """Get available job types"""
-    return job_template_manager.get_job_types()
+    return job_template_service.get_job_types()
 
 
 @router.get("/{template_id}", response_model=JobTemplateResponse)
 async def get_job_template(
-    template_id: int, current_user: dict = Depends(verify_token)
+    template_id: int,
+    current_user: dict = Depends(verify_token),
+    job_template_service: JobTemplateService = Depends(get_job_template_service),
 ):
     """Get a specific job template by ID"""
     try:
-        template = job_template_manager.get_job_template(template_id)
+        template = job_template_service.get_job_template(template_id)
 
         if not template:
             raise HTTPException(
@@ -227,10 +237,11 @@ async def update_job_template(
     template_id: int,
     update_data: JobTemplateUpdate,
     current_user: dict = Depends(verify_token),
+    job_template_service: JobTemplateService = Depends(get_job_template_service),
 ):
     """Update a job template"""
     try:
-        template = job_template_manager.get_job_template(template_id)
+        template = job_template_service.get_job_template(template_id)
 
         if not template:
             raise HTTPException(
@@ -257,7 +268,7 @@ async def update_job_template(
                 )
 
         # Update the template
-        updated_template = job_template_manager.update_job_template(
+        updated_template = job_template_service.update_job_template(
             template_id=template_id,
             name=update_data.name,
             description=update_data.description,
@@ -365,11 +376,13 @@ async def update_job_template(
 
 @router.delete("/{template_id}")
 async def delete_job_template(
-    template_id: int, current_user: dict = Depends(verify_token)
+    template_id: int,
+    current_user: dict = Depends(verify_token),
+    job_template_service: JobTemplateService = Depends(get_job_template_service),
 ):
     """Delete a job template"""
     try:
-        template = job_template_manager.get_job_template(template_id)
+        template = job_template_service.get_job_template(template_id)
 
         if not template:
             raise HTTPException(
@@ -395,7 +408,7 @@ async def delete_job_template(
                     detail="Access denied: You can only delete your own private templates",
                 )
 
-        deleted = job_template_manager.delete_job_template(template_id)
+        deleted = job_template_service.delete_job_template(template_id)
 
         if not deleted:
             raise HTTPException(

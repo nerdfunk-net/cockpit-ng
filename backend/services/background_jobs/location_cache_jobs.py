@@ -84,9 +84,9 @@ def cache_all_locations_task(self, job_run_id: int = None) -> Dict[str, Any]:
                 "cached": 0,
             }
             if job_run_id:
-                import job_run_manager
-
-                job_run_manager.mark_completed(job_run_id, result=result)
+                import service_factory
+                _jrs = service_factory.build_job_run_service()
+                _jrs.mark_completed(job_run_id, result=result)
             return result
 
         logger.info(
@@ -123,9 +123,9 @@ def cache_all_locations_task(self, job_run_id: int = None) -> Dict[str, Any]:
             "total": total_locations,
         }
         if job_run_id:
-            import job_run_manager
-
-            job_run_manager.mark_completed(job_run_id, result=result)
+            import service_factory
+            _jrs = service_factory.build_job_run_service()
+            _jrs.mark_completed(job_run_id, result=result)
         return result
 
     except Exception as e:
@@ -142,7 +142,7 @@ def cache_all_locations_task(self, job_run_id: int = None) -> Dict[str, Any]:
             "cached": 0,
         }
         if job_run_id:
-            import job_run_manager
-
-            job_run_manager.mark_failed(job_run_id, error_msg)
+            import service_factory
+            _jrs = service_factory.build_job_run_service()
+            _jrs.mark_failed(job_run_id, error_msg)
         return result

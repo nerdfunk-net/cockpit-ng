@@ -12,7 +12,7 @@ import os
 import socket
 from typing import List, Dict, Any, Set
 
-import job_run_manager
+import service_factory
 
 logger = logging.getLogger(__name__)
 
@@ -309,7 +309,8 @@ def ping_network_task(
 
     try:
         # Create job run record
-        job_run = job_run_manager.create_job_run(
+        _jrs = service_factory.build_job_run_service()
+        job_run = _jrs.create_job_run(
             job_name=f"Ping Network ({len(cidrs)} network(s))",
             job_type="ping_network",
             triggered_by="manual",
@@ -319,7 +320,7 @@ def ping_network_task(
         job_run_id = job_run["id"]
 
         # Mark job as started
-        job_run_manager.mark_started(job_run_id, self.request.id)
+        _jrs.mark_started(job_run_id, self.request.id)
 
         logger.info(
             "Ping network task started: %s networks, resolve_dns=%s",
@@ -420,7 +421,7 @@ def ping_network_task(
         }
 
         # Mark job as completed
-        job_run_manager.mark_completed(job_run_id, result=result)
+        _jrs.mark_completed(job_run_id, result=result)
 
         logger.info(
             "Ping network task completed: %s/%s reachable", len(alive_ips), len(all_ips)
@@ -432,7 +433,7 @@ def ping_network_task(
 
         # Mark job as failed
         if job_run_id:
-            job_run_manager.mark_failed(job_run_id, error_message=str(e))
+            _jrs.mark_failed(job_run_id, error_message=str(e))
 
         return {
             "success": False,

@@ -273,11 +273,11 @@ def import_devices_from_csv_task(
 
         # Update job run status if this task is tracked
         try:
-            import job_run_manager
-
-            job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
+            import service_factory
+            _jrs = service_factory.build_job_run_service()
+            job_run = _jrs.get_job_run_by_celery_id(self.request.id)
             if job_run:
-                job_run_manager.mark_completed(job_run["id"], result=result)
+                _jrs.mark_completed(job_run["id"], result=result)
                 logger.info("✓ Updated job run %s status to completed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)
@@ -295,11 +295,11 @@ def import_devices_from_csv_task(
 
         # Update job run status to failed if tracked
         try:
-            import job_run_manager
-
-            job_run = job_run_manager.get_job_run_by_celery_id(self.request.id)
+            import service_factory
+            _jrs = service_factory.build_job_run_service()
+            job_run = _jrs.get_job_run_by_celery_id(self.request.id)
             if job_run:
-                job_run_manager.mark_failed(job_run["id"], error_msg)
+                _jrs.mark_failed(job_run["id"], error_msg)
                 logger.info("✓ Updated job run %s status to failed", job_run["id"])
         except Exception as job_error:
             logger.warning("Failed to update job run status: %s", job_error)

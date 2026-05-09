@@ -48,7 +48,7 @@ def finalize_backup_task(
     import service_factory
 
     git_service = service_factory.build_git_service()
-    import job_run_manager
+    _jrs = service_factory.build_job_run_service()
 
     logger.info("=" * 80)
     logger.info("FINALIZE BACKUP (CHORD CALLBACK)")
@@ -151,7 +151,7 @@ def finalize_backup_task(
     job_run_id = repo_config.get("job_run_id")
     if job_run_id:
         try:
-            job_run_manager.mark_completed(job_run_id, result=final_result)
+            _jrs.mark_completed(job_run_id, result=final_result)
             logger.info("✓ Updated job_run %s with detailed results", job_run_id)
         except Exception as e:
             logger.error(

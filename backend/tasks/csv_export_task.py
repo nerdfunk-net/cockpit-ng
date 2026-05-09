@@ -268,9 +268,9 @@ def _run_csv_export(
 
         if job_run_id:
             try:
-                import job_run_manager
-
-                job_run_manager.mark_completed(job_run_id, result=result)
+                import service_factory
+                _jrs = service_factory.build_job_run_service()
+                _jrs.mark_completed(job_run_id, result=result)
                 logger.info("Updated job run %s to completed", job_run_id)
             except Exception as job_err:
                 logger.warning("Failed to update job run: %s", job_err)
@@ -288,9 +288,9 @@ def _run_csv_export(
 
         if job_run_id:
             try:
-                import job_run_manager
-
-                job_run_manager.mark_failed(job_run_id, str(e))
+                import service_factory
+                _jrs = service_factory.build_job_run_service()
+                _jrs.mark_failed(job_run_id, str(e))
             except Exception as job_err:
                 logger.warning("Failed to update job run to failed: %s", job_err)
 

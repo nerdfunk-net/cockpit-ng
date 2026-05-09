@@ -219,7 +219,7 @@ def sync_devices_to_checkmk_task(
 
         nb2cmk_service = service_factory.build_nb2cmk_service()
         nb2cmk_db_service = service_factory.build_nb2cmk_db_service()
-        import job_run_manager
+        _jrs = service_factory.build_job_run_service()
 
         total_devices = len(device_ids)
         success_count = 0
@@ -234,7 +234,7 @@ def sync_devices_to_checkmk_task(
         )
 
         # Also create job run entry for Jobs/Views app visibility
-        job_run = job_run_manager.create_job_run(
+        job_run = _jrs.create_job_run(
             job_name=f"Sync {total_devices} devices to CheckMK",
             job_type="sync_devices",
             triggered_by="manual",
@@ -243,7 +243,7 @@ def sync_devices_to_checkmk_task(
         )
         job_run_id = job_run.get("id")
         if job_run_id:
-            job_run_manager.mark_started(job_run_id, self.request.id)
+            _jrs.mark_started(job_run_id, self.request.id)
 
         logger.info(
             "Created sync job %s (run_id: %s) for %s devices",
@@ -557,7 +557,7 @@ def sync_devices_to_checkmk_task(
                 "results": results,
                 "activation": activation_result,
             }
-            job_run_manager.mark_completed(job_run_id, result=result_summary)
+            _jrs.mark_completed(job_run_id, result=result_summary)
 
         # Update final progress
         nb2cmk_db_service.update_job_progress(
@@ -593,9 +593,9 @@ def sync_devices_to_checkmk_task(
         # Also mark job run as failed for Jobs/Views app
         if job_run_id:
             try:
-                import job_run_manager
-
-                job_run_manager.mark_failed(job_run_id, str(e))
+                import service_factory
+                _jrs = service_factory.build_job_run_service()
+                _jrs.mark_failed(job_run_id, str(e))
             except Exception as run_error:
                 logger.error("Failed to update job run status: %s", run_error)
 

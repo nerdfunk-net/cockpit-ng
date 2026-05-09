@@ -47,7 +47,7 @@ def main():
 
     # Import after path setup
     try:
-        import job_run_manager
+        import service_factory
         from tasks.test_tasks import debug_wait_task
     except ImportError as exc:
         print(
@@ -57,8 +57,9 @@ def main():
         )
         sys.exit(1)
 
+    _jrs = service_factory.build_job_run_service()
     # Create the job_run record first (status: pending)
-    job_run = job_run_manager.create_job_run(
+    job_run = _jrs.create_job_run(
         job_name=f"Debug Wait ({duration}s)",
         job_type="cache_devices",  # use an existing job_type so it appears with a known label
         triggered_by="manual",

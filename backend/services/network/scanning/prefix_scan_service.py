@@ -39,13 +39,14 @@ class PrefixScanService:
         Determines prefixes to scan, splits into sub-tasks if needed, or runs
         the full fping/DNS/Nautobot update cycle.
         """
-        import job_run_manager
+        import service_factory
+        _jrs = service_factory.build_job_run_service()
 
         created_job_run = False
 
         try:
             if job_run_id is None and task_context:
-                job_run = job_run_manager.create_job_run(
+                job_run = _jrs.create_job_run(
                     job_name="Scan Prefixes (%s=%s)"
                     % (custom_field_name, custom_field_value),
                     job_type="scan_prefixes",
@@ -55,7 +56,7 @@ class PrefixScanService:
                 )
                 job_run_id = job_run["id"]
                 created_job_run = True
-                job_run_manager.mark_started(job_run_id, task_context.request.id)
+                _jrs.mark_started(job_run_id, task_context.request.id)
 
             logger.info(
                 "Scan prefixes task started: custom_field=%s, value=%s, max_ips=%s",
@@ -95,7 +96,7 @@ class PrefixScanService:
                 }
 
                 if created_job_run:
-                    job_run_manager.mark_completed(job_run_id, result=result)
+                    _jrs.mark_completed(job_run_id, result=result)
                 return result
 
             from tasks.ping_network_task import _expand_cidr_to_ips
@@ -248,7 +249,7 @@ class PrefixScanService:
                 }
 
                 if created_job_run:
-                    job_run_manager.mark_completed(job_run_id, result=result)
+                    _jrs.mark_completed(job_run_id, result=result)
 
                 return result
 
@@ -384,7 +385,7 @@ class PrefixScanService:
             }
 
             if created_job_run and job_run_id:
-                job_run_manager.mark_completed(job_run_id, result=result)
+                _jrs.mark_completed(job_run_id, result=result)
 
             logger.info(
                 "Scan prefixes task completed: %s/%s reachable",
@@ -396,10 +397,8 @@ class PrefixScanService:
         except Exception as e:
             logger.error("Scan prefixes task failed: %s", e, exc_info=True)
 
-            import job_run_manager as _jrm
-
             if created_job_run and job_run_id:
-                _jrm.mark_failed(job_run_id, error_message=str(e))
+                _jrs.mark_failed(job_run_id, error_message=str(e))
 
             return {
                 "success": False,

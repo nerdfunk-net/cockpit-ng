@@ -10,7 +10,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-import job_run_manager
+import service_factory
 from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
 from models.celery import (
@@ -64,13 +64,14 @@ async def trigger_update_devices_from_csv(
     )
 
     job_name = f"Update devices from CSV{'(DRY RUN)' if request.dry_run else ''}"
-    job_run = job_run_manager.create_job_run(
+    _jrs = service_factory.build_job_run_service()
+    job_run = _jrs.create_job_run(
         job_name=job_name,
         job_type="update_devices_from_csv",
         triggered_by="manual",
         executed_by=current_user.get("username"),
     )
-    job_run_manager.mark_started(job_run["id"], task.id)
+    _jrs.mark_started(job_run["id"], task.id)
 
     return TaskWithJobResponse(
         task_id=task.id,
@@ -122,13 +123,14 @@ async def trigger_update_ip_prefixes_from_csv(
     )
 
     job_name = f"Update IP Prefixes from CSV{' (DRY RUN)' if request.dry_run else ''}"
-    job_run = job_run_manager.create_job_run(
+    _jrs = service_factory.build_job_run_service()
+    job_run = _jrs.create_job_run(
         job_name=job_name,
         job_type="update_ip_prefixes_from_csv",
         triggered_by="manual",
         executed_by=current_user.get("username"),
     )
-    job_run_manager.mark_started(job_run["id"], task.id)
+    _jrs.mark_started(job_run["id"], task.id)
 
     return TaskWithJobResponse(
         task_id=task.id,
@@ -181,13 +183,14 @@ async def trigger_update_ip_addresses_from_csv(
     )
 
     job_name = f"Update IP Addresses from CSV{' (DRY RUN)' if request.dry_run else ''}"
-    job_run = job_run_manager.create_job_run(
+    _jrs = service_factory.build_job_run_service()
+    job_run = _jrs.create_job_run(
         job_name=job_name,
         job_type="update_ip_addresses_from_csv",
         triggered_by="manual",
         executed_by=current_user.get("username"),
     )
-    job_run_manager.mark_started(job_run["id"], task.id)
+    _jrs.mark_started(job_run["id"], task.id)
 
     return TaskWithJobResponse(
         task_id=task.id,
@@ -219,13 +222,14 @@ async def trigger_update_devices(
     )
 
     job_name = f"Update devices{' (DRY RUN)' if request.dry_run else ''}"
-    job_run = job_run_manager.create_job_run(
+    _jrs = service_factory.build_job_run_service()
+    job_run = _jrs.create_job_run(
         job_name=job_name,
         job_type="update_devices",
         triggered_by="manual",
         executed_by=current_user.get("username"),
     )
-    job_run_manager.mark_started(job_run["id"], task.id)
+    _jrs.mark_started(job_run["id"], task.id)
 
     return TaskWithJobResponse(
         task_id=task.id,
@@ -278,13 +282,14 @@ async def trigger_import_devices_from_csv(
     job_name = (
         f"Import devices from CSV{' (skip duplicates)' if skip_duplicates else ''}"
     )
-    job_run = job_run_manager.create_job_run(
+    _jrs = service_factory.build_job_run_service()
+    job_run = _jrs.create_job_run(
         job_name=job_name,
         job_type="import_devices_from_csv",
         triggered_by="manual",
         executed_by=current_user.get("username"),
     )
-    job_run_manager.mark_started(job_run["id"], task.id)
+    _jrs.mark_started(job_run["id"], task.id)
 
     return TaskWithJobResponse(
         task_id=task.id,
@@ -319,14 +324,15 @@ async def trigger_import_or_update_from_csv(
     job_name = (
         f"CSV Import ({request.import_type}){' (DRY RUN)' if request.dry_run else ''}"
     )
-    job_run = job_run_manager.create_job_run(
+    _jrs = service_factory.build_job_run_service()
+    job_run = _jrs.create_job_run(
         job_name=job_name,
         job_type="csv_import",
         triggered_by="manual",
         executed_by=current_user.get("username"),
         job_template_id=request.template_id,
     )
-    job_run_manager.mark_started(job_run["id"], task.id)
+    _jrs.mark_started(job_run["id"], task.id)
 
     return TaskWithJobResponse(
         task_id=task.id,
