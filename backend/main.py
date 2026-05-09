@@ -357,7 +357,8 @@ async def _startup_services():
 
     # Ensure built-in Celery queues exist
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         settings_manager.ensure_builtin_queues()
         logger.info("Built-in Celery queues verified")
@@ -403,7 +404,8 @@ async def _startup_services():
         logger.debug("Startup cache: hook invoked")
         # Local imports to avoid circular dependencies at import time
         import service_factory
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
         from services.settings.git.shared_utils import get_git_repo_by_id
 
         cache_service = service_factory.build_cache_service()

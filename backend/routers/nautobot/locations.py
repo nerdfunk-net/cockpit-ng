@@ -25,7 +25,8 @@ async def get_locations(
     **🔷 This endpoint uses GraphQL** to fetch hierarchical location data.
     """
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         cache_key = "nautobot:locations:list"
         cached = cache_service.get(cache_key)

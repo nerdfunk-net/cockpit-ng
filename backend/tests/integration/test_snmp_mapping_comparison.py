@@ -108,7 +108,8 @@ def mock_checkmk_client():
 def real_checkmk_client():
     """Create real CheckMK client for integration tests."""
     from services.checkmk.client import CheckMKClient
-    from settings_manager import settings_manager
+    from services.settings.manager import SettingsManager
+    settings_manager = SettingsManager()
     from urllib.parse import urlparse
 
     db_settings = settings_manager.get_checkmk_settings()

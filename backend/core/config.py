@@ -21,6 +21,7 @@ def get_nautobot_service():
 
 def get_settings_manager():
     """Get settings manager instance."""
-    from settings_manager import settings_manager
+    from services.settings.manager import SettingsManager
+    settings_manager = SettingsManager()
 
     return settings_manager

@@ -56,7 +56,8 @@ async def get_file_complete_history(
     current_user: dict = Depends(require_permission("git.repositories", "read")),
     cache_service=Depends(get_cache_service),
 ):
-    from settings_manager import settings_manager
+    from services.settings.manager import SettingsManager
+    settings_manager = SettingsManager()
 
     cache_cfg = settings_manager.get_cache_settings()
     return _git_file_service.get_file_history(

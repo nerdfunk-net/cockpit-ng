@@ -7,7 +7,8 @@ Loads configuration and starts the FastAPI server.
 import uvicorn
 import os
 from config import settings
-from settings_manager import settings_manager
+from services.settings.manager import SettingsManager as _SM
+settings_manager = _SM()
 from cert_installer import install_certificates
 import logging
 

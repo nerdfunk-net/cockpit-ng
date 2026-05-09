@@ -85,7 +85,8 @@ def load_cache_schedules_task() -> dict:
     Dispatches the appropriate cache task with job tracking when due.
     """
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         cache_settings = settings_manager.get_cache_settings()
 
@@ -222,7 +223,8 @@ def cleanup_celery_data_task() -> dict:
         dict: Cleanup results with counts of removed items
     """
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
         from datetime import datetime, timezone, timedelta
         from config import settings
         import redis
@@ -319,7 +321,8 @@ def cleanup_client_data_task() -> dict:
         dict: Cleanup results with counts of removed rows per table
     """
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
         from datetime import datetime, timezone, timedelta
         from core.database import get_db_session
         from sqlalchemy import text

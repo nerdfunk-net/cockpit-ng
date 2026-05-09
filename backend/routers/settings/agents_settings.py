@@ -20,7 +20,8 @@ async def get_agents_settings(
 ):
     """Get Agents settings."""
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         settings = settings_manager.get_agents_settings()
 
@@ -41,7 +42,8 @@ async def create_agents_settings(
 ):
     """Create/Update Agents settings via POST."""
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         settings_dict = agents_request.dict()
         success = settings_manager.update_agents_settings(settings_dict)

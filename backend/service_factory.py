@@ -370,3 +370,22 @@ def build_template_render_orchestrator():
         inventory_service=build_inventory_service(),
         template_manager=template_manager,
     )
+
+
+# ---------------------------------------------------------------------------
+# Settings / Auth helpers
+# ---------------------------------------------------------------------------
+
+
+def build_settings_manager():
+    """Create a fresh SettingsManager instance."""
+    from services.settings.manager import SettingsManager
+
+    return SettingsManager()
+
+
+def build_profile_service():
+    """Return the profile_service module (module-level functions pattern)."""
+    import services.auth.profile_service as profile_service
+
+    return profile_service

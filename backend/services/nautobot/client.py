@@ -41,7 +41,8 @@ class NautobotService:
     def _get_config(self) -> dict[str, Any]:
         """Get Nautobot configuration from database with fallback to environment variables."""
         try:
-            from settings_manager import settings_manager
+            from services.settings.manager import SettingsManager
+            settings_manager = SettingsManager()
 
             db_settings = settings_manager.get_nautobot_settings()
             if db_settings and db_settings.get("url") and db_settings.get("token"):

@@ -30,7 +30,8 @@ class CheckMKConfig:
 
 def get_checkmk_config(site_name: Optional[str] = None) -> CheckMKConfig:
     """Load and validate CheckMK settings into a typed config object."""
-    from settings_manager import settings_manager
+    from services.settings.manager import SettingsManager
+    settings_manager = SettingsManager()
 
     db_settings = settings_manager.get_checkmk_settings()
     if not db_settings or not all(

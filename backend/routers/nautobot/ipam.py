@@ -64,7 +64,8 @@ async def get_software_versions(
         platform: Optional platform name to filter software versions
     """
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         cache_key = f"nautobot:software_versions:list:{platform or 'all'}"
         cached = cache_service.get(cache_key)
@@ -138,7 +139,8 @@ async def get_software_image_files(
         software_version: Optional software version string to filter image files
     """
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         cache_key = f"nautobot:software_image_files:list:{software_version or 'all'}"
         cached = cache_service.get(cache_key)
@@ -192,7 +194,8 @@ async def get_vlans(
         get_global_vlans: If true and location is set, also include VLANs with no location (global VLANs)
     """
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         cache_key = f"nautobot:vlans:list:{location or 'all'}:global_{get_global_vlans}"
         cached = cache_service.get(cache_key)

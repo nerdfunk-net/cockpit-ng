@@ -25,7 +25,8 @@ async def get_nautobot_settings(
 ):
     """Get Nautobot settings."""
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         nautobot_settings = settings_manager.get_nautobot_settings()
         return {"success": True, "data": nautobot_settings}
@@ -45,7 +46,8 @@ async def update_nautobot_settings(
 ):
     """Update Nautobot settings."""
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         success = settings_manager.update_nautobot_settings(nautobot_request.dict())
 
@@ -84,7 +86,8 @@ async def create_nautobot_settings(
 ):
     """Create/Update Nautobot settings via POST."""
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         success = settings_manager.update_nautobot_settings(nautobot_request.dict())
 
@@ -150,7 +153,8 @@ async def get_nautobot_defaults(
 ):
     """Get Nautobot default settings."""
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         defaults = settings_manager.get_nautobot_defaults()
 
@@ -171,7 +175,8 @@ async def update_nautobot_defaults(
 ):
     """Update Nautobot default settings."""
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         success = settings_manager.update_nautobot_defaults(defaults_request.dict())
 

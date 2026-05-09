@@ -57,7 +57,8 @@ async def get_commits(
 ):
     """Get commits for a specific branch."""
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         cache_cfg = settings_manager.get_cache_settings()
         repo = get_git_repo_by_id(repo_id)

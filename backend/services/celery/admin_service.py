@@ -243,7 +243,8 @@ def get_cleanup_stats() -> dict[str, Any]:
     Return statistics about Celery task results stored in Redis that could be
     removed by the cleanup task.
     """
-    from settings_manager import settings_manager
+    from services.settings.manager import SettingsManager
+    settings_manager = SettingsManager()
 
     celery_settings = settings_manager.get_celery_settings()
     cleanup_age_hours: int = celery_settings.get("cleanup_age_hours", 24)

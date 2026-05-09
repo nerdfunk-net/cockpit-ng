@@ -79,7 +79,8 @@ async def test_current_nautobot_connection(
         # Get nautobot config using the same pattern as the original code
         try:
             # Try to get settings from database first
-            from settings_manager import settings_manager
+            from services.settings.manager import SettingsManager
+            settings_manager = SettingsManager()
 
             db_settings = settings_manager.get_nautobot_settings()
             if db_settings and db_settings.get("url") and db_settings.get("token"):
@@ -374,7 +375,8 @@ async def onboard_device(
     try:
         # Get nautobot config
         try:
-            from settings_manager import settings_manager
+            from services.settings.manager import SettingsManager
+            settings_manager = SettingsManager()
 
             db_settings = settings_manager.get_nautobot_settings()
             if db_settings and db_settings.get("url") and db_settings.get("token"):
@@ -603,7 +605,8 @@ async def sync_network_data(
     try:
         # Get nautobot config
         try:
-            from settings_manager import settings_manager
+            from services.settings.manager import SettingsManager
+            settings_manager = SettingsManager()
 
             db_settings = settings_manager.get_nautobot_settings()
             if db_settings and db_settings.get("url") and db_settings.get("token"):

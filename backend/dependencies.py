@@ -255,3 +255,13 @@ def get_template_import_service():
 def get_template_render_orchestrator():
     """Provide the TemplateRenderOrchestrator."""
     return service_factory.build_template_render_orchestrator()
+
+
+# ---------------------------------------------------------------------------
+# Auth helpers
+# ---------------------------------------------------------------------------
+
+
+def get_profile_service():
+    """Provide the profile_service module."""
+    return service_factory.build_profile_service()

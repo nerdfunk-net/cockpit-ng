@@ -19,7 +19,8 @@ from models.auth import (
 from core.auth import create_access_token, require_role
 from dependencies import get_oidc_service
 from repositories.audit_log_repository import audit_log_repo
-from settings_manager import settings_manager
+from services.settings.manager import SettingsManager as _SM
+settings_manager = _SM()
 from config import settings
 
 logger = logging.getLogger(__name__)

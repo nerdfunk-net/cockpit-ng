@@ -120,7 +120,8 @@ def load_all_queues_from_db():
     Falls back to 'default' if database is unavailable or empty.
     """
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         celery_settings = settings_manager.get_celery_settings()
         configured_queues = celery_settings.get("queues", [])

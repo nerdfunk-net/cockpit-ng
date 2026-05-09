@@ -63,7 +63,8 @@ async def get_racks(
         location: Optional location ID or name to filter racks
     """
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         cache_key = f"nautobot:racks:list:{location or 'all'}"
         cached = cache_service.get(cache_key)
@@ -102,7 +103,8 @@ async def get_rack_groups(
         location: Optional location ID or name to filter rack groups
     """
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         cache_key = f"nautobot:rack-groups:list:{location or 'all'}"
         cached = cache_service.get(cache_key)
@@ -139,7 +141,8 @@ async def get_interface_types(
     Uses OPTIONS request to get field choices from the interfaces endpoint.
     """
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         cache_key = "nautobot:interface_types:list"
         cached = cache_service.get(cache_key)

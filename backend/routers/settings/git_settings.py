@@ -21,7 +21,8 @@ async def get_git_settings(
 ):
     """Get Git settings."""
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         git_settings = settings_manager.get_git_settings()
         return {"success": True, "data": git_settings}
@@ -41,7 +42,8 @@ async def update_git_settings(
 ):
     """Update Git settings."""
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         success = settings_manager.update_git_settings(git_request.dict())
 
@@ -80,7 +82,8 @@ async def create_git_settings(
 ):
     """Create/Update Git settings via POST."""
     try:
-        from settings_manager import settings_manager
+        from services.settings.manager import SettingsManager
+        settings_manager = SettingsManager()
 
         success = settings_manager.update_git_settings(git_request.dict())
 

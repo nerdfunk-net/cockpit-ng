@@ -529,9 +529,9 @@ def delete_user_with_rbac(user_id: int) -> bool:
     # Delete user profile
     if username:
         try:
-            import profile_manager
+            from services.auth import profile_service
 
-            profile_manager.delete_user_profile(username)
+            profile_service.delete_user_profile(username)
             logger.info("Deleted profile for user %s", username)
         except Exception as e:
             logger.warning("Failed to delete profile for user %s: %s", username, e)

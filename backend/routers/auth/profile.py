@@ -7,7 +7,7 @@ import logging
 from fastapi import APIRouter, HTTPException, status, Depends
 from core.auth import get_current_username
 from models.auth import PersonalCredentialData, ProfileResponse, ProfileUpdateRequest
-import profile_manager
+import services.auth.profile_service as profile_manager
 import credentials_manager
 
 logger = logging.getLogger(__name__)

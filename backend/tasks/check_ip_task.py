@@ -13,7 +13,8 @@ import asyncio
 from typing import Dict, Any
 import service_factory
 from celery_app import celery_app
-from settings_manager import settings_manager
+from services.settings.manager import SettingsManager as _SM
+settings_manager = _SM()
 import job_run_manager
 
 logger = logging.getLogger(__name__)

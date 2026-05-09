@@ -337,7 +337,8 @@ async def get_celery_settings(
     - Custom queues (built_in=false): Must be configured via CELERY_WORKER_QUEUE env var
     - See CELERY_ARCHITECTURE.md for details on adding custom queues
     """
-    from settings_manager import settings_manager
+    from services.settings.manager import SettingsManager
+    settings_manager = SettingsManager()
 
     celery_settings = settings_manager.get_celery_settings()
     return {"success": True, "settings": celery_settings}
@@ -360,7 +361,8 @@ async def update_celery_settings(
 
     Note: max_workers changes require restarting the Celery worker to take effect.
     """
-    from settings_manager import settings_manager
+    from services.settings.manager import SettingsManager
+    settings_manager = SettingsManager()
 
     current = settings_manager.get_celery_settings()
     updates = request.model_dump(exclude_unset=True)

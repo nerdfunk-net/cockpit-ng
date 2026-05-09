@@ -401,7 +401,8 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
     Returns:
         dict: Activation result
     """
-    from settings_manager import settings_manager
+    from services.settings.manager import SettingsManager
+    settings_manager = SettingsManager()
     from services.checkmk.client import CheckMKClient
 
     logger.info("[ACTIVATION] Starting CheckMK change activation...")

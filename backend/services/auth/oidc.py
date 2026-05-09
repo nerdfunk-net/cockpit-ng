@@ -13,7 +13,8 @@ import httpx
 from jose import jwt, JWTError
 from fastapi import HTTPException, status
 from models.auth import OIDCConfig
-from settings_manager import settings_manager
+from services.settings.manager import SettingsManager as _SM
+settings_manager = _SM()
 
 logger = logging.getLogger(__name__)
 
