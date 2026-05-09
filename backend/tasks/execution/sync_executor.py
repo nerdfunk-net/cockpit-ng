@@ -402,6 +402,7 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
         dict: Activation result
     """
     from services.settings.manager import SettingsManager
+
     settings_manager = SettingsManager()
     from services.checkmk.client import CheckMKClient
 

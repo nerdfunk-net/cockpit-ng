@@ -25,6 +25,7 @@ def _make_template_result(
 ):
     """Construct a TemplateExecutionResult dict; import kept local to avoid circular deps."""
     from models.netmiko import TemplateExecutionResult
+
     return TemplateExecutionResult(
         device_id=device_id,
         device_name=device_name,
@@ -465,10 +466,15 @@ class NetmikoService:
             return manual_username, manual_password
 
         import service_factory
+
         cred_mgr = service_factory.build_credentials_service()
 
-        general_creds = cred_mgr.list_credentials(include_expired=False, source="general")
-        private_creds = cred_mgr.list_credentials(include_expired=False, source="private")
+        general_creds = cred_mgr.list_credentials(
+            include_expired=False, source="general"
+        )
+        private_creds = cred_mgr.list_credentials(
+            include_expired=False, source="private"
+        )
         user_private = [c for c in private_creds if c.get("owner") == current_username]
 
         credential = next(
@@ -603,19 +609,29 @@ class NetmikoService:
                                     "id": device_id,
                                     "name": device_data.get("name", ""),
                                     "primary_ip4": (
-                                        device_data.get("primary_ip4", {}).get("address", "")
-                                        if isinstance(device_data.get("primary_ip4"), dict)
+                                        device_data.get("primary_ip4", {}).get(
+                                            "address", ""
+                                        )
+                                        if isinstance(
+                                            device_data.get("primary_ip4"), dict
+                                        )
                                         else device_data.get("primary_ip4", "")
                                     ),
                                     "primary_ip6": (
-                                        device_data.get("primary_ip6", {}).get("address", "")
-                                        if isinstance(device_data.get("primary_ip6"), dict)
+                                        device_data.get("primary_ip6", {}).get(
+                                            "address", ""
+                                        )
+                                        if isinstance(
+                                            device_data.get("primary_ip6"), dict
+                                        )
                                         else device_data.get("primary_ip6", "")
                                     ),
                                 }
                             ]
                         except Exception as e:
-                            error_msg = f"Failed to fetch Nautobot device data: {str(e)}"
+                            error_msg = (
+                                f"Failed to fetch Nautobot device data: {str(e)}"
+                            )
                             logger.error(error_msg)
                             if pre_run_command and pre_run_command.strip():
                                 raise ValueError(error_msg)
@@ -627,12 +643,17 @@ class NetmikoService:
                                 "Template has pre_run_command but no credential_id configured"
                             )
                         try:
-                            from services.network.automation.render import render_service
-                            pre_run_result = await render_service._execute_pre_run_command(
-                                device_id=device_id,
-                                command=pre_run_command.strip(),
-                                credential_id=template_credential_id,
-                                nautobot_device=context.get("device_details"),
+                            from services.network.automation.render import (
+                                render_service,
+                            )
+
+                            pre_run_result = (
+                                await render_service._execute_pre_run_command(
+                                    device_id=device_id,
+                                    command=pre_run_command.strip(),
+                                    credential_id=template_credential_id,
+                                    nautobot_device=context.get("device_details"),
+                                )
                             )
                             context["pre_run"] = {
                                 "raw": pre_run_result.get("raw_output", ""),
@@ -652,7 +673,9 @@ class NetmikoService:
 
                     if warnings:
                         logger.warning(
-                            "Template rendering warnings for %s: %s", device_name, warnings
+                            "Template rendering warnings for %s: %s",
+                            device_name,
+                            warnings,
                         )
 
                 except UndefinedError as e:
@@ -665,8 +688,10 @@ class NetmikoService:
                     failed_count += 1
                     results.append(
                         _make_template_result(
-                            device_id=device_id, device_name=device_name,
-                            success=False, error=error_msg,
+                            device_id=device_id,
+                            device_name=device_name,
+                            success=False,
+                            error=error_msg,
                         )
                     )
                     continue
@@ -676,8 +701,10 @@ class NetmikoService:
                     failed_count += 1
                     results.append(
                         _make_template_result(
-                            device_id=device_id, device_name=device_name,
-                            success=False, error=error_msg,
+                            device_id=device_id,
+                            device_name=device_name,
+                            success=False,
+                            error=error_msg,
                         )
                     )
                     continue
@@ -685,7 +712,8 @@ class NetmikoService:
                     failed_count += 1
                     results.append(
                         _make_template_result(
-                            device_id=device_id, device_name=device_name,
+                            device_id=device_id,
+                            device_name=device_name,
                             success=False,
                             error=f"Template rendering failed: {str(render_error)}",
                         )
@@ -695,8 +723,10 @@ class NetmikoService:
                 if dry_run:
                     results.append(
                         _make_template_result(
-                            device_id=device_id, device_name=device_name,
-                            success=True, rendered_content=rendered,
+                            device_id=device_id,
+                            device_name=device_name,
+                            success=True,
+                            rendered_content=rendered,
                         )
                     )
                     continue
@@ -706,8 +736,10 @@ class NetmikoService:
                         cancelled_count += 1
                         results.append(
                             _make_template_result(
-                                device_id=device_id, device_name=device_name,
-                                success=False, rendered_content=rendered,
+                                device_id=device_id,
+                                device_name=device_name,
+                                success=False,
+                                rendered_content=rendered,
                                 error="Execution cancelled by user",
                             )
                         )
@@ -718,8 +750,10 @@ class NetmikoService:
                         failed_count += 1
                         results.append(
                             _make_template_result(
-                                device_id=device_id, device_name=device_name,
-                                success=False, rendered_content=rendered,
+                                device_id=device_id,
+                                device_name=device_name,
+                                success=False,
+                                rendered_content=rendered,
                                 error="Device has no primary IP address",
                             )
                         )
@@ -727,9 +761,7 @@ class NetmikoService:
 
                     platform = device.get("platform", {}).get("name", "cisco_ios")
                     commands = [
-                        line.strip()
-                        for line in rendered.split("\n")
-                        if line.strip()
+                        line.strip() for line in rendered.split("\n") if line.strip()
                     ]
 
                     execution_result = await self.execute_commands_on_device(
@@ -747,8 +779,10 @@ class NetmikoService:
                         executed_count += 1
                         results.append(
                             _make_template_result(
-                                device_id=device_id, device_name=device_name,
-                                success=True, rendered_content=rendered,
+                                device_id=device_id,
+                                device_name=device_name,
+                                success=True,
+                                rendered_content=rendered,
                                 output=execution_result["output"],
                             )
                         )
@@ -756,8 +790,10 @@ class NetmikoService:
                         failed_count += 1
                         results.append(
                             _make_template_result(
-                                device_id=device_id, device_name=device_name,
-                                success=False, rendered_content=rendered,
+                                device_id=device_id,
+                                device_name=device_name,
+                                success=False,
+                                rendered_content=rendered,
                                 error=execution_result.get("error", "Execution failed"),
                             )
                         )
@@ -766,8 +802,10 @@ class NetmikoService:
                     failed_count += 1
                     results.append(
                         _make_template_result(
-                            device_id=device_id, device_name=device_name,
-                            success=False, rendered_content=rendered,
+                            device_id=device_id,
+                            device_name=device_name,
+                            success=False,
+                            rendered_content=rendered,
                             error=f"Execution failed: {str(exec_error)}",
                         )
                     )

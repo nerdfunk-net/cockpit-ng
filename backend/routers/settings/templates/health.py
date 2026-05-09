@@ -20,6 +20,7 @@ async def template_health_check(
     """Check template system health."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         return template_manager.health_check()

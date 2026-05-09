@@ -206,6 +206,7 @@ def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
 
         if job_run_id:
             import service_factory
+
             _jrs = service_factory.build_job_run_service()
             if status == "failed":
                 _jrs.mark_failed(job_run_id, message)
@@ -230,6 +231,7 @@ def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
         }
         if job_run_id:
             import service_factory
+
             _jrs = service_factory.build_job_run_service()
             _jrs.mark_failed(job_run_id, error_msg)
         return result

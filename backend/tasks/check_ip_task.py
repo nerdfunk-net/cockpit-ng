@@ -14,6 +14,7 @@ from typing import Dict, Any
 import service_factory
 from celery_app import celery_app
 from services.settings.manager import SettingsManager as _SM
+
 settings_manager = _SM()
 
 logger = logging.getLogger(__name__)

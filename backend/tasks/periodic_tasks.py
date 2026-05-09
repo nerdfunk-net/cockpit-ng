@@ -86,6 +86,7 @@ def load_cache_schedules_task() -> dict:
     """
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         cache_settings = settings_manager.get_cache_settings()
@@ -160,6 +161,7 @@ def dispatch_cache_task(self, cache_type: str, task_name: str) -> dict:
     """
     try:
         import service_factory
+
         _jrs = service_factory.build_job_run_service()
         from services.background_jobs import (
             cache_all_devices_task,
@@ -225,6 +227,7 @@ def cleanup_celery_data_task() -> dict:
     """
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
         from datetime import datetime, timezone, timedelta
         from config import settings
@@ -282,6 +285,7 @@ def cleanup_celery_data_task() -> dict:
         removed_job_runs = 0
         try:
             import service_factory
+
             _jrs = service_factory.build_job_run_service()
             # Use the hours-based cleanup function
             removed_job_runs = _jrs.cleanup_old_runs_hours(cleanup_age_hours)
@@ -323,6 +327,7 @@ def cleanup_client_data_task() -> dict:
     """
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
         from datetime import datetime, timezone, timedelta
         from core.database import get_db_session
@@ -402,6 +407,7 @@ def check_stale_jobs_task() -> dict:
     """
     try:
         import service_factory
+
         _jrs = service_factory.build_job_run_service()
         from celery_app import celery_app
 

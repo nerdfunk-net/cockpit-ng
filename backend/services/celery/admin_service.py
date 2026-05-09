@@ -244,6 +244,7 @@ def get_cleanup_stats() -> dict[str, Any]:
     removed by the cleanup task.
     """
     from services.settings.manager import SettingsManager
+
     settings_manager = SettingsManager()
 
     celery_settings = settings_manager.get_celery_settings()

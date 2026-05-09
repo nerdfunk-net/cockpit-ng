@@ -164,6 +164,7 @@ def require_permission(resource: str, action: str):
 
     def permission_checker(user_info: dict = Depends(verify_token)) -> dict:
         import service_factory
+
         rbac = service_factory.build_rbac_service()
 
         user_id = user_info.get("user_id")
@@ -195,6 +196,7 @@ def require_any_permission(resource: str, actions: list):
 
     def permission_checker(user_info: dict = Depends(verify_token)) -> dict:
         import service_factory
+
         rbac = service_factory.build_rbac_service()
 
         user_id = user_info.get("user_id")
@@ -226,6 +228,7 @@ def require_all_permissions(resource: str, actions: list):
 
     def permission_checker(user_info: dict = Depends(verify_token)) -> dict:
         import service_factory
+
         rbac = service_factory.build_rbac_service()
 
         user_id = user_info.get("user_id")
@@ -257,6 +260,7 @@ def require_role(role_name: str):
 
     def role_checker(user_info: dict = Depends(verify_token)) -> dict:
         import service_factory
+
         rbac = service_factory.build_rbac_service()
 
         user_id = user_info.get("user_id")
@@ -283,6 +287,7 @@ def require_role(role_name: str):
 def has_permission_check(user_id: int, resource: str, action: str) -> bool:
     """Helper function to check permission (non-dependency version)."""
     import service_factory
+
     rbac = service_factory.build_rbac_service()
 
     return rbac.has_permission(user_id, resource, action)

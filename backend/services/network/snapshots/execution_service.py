@@ -13,7 +13,9 @@ from models.snapshots import SnapshotExecuteRequest, SnapshotResponse
 from services.network.automation.netmiko import NetmikoService
 from services.settings.git.service import GitService
 from services.settings.git.paths import repo_path
-from services.settings.git.repository_service import GitRepositoryService as GitRepositoryManager
+from services.settings.git.repository_service import (
+    GitRepositoryService as GitRepositoryManager,
+)
 import service_factory
 
 logger = logging.getLogger(__name__)

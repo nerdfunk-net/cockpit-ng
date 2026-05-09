@@ -358,6 +358,7 @@ async def _startup_services():
     # Ensure built-in Celery queues exist
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         settings_manager.ensure_builtin_queues()
@@ -370,7 +371,9 @@ async def _startup_services():
     try:
         import service_factory
 
-        exported_keys = service_factory.build_credentials_service().export_ssh_keys_to_filesystem()
+        exported_keys = (
+            service_factory.build_credentials_service().export_ssh_keys_to_filesystem()
+        )
         if exported_keys:
             logger.info("Exported %s SSH keys to ./data/ssh_keys/", len(exported_keys))
         else:
@@ -392,7 +395,10 @@ async def _startup_services():
     # Initialize next_run for job schedules that don't have one
     try:
         import service_factory
-        result = service_factory.build_job_schedule_service().initialize_schedule_next_runs()
+
+        result = (
+            service_factory.build_job_schedule_service().initialize_schedule_next_runs()
+        )
         if result["initialized_count"] > 0:
             logger.info(
                 "Initialized next_run for %s job schedules", result["initialized_count"]
@@ -406,6 +412,7 @@ async def _startup_services():
         # Local imports to avoid circular dependencies at import time
         import service_factory
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
         from services.settings.git.shared_utils import get_git_repo_by_id
 

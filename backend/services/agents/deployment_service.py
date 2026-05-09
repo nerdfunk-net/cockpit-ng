@@ -90,9 +90,7 @@ class AgentDeploymentService:
 
         return repo, repo_path
 
-    def _setup_deployment(
-        self, agent_id: str, task_context=None
-    ) -> tuple:
+    def _setup_deployment(self, agent_id: str, task_context=None) -> tuple:
         """
         Load agent config, git repository, then clone/open the repo.
 
@@ -277,7 +275,11 @@ class AgentDeploymentService:
             self._update_progress(task_context, 35, "Rendering template...")
 
             try:
-                template_name, rendered_content, file_path = await self._render_template(
+                (
+                    template_name,
+                    rendered_content,
+                    file_path,
+                ) = await self._render_template(
                     template_id, path, inventory_id, custom_variables, username
                 )
             except (ValueError, Exception) as e:
@@ -371,7 +373,11 @@ class AgentDeploymentService:
                 entry_custom_variables = entry.get("custom_variables") or {}
 
                 try:
-                    template_name, rendered_content, file_path = await self._render_template(
+                    (
+                        template_name,
+                        rendered_content,
+                        file_path,
+                    ) = await self._render_template(
                         entry_template_id,
                         entry_path,
                         entry_inventory_id,
@@ -392,7 +398,12 @@ class AgentDeploymentService:
                     )
                     success_count += 1
                 except Exception as e:
-                    logger.error("Template render failed (id=%s): %s", entry_template_id, e, exc_info=True)
+                    logger.error(
+                        "Template render failed (id=%s): %s",
+                        entry_template_id,
+                        e,
+                        exc_info=True,
+                    )
                     template_results.append(
                         {
                             "template_id": entry_template_id,

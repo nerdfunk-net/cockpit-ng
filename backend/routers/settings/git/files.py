@@ -57,6 +57,7 @@ async def get_file_complete_history(
     cache_service=Depends(get_cache_service),
 ):
     from services.settings.manager import SettingsManager
+
     settings_manager = SettingsManager()
 
     cache_cfg = settings_manager.get_cache_settings()

@@ -4,13 +4,15 @@ Cockpit Backend Startup Script
 Loads configuration and starts the FastAPI server.
 """
 
-import uvicorn
+import logging
 import os
+
+import uvicorn
+from cert_installer import install_certificates
 from config import settings
 from services.settings.manager import SettingsManager as _SM
+
 settings_manager = _SM()
-from cert_installer import install_certificates
-import logging
 
 
 def initialize_database_settings():

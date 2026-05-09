@@ -30,6 +30,7 @@ async def list_templates(
     """List all templates with optional filtering."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         username = current_user.get("username")
@@ -67,6 +68,7 @@ async def create_template(
     """Create a new template."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         username = current_user.get("username")
@@ -101,6 +103,7 @@ async def get_template_categories(
     """Get all template categories."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         return template_manager.get_categories()
@@ -121,6 +124,7 @@ async def get_template_by_name(
     """Get a template by name."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         template = template_manager.get_template_by_name(template_name)
@@ -149,6 +153,7 @@ async def get_template(
     """Get a specific template by ID."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         template = template_manager.get_template(template_id)
@@ -178,6 +183,7 @@ async def update_template(
     """Update an existing template."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         existing = template_manager.get_template(template_id)
@@ -225,6 +231,7 @@ async def delete_template(
     """Delete a template."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         if template_manager.delete_template(template_id, hard_delete=hard_delete):

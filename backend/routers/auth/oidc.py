@@ -19,9 +19,10 @@ from models.auth import (
 from core.auth import create_access_token, require_role
 from dependencies import get_oidc_service
 from repositories.audit_log_repository import audit_log_repo
-from services.settings.manager import SettingsManager as _SM
-settings_manager = _SM()
 from config import settings
+from services.settings.manager import SettingsManager as _SM
+
+settings_manager = _SM()
 
 logger = logging.getLogger(__name__)
 
@@ -256,6 +257,7 @@ async def oidc_callback(
         # Get user with RBAC roles and permissions
         logger.debug("[OIDC Debug] Fetching user RBAC roles and permissions...")
         import service_factory
+
         rbac = service_factory.build_rbac_service()
 
         user_with_roles = rbac.get_user_with_rbac(user["id"])

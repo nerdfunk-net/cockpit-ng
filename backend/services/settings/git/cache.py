@@ -37,6 +37,7 @@ class GitCacheService:
         """
         try:
             from services.settings.manager import SettingsManager
+
             settings_manager = SettingsManager()
 
             return settings_manager.get_cache_settings()

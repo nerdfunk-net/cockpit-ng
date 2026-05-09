@@ -594,6 +594,7 @@ def sync_devices_to_checkmk_task(
         if job_run_id:
             try:
                 import service_factory
+
                 _jrs = service_factory.build_job_run_service()
                 _jrs.mark_failed(job_run_id, str(e))
             except Exception as run_error:
@@ -617,6 +618,7 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
         Dictionary with activation result
     """
     from services.settings.manager import SettingsManager
+
     settings_manager = SettingsManager()
     from services.checkmk.client import CheckMKClient
     from urllib.parse import urlparse

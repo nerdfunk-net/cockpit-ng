@@ -23,6 +23,7 @@ async def get_template_content(
     """Get template content."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         content = template_manager.get_template_content(template_id)
@@ -51,6 +52,7 @@ async def get_template_versions(
     """Get version history for a template."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         return template_manager.get_template_versions(template_id)
@@ -76,6 +78,7 @@ async def upload_template_file(
     """Upload a template file."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         username = current_user.get("username")

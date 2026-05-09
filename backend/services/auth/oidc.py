@@ -14,6 +14,7 @@ from jose import jwt, JWTError
 from fastapi import HTTPException, status
 from models.auth import OIDCConfig
 from services.settings.manager import SettingsManager as _SM
+
 settings_manager = _SM()
 
 logger = logging.getLogger(__name__)

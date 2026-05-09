@@ -274,6 +274,7 @@ def import_devices_from_csv_task(
         # Update job run status if this task is tracked
         try:
             import service_factory
+
             _jrs = service_factory.build_job_run_service()
             job_run = _jrs.get_job_run_by_celery_id(self.request.id)
             if job_run:
@@ -296,6 +297,7 @@ def import_devices_from_csv_task(
         # Update job run status to failed if tracked
         try:
             import service_factory
+
             _jrs = service_factory.build_job_run_service()
             job_run = _jrs.get_job_run_by_celery_id(self.request.id)
             if job_run:

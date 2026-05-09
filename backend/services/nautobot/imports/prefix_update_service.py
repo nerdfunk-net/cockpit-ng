@@ -451,6 +451,7 @@ class PrefixUpdateService:
 
             try:
                 import service_factory
+
                 _jrs = service_factory.build_job_run_service()
                 job_run = _jrs.get_job_run_by_celery_id(task_context.request.id)
                 if job_run:
@@ -474,6 +475,7 @@ class PrefixUpdateService:
 
             try:
                 import service_factory
+
                 _jrs = service_factory.build_job_run_service()
                 job_run = _jrs.get_job_run_by_celery_id(task_context.request.id)
                 if job_run:

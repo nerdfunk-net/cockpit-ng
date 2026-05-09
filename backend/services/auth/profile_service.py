@@ -76,12 +76,17 @@ def update_user_profile(
 def update_user_password(username: str, new_password: str) -> bool:
     """Update user password via CredentialsService."""
     import service_factory
+
     cred_mgr = service_factory.build_credentials_service()
 
     try:
         credentials = cred_mgr.list_credentials(include_expired=False)
         user_cred = next(
-            (c for c in credentials if c["username"] == username and c["status"] == "active"),
+            (
+                c
+                for c in credentials
+                if c["username"] == username and c["status"] == "active"
+            ),
             None,
         )
         if user_cred:

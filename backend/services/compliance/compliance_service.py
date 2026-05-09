@@ -255,9 +255,7 @@ class ComplianceService:
             data["name"] = name
         if snmp_version is not None:
             if snmp_version not in ("v1", "v2c", "v3"):
-                raise ValueError(
-                    "Invalid snmp_version. Must be 'v1', 'v2c', or 'v3'"
-                )
+                raise ValueError("Invalid snmp_version. Must be 'v1', 'v2c', or 'v3'")
             data["snmp_version"] = snmp_version
         if snmp_community is not None:
             data["snmp_community"] = snmp_community
@@ -377,8 +375,12 @@ class ComplianceService:
             "description": pattern.description,
             "pattern_type": pattern.pattern_type,
             "is_active": pattern.is_active,
-            "created_at": pattern.created_at.isoformat() if pattern.created_at else None,
-            "updated_at": pattern.updated_at.isoformat() if pattern.updated_at else None,
+            "created_at": pattern.created_at.isoformat()
+            if pattern.created_at
+            else None,
+            "updated_at": pattern.updated_at.isoformat()
+            if pattern.updated_at
+            else None,
         }
 
     def _login_cred_to_dict(
@@ -408,8 +410,12 @@ class ComplianceService:
             "snmp_v3_priv_protocol": mapping.snmp_v3_priv_protocol,
             "description": mapping.description,
             "is_active": mapping.is_active,
-            "created_at": mapping.created_at.isoformat() if mapping.created_at else None,
-            "updated_at": mapping.updated_at.isoformat() if mapping.updated_at else None,
+            "created_at": mapping.created_at.isoformat()
+            if mapping.created_at
+            else None,
+            "updated_at": mapping.updated_at.isoformat()
+            if mapping.updated_at
+            else None,
         }
         if decrypt_passwords:
             if mapping.snmp_v3_auth_password_encrypted:

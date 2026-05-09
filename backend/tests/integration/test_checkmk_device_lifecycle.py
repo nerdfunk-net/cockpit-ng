@@ -21,6 +21,7 @@ from services.checkmk.config import ConfigService
 import service_factory as _sf
 from services.checkmk.client import CheckMKClient, CheckMKAPIError
 from services.settings.manager import SettingsManager as _SM
+
 settings_manager = _SM()
 
 nautobot_service = _sf.build_nautobot_service()

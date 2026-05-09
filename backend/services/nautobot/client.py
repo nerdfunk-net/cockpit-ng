@@ -42,6 +42,7 @@ class NautobotService:
         """Get Nautobot configuration from database with fallback to environment variables."""
         try:
             from services.settings.manager import SettingsManager
+
             settings_manager = SettingsManager()
 
             db_settings = settings_manager.get_nautobot_settings()

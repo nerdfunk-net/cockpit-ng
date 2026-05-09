@@ -75,6 +75,7 @@ async def agent_deploy_dry_run(
     """
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         # Fetch the template
@@ -174,6 +175,7 @@ async def agent_deploy_to_git(
     """
     try:
         import service_factory as _sf
+
         template_manager = _sf.build_template_service()
         from repositories.settings.git_repository_repository import (
             GitRepositoryRepository,

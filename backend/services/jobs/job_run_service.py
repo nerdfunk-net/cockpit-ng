@@ -67,7 +67,9 @@ class JobRunService:
             return self._to_dict(job_run)
         return None
 
-    def get_job_runs_by_celery_ids(self, celery_task_ids: List[str]) -> List[Dict[str, Any]]:
+    def get_job_runs_by_celery_ids(
+        self, celery_task_ids: List[str]
+    ) -> List[Dict[str, Any]]:
         job_runs = self._repo.get_by_celery_task_ids(celery_task_ids)
         return [self._to_dict(job_run) for job_run in job_runs]
 
@@ -104,22 +106,32 @@ class JobRunService:
         }
 
     def get_recent_runs(
-        self, limit: int = 50, status: Optional[str] = None, job_type: Optional[str] = None
+        self,
+        limit: int = 50,
+        status: Optional[str] = None,
+        job_type: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         runs = self._repo.get_recent_runs(limit=limit, status=status, job_type=job_type)
         return [self._to_dict(run) for run in runs]
 
     def get_runs_since(
-        self, since: datetime, status: Optional[str] = None, job_type: Optional[str] = None
+        self,
+        since: datetime,
+        status: Optional[str] = None,
+        job_type: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         runs = self._repo.get_runs_since(since=since, status=status, job_type=job_type)
         return [self._to_dict(run) for run in runs]
 
-    def get_schedule_runs(self, schedule_id: int, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_schedule_runs(
+        self, schedule_id: int, limit: int = 50
+    ) -> List[Dict[str, Any]]:
         runs = self._repo.get_by_schedule(schedule_id, limit=limit)
         return [self._to_dict(run) for run in runs]
 
-    def mark_started(self, run_id: int, celery_task_id: str) -> Optional[Dict[str, Any]]:
+    def mark_started(
+        self, run_id: int, celery_task_id: str
+    ) -> Optional[Dict[str, Any]]:
         job_run = self._repo.mark_started(run_id, celery_task_id)
         if job_run:
             logger.info("Job run %s started (task: %s)", run_id, celery_task_id)
@@ -157,7 +169,10 @@ class JobRunService:
         return self._repo.get_pending_count()
 
     def get_queue_stats(self) -> Dict[str, Any]:
-        return {"running": self._repo.get_running_count(), "pending": self._repo.get_pending_count()}
+        return {
+            "running": self._repo.get_running_count(),
+            "pending": self._repo.get_pending_count(),
+        }
 
     def get_dashboard_stats(self) -> Dict[str, Any]:
         from core.database import get_db_session

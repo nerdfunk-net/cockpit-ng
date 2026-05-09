@@ -26,6 +26,7 @@ async def get_locations(
     """
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         cache_key = "nautobot:locations:list"

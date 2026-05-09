@@ -72,6 +72,7 @@ class DeviceBackupService:
         """
         from services.settings.git.shared_utils import git_repo_manager
         import service_factory
+
         credentials_manager = service_factory.build_credentials_service()
 
         logger.info("-" * 80)

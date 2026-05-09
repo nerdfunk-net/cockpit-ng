@@ -20,6 +20,7 @@ async def get_cache_settings(
     """Get Cache settings."""
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         cache_settings = settings_manager.get_cache_settings()
@@ -40,6 +41,7 @@ async def update_cache_settings(
     """Update Cache settings."""
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         success = settings_manager.update_cache_settings(cache_request.dict())
@@ -72,6 +74,7 @@ async def create_cache_settings(
     """Create/Update Cache settings via POST."""
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         success = settings_manager.update_cache_settings(cache_request.dict())

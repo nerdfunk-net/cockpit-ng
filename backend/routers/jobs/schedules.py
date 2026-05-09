@@ -40,6 +40,7 @@ async def create_job_schedule(
         if job_data.is_global:
             # For global jobs, require admin role or jobs:write permission
             import service_factory
+
             rbac_manager = service_factory.build_rbac_service()
 
             has_permission = rbac_manager.has_permission(
@@ -186,6 +187,7 @@ async def update_job_schedule(
         if job.get("is_global"):
             # Global jobs require write permission
             import service_factory
+
             rbac_manager = service_factory.build_rbac_service()
 
             has_permission = rbac_manager.has_permission(
@@ -250,6 +252,7 @@ async def delete_job_schedule(
         if job.get("is_global"):
             # Global jobs require write permission
             import service_factory
+
             rbac_manager = service_factory.build_rbac_service()
 
             has_permission = rbac_manager.has_permission(

@@ -109,6 +109,7 @@ def real_checkmk_client():
     """Create real CheckMK client for integration tests."""
     from services.checkmk.client import CheckMKClient
     from services.settings.manager import SettingsManager
+
     settings_manager = SettingsManager()
     from urllib.parse import urlparse
 

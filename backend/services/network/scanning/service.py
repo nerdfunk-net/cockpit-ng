@@ -31,6 +31,7 @@ class ScanService:
         self._jobs: Dict[str, ScanJob] = {}
         self._network_scanner = NetworkScanService()
         self._creds = service_factory.build_credentials_service()
+        self._template_manager = service_factory.build_template_service()
 
     # ------------------------------------------------------------------
     # Public API
@@ -155,7 +156,7 @@ class ScanService:
 
         for tid in parser_template_ids:
             try:
-                t = template_manager.get_template(tid)
+                t = self._template_manager.get_template(tid)
                 if (
                     t
                     and t.get("category") == "parser"
@@ -165,7 +166,7 @@ class ScanService:
                         "text",
                     )
                 ):
-                    content = template_manager.get_template_content(tid)
+                    content = self._template_manager.get_template_content(tid)
                     if content:
                         templates.append((tid, content))
                         logger.info(

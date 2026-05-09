@@ -50,6 +50,7 @@ class InventoryExportService:
                 )
 
             import service_factory
+
             template_manager = service_factory.build_template_service()
 
             inventory_content = template_manager.render_template(

@@ -22,6 +22,7 @@ async def get_checkmk_settings(
     """Get CheckMK settings."""
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         settings_data = settings_manager.get_checkmk_settings()
@@ -43,6 +44,7 @@ async def create_checkmk_settings(
     """Create/Update CheckMK settings via POST."""
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         success = settings_manager.update_checkmk_settings(checkmk_request.dict())

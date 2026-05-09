@@ -65,6 +65,7 @@ async def get_software_versions(
     """
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         cache_key = f"nautobot:software_versions:list:{platform or 'all'}"
@@ -140,6 +141,7 @@ async def get_software_image_files(
     """
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         cache_key = f"nautobot:software_image_files:list:{software_version or 'all'}"
@@ -195,6 +197,7 @@ async def get_vlans(
     """
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         cache_key = f"nautobot:vlans:list:{location or 'all'}:global_{get_global_vlans}"

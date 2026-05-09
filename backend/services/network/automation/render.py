@@ -273,6 +273,7 @@ class RenderService:
         """
         from netmiko import ConnectHandler
         import service_factory
+
         credentials_manager = service_factory.build_credentials_service()
 
         result = {

@@ -16,9 +16,10 @@ logger = logging.getLogger(__name__)
 def _user_service():
     return _sf.build_user_service()
 
-user_db = type("_Proxy", (), {
-    "__getattr__": lambda self, name: getattr(_user_service(), name)
-})()
+
+user_db = type(
+    "_Proxy", (), {"__getattr__": lambda self, name: getattr(_user_service(), name)}
+)()
 
 
 def create_user(
@@ -215,13 +216,3 @@ def toggle_user_status(user_id: int) -> Optional[Dict[str, Any]]:
 
 
 # Permission constants for easy access
-from services.auth.user_service import (
-    PERMISSION_READ,
-    PERMISSION_WRITE,
-    PERMISSION_ADMIN,
-    PERMISSION_DELETE,
-    PERMISSION_USER_MANAGE,
-    PERMISSIONS_VIEWER,
-    PERMISSIONS_USER,
-    PERMISSIONS_ADMIN,
-)

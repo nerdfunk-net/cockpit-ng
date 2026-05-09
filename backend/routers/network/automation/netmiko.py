@@ -18,7 +18,6 @@ from models.netmiko import (
     CommandResult,
     CommandExecutionResponse,
     TemplateExecutionRequest,
-    TemplateExecutionResult,
     TemplateExecutionResponse,
 )
 
@@ -48,7 +47,11 @@ def _load_template(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Template content for ID {request.template_id} not found",
             )
-        return template_content, template.get("pre_run_command"), template.get("credential_id")
+        return (
+            template_content,
+            template.get("pre_run_command"),
+            template.get("credential_id"),
+        )
 
     return request.template_content, None, None
 
@@ -183,6 +186,7 @@ async def execute_template(
 ) -> TemplateExecutionResponse:
     """Execute a Jinja2 template on multiple network devices."""
     import service_factory
+
     template_manager = service_factory.build_template_service()
 
     if not request.device_ids:
@@ -231,7 +235,9 @@ async def execute_template(
     netmiko_service.unregister_session(session_id)
 
     summary = {**counters, "total": len(request.device_ids)}
-    return TemplateExecutionResponse(session_id=session_id, results=results, summary=summary)
+    return TemplateExecutionResponse(
+        session_id=session_id, results=results, summary=summary
+    )
 
 
 @router.get("/health")

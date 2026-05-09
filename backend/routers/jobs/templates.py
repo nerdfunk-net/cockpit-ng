@@ -38,6 +38,7 @@ async def create_job_template(
         # Check permissions for global templates
         if template_data.is_global:
             import service_factory
+
             rbac_manager = service_factory.build_rbac_service()
             has_permission = rbac_manager.has_permission(
                 current_user["user_id"], "jobs", "write"
@@ -251,6 +252,7 @@ async def update_job_template(
         # Check permissions
         if template.get("is_global"):
             import service_factory
+
             rbac_manager = service_factory.build_rbac_service()
             has_permission = rbac_manager.has_permission(
                 current_user["user_id"], "jobs", "write"
@@ -392,6 +394,7 @@ async def delete_job_template(
         # Check permissions
         if template.get("is_global"):
             import service_factory
+
             rbac_manager = service_factory.build_rbac_service()
             has_permission = rbac_manager.has_permission(
                 current_user["user_id"], "jobs", "write"

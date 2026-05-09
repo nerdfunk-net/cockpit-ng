@@ -424,6 +424,7 @@ def update_ip_addresses_from_csv_task(
         # Update job run status if tracked
         try:
             import service_factory
+
             _jrs = service_factory.build_job_run_service()
             job_run = _jrs.get_job_run_by_celery_id(self.request.id)
             if job_run:
@@ -446,6 +447,7 @@ def update_ip_addresses_from_csv_task(
         # Update job run status to failed if tracked
         try:
             import service_factory
+
             _jrs = service_factory.build_job_run_service()
             job_run = _jrs.get_job_run_by_celery_id(self.request.id)
             if job_run:

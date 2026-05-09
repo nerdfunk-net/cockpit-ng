@@ -252,6 +252,7 @@ class TemplateRenderOrchestrator:
         """Render template per device, parse output, queue Celery update task."""
         from tasks.update_devices_task import update_devices_task
         import service_factory
+
         _jrs = service_factory.build_job_run_service()
 
         template = self._tm.get_template(request.template_id)

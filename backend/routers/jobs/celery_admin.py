@@ -338,6 +338,7 @@ async def get_celery_settings(
     - See CELERY_ARCHITECTURE.md for details on adding custom queues
     """
     from services.settings.manager import SettingsManager
+
     settings_manager = SettingsManager()
 
     celery_settings = settings_manager.get_celery_settings()
@@ -362,6 +363,7 @@ async def update_celery_settings(
     Note: max_workers changes require restarting the Celery worker to take effect.
     """
     from services.settings.manager import SettingsManager
+
     settings_manager = SettingsManager()
 
     current = settings_manager.get_celery_settings()

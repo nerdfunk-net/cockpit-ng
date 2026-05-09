@@ -21,6 +21,7 @@ async def get_all_settings(
     """Get all application settings."""
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         settings_data = settings_manager.get_all_settings()
@@ -53,6 +54,7 @@ async def update_all_settings(
     """Update all application settings."""
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         settings_dict = {
@@ -90,6 +92,7 @@ async def reset_settings_to_defaults(
     """Reset all settings to default values."""
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         success = settings_manager.reset_to_defaults()
@@ -120,6 +123,7 @@ async def check_settings_health(
     """Check settings database health."""
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         health_info = settings_manager.health_check()

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from services.auth.rbac_service import RBACService
 
 from core.auth import get_password_hash, verify_password
 from repositories.auth.user_repository import UserRepository
@@ -20,8 +23,11 @@ PERMISSION_USER_MANAGE = 16
 PERMISSIONS_VIEWER = PERMISSION_READ
 PERMISSIONS_USER = PERMISSION_READ | PERMISSION_WRITE
 PERMISSIONS_ADMIN = (
-    PERMISSION_READ | PERMISSION_WRITE | PERMISSION_ADMIN
-    | PERMISSION_DELETE | PERMISSION_USER_MANAGE
+    PERMISSION_READ
+    | PERMISSION_WRITE
+    | PERMISSION_ADMIN
+    | PERMISSION_DELETE
+    | PERMISSION_USER_MANAGE
 )
 
 
@@ -55,10 +61,14 @@ class UserService:
         return self._to_dict(user)
 
     def get_all_users(self, include_inactive: bool = True) -> List[Dict[str, Any]]:
-        users = self._repo.get_all() if include_inactive else self._repo.get_active_users()
+        users = (
+            self._repo.get_all() if include_inactive else self._repo.get_active_users()
+        )
         return [self._to_dict(u) for u in users]
 
-    def get_user_by_id(self, user_id: int, include_inactive: bool = False) -> Optional[Dict[str, Any]]:
+    def get_user_by_id(
+        self, user_id: int, include_inactive: bool = False
+    ) -> Optional[Dict[str, Any]]:
         user = self._repo.get_by_id(user_id)
         if user and (include_inactive or user.is_active):
             return self._to_dict(user)
@@ -70,7 +80,9 @@ class UserService:
             return self._to_dict(user)
         return None
 
-    def authenticate_user(self, username: str, password: str) -> Optional[Dict[str, Any]]:
+    def authenticate_user(
+        self, username: str, password: str
+    ) -> Optional[Dict[str, Any]]:
         user = self._repo.get_by_username(username)
         if user and user.is_active and verify_password(password, user.password):
             return self._to_dict(user)
@@ -139,7 +151,9 @@ class UserService:
                 errors.append(f"Failed to delete user ID {uid}: {e}")
         return success, errors
 
-    def bulk_update_permissions(self, user_ids: List[int], permissions: int) -> Tuple[int, List[str]]:
+    def bulk_update_permissions(
+        self, user_ids: List[int], permissions: int
+    ) -> Tuple[int, List[str]]:
         success, errors = 0, []
         for uid in user_ids:
             try:
@@ -169,6 +183,7 @@ class UserService:
             return None
         try:
             from config import settings as config_settings
+
             user = self.create_user(
                 username="admin",
                 realname="System Administrator",
@@ -183,15 +198,20 @@ class UserService:
             logger.warning("Failed to create default admin: %s", e)
             return None
 
-    def _ensure_admin_role_assigned(self, user_id: int, rbac_service: "RBACService") -> None:
+    def _ensure_admin_role_assigned(
+        self, user_id: int, rbac_service: "RBACService"
+    ) -> None:
         try:
             admin_role = rbac_service.get_role_by_name("admin")
             if not admin_role:
                 try:
                     from tools import seed_rbac
+
                     seed_rbac.main(verbose=False)
                     admin_role = rbac_service.get_role_by_name("admin")
-                    logger.info("Initialized RBAC system with default roles and permissions")
+                    logger.info(
+                        "Initialized RBAC system with default roles and permissions"
+                    )
                 except Exception as e:
                     logger.warning("Failed to seed RBAC: %s", e)
                     return

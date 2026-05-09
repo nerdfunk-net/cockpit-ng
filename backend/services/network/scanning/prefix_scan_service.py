@@ -40,6 +40,7 @@ class PrefixScanService:
         the full fping/DNS/Nautobot update cycle.
         """
         import service_factory
+
         _jrs = service_factory.build_job_run_service()
 
         created_job_run = False

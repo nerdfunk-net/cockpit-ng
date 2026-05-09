@@ -132,7 +132,9 @@ class GitRepositoryService:
                 self._repo.delete(repo_id)
                 action = "Deleted"
             else:
-                self._repo.update(repo_id, is_active=False, updated_at=datetime.utcnow())
+                self._repo.update(
+                    repo_id, is_active=False, updated_at=datetime.utcnow()
+                )
                 action = "Deactivated"
             logger.info("%s git repository ID: %s", action, repo_id)
             return True
@@ -155,9 +157,7 @@ class GitRepositoryService:
             )
             return True
         except Exception as e:
-            logger.error(
-                "Error updating sync status for repository %s: %s", repo_id, e
-            )
+            logger.error("Error updating sync status for repository %s: %s", repo_id, e)
             raise
 
     def health_check(self) -> Dict[str, Any]:

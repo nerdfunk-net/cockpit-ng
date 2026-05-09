@@ -64,6 +64,7 @@ async def get_racks(
     """
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         cache_key = f"nautobot:racks:list:{location or 'all'}"
@@ -104,6 +105,7 @@ async def get_rack_groups(
     """
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         cache_key = f"nautobot:rack-groups:list:{location or 'all'}"
@@ -142,6 +144,7 @@ async def get_interface_types(
     """
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         cache_key = "nautobot:interface_types:list"

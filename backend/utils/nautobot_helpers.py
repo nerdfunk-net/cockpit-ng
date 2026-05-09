@@ -24,6 +24,7 @@ def get_nautobot_config() -> Tuple[str, str]:
         >>> print(f"Using Nautobot at {nautobot_url}")
     """
     from services.settings.manager import SettingsManager
+
     settings_manager = SettingsManager()
     from config import settings
 

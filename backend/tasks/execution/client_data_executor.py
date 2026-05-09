@@ -51,6 +51,7 @@ def execute_get_client_data(
     """
     import asyncio
     import service_factory
+
     credentials_manager = service_factory.build_credentials_service()
     from repositories.client_data_repository import ClientDataRepository
 

@@ -350,6 +350,7 @@ def bulk_onboard_devices_task(
     # Update job run in database (for Jobs/View)
     try:
         import service_factory
+
         _jrs = service_factory.build_job_run_service()
 
         # Find job run by celery task ID

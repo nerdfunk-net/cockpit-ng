@@ -56,8 +56,12 @@ class CredentialsService:
             username=username,
             type=cred_type,
             password_encrypted=self._encryption.encrypt(password) if password else None,
-            ssh_key_encrypted=self._encryption.encrypt(ssh_private_key) if ssh_private_key else None,
-            ssh_passphrase_encrypted=self._encryption.encrypt(ssh_passphrase) if ssh_passphrase else None,
+            ssh_key_encrypted=self._encryption.encrypt(ssh_private_key)
+            if ssh_private_key
+            else None,
+            ssh_passphrase_encrypted=self._encryption.encrypt(ssh_passphrase)
+            if ssh_passphrase
+            else None,
             valid_until=valid_until,
             source=source,
             owner=owner,
@@ -86,15 +90,26 @@ class CredentialsService:
         if not existing:
             raise ValueError("Credential not found")
         kwargs: Dict[str, Any] = {"updated_at": datetime.utcnow()}
-        if name is not None: kwargs["name"] = name
-        if username is not None: kwargs["username"] = username
-        if cred_type is not None: kwargs["type"] = cred_type
-        if valid_until is not None: kwargs["valid_until"] = valid_until
-        if source is not None: kwargs["source"] = source
-        if owner is not None: kwargs["owner"] = owner
-        if password is not None: kwargs["password_encrypted"] = self._encryption.encrypt(password)
-        if ssh_private_key is not None: kwargs["ssh_key_encrypted"] = self._encryption.encrypt(ssh_private_key)
-        if ssh_passphrase is not None: kwargs["ssh_passphrase_encrypted"] = self._encryption.encrypt(ssh_passphrase)
+        if name is not None:
+            kwargs["name"] = name
+        if username is not None:
+            kwargs["username"] = username
+        if cred_type is not None:
+            kwargs["type"] = cred_type
+        if valid_until is not None:
+            kwargs["valid_until"] = valid_until
+        if source is not None:
+            kwargs["source"] = source
+        if owner is not None:
+            kwargs["owner"] = owner
+        if password is not None:
+            kwargs["password_encrypted"] = self._encryption.encrypt(password)
+        if ssh_private_key is not None:
+            kwargs["ssh_key_encrypted"] = self._encryption.encrypt(ssh_private_key)
+        if ssh_passphrase is not None:
+            kwargs["ssh_passphrase_encrypted"] = self._encryption.encrypt(
+                ssh_passphrase
+            )
         updated = self._repo.update(cred_id, **kwargs)
         final_type = cred_type if cred_type is not None else existing.type
         if final_type == "ssh_key" and ssh_private_key is not None:
@@ -186,14 +201,18 @@ class CredentialsService:
             logger.error("Failed to export SSH key '%s': %s", cred.name, e)
             return None
 
-    def export_ssh_keys_to_filesystem(self, output_dir: Optional[str] = None) -> List[str]:
+    def export_ssh_keys_to_filesystem(
+        self, output_dir: Optional[str] = None
+    ) -> List[str]:
         if output_dir is None:
             output_dir = self._ssh_keys_directory()
         os.makedirs(output_dir, exist_ok=True)
         exported: List[str] = []
         for cred in self._repo.get_by_type("ssh_key"):
             if not cred.ssh_key_encrypted:
-                logger.warning("SSH key credential '%s' has no key data, skipping", cred.name)
+                logger.warning(
+                    "SSH key credential '%s' has no key data, skipping", cred.name
+                )
                 continue
             try:
                 content = self._encryption.decrypt(cred.ssh_key_encrypted)
@@ -227,7 +246,9 @@ class CredentialsService:
             return "private_"
         return ""
 
-    def _delete_ssh_key_file(self, cred_name: str, source: str, owner: Optional[str] = None) -> bool:
+    def _delete_ssh_key_file(
+        self, cred_name: str, source: str, owner: Optional[str] = None
+    ) -> bool:
         output_dir = self._ssh_keys_directory()
         prefix = self._ssh_key_filename_prefix(source, owner)
         safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", cred_name)

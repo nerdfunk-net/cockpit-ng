@@ -49,6 +49,7 @@ async def sync_templates(
     """Sync templates from Git repositories."""
     try:
         import service_factory
+
         template_manager = service_factory.build_template_service()
 
         # TODO: implement real Git template synchronization

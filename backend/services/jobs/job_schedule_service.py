@@ -264,7 +264,9 @@ class JobScheduleService:
             return base_time + timedelta(minutes=interval_minutes)
 
         elif schedule_type == "hourly":
-            return base_time.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+            return base_time.replace(minute=0, second=0, microsecond=0) + timedelta(
+                hours=1
+            )
 
         elif schedule_type == "daily":
             start_time = schedule.get("start_time", "00:00")
@@ -346,8 +348,12 @@ class JobScheduleService:
             "job_parameters": json.loads(schedule.job_parameters)
             if schedule.job_parameters
             else None,
-            "created_at": schedule.created_at.isoformat() if schedule.created_at else None,
-            "updated_at": schedule.updated_at.isoformat() if schedule.updated_at else None,
+            "created_at": schedule.created_at.isoformat()
+            if schedule.created_at
+            else None,
+            "updated_at": schedule.updated_at.isoformat()
+            if schedule.updated_at
+            else None,
             "last_run": schedule.last_run.isoformat() if schedule.last_run else None,
             "next_run": schedule.next_run.isoformat() if schedule.next_run else None,
         }

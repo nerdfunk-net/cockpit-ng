@@ -121,6 +121,7 @@ def load_all_queues_from_db():
     """
     try:
         from services.settings.manager import SettingsManager
+
         settings_manager = SettingsManager()
 
         celery_settings = settings_manager.get_celery_settings()
