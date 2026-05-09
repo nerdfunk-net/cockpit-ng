@@ -136,19 +136,7 @@ def export_devices_task(
         logger.info("STEP 2: FILTERING DEVICES BY REQUIREMENTS")
         logger.info("-" * 80)
 
-        if "primary_ip4" in properties:
-            devices_before = len(all_devices)
-            all_devices = [
-                device
-                for device in all_devices
-                if device.get("primary_ip4") and device["primary_ip4"].get("address")
-            ]
-            devices_excluded = devices_before - len(all_devices)
-            if devices_excluded > 0:
-                logger.info(
-                    "✓ Excluded %s devices without primary_ip4", devices_excluded
-                )
-            logger.info("✓ %s devices remaining after filtering", len(all_devices))
+        logger.info("✓ %s devices proceeding to property filter", len(all_devices))
 
         # STEP 3: Filter properties
         logger.info("-" * 80)
