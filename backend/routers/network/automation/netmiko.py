@@ -87,7 +87,8 @@ async def execute_commands(
         if request.credential_id is not None:
             # Use stored credential
             logger.info("Using stored credential ID: %s", request.credential_id)
-            import credentials_manager as cred_mgr
+            import service_factory
+            cred_mgr = service_factory.build_credentials_service()
 
             try:
                 # Get credential details - include both general and user's private credentials
@@ -364,7 +365,8 @@ async def execute_template(
 
             if request.credential_id is not None:
                 logger.info("Using stored credential ID: %s", request.credential_id)
-                import credentials_manager as cred_mgr
+                import service_factory
+                cred_mgr = service_factory.build_credentials_service()
 
                 try:
                     # Get credential details - include both general and user's private credentials

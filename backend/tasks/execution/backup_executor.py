@@ -81,7 +81,7 @@ def execute_backup(
 
         git_service = service_factory.build_git_service()
         git_auth_service = service_factory.build_git_auth_service()
-        import credentials_manager
+        credentials_manager = service_factory.build_credentials_service()
         import jobs_manager
         import job_template_manager
 

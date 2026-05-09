@@ -50,8 +50,8 @@ def execute_get_client_data(
         dict: Summary with session_id and row counts
     """
     import asyncio
-    import credentials_manager
     import service_factory
+    credentials_manager = service_factory.build_credentials_service()
     from repositories.client_data_repository import ClientDataRepository
 
     # -------------------------------------------------------------------------

@@ -7,8 +7,10 @@ import logging
 from fastapi import APIRouter, HTTPException, status, Depends
 from core.auth import get_current_username
 from models.auth import PersonalCredentialData, ProfileResponse, ProfileUpdateRequest
+import service_factory
 import services.auth.profile_service as profile_manager
-import credentials_manager
+
+credentials_manager = service_factory.build_credentials_service()
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/profile", tags=["profile"])

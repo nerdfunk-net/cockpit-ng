@@ -6,7 +6,7 @@ import logging
 import time
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from credentials_manager import get_decrypted_password, list_credentials  # type: ignore
+import service_factory
 from template_manager import template_manager  # type: ignore
 
 try:
@@ -31,6 +31,7 @@ class ScanService:
     def __init__(self) -> None:
         self._jobs: Dict[str, ScanJob] = {}
         self._network_scanner = NetworkScanService()
+        self._creds = service_factory.build_credentials_service()
 
     # ------------------------------------------------------------------
     # Public API
@@ -109,7 +110,7 @@ class ScanService:
         semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
 
         try:
-            credentials = {c["id"]: c for c in list_credentials()}  # type: ignore
+            credentials = {c["id"]: c for c in self._creds.list_credentials()}
         except Exception as e:
             logger.error("Failed to load credentials: %s", e)
             job.state = "finished"
@@ -233,7 +234,7 @@ class ScanService:
 
             username = cred["username"]
             try:
-                password = get_decrypted_password(cred_id)
+                password = self._creds.get_decrypted_password(cred_id)
             except Exception as e:
                 logger.error(
                     "Failed to decrypt password for credential %s: %s", cred_id, e

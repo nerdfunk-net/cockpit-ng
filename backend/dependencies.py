@@ -277,6 +277,11 @@ def get_template_render_orchestrator():
 # ---------------------------------------------------------------------------
 
 
+def get_credentials_service():
+    """Provide a CredentialsService instance."""
+    return service_factory.build_credentials_service()
+
+
 def get_profile_service():
     """Provide the profile_service module."""
     return service_factory.build_profile_service()

@@ -272,7 +272,8 @@ class RenderService:
                 - parse_error: Error message if TextFSM parsing failed
         """
         from netmiko import ConnectHandler
-        import credentials_manager
+        import service_factory
+        credentials_manager = service_factory.build_credentials_service()
 
         result = {
             "raw_output": "",

@@ -27,7 +27,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from credentials_manager import EncryptionService  # noqa: E402
+from core.crypto import EncryptionService  # noqa: E402
 from core.database import get_db_session  # noqa: E402
 from core.models import Credential, LoginCredential  # noqa: E402
 from config import settings  # noqa: E402

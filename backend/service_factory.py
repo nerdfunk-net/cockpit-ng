@@ -405,6 +405,13 @@ def build_template_render_orchestrator():
 # ---------------------------------------------------------------------------
 
 
+def build_credentials_service():
+    """Create a fresh CredentialsService instance."""
+    from services.settings.credentials_service import CredentialsService
+
+    return CredentialsService()
+
+
 def build_settings_manager():
     """Create a fresh SettingsManager instance."""
     from services.settings.manager import SettingsManager

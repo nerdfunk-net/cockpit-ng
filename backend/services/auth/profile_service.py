@@ -74,8 +74,9 @@ def update_user_profile(
 
 
 def update_user_password(username: str, new_password: str) -> bool:
-    """Update user password. Delegates to credentials_manager until Step 4.5."""
-    import credentials_manager as cred_mgr
+    """Update user password via CredentialsService."""
+    import service_factory
+    cred_mgr = service_factory.build_credentials_service()
 
     try:
         credentials = cred_mgr.list_credentials(include_expired=False)

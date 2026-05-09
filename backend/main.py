@@ -368,9 +368,9 @@ async def _startup_services():
 
     # Export SSH keys to filesystem
     try:
-        import credentials_manager
+        import service_factory
 
-        exported_keys = credentials_manager.export_ssh_keys_to_filesystem()
+        exported_keys = service_factory.build_credentials_service().export_ssh_keys_to_filesystem()
         if exported_keys:
             logger.info("Exported %s SSH keys to ./data/ssh_keys/", len(exported_keys))
         else:

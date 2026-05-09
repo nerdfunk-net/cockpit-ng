@@ -14,7 +14,7 @@ from services.network.automation.netmiko import NetmikoService
 from services.settings.git.service import GitService
 from services.settings.git.paths import repo_path
 from services.settings.git.repository_service import GitRepositoryService as GitRepositoryManager
-import credentials_manager as cred_mgr
+import service_factory
 
 logger = logging.getLogger(__name__)
 
@@ -166,11 +166,12 @@ class SnapshotExecutionService:
         if request.credential_id is not None:
             logger.info("Using stored credential ID: %s", request.credential_id)
             try:
+                cred_svc = service_factory.build_credentials_service()
                 # Get credential details - include both general and private credentials
-                general_creds = cred_mgr.list_credentials(
+                general_creds = cred_svc.list_credentials(
                     include_expired=False, source="general"
                 )
-                private_creds = cred_mgr.list_credentials(
+                private_creds = cred_svc.list_credentials(
                     include_expired=False, source="private"
                 )
                 user_private = [c for c in private_creds if c.get("owner") == username]
@@ -192,7 +193,7 @@ class SnapshotExecutionService:
 
                 # Get decrypted password
                 cred_username = credential["username"]
-                cred_password = cred_mgr.get_decrypted_password(request.credential_id)
+                cred_password = cred_svc.get_decrypted_password(request.credential_id)
 
                 if not cred_password:
                     raise ValueError("Failed to decrypt credential password")

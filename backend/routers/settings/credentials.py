@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from core.auth import require_permission, get_current_username
 from models.credentials import CredentialCreate, CredentialUpdate
 from repositories.audit_log_repository import audit_log_repo
-import credentials_manager as cred_mgr
+from dependencies import get_credentials_service
+from services.settings.credentials_service import CredentialsService
 
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 
@@ -19,6 +20,7 @@ def list_credentials(
         None, description="Filter by source: 'general', 'private', or None for all"
     ),
     current_user: str = Depends(get_current_username),
+    cred_mgr: CredentialsService = Depends(get_credentials_service),
 ) -> list[dict]:
     """
     List credentials accessible to the current user.
@@ -59,6 +61,7 @@ def list_credentials(
 def create_credential(
     payload: CredentialCreate,
     current_user: dict = Depends(require_permission("settings.credentials", "write")),
+    cred_mgr: CredentialsService = Depends(get_credentials_service),
 ) -> dict:
     try:
         result = cred_mgr.create_credential(
@@ -93,6 +96,7 @@ def update_credential(
     cred_id: int,
     payload: CredentialUpdate,
     current_user: dict = Depends(require_permission("settings.credentials", "write")),
+    cred_mgr: CredentialsService = Depends(get_credentials_service),
 ) -> dict:
     try:
         result = cred_mgr.update_credential(
@@ -129,6 +133,7 @@ def update_credential(
 def delete_credential(
     cred_id: int,
     current_user: dict = Depends(require_permission("settings.credentials", "delete")),
+    cred_mgr: CredentialsService = Depends(get_credentials_service),
 ) -> dict:
     try:
         cred_mgr.delete_credential(cred_id)
@@ -152,7 +157,9 @@ def delete_credential(
     dependencies=[Depends(require_permission("settings.credentials", "read"))],
 )
 def get_credential_password(
-    cred_id: int, current_user: str = Depends(get_current_username)
+    cred_id: int,
+    current_user: str = Depends(get_current_username),
+    cred_mgr: CredentialsService = Depends(get_credentials_service),
 ) -> dict:
     """Get the decrypted password for a credential.
 
@@ -195,7 +202,9 @@ def get_credential_password(
     dependencies=[Depends(require_permission("settings.credentials", "read"))],
 )
 def get_credential_ssh_key(
-    cred_id: int, current_user: str = Depends(get_current_username)
+    cred_id: int,
+    current_user: str = Depends(get_current_username),
+    cred_mgr: CredentialsService = Depends(get_credentials_service),
 ) -> dict:
     """Get the decrypted SSH key for a credential.
 

@@ -40,7 +40,8 @@ def execute_run_commands(
     """
     from services.network.automation.netmiko import NetmikoService
     from services.network.automation.render import RenderService
-    import credentials_manager
+    import service_factory
+    credentials_manager = service_factory.build_credentials_service()
     from template_manager import template_manager
 
     # Track credential usage
