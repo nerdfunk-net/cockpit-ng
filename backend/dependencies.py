@@ -167,6 +167,11 @@ def get_git_cache_service():
     return service_factory.build_git_cache_service()
 
 
+def get_compliance_service():
+    """Provide a ComplianceService instance."""
+    return service_factory.build_compliance_service()
+
+
 def get_git_operations_service():
     """Provide the GitOperationsService."""
     return service_factory.build_git_operations_service()

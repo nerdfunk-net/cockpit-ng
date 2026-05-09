@@ -256,6 +256,13 @@ def build_git_repository_service():
     return GitRepositoryService()
 
 
+def build_compliance_service():
+    """Create a fresh ComplianceService instance."""
+    from services.compliance.compliance_service import ComplianceService
+
+    return ComplianceService()
+
+
 def build_git_operations_service():
     """Create a fresh GitOperationsService instance."""
     from services.settings.git.operations import GitOperationsService

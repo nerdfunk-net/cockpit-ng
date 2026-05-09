@@ -9,7 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from core.auth import require_permission
 from models.settings import ComplianceCheckRequest
 from services.network.compliance.check import ComplianceCheckService
-import compliance_manager as compliance
+from dependencies import get_compliance_service
+from services.compliance.compliance_service import ComplianceService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/compliance", tags=["compliance-check"])
@@ -19,6 +20,7 @@ router = APIRouter(prefix="/api/compliance", tags=["compliance-check"])
 async def check_compliance(
     check_request: ComplianceCheckRequest,
     current_user: dict = Depends(require_permission("compliance.check", "execute")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """
     Perform compliance checks on selected devices.

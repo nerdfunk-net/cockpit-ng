@@ -15,7 +15,8 @@ from models.settings import (
     SNMPMappingRequest,
     SNMPMappingUpdateRequest,
 )
-import compliance_manager as compliance
+from dependencies import get_compliance_service
+from services.compliance.compliance_service import ComplianceService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings/compliance", tags=["compliance-settings"])
@@ -29,6 +30,7 @@ router = APIRouter(prefix="/api/settings/compliance", tags=["compliance-settings
 @router.get("/regex-patterns")
 async def get_all_regex_patterns(
     current_user: dict = Depends(require_permission("settings.compliance", "read")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Get all regex patterns."""
     try:
@@ -46,6 +48,7 @@ async def get_all_regex_patterns(
 async def get_regex_pattern(
     pattern_id: int,
     current_user: dict = Depends(require_permission("settings.compliance", "read")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Get a specific regex pattern by ID."""
     try:
@@ -70,6 +73,7 @@ async def get_regex_pattern(
 async def create_regex_pattern(
     pattern_request: RegexPatternRequest,
     current_user: dict = Depends(require_permission("settings.compliance", "write")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Create a new regex pattern."""
     try:
@@ -102,6 +106,7 @@ async def update_regex_pattern(
     pattern_id: int,
     pattern_request: RegexPatternUpdateRequest,
     current_user: dict = Depends(require_permission("settings.compliance", "write")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Update an existing regex pattern."""
     try:
@@ -136,6 +141,7 @@ async def update_regex_pattern(
 async def delete_regex_pattern(
     pattern_id: int,
     current_user: dict = Depends(require_permission("settings.compliance", "write")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Delete a regex pattern."""
     try:
@@ -164,6 +170,7 @@ async def delete_regex_pattern(
 @router.get("/login-credentials")
 async def get_all_login_credentials(
     current_user: dict = Depends(require_permission("settings.compliance", "read")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Get all login credentials (passwords masked)."""
     try:
@@ -181,6 +188,7 @@ async def get_all_login_credentials(
 async def get_login_credential(
     credential_id: int,
     current_user: dict = Depends(require_permission("settings.compliance", "read")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Get a specific login credential by ID (password masked)."""
     try:
@@ -207,6 +215,7 @@ async def get_login_credential(
 async def create_login_credential(
     credential_request: LoginCredentialRequest,
     current_user: dict = Depends(require_permission("settings.compliance", "write")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Create a new login credential."""
     try:
@@ -237,6 +246,7 @@ async def update_login_credential(
     credential_id: int,
     credential_request: LoginCredentialUpdateRequest,
     current_user: dict = Depends(require_permission("settings.compliance", "write")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Update an existing login credential."""
     try:
@@ -275,6 +285,7 @@ async def update_login_credential(
 async def delete_login_credential(
     credential_id: int,
     current_user: dict = Depends(require_permission("settings.compliance", "write")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Delete a login credential."""
     try:
@@ -303,6 +314,7 @@ async def delete_login_credential(
 @router.get("/snmp-mappings")
 async def get_all_snmp_mappings(
     current_user: dict = Depends(require_permission("settings.compliance", "read")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Get all SNMP mappings (passwords masked)."""
     try:
@@ -320,6 +332,7 @@ async def get_all_snmp_mappings(
 async def get_snmp_mapping(
     mapping_id: int,
     current_user: dict = Depends(require_permission("settings.compliance", "read")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Get a specific SNMP mapping by ID (passwords masked)."""
     try:
@@ -344,6 +357,7 @@ async def get_snmp_mapping(
 async def create_snmp_mapping(
     mapping_request: SNMPMappingRequest,
     current_user: dict = Depends(require_permission("settings.compliance", "write")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Create a new SNMP mapping."""
     try:
@@ -384,6 +398,7 @@ async def update_snmp_mapping(
     mapping_id: int,
     mapping_request: SNMPMappingUpdateRequest,
     current_user: dict = Depends(require_permission("settings.compliance", "write")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Update an existing SNMP mapping."""
     try:
@@ -432,6 +447,7 @@ async def update_snmp_mapping(
 async def delete_snmp_mapping(
     mapping_id: int,
     current_user: dict = Depends(require_permission("settings.compliance", "write")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Delete an SNMP mapping."""
     try:
@@ -456,6 +472,7 @@ async def delete_snmp_mapping(
 async def import_snmp_mappings(
     yaml_content: str = Body(..., embed=True),
     current_user: dict = Depends(require_permission("settings.compliance", "write")),
+    compliance: ComplianceService = Depends(get_compliance_service),
 ):
     """Import SNMP mappings from YAML content.
 
