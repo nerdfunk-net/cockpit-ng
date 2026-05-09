@@ -90,6 +90,90 @@ class AgentDeploymentService:
 
         return repo, repo_path
 
+    def _setup_deployment(
+        self, agent_id: str, task_context=None
+    ) -> tuple:
+        """
+        Load agent config, git repository, then clone/open the repo.
+
+        Returns (agent, agent_name, repo_dict, repo, repo_path, git_repository).
+        Raises ValueError with a human-readable message on any configuration error.
+        Raises GitCommandError if the repo cannot be prepared.
+        """
+        agent = self._load_agent_config(agent_id)
+        agent_name = agent.get("name", agent_id)
+
+        self._update_progress(task_context, 10, "Loading Git repository...")
+        git_repository = self._load_git_repository(agent)
+        repo_dict = self._repo_to_dict(git_repository)
+
+        self._update_progress(task_context, 25, "Preparing Git repository...")
+        repo, repo_path = self._open_or_clone_repo(repo_dict)
+
+        return agent, agent_name, repo_dict, repo, repo_path, git_repository
+
+    def _commit_and_finalize(
+        self,
+        *,
+        repo_dict: Dict[str, Any],
+        repo,
+        file_paths: List[str],
+        commit_message: str,
+        agent_id: str,
+        agent_name: str,
+        git_repository,
+        activate_after_deploy: bool,
+        username: str,
+        task_context=None,
+        extra_result_fields: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Commit, push, and optionally activate the agent.
+
+        Returns the final result dict (success or failure).
+        Callers merge their own fields via extra_result_fields.
+        """
+        self._update_progress(task_context, 75, "Committing and pushing changes...")
+
+        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        result = self._commit_and_push(repo_dict, repo, file_paths, commit_message)
+
+        if not result.success:
+            return {
+                "success": False,
+                "error": f"Failed to commit/push to git: {result.message}",
+                "agent_id": agent_id,
+                "agent_name": agent_name,
+                **(extra_result_fields or {}),
+            }
+
+        deployment_result = {
+            "success": True,
+            "agent_id": agent_id,
+            "agent_name": agent_name,
+            "commit_sha": result.commit_sha,
+            "commit_sha_short": result.commit_sha[:8] if result.commit_sha else None,
+            "repository_name": git_repository.name,
+            "repository_url": git_repository.url,
+            "branch": git_repository.branch or "main",
+            "files_changed": result.files_changed,
+            "pushed": result.pushed,
+            "timestamp": current_date,
+            "activated": False,
+            **(extra_result_fields or {}),
+        }
+
+        if activate_after_deploy:
+            activation_result = self._activate_agent(
+                cockpit_agent_id=agent_id,
+                agent_name=agent_name,
+                username=username,
+                task_context=task_context,
+            )
+            deployment_result.update(activation_result)
+
+        return deployment_result
+
     def _write_file(
         self,
         repo_path: str,
@@ -171,219 +255,72 @@ class AgentDeploymentService:
         """
         Deploy agent configuration to Git repository.
 
-        Orchestrates: load agent config → load repo → render template →
-        clone/open repo → write file → commit/push → activate.
+        Orchestrates: load agent config → load repo → clone/open repo →
+        render template → write file → commit/push → activate.
         """
         try:
-            logger.info("=" * 80)
-            logger.info("AGENT DEPLOYMENT STARTED")
-            logger.info("=" * 80)
-            logger.info("Template ID: %s", template_id)
-            logger.info("Agent ID: %s", agent_id)
-            logger.info("Path: %s", path)
-            logger.info("Inventory ID: %s", inventory_id)
-            logger.info("Activate after deploy: %s", activate_after_deploy)
-            logger.info(
-                "Custom variables: %s",
-                list(custom_variables.keys()) if custom_variables else "none",
-            )
-
             self._update_progress(task_context, 0, "Initializing agent deployment...")
 
-            # Step 1: Load agent configuration
-            logger.info("-" * 80)
-            logger.info("STEP 1: LOADING AGENT CONFIGURATION")
-            logger.info("-" * 80)
-
             try:
-                agent = self._load_agent_config(agent_id)
-            except ValueError as e:
-                logger.error("ERROR: %s", e)
+                agent, agent_name, repo_dict, repo, repo_path, git_repository = (
+                    self._setup_deployment(agent_id, task_context)
+                )
+            except (ValueError, GitCommandError) as e:
+                logger.error("Deployment setup failed: %s", e)
                 return {
                     "success": False,
                     "error": str(e),
-                    "template_id": template_id,
                     "agent_id": agent_id,
+                    "template_id": template_id,
                 }
 
-            agent_name = agent.get("name", agent_id)
-            logger.info(
-                "✓ Agent found: %s (Cockpit Agent ID: %s)", agent_name, agent_id
-            )
-
-            self._update_progress(task_context, 15, "Loading Git repository...")
-
-            # Step 2: Load Git repository configuration
-            logger.info("-" * 80)
-            logger.info("STEP 2: LOADING GIT REPOSITORY")
-            logger.info("-" * 80)
+            self._update_progress(task_context, 35, "Rendering template...")
 
             try:
-                git_repository = self._load_git_repository(agent)
-            except ValueError as e:
-                logger.error("ERROR: %s", e)
-                return {
-                    "success": False,
-                    "error": str(e),
-                    "template_id": template_id,
-                    "agent_id": agent_id,
-                }
-
-            repo_dict = self._repo_to_dict(git_repository)
-            logger.info(
-                "✓ Git repository: %s (%s)", git_repository.name, git_repository.url
-            )
-
-            self._update_progress(task_context, 30, "Rendering template...")
-
-            # Step 3: Load and render template
-            logger.info("-" * 80)
-            logger.info("STEP 3: LOADING AND RENDERING TEMPLATE")
-            logger.info("-" * 80)
-
-            try:
-                (
-                    template_name,
-                    rendered_content,
-                    file_path,
-                ) = await self._render_template(
+                template_name, rendered_content, file_path = await self._render_template(
                     template_id, path, inventory_id, custom_variables, username
                 )
-                logger.info(
-                    "✓ Template rendered: %s (%s chars) → %s",
-                    template_name,
-                    len(rendered_content),
-                    file_path,
-                )
-            except ValueError as e:
-                logger.error("ERROR: %s", e)
+            except (ValueError, Exception) as e:
+                logger.error("Template rendering failed: %s", e, exc_info=True)
                 return {
                     "success": False,
                     "error": str(e),
-                    "template_id": template_id,
                     "agent_id": agent_id,
-                }
-            except Exception as e:
-                error_msg = f"Failed to render template: {str(e)}"
-                logger.error("ERROR: %s", error_msg, exc_info=True)
-                return {
-                    "success": False,
-                    "error": error_msg,
                     "template_id": template_id,
-                    "agent_id": agent_id,
                 }
 
-            self._update_progress(task_context, 55, "Preparing Git repository...")
-
-            # Step 4: Prepare Git repository
-            logger.info("-" * 80)
-            logger.info("STEP 4: PREPARING GIT REPOSITORY")
-            logger.info("-" * 80)
-
-            try:
-                repo, repo_path = self._open_or_clone_repo(repo_dict)
-                logger.info("✓ Repository ready at %s", repo_path)
-            except GitCommandError as e:
-                error_msg = f"Failed to prepare repository: {str(e)}"
-                logger.error("ERROR: %s", error_msg)
-                return {
-                    "success": False,
-                    "error": error_msg,
-                    "template_id": template_id,
-                    "agent_id": agent_id,
-                }
-
-            self._update_progress(task_context, 70, "Writing configuration file...")
-
-            # Step 5: Write configuration file
-            logger.info("-" * 80)
-            logger.info("STEP 5: WRITING CONFIGURATION FILE")
-            logger.info("-" * 80)
-
+            self._update_progress(task_context, 60, "Writing configuration file...")
             self._write_file(repo_path, file_path, rendered_content)
-            logger.info("✓ Configuration written to %s", file_path)
-
-            self._update_progress(task_context, 82, "Committing and pushing changes...")
-
-            # Step 6: Commit and push
-            logger.info("-" * 80)
-            logger.info("STEP 6: COMMITTING AND PUSHING TO GIT")
-            logger.info("-" * 80)
 
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             commit_message = f"Deploy {agent_name} - {template_name} - {current_date}"
-            logger.info("Commit message: '%s'", commit_message)
 
-            result = self._commit_and_push(
-                repo_dict, repo, [file_path.lstrip("/")], commit_message
-            )
-
-            if result.success:
-                logger.info("=" * 80)
-                logger.info("GIT DEPLOYMENT COMPLETED SUCCESSFULLY")
-                logger.info("=" * 80)
-                logger.info(
-                    "✓ Commit SHA: %s",
-                    result.commit_sha[:8] if result.commit_sha else "none",
-                )
-                logger.info("✓ Files changed: %s", result.files_changed)
-
-                deployment_result = {
-                    "success": True,
-                    "message": f"Successfully deployed configuration to git repository '{git_repository.name}'",
+            return self._commit_and_finalize(
+                repo_dict=repo_dict,
+                repo=repo,
+                file_paths=[file_path.lstrip("/")],
+                commit_message=commit_message,
+                agent_id=agent_id,
+                agent_name=agent_name,
+                git_repository=git_repository,
+                activate_after_deploy=activate_after_deploy,
+                username=username,
+                task_context=task_context,
+                extra_result_fields={
                     "template_id": template_id,
                     "template_name": template_name,
-                    "agent_id": agent_id,
-                    "agent_name": agent_name,
-                    "commit_sha": result.commit_sha,
-                    "commit_sha_short": result.commit_sha[:8]
-                    if result.commit_sha
-                    else None,
                     "file_path": file_path,
-                    "repository_name": git_repository.name,
-                    "repository_url": git_repository.url,
-                    "branch": git_repository.branch or "main",
-                    "files_changed": result.files_changed,
-                    "pushed": result.pushed,
-                    "timestamp": current_date,
-                    "activated": False,
-                }
-
-                if activate_after_deploy:
-                    activation_result = self._activate_agent(
-                        cockpit_agent_id=agent_id,
-                        agent_name=agent_name,
-                        username=username,
-                        task_context=task_context,
-                    )
-                    deployment_result.update(activation_result)
-
-                logger.info("=" * 80)
-                logger.info("AGENT DEPLOYMENT COMPLETED")
-                logger.info("=" * 80)
-
-                return deployment_result
-            else:
-                error_msg = f"Failed to commit/push to git: {result.message}"
-                logger.error("ERROR: %s", error_msg)
-                return {
-                    "success": False,
-                    "error": error_msg,
-                    "template_id": template_id,
-                    "agent_id": agent_id,
-                    "file_path": file_path,
-                }
+                    "message": f"Successfully deployed configuration to git repository '{git_repository.name}'",
+                },
+            )
 
         except Exception as e:
-            logger.error("=" * 80)
-            logger.error("AGENT DEPLOYMENT FAILED WITH EXCEPTION")
-            logger.error("=" * 80)
-            logger.error("Exception: %s", e, exc_info=True)
+            logger.error("Agent deployment failed: %s", e, exc_info=True)
             return {
                 "success": False,
                 "error": str(e),
-                "template_id": template_id,
                 "agent_id": agent_id,
+                "template_id": template_id,
             }
 
     async def deploy_multi(
@@ -401,79 +338,26 @@ class AgentDeploymentService:
         git commit/push and optional activation.
         """
         try:
-            logger.info("=" * 80)
-            logger.info("MULTI-TEMPLATE AGENT DEPLOYMENT STARTED")
-            logger.info("=" * 80)
-            logger.info("Agent ID: %s", agent_id)
-            logger.info("Template entries: %s", len(template_entries))
-            logger.info("Activate after deploy: %s", activate_after_deploy)
-
             self._update_progress(
                 task_context, 0, "Initializing multi-template deployment..."
             )
 
-            # Step 1: Load agent configuration
-            logger.info("-" * 80)
-            logger.info("STEP 1: LOADING AGENT CONFIGURATION")
-            logger.info("-" * 80)
-
             try:
-                agent = self._load_agent_config(agent_id)
-            except ValueError as e:
+                agent, agent_name, repo_dict, repo, repo_path, git_repository = (
+                    self._setup_deployment(agent_id, task_context)
+                )
+            except (ValueError, GitCommandError) as e:
+                logger.error("Deployment setup failed: %s", e)
                 return {"success": False, "error": str(e), "agent_id": agent_id}
 
-            agent_name = agent.get("name", agent_id)
-            logger.info("Agent found: %s", agent_name)
+            self._update_progress(task_context, 30, "Rendering templates...")
 
-            self._update_progress(task_context, 10, "Loading Git repository...")
-
-            # Step 2: Load Git repository
-            logger.info("-" * 80)
-            logger.info("STEP 2: LOADING GIT REPOSITORY")
-            logger.info("-" * 80)
-
-            try:
-                git_repository = self._load_git_repository(agent)
-            except ValueError as e:
-                return {"success": False, "error": str(e), "agent_id": agent_id}
-
-            repo_dict = self._repo_to_dict(git_repository)
-            logger.info("Git repository: %s", git_repository.name)
-
-            self._update_progress(task_context, 20, "Preparing Git repository...")
-
-            # Step 3: Prepare Git repository
-            logger.info("-" * 80)
-            logger.info("STEP 3: PREPARING GIT REPOSITORY")
-            logger.info("-" * 80)
-
-            try:
-                repo, repo_path = self._open_or_clone_repo(repo_dict)
-                logger.info("Repository ready at %s", repo_path)
-            except GitCommandError as e:
-                return {
-                    "success": False,
-                    "error": f"Failed to prepare repository: {str(e)}",
-                    "agent_id": agent_id,
-                }
-
-            # Step 4: Render templates and write files
-            logger.info("-" * 80)
-            logger.info("STEP 4: RENDERING TEMPLATES AND WRITING FILES")
-            logger.info("-" * 80)
-
-            template_results = []
-            all_file_paths = []
+            template_results: List[Dict[str, Any]] = []
+            all_file_paths: List[str] = []
             success_count = 0
-            fail_count = 0
-
             total_entries = len(template_entries)
-            for idx, entry in enumerate(template_entries):
-                entry_template_id = entry.get("template_id")
-                entry_inventory_id = entry.get("inventory_id")
-                entry_path = entry.get("path")
-                entry_custom_variables = entry.get("custom_variables") or {}
 
+            for idx, entry in enumerate(template_entries):
                 progress = 30 + int((idx / total_entries) * 40)
                 self._update_progress(
                     task_context,
@@ -481,29 +365,34 @@ class AgentDeploymentService:
                     f"Rendering template {idx + 1}/{total_entries}...",
                 )
 
-                logger.info("--- Template entry %s/%s ---", idx + 1, total_entries)
-                logger.info("  Template ID: %s", entry_template_id)
+                entry_template_id = entry.get("template_id")
+                entry_inventory_id = entry.get("inventory_id")
+                entry_path = entry.get("path")
+                entry_custom_variables = entry.get("custom_variables") or {}
 
                 try:
-                    (
-                        template_name,
-                        rendered_content,
-                        file_path,
-                    ) = await self._render_template(
+                    template_name, rendered_content, file_path = await self._render_template(
                         entry_template_id,
                         entry_path,
                         entry_inventory_id,
                         entry_custom_variables,
                         username,
                     )
-                    logger.info(
-                        "  Rendered: %s (%s chars) → %s",
-                        template_name,
-                        len(rendered_content),
-                        file_path,
+                    self._write_file(repo_path, file_path, rendered_content)
+                    all_file_paths.append(file_path.lstrip("/"))
+                    template_results.append(
+                        {
+                            "template_id": entry_template_id,
+                            "template_name": template_name,
+                            "file_path": file_path,
+                            "inventory_id": entry_inventory_id,
+                            "success": True,
+                            "rendered_size": len(rendered_content),
+                        }
                     )
-                except ValueError as e:
-                    logger.error("  Error: %s", e)
+                    success_count += 1
+                except Exception as e:
+                    logger.error("Template render failed (id=%s): %s", entry_template_id, e, exc_info=True)
                     template_results.append(
                         {
                             "template_id": entry_template_id,
@@ -515,39 +404,6 @@ class AgentDeploymentService:
                             "rendered_size": 0,
                         }
                     )
-                    fail_count += 1
-                    continue
-                except Exception as e:
-                    logger.error("  Render failed: %s", e, exc_info=True)
-                    template_results.append(
-                        {
-                            "template_id": entry_template_id,
-                            "template_name": None,
-                            "file_path": entry_path,
-                            "inventory_id": entry_inventory_id,
-                            "success": False,
-                            "error": f"Failed to render template: {str(e)}",
-                            "rendered_size": 0,
-                        }
-                    )
-                    fail_count += 1
-                    continue
-
-                self._write_file(repo_path, file_path, rendered_content)
-                logger.info("  Written to: %s", file_path)
-
-                all_file_paths.append(file_path.lstrip("/"))
-                template_results.append(
-                    {
-                        "template_id": entry_template_id,
-                        "template_name": template_name,
-                        "file_path": file_path,
-                        "inventory_id": entry_inventory_id,
-                        "success": True,
-                        "rendered_size": len(rendered_content),
-                    }
-                )
-                success_count += 1
 
             if success_count == 0:
                 return {
@@ -558,80 +414,30 @@ class AgentDeploymentService:
                     "template_results": template_results,
                 }
 
-            self._update_progress(task_context, 75, "Committing and pushing changes...")
-
-            # Step 5: Single commit and push with all files
-            logger.info("-" * 80)
-            logger.info("STEP 5: COMMITTING AND PUSHING TO GIT")
-            logger.info("-" * 80)
-
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             commit_message = (
                 f"Deploy {agent_name} - {success_count} templates - {current_date}"
             )
-            logger.info("Commit message: '%s'", commit_message)
 
-            result = self._commit_and_push(
-                repo_dict, repo, all_file_paths, commit_message
+            return self._commit_and_finalize(
+                repo_dict=repo_dict,
+                repo=repo,
+                file_paths=all_file_paths,
+                commit_message=commit_message,
+                agent_id=agent_id,
+                agent_name=agent_name,
+                git_repository=git_repository,
+                activate_after_deploy=activate_after_deploy,
+                username=username,
+                task_context=task_context,
+                extra_result_fields={
+                    "template_results": template_results,
+                    "message": f"Successfully deployed {success_count} templates to git repository '{git_repository.name}'",
+                },
             )
 
-            if result.success:
-                logger.info("=" * 80)
-                logger.info("GIT DEPLOYMENT COMPLETED SUCCESSFULLY")
-                logger.info("=" * 80)
-                logger.info(
-                    "Commit SHA: %s",
-                    result.commit_sha[:8] if result.commit_sha else "none",
-                )
-                logger.info("Files changed: %s", result.files_changed)
-
-                deployment_result = {
-                    "success": True,
-                    "message": f"Successfully deployed {success_count} templates to git repository '{git_repository.name}'",
-                    "agent_id": agent_id,
-                    "agent_name": agent_name,
-                    "commit_sha": result.commit_sha,
-                    "commit_sha_short": result.commit_sha[:8]
-                    if result.commit_sha
-                    else None,
-                    "repository_name": git_repository.name,
-                    "repository_url": git_repository.url,
-                    "branch": git_repository.branch or "main",
-                    "files_changed": result.files_changed,
-                    "pushed": result.pushed,
-                    "timestamp": current_date,
-                    "activated": False,
-                    "template_results": template_results,
-                }
-
-                if activate_after_deploy:
-                    activation_result = self._activate_agent(
-                        cockpit_agent_id=agent_id,
-                        agent_name=agent_name,
-                        username=username,
-                        task_context=task_context,
-                    )
-                    deployment_result.update(activation_result)
-
-                logger.info("=" * 80)
-                logger.info("MULTI-TEMPLATE AGENT DEPLOYMENT COMPLETED")
-                logger.info("=" * 80)
-
-                return deployment_result
-            else:
-                return {
-                    "success": False,
-                    "error": f"Failed to commit/push to git: {result.message}",
-                    "agent_id": agent_id,
-                    "agent_name": agent_name,
-                    "template_results": template_results,
-                }
-
         except Exception as e:
-            logger.error("=" * 80)
-            logger.error("MULTI-TEMPLATE AGENT DEPLOYMENT FAILED WITH EXCEPTION")
-            logger.error("=" * 80)
-            logger.error("Exception: %s", e, exc_info=True)
+            logger.error("Multi-template deployment failed: %s", e, exc_info=True)
             return {"success": False, "error": str(e), "agent_id": agent_id}
 
     def _activate_agent(
