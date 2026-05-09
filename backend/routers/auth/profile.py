@@ -5,41 +5,13 @@ User profile management router.
 from __future__ import annotations
 import logging
 from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel
-from typing import Optional, List
 from core.auth import get_current_username
+from models.auth import PersonalCredentialData, ProfileResponse, ProfileUpdateRequest
 import profile_manager
 import credentials_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/profile", tags=["profile"])
-
-
-class PersonalCredentialData(BaseModel):
-    id: str
-    name: str
-    username: str
-    type: str
-    password: Optional[str] = None  # Optional for ssh_key type
-    ssh_private_key: Optional[str] = None  # For ssh_key type
-    ssh_passphrase: Optional[str] = None  # Optional passphrase for ssh_key
-    has_ssh_key: Optional[bool] = None  # Indicates if SSH key is stored
-
-
-class ProfileResponse(BaseModel):
-    username: str
-    realname: str
-    email: str
-    api_key: Optional[str]
-    personal_credentials: Optional[List[PersonalCredentialData]] = []
-
-
-class ProfileUpdateRequest(BaseModel):
-    realname: Optional[str] = None
-    email: Optional[str] = None
-    password: Optional[str] = None
-    api_key: Optional[str] = None
-    personal_credentials: Optional[List[PersonalCredentialData]] = []
 
 
 @router.get("", response_model=ProfileResponse)

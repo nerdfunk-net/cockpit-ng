@@ -9,12 +9,16 @@ import logging
 import subprocess
 import shutil
 from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from pydantic import BaseModel
 
 from core.auth import require_permission
+from models.tools import (
+    CertificateInfo,
+    ScanResponse,
+    AddCertificateRequest,
+    AddCertificateResponse,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/certificates", tags=["certificates"])
@@ -22,40 +26,6 @@ router = APIRouter(prefix="/api/certificates", tags=["certificates"])
 # Default certificate directories
 CONFIG_CERTS_DIR = Path("../config/certs")
 SYSTEM_CA_DIR = Path("/usr/local/share/ca-certificates")
-
-
-class CertificateInfo(BaseModel):
-    """Certificate file information."""
-
-    filename: str
-    path: str
-    size: int
-    exists_in_system: bool
-
-
-class ScanResponse(BaseModel):
-    """Response for certificate scan operation."""
-
-    success: bool
-    certificates: list[CertificateInfo]
-    certs_directory: str
-    message: Optional[str] = None
-
-
-class AddCertificateRequest(BaseModel):
-    """Request to add a certificate to system CA store."""
-
-    filename: str
-
-
-class AddCertificateResponse(BaseModel):
-    """Response from adding certificate to system CA store."""
-
-    success: bool
-    message: str
-    output: Optional[str] = None
-    error: Optional[str] = None
-    command_output: Optional[str] = None
 
 
 @router.get("/scan", response_model=ScanResponse)

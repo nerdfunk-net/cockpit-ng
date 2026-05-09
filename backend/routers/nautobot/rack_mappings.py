@@ -12,33 +12,17 @@ import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, Query, Response, status
-from pydantic import BaseModel
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from core.auth import require_permission
 from core.database import get_db
 from core.models import RackDeviceMapping
+from models.nautobot import RackMappingItem, RackMappingsCreate
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["nautobot-rack-mappings"])
-
-
-class MappingEntry(BaseModel):
-    origin_name: str
-    mapped_name: str
-
-
-class RackMappingItem(BaseModel):
-    origin_name: str
-    mapped_name: str
-
-
-class RackMappingsCreate(BaseModel):
-    rack_name: str
-    location_id: str
-    mappings: List[MappingEntry]
 
 
 @router.get(

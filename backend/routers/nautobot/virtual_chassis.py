@@ -124,13 +124,17 @@ async def get_virtual_chassis_detail(
     except HTTPException:
         raise
     except NautobotAPIError as exc:
-        logger.error("Failed to get virtual chassis detail %s: %s", vc_id, exc, exc_info=True)
+        logger.error(
+            "Failed to get virtual chassis detail %s: %s", vc_id, exc, exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get virtual chassis detail: {exc}",
         )
     except Exception as exc:
-        logger.error("Failed to get virtual chassis detail %s: %s", vc_id, exc, exc_info=True)
+        logger.error(
+            "Failed to get virtual chassis detail %s: %s", vc_id, exc, exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get virtual chassis detail: {exc}",
@@ -234,7 +238,9 @@ async def delete_virtual_chassis(
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except NautobotAPIError as exc:
         error_msg = str(exc)
-        logger.error("Failed to delete virtual chassis %s: %s", vc_id, error_msg, exc_info=True)
+        logger.error(
+            "Failed to delete virtual chassis %s: %s", vc_id, error_msg, exc_info=True
+        )
         if "404" in error_msg or "Not Found" in error_msg:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -245,7 +251,9 @@ async def delete_virtual_chassis(
             detail=f"Failed to delete virtual chassis: {error_msg}",
         )
     except Exception as exc:
-        logger.error("Failed to delete virtual chassis %s: %s", vc_id, exc, exc_info=True)
+        logger.error(
+            "Failed to delete virtual chassis %s: %s", vc_id, exc, exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete virtual chassis: {exc}",
@@ -287,7 +295,9 @@ async def update_virtual_chassis(
         return result
     except NautobotAPIError as exc:
         error_msg = str(exc)
-        logger.error("Failed to update virtual chassis %s: %s", vc_id, error_msg, exc_info=True)
+        logger.error(
+            "Failed to update virtual chassis %s: %s", vc_id, error_msg, exc_info=True
+        )
         if "404" in error_msg or "Not Found" in error_msg:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -303,7 +313,9 @@ async def update_virtual_chassis(
             detail=f"Failed to update virtual chassis: {error_msg}",
         )
     except Exception as exc:
-        logger.error("Failed to update virtual chassis %s: %s", vc_id, exc, exc_info=True)
+        logger.error(
+            "Failed to update virtual chassis %s: %s", vc_id, exc, exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update virtual chassis: {exc}",

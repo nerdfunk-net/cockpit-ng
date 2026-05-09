@@ -6,11 +6,11 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 import yaml
 
 from core.auth import require_permission
 from dependencies import get_checkmk_config_service
+from models.settings import ConfigFileContent
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/config", tags=["config"])
@@ -18,10 +18,6 @@ router = APIRouter(prefix="/api/config", tags=["config"])
 # Base path for config files
 # Updated path: routers/settings/connections/config.py -> backend/ -> project_root/config/
 CONFIG_BASE_PATH = Path(__file__).parent.parent.parent.parent.parent / "config"
-
-
-class ConfigFileContent(BaseModel):
-    content: str
 
 
 @router.post("/validate")

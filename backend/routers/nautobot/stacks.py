@@ -8,14 +8,18 @@ splitting them into separate devices, and building Virtual Chassis groups.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
 
 from core.auth import require_permission
 from dependencies import get_nautobot_service
-from models.nautobot import AddDeviceRequest
+from models.nautobot import (
+    AddDeviceRequest,
+    ProcessStacksRequest,
+    StackProcessingResult,
+    ProcessStacksResponse,
+)
 from services.nautobot.client import NautobotService
 from services.nautobot.devices.creation import DeviceCreationService
 from services.nautobot.devices.update import DeviceUpdateService
@@ -23,56 +27,6 @@ from services.nautobot.devices.update import DeviceUpdateService
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["nautobot-stacks"])
-
-
-# ---------------------------------------------------------------------------
-# Request / Response models
-# ---------------------------------------------------------------------------
-
-
-class StackDeviceInfo(BaseModel):
-    """Device information as returned by the GraphQL query."""
-
-    id: str
-    name: str
-    serial: str
-    location: Optional[Dict[str, Any]] = None
-    device_type: Optional[Dict[str, Any]] = None
-
-
-class ProcessStacksRequest(BaseModel):
-    """Request to split and build virtual chassis for selected stack devices."""
-
-    device_ids: List[str] = Field(
-        ...,
-        min_items=1,
-        description="List of device UUIDs to process (split + build VC)",
-    )
-    separator: str = Field(
-        default=",",
-        description="Delimiter used to split multiple serial numbers",
-    )
-
-
-class DeviceResult(BaseModel):
-    """Result for a single device processed in the stacks workflow."""
-
-    device_id: str
-    device_name: str
-    success: bool
-    message: str
-    created_devices: List[str] = Field(default_factory=list)
-    virtual_chassis_id: Optional[str] = None
-    virtual_chassis_name: Optional[str] = None
-
-
-class ProcessStacksResponse(BaseModel):
-    """Response after processing stack devices."""
-
-    results: List[DeviceResult]
-    total: int
-    succeeded: int
-    failed: int
 
 
 # ---------------------------------------------------------------------------
@@ -283,14 +237,14 @@ async def process_stacks(
     creation_service = DeviceCreationService()
     update_service = DeviceUpdateService(nautobot_service)
 
-    results: list[DeviceResult] = []
+    results: list[StackProcessingResult] = []
 
     for device_id in request.device_ids:
         device = await _fetch_device_full(nautobot_service, device_id)
 
         if not device:
             results.append(
-                DeviceResult(
+                StackProcessingResult(
                     device_id=device_id,
                     device_name="<unknown>",
                     success=False,
@@ -304,7 +258,7 @@ async def process_stacks(
 
         if len(serials) <= 1:
             results.append(
-                DeviceResult(
+                StackProcessingResult(
                     device_id=device_id,
                     device_name=device_name,
                     success=False,
@@ -334,7 +288,7 @@ async def process_stacks(
         except Exception as exc:
             logger.error("Error updating device %s: %s", device_name, exc)
             results.append(
-                DeviceResult(
+                StackProcessingResult(
                     device_id=device_id,
                     device_name=device_name,
                     success=False,
@@ -371,7 +325,7 @@ async def process_stacks(
 
         if error_message:
             results.append(
-                DeviceResult(
+                StackProcessingResult(
                     device_id=device_id,
                     device_name=device_name,
                     success=False,
@@ -409,7 +363,7 @@ async def process_stacks(
 
         if not all_members:
             results.append(
-                DeviceResult(
+                StackProcessingResult(
                     device_id=device_id,
                     device_name=device_name,
                     success=False,
@@ -457,7 +411,7 @@ async def process_stacks(
             )
 
             results.append(
-                DeviceResult(
+                StackProcessingResult(
                     device_id=device_id,
                     device_name=device_name,
                     success=True,
@@ -473,7 +427,7 @@ async def process_stacks(
         except Exception as exc:
             logger.error("Error building Virtual Chassis for '%s': %s", canon_name, exc)
             results.append(
-                DeviceResult(
+                StackProcessingResult(
                     device_id=device_id,
                     device_name=device_name,
                     success=False,

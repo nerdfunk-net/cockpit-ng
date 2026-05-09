@@ -12,22 +12,15 @@ import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
 
 from core.auth import require_permission
 from dependencies import get_nautobot_service
+from models.nautobot import RackReservationCreate
 from services.nautobot.client import NautobotService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["nautobot-rack-reservations"])
-
-
-class RackReservationCreate(BaseModel):
-    rack_id: str
-    units: List[int]
-    description: str
-    location_id: str
 
 
 @router.delete(

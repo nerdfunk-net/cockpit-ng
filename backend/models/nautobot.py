@@ -3,8 +3,11 @@ Nautobot-related Pydantic models.
 """
 
 from __future__ import annotations
-from pydantic import BaseModel, field_validator
+
+import ipaddress
 from typing import Any, Dict, List, Literal, Optional, Union
+
+from pydantic import BaseModel, Field, field_validator, validator
 
 
 class CheckIPRequest(BaseModel):
@@ -399,3 +402,135 @@ class UpdateVirtualChassisRequest(BaseModel):
     """Request model for updating the master of a virtual chassis."""
 
     new_master_id: str
+
+
+# --- Stacks ---
+
+
+class StackDeviceInfo(BaseModel):
+    id: str
+    name: str
+    serial: str
+    location: Optional[Dict[str, Any]] = None
+    device_type: Optional[Dict[str, Any]] = None
+
+
+class ProcessStacksRequest(BaseModel):
+    device_ids: List[str] = Field(..., min_items=1)
+    separator: str = Field(default=",")
+
+
+class StackProcessingResult(BaseModel):
+    device_id: str
+    device_name: str
+    success: bool
+    message: str
+    created_devices: List[str] = Field(default_factory=list)
+    virtual_chassis_id: Optional[str] = None
+    virtual_chassis_name: Optional[str] = None
+
+
+class ProcessStacksResponse(BaseModel):
+    results: List[StackProcessingResult]
+    total: int
+    succeeded: int
+    failed: int
+
+
+# --- Rack Mappings ---
+
+
+class RackMappingItem(BaseModel):
+    origin_name: str
+    mapped_name: str
+
+
+class RackMappingsCreate(BaseModel):
+    rack_name: str
+    location_id: str
+    mappings: List[RackMappingItem]
+
+
+# --- Rack Reservations ---
+
+
+class RackReservationCreate(BaseModel):
+    rack_id: str
+    units: List[int]
+    description: str
+    location_id: str
+
+
+# --- Network Scan and Add ---
+
+
+class ScanStartRequest(BaseModel):
+    cidrs: List[str] = Field(..., max_items=10)
+    credential_ids: Optional[List[int]] = Field(default=None)
+    discovery_mode: str = Field(default="netmiko")
+    ping_mode: str = Field(default="fping")
+    parser_template_ids: Optional[List[int]] = Field(default=None)
+
+    @validator("cidrs")
+    def validate_cidrs(cls, v: List[str]) -> List[str]:
+        if not v:
+            raise ValueError("At least one CIDR required")
+        cleaned = []
+        seen: set = set()
+        for cidr in v:
+            try:
+                network = ipaddress.ip_network(cidr, strict=False)
+            except Exception:
+                raise ValueError(f"Invalid CIDR format: {cidr}")
+            if network.prefixlen < 22:
+                raise ValueError(f"CIDR too large (minimum /22): {cidr}")
+            if cidr not in seen:
+                seen.add(cidr)
+                cleaned.append(cidr)
+        return cleaned
+
+    @validator("credential_ids")
+    def validate_credentials(cls, v: Optional[List[int]]) -> List[int]:
+        if v is None or len(v) == 0:
+            return []
+        return v
+
+    @validator("discovery_mode")
+    def validate_discovery_mode(cls, v: str) -> str:
+        if v not in ["napalm", "ssh-login", "netmiko"]:
+            raise ValueError(
+                "discovery_mode must be 'napalm', 'ssh-login', or 'netmiko'"
+            )
+        return v
+
+    @validator("ping_mode")
+    def validate_ping_mode_for_no_credentials(cls, v: str, values: dict) -> str:
+        if v not in ["ping", "fping"]:
+            raise ValueError("ping_mode must be 'ping' or 'fping'")
+        credential_ids = values.get("credential_ids")
+        if (credential_ids is None or len(credential_ids) == 0) and v != "fping":
+            return "fping"
+        return v
+
+
+class ScanStartResponse(BaseModel):
+    job_id: str
+    total_targets: int
+    state: str
+
+
+class ScanProgress(BaseModel):
+    total: int
+    scanned: int
+    alive: int
+    authenticated: int
+    unreachable: int
+    auth_failed: int
+    driver_not_supported: int
+
+
+class ScanStatusResponse(BaseModel):
+    job_id: str
+    state: str
+    progress: ScanProgress
+    results: List[Dict[str, Any]]

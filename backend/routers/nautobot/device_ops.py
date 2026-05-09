@@ -18,7 +18,9 @@ from dependencies import (
 from services.nautobot.client import NautobotService
 from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.offboarding.service import OffboardingService
-from services.nautobot.offboarding.virtual_chassis_cleanup import VirtualChassisCleanupManager
+from services.nautobot.offboarding.virtual_chassis_cleanup import (
+    VirtualChassisCleanupManager,
+)
 from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)

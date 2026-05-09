@@ -5,12 +5,10 @@ Migrated to PostgreSQL with repository pattern.
 """
 
 from __future__ import annotations
-import base64
-import hashlib
 import os
 import yaml
 from typing import Any, Dict, List, Optional
-from cryptography.fernet import Fernet, InvalidToken
+from core.crypto import EncryptionService
 from config import settings as config_settings
 
 from repositories.compliance.compliance_repository import (
@@ -24,30 +22,9 @@ regex_repo = RegexPatternRepository()
 login_repo = LoginCredentialRepository()
 snmp_repo = SNMPMappingRepository()
 
-
-def _build_key(secret: str) -> bytes:
-    digest = hashlib.sha256(secret.encode("utf-8")).digest()
-    return base64.urlsafe_b64encode(digest)
-
-
-class EncryptionService:
-    def __init__(self, secret_key: Optional[str] = None):
-        secret = secret_key or os.getenv("SECRET_KEY") or config_settings.secret_key
-        if not secret:
-            raise RuntimeError("SECRET_KEY not set for credential encryption")
-        self.fernet = Fernet(_build_key(secret))
-
-    def encrypt(self, plaintext: str) -> bytes:
-        return self.fernet.encrypt(plaintext.encode("utf-8"))
-
-    def decrypt(self, encrypted: bytes) -> str:
-        try:
-            return self.fernet.decrypt(encrypted).decode("utf-8")
-        except InvalidToken:
-            raise ValueError("Decryption failed: invalid token or key")
-
-
-encryption_service = EncryptionService()
+encryption_service = EncryptionService(
+    os.getenv("SECRET_KEY") or config_settings.secret_key
+)
 
 
 # Database tables are now managed by SQLAlchemy models in core/models.py

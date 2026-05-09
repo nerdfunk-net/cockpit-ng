@@ -330,7 +330,7 @@ def _ensure_admin_role_assigned(user_id: Optional[int] = None) -> None:
             except Exception as e:
                 import logging
 
-                logging.getLogger(__name__).warning(f"Failed to seed RBAC: {e}")
+                logging.getLogger(__name__).warning("Failed to seed RBAC: %s", e)
                 return
 
         if admin_role:
@@ -342,13 +342,13 @@ def _ensure_admin_role_assigned(user_id: Optional[int] = None) -> None:
                 import logging
 
                 logging.getLogger(__name__).info(
-                    f"Assigned admin role to user ID {user_id}"
+                    "Assigned admin role to user ID %s", user_id
                 )
     except Exception as e:
         import logging
 
         logging.getLogger(__name__).warning(
-            f"Failed to ensure admin role assignment: {e}"
+            "Failed to ensure admin role assignment: %s", e
         )
 
 
@@ -382,7 +382,7 @@ def _create_default_admin_without_rbac() -> Optional[Dict[str, Any]]:
     except Exception as e:
         import logging
 
-        logging.getLogger(__name__).warning(f"Failed to create default admin: {e}")
+        logging.getLogger(__name__).warning("Failed to create default admin: %s", e)
         return None
 
 
@@ -402,7 +402,7 @@ def ensure_admin_has_rbac_role() -> None:
     except Exception as e:
         import logging
 
-        logging.getLogger(__name__).warning(f"Failed to ensure admin RBAC role: {e}")
+        logging.getLogger(__name__).warning("Failed to ensure admin RBAC role: %s", e)
 
 
 # NOTE: Default admin creation moved to ensure_admin_has_rbac_role()

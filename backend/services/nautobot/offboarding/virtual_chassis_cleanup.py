@@ -151,9 +151,7 @@ class VirtualChassisCleanupManager:
                 method="PATCH",
                 data={"master": {"id": new_master_id}},
             )
-            logger.info(
-                "Updated virtual chassis %s master to %s", vc_id, new_master_id
-            )
+            logger.info("Updated virtual chassis %s master to %s", vc_id, new_master_id)
         except NautobotAPIError as exc:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

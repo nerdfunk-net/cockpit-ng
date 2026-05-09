@@ -6,146 +6,23 @@ from __future__ import annotations
 import logging
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
 
 from core.auth import require_permission
 from dependencies import get_nautobot_service, get_device_query_service
 from services.nautobot.client import NautobotService
 from services.nautobot.devices.query import DeviceQueryService
 from dependencies import get_netmiko_service
+from models.netmiko import (
+    DeviceCommand,
+    CommandResult,
+    CommandExecutionResponse,
+    TemplateExecutionRequest,
+    TemplateExecutionResult,
+    TemplateExecutionResponse,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/netmiko", tags=["netmiko"])
-
-
-class DeviceCommand(BaseModel):
-    """Model for device command execution request."""
-
-    devices: List[Dict[str, str]] = Field(
-        ...,
-        description="List of devices with 'ip' or 'primary_ip4' and 'platform' fields",
-    )
-    commands: List[str] = Field(
-        ..., description="List of commands to execute", min_items=1
-    )
-    credential_id: int | None = Field(
-        default=None, description="ID of stored credential to use (optional)"
-    )
-    username: str | None = Field(
-        default=None,
-        description="SSH username (required if credential_id not provided)",
-    )
-    password: str | None = Field(
-        default=None,
-        description="SSH password (required if credential_id not provided)",
-    )
-    enable_mode: bool = Field(
-        default=False, description="Whether to enter config mode after login"
-    )
-    write_config: bool = Field(
-        default=False,
-        description="Whether to save config to startup after successful execution",
-    )
-    use_textfsm: bool = Field(
-        default=False,
-        description="Whether to parse command output using TextFSM templates (only applies to exec mode commands)",
-    )
-    session_id: str | None = Field(
-        default=None, description="Optional session ID for cancellation support"
-    )
-
-
-class CommandResult(BaseModel):
-    """Model for command execution result."""
-
-    device: str
-    success: bool
-    output: str
-    error: str | None = None
-    command_outputs: Dict[str, Any] | None = Field(
-        default=None,
-        description="Parsed command outputs (when use_textfsm=True) or raw outputs per command",
-    )
-
-
-class CommandExecutionResponse(BaseModel):
-    """Model for command execution response."""
-
-    session_id: str
-    results: List[CommandResult]
-    total_devices: int
-    successful: int
-    failed: int
-    cancelled: int
-
-
-class TemplateExecutionRequest(BaseModel):
-    """Model for template execution request."""
-
-    device_ids: List[str] = Field(
-        ..., description="List of device UUIDs from Nautobot", min_items=1
-    )
-    template_id: int | None = Field(
-        default=None,
-        description="ID of saved template (either this or template_content required)",
-    )
-    template_content: str | None = Field(
-        default=None,
-        description="Ad-hoc template content (either this or template_id required)",
-    )
-    user_variables: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="User-defined variables for template rendering",
-    )
-    use_nautobot_context: bool = Field(
-        default=True,
-        description="Whether to include Nautobot device data in template context",
-    )
-    dry_run: bool = Field(
-        default=False, description="If true, only render templates without executing"
-    )
-    credential_id: int | None = Field(
-        default=None, description="ID of stored credential to use (optional)"
-    )
-    username: str | None = Field(
-        default=None,
-        description="SSH username (required if credential_id not provided and not dry_run)",
-    )
-    password: str | None = Field(
-        default=None,
-        description="SSH password (required if credential_id not provided and not dry_run)",
-    )
-    enable_mode: bool = Field(
-        default=False, description="Whether to enter enable mode after login"
-    )
-    write_config: bool = Field(
-        default=False,
-        description="Whether to save config to startup after successful execution",
-    )
-    session_id: str | None = Field(
-        default=None, description="Optional session ID for cancellation support"
-    )
-
-
-class TemplateExecutionResult(BaseModel):
-    """Model for template execution result."""
-
-    device_id: str
-    device_name: str
-    success: bool
-    rendered_content: str | None = None
-    output: str | None = None
-    error: str | None = None
-
-
-class TemplateExecutionResponse(BaseModel):
-    """Model for template execution response."""
-
-    session_id: str
-    results: List[TemplateExecutionResult]
-    summary: Dict[str, int] = Field(
-        description="Summary statistics (total, rendered_successfully, executed_successfully, failed, cancelled)"
-    )
 
 
 @router.post("/execute-commands", response_model=CommandExecutionResponse)

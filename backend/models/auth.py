@@ -106,3 +106,33 @@ class OIDCTestLoginRequest(BaseModel):
     scopes: Optional[List[str]] = None
     response_type: Optional[str] = None
     client_id: Optional[str] = None
+
+
+# --- User Profile ---
+
+
+class PersonalCredentialData(BaseModel):
+    id: str
+    name: str
+    username: str
+    type: str
+    password: Optional[str] = None
+    ssh_private_key: Optional[str] = None
+    ssh_passphrase: Optional[str] = None
+    has_ssh_key: Optional[bool] = None
+
+
+class ProfileResponse(BaseModel):
+    username: str
+    realname: str
+    email: str
+    api_key: Optional[str]
+    personal_credentials: Optional[List[PersonalCredentialData]] = []
+
+
+class ProfileUpdateRequest(BaseModel):
+    realname: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+    api_key: Optional[str] = None
+    personal_credentials: Optional[List[PersonalCredentialData]] = []

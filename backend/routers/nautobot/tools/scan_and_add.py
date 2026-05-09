@@ -1,114 +1,22 @@
 from __future__ import annotations
 
 import logging
-import ipaddress
-from typing import List, Optional, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field, validator
 
 from core.auth import require_permission
 from dependencies import get_scan_service
+from models.nautobot import (
+    ScanStartRequest,
+    ScanStartResponse,
+    ScanProgress,
+    ScanStatusResponse,
+)
 
 """API router for network scanning operations."""
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/scan", tags=["scan"])
-
-
-# Request/Response Models
-class ScanStartRequest(BaseModel):
-    cidrs: List[str] = Field(
-        ..., max_items=10, description="List of CIDR networks to scan"
-    )
-    credential_ids: Optional[List[int]] = Field(
-        default=None,
-        description="List of credential IDs to try (optional for ping-only mode)",
-    )
-    discovery_mode: str = Field(
-        default="netmiko", description="Discovery mode: napalm, ssh-login, or netmiko"
-    )
-    ping_mode: str = Field(default="fping", description="Ping mode: ping or fping")
-    parser_template_ids: Optional[List[int]] = Field(
-        default=None,
-        description="Template IDs to use for parsing 'show version' output (textfsm)",
-    )
-
-    @validator("cidrs")
-    def validate_cidrs(cls, v: List[str]):
-        if not v:
-            raise ValueError("At least one CIDR required")
-
-        cleaned = []
-        seen = set()
-
-        for cidr in v:
-            try:
-                network = ipaddress.ip_network(cidr, strict=False)
-            except Exception:
-                raise ValueError(f"Invalid CIDR format: {cidr}")
-
-            # Enforce /22 minimum (max ~1024 hosts per spec)
-            if network.prefixlen < 22:
-                raise ValueError(f"CIDR too large (minimum /22): {cidr}")
-
-            # Deduplicate
-            if cidr not in seen:
-                seen.add(cidr)
-                cleaned.append(cidr)
-
-        return cleaned
-
-    @validator("credential_ids")
-    def validate_credentials(cls, v: Optional[List[int]]):
-        # Allow None or empty list for ping-only mode
-        if v is None or len(v) == 0:
-            return []
-        return v
-
-    @validator("discovery_mode")
-    def validate_discovery_mode(cls, v: str):
-        if v not in ["napalm", "ssh-login", "netmiko"]:
-            raise ValueError(
-                "discovery_mode must be 'napalm', 'ssh-login', or 'netmiko'"
-            )
-        return v
-
-    @validator("ping_mode")
-    def validate_ping_mode_for_no_credentials(cls, v: str, values: dict):
-        # Validate ping_mode value
-        if v not in ["ping", "fping"]:
-            raise ValueError("ping_mode must be 'ping' or 'fping'")
-
-        # If no credentials provided, enforce fping mode
-        credential_ids = values.get("credential_ids")
-        if (credential_ids is None or len(credential_ids) == 0) and v != "fping":
-            # Auto-correct to fping for ping-only mode
-            return "fping"
-        return v
-
-
-class ScanStartResponse(BaseModel):
-    job_id: str
-    total_targets: int
-    state: str
-
-
-class ScanProgress(BaseModel):
-    total: int
-    scanned: int
-    alive: int
-    authenticated: int
-    unreachable: int
-    auth_failed: int
-    driver_not_supported: int
-
-
-class ScanStatusResponse(BaseModel):
-    job_id: str
-    state: str
-    progress: ScanProgress
-    results: List[Dict[str, Any]]
 
 
 # API Endpoints
