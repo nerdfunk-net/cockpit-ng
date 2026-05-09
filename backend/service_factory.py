@@ -263,6 +263,20 @@ def build_compliance_service():
     return ComplianceService()
 
 
+def build_user_service():
+    """Create a fresh UserService instance."""
+    from services.auth.user_service import UserService
+
+    return UserService()
+
+
+def build_rbac_service():
+    """Create a fresh RBACService instance (with UserService injected)."""
+    from services.auth.rbac_service import RBACService
+
+    return RBACService(user_service=build_user_service())
+
+
 def build_git_operations_service():
     """Create a fresh GitOperationsService instance."""
     from services.settings.git.operations import GitOperationsService

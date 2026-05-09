@@ -5,8 +5,9 @@ Usage: python tools/check_user_permissions.py <username>
 """
 
 import sys
-import rbac_manager as rbac
-import user_db_manager as user_db
+import service_factory as _sf
+rbac = _sf.build_rbac_service()
+user_db = _sf.build_user_service()
 
 
 def check_user(username: str):

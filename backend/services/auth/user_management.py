@@ -7,10 +7,18 @@ with modern permission handling and secure password management.
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 import logging
-import user_db_manager as user_db
+import service_factory as _sf
 from models.user_management import UserRole
 
 logger = logging.getLogger(__name__)
+
+
+def _user_service():
+    return _sf.build_user_service()
+
+user_db = type("_Proxy", (), {
+    "__getattr__": lambda self, name: getattr(_user_service(), name)
+})()
 
 
 def create_user(
@@ -207,12 +215,13 @@ def toggle_user_status(user_id: int) -> Optional[Dict[str, Any]]:
 
 
 # Permission constants for easy access
-PERMISSION_READ = user_db.PERMISSION_READ
-PERMISSION_WRITE = user_db.PERMISSION_WRITE
-PERMISSION_ADMIN = user_db.PERMISSION_ADMIN
-PERMISSION_DELETE = user_db.PERMISSION_DELETE
-PERMISSION_USER_MANAGE = user_db.PERMISSION_USER_MANAGE
-
-PERMISSIONS_VIEWER = user_db.PERMISSIONS_VIEWER
-PERMISSIONS_USER = user_db.PERMISSIONS_USER
-PERMISSIONS_ADMIN = user_db.PERMISSIONS_ADMIN
+from services.auth.user_service import (
+    PERMISSION_READ,
+    PERMISSION_WRITE,
+    PERMISSION_ADMIN,
+    PERMISSION_DELETE,
+    PERMISSION_USER_MANAGE,
+    PERMISSIONS_VIEWER,
+    PERMISSIONS_USER,
+    PERMISSIONS_ADMIN,
+)

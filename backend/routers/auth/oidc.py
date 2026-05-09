@@ -255,7 +255,8 @@ async def oidc_callback(
 
         # Get user with RBAC roles and permissions
         logger.debug("[OIDC Debug] Fetching user RBAC roles and permissions...")
-        import rbac_manager as rbac
+        import service_factory
+        rbac = service_factory.build_rbac_service()
 
         user_with_roles = rbac.get_user_with_rbac(user["id"])
 

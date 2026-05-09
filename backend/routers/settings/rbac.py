@@ -12,8 +12,9 @@ from __future__ import annotations
 
 import logging
 
-import rbac_manager as rbac
 from core.auth import require_role, verify_token
+from dependencies import get_rbac_service
+from services.auth.rbac_service import RBACService
 from fastapi import APIRouter, Depends, HTTPException, status
 from repositories.audit_log_repository import audit_log_repo
 from models.rbac import (
@@ -50,7 +51,10 @@ router = APIRouter(prefix="/api/rbac", tags=["rbac"])
 
 
 @router.get("/permissions", response_model=list[Permission])
-async def list_permissions(current_user: dict = Depends(verify_token)):
+async def list_permissions(
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
+):
     """List all permissions in the system."""
     permissions = rbac.list_permissions()
     return permissions
@@ -60,7 +64,9 @@ async def list_permissions(current_user: dict = Depends(verify_token)):
     "/permissions", response_model=Permission, status_code=status.HTTP_201_CREATED
 )
 async def create_permission(
-    permission: PermissionCreate, current_user: dict = Depends(require_role("admin"))
+    permission: PermissionCreate,
+    current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Create a new permission (admin only)."""
     try:
@@ -76,7 +82,9 @@ async def create_permission(
 
 @router.get("/permissions/{permission_id}", response_model=Permission)
 async def get_permission(
-    permission_id: int, current_user: dict = Depends(verify_token)
+    permission_id: int,
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Get a specific permission by ID."""
     permission = rbac.get_permission_by_id(permission_id)
@@ -89,7 +97,9 @@ async def get_permission(
 
 @router.delete("/permissions/{permission_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_permission(
-    permission_id: int, current_user: dict = Depends(require_role("admin"))
+    permission_id: int,
+    current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Delete a permission (admin only)."""
     try:
@@ -104,7 +114,10 @@ async def delete_permission(
 
 
 @router.get("/roles", response_model=list[Role])
-async def list_roles(current_user: dict = Depends(verify_token)):
+async def list_roles(
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
+):
     """List all roles in the system."""
     roles = rbac.list_roles()
     return roles
@@ -112,7 +125,9 @@ async def list_roles(current_user: dict = Depends(verify_token)):
 
 @router.post("/roles", response_model=Role, status_code=status.HTTP_201_CREATED)
 async def create_role(
-    role: RoleCreate, current_user: dict = Depends(require_role("admin"))
+    role: RoleCreate,
+    current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Create a new role (admin only)."""
     try:
@@ -135,7 +150,11 @@ async def create_role(
 
 
 @router.get("/roles/{role_id}", response_model=RoleWithPermissions)
-async def get_role(role_id: int, current_user: dict = Depends(verify_token)):
+async def get_role(
+    role_id: int,
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
+):
     """Get a specific role by ID with its permissions."""
     role = rbac.get_role(role_id)
     if not role:
@@ -158,6 +177,7 @@ async def update_role(
     role_id: int,
     role_update: RoleUpdate,
     current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Update a role (admin only)."""
     try:
@@ -181,7 +201,9 @@ async def update_role(
 
 @router.delete("/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_role(
-    role_id: int, current_user: dict = Depends(require_role("admin"))
+    role_id: int,
+    current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Delete a role (admin only, cannot delete system roles)."""
     try:
@@ -202,7 +224,9 @@ async def delete_role(
 
 @router.get("/roles/{role_id}/permissions", response_model=list[PermissionWithGrant])
 async def get_role_permissions(
-    role_id: int, current_user: dict = Depends(verify_token)
+    role_id: int,
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Get all permissions for a role."""
     role = rbac.get_role(role_id)
@@ -225,6 +249,7 @@ async def assign_permission_to_role(
     role_id: int,
     assignment: RolePermissionAssignment,
     current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Assign a permission to a role (admin only)."""
     # Verify role exists
@@ -263,6 +288,7 @@ async def assign_multiple_permissions_to_role(
     role_id: int,
     assignment: BulkPermissionAssignment,
     current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Assign multiple permissions to a role (admin only)."""
     # Verify role exists
@@ -294,6 +320,7 @@ async def remove_permission_from_role(
     role_id: int,
     permission_id: int,
     current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Remove a permission from a role (admin only)."""
     rbac.remove_permission_from_role(role_id, permission_id)
@@ -315,7 +342,11 @@ async def remove_permission_from_role(
 
 
 @router.get("/users/{user_id}/roles", response_model=list[Role])
-async def get_user_roles(user_id: int, current_user: dict = Depends(verify_token)):
+async def get_user_roles(
+    user_id: int,
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
+):
     """Get all roles assigned to a user."""
     # Users can view their own roles, admins can view anyone's
     if current_user["user_id"] != user_id:
@@ -336,6 +367,7 @@ async def assign_role_to_user(
     user_id: int,
     assignment: UserRoleAssignment,
     current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Assign a role to a user (admin only)."""
     # Verify role exists
@@ -353,6 +385,7 @@ async def assign_multiple_roles_to_user(
     user_id: int,
     assignment: BulkRoleAssignment,
     current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Assign multiple roles to a user (admin only)."""
     for role_id in assignment.role_ids:
@@ -363,7 +396,10 @@ async def assign_multiple_roles_to_user(
     "/users/{user_id}/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT
 )
 async def remove_role_from_user(
-    user_id: int, role_id: int, current_user: dict = Depends(require_role("admin"))
+    user_id: int,
+    role_id: int,
+    current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Remove a role from a user (admin only)."""
     rbac.remove_role_from_user(user_id, role_id)
@@ -376,7 +412,9 @@ async def remove_role_from_user(
 
 @router.get("/users/{user_id}/permissions", response_model=UserPermissions)
 async def get_user_permissions(
-    user_id: int, current_user: dict = Depends(verify_token)
+    user_id: int,
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Get all effective permissions for a user (from roles + overrides)."""
     # Users can view their own permissions, admins can view anyone's
@@ -404,7 +442,9 @@ async def get_user_permissions(
     "/users/{user_id}/permissions/overrides", response_model=list[PermissionWithGrant]
 )
 async def get_user_permission_overrides(
-    user_id: int, current_user: dict = Depends(verify_token)
+    user_id: int,
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Get permission overrides for a user (direct assignments)."""
     # Users can view their own overrides, admins can view anyone's
@@ -425,6 +465,7 @@ async def assign_permission_to_user(
     user_id: int,
     assignment: UserPermissionAssignment,
     current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Assign a permission directly to a user (override) (admin only)."""
     try:
@@ -456,6 +497,7 @@ async def remove_permission_from_user(
     user_id: int,
     permission_id: int,
     current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Remove a permission override from a user (admin only)."""
     rbac.remove_permission_from_user(user_id, permission_id)
@@ -468,7 +510,10 @@ async def remove_permission_from_user(
 
 @router.post("/users/{user_id}/check-permission", response_model=PermissionCheckResult)
 async def check_user_permission(
-    user_id: int, check: PermissionCheck, current_user: dict = Depends(verify_token)
+    user_id: int,
+    check: PermissionCheck,
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Check if a user has a specific permission."""
     # Users can check their own permissions, admins can check anyone's
@@ -506,7 +551,10 @@ async def check_user_permission(
 
 
 @router.get("/users/me/permissions", response_model=UserPermissions)
-async def get_my_permissions(current_user: dict = Depends(verify_token)):
+async def get_my_permissions(
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
+):
     """Get current user's permissions (convenience endpoint)."""
     user_id = current_user["user_id"]
 
@@ -524,7 +572,9 @@ async def get_my_permissions(current_user: dict = Depends(verify_token)):
 
 @router.post("/users/me/check-permission", response_model=PermissionCheckResult)
 async def check_my_permission(
-    check: PermissionCheck, current_user: dict = Depends(verify_token)
+    check: PermissionCheck,
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Check if current user has a specific permission (convenience endpoint)."""
     user_id = current_user["user_id"]
@@ -559,7 +609,9 @@ async def check_my_permission(
 
 @router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
-    user_data: UserCreate, current_user: dict = Depends(require_role("admin"))
+    user_data: UserCreate,
+    current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Create a new user with initial role assignments (admin only)."""
     try:
@@ -601,6 +653,7 @@ async def create_user(
 async def list_users(
     include_inactive: bool = True,
     current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """List all users with their roles."""
     try:
@@ -615,7 +668,11 @@ async def list_users(
 
 
 @router.get("/users/{user_id}", response_model=UserResponse)
-async def get_user(user_id: int, current_user: dict = Depends(verify_token)):
+async def get_user(
+    user_id: int,
+    current_user: dict = Depends(verify_token),
+    rbac: RBACService = Depends(get_rbac_service),
+):
     """Get user details with roles and permissions."""
     try:
         user = rbac.get_user_with_rbac(user_id)
@@ -639,6 +696,7 @@ async def update_user(
     user_id: int,
     user_data: UserUpdate,
     current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Update user profile (admin only)."""
     try:
@@ -688,7 +746,9 @@ async def update_user(
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
-    user_id: int, current_user: dict = Depends(require_role("admin"))
+    user_id: int,
+    current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Delete a user and all RBAC associations (admin only)."""
     try:
@@ -719,7 +779,9 @@ async def delete_user(
 
 @router.patch("/users/{user_id}/activate", response_model=UserResponse)
 async def toggle_user_activation(
-    user_id: int, current_user: dict = Depends(require_role("admin"))
+    user_id: int,
+    current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Toggle user active status (admin only)."""
     try:
@@ -746,7 +808,9 @@ async def toggle_user_activation(
 
 @router.patch("/users/{user_id}/debug", response_model=UserResponse)
 async def toggle_user_debug(
-    user_id: int, current_user: dict = Depends(require_role("admin"))
+    user_id: int,
+    current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Toggle user debug mode (admin only)."""
     try:
@@ -773,7 +837,9 @@ async def toggle_user_debug(
 
 @router.post("/users/bulk-delete", status_code=status.HTTP_200_OK)
 async def bulk_delete_users(
-    bulk_data: BulkUserDelete, current_user: dict = Depends(require_role("admin"))
+    bulk_data: BulkUserDelete,
+    current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
 ):
     """Bulk delete users with RBAC cleanup (admin only)."""
     try:

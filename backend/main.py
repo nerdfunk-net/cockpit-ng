@@ -380,9 +380,11 @@ async def _startup_services():
 
     # Ensure admin user has RBAC role assigned (must happen before other services)
     try:
-        import user_db_manager
+        import service_factory as _sf
 
-        user_db_manager.ensure_admin_has_rbac_role()
+        _user_svc = _sf.build_user_service()
+        _rbac_svc = _sf.build_rbac_service()
+        _user_svc.ensure_admin_has_rbac_role(_rbac_svc)
         logger.info("Admin RBAC role assignment completed")
     except Exception as e:
         logger.error("Failed to ensure admin RBAC role: %s", e)

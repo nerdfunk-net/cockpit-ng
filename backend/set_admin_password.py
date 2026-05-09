@@ -16,7 +16,7 @@ sys.path.insert(0, str(backend_dir))
 
 from config import settings as config_settings  # noqa: E402
 from core.auth import get_password_hash  # noqa: E402
-from user_db_manager import PERMISSIONS_ADMIN  # noqa: E402
+from services.auth.user_service import PERMISSIONS_ADMIN  # noqa: E402
 import sqlite3  # noqa: E402
 
 

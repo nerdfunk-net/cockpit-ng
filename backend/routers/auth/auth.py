@@ -23,7 +23,8 @@ async def login(request: Request, user_data: UserLogin):
     """
     from config import settings
     from services.auth.user_management import authenticate_user
-    import rbac_manager as rbac
+    import service_factory
+    rbac = service_factory.build_rbac_service()
 
     try:
         # Authenticate against new user database
@@ -190,7 +191,8 @@ async def refresh_token(request: Request):
             )
 
         # Get user with RBAC roles - same as login endpoint
-        import rbac_manager as rbac
+        import service_factory
+        rbac = service_factory.build_rbac_service()
 
         user_with_roles = rbac.get_user_with_rbac(user["id"])
 

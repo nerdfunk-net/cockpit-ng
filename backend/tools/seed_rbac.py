@@ -8,8 +8,9 @@ This script initializes the RBAC system with:
 
 import argparse
 import sys
-import rbac_manager as rbac
-import user_db_manager as user_db
+import service_factory as _sf
+rbac = _sf.build_rbac_service()
+user_db = _sf.build_user_service()
 
 
 def migrate_inventory_permissions(verbose: bool = True):
@@ -145,9 +146,7 @@ def remove_all_rbac_data(verbose: bool = True):
 
     # Get all users and remove their permission overrides
     try:
-        import user_db_manager
-
-        all_users = user_db_manager.get_all_users(include_inactive=True)
+        all_users = user_db.get_all_users(include_inactive=True)
         override_count = 0
 
         for user in all_users:

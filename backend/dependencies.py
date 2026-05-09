@@ -172,6 +172,16 @@ def get_compliance_service():
     return service_factory.build_compliance_service()
 
 
+def get_user_service():
+    """Provide a UserService instance."""
+    return service_factory.build_user_service()
+
+
+def get_rbac_service():
+    """Provide an RBACService instance."""
+    return service_factory.build_rbac_service()
+
+
 def get_git_operations_service():
     """Provide the GitOperationsService."""
     return service_factory.build_git_operations_service()
