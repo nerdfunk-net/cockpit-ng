@@ -1,14 +1,15 @@
-"""
-Template Management for Cockpit
-Handles template storage, retrieval, and management operations
-All templates are now stored in PostgreSQL database
+"""Template service — CRUD for template and template_version records in PostgreSQL.
+
+Drop-in replacement for the root-level template_manager.TemplateManager class.
+All method signatures and return types are preserved.
 """
 
 from __future__ import annotations
-import logging
-import json
-from typing import Dict, Any, Optional, List
 import hashlib
+import json
+import logging
+from typing import Any, Dict, List, Optional
+
 from repositories.settings.template_repository import (
     TemplateRepository,
     TemplateVersionRepository,
@@ -18,45 +19,38 @@ from core.models import Template, TemplateVersion
 logger = logging.getLogger(__name__)
 
 
-class TemplateManager:
-    """Manages configuration templates in PostgreSQL database"""
+class TemplateService:
+    """CRUD service for templates stored in PostgreSQL."""
 
-    def __init__(self, storage_path: str = None):
+    def __init__(self, storage_path: str = None) -> None:
         # storage_path parameter kept for backwards compatibility but no longer used
-        # All template content is now stored in PostgreSQL database
         pass
 
     def create_template(self, template_data: Dict[str, Any]) -> Optional[int]:
-        """Create a new template"""
+        """Create a new template. Returns the new template ID or None on error."""
         try:
             repo = TemplateRepository()
             version_repo = TemplateVersionRepository()
 
-            # Validate required fields
             if not template_data.get("name"):
                 raise ValueError("Template name is required")
-
             if not template_data.get("source"):
                 raise ValueError("Template source is required")
 
-            # Check for existing active template with same name
             existing = repo.get_by_name(template_data["name"], active_only=True)
             if existing:
                 raise ValueError(
                     f"Template with name '{template_data['name']}' already exists"
                 )
 
-            # Prepare data
             variables_json = json.dumps(template_data.get("variables", {}))
             tags_json = json.dumps(template_data.get("tags", []))
 
-            # Handle content based on source
             content = template_data.get("content", "")
             content_hash = (
                 hashlib.sha256(content.encode()).hexdigest() if content else None
             )
 
-            # Create template using BaseRepository.create(**kwargs)
             template = repo.create(
                 name=template_data["name"],
                 source=template_data["source"],
@@ -81,10 +75,6 @@ class TemplateManager:
             )
             template_id = template.id
 
-            # Content is already saved to database in repo.create() above
-            # No file system operations needed
-
-            # Create initial version
             if content:
                 self._create_template_version_obj(
                     version_repo, template_id, content, content_hash, "Initial version"
@@ -102,7 +92,7 @@ class TemplateManager:
             raise e
 
     def get_template(self, template_id: int) -> Optional[Dict[str, Any]]:
-        """Get a template by ID"""
+        """Get a template by ID."""
         try:
             repo = TemplateRepository()
             template = repo.get_by_id(template_id)
@@ -123,7 +113,7 @@ class TemplateManager:
             return None
 
     def get_template_by_name(self, name: str) -> Optional[Dict[str, Any]]:
-        """Get a template by name"""
+        """Get a template by name."""
         try:
             repo = TemplateRepository()
             template = repo.get_by_name(name, active_only=True)
@@ -145,9 +135,8 @@ class TemplateManager:
     ) -> List[Dict[str, Any]]:
         """List templates with optional filtering.
 
-        Returns:
-        - Global templates (scope='global')
-        - Private templates owned by the user (scope='private' AND created_by=username)
+        Returns global templates (scope='global') and private templates owned
+        by the user (scope='private' AND created_by=username).
         """
         try:
             repo = TemplateRepository()
@@ -179,12 +168,11 @@ class TemplateManager:
             return []
 
     def update_template(self, template_id: int, template_data: Dict[str, Any]) -> bool:
-        """Update an existing template"""
+        """Update an existing template."""
         try:
             repo = TemplateRepository()
             version_repo = TemplateVersionRepository()
 
-            # Get current template
             current_obj = repo.get_by_id(template_id)
             if not current_obj:
                 raise ValueError(f"Template with ID {template_id} not found")
@@ -198,7 +186,6 @@ class TemplateManager:
                 current.get("scope"),
             )
 
-            # Prepare update data
             variables_json = json.dumps(template_data.get("variables", {}))
             tags_json = json.dumps(template_data.get("tags", []))
 
@@ -207,10 +194,8 @@ class TemplateManager:
                 hashlib.sha256(content.encode()).hexdigest() if content else None
             )
 
-            # Check if content changed
             content_changed = content_hash != current.get("content_hash")
 
-            # Get the scope to update
             new_scope = template_data.get("scope", current.get("scope", "global"))
             logger.info(
                 "DEBUG: update_template(%s) - will update scope to: %s",
@@ -218,7 +203,6 @@ class TemplateManager:
                 new_scope,
             )
 
-            # Prepare update kwargs
             update_kwargs = {
                 "name": template_data.get("name", current["name"]),
                 "template_type": template_data.get(
@@ -261,10 +245,6 @@ class TemplateManager:
                 new_scope,
             )
 
-            # Content is already saved to database in repo.update() above
-            # No file system operations needed
-
-            # Create new version if content changed
             if content_changed and content:
                 self._create_template_version_obj(
                     version_repo,
@@ -282,16 +262,13 @@ class TemplateManager:
             return False
 
     def delete_template(self, template_id: int, hard_delete: bool = False) -> bool:
-        """Delete a template (soft delete by default)"""
+        """Delete a template (soft delete by default)."""
         try:
             repo = TemplateRepository()
 
             if hard_delete:
-                # Hard delete - remove from database only
-                # All content is now stored in database
                 repo.delete(template_id)
             else:
-                # Soft delete - mark as inactive using update
                 repo.update(template_id, is_active=False)
 
             logger.info(
@@ -306,14 +283,11 @@ class TemplateManager:
             return False
 
     def get_template_content(self, template_id: int) -> Optional[str]:
-        """Get template content from database"""
+        """Get template content from database."""
         try:
             template = self.get_template(template_id)
             if not template:
                 return None
-
-            # All content is now stored in database
-            # For Git templates, content should be synced to database
             return template.get("content")
 
         except Exception as e:
@@ -323,15 +297,12 @@ class TemplateManager:
     def render_template(
         self, template_name: str, category: str, data: Dict[str, Any]
     ) -> str:
-        """Render a template using Jinja2 with provided data"""
+        """Render a template using Jinja2 with provided data."""
         try:
-            # Import Jinja2 here to avoid import errors if not installed
             from jinja2 import Environment, BaseLoader
 
-            # Find template by name and category
             template = self.get_template_by_name(template_name)
             if not template:
-                # If no exact name match, try searching templates
                 templates = self.list_templates(category=category if category else None)
                 matching_templates = [
                     t for t in templates if t["name"] == template_name
@@ -343,12 +314,10 @@ class TemplateManager:
                         f"Template '{template_name}' not found in category '{category}'"
                     )
 
-            # Get template content
             content = self.get_template_content(template["id"])
             if not content:
                 raise ValueError(f"Template content not found for '{template_name}'")
 
-            # Create Jinja2 template and render
             env = Environment(loader=BaseLoader())
             jinja_template = env.from_string(content)
             rendered = jinja_template.render(**data)
@@ -370,7 +339,7 @@ class TemplateManager:
             raise e
 
     def get_template_versions(self, template_id: int) -> List[Dict[str, Any]]:
-        """Get version history for a template"""
+        """Get version history for a template."""
         try:
             version_repo = TemplateVersionRepository()
             versions = version_repo.get_versions_by_template_id(template_id)
@@ -380,8 +349,62 @@ class TemplateManager:
             logger.error("Error getting template versions for %s: %s", template_id, e)
             return []
 
+    def search_templates(
+        self, query: str, search_content: bool = False, username: str = None
+    ) -> List[Dict[str, Any]]:
+        """Search templates by name, description, category, or content.
+
+        Respects scope and ownership — returns global templates and user's
+        private templates.
+        """
+        try:
+            repo = TemplateRepository()
+            templates = repo.search_templates(
+                query_text=query, search_content=search_content, username=username
+            )
+            return [self._model_to_dict(t) for t in templates]
+
+        except Exception as e:
+            logger.error("Error searching templates: %s", e)
+            return []
+
+    def get_categories(self) -> List[str]:
+        """Get all unique template categories."""
+        try:
+            repo = TemplateRepository()
+            return repo.get_categories()
+
+        except Exception as e:
+            logger.error("Error getting categories: %s", e)
+            return []
+
+    def health_check(self) -> Dict[str, Any]:
+        """Check template database health."""
+        try:
+            repo = TemplateRepository()
+
+            active_count = repo.get_active_count()
+            total_count = repo.get_total_count()
+            categories_count = repo.get_categories_count()
+
+            return {
+                "status": "healthy",
+                "storage_type": "database",
+                "active_templates": active_count,
+                "total_templates": total_count,
+                "categories": categories_count,
+            }
+
+        except Exception as e:
+            logger.error("Template database health check failed: %s", e)
+            return {"status": "unhealthy", "error": str(e)}
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
     def _model_to_dict(self, template: Template) -> Dict[str, Any]:
-        """Convert SQLAlchemy model to dictionary with proper data types"""
+        """Convert SQLAlchemy model to dictionary with proper data types."""
         result = {
             "id": template.id,
             "name": template.name,
@@ -404,15 +427,14 @@ class TemplateManager:
             "file_path": template.file_path,
             "last_sync": template.last_sync.isoformat() if template.last_sync else None,
             "sync_status": template.sync_status,
-            "created_at": template.created_at.isoformat()
-            if template.created_at
-            else None,
-            "updated_at": template.updated_at.isoformat()
-            if template.updated_at
-            else None,
+            "created_at": (
+                template.created_at.isoformat() if template.created_at else None
+            ),
+            "updated_at": (
+                template.updated_at.isoformat() if template.updated_at else None
+            ),
         }
 
-        # Parse JSON fields
         if template.variables:
             try:
                 result["variables"] = json.loads(template.variables)
@@ -432,16 +454,16 @@ class TemplateManager:
         return result
 
     def _version_model_to_dict(self, version: TemplateVersion) -> Dict[str, Any]:
-        """Convert TemplateVersion model to dictionary"""
+        """Convert TemplateVersion model to dictionary."""
         return {
             "id": version.id,
             "template_id": version.template_id,
             "version_number": version.version_number,
             "content": version.content,
             "content_hash": version.content_hash,
-            "created_at": version.created_at.isoformat()
-            if version.created_at
-            else None,
+            "created_at": (
+                version.created_at.isoformat() if version.created_at else None
+            ),
             "created_by": version.created_by,
             "change_notes": version.change_notes,
         }
@@ -454,12 +476,9 @@ class TemplateManager:
         content_hash: str,
         notes: str = "",
     ) -> None:
-        """Create a new version entry for a template"""
+        """Create a new version entry for a template."""
         try:
-            # Get current version number
             version_number = version_repo.get_max_version_number(template_id) + 1
-
-            # Create new version using BaseRepository.create(**kwargs)
             version_repo.create(
                 template_id=template_id,
                 version_number=version_number,
@@ -467,59 +486,5 @@ class TemplateManager:
                 content_hash=content_hash,
                 change_notes=notes,
             )
-
         except Exception as e:
             logger.error("Error creating template version: %s", e)
-
-    def search_templates(
-        self, query: str, search_content: bool = False, username: str = None
-    ) -> List[Dict[str, Any]]:
-        """Search templates by name, description, category, or content.
-
-        Respects scope and ownership - returns global templates and user's private templates.
-        """
-        try:
-            repo = TemplateRepository()
-            templates = repo.search_templates(
-                query_text=query, search_content=search_content, username=username
-            )
-            return [self._model_to_dict(t) for t in templates]
-
-        except Exception as e:
-            logger.error("Error searching templates: %s", e)
-            return []
-
-    def get_categories(self) -> List[str]:
-        """Get all unique template categories"""
-        try:
-            repo = TemplateRepository()
-            return repo.get_categories()
-
-        except Exception as e:
-            logger.error("Error getting categories: %s", e)
-            return []
-
-    def health_check(self) -> Dict[str, Any]:
-        """Check template database health"""
-        try:
-            repo = TemplateRepository()
-
-            active_count = repo.get_active_count()
-            total_count = repo.get_total_count()
-            categories_count = repo.get_categories_count()
-
-            return {
-                "status": "healthy",
-                "storage_type": "database",
-                "active_templates": active_count,
-                "total_templates": total_count,
-                "categories": categories_count,
-            }
-
-        except Exception as e:
-            logger.error("Template database health check failed: %s", e)
-            return {"status": "unhealthy", "error": str(e)}
-
-
-# Global template manager instance
-template_manager = TemplateManager()

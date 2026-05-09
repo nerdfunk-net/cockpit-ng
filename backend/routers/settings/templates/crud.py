@@ -29,7 +29,8 @@ async def list_templates(
 ) -> TemplateListResponse:
     """List all templates with optional filtering."""
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         username = current_user.get("username")
 
@@ -65,7 +66,8 @@ async def create_template(
 ) -> TemplateResponse:
     """Create a new template."""
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         username = current_user.get("username")
         template_data = template_request.dict(exclude_unset=True)
@@ -98,7 +100,8 @@ async def get_template_categories(
 ):
     """Get all template categories."""
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         return template_manager.get_categories()
 
@@ -117,7 +120,8 @@ async def get_template_by_name(
 ) -> TemplateResponse:
     """Get a template by name."""
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         template = template_manager.get_template_by_name(template_name)
         if not template:
@@ -144,7 +148,8 @@ async def get_template(
 ) -> TemplateResponse:
     """Get a specific template by ID."""
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         template = template_manager.get_template(template_id)
         if not template:
@@ -172,7 +177,8 @@ async def update_template(
 ) -> TemplateResponse:
     """Update an existing template."""
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         existing = template_manager.get_template(template_id)
         if not existing:
@@ -218,7 +224,8 @@ async def delete_template(
 ):
     """Delete a template."""
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         if template_manager.delete_template(template_id, hard_delete=hard_delete):
             action = "deleted" if hard_delete else "deactivated"

@@ -306,7 +306,8 @@ async def execute_template(
         HTTPException: If validation fails or execution errors occur
     """
     import uuid
-    from template_manager import template_manager
+    import service_factory
+    template_manager = service_factory.build_template_service()
     from jinja2 import Template, TemplateError, UndefinedError
 
     try:

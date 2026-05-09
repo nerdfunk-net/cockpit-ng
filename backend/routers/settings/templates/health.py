@@ -19,7 +19,8 @@ async def template_health_check(
 ) -> Dict[str, Any]:
     """Check template system health."""
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         return template_manager.health_check()
 

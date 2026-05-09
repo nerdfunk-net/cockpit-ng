@@ -22,7 +22,8 @@ async def get_template_content(
 ) -> Dict[str, str]:
     """Get template content."""
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         content = template_manager.get_template_content(template_id)
         if content is None:
@@ -49,7 +50,8 @@ async def get_template_versions(
 ) -> List[Dict[str, Any]]:
     """Get version history for a template."""
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         return template_manager.get_template_versions(template_id)
 
@@ -73,7 +75,8 @@ async def upload_template_file(
 ) -> TemplateResponse:
     """Upload a template file."""
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         username = current_user.get("username")
         content_bytes = await file.read()

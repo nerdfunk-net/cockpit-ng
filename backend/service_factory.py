@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from services.checkmk.client import CheckMKClient
     from services.agents.deployment_service import AgentDeploymentService
     from services.agents.template_render_service import AgentTemplateRenderService
-    from template_manager import TemplateManager
+    from services.templates.template_service import TemplateService
 
 
 def build_nautobot_service() -> "NautobotService":
@@ -164,11 +164,11 @@ def build_agent_deployment_service() -> "AgentDeploymentService":
     return AgentDeploymentService()
 
 
-def build_template_manager() -> "TemplateManager":
-    """Create a new TemplateManager instance."""
-    from template_manager import TemplateManager
+def build_template_service() -> "TemplateService":
+    """Create a new TemplateService instance."""
+    from services.templates.template_service import TemplateService
 
-    return TemplateManager()
+    return TemplateService()
 
 
 # ---------------------------------------------------------------------------
@@ -379,16 +379,14 @@ def build_template_scan_service():
 
 
 def build_template_import_service():
-    """Create a TemplateImportService backed by the global template_manager."""
-    from template_manager import template_manager
+    """Create a TemplateImportService backed by a fresh TemplateService."""
     from services.templates.import_service import TemplateImportService
 
-    return TemplateImportService(template_manager=template_manager)
+    return TemplateImportService(template_manager=build_template_service())
 
 
 def build_template_render_orchestrator():
     """Create a TemplateRenderOrchestrator with all required dependencies."""
-    from template_manager import template_manager
     from services.templates.render_orchestrator import TemplateRenderOrchestrator
 
     return TemplateRenderOrchestrator(
@@ -396,7 +394,7 @@ def build_template_render_orchestrator():
         checkmk_config_service=build_checkmk_config_service(),
         render_service=build_render_service(),
         inventory_service=build_inventory_service(),
-        template_manager=template_manager,
+        template_manager=build_template_service(),
     )
 
 

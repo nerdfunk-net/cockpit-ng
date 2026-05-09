@@ -7,7 +7,6 @@ import time
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import service_factory
-from template_manager import template_manager  # type: ignore
 
 try:
     import textfsm  # type: ignore

@@ -42,7 +42,7 @@ def execute_run_commands(
     from services.network.automation.render import RenderService
     import service_factory
     credentials_manager = service_factory.build_credentials_service()
-    from template_manager import template_manager
+    template_manager = service_factory.build_template_service()
 
     # Track credential usage
     credential_info = {

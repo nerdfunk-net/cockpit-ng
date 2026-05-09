@@ -257,6 +257,11 @@ def get_device_creation_service():
 # ---------------------------------------------------------------------------
 
 
+def get_template_service():
+    """Provide a TemplateService instance."""
+    return service_factory.build_template_service()
+
+
 def get_template_scan_service():
     """Provide the TemplateScanService."""
     return service_factory.build_template_scan_service()

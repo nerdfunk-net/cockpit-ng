@@ -74,7 +74,8 @@ async def agent_deploy_dry_run(
     Telegraf/InfluxDB/Grafana agent deployment.
     """
     try:
-        from template_manager import template_manager
+        import service_factory
+        template_manager = service_factory.build_template_service()
 
         # Fetch the template
         template = template_manager.get_template(request.templateId)
@@ -172,7 +173,8 @@ async def agent_deploy_to_git(
     5. Returns success message with commit SHA
     """
     try:
-        from template_manager import template_manager
+        import service_factory as _sf
+        template_manager = _sf.build_template_service()
         from repositories.settings.git_repository_repository import (
             GitRepositoryRepository,
         )

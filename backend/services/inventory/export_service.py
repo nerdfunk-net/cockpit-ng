@@ -49,7 +49,8 @@ class InventoryExportService:
                     }
                 )
 
-            from template_manager import template_manager
+            import service_factory
+            template_manager = service_factory.build_template_service()
 
             inventory_content = template_manager.render_template(
                 template_name=template_name,
