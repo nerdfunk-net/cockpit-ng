@@ -353,7 +353,7 @@ class AgentTemplateRenderService:
         Reads the file from the local clone using the same pattern as
         the /api/git/{repo_id}/file-content endpoint.
         """
-        from git_repositories_manager import GitRepositoryManager
+        from services.settings.git.repository_service import GitRepositoryService as GitRepositoryManager
         from services.settings.git.paths import repo_path as git_repo_path
 
         metadata = var_def.get("metadata", {})

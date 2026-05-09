@@ -5,7 +5,7 @@ Consolidates common functions to avoid duplication.
 
 import logging
 from fastapi import HTTPException, status
-from git_repositories_manager import GitRepositoryManager
+from services.settings.git.repository_service import GitRepositoryService as GitRepositoryManager
 
 logger = logging.getLogger(__name__)
 

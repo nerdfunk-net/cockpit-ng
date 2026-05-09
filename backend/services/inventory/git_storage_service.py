@@ -33,7 +33,7 @@ class InventoryGitStorage:
         repository_id: int,
     ) -> Dict[str, Any]:
         """Write an inventory JSON file and push it to the git repository."""
-        from git_repositories_manager import GitRepositoryManager
+        from services.settings.git.repository_service import GitRepositoryService as GitRepositoryManager
         import service_factory
 
         git_service = service_factory.build_git_service()
@@ -111,7 +111,7 @@ class InventoryGitStorage:
 
     async def list_inventories(self, repository_id: int) -> List[SavedInventory]:
         """Return all saved inventories found in the repository's ``inventories/`` dir."""
-        from git_repositories_manager import GitRepositoryManager
+        from services.settings.git.repository_service import GitRepositoryService as GitRepositoryManager
         import service_factory
 
         git_service = service_factory.build_git_service()
@@ -166,7 +166,7 @@ class InventoryGitStorage:
         self, name: str, repository_id: int
     ) -> Optional[SavedInventory]:
         """Load a single inventory by name from the git repository."""
-        from git_repositories_manager import GitRepositoryManager
+        from services.settings.git.repository_service import GitRepositoryService as GitRepositoryManager
         import service_factory
 
         git_service = service_factory.build_git_service()

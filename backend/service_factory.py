@@ -249,6 +249,13 @@ def build_git_cache_service():
     return GitCacheService(build_cache_service())
 
 
+def build_git_repository_service():
+    """Create a fresh GitRepositoryService instance."""
+    from services.settings.git.repository_service import GitRepositoryService
+
+    return GitRepositoryService()
+
+
 def build_git_operations_service():
     """Create a fresh GitOperationsService instance."""
     from services.settings.git.operations import GitOperationsService
