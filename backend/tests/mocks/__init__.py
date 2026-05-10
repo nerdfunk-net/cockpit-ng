@@ -1,6 +1,11 @@
 """Mock implementations for unit testing."""
 
 from .fake_auth_repositories import FakeUserRepository, FakeRBACRepository
+from .fake_job_repositories import (
+    FakeJobTemplateRepository,
+    FakeJobScheduleRepository,
+    FakeJobRunRepository,
+)
 from .fake_checkmk_client import (
     FakeCheckMKClient,
     FOLDER_ROOT,
