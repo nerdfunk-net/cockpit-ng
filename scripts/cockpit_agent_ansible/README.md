@@ -98,7 +98,21 @@ Response:
 
 Runs `get_facts.yml` against the specified IP address using `ansible-playbook -i "IP,"` (no inventory file required). Returns the full `hostvars` dict for the target host.
 
-**Request:**
+**Authentication is required** — you must provide either `ansible_password` or `use_sshkey: true`.
+
+#### Parameters
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `ip_address` | string | required | Target host IP address |
+| `ansible_user` | string | required | SSH user for Ansible to connect as |
+| `ansible_password` | string | — | SSH password. Required unless `use_sshkey` is set |
+| `use_sshkey` | bool | `false` | Use the agent host's default SSH key (`~/.ssh/id_rsa`). Required unless `ansible_password` is set |
+| `ansible_ssh_private_key_file` | string | — | Path to a specific SSH private key on the agent host (only used together with `use_sshkey: true`) |
+| `ansible_port` | int | `22` | SSH port |
+
+#### Example — password authentication
+
 ```json
 {
   "command_id": "uuid-here",
@@ -112,13 +126,40 @@ Runs `get_facts.yml` against the specified IP address using `ansible-playbook -i
 }
 ```
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `ip_address` | string | required | Target host IP address |
-| `ansible_user` | string | required | SSH user for Ansible to connect as |
-| `ansible_password` | string | optional | SSH password (omit when using key auth) |
-| `ansible_ssh_private_key_file` | string | optional | Path to SSH private key on the agent host |
-| `ansible_port` | int | `22` | SSH port |
+#### Example — SSH key authentication (default key)
+
+Uses the agent host's default SSH key (`~/.ssh/id_rsa` or whatever `ssh-agent` has loaded):
+
+```json
+{
+  "command_id": "uuid-here",
+  "command": "get_facts",
+  "params": {
+    "ip_address": "192.168.1.1",
+    "ansible_user": "netops",
+    "use_sshkey": true,
+    "ansible_port": 22
+  }
+}
+```
+
+#### Example — SSH key authentication (specific key file)
+
+Specify the exact private key the agent should use:
+
+```json
+{
+  "command_id": "uuid-here",
+  "command": "get_facts",
+  "params": {
+    "ip_address": "192.168.1.1",
+    "ansible_user": "netops",
+    "use_sshkey": true,
+    "ansible_ssh_private_key_file": "/opt/cockpit-agent/.ssh/id_ed25519",
+    "ansible_port": 22
+  }
+}
+```
 
 **Response:**
 ```json
@@ -157,9 +198,13 @@ redis-cli -h cockpit.example.com -a your_password SUBSCRIBE cockpit-agent-respon
 redis-cli -h cockpit.example.com -a your_password PUBLISH cockpit-agent:$(hostname) \
   '{"command_id":"1","command":"echo","params":{"message":"hello"}}'
 
-# Send get_facts command
+# Send get_facts command (password auth)
 redis-cli -h cockpit.example.com -a your_password PUBLISH cockpit-agent:$(hostname) \
   '{"command_id":"2","command":"get_facts","params":{"ip_address":"192.168.1.1","ansible_user":"root","ansible_password":"secret"}}'
+
+# Send get_facts command (SSH key auth)
+redis-cli -h cockpit.example.com -a your_password PUBLISH cockpit-agent:$(hostname) \
+  '{"command_id":"3","command":"get_facts","params":{"ip_address":"192.168.1.1","ansible_user":"netops","use_sshkey":true}}'
 ```
 
 ## Security
@@ -181,9 +226,17 @@ sudo journalctl -u cockpit-agent -n 50
 ### Playbook fails with SSH error
 
 ```bash
-# Test connectivity manually as the agent user
+# Test connectivity manually as the agent user (password auth)
 sudo -u cockpit-agent ansible all -i "192.168.1.1," -m ping \
   -e "ansible_user=root ansible_password=secret"
+
+# Test connectivity manually as the agent user (SSH key auth)
+sudo -u cockpit-agent ansible all -i "192.168.1.1," -m ping \
+  -e "ansible_user=netops"
+
+# Test with a specific key file
+sudo -u cockpit-agent ansible all -i "192.168.1.1," -m ping \
+  -e "ansible_user=netops ansible_ssh_private_key_file=/opt/cockpit-agent/.ssh/id_ed25519"
 ```
 
 ### Facts file not created

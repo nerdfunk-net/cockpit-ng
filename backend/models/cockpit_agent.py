@@ -30,14 +30,21 @@ class CommandRequest(BaseModel):
     params: Dict[str, Any] = Field(
         default_factory=dict, description="Command parameters"
     )
+    timeout: Optional[int] = Field(
+        default=None,
+        description=(
+            "Seconds to wait for the agent response before returning. "
+            "When omitted the endpoint returns immediately with status 'pending'."
+        ),
+    )
 
 
 class CommandResponse(BaseModel):
     """Response from agent after command execution"""
 
     command_id: str
-    status: str  # success, error, timeout
-    output: Optional[str] = None
+    status: str  # success, error, timeout, pending
+    output: Optional[Any] = None
     error: Optional[str] = None
     execution_time_ms: int
 

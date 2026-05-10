@@ -48,8 +48,11 @@ async def send_command(
     db: Session = Depends(get_db),
 ):
     """
-    Send command to Grafana Agent
-    Does not wait for response - use this for fire-and-forget commands
+    Send command to Cockpit Agent.
+
+    When **timeout** is omitted the endpoint returns immediately with
+    ``status: pending``.  Set **timeout** (seconds) to block until the agent
+    replies or the deadline expires.
     """
     try:
         service = CockpitAgentService(db)
@@ -61,7 +64,7 @@ async def send_command(
                 detail="Agent is offline or not responding",
             )
 
-        # Send command (no wait)
+        # Send command
         command_id = service.send_command(
             agent_id=request.agent_id,
             command=request.command,
@@ -69,13 +72,30 @@ async def send_command(
             sent_by=user.get("sub", "system"),
         )
 
-        return {
-            "command_id": command_id,
-            "status": "pending",
-            "output": None,
-            "error": None,
-            "execution_time_ms": 0,
-        }
+        # Fire-and-forget when no timeout requested
+        if request.timeout is None:
+            return {
+                "command_id": command_id,
+                "status": "pending",
+                "output": None,
+                "error": None,
+                "execution_time_ms": 0,
+            }
+
+        # Wait for the agent response
+        response = service.wait_for_response(
+            agent_id=request.agent_id,
+            command_id=command_id,
+            timeout=request.timeout,
+        )
+
+        if response.get("status") == "timeout":
+            raise HTTPException(status_code=504, detail=response.get("error"))
+
+        if response.get("status") == "error":
+            raise HTTPException(status_code=500, detail=response.get("error"))
+
+        return response
 
     except HTTPException:
         raise

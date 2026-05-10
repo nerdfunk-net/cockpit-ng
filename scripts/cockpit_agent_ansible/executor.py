@@ -94,8 +94,9 @@ class CommandExecutor:
         {
             "ip_address": "192.168.1.1",                      # required
             "ansible_user": "root",                           # required
-            "ansible_password": "secret",                     # optional
-            "ansible_ssh_private_key_file": "/path/to/key",   # optional
+            "ansible_password": "secret",                     # required unless use_sshkey is set
+            "use_sshkey": true,                               # required unless ansible_password is set
+            "ansible_ssh_private_key_file": "/path/to/key",   # optional (uses default key when use_sshkey=true)
             "ansible_port": 22                                # optional (default: 22)
         }
 
@@ -108,11 +109,19 @@ class CommandExecutor:
         """
         ip_address = params.get("ip_address")
         ansible_user = params.get("ansible_user")
+        ansible_password = params.get("ansible_password")
+        use_sshkey = params.get("use_sshkey", False)
 
         if not ip_address:
             return {"status": "error", "error": "ip_address is required", "output": None}
         if not ansible_user:
             return {"status": "error", "error": "ansible_user is required", "output": None}
+        if not ansible_password and not use_sshkey:
+            return {
+                "status": "error",
+                "error": "Either ansible_password or use_sshkey is required",
+                "output": None,
+            }
 
         ansible_port = int(params.get("ansible_port", 22))
         playbook_path = Path(config.ansible_playbook_dir) / "get_facts.yml"
@@ -136,7 +145,7 @@ class CommandExecutor:
                 "-e", extra_vars,
             ]
 
-            if ansible_password := params.get("ansible_password"):
+            if ansible_password:
                 cmd += ["-e", f"ansible_password={ansible_password}"]
 
             if key_file := params.get("ansible_ssh_private_key_file"):
