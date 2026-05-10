@@ -292,14 +292,35 @@ python start_beat.py
 ### Running Tests
 
 ```bash
-# Backend tests
+# All unit tests (offline, no Nautobot required)
 cd backend
-pytest
+pytest tests/unit/ -v
+
+# Unit tests with coverage report (target: ≥80% on services/nautobot/)
+pytest tests/unit/ --cov=services/nautobot --cov-report=term-missing
+
+# Run a specific test file
+pytest tests/unit/services/test_device_creation_service.py -v
+pytest tests/unit/services/test_offboarding_service.py -v
+pytest tests/unit/services/test_resolvers.py -v
+pytest tests/unit/services/test_managers.py -v
+
+# Integration tests (requires a running Nautobot — set credentials in .env.test)
+pytest tests/integration/ -v -m "integration and nautobot"
 
 # Frontend linting
 cd frontend
 npm run lint
 ```
+
+#### Test structure
+
+| Directory | Contents | Requires Nautobot |
+|-----------|----------|-------------------|
+| `tests/unit/services/` | DeviceCreationService, OffboardingService, resolvers, managers | No |
+| `tests/unit/tasks/` | Celery task logic | No |
+| `tests/integration/` | End-to-end flows against real Nautobot | Yes |
+| `tests/mocks/` | `FakeNautobotService` — stateful in-memory Nautobot simulation | — |
 
 ---
 

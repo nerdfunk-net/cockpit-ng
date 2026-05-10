@@ -1,0 +1,43 @@
+"""Mock implementations for unit testing."""
+
+from .fake_nautobot_service import (
+    FakeNautobotService,
+    STATUS_ACTIVE_ID,
+    STATUS_PLANNED_ID,
+    STATUS_STAGED_ID,
+    STATUS_DECOM_ID,
+    PLATFORM_IOS_ID,
+    PLATFORM_NXOS_ID,
+    PLATFORM_JUNOS_ID,
+    DT_NETWORKA_ID,
+    DT_NETWORKB_ID,
+    DT_SERVER_ID,
+    LOC_CITYA_ID,
+    LOC_CITYB_ID,
+    LOC_DC_ID,
+    NS_GLOBAL_ID,
+    ROLE_NETWORK_ID,
+    ROLE_SERVER_ID,
+    ROLE_FIREWALL_ID,
+)
+
+__all__ = [
+    "FakeNautobotService",
+    "STATUS_ACTIVE_ID",
+    "STATUS_PLANNED_ID",
+    "STATUS_STAGED_ID",
+    "STATUS_DECOM_ID",
+    "PLATFORM_IOS_ID",
+    "PLATFORM_NXOS_ID",
+    "PLATFORM_JUNOS_ID",
+    "DT_NETWORKA_ID",
+    "DT_NETWORKB_ID",
+    "DT_SERVER_ID",
+    "LOC_CITYA_ID",
+    "LOC_CITYB_ID",
+    "LOC_DC_ID",
+    "NS_GLOBAL_ID",
+    "ROLE_NETWORK_ID",
+    "ROLE_SERVER_ID",
+    "ROLE_FIREWALL_ID",
+]

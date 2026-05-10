@@ -108,12 +108,13 @@ class DeviceCreationService:
             request, device_id, workflow_status
         )
 
-        # Determine overall success
+        # Determine overall success — "skipped" is valid when no interfaces were requested
         overall_success = workflow_status["step1_device"][
             "status"
         ] == "success" and workflow_status["step3_interfaces"]["status"] in [
             "success",
             "partial",
+            "skipped",
         ]
 
         # Log device creation to audit log

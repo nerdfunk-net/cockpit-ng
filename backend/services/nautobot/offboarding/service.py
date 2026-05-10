@@ -260,9 +260,13 @@ class OffboardingService:
 
         # 7. CheckMK
         if request.remove_from_checkmk:
-            await self._checkmk_cleanup.remove_host(
-                device_details, current_user, results
-            )
+            try:
+                await self._checkmk_cleanup.remove_host(
+                    device_details, current_user, results
+                )
+            except Exception as exc:
+                logger.warning("CheckMK removal failed (Nautobot cleanup continues): %s", exc)
+                results["errors"].append(f"CheckMK removal failed: {exc}")
         else:
             results["skipped_items"].append("CheckMK removal was not requested")
             logger.info("CheckMK removal skipped (not requested)")
