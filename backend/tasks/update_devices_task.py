@@ -14,7 +14,7 @@ from celery_app import celery_app
 import logging
 import asyncio
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 import service_factory
 from services.nautobot.devices.update import DeviceUpdateService
@@ -322,7 +322,7 @@ def update_devices_task(
             "failed_updates": len(failures),
             "skipped_updates": len(skipped),
             "dry_run": dry_run,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "results": {
                 "successes": successes,
                 "failures": failures,
@@ -387,7 +387,7 @@ def update_devices_task(
         return {
             "success": False,
             "error": str(e),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
 

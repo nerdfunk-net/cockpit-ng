@@ -11,7 +11,11 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from tasks.test_tasks import debug_wait_task, test_progress_task, test_task
+import tasks.test_tasks as _test_tasks_module
+
+debug_wait_task = _test_tasks_module.debug_wait_task
+progress_task = _test_tasks_module.test_progress_task
+simple_task = _test_tasks_module.test_task
 
 
 # ── test_task ─────────────────────────────────────────────────────────────────
@@ -21,7 +25,7 @@ from tasks.test_tasks import debug_wait_task, test_progress_task, test_task
 def test_task_returns_success_with_message():
     """Custom message is echoed back in the success response."""
     with patch("tasks.test_tasks.time.sleep"):
-        result = test_task.run(message="ping")
+        result = simple_task.run(message="ping")
 
     assert result["success"] is True
     assert result["message"] == "ping"
@@ -32,7 +36,7 @@ def test_task_returns_success_with_message():
 def test_task_default_message():
     """Default message is used when none is provided."""
     with patch("tasks.test_tasks.time.sleep"):
-        result = test_task.run()
+        result = simple_task.run()
 
     assert result["success"] is True
     assert "Hello from Celery!" in result["message"]
@@ -42,7 +46,7 @@ def test_task_default_message():
 def test_task_returns_failure_on_exception():
     """If time.sleep raises, the task returns success=False with the error."""
     with patch("tasks.test_tasks.time.sleep", side_effect=RuntimeError("boom")):
-        result = test_task.run(message="hello")
+        result = simple_task.run(message="hello")
 
     assert result["success"] is False
     assert "boom" in result["error"]
@@ -54,9 +58,9 @@ def test_task_returns_failure_on_exception():
 @pytest.mark.unit
 def test_progress_task_returns_success():
     """Task completes all steps and returns success."""
-    with patch.object(test_progress_task, "update_state"):
+    with patch.object(progress_task, "update_state"):
         with patch("tasks.test_tasks.time.sleep"):
-            result = test_progress_task.run(duration=3)
+            result = progress_task.run(duration=3)
 
     assert result["success"] is True
     assert result["duration"] == 3
@@ -66,9 +70,9 @@ def test_progress_task_returns_success():
 @pytest.mark.unit
 def test_progress_task_calls_update_state_per_step():
     """update_state is called once per step."""
-    with patch.object(test_progress_task, "update_state") as mock_update:
+    with patch.object(progress_task, "update_state") as mock_update:
         with patch("tasks.test_tasks.time.sleep"):
-            test_progress_task.run(duration=4)
+            progress_task.run(duration=4)
 
     assert mock_update.call_count == 4
 
@@ -76,8 +80,8 @@ def test_progress_task_calls_update_state_per_step():
 @pytest.mark.unit
 def test_progress_task_zero_duration():
     """With duration=0 the task completes immediately without calling update_state."""
-    with patch.object(test_progress_task, "update_state") as mock_update:
-        result = test_progress_task.run(duration=0)
+    with patch.object(progress_task, "update_state") as mock_update:
+        result = progress_task.run(duration=0)
 
     assert result["success"] is True
     mock_update.assert_not_called()
@@ -86,9 +90,9 @@ def test_progress_task_zero_duration():
 @pytest.mark.unit
 def test_progress_task_returns_failure_on_exception():
     """Exception inside the loop is caught and returned as success=False."""
-    with patch.object(test_progress_task, "update_state"):
+    with patch.object(progress_task, "update_state"):
         with patch("tasks.test_tasks.time.sleep", side_effect=ValueError("oops")):
-            result = test_progress_task.run(duration=2)
+            result = progress_task.run(duration=2)
 
     assert result["success"] is False
     assert "oops" in result["error"]

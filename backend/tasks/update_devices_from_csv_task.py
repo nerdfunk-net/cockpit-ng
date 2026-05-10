@@ -23,7 +23,7 @@ import io
 import re
 import asyncio
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 import service_factory
 from services.nautobot.devices.update import DeviceUpdateService
@@ -336,7 +336,7 @@ def update_devices_from_csv_task(
             "successes": successes,
             "failures": failures,
             "skipped": skipped,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         # Update job run status if this task is tracked
