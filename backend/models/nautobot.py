@@ -7,7 +7,7 @@ from __future__ import annotations
 import ipaddress
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator, validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 
 class CheckIPRequest(BaseModel):
@@ -416,7 +416,7 @@ class StackDeviceInfo(BaseModel):
 
 
 class ProcessStacksRequest(BaseModel):
-    device_ids: List[str] = Field(..., min_items=1)
+    device_ids: List[str] = Field(..., min_length=1)
     separator: str = Field(default=",")
 
 
@@ -465,13 +465,14 @@ class RackReservationCreate(BaseModel):
 
 
 class ScanStartRequest(BaseModel):
-    cidrs: List[str] = Field(..., max_items=10)
+    cidrs: List[str] = Field(..., max_length=10)
     credential_ids: Optional[List[int]] = Field(default=None)
     discovery_mode: str = Field(default="netmiko")
     ping_mode: str = Field(default="fping")
     parser_template_ids: Optional[List[int]] = Field(default=None)
 
-    @validator("cidrs")
+    @field_validator("cidrs")
+    @classmethod
     def validate_cidrs(cls, v: List[str]) -> List[str]:
         if not v:
             raise ValueError("At least one CIDR required")
@@ -489,13 +490,15 @@ class ScanStartRequest(BaseModel):
                 cleaned.append(cidr)
         return cleaned
 
-    @validator("credential_ids")
+    @field_validator("credential_ids")
+    @classmethod
     def validate_credentials(cls, v: Optional[List[int]]) -> List[int]:
         if v is None or len(v) == 0:
             return []
         return v
 
-    @validator("discovery_mode")
+    @field_validator("discovery_mode")
+    @classmethod
     def validate_discovery_mode(cls, v: str) -> str:
         if v not in ["napalm", "ssh-login", "netmiko"]:
             raise ValueError(
@@ -503,11 +506,12 @@ class ScanStartRequest(BaseModel):
             )
         return v
 
-    @validator("ping_mode")
-    def validate_ping_mode_for_no_credentials(cls, v: str, values: dict) -> str:
+    @field_validator("ping_mode")
+    @classmethod
+    def validate_ping_mode_for_no_credentials(cls, v: str, info: ValidationInfo) -> str:
         if v not in ["ping", "fping"]:
             raise ValueError("ping_mode must be 'ping' or 'fping'")
-        credential_ids = values.get("credential_ids")
+        credential_ids = info.data.get("credential_ids")
         if (credential_ids is None or len(credential_ids) == 0) and v != "fping":
             return "fping"
         return v

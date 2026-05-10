@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
-from tasks.import_or_update_from_csv_task import _run_csv_import
+from services.nautobot.imports.csv_import_service import CsvImportService
 
 # ---------------------------------------------------------------------------
 # Paths to golden CSV fixtures
@@ -151,7 +151,7 @@ def _make_services():
 
 
 def _run(csv_repo_dir, task_context, nautobot_svc, import_svc, update_svc, **kwargs):
-    """Call _run_csv_import with all external dependencies patched.
+    """Call CsvImportService.run_import with all external dependencies patched.
 
     Patches applied:
     - git_repo_manager.get_repository → returns a dummy repo object
@@ -160,40 +160,41 @@ def _run(csv_repo_dir, task_context, nautobot_svc, import_svc, update_svc, **kwa
     - DeviceImportService constructor → returns import_svc
     - DeviceUpdateService constructor → returns update_svc
     """
+    _MODULE = "services.nautobot.imports.csv_import_service"
     fake_repo = Mock()
 
     with ExitStack() as stack:
         mock_git_manager = stack.enter_context(
-            patch("tasks.import_or_update_from_csv_task.git_repo_manager")
+            patch(f"{_MODULE}.git_repo_manager")
         )
         mock_git_manager.get_repository.return_value = fake_repo
 
         stack.enter_context(
             patch(
-                "tasks.import_or_update_from_csv_task.git_repo_path",
+                f"{_MODULE}.git_repo_path",
                 return_value=str(csv_repo_dir),
             )
         )
 
         mock_sf = stack.enter_context(
-            patch("tasks.import_or_update_from_csv_task.service_factory")
+            patch(f"{_MODULE}.service_factory")
         )
         mock_sf.build_nautobot_service.return_value = nautobot_svc
 
         stack.enter_context(
             patch(
-                "tasks.import_or_update_from_csv_task.DeviceImportService",
+                f"{_MODULE}.DeviceImportService",
                 return_value=import_svc,
             )
         )
         stack.enter_context(
             patch(
-                "tasks.import_or_update_from_csv_task.DeviceUpdateService",
+                f"{_MODULE}.DeviceUpdateService",
                 return_value=update_svc,
             )
         )
 
-        return _run_csv_import(
+        return CsvImportService().run_import(
             task_context=task_context,
             repo_id=1,
             **kwargs,

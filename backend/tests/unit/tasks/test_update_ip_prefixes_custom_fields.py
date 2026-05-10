@@ -2,7 +2,9 @@
 Unit tests for IP prefix update task - custom fields handling.
 """
 
-from tasks.update_ip_prefixes_from_csv_task import _prepare_prefix_update_data
+from services.nautobot.imports.prefix_update_service import PrefixUpdateService
+
+_prepare_prefix_update_data = PrefixUpdateService._prepare_prefix_update_data
 
 
 class TestCustomFieldsHandling:

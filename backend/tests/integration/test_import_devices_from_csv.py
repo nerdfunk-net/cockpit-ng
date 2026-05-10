@@ -33,12 +33,12 @@ import os
 import pytest
 
 from services.nautobot.devices.import_service import DeviceImportService
-from tasks.import_or_update_from_csv_task import (
-    _apply_column_mapping,
-    _apply_default_prefix_length,
-    _extract_interface_config,
-    _filter_nautobot_nulls,
-)
+from services.nautobot.imports.csv_import_service import CsvImportService
+
+_apply_column_mapping = CsvImportService._apply_column_mapping
+_apply_default_prefix_length = CsvImportService._apply_default_prefix_length
+_extract_interface_config = CsvImportService._extract_interface_config
+_filter_nautobot_nulls = CsvImportService._filter_nautobot_nulls
 
 logger = logging.getLogger(__name__)
 
