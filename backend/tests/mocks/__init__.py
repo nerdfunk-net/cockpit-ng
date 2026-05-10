@@ -1,5 +1,15 @@
 """Mock implementations for unit testing."""
 
+from .fake_auth_repositories import FakeUserRepository, FakeRBACRepository
+from .fake_checkmk_client import (
+    FakeCheckMKClient,
+    FOLDER_ROOT,
+    FOLDER_DC1,
+    FOLDER_DC2,
+    TAG_GROUP_AGENT_ID,
+    HOST_GROUP_NETWORK,
+    HOST_GROUP_SERVERS,
+)
 from .fake_nautobot_service import (
     FakeNautobotService,
     STATUS_ACTIVE_ID,
@@ -22,6 +32,15 @@ from .fake_nautobot_service import (
 )
 
 __all__ = [
+    "FakeUserRepository",
+    "FakeRBACRepository",
+    "FakeCheckMKClient",
+    "FOLDER_ROOT",
+    "FOLDER_DC1",
+    "FOLDER_DC2",
+    "TAG_GROUP_AGENT_ID",
+    "HOST_GROUP_NETWORK",
+    "HOST_GROUP_SERVERS",
     "FakeNautobotService",
     "STATUS_ACTIVE_ID",
     "STATUS_PLANNED_ID",

@@ -4,12 +4,12 @@
 
 This directory contains the test suite for the Cockpit-NG backend application. All tests use **comprehensive mocking** to eliminate dependencies on external services (Nautobot, CheckMK), enabling fast, reliable test execution in any environment.
 
-**Current Status: ✅ 93 passing tests, 0 failures, 0 skipped**
+**Current Status: ✅ 167 passing tests, 0 failures, 0 skipped**
 
 ## Test Statistics
 
-- **Total Tests**: 93
-- **Execution Time**: ~0.6 seconds
+- **Total Tests**: 167
+- **Execution Time**: ~0.7 seconds
 - **Pass Rate**: 100%
 - **External Dependencies**: None (all mocked)
 
@@ -268,7 +268,122 @@ async def test_transforms_nautobot_to_checkmk_format():
 
 ---
 
-## Test Infrastructure
+### 5. CheckMK Service Tests (74 tests)
+
+A complete offline test suite for the CheckMK service layer, using a stateful `FakeCheckMKClient` as a drop-in replacement for the real client. No CheckMK instance is required.
+
+#### `test_checkmk_host_service.py` (15 tests)
+
+**What is tested:**
+- `get_all_hosts` — empty store, seeded hosts, folder filtering
+- `get_host` — found by name, not found raises `CheckMKAPIError`
+- `create_host` — success, duplicate raises error, triggers service discovery
+- `update_host` — merges attributes, propagates errors
+- `delete_host` — success, not found raises error
+- `move_host` — changes folder assignment
+- `rename_host` — updates hostname key in store
+- `bulk_create_hosts` — creates multiple hosts in one call
+
+#### `test_checkmk_folder_service.py` (8 tests)
+
+**What is tested:**
+- `get_all_folders` — returns all seeded folders, filtered by parent
+- `create_folder_path` — single segment, multi-segment paths, idempotent on existing folder, empty path returns true, API error returns false
+
+#### `test_checkmk_host_group_service.py` (9 tests)
+
+**What is tested:**
+- `get_host_groups` — returns seeded groups
+- `get_host_group` — found, not found raises error
+- `create_host_group` — success, duplicate raises error
+- `update_host_group` — updates alias
+- `delete_host_group` — success, not found raises error
+- `bulk_delete_host_groups` — removes multiple groups
+
+#### `test_checkmk_tag_group_service.py` (8 tests)
+
+**What is tested:**
+- `get_all_host_tag_groups` — returns transformed list under `tag_groups` key
+- `get_host_tag_group` — found, not found raises error
+- `create_host_tag_group` — success with request object, duplicate raises error
+- `update_host_tag_group` — updates tags via request object
+- `delete_host_tag_group` — success, not found raises error
+
+**Key pattern:** Service methods accept Pydantic model instances. Tests use `SimpleNamespace` with `MagicMock()` tag objects that have a `.dict()` method:
+
+```python
+def _create_request(group_id: str, title: str, tags: list[str]) -> SimpleNamespace:
+    tag_mocks = [MagicMock(**{"dict.return_value": {"id": t, "title": t}}) for t in tags]
+    return SimpleNamespace(id=group_id, title=title, tags=tag_mocks, topic="monitoring", help="")
+```
+
+#### `test_checkmk_discovery_service.py` (8 tests)
+
+**What is tested:**
+- `get_service_discovery` — returns idle state, transitions after start
+- `start_service_discovery` — success, host not found raises, simulated 500 error
+- `wait_for_service_discovery` — returns completed status
+- `start_bulk_discovery` — triggers discovery for all listed hosts
+- `update_discovery_phase` — updates mode in internal state
+
+**Key pattern:** `start_bulk_discovery` accepts a request object with a nested `options` namespace:
+
+```python
+def _bulk_request(hostnames: list[str]) -> SimpleNamespace:
+    options = SimpleNamespace(
+        monitor_undecided_services=True,
+        remove_vanished_services=False,
+        update_service_labels=False,
+        update_service_parameters=False,
+        update_host_labels=False,
+    )
+    return SimpleNamespace(hostnames=hostnames, options=options, do_full_scan=False, bulk_size=10, ignore_errors=False)
+```
+
+#### `test_checkmk_activation_service.py` (9 tests)
+
+**What is tested:**
+- `get_pending_changes` — empty initially, non-empty after host creation
+- `activate_changes` — clears pending changes, returns activation id, simulated error propagates
+- `get_activation_status` — unknown id raises, found after activation
+- `get_running_activations` — empty initially
+- `wait_for_activation_completion` — returns completed status
+
+**Note:** `get_pending_changes()` calls `client._make_request()` directly. `FakeCheckMKClient` implements `_make_request()` and `_handle_response()` stubs that return the pending changes data, making the full service call path testable.
+
+#### `test_checkmk_monitoring_service.py` (8 tests)
+
+**What is tested:**
+- `get_all_monitored_hosts` — empty, returns seeded monitored hosts
+- `get_monitored_host` — found (returns `{"id": ..., "extensions": {...}}`), not found raises
+- `get_host_services` — returns seeded service list, returns empty list when none seeded
+- `show_service` — returns service detail envelope, works with columns param
+
+#### `test_checkmk_problems_service.py` (9 tests)
+
+**What is tested:**
+- `acknowledge_host_problem` — stores ack in fake, error simulation raises
+- `acknowledge_service_problem` — stores ack under `host:service` key
+- `delete_acknowledgment` — removes stored ack
+- `create_host_downtime` — stores downtime, error simulation raises
+- `add_host_comment` — stores comment under hostname key
+- `add_service_comment` — stores comment under `host:service` key
+
+**Key pattern:** All problem methods accept request objects. Tests use `SimpleNamespace` helpers:
+
+```python
+def _host_ack_request(hostname: str, comment: str = "Ack") -> SimpleNamespace:
+    return SimpleNamespace(host_name=hostname, comment=comment, sticky=True, persistent=False, notify=True)
+
+def _downtime_request(hostname: str, comment: str = "Maintenance") -> SimpleNamespace:
+    return SimpleNamespace(
+        host_name=hostname, comment=comment,
+        start_time="2025-01-01T00:00:00", end_time="2025-01-01T02:00:00",
+        downtime_type="host",
+    )
+```
+
+---
 
 ### Fixtures (`conftest.py`)
 
@@ -364,9 +479,13 @@ def test_ip_validation(common_service, input_value, expected):
 
 ## Running Tests
 
-### Run All Tests
+### Run CheckMK Service Tests
 ```bash
-cd backend
+python -m pytest tests/unit/services/test_checkmk_*.py -v -m "unit"
+```
+
+### Run All Unit Tests
+```bash
 python -m pytest tests/ -v
 ```
 
@@ -407,9 +526,20 @@ tests/
 │   ├── __init__.py
 │   ├── nautobot_fixtures.py            # Nautobot mock responses
 │   └── checkmk_fixtures.py             # CheckMK mock responses
+├── mocks/
+│   ├── __init__.py                     # Exports FakeCheckMKClient + constants
+│   └── fake_checkmk_client.py          # Stateful in-memory CheckMK simulation
 ├── unit/
 │   └── services/
-│       └── test_ansible_inventory_service.py
+│       ├── test_ansible_inventory_service.py
+│       ├── test_checkmk_activation_service.py
+│       ├── test_checkmk_discovery_service.py
+│       ├── test_checkmk_folder_service.py
+│       ├── test_checkmk_host_group_service.py
+│       ├── test_checkmk_host_service.py
+│       ├── test_checkmk_monitoring_service.py
+│       ├── test_checkmk_problems_service.py
+│       └── test_checkmk_tag_group_service.py
 ├── integration/
 │   └── workflows/
 │       └── test_nb2cmk_sync_workflow.py
@@ -430,7 +560,7 @@ tests/
 
 - ✅ Nautobot GraphQL API calls
 - ✅ Nautobot REST API calls
-- ✅ CheckMK API calls
+- ✅ CheckMK API calls (`FakeCheckMKClient` — stateful, not `MagicMock`)
 - ✅ Netmiko SSH connections
 - ✅ Database operations (where applicable)
 - ✅ External service dependencies
@@ -458,7 +588,28 @@ mock_nautobot_service.rest_request = AsyncMock(return_value={
 })
 ```
 
-**CheckMK Client:**
+**CheckMK Client (FakeCheckMKClient):**
+```python
+from tests.mocks import FakeCheckMKClient
+
+fake = FakeCheckMKClient()
+fake.seed_host("router1", {"ipaddress": "10.0.0.1"}, folder="~dc1")
+fake.seed_monitored_host("router1", {"address": "10.0.0.1"})
+fake.seed_host_services("router1", [{"description": "CPU load"}])
+
+# Simulate a 404 on a specific call
+fake_err = FakeCheckMKClient(error_on={('get_host', 'missing-host'): 404})
+
+# Patch the factory so service instantiation picks up the fake
+with patch(
+    "services.checkmk.host_service.CheckMKClientFactory.build_client_from_settings",
+    return_value=fake,
+):
+    svc = CheckMKHostService()
+    result = await svc.get_host("router1")
+```
+
+**Legacy CheckMK Client (unittest.mock):**
 ```python
 with patch('routers.checkmk._get_checkmk_client') as mock_client:
     mock_client.return_value.get_hosts.return_value = [
@@ -667,9 +818,9 @@ Potential areas for expansion:
 
 ---
 
-**Last Updated**: 2025-12-29
-**Test Suite Version**: 1.3
-**Total Tests**: 93 passing unit tests + 32 integration tests (26 ansible-inventory + 6 device operations)
+**Last Updated**: 2026-05-10
+**Test Suite Version**: 1.4
+**Total Tests**: 167 passing unit tests + 32 integration tests (26 ansible-inventory + 6 device operations)
 **Integration Test Suites**:
 - Ansible Inventory (26 tests) - Baseline data validation with logical operations
 - Device Operations (6 tests) - Add Device and Bulk Edit workflows
