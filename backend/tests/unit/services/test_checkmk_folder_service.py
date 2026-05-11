@@ -9,11 +9,12 @@ import pytest
 from unittest.mock import patch
 
 from services.checkmk.folder import CheckMKFolderService
-from services.checkmk.exceptions import CheckMKAPIError
-from tests.mocks import FakeCheckMKClient, FOLDER_DC1, FOLDER_ROOT
+from tests.mocks import FakeCheckMKClient
 
 
-_PATCH_TARGET = "services.checkmk.folder.CheckMKClientFactory.build_client_from_settings"
+_PATCH_TARGET = (
+    "services.checkmk.folder.CheckMKClientFactory.build_client_from_settings"
+)
 
 
 # ── GET /folders ───────────────────────────────────────────────────────────────
@@ -80,7 +81,9 @@ async def test_create_folder_path_multi_segment():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKFolderService()
-        success = await svc.create_path("/region/country/city", site_name="cmk", current_user={})
+        success = await svc.create_path(
+            "/region/country/city", site_name="cmk", current_user={}
+        )
 
     assert success is True
     assert "~region" in fake._folders
@@ -95,7 +98,11 @@ async def test_create_folder_path_already_exists_is_idempotent():
     """If a folder already exists, create_path should still succeed (skip, not fail)."""
     fake = FakeCheckMKClient()
     # Pre-create so the API would return 400 "already exists"
-    fake._folders["~dc1"] = {"id": "~dc1", "title": "DC1", "extensions": {"parent": "~", "path": "~dc1", "attributes": {}, "hosts": []}}
+    fake._folders["~dc1"] = {
+        "id": "~dc1",
+        "title": "DC1",
+        "extensions": {"parent": "~", "path": "~dc1", "attributes": {}, "hosts": []},
+    }
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKFolderService()

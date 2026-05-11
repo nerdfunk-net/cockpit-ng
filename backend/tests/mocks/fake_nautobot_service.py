@@ -26,31 +26,31 @@ from services.nautobot.common.exceptions import NautobotAPIError, NautobotNotFou
 logger = logging.getLogger(__name__)
 
 # ── Seed UUIDs ─────────────────────────────────────────────────────────────────
-STATUS_ACTIVE_ID     = "10000000-0000-0000-0000-000000000001"
-STATUS_PLANNED_ID    = "10000000-0000-0000-0000-000000000002"
-STATUS_STAGED_ID     = "10000000-0000-0000-0000-000000000003"
-STATUS_DECOM_ID      = "10000000-0000-0000-0000-000000000004"
+STATUS_ACTIVE_ID = "10000000-0000-0000-0000-000000000001"
+STATUS_PLANNED_ID = "10000000-0000-0000-0000-000000000002"
+STATUS_STAGED_ID = "10000000-0000-0000-0000-000000000003"
+STATUS_DECOM_ID = "10000000-0000-0000-0000-000000000004"
 
-PLATFORM_IOS_ID      = "20000000-0000-0000-0000-000000000001"
-PLATFORM_NXOS_ID     = "20000000-0000-0000-0000-000000000002"
-PLATFORM_JUNOS_ID    = "20000000-0000-0000-0000-000000000003"
+PLATFORM_IOS_ID = "20000000-0000-0000-0000-000000000001"
+PLATFORM_NXOS_ID = "20000000-0000-0000-0000-000000000002"
+PLATFORM_JUNOS_ID = "20000000-0000-0000-0000-000000000003"
 
-DT_NETWORKA_ID       = "30000000-0000-0000-0000-000000000001"
-DT_NETWORKB_ID       = "30000000-0000-0000-0000-000000000002"
-DT_SERVER_ID         = "30000000-0000-0000-0000-000000000003"
+DT_NETWORKA_ID = "30000000-0000-0000-0000-000000000001"
+DT_NETWORKB_ID = "30000000-0000-0000-0000-000000000002"
+DT_SERVER_ID = "30000000-0000-0000-0000-000000000003"
 
-LOC_CITYA_ID         = "40000000-0000-0000-0000-000000000001"
-LOC_CITYB_ID         = "40000000-0000-0000-0000-000000000002"
-LOC_DC_ID            = "40000000-0000-0000-0000-000000000003"
+LOC_CITYA_ID = "40000000-0000-0000-0000-000000000001"
+LOC_CITYB_ID = "40000000-0000-0000-0000-000000000002"
+LOC_DC_ID = "40000000-0000-0000-0000-000000000003"
 
-NS_GLOBAL_ID         = "50000000-0000-0000-0000-000000000001"
+NS_GLOBAL_ID = "50000000-0000-0000-0000-000000000001"
 
-ROLE_NETWORK_ID      = "60000000-0000-0000-0000-000000000001"
-ROLE_SERVER_ID       = "60000000-0000-0000-0000-000000000002"
-ROLE_FIREWALL_ID     = "60000000-0000-0000-0000-000000000003"
+ROLE_NETWORK_ID = "60000000-0000-0000-0000-000000000001"
+ROLE_SERVER_ID = "60000000-0000-0000-0000-000000000002"
+ROLE_FIREWALL_ID = "60000000-0000-0000-0000-000000000003"
 
-MFR_CISCO_ID         = "70000000-0000-0000-0000-000000000001"
-MFR_JUNIPER_ID       = "70000000-0000-0000-0000-000000000002"
+MFR_CISCO_ID = "70000000-0000-0000-0000-000000000001"
+MFR_JUNIPER_ID = "70000000-0000-0000-0000-000000000002"
 
 _UUID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
@@ -77,9 +77,21 @@ class FakeNautobotService:
             "decommissioning": {"id": STATUS_DECOM_ID, "name": "Decommissioning"},
         }
         self._platforms = {
-            "cisco_ios": {"id": PLATFORM_IOS_ID, "name": "cisco_ios", "napalm_driver": "ios"},
-            "cisco_nxos": {"id": PLATFORM_NXOS_ID, "name": "cisco_nxos", "napalm_driver": "nxos"},
-            "junos": {"id": PLATFORM_JUNOS_ID, "name": "junos", "napalm_driver": "junos"},
+            "cisco_ios": {
+                "id": PLATFORM_IOS_ID,
+                "name": "cisco_ios",
+                "napalm_driver": "ios",
+            },
+            "cisco_nxos": {
+                "id": PLATFORM_NXOS_ID,
+                "name": "cisco_nxos",
+                "napalm_driver": "nxos",
+            },
+            "junos": {
+                "id": PLATFORM_JUNOS_ID,
+                "name": "junos",
+                "napalm_driver": "junos",
+            },
         }
         self._device_types: dict[str, dict] = {
             "networka": {
@@ -98,7 +110,10 @@ class FakeNautobotService:
                 "id": DT_SERVER_ID,
                 "model": "server",
                 "display": "Generic server",
-                "manufacturer": {"id": "70000000-0000-0000-0000-000000000003", "name": "Generic"},
+                "manufacturer": {
+                    "id": "70000000-0000-0000-0000-000000000003",
+                    "name": "Generic",
+                },
             },
         }
         self._locations = {
@@ -191,7 +206,10 @@ class FakeNautobotService:
         if "filter_device" in query and "filter_address" in query:
             return self._gql_device_interface_with_ip(variables)
 
-        logger.warning("FakeNautobotService: unhandled GraphQL query (first 80 chars): %s", query[:80])
+        logger.warning(
+            "FakeNautobotService: unhandled GraphQL query (first 80 chars): %s",
+            query[:80],
+        )
         return {"data": {}}
 
     async def rest_request(
@@ -272,13 +290,17 @@ class FakeNautobotService:
             if not dt:
                 continue
             if mfr_filter:
-                if dt["manufacturer"]["name"].lower() not in [m.lower() for m in mfr_filter]:
+                if dt["manufacturer"]["name"].lower() not in [
+                    m.lower() for m in mfr_filter
+                ]:
                     continue
-            results.append({
-                "id": dt["id"],
-                "model": dt["model"],
-                "manufacturer": dt["manufacturer"],
-            })
+            results.append(
+                {
+                    "id": dt["id"],
+                    "model": dt["model"],
+                    "manufacturer": dt["manufacturer"],
+                }
+            )
         return {"data": {"device_types": results}}
 
     def _gql_ip_for_device(self, variables: dict) -> dict:
@@ -301,11 +323,13 @@ class FakeNautobotService:
                     if prim.get("id") == ip["id"]:
                         primary_device = {"id": dev["id"], "name": dev["name"]}
                         break
-                results.append({
-                    "id": ip["id"],
-                    "address": ip.get("address", addr),
-                    "primary_ip4_for": [primary_device] if primary_device else [],
-                })
+                results.append(
+                    {
+                        "id": ip["id"],
+                        "address": ip.get("address", addr),
+                        "primary_ip4_for": [primary_device] if primary_device else [],
+                    }
+                )
         return {"data": {"ip_addresses": results}}
 
     def _gql_ip_address(self, variables: dict) -> dict:
@@ -324,7 +348,11 @@ class FakeNautobotService:
                 ip_host = ip.get("address", "").split("/")[0]
                 if ip_host != host and ip.get("address") != addr:
                     continue
-                if ns_filter and ip.get("namespace_id") and ip["namespace_id"] != ns_filter:
+                if (
+                    ns_filter
+                    and ip.get("namespace_id")
+                    and ip["namespace_id"] != ns_filter
+                ):
                     continue
                 results.append({"id": ip["id"], "address": ip.get("address", addr)})
         return {"data": {"ip_addresses": results}}
@@ -412,13 +440,17 @@ class FakeNautobotService:
                     continue
                 for ip_obj in iface.get("ip_addresses", []):
                     if ip_obj.get("address") in ip_filters:
-                        matching_ifaces.append({"id": iface["id"], "name": iface["name"]})
+                        matching_ifaces.append(
+                            {"id": iface["id"], "name": iface["name"]}
+                        )
                         break
-            devices.append({
-                "id": dev["id"],
-                "name": dev["name"],
-                "interfaces": matching_ifaces,
-            })
+            devices.append(
+                {
+                    "id": dev["id"],
+                    "name": dev["name"],
+                    "interfaces": matching_ifaces,
+                }
+            )
         return {"data": {"devices": devices}}
 
     # ── REST dispatch ───────────────────────────────────────────────────────────
@@ -456,19 +488,28 @@ class FakeNautobotService:
         if resource == "dcim/platforms":
             return self._platform_endpoint(resource_id, params)
         if resource == "extras/roles":
-            return self._count_list_response([
-                {"id": v["id"], "name": v["name"]}
-                for v in self._roles.values()
-                if not params.get("id") or v["id"] == params["id"]
-            ])
+            return self._count_list_response(
+                [
+                    {"id": v["id"], "name": v["name"]}
+                    for v in self._roles.values()
+                    if not params.get("id") or v["id"] == params["id"]
+                ]
+            )
         if resource == "dcim/locations":
-            return self._count_list_response([
-                {"id": v["id"], "name": v["name"]}
-                for v in self._locations.values()
-                if not params.get("id") or v["id"] == params["id"]
-            ])
+            return self._count_list_response(
+                [
+                    {"id": v["id"], "name": v["name"]}
+                    for v in self._locations.values()
+                    if not params.get("id") or v["id"] == params["id"]
+                ]
+            )
 
-        logger.warning("FakeNautobotService: unhandled REST %s /%s params=%s", method, resource, params)
+        logger.warning(
+            "FakeNautobotService: unhandled REST %s /%s params=%s",
+            method,
+            resource,
+            params,
+        )
         return {"count": 0, "results": []}
 
     # ── Device handlers ─────────────────────────────────────────────────────────
@@ -485,8 +526,10 @@ class FakeNautobotService:
             results = [d for d in results if d.get("name") == params["name"]]
         if params.get("virtual_chassis"):
             results = [
-                d for d in results
-                if (d.get("virtual_chassis") or {}).get("id") == params["virtual_chassis"]
+                d
+                for d in results
+                if (d.get("virtual_chassis") or {}).get("id")
+                == params["virtual_chassis"]
             ]
         limit = int(params.get("limit", 200))
         return self._count_list_response(results[:limit])
@@ -558,13 +601,16 @@ class FakeNautobotService:
             target = params["address"]
             host = target.split("/")[0]
             results = [
-                ip for ip in results
-                if ip.get("address") == target or ip.get("address", "").split("/")[0] == host
+                ip
+                for ip in results
+                if ip.get("address") == target
+                or ip.get("address", "").split("/")[0] == host
             ]
         if params.get("namespace"):
             ns = params["namespace"]
             results = [
-                ip for ip in results
+                ip
+                for ip in results
                 if ip.get("namespace_id") == ns or ip.get("namespace") == ns
             ]
         return self._count_list_response(results)
@@ -593,7 +639,9 @@ class FakeNautobotService:
 
         results = list(self._ip_iface_assocs.values())
         if params.get("ip_address"):
-            results = [a for a in results if a.get("ip_address") == params["ip_address"]]
+            results = [
+                a for a in results if a.get("ip_address") == params["ip_address"]
+            ]
         if params.get("interface"):
             results = [a for a in results if a.get("interface") == params["interface"]]
         return self._count_list_response(results)
@@ -651,7 +699,9 @@ class FakeNautobotService:
 
     def _device_type_endpoint(self, resource_id: str | None, params: dict) -> dict:
         if resource_id:
-            dt = next((v for v in self._device_types.values() if v["id"] == resource_id), None)
+            dt = next(
+                (v for v in self._device_types.values() if v["id"] == resource_id), None
+            )
             if dt is None:
                 raise NautobotNotFoundError(f"Device type {resource_id} not found")
             return dict(dt)
@@ -664,7 +714,9 @@ class FakeNautobotService:
 
     def _platform_endpoint(self, resource_id: str | None, params: dict) -> dict:
         if resource_id:
-            p = next((v for v in self._platforms.values() if v["id"] == resource_id), None)
+            p = next(
+                (v for v in self._platforms.values() if v["id"] == resource_id), None
+            )
             if p is None:
                 raise NautobotNotFoundError(f"Platform {resource_id} not found")
             return dict(p)

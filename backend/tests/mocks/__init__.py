@@ -64,4 +64,7 @@ __all__ = [
     "ROLE_NETWORK_ID",
     "ROLE_SERVER_ID",
     "ROLE_FIREWALL_ID",
+    "FakeJobTemplateRepository",
+    "FakeJobScheduleRepository",
+    "FakeJobRunRepository",
 ]

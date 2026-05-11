@@ -164,9 +164,7 @@ def _run(csv_repo_dir, task_context, nautobot_svc, import_svc, update_svc, **kwa
     fake_repo = Mock()
 
     with ExitStack() as stack:
-        mock_git_manager = stack.enter_context(
-            patch(f"{_MODULE}.git_repo_manager")
-        )
+        mock_git_manager = stack.enter_context(patch(f"{_MODULE}.git_repo_manager"))
         mock_git_manager.get_repository.return_value = fake_repo
 
         stack.enter_context(
@@ -176,9 +174,7 @@ def _run(csv_repo_dir, task_context, nautobot_svc, import_svc, update_svc, **kwa
             )
         )
 
-        mock_sf = stack.enter_context(
-            patch(f"{_MODULE}.service_factory")
-        )
+        mock_sf = stack.enter_context(patch(f"{_MODULE}.service_factory"))
         mock_sf.build_nautobot_service.return_value = nautobot_svc
 
         stack.enter_context(

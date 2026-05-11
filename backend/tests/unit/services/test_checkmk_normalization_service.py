@@ -71,7 +71,9 @@ class TestIPNormalizer:
     def test_process_ip_strips_cidr_notation(self) -> None:
         """IP with CIDR suffix is stripped to the bare host address."""
         ext = _ext()
-        self.norm.process_ip_address({"primary_ip4": {"address": "192.168.1.1/24"}}, ext)
+        self.norm.process_ip_address(
+            {"primary_ip4": {"address": "192.168.1.1/24"}}, ext
+        )
         assert ext.attributes["ipaddress"] == "192.168.1.1"
 
     @pytest.mark.unit
@@ -149,7 +151,6 @@ class TestIPNormalizer:
 
 
 class TestSNMPNormalizer:
-
     def _make(self, snmp_mapping: dict | None = None) -> SNMPNormalizer:
         fake = _FakeConfig(snmp_mapping=snmp_mapping or {})
         with patch(_PATCH_CONFIG, return_value=fake):
@@ -171,7 +172,9 @@ class TestSNMPNormalizer:
         """SNMPv2 credentials → snmp_community dict with v1_v2_community type and tags."""
         norm = self._make({"my-v2": {"version": "v2", "community": "public"}})
         ext = _ext()
-        norm.process_snmp_config({"_custom_field_data": {"snmp_credentials": "my-v2"}}, ext)
+        norm.process_snmp_config(
+            {"_custom_field_data": {"snmp_credentials": "my-v2"}}, ext
+        )
         assert ext.attributes["snmp_community"] == {
             "type": "v1_v2_community",
             "community": "public",
@@ -196,7 +199,9 @@ class TestSNMPNormalizer:
         }
         norm = self._make(mapping)
         ext = _ext()
-        norm.process_snmp_config({"_custom_field_data": {"snmp_credentials": "v3-cred"}}, ext)
+        norm.process_snmp_config(
+            {"_custom_field_data": {"snmp_credentials": "v3-cred"}}, ext
+        )
         community = ext.attributes["snmp_community"]
         assert community["type"] == "v3_auth_privacy"
         assert community["auth_protocol"] == "md5"
@@ -222,7 +227,9 @@ class TestSNMPNormalizer:
         }
         norm = self._make(mapping)
         ext = _ext()
-        norm.process_snmp_config({"_custom_field_data": {"snmp_credentials": "v3-no-priv"}}, ext)
+        norm.process_snmp_config(
+            {"_custom_field_data": {"snmp_credentials": "v3-no-priv"}}, ext
+        )
         community = ext.attributes["snmp_community"]
         assert "privacy_protocol" not in community
         assert "privacy_password" not in community
@@ -246,7 +253,9 @@ class TestSNMPNormalizer:
         """YAML may parse unquoted version numbers as int — 2 should be treated as v2."""
         norm = self._make({"int-cred": {"version": 2, "community": "secret"}})
         ext = _ext()
-        norm.process_snmp_config({"_custom_field_data": {"snmp_credentials": "int-cred"}}, ext)
+        norm.process_snmp_config(
+            {"_custom_field_data": {"snmp_credentials": "int-cred"}}, ext
+        )
         assert ext.attributes["snmp_community"]["type"] == "v1_v2_community"
 
 
@@ -256,7 +265,6 @@ class TestSNMPNormalizer:
 
 
 class TestFieldNormalizer:
-
     def _make(self, mapping: dict | None = None) -> FieldNormalizer:
         fake = _FakeConfig(cfg={"mapping": mapping or {}})
         with patch(_PATCH_CONFIG, return_value=fake):
@@ -323,7 +331,10 @@ class TestFieldNormalizer:
     def test_extract_field_value_nested_dot_notation(self) -> None:
         """Dot-notation resolves through nested dicts."""
         norm = self._make()
-        assert norm.extract_field_value({"role": {"name": "Switch"}}, "role.name") == "Switch"
+        assert (
+            norm.extract_field_value({"role": {"name": "Switch"}}, "role.name")
+            == "Switch"
+        )
 
     @pytest.mark.unit
     @pytest.mark.checkmk
@@ -339,7 +350,6 @@ class TestFieldNormalizer:
 
 
 class TestTagNormalizer:
-
     def _make(self, cfg: dict | None = None) -> TagNormalizer:
         fake = _FakeConfig(cfg=cfg or {})
         with patch(_PATCH_CONFIG, return_value=fake):
@@ -356,7 +366,8 @@ class TestTagNormalizer:
         norm = self._make({"cf2htg": {"snmp_credentials": "snmp_group"}})
         ext = _ext()
         norm.process_cf2htg_mappings(
-            {"name": "sw1", "_custom_field_data": {"snmp_credentials": "v2-public"}}, ext
+            {"name": "sw1", "_custom_field_data": {"snmp_credentials": "v2-public"}},
+            ext,
         )
         assert ext.attributes["tag_snmp_group"] == "v2-public"
 
@@ -413,7 +424,11 @@ class TestTagNormalizer:
     def test_additional_attributes_by_ip_cidr_match_merged(self) -> None:
         """Device IP inside a configured CIDR → mapped attributes merged."""
         norm = self._make(
-            {"additional_attributes": {"by_ip": {"10.0.0.0/8": {"tag_datacenter": "dc1"}}}}
+            {
+                "additional_attributes": {
+                    "by_ip": {"10.0.0.0/8": {"tag_datacenter": "dc1"}}
+                }
+            }
         )
         ext = _ext()
         device = {"name": "sw1", "primary_ip4": {"address": "10.1.2.3/24"}}
@@ -493,7 +508,9 @@ class TestDeviceNormalizationService:
     def test_normalize_device_sets_hostname_in_internal(self) -> None:
         """Device name is stored as 'hostname' in the internal dict."""
         svc = self._make_service()
-        result = self._normalize(svc, {"name": "router1", "primary_ip4": {"address": "10.0.0.1/24"}})
+        result = self._normalize(
+            svc, {"name": "router1", "primary_ip4": {"address": "10.0.0.1/24"}}
+        )
         assert result.internal["hostname"] == "router1"
 
     @pytest.mark.unit
@@ -501,7 +518,9 @@ class TestDeviceNormalizationService:
     def test_normalize_device_strips_cidr_from_primary_ip(self) -> None:
         """primary_ip4 address has CIDR suffix removed before storing in attributes."""
         svc = self._make_service()
-        result = self._normalize(svc, {"name": "router1", "primary_ip4": {"address": "192.168.1.100/28"}})
+        result = self._normalize(
+            svc, {"name": "router1", "primary_ip4": {"address": "192.168.1.100/28"}}
+        )
         assert result.attributes["ipaddress"] == "192.168.1.100"
 
     @pytest.mark.unit
@@ -579,5 +598,7 @@ class TestDeviceNormalizationService:
             patch(_PATCH_SITE, return_value="prod"),
             patch(_PATCH_FOLDER, return_value="/dc1"),
         ):
-            with pytest.raises(ValueError, match="Failed to load CheckMK configuration"):
+            with pytest.raises(
+                ValueError, match="Failed to load CheckMK configuration"
+            ):
                 svc.normalize_device({"name": "router1"})

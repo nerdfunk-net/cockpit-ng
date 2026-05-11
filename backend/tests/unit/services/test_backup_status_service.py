@@ -111,7 +111,9 @@ class TestBuildResponse:
     ) -> None:
         run = _make_run(
             backed_up=[],
-            failed=[{"device_id": "dev-2", "device_name": "Switch 2", "error": "Timeout"}],
+            failed=[
+                {"device_id": "dev-2", "device_name": "Switch 2", "error": "Timeout"}
+            ],
         )
         mock_repo.get_all_by_type_and_statuses.return_value = [run]
         _no_cache(mock_redis)

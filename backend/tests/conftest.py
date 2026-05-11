@@ -22,7 +22,11 @@ from tests.fixtures import (
     create_device_response,
     create_host_response,
 )
-from tests.mocks import FakeNautobotService, STATUS_ACTIVE_ID, DT_NETWORKA_ID, LOC_CITYA_ID, ROLE_NETWORK_ID, NS_GLOBAL_ID
+from tests.mocks import (
+    FakeNautobotService,
+    STATUS_ACTIVE_ID,
+    NS_GLOBAL_ID,
+)
 
 
 # =============================================================================
@@ -418,23 +422,38 @@ def fake_nautobot_service_with_device() -> FakeNautobotService:
     iface_id = "aa000000-0000-0000-0002-000000000001"
     device_id = "aa000000-0000-0000-0003-000000000001"
 
-    fake.seed_ip(ip_id, {
-        "address": "10.0.0.1/24",
-        "namespace_id": NS_GLOBAL_ID,
-        "status": {"id": STATUS_ACTIVE_ID, "name": "Active"},
-    })
-    fake.seed_interface(iface_id, {
-        "name": "Loopback0",
-        "type": "virtual",
-        "device_id": device_id,
-        "ip_addresses": [{"id": ip_id, "address": "10.0.0.1/24"}],
-    })
-    fake.seed_device(device_id, {
-        "name": "test-router-01",
-        "status": {"id": STATUS_ACTIVE_ID, "name": "Active"},
-        "primary_ip4": {"id": ip_id, "address": "10.0.0.1/24"},
-        "interfaces": [{"id": iface_id, "name": "Loopback0", "ip_addresses": [{"id": ip_id, "address": "10.0.0.1/24"}]}],
-    })
+    fake.seed_ip(
+        ip_id,
+        {
+            "address": "10.0.0.1/24",
+            "namespace_id": NS_GLOBAL_ID,
+            "status": {"id": STATUS_ACTIVE_ID, "name": "Active"},
+        },
+    )
+    fake.seed_interface(
+        iface_id,
+        {
+            "name": "Loopback0",
+            "type": "virtual",
+            "device_id": device_id,
+            "ip_addresses": [{"id": ip_id, "address": "10.0.0.1/24"}],
+        },
+    )
+    fake.seed_device(
+        device_id,
+        {
+            "name": "test-router-01",
+            "status": {"id": STATUS_ACTIVE_ID, "name": "Active"},
+            "primary_ip4": {"id": ip_id, "address": "10.0.0.1/24"},
+            "interfaces": [
+                {
+                    "id": iface_id,
+                    "name": "Loopback0",
+                    "ip_addresses": [{"id": ip_id, "address": "10.0.0.1/24"}],
+                }
+            ],
+        },
+    )
 
     return fake
 

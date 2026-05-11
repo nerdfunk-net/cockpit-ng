@@ -51,9 +51,7 @@ def _run(csv_content: str, devices: list, delimiter: str = ",") -> dict:
         with patch(_PATCH_SF) as mock_sf:
             mock_sf.build_device_query_service.return_value = _make_dqs(devices)
             mock_sf.build_job_run_service.return_value = _make_jrs()
-            return check_ip_task.run(
-                csv_content, delimiter=delimiter, quote_char='"'
-            )
+            return check_ip_task.run(csv_content, delimiter=delimiter, quote_char='"')
 
 
 # ── happy path ────────────────────────────────────────────────────────────────
@@ -63,10 +61,12 @@ def _run(csv_content: str, devices: list, delimiter: str = ",") -> dict:
 @pytest.mark.nautobot
 def test_check_ip_task_all_match():
     """All CSV devices match Nautobot by IP and name → all status='match'."""
-    csv_content = _csv([
-        {"ip_address": "10.0.0.1", "name": "router1"},
-        {"ip_address": "10.0.0.2", "name": "switch1"},
-    ])
+    csv_content = _csv(
+        [
+            {"ip_address": "10.0.0.1", "name": "router1"},
+            {"ip_address": "10.0.0.2", "name": "switch1"},
+        ]
+    )
     nautobot_devices = [
         {"name": "router1", "primary_ip4": "10.0.0.1/24"},
         {"name": "switch1", "primary_ip4": "10.0.0.2/24"},
@@ -129,11 +129,13 @@ def test_check_ip_task_cidr_ip_in_csv_stripped():
 @pytest.mark.nautobot
 def test_check_ip_task_mixed_results():
     """Match, mismatch, and not-found all appear in the same run."""
-    csv_content = _csv([
-        {"ip_address": "10.0.0.1", "name": "router1"},
-        {"ip_address": "10.0.0.2", "name": "wrong-name"},
-        {"ip_address": "10.0.0.99", "name": "ghost"},
-    ])
+    csv_content = _csv(
+        [
+            {"ip_address": "10.0.0.1", "name": "router1"},
+            {"ip_address": "10.0.0.2", "name": "wrong-name"},
+            {"ip_address": "10.0.0.99", "name": "ghost"},
+        ]
+    )
     nautobot_devices = [
         {"name": "router1", "primary_ip4": "10.0.0.1/24"},
         {"name": "switch1", "primary_ip4": "10.0.0.2/24"},
@@ -161,9 +163,7 @@ def test_check_ip_task_csv_missing_required_columns():
             mock_sf.build_device_query_service.return_value = _make_dqs([])
             mock_sf.build_job_run_service.return_value = _make_jrs()
             with patch(_PATCH_SETTINGS):
-                result = check_ip_task.run(
-                    csv_content, delimiter=",", quote_char='"'
-                )
+                result = check_ip_task.run(csv_content, delimiter=",", quote_char='"')
 
     assert result["success"] is False
     assert "ip_address" in result["error"] or "name" in result["error"]
@@ -201,9 +201,7 @@ def test_check_ip_task_provided_delimiter_used_directly():
             )
             mock_sf.build_job_run_service.return_value = _make_jrs()
             with patch(_PATCH_SETTINGS) as mock_settings:
-                result = check_ip_task.run(
-                    csv_content, delimiter=";", quote_char='"'
-                )
+                result = check_ip_task.run(csv_content, delimiter=";", quote_char='"')
 
     mock_settings.get_nautobot_settings.assert_not_called()
     assert result["success"] is True

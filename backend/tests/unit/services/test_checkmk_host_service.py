@@ -12,12 +12,14 @@ from unittest.mock import patch
 
 from services.checkmk.host_service import CheckMKHostService
 from services.checkmk.exceptions import CheckMKAPIError, HostNotFoundError
-from tests.mocks import FakeCheckMKClient, FOLDER_DC1
+from tests.mocks import FakeCheckMKClient
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-_PATCH_TARGET = "services.checkmk.host_service.CheckMKClientFactory.build_client_from_settings"
+_PATCH_TARGET = (
+    "services.checkmk.host_service.CheckMKClientFactory.build_client_from_settings"
+)
 
 
 def _service_with(fake: FakeCheckMKClient) -> CheckMKHostService:
@@ -143,9 +145,7 @@ async def test_create_host_duplicate_raises():
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKHostService()
         with pytest.raises(CheckMKAPIError):
-            await svc.create_host(
-                hostname="existing-host", folder="/", attributes={}
-            )
+            await svc.create_host(hostname="existing-host", folder="/", attributes={})
 
 
 @pytest.mark.asyncio

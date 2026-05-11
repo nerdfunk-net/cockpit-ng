@@ -14,9 +14,9 @@ a MagicMock / AsyncMock for that dependency.
 from __future__ import annotations
 
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, patch as _patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from models.nb2cmk import DeviceComparison, DeviceListWithStatus
+from models.nb2cmk import DeviceComparison
 from services.checkmk.sync.comparison import DeviceComparisonService
 from tests.mocks import FakeCheckMKClient
 
@@ -78,7 +78,9 @@ def _normalized(
     """Return a normalized device config dict as returned by get_device_normalized."""
     return {
         "folder": folder,
-        "attributes": attributes if attributes is not None else {"ipaddress": "10.0.0.1"},
+        "attributes": attributes
+        if attributes is not None
+        else {"ipaddress": "10.0.0.1"},
         "internal": {"hostname": hostname},
     }
 
@@ -119,7 +121,10 @@ class TestCompareConfigurations:
     @pytest.mark.checkmk
     def test_attribute_present_in_nautobot_missing_in_checkmk_reported(self) -> None:
         """Attribute in Nautobot but absent from CheckMK → 'missing in CheckMK' diff."""
-        nb = {"folder": "/dc1", "attributes": {"ipaddress": "10.0.0.1", "alias": "my-router"}}
+        nb = {
+            "folder": "/dc1",
+            "attributes": {"ipaddress": "10.0.0.1", "alias": "my-router"},
+        }
         cmk = {"folder": "/dc1", "attributes": {"ipaddress": "10.0.0.1"}}
         diffs = self.svc._compare_configurations(nb, cmk)
         assert any("alias" in d and "missing in CheckMK" in d for d in diffs)
@@ -164,7 +169,10 @@ class TestCompareConfigurations:
         """comparison_keys containing only 'attributes' → folder differences ignored."""
         svc = _make_service(comparison_keys=["attributes"])
         nb = {"folder": "/dc1", "attributes": {"ipaddress": "10.0.0.1"}}
-        cmk = {"folder": "/COMPLETELY-DIFFERENT", "attributes": {"ipaddress": "10.0.0.1"}}
+        cmk = {
+            "folder": "/COMPLETELY-DIFFERENT",
+            "attributes": {"ipaddress": "10.0.0.1"},
+        }
         diffs = svc._compare_configurations(nb, cmk)
         assert diffs == []
 
@@ -172,8 +180,14 @@ class TestCompareConfigurations:
     @pytest.mark.checkmk
     def test_multiple_attribute_differences_all_reported(self) -> None:
         """Multiple differing attributes → all reported as individual diff entries."""
-        nb = {"folder": "/dc1", "attributes": {"ipaddress": "10.0.0.1", "alias": "router-a"}}
-        cmk = {"folder": "/dc1", "attributes": {"ipaddress": "10.0.0.2", "alias": "router-b"}}
+        nb = {
+            "folder": "/dc1",
+            "attributes": {"ipaddress": "10.0.0.1", "alias": "router-a"},
+        }
+        cmk = {
+            "folder": "/dc1",
+            "attributes": {"ipaddress": "10.0.0.2", "alias": "router-b"},
+        }
         diffs = self.svc._compare_configurations(nb, cmk)
         assert len(diffs) == 2
 
@@ -204,7 +218,9 @@ class TestFilterDiffByIgnoredAttributes:
     @pytest.mark.checkmk
     def test_empty_diff_text_returned_unchanged(self) -> None:
         """Empty diff text is returned as-is regardless of ignored list."""
-        result = DeviceComparisonService.filter_diff_by_ignored_attributes("", ["meta_data"])
+        result = DeviceComparisonService.filter_diff_by_ignored_attributes(
+            "", ["meta_data"]
+        )
         assert result == ""
 
     @pytest.mark.unit
@@ -246,7 +262,9 @@ class TestCompareDeviceConfig:
     @pytest.mark.asyncio
     @pytest.mark.unit
     @pytest.mark.checkmk
-    async def test_host_not_found_in_checkmk_returns_host_not_found_result(self) -> None:
+    async def test_host_not_found_in_checkmk_returns_host_not_found_result(
+        self,
+    ) -> None:
         """FakeCheckMKClient with no hosts seeded → result='host_not_found'."""
         svc, _, fake_client = self._setup()
         with patch(_PATCH_CLIENT, return_value=fake_client):
@@ -327,7 +345,9 @@ class TestCompareDeviceConfig:
     @pytest.mark.asyncio
     @pytest.mark.unit
     @pytest.mark.checkmk
-    async def test_meta_data_stripped_from_checkmk_attrs_before_comparison(self) -> None:
+    async def test_meta_data_stripped_from_checkmk_attrs_before_comparison(
+        self,
+    ) -> None:
         """meta_data key present in CheckMK attributes is removed before comparison."""
         normalized = _normalized(folder="/dc1", attributes={"ipaddress": "10.0.0.1"})
         svc, _, fake_client = self._setup(normalized)
@@ -382,7 +402,9 @@ class TestGetDevicesDiff:
             diff="Host 'router1' not found in CheckMK",
         )
         with patch(_PATCH_NAUTOBOT, return_value=mock_nautobot):
-            with patch.object(svc, "compare_device_config", new=AsyncMock(return_value=comparison)):
+            with patch.object(
+                svc, "compare_device_config", new=AsyncMock(return_value=comparison)
+            ):
                 result = await svc.get_devices_diff()
 
         assert result.total == 1
@@ -400,7 +422,9 @@ class TestGetDevicesDiff:
         }
         comparison = DeviceComparison(result="equal")
         with patch(_PATCH_NAUTOBOT, return_value=mock_nautobot):
-            with patch.object(svc, "compare_device_config", new=AsyncMock(return_value=comparison)):
+            with patch.object(
+                svc, "compare_device_config", new=AsyncMock(return_value=comparison)
+            ):
                 result = await svc.get_devices_diff()
 
         assert result.devices[0]["checkmk_status"] == "equal"
@@ -415,9 +439,13 @@ class TestGetDevicesDiff:
         mock_nautobot.graphql_query.return_value = {
             "data": {"devices": [_nautobot_device()]}
         }
-        comparison = DeviceComparison(result="diff", diff="attributes.'ipaddress': differs")
+        comparison = DeviceComparison(
+            result="diff", diff="attributes.'ipaddress': differs"
+        )
         with patch(_PATCH_NAUTOBOT, return_value=mock_nautobot):
-            with patch.object(svc, "compare_device_config", new=AsyncMock(return_value=comparison)):
+            with patch.object(
+                svc, "compare_device_config", new=AsyncMock(return_value=comparison)
+            ):
                 result = await svc.get_devices_diff()
 
         assert result.devices[0]["checkmk_status"] == "diff"
@@ -460,7 +488,9 @@ class TestGetDevicesDiff:
         }
         comparison = DeviceComparison(result="equal")
         with patch(_PATCH_NAUTOBOT, return_value=mock_nautobot):
-            with patch.object(svc, "compare_device_config", new=AsyncMock(return_value=comparison)):
+            with patch.object(
+                svc, "compare_device_config", new=AsyncMock(return_value=comparison)
+            ):
                 result = await svc.get_devices_diff()
 
         assert result.total == 3

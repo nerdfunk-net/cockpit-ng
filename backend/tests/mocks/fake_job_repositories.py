@@ -18,7 +18,6 @@ Usage::
 
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -39,14 +38,26 @@ class _FakeJobTemplate:
         self.description: Optional[str] = kwargs.get("description")
         self.config_repository_id: Optional[int] = kwargs.get("config_repository_id")
         self.inventory_source: str = kwargs.get("inventory_source", "all")
-        self.inventory_repository_id: Optional[int] = kwargs.get("inventory_repository_id")
+        self.inventory_repository_id: Optional[int] = kwargs.get(
+            "inventory_repository_id"
+        )
         self.inventory_name: Optional[str] = kwargs.get("inventory_name")
         self.command_template_name: Optional[str] = kwargs.get("command_template_name")
-        self.backup_running_config_path: Optional[str] = kwargs.get("backup_running_config_path")
-        self.backup_startup_config_path: Optional[str] = kwargs.get("backup_startup_config_path")
-        self.write_timestamp_to_custom_field: bool = kwargs.get("write_timestamp_to_custom_field", False)
-        self.timestamp_custom_field_name: Optional[str] = kwargs.get("timestamp_custom_field_name")
-        self.activate_changes_after_sync: bool = kwargs.get("activate_changes_after_sync", True)
+        self.backup_running_config_path: Optional[str] = kwargs.get(
+            "backup_running_config_path"
+        )
+        self.backup_startup_config_path: Optional[str] = kwargs.get(
+            "backup_startup_config_path"
+        )
+        self.write_timestamp_to_custom_field: bool = kwargs.get(
+            "write_timestamp_to_custom_field", False
+        )
+        self.timestamp_custom_field_name: Optional[str] = kwargs.get(
+            "timestamp_custom_field_name"
+        )
+        self.activate_changes_after_sync: bool = kwargs.get(
+            "activate_changes_after_sync", True
+        )
         self.use_last_compare_run: bool = kwargs.get("use_last_compare_run", True)
         self.sync_not_found_devices: bool = kwargs.get("sync_not_found_devices", False)
         self.scan_resolve_dns: bool = kwargs.get("scan_resolve_dns", False)
@@ -54,16 +65,26 @@ class _FakeJobTemplate:
         self.scan_timeout_ms: Optional[int] = kwargs.get("scan_timeout_ms")
         self.scan_retries: Optional[int] = kwargs.get("scan_retries")
         self.scan_interval_ms: Optional[int] = kwargs.get("scan_interval_ms")
-        self.scan_custom_field_name: Optional[str] = kwargs.get("scan_custom_field_name")
-        self.scan_custom_field_value: Optional[str] = kwargs.get("scan_custom_field_value")
-        self.scan_response_custom_field_name: Optional[str] = kwargs.get("scan_response_custom_field_name")
-        self.scan_set_reachable_ip_active: bool = kwargs.get("scan_set_reachable_ip_active", True)
+        self.scan_custom_field_name: Optional[str] = kwargs.get(
+            "scan_custom_field_name"
+        )
+        self.scan_custom_field_value: Optional[str] = kwargs.get(
+            "scan_custom_field_value"
+        )
+        self.scan_response_custom_field_name: Optional[str] = kwargs.get(
+            "scan_response_custom_field_name"
+        )
+        self.scan_set_reachable_ip_active: bool = kwargs.get(
+            "scan_set_reachable_ip_active", True
+        )
         self.scan_max_ips: Optional[int] = kwargs.get("scan_max_ips")
         self.parallel_tasks: int = kwargs.get("parallel_tasks", 1)
         self.deploy_template_id: Optional[int] = kwargs.get("deploy_template_id")
         self.deploy_agent_id: Optional[str] = kwargs.get("deploy_agent_id")
         self.deploy_path: Optional[str] = kwargs.get("deploy_path")
-        self.deploy_custom_variables: Optional[str] = kwargs.get("deploy_custom_variables")
+        self.deploy_custom_variables: Optional[str] = kwargs.get(
+            "deploy_custom_variables"
+        )
         self.activate_after_deploy: bool = kwargs.get("activate_after_deploy", True)
         self.deploy_templates: Optional[str] = kwargs.get("deploy_templates")
         self.ip_action: Optional[str] = kwargs.get("ip_action")
@@ -77,25 +98,43 @@ class _FakeJobTemplate:
         self.csv_import_repo_id: Optional[int] = kwargs.get("csv_import_repo_id")
         self.csv_import_file_path: Optional[str] = kwargs.get("csv_import_file_path")
         self.csv_import_type: Optional[str] = kwargs.get("csv_import_type")
-        self.csv_import_primary_key: Optional[str] = kwargs.get("csv_import_primary_key")
-        self.csv_import_update_existing: bool = kwargs.get("csv_import_update_existing", True)
+        self.csv_import_primary_key: Optional[str] = kwargs.get(
+            "csv_import_primary_key"
+        )
+        self.csv_import_update_existing: bool = kwargs.get(
+            "csv_import_update_existing", True
+        )
         self.csv_import_delimiter: Optional[str] = kwargs.get("csv_import_delimiter")
         self.csv_import_quote_char: Optional[str] = kwargs.get("csv_import_quote_char")
-        self.csv_import_column_mapping: Optional[str] = kwargs.get("csv_import_column_mapping")
-        self.csv_import_file_filter: Optional[str] = kwargs.get("csv_import_file_filter")
+        self.csv_import_column_mapping: Optional[str] = kwargs.get(
+            "csv_import_column_mapping"
+        )
+        self.csv_import_file_filter: Optional[str] = kwargs.get(
+            "csv_import_file_filter"
+        )
         self.csv_import_defaults: Optional[str] = kwargs.get("csv_import_defaults")
         self.csv_import_format: Optional[str] = kwargs.get("csv_import_format")
-        self.csv_import_add_prefixes: bool = kwargs.get("csv_import_add_prefixes", False)
-        self.csv_import_default_prefix_length: Optional[str] = kwargs.get("csv_import_default_prefix_length")
+        self.csv_import_add_prefixes: bool = kwargs.get(
+            "csv_import_add_prefixes", False
+        )
+        self.csv_import_default_prefix_length: Optional[str] = kwargs.get(
+            "csv_import_default_prefix_length"
+        )
         self.csv_export_repo_id: Optional[int] = kwargs.get("csv_export_repo_id")
         self.csv_export_file_path: Optional[str] = kwargs.get("csv_export_file_path")
         self.csv_export_properties: Optional[str] = kwargs.get("csv_export_properties")
         self.csv_export_delimiter: Optional[str] = kwargs.get("csv_export_delimiter")
         self.csv_export_quote_char: Optional[str] = kwargs.get("csv_export_quote_char")
-        self.csv_export_include_headers: bool = kwargs.get("csv_export_include_headers", True)
+        self.csv_export_include_headers: bool = kwargs.get(
+            "csv_export_include_headers", True
+        )
         self.ping_agent_id: Optional[str] = kwargs.get("ping_agent_id")
-        self.set_primary_ip_strategy: Optional[str] = kwargs.get("set_primary_ip_strategy")
-        self.set_primary_ip_agent_id: Optional[str] = kwargs.get("set_primary_ip_agent_id")
+        self.set_primary_ip_strategy: Optional[str] = kwargs.get(
+            "set_primary_ip_strategy"
+        )
+        self.set_primary_ip_agent_id: Optional[str] = kwargs.get(
+            "set_primary_ip_agent_id"
+        )
         self.collect_ip_address: bool = kwargs.get("collect_ip_address", True)
         self.collect_mac_address: bool = kwargs.get("collect_mac_address", True)
         self.collect_hostname: bool = kwargs.get("collect_hostname", True)
@@ -153,7 +192,9 @@ class FakeJobTemplateRepository:
         self._templates[tmpl.id] = tmpl
         return tmpl
 
-    def update(self, id: int, db: Any = None, **kwargs: Any) -> Optional[_FakeJobTemplate]:
+    def update(
+        self, id: int, db: Any = None, **kwargs: Any
+    ) -> Optional[_FakeJobTemplate]:
         tmpl = self._templates.get(id)
         if tmpl is None:
             return None
@@ -182,8 +223,7 @@ class FakeJobTemplateRepository:
         self, user_id: int, job_type: Optional[str] = None
     ) -> List[_FakeJobTemplate]:
         results = [
-            t for t in self._templates.values()
-            if t.is_global or t.user_id == user_id
+            t for t in self._templates.values() if t.is_global or t.user_id == user_id
         ]
         if job_type is not None:
             results = [t for t in results if t.job_type == job_type]
@@ -241,7 +281,9 @@ class FakeJobScheduleRepository:
         self._schedules[sched.id] = sched
         return sched
 
-    def update(self, id: int, db: Any = None, **kwargs: Any) -> Optional[_FakeJobSchedule]:
+    def update(
+        self, id: int, db: Any = None, **kwargs: Any
+    ) -> Optional[_FakeJobSchedule]:
         sched = self._schedules.get(id)
         if sched is None:
             return None
@@ -267,8 +309,7 @@ class FakeJobScheduleRepository:
         self, user_id: int, is_active: Optional[bool] = None
     ) -> List[_FakeJobSchedule]:
         results = [
-            s for s in self._schedules.values()
-            if s.is_global or s.user_id == user_id
+            s for s in self._schedules.values() if s.is_global or s.user_id == user_id
         ]
         if is_active is not None:
             results = [s for s in results if s.is_active == is_active]
@@ -358,16 +399,19 @@ class FakeJobRunRepository:
                 return run
         return None
 
-    def get_by_celery_task_ids(self, celery_task_ids: List[str]) -> List[Dict[str, Any]]:
+    def get_by_celery_task_ids(
+        self, celery_task_ids: List[str]
+    ) -> List[Dict[str, Any]]:
         return [
-            r for r in self._runs.values()
-            if r.get("celery_task_id") in celery_task_ids
+            r for r in self._runs.values() if r.get("celery_task_id") in celery_task_ids
         ]
 
     def get_by_schedule(
         self, schedule_id: int, limit: int = 50, status: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        results = [r for r in self._runs.values() if r.get("job_schedule_id") == schedule_id]
+        results = [
+            r for r in self._runs.values() if r.get("job_schedule_id") == schedule_id
+        ]
         if status:
             results = [r for r in results if r.get("status") == status]
         return results[:limit]
@@ -396,7 +440,8 @@ class FakeJobRunRepository:
         triggered_by: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         results = [
-            r for r in self._runs.values()
+            r
+            for r in self._runs.values()
             if r.get("queued_at") and r["queued_at"] >= since
         ]
         if status:
@@ -435,7 +480,9 @@ class FakeJobRunRepository:
         offset = (page - 1) * page_size
         return results[offset : offset + page_size], total
 
-    def mark_started(self, job_run_id: int, celery_task_id: str) -> Optional[Dict[str, Any]]:
+    def mark_started(
+        self, job_run_id: int, celery_task_id: str
+    ) -> Optional[Dict[str, Any]]:
         run = self._runs.get(job_run_id)
         if run:
             run["status"] = "running"
@@ -443,7 +490,9 @@ class FakeJobRunRepository:
             run["started_at"] = datetime.now(timezone.utc)
         return run
 
-    def mark_completed(self, job_run_id: int, result: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def mark_completed(
+        self, job_run_id: int, result: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         run = self._runs.get(job_run_id)
         if run:
             run["status"] = "completed"
@@ -451,7 +500,9 @@ class FakeJobRunRepository:
             run["result"] = result
         return run
 
-    def mark_failed(self, job_run_id: int, error_message: str) -> Optional[Dict[str, Any]]:
+    def mark_failed(
+        self, job_run_id: int, error_message: str
+    ) -> Optional[Dict[str, Any]]:
         run = self._runs.get(job_run_id)
         if run:
             run["status"] = "failed"
@@ -474,9 +525,11 @@ class FakeJobRunRepository:
 
     def cleanup_old_runs(self, days: int = 30) -> int:
         from datetime import timedelta
+
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         to_delete = [
-            rid for rid, r in self._runs.items()
+            rid
+            for rid, r in self._runs.items()
             if r.get("queued_at") and r["queued_at"] < cutoff
         ]
         for rid in to_delete:
@@ -485,10 +538,12 @@ class FakeJobRunRepository:
 
     def cleanup_old_runs_hours(self, hours: int = 24) -> int:
         from datetime import timedelta
+
         cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
         terminal = {"completed", "failed", "cancelled"}
         to_delete = [
-            rid for rid, r in self._runs.items()
+            rid
+            for rid, r in self._runs.items()
             if r.get("queued_at")
             and r["queued_at"] < cutoff
             and r.get("status") in terminal
@@ -531,7 +586,8 @@ class FakeJobRunRepository:
         self, job_type: str, statuses: List[str]
     ) -> List[Dict[str, Any]]:
         return [
-            r for r in self._runs.values()
+            r
+            for r in self._runs.values()
             if r.get("job_type") == job_type and r.get("status") in statuses
         ]
 

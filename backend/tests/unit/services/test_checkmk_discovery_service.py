@@ -16,7 +16,9 @@ from services.checkmk.exceptions import CheckMKAPIError
 from tests.mocks import FakeCheckMKClient
 
 
-_PATCH_TARGET = "services.checkmk.discovery_service.CheckMKClientFactory.build_client_from_settings"
+_PATCH_TARGET = (
+    "services.checkmk.discovery_service.CheckMKClientFactory.build_client_from_settings"
+)
 
 
 def _bulk_request(hostnames: list[str], mode: str = "new") -> SimpleNamespace:

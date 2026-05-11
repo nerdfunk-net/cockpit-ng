@@ -55,6 +55,7 @@ def test_passes_csv_content_to_service():
 def test_passes_task_context_to_service():
     """task_context passed to run_update is a Celery task instance."""
     from celery import Task as CeleryTask
+
     _, svc = _run()
     call_kwargs = svc.run_update.call_args.kwargs
     # task_context should be a Celery Task instance (the bound self)

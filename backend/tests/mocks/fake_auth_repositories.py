@@ -20,7 +20,6 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from core.auth import get_password_hash
 
 
 # ---------------------------------------------------------------------------
@@ -59,7 +58,9 @@ class _FakeUser:
 class _FakeRole:
     _counter = 0
 
-    def __init__(self, *, name: str, description: str = "", is_system: bool = False) -> None:
+    def __init__(
+        self, *, name: str, description: str = "", is_system: bool = False
+    ) -> None:
         _FakeRole._counter += 1
         self.id: int = _FakeRole._counter
         self.name = name
@@ -227,7 +228,9 @@ class FakeRBACRepository:
     def create_permission(
         self, resource: str, action: str, description: str = ""
     ) -> _FakePermission:
-        perm = _FakePermission(resource=resource, action=action, description=description)
+        perm = _FakePermission(
+            resource=resource, action=action, description=description
+        )
         self._permissions[perm.id] = perm
         return perm
 
@@ -241,9 +244,7 @@ class FakeRBACRepository:
         return self._permissions.get(permission_id)
 
     def list_permissions(self) -> List[_FakePermission]:
-        return sorted(
-            self._permissions.values(), key=lambda p: (p.resource, p.action)
-        )
+        return sorted(self._permissions.values(), key=lambda p: (p.resource, p.action))
 
     def delete_permission(self, permission_id: int) -> bool:
         if permission_id in self._permissions:

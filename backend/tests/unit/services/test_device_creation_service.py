@@ -14,7 +14,6 @@ from tests.mocks import (
     DT_NETWORKA_ID,
     LOC_CITYA_ID,
     ROLE_NETWORK_ID,
-    NS_GLOBAL_ID,
     PLATFORM_IOS_ID,
 )
 
@@ -51,8 +50,12 @@ def make_request_with_uuids(**overrides) -> AddDeviceRequest:
 def make_interface(name: str = "Loopback0", ip: str | None = None) -> InterfaceData:
     ip_addresses = []
     if ip:
-        ip_addresses.append(IpAddressData(address=ip, namespace="Global", is_primary=True))
-    return InterfaceData(name=name, type="virtual", status="active", ip_addresses=ip_addresses)
+        ip_addresses.append(
+            IpAddressData(address=ip, namespace="Global", is_primary=True)
+        )
+    return InterfaceData(
+        name=name, type="virtual", status="active", ip_addresses=ip_addresses
+    )
 
 
 @pytest.fixture
@@ -113,7 +116,9 @@ async def test_create_device_resolves_names_to_uuids(creation_service, fake_nb):
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_create_device_with_uuid_fields_skips_resolution(creation_service, fake_nb):
+async def test_create_device_with_uuid_fields_skips_resolution(
+    creation_service, fake_nb
+):
     """Fields that are already valid UUIDs must be passed through unchanged."""
     result = await creation_service.create_device_with_interfaces(
         make_request_with_uuids()
@@ -156,11 +161,13 @@ async def test_create_device_with_loopback_interface(creation_service, fake_nb):
 @pytest.mark.unit
 async def test_create_device_with_multiple_interfaces(creation_service, fake_nb):
     """Multiple interfaces should all be created."""
-    request = make_request_with_uuids(interfaces=[
-        make_interface("Loopback0", "10.0.0.1/32"),
-        make_interface("GigabitEthernet0/0", "192.168.1.1/24"),
-        make_interface("GigabitEthernet0/1"),
-    ])
+    request = make_request_with_uuids(
+        interfaces=[
+            make_interface("Loopback0", "10.0.0.1/32"),
+            make_interface("GigabitEthernet0/0", "192.168.1.1/24"),
+            make_interface("GigabitEthernet0/1"),
+        ]
+    )
 
     result = await creation_service.create_device_with_interfaces(request)
 
@@ -224,7 +231,9 @@ async def test_create_device_dry_run_passes_when_valid(creation_service, fake_nb
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_create_device_dry_run_detects_missing_device_type(creation_service, fake_nb):
+async def test_create_device_dry_run_detects_missing_device_type(
+    creation_service, fake_nb
+):
     """dry_run should report error when device_type UUID does not exist."""
     request = make_request_with_uuids(
         dry_run=True,
@@ -272,9 +281,7 @@ async def test_create_device_with_prefix_auto_creation(creation_service, fake_nb
 @pytest.mark.unit
 async def test_create_device_with_virtual_chassis(creation_service, fake_nb):
     """new_virtual_chassis_name should create a VC and assign the device as master."""
-    request = make_request_with_uuids(
-        new_virtual_chassis_name="test-stack-01"
-    )
+    request = make_request_with_uuids(new_virtual_chassis_name="test-stack-01")
 
     result = await creation_service.create_device_with_interfaces(request)
 

@@ -265,7 +265,9 @@ class OffboardingService:
                     device_details, current_user, results
                 )
             except Exception as exc:
-                logger.warning("CheckMK removal failed (Nautobot cleanup continues): %s", exc)
+                logger.warning(
+                    "CheckMK removal failed (Nautobot cleanup continues): %s", exc
+                )
                 results["errors"].append(f"CheckMK removal failed: {exc}")
         else:
             results["skipped_items"].append("CheckMK removal was not requested")

@@ -439,9 +439,7 @@ class TestGetUserInfo:
         svc._configs["my-provider"] = _fake_oidc_config()
 
         mock_client = AsyncMock()
-        mock_client.get = AsyncMock(
-            side_effect=httpx.HTTPError("connection refused")
-        )
+        mock_client.get = AsyncMock(side_effect=httpx.HTTPError("connection refused"))
         mock_cls = MagicMock()
         mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
         mock_cls.return_value.__aexit__ = AsyncMock(return_value=None)

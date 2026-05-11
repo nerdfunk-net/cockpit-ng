@@ -17,7 +17,9 @@ from services.checkmk.exceptions import CheckMKAPIError
 from tests.mocks import FakeCheckMKClient
 
 
-_PATCH_TARGET = "services.checkmk.problems_service.CheckMKClientFactory.build_client_from_settings"
+_PATCH_TARGET = (
+    "services.checkmk.problems_service.CheckMKClientFactory.build_client_from_settings"
+)
 
 
 def _host_ack_request(hostname: str, comment: str = "ack") -> SimpleNamespace:
@@ -30,7 +32,9 @@ def _host_ack_request(hostname: str, comment: str = "ack") -> SimpleNamespace:
     )
 
 
-def _svc_ack_request(hostname: str, service: str, comment: str = "ack") -> SimpleNamespace:
+def _svc_ack_request(
+    hostname: str, service: str, comment: str = "ack"
+) -> SimpleNamespace:
     return SimpleNamespace(
         host_name=hostname,
         service_description=service,
@@ -51,7 +55,9 @@ def _downtime_request(hostname: str, comment: str = "maint") -> SimpleNamespace:
     )
 
 
-def _comment_request(hostname: str, comment: str, *, persistent: bool = False) -> SimpleNamespace:
+def _comment_request(
+    hostname: str, comment: str, *, persistent: bool = False
+) -> SimpleNamespace:
     return SimpleNamespace(
         host_name=hostname,
         comment=comment,
@@ -81,7 +87,9 @@ async def test_acknowledge_host_problem_success():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
-        await svc.acknowledge_host_problem(_host_ack_request("router1", "Acknowledged by ops team"))
+        await svc.acknowledge_host_problem(
+            _host_ack_request("router1", "Acknowledged by ops team")
+        )
 
     ack = fake.get_acknowledgement("router1")
     assert ack is not None
@@ -93,7 +101,7 @@ async def test_acknowledge_host_problem_success():
 @pytest.mark.checkmk
 async def test_acknowledge_host_problem_not_found_raises():
     """Acknowledging a problem on an unknown host raises CheckMKAPIError."""
-    fake = FakeCheckMKClient(error_on={('acknowledge_host_problem', 'ghost-host'): 404})
+    fake = FakeCheckMKClient(error_on={("acknowledge_host_problem", "ghost-host"): 404})
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
@@ -134,7 +142,9 @@ async def test_delete_acknowledgment_removes_it():
     """Deleting an acknowledgement removes it from the store."""
     fake = FakeCheckMKClient()
     fake.seed_host("router1", {})
-    fake.acknowledge_host_problem("router1", comment="temp ack", sticky=False, notify=False, persistent=False)
+    fake.acknowledge_host_problem(
+        "router1", comment="temp ack", sticky=False, notify=False, persistent=False
+    )
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
@@ -156,7 +166,9 @@ async def test_create_host_downtime_success():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
-        await svc.create_host_downtime(_downtime_request("maintenance-host", "Scheduled maintenance"))
+        await svc.create_host_downtime(
+            _downtime_request("maintenance-host", "Scheduled maintenance")
+        )
 
     downtime = fake.get_downtime("maintenance-host")
     assert downtime is not None
@@ -167,7 +179,7 @@ async def test_create_host_downtime_success():
 @pytest.mark.checkmk
 async def test_create_host_downtime_not_found_raises():
     """Creating a downtime for an unknown host raises CheckMKAPIError."""
-    fake = FakeCheckMKClient(error_on={('create_host_downtime', 'no-such-host'): 404})
+    fake = FakeCheckMKClient(error_on={("create_host_downtime", "no-such-host"): 404})
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
@@ -200,7 +212,7 @@ async def test_add_host_comment_success():
 @pytest.mark.checkmk
 async def test_add_host_comment_not_found_raises():
     """Adding a comment to an unknown host raises CheckMKAPIError."""
-    fake = FakeCheckMKClient(error_on={('add_host_comment', 'no-host'): 404})
+    fake = FakeCheckMKClient(error_on={("add_host_comment", "no-host"): 404})
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
@@ -221,7 +233,9 @@ async def test_add_service_comment_success():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
-        await svc.add_service_comment(_svc_comment_request("router1", "CPU load", "Elevated during backup"))
+        await svc.add_service_comment(
+            _svc_comment_request("router1", "CPU load", "Elevated during backup")
+        )
 
     key = "router1:CPU load"
     comments = fake.get_comments(key)

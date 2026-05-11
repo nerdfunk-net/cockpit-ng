@@ -76,7 +76,7 @@ async def test_create_host_group_success():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKHostGroupService()
-        result = await svc.create_host_group("firewall-group", "Firewall Devices")
+        await svc.create_host_group("firewall-group", "Firewall Devices")
 
     assert "firewall-group" in fake._host_groups
     assert fake._host_groups["firewall-group"]["alias"] == "Firewall Devices"
@@ -107,7 +107,7 @@ async def test_update_host_group_alias():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKHostGroupService()
-        result = await svc.update_host_group(HOST_GROUP_NETWORK, "New Alias")
+        await svc.update_host_group(HOST_GROUP_NETWORK, "New Alias")
 
     assert fake._host_groups[HOST_GROUP_NETWORK]["alias"] == "New Alias"
 

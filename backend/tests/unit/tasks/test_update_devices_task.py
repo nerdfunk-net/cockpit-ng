@@ -47,7 +47,12 @@ class TestPrepareDeviceData:
 
     def test_all_identifier_fields_can_coexist(self):
         """id, name, and ip_address can all appear in device_identifier together."""
-        data = {"id": "uuid", "name": "router1", "ip_address": "10.0.0.1", "status": "active"}
+        data = {
+            "id": "uuid",
+            "name": "router1",
+            "ip_address": "10.0.0.1",
+            "status": "active",
+        }
         identifier, _, _, _ = _prepare_device_data(data)
         assert identifier == {"id": "uuid", "name": "router1", "ip_address": "10.0.0.1"}
 
@@ -243,8 +248,18 @@ def test_update_devices_task_multiple_devices_all_succeed():
     svc = MagicMock()
     svc.update_device = AsyncMock(
         side_effect=[
-            {"device_id": "id-1", "device_name": "r1", "updated_fields": ["status"], "warnings": []},
-            {"device_id": "id-2", "device_name": "r2", "updated_fields": ["role"], "warnings": []},
+            {
+                "device_id": "id-1",
+                "device_name": "r1",
+                "updated_fields": ["status"],
+                "warnings": [],
+            },
+            {
+                "device_id": "id-2",
+                "device_name": "r2",
+                "updated_fields": ["role"],
+                "warnings": [],
+            },
         ]
     )
     devices = [
@@ -264,7 +279,12 @@ def test_update_devices_task_mixed_success_and_failure():
     svc = MagicMock()
     svc.update_device = AsyncMock(
         side_effect=[
-            {"device_id": "id-1", "device_name": "r1", "updated_fields": ["status"], "warnings": []},
+            {
+                "device_id": "id-1",
+                "device_name": "r1",
+                "updated_fields": ["status"],
+                "warnings": [],
+            },
             RuntimeError("not found"),
         ]
     )

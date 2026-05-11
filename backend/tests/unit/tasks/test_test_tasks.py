@@ -7,7 +7,7 @@ automatically, and update_state is patched on the task instance.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -139,7 +139,9 @@ def test_debug_wait_task_marks_failed_on_exception():
 
     with patch.object(debug_wait_task, "update_state"):
         with patch("service_factory.build_job_run_service", return_value=mock_jrs):
-            with patch("tasks.test_tasks.time.sleep", side_effect=RuntimeError("crash")):
+            with patch(
+                "tasks.test_tasks.time.sleep", side_effect=RuntimeError("crash")
+            ):
                 result = debug_wait_task.run(duration=2, job_run_id=7)
 
     assert result["success"] is False

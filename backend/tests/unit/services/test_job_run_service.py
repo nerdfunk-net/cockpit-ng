@@ -108,7 +108,9 @@ class TestCreateJobRun:
         schedule_service: MagicMock,
         template_service: MagicMock,
     ) -> None:
-        schedule_service.get_job_schedule.return_value = {"job_identifier": "daily-backup"}
+        schedule_service.get_job_schedule.return_value = {
+            "job_identifier": "daily-backup"
+        }
         template_service.get_job_template.return_value = {"name": "backup-tmpl"}
 
         result = svc.create_job_run(
@@ -137,7 +139,9 @@ class TestGetJobRun:
     def test_not_found(self, svc: JobRunService) -> None:
         assert svc.get_job_run(9999) is None
 
-    def test_get_by_celery_id(self, svc: JobRunService, run_repo: FakeJobRunRepository) -> None:
+    def test_get_by_celery_id(
+        self, svc: JobRunService, run_repo: FakeJobRunRepository
+    ) -> None:
         run_repo.create(job_name="x", job_type="backup", celery_task_id="abc-123")
         found = svc.get_job_run_by_celery_id("abc-123")
         assert found is not None
@@ -302,7 +306,9 @@ class TestCleanup:
         assert svc.get_job_run(r1["id"]) is None
         assert svc.get_job_run(r2["id"]) is not None
 
-    def test_get_distinct_templates(self, svc: JobRunService, run_repo: FakeJobRunRepository) -> None:
+    def test_get_distinct_templates(
+        self, svc: JobRunService, run_repo: FakeJobRunRepository
+    ) -> None:
         run_repo.create(job_name="a", job_type="backup", job_template_id=1)
         run_repo.create(job_name="b", job_type="backup", job_template_id=1)
         run_repo.create(job_name="c", job_type="compare_devices", job_template_id=2)

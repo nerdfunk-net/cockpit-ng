@@ -6,7 +6,6 @@ All tests run offline — no database required.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
@@ -28,12 +27,18 @@ def sched_repo() -> FakeJobScheduleRepository:
 @pytest.fixture
 def template_service() -> MagicMock:
     mock = MagicMock()
-    mock.get_job_template.return_value = {"id": 1, "name": "nightly-backup", "job_type": "backup"}
+    mock.get_job_template.return_value = {
+        "id": 1,
+        "name": "nightly-backup",
+        "job_type": "backup",
+    }
     return mock
 
 
 @pytest.fixture
-def svc(sched_repo: FakeJobScheduleRepository, template_service: MagicMock) -> JobScheduleService:
+def svc(
+    sched_repo: FakeJobScheduleRepository, template_service: MagicMock
+) -> JobScheduleService:
     service = JobScheduleService.__new__(JobScheduleService)
     service._repo = sched_repo
     service._template_service = template_service
@@ -280,7 +285,9 @@ class TestUpdateJobSchedule:
         result = svc.update_job_schedule(9999, job_identifier="ghost")
         assert result is None
 
-    def test_schedule_change_recalculates_next_run(self, svc: JobScheduleService) -> None:
+    def test_schedule_change_recalculates_next_run(
+        self, svc: JobScheduleService
+    ) -> None:
         created = _create_daily(svc, start_time="01:00")
         old_next_run = created["next_run"]
 
@@ -295,9 +302,7 @@ class TestUpdateJobSchedule:
         assert updated["next_run"] is None
 
     def test_reactivating_sets_next_run(self, svc: JobScheduleService) -> None:
-        inactive = svc.create_job_schedule(
-            "disabled", 1, "daily", is_active=False
-        )
+        inactive = svc.create_job_schedule("disabled", 1, "daily", is_active=False)
         assert inactive["next_run"] is None
 
         activated = svc.update_job_schedule(inactive["id"], is_active=True)

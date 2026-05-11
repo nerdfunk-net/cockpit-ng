@@ -29,7 +29,9 @@ def svc(tmpl_repo: FakeJobTemplateRepository) -> JobTemplateService:
     return service
 
 
-def _create_backup(svc: JobTemplateService, name: str = "nightly-backup", user_id: int = 1) -> dict:
+def _create_backup(
+    svc: JobTemplateService, name: str = "nightly-backup", user_id: int = 1
+) -> dict:
     """Helper: create a minimal backup job template."""
     return svc.create_job_template(
         name=name,

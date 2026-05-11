@@ -4,7 +4,6 @@ All tests run offline — no database required.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
 
 from core.auth import get_password_hash, verify_password
 from services.auth.user_service import (
@@ -83,7 +82,9 @@ class TestCreateUser:
         assert verify_password("secret123", stored.password)
 
     def test_default_permissions_are_user_level(self, svc: UserService) -> None:
-        result = svc.create_user(username="carol", realname="Carol", password="pass1234")
+        result = svc.create_user(
+            username="carol", realname="Carol", password="pass1234"
+        )
         assert result["permissions"] == PERMISSIONS_USER
 
     def test_custom_permissions_stored(self, svc: UserService) -> None:
@@ -107,7 +108,9 @@ class TestCreateUser:
         )
 
         with pytest.raises(ValueError, match="already exists"):
-            svc.create_user(username="alice", realname="Other Alice", password="pass1234")
+            svc.create_user(
+                username="alice", realname="Other Alice", password="pass1234"
+            )
 
     def test_missing_required_fields_raises(self, svc: UserService) -> None:
         with pytest.raises(ValueError):
@@ -131,7 +134,9 @@ class TestCreateUser:
         assert stored.email == "frank@example.com"
 
     def test_user_active_by_default(self, svc: UserService) -> None:
-        result = svc.create_user(username="grace", realname="Grace", password="pass1234")
+        result = svc.create_user(
+            username="grace", realname="Grace", password="pass1234"
+        )
         assert result["is_active"] is True
 
 
@@ -206,9 +211,7 @@ class TestGetUsers:
 
 @pytest.mark.unit
 class TestAuthenticateUser:
-    def test_correct_credentials_returns_user(
-        self, populated_svc: UserService
-    ) -> None:
+    def test_correct_credentials_returns_user(self, populated_svc: UserService) -> None:
         result = populated_svc.authenticate_user("alice", "correct-password")
         assert result is not None
         assert result["username"] == "alice"

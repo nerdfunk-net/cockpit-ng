@@ -20,24 +20,30 @@ from tests.mocks import (
 
 # Pre-seeded device and IP for lookup tests
 DEVICE_ID = "cc000000-0000-0000-0003-000000000001"
-IP_ID     = "cc000000-0000-0000-0001-000000000001"
-IFACE_ID  = "cc000000-0000-0000-0002-000000000001"
+IP_ID = "cc000000-0000-0000-0001-000000000001"
+IFACE_ID = "cc000000-0000-0000-0002-000000000001"
 
 
 @pytest.fixture
 def fake_nb() -> FakeNautobotService:
     fake = FakeNautobotService()
     fake.seed_ip(IP_ID, {"address": "10.0.1.1/32", "namespace_id": NS_GLOBAL_ID})
-    fake.seed_interface(IFACE_ID, {
-        "name": "Loopback0",
-        "device_id": DEVICE_ID,
-        "ip_addresses": [{"id": IP_ID, "address": "10.0.1.1/32"}],
-    })
-    fake.seed_device(DEVICE_ID, {
-        "name": "router-alpha",
-        "primary_ip4": {"id": IP_ID, "address": "10.0.1.1/32"},
-        "interfaces": [{"id": IFACE_ID, "name": "Loopback0"}],
-    })
+    fake.seed_interface(
+        IFACE_ID,
+        {
+            "name": "Loopback0",
+            "device_id": DEVICE_ID,
+            "ip_addresses": [{"id": IP_ID, "address": "10.0.1.1/32"}],
+        },
+    )
+    fake.seed_device(
+        DEVICE_ID,
+        {
+            "name": "router-alpha",
+            "primary_ip4": {"id": IP_ID, "address": "10.0.1.1/32"},
+            "interfaces": [{"id": IFACE_ID, "name": "Loopback0"}],
+        },
+    )
     return fake
 
 
@@ -271,7 +277,9 @@ class TestNetworkResolver:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_resolve_interface_by_name_not_found(self, resolver):
-        result = await resolver.resolve_interface_by_name(DEVICE_ID, "GigabitEthernet9/0")
+        result = await resolver.resolve_interface_by_name(
+            DEVICE_ID, "GigabitEthernet9/0"
+        )
         assert result is None
 
     @pytest.mark.asyncio

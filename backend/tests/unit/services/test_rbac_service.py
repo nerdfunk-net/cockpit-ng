@@ -6,7 +6,7 @@ All tests run offline — no database required.
 import pytest
 
 from core.auth import get_password_hash
-from services.auth.user_service import UserService, PERMISSIONS_USER, PERMISSIONS_VIEWER
+from services.auth.user_service import UserService, PERMISSIONS_USER
 from services.auth.rbac_service import RBACService
 from tests.mocks.fake_auth_repositories import FakeUserRepository, FakeRBACRepository
 
@@ -34,9 +34,7 @@ def user_svc(user_repo: FakeUserRepository) -> UserService:
 
 
 @pytest.fixture
-def rbac_svc(
-    rbac_repo: FakeRBACRepository, user_svc: UserService
-) -> RBACService:
+def rbac_svc(rbac_repo: FakeRBACRepository, user_svc: UserService) -> RBACService:
     svc = RBACService.__new__(RBACService)
     svc._rbac_repo = rbac_repo
     svc._user_service = user_svc
@@ -204,9 +202,7 @@ class TestRolePermissionAssignment:
         rbac_svc.remove_permission_from_role(role["id"], perm["id"])
         assert rbac_svc.get_role_permissions(role["id"]) == []
 
-    def test_get_role_permissions_empty_by_default(
-        self, rbac_svc: RBACService
-    ) -> None:
+    def test_get_role_permissions_empty_by_default(self, rbac_svc: RBACService) -> None:
         role = rbac_svc.create_role("empty-role")
         assert rbac_svc.get_role_permissions(role["id"]) == []
 
@@ -218,17 +214,13 @@ class TestRolePermissionAssignment:
 
 @pytest.mark.unit
 class TestUserRoleAssignment:
-    def test_assign_role_to_user(
-        self, rbac_svc: RBACService, alice_id: int
-    ) -> None:
+    def test_assign_role_to_user(self, rbac_svc: RBACService, alice_id: int) -> None:
         role = rbac_svc.create_role("editor")
         rbac_svc.assign_role_to_user(alice_id, role["id"])
         roles = rbac_svc.get_user_roles(alice_id)
         assert any(r["id"] == role["id"] for r in roles)
 
-    def test_remove_role_from_user(
-        self, rbac_svc: RBACService, alice_id: int
-    ) -> None:
+    def test_remove_role_from_user(self, rbac_svc: RBACService, alice_id: int) -> None:
         role = rbac_svc.create_role("editor")
         rbac_svc.assign_role_to_user(alice_id, role["id"])
         rbac_svc.remove_role_from_user(alice_id, role["id"])
@@ -239,9 +231,7 @@ class TestUserRoleAssignment:
     ) -> None:
         assert rbac_svc.get_user_roles(alice_id) == []
 
-    def test_get_users_with_role(
-        self, rbac_svc: RBACService, alice_id: int
-    ) -> None:
+    def test_get_users_with_role(self, rbac_svc: RBACService, alice_id: int) -> None:
         role = rbac_svc.create_role("contributor")
         rbac_svc.assign_role_to_user(alice_id, role["id"])
         users = rbac_svc.get_users_with_role(role["id"])
@@ -347,14 +337,20 @@ class TestHasPermission:
         rbac_svc.assign_permission_to_role(role["id"], perm["id"])
         rbac_svc.assign_role_to_user(alice_id, role["id"])
 
-        assert rbac_svc.check_any_permission(alice_id, "devices", ["read", "write"]) is True
+        assert (
+            rbac_svc.check_any_permission(alice_id, "devices", ["read", "write"])
+            is True
+        )
 
     def test_check_any_permission_none_match(
         self, rbac_svc: RBACService, alice_id: int
     ) -> None:
         rbac_svc.create_permission("devices", "read")
         rbac_svc.create_permission("devices", "write")
-        assert rbac_svc.check_any_permission(alice_id, "devices", ["read", "write"]) is False
+        assert (
+            rbac_svc.check_any_permission(alice_id, "devices", ["read", "write"])
+            is False
+        )
 
     def test_check_all_permissions_all_granted(
         self, rbac_svc: RBACService, alice_id: int
@@ -366,7 +362,10 @@ class TestHasPermission:
         rbac_svc.assign_permission_to_role(role["id"], p_write["id"])
         rbac_svc.assign_role_to_user(alice_id, role["id"])
 
-        assert rbac_svc.check_all_permissions(alice_id, "devices", ["read", "write"]) is True
+        assert (
+            rbac_svc.check_all_permissions(alice_id, "devices", ["read", "write"])
+            is True
+        )
 
     def test_check_all_permissions_one_missing(
         self, rbac_svc: RBACService, alice_id: int
@@ -377,7 +376,10 @@ class TestHasPermission:
         rbac_svc.assign_permission_to_role(role["id"], p_read["id"])
         rbac_svc.assign_role_to_user(alice_id, role["id"])
 
-        assert rbac_svc.check_all_permissions(alice_id, "devices", ["read", "write"]) is False
+        assert (
+            rbac_svc.check_all_permissions(alice_id, "devices", ["read", "write"])
+            is False
+        )
 
 
 # ===========================================================================
@@ -396,7 +398,9 @@ class TestGetUserPermissions:
         rbac_svc.assign_role_to_user(alice_id, role["id"])
 
         perms = rbac_svc.get_user_permissions(alice_id)
-        assert any(p["resource"] == "inventory" and p["action"] == "read" for p in perms)
+        assert any(
+            p["resource"] == "inventory" and p["action"] == "read" for p in perms
+        )
         assert any(p["source"] == "role" for p in perms)
 
     def test_override_permission_overwrites_role_source(
@@ -436,9 +440,7 @@ class TestGetUserPermissions:
 
 @pytest.mark.unit
 class TestCreateUserWithRoles:
-    def test_creates_user_and_assigns_roles(
-        self, rbac_svc: RBACService
-    ) -> None:
+    def test_creates_user_and_assigns_roles(self, rbac_svc: RBACService) -> None:
         role = rbac_svc.create_role("contributor")
         user = rbac_svc.create_user_with_roles(
             username="newuser",
@@ -450,9 +452,7 @@ class TestCreateUserWithRoles:
         roles = rbac_svc.get_user_roles(user["id"])
         assert any(r["id"] == role["id"] for r in roles)
 
-    def test_invalid_role_id_rolls_back_user(
-        self, rbac_svc: RBACService
-    ) -> None:
+    def test_invalid_role_id_rolls_back_user(self, rbac_svc: RBACService) -> None:
         with pytest.raises(ValueError, match="not found"):
             rbac_svc.create_user_with_roles(
                 username="rollback",
@@ -498,9 +498,7 @@ class TestGetUserWithRBAC:
     ) -> None:
         assert rbac_svc.get_user_with_rbac(9999) is None
 
-    def test_list_users_with_rbac(
-        self, rbac_svc: RBACService, alice_id: int
-    ) -> None:
+    def test_list_users_with_rbac(self, rbac_svc: RBACService, alice_id: int) -> None:
         users = rbac_svc.list_users_with_rbac()
         assert len(users) == 1
         assert "roles" in users[0]
@@ -526,9 +524,7 @@ class TestDeleteUserWithRBAC:
         # Role still exists; only the assignment should be gone
         assert rbac_svc.get_role(role["id"]) is not None
 
-    def test_delete_nonexistent_user_returns_false(
-        self, rbac_svc: RBACService
-    ) -> None:
+    def test_delete_nonexistent_user_returns_false(self, rbac_svc: RBACService) -> None:
         assert rbac_svc.delete_user_with_rbac(9999) is False
 
     def test_bulk_delete_users_with_rbac(

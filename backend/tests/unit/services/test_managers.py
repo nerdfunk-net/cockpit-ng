@@ -19,18 +19,21 @@ from tests.mocks import (
 )
 
 DEVICE_ID = "ee000000-0000-0000-0003-000000000001"
-IP_ID     = "ee000000-0000-0000-0001-000000000001"
-IFACE_ID  = "ee000000-0000-0000-0002-000000000001"
+IP_ID = "ee000000-0000-0000-0001-000000000001"
+IFACE_ID = "ee000000-0000-0000-0002-000000000001"
 
 
 @pytest.fixture
 def fake_nb() -> FakeNautobotService:
     fake = FakeNautobotService()
-    fake.seed_device(DEVICE_ID, {
-        "name": "test-device",
-        "status": {"id": STATUS_ACTIVE_ID, "name": "Active"},
-        "primary_ip4": None,
-    })
+    fake.seed_device(
+        DEVICE_ID,
+        {
+            "name": "test-device",
+            "status": {"id": STATUS_ACTIVE_ID, "name": "Active"},
+            "primary_ip4": None,
+        },
+    )
     return fake
 
 
@@ -50,7 +53,9 @@ def ip_manager(fake_nb, network_resolver, metadata_resolver) -> IPManager:
 
 
 @pytest.fixture
-def interface_manager(fake_nb, network_resolver, metadata_resolver, ip_manager) -> InterfaceManager:
+def interface_manager(
+    fake_nb, network_resolver, metadata_resolver, ip_manager
+) -> InterfaceManager:
     return InterfaceManager(fake_nb, network_resolver, metadata_resolver, ip_manager)
 
 
@@ -97,7 +102,9 @@ class TestIPManager:
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_ensure_ip_with_missing_prefix_and_auto_create(self, ip_manager, fake_nb):
+    async def test_ensure_ip_with_missing_prefix_and_auto_create(
+        self, ip_manager, fake_nb
+    ):
         """With add_prefixes_automatically=True, a missing prefix error should trigger prefix creation."""
         # Simulate missing-prefix error on first POST, then succeed on retry
         call_count = {"n": 0}
@@ -126,15 +133,15 @@ class TestIPManager:
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_ensure_ip_missing_prefix_no_auto_create_raises(self, ip_manager, fake_nb):
+    async def test_ensure_ip_missing_prefix_no_auto_create_raises(
+        self, ip_manager, fake_nb
+    ):
         """Without auto-prefix creation, a missing-prefix error should propagate."""
         original_ip_list = fake_nb._ip_list
 
         def always_raise_prefix_error(method, params, data):
             if method == "POST":
-                raise NautobotAPIError(
-                    "No suitable parent Prefix exists in namespace"
-                )
+                raise NautobotAPIError("No suitable parent Prefix exists in namespace")
             return original_ip_list(method, params, data)
 
         fake_nb._ip_list = always_raise_prefix_error
@@ -148,7 +155,9 @@ class TestIPManager:
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_assign_ip_to_interface_creates_association(self, ip_manager, fake_nb):
+    async def test_assign_ip_to_interface_creates_association(
+        self, ip_manager, fake_nb
+    ):
         fake_nb.seed_ip(IP_ID, {"address": "10.1.1.1/24"})
 
         result = await ip_manager.assign_ip_to_interface(IP_ID, IFACE_ID)
@@ -187,10 +196,13 @@ class TestInterfaceManager:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_ensure_interface_returns_existing(self, interface_manager, fake_nb):
-        fake_nb.seed_interface(IFACE_ID, {
-            "name": "Loopback0",
-            "device_id": DEVICE_ID,
-        })
+        fake_nb.seed_interface(
+            IFACE_ID,
+            {
+                "name": "Loopback0",
+                "device_id": DEVICE_ID,
+            },
+        )
 
         iface_id = await interface_manager.ensure_interface_exists(
             device_id=DEVICE_ID,
@@ -202,7 +214,9 @@ class TestInterfaceManager:
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_ensure_interface_with_ip_creates_all(self, interface_manager, fake_nb):
+    async def test_ensure_interface_with_ip_creates_all(
+        self, interface_manager, fake_nb
+    ):
         ip_id = await interface_manager.ensure_interface_with_ip(
             device_id=DEVICE_ID,
             ip_address="192.168.1.1/24",
@@ -256,7 +270,9 @@ class TestDeviceManager:
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_verify_device_updates_detects_mismatch(self, device_manager, fake_nb):
+    async def test_verify_device_updates_detects_mismatch(
+        self, device_manager, fake_nb
+    ):
         fake_nb._devices[DEVICE_ID]["serial"] = "SN-WRONG"
 
         actual = fake_nb._devices[DEVICE_ID]
