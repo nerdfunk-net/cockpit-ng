@@ -1,3 +1,5 @@
+"""API router for network scanning operations."""
+
 from __future__ import annotations
 
 import logging
@@ -5,6 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_scan_service
 from models.nautobot import (
     ScanStartRequest,
@@ -12,8 +15,6 @@ from models.nautobot import (
     ScanProgress,
     ScanStatusResponse,
 )
-
-"""API router for network scanning operations."""
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/scan", tags=["scan"])
@@ -60,11 +61,7 @@ async def start_scan(
             job_id=job.job_id, total_targets=job.total_targets, state=job.state
         )
     except Exception as e:
-        logger.error("Failed to start scan: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start scan: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to start scan: ", e)
 
 
 @router.get("/{job_id}/status", response_model=ScanStatusResponse)

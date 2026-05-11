@@ -18,6 +18,8 @@ from models.settings import (
 from dependencies import get_compliance_service
 from services.compliance.compliance_service import ComplianceService
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings/compliance", tags=["compliance-settings"])
 
@@ -37,11 +39,7 @@ async def get_all_regex_patterns(
         patterns = compliance.get_all_regex_patterns()
         return {"success": True, "data": patterns}
     except Exception as e:
-        logger.error("Error getting regex patterns: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve regex patterns: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve regex patterns: ", e)
 
 
 @router.get("/regex-patterns/{pattern_id}")
@@ -62,11 +60,7 @@ async def get_regex_pattern(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting regex pattern %s: %s", pattern_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve regex pattern: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve regex pattern: ", e)
 
 
 @router.post("/regex-patterns")
@@ -94,11 +88,7 @@ async def create_regex_pattern(
             detail=str(e),
         )
     except Exception as e:
-        logger.error("Error creating regex pattern: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create regex pattern: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create regex pattern: ", e)
 
 
 @router.put("/regex-patterns/{pattern_id}")
@@ -130,11 +120,7 @@ async def update_regex_pattern(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating regex pattern %s: %s", pattern_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update regex pattern: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update regex pattern: ", e)
 
 
 @router.delete("/regex-patterns/{pattern_id}")
@@ -155,11 +141,7 @@ async def delete_regex_pattern(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting regex pattern %s: %s", pattern_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete regex pattern: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete regex pattern: ", e)
 
 
 # ============================================================================
@@ -177,11 +159,7 @@ async def get_all_login_credentials(
         credentials = compliance.get_all_login_credentials(decrypt_passwords=False)
         return {"success": True, "data": credentials}
     except Exception as e:
-        logger.error("Error getting login credentials: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve login credentials: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve login credentials: ", e)
 
 
 @router.get("/login-credentials/{credential_id}")
@@ -204,11 +182,7 @@ async def get_login_credential(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting login credential %s: %s", credential_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve login credential: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve login credential: ", e)
 
 
 @router.post("/login-credentials")
@@ -234,11 +208,7 @@ async def create_login_credential(
             "data": created_credential,
         }
     except Exception as e:
-        logger.error("Error creating login credential: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create login credential: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create login credential: ", e)
 
 
 @router.put("/login-credentials/{credential_id}")
@@ -274,11 +244,7 @@ async def update_login_credential(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating login credential %s: %s", credential_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update login credential: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update login credential: ", e)
 
 
 @router.delete("/login-credentials/{credential_id}")
@@ -299,11 +265,7 @@ async def delete_login_credential(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting login credential %s: %s", credential_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete login credential: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete login credential: ", e)
 
 
 # ============================================================================
@@ -321,11 +283,7 @@ async def get_all_snmp_mappings(
         mappings = compliance.get_all_snmp_mappings(decrypt_passwords=False)
         return {"success": True, "data": mappings}
     except Exception as e:
-        logger.error("Error getting SNMP mappings: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve SNMP mappings: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve SNMP mappings: ", e)
 
 
 @router.get("/snmp-mappings/{mapping_id}")
@@ -346,11 +304,7 @@ async def get_snmp_mapping(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting SNMP mapping %s: %s", mapping_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve SNMP mapping: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve SNMP mapping: ", e)
 
 
 @router.post("/snmp-mappings")
@@ -386,11 +340,7 @@ async def create_snmp_mapping(
             detail=str(e),
         )
     except Exception as e:
-        logger.error("Error creating SNMP mapping: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create SNMP mapping: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create SNMP mapping: ", e)
 
 
 @router.put("/snmp-mappings/{mapping_id}")
@@ -436,11 +386,7 @@ async def update_snmp_mapping(
             detail=str(e),
         )
     except Exception as e:
-        logger.error("Error updating SNMP mapping %s: %s", mapping_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update SNMP mapping: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update SNMP mapping: ", e)
 
 
 @router.delete("/snmp-mappings/{mapping_id}")
@@ -461,11 +407,7 @@ async def delete_snmp_mapping(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting SNMP mapping %s: %s", mapping_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete SNMP mapping: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete SNMP mapping: ", e)
 
 
 @router.post("/snmp-mappings/import")
@@ -510,8 +452,4 @@ async def import_snmp_mappings(
             detail=str(e),
         )
     except Exception as e:
-        logger.error("Error importing SNMP mappings: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to import SNMP mappings: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to import SNMP mappings: ", e)

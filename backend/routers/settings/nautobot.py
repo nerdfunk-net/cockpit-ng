@@ -15,6 +15,8 @@ from models.settings import (
     NautobotDefaultsRequest,
 )
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -74,11 +76,7 @@ async def update_nautobot_settings(
             )
 
     except Exception as e:
-        logger.error("Error updating Nautobot settings: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update Nautobot settings: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update Nautobot settings: ", e)
 
 
 @router.post("/nautobot")

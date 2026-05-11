@@ -11,6 +11,8 @@ from dependencies import get_nautobot_service
 from services.nautobot.client import NautobotService
 from repositories.audit_log_repository import audit_log_repo
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ipam", tags=["nautobot-ipam-addresses"])
 
@@ -82,8 +84,6 @@ async def assign_ip_address_to_interface(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to assign IP address to interface: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to assign IP address to interface: {str(e)}",
+        raise_internal_server_error(
+            logger, "Failed to assign IP address to interface: ", e
         )

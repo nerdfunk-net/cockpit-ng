@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
+
 from core.auth import verify_token
+from core.safe_http_errors import raise_internal_server_error
 from core.schema_manager import SchemaManager
 from services.network.tools.baseline import TestBaselineService
 import logging
@@ -66,10 +68,7 @@ async def seed_rbac() -> Dict[str, Any]:
             sys.stdout = old_stdout
 
     except Exception as e:
-        logger.error("Error seeding RBAC: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to seed RBAC system: {str(e)}"
-        )
+        raise_internal_server_error(logger, "Failed to seed RBAC system", e)
 
 
 @router.post("/tests-baseline", dependencies=[Depends(verify_token)])
@@ -111,7 +110,4 @@ async def create_tests_baseline() -> Dict[str, Any]:
         logger.error("Invalid baseline data: %s", e)
         raise HTTPException(status_code=400, detail=f"Invalid baseline data: {str(e)}")
     except Exception as e:
-        logger.error("Error creating test baseline: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to create test baseline: {str(e)}"
-        )
+        raise_internal_server_error(logger, "Failed to create test baseline", e)

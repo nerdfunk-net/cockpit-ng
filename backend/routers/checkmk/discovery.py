@@ -18,6 +18,8 @@ from models.checkmk import (
 )
 from services.checkmk.exceptions import CheckMKClientError
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkmk"])
 
@@ -138,10 +140,8 @@ async def update_discovery_phase(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating discovery phase for host %s: %s", hostname, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update discovery phase for host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to update discovery phase for host {hostname}", e
         )
 
 
@@ -164,8 +164,4 @@ async def start_bulk_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error starting bulk discovery: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start bulk discovery: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to start bulk discovery: ", e)

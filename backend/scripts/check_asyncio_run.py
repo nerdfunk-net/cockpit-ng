@@ -23,6 +23,7 @@ from pathlib import Path
 
 PATTERN = re.compile(r"\basyncio\.run\(")
 
+
 # Path containing FastAPI route modules. Resolved relative to repo root so the
 # script works from any cwd that contains the ``backend`` directory.
 def _routers_dir() -> Path:

@@ -27,6 +27,8 @@ from services.nautobot.resolvers import (
 from services.nautobot.managers.vm_manager import VirtualMachineManager
 from services.nautobot.managers import IPManager
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/virtualization", tags=["nautobot-virtualization"])
 
@@ -66,11 +68,7 @@ async def get_clusters(
         clusters = await resolver.get_all_clusters(group=group_filter)
         return clusters
     except Exception as e:
-        logger.error("Failed to fetch clusters: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch clusters: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch clusters: ", e)
 
 
 @router.get(
@@ -101,11 +99,7 @@ async def get_cluster_groups(
         cluster_groups = await resolver.get_all_cluster_groups()
         return cluster_groups
     except Exception as e:
-        logger.error("Failed to fetch cluster groups: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch cluster groups: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch cluster groups: ", e)
 
 
 @router.get(
@@ -157,11 +151,7 @@ async def get_cluster_by_id(
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
-        logger.error("Failed to fetch cluster %s: %s", cluster_id, e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch cluster: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch cluster: ", e)
 
 
 @router.post(
@@ -696,8 +686,4 @@ async def create_virtual_interface(
         return result
 
     except Exception as e:
-        logger.error("Failed to create virtual interface: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create virtual interface: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create virtual interface: ", e)

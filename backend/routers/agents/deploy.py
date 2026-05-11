@@ -11,6 +11,8 @@ from core.auth import require_permission
 from dependencies import get_agent_template_render_service, get_git_service
 from pydantic import BaseModel, Field
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/agents/deploy", tags=["agents"])
 
@@ -140,11 +142,7 @@ async def agent_deploy_dry_run(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error in agent deployment dry run: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to perform dry run: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to perform dry run: ", e)
 
 
 class DeployToGitResponse(BaseModel):
@@ -323,11 +321,7 @@ async def agent_deploy_to_git(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error in agent git deployment: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to deploy to git: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to deploy to git: ", e)
 
 
 @router.post("/activate")

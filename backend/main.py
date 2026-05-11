@@ -18,6 +18,7 @@ from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from core.limiter import limiter
+from core.safe_http_errors import raise_internal_server_error
 
 # Import routers
 # Auth routers now use feature-based structure (Phase 3.5 migration)
@@ -303,10 +304,11 @@ async def nautobot_graphql_endpoint(
 
         result = await nautobot_service.graphql_query(query, variables)
         return result
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"GraphQL query failed: {str(e)}",
+        raise_internal_server_error(
+            logger, "Nautobot GraphQL compatibility query failed", e
         )
 
 

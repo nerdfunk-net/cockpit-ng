@@ -12,6 +12,8 @@ import logging
 import asyncio
 from typing import Callable, Any
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -61,6 +63,7 @@ def handle_errors(
                 logger.error("Failed to do operation: %s", e)
                 raise HTTPException(status_code=500, detail=str(e))
 
+
         Use:
             @handle_errors("do operation")
             async def endpoint():
@@ -80,7 +83,17 @@ def handle_errors(
                     # Re-raise HTTP exceptions as-is (allows custom status codes)
                     raise
                 except Exception as e:
-                    # Log error with full context
+                    if error_status >= status.HTTP_500_INTERNAL_SERVER_ERROR:
+                        raise_internal_server_error(
+                            logger,
+                            f"Failed to {operation}",
+                            e,
+                            extra={
+                                "operation": operation,
+                                "function": func.__name__,
+                                "module": func.__module__,
+                            },
+                        )
                     logger.error(
                         "Failed to %s: %s",
                         operation,
@@ -94,7 +107,6 @@ def handle_errors(
                             "kwargs": kwargs,
                         },
                     )
-                    # Convert to HTTP error
                     raise HTTPException(
                         status_code=error_status,
                         detail=f"Failed to {operation}: {str(e)}",
@@ -113,7 +125,17 @@ def handle_errors(
                     # Re-raise HTTP exceptions as-is
                     raise
                 except Exception as e:
-                    # Log error with full context
+                    if error_status >= status.HTTP_500_INTERNAL_SERVER_ERROR:
+                        raise_internal_server_error(
+                            logger,
+                            f"Failed to {operation}",
+                            e,
+                            extra={
+                                "operation": operation,
+                                "function": func.__name__,
+                                "module": func.__module__,
+                            },
+                        )
                     logger.error(
                         "Failed to %s: %s",
                         operation,
@@ -127,7 +149,6 @@ def handle_errors(
                             "kwargs": kwargs,
                         },
                     )
-                    # Convert to HTTP error
                     raise HTTPException(
                         status_code=error_status,
                         detail=f"Failed to {operation}: {str(e)}",
@@ -189,16 +210,11 @@ def handle_not_found(operation: str, resource_name: str = "Resource"):
                         detail=f"{resource_name} not found",
                     )
                 except Exception as e:
-                    logger.error(
-                        "Failed to %s: %s",
-                        operation,
+                    raise_internal_server_error(
+                        logger,
+                        f"Failed to {operation}",
                         e,
-                        exc_info=True,
                         extra={"operation": operation, "function": func.__name__},
-                    )
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Failed to {operation}: {str(e)}",
                     )
 
             return async_wrapper
@@ -227,16 +243,11 @@ def handle_not_found(operation: str, resource_name: str = "Resource"):
                         detail=f"{resource_name} not found",
                     )
                 except Exception as e:
-                    logger.error(
-                        "Failed to %s: %s",
-                        operation,
+                    raise_internal_server_error(
+                        logger,
+                        f"Failed to {operation}",
                         e,
-                        exc_info=True,
                         extra={"operation": operation, "function": func.__name__},
-                    )
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Failed to {operation}: {str(e)}",
                     )
 
             return sync_wrapper
@@ -291,16 +302,11 @@ def handle_validation_errors(operation: str):
                         detail=f"Validation error: {str(e)}",
                     )
                 except Exception as e:
-                    logger.error(
-                        "Failed to %s: %s",
-                        operation,
+                    raise_internal_server_error(
+                        logger,
+                        f"Failed to {operation}",
                         e,
-                        exc_info=True,
                         extra={"operation": operation, "function": func.__name__},
-                    )
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Failed to {operation}: {str(e)}",
                     )
 
             return async_wrapper
@@ -328,16 +334,11 @@ def handle_validation_errors(operation: str):
                         detail=f"Validation error: {str(e)}",
                     )
                 except Exception as e:
-                    logger.error(
-                        "Failed to %s: %s",
-                        operation,
+                    raise_internal_server_error(
+                        logger,
+                        f"Failed to {operation}",
                         e,
-                        exc_info=True,
                         extra={"operation": operation, "function": func.__name__},
-                    )
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Failed to {operation}: {str(e)}",
                     )
 
             return sync_wrapper

@@ -40,6 +40,8 @@ from models.rbac import (
     UserUpdate,
 )
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/rbac", tags=["rbac"])
@@ -482,11 +484,7 @@ async def assign_permission_to_user(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error assigning permission to user: %s", str(e), exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to assign permission: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to assign permission: ", e)
 
 
 @router.delete(
@@ -642,11 +640,7 @@ async def create_user(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        logger.error("Error creating user: %s", str(e), exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create user: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create user: ", e)
 
 
 @router.get("/users", response_model=UserListResponse)

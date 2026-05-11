@@ -21,6 +21,8 @@ from models.git_repositories import (
 from services.settings.git.shared_utils import git_repo_manager
 from dependencies import get_git_connection_service
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git-repositories", tags=["git-repositories"])
 
@@ -46,8 +48,7 @@ async def get_repositories(
             repositories=repo_responses, total=len(repo_responses)
         )
     except Exception as e:
-        logger.error("Error getting repositories: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/{repo_id}", response_model=GitRepositoryResponse)
@@ -68,8 +69,7 @@ async def get_repository(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting repository %s: %s", repo_id, e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/{repo_id}/edit")
@@ -88,8 +88,7 @@ async def get_repository_for_edit(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting repository %s for edit: %s", repo_id, e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.post("/", response_model=GitRepositoryResponse)
@@ -119,8 +118,7 @@ async def create_repository(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error("Error creating repository: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.put("/{repo_id}", response_model=GitRepositoryResponse)
@@ -165,8 +163,7 @@ async def update_repository(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error("Error updating repository %s: %s", repo_id, e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.delete("/{repo_id}")
@@ -191,8 +188,7 @@ async def delete_repository(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting repository %s: %s", repo_id, e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.post("/test-connection", response_model=GitConnectionTestResponse)
@@ -240,5 +236,4 @@ async def health_check(
         health = git_repo_manager.health_check()
         return health
     except Exception as e:
-        logger.error("Health check failed: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)

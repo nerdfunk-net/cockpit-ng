@@ -13,6 +13,8 @@ from dependencies import get_nautobot_service
 from services.nautobot.client import NautobotService
 from repositories.audit_log_repository import audit_log_repo
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/dcim/interfaces", tags=["nautobot-dcim-interfaces"])
 
@@ -90,11 +92,7 @@ async def get_dcim_interfaces(
         return result
 
     except Exception as e:
-        logger.error("Failed to get DCIM interfaces: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve DCIM interfaces: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve DCIM interfaces: ", e)
 
 
 @router.get("/{interface_id}", summary="🔶 REST: Get Device Interface")
@@ -122,11 +120,7 @@ async def get_dcim_interface(
             detail=f"DCIM interface not found: {interface_id}",
         )
     except Exception as e:
-        logger.error("Failed to get DCIM interface %s: %s", interface_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve DCIM interface: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve DCIM interface: ", e)
 
 
 @router.post("", summary="🔶 REST: Create Device Interface")
@@ -210,11 +204,7 @@ async def create_dcim_interface(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to create DCIM interface: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create DCIM interface: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create DCIM interface: ", e)
 
 
 @router.put("/{interface_id}", summary="🔶 REST: Update Device Interface (Full)")
@@ -278,11 +268,7 @@ async def update_dcim_interface(
             detail=f"DCIM interface not found: {interface_id}",
         )
     except Exception as e:
-        logger.error("Failed to update DCIM interface %s: %s", interface_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update DCIM interface: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update DCIM interface: ", e)
 
 
 @router.delete("/{interface_id}", summary="🔶 REST: Delete Device Interface")
@@ -322,8 +308,4 @@ async def delete_dcim_interface(
             detail=f"DCIM interface not found: {interface_id}",
         )
     except Exception as e:
-        logger.error("Failed to delete DCIM interface %s: %s", interface_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete DCIM interface: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete DCIM interface: ", e)

@@ -17,6 +17,7 @@ from models.auth import (
     OIDCTestLoginRequest,
 )
 from core.auth import create_access_token, require_role
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_oidc_service
 from repositories.audit_log_repository import audit_log_repo
 from config import settings
@@ -534,8 +535,6 @@ async def get_oidc_debug_info(oidc_service=Depends(get_oidc_service)):
         }
 
     except Exception as e:
-        logger.error("Failed to get OIDC debug info: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve OIDC debug information: {str(e)}",
+        raise_internal_server_error(
+            logger, "Failed to retrieve OIDC debug information: ", e
         )

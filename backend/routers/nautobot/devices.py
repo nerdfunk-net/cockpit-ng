@@ -26,6 +26,8 @@ from services.nautobot_helpers.cache_helpers import (
     get_cached_device,
 )
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 
 
@@ -120,11 +122,7 @@ async def test_current_nautobot_connection(
             "connection_source": nautobot_config.get("_source", "unknown"),
         }
     except Exception as e:
-        logger.error("Error testing Nautobot connection: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to test Nautobot connection: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to test Nautobot connection: ", e)
 
 
 @router.get("/devices/use-filter", summary="🔷 GraphQL: List Devices with Filters")
@@ -176,9 +174,11 @@ async def get_devices_with_filter(
         result = await nautobot_service.graphql_query(query)
 
         if "errors" in result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL errors: {result['errors']}",
+            raise_internal_server_error(
+                logger,
+                "Nautobot GraphQL returned errors",
+                None,
+                extra={"graphql_errors": result.get("errors")},
             )
 
         devices = result.get("data", {}).get("devices", [])
@@ -186,11 +186,7 @@ async def get_devices_with_filter(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error fetching filtered devices: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch filtered devices: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch filtered devices: ", e)
 
 
 @router.get("/devices", summary="🔷 GraphQL: List Devices")
@@ -233,11 +229,7 @@ async def get_devices(
             reload=reload,
         )
     except Exception as e:
-        logger.error("Error fetching devices: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch devices: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch devices: ", e)
 
 
 @router.get("/devices/{device_id}", summary="🔷 GraphQL: Get Device Details")
@@ -285,9 +277,11 @@ async def get_device(
         result = await nautobot_service.graphql_query(query, variables)
 
         if "errors" in result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL errors: {result['errors']}",
+            raise_internal_server_error(
+                logger,
+                "Nautobot GraphQL returned errors",
+                None,
+                extra={"graphql_errors": result.get("errors")},
             )
 
         device = result["data"]["device"]
@@ -299,10 +293,7 @@ async def get_device(
 
         return device
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch device {device_id}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to fetch device {device_id}", e)
 
 
 @router.post("/check-ip", summary="🔷 GraphQL: Check IP Address")
@@ -330,9 +321,11 @@ async def check_ip(
         result = await nautobot_service.graphql_query(query, variables)
 
         if "errors" in result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL errors: {result['errors']}",
+            raise_internal_server_error(
+                logger,
+                "Nautobot GraphQL returned errors",
+                None,
+                extra={"graphql_errors": result.get("errors")},
             )
 
         ip_addresses = result["data"]["ip_addresses"]
@@ -358,10 +351,7 @@ async def check_ip(
             "details": ip_addresses,  # For backward compatibility
         }
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to check IP address: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to check IP address: ", e)
 
 
 @router.post("/devices/onboard", summary="⚙️ Nautobot Job: Onboard Device")
@@ -463,11 +453,7 @@ def onboard_device(
             }
 
     except Exception as e:
-        logger.error("Exception in onboard_device: %s", str(e), exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to onboard device: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to onboard device: ", e)
 
 
 @router.post("/add-device", summary="🔶 REST: Add Device with Interfaces")
@@ -505,16 +491,14 @@ async def add_device(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=detail,
             )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to add device: {error_msg}",
+        raise_internal_server_error(
+            logger,
+            "Failed to add device (Nautobot API error)",
+            e,
+            extra={"nautobot_error": (error_msg[:4000] if error_msg else "")},
         )
     except Exception as e:
-        logger.error("Failed to add device: %s", str(e), exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to add device: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to add device: ", e)
 
 
 @router.patch("/devices/{device_id}", summary="🔶 REST: Update Device with Interfaces")
@@ -591,11 +575,7 @@ async def update_device(
             detail=str(e),
         )
     except Exception as e:
-        logger.error("Failed to update device: %s", str(e), exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update device: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update device: ", e)
 
 
 @router.post("/sync-network-data", summary="⚙️ Nautobot Job: Sync Network Data")
@@ -684,7 +664,4 @@ def sync_network_data(
             }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to sync network data: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to sync network data: ", e)

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from core.auth import verify_token, require_permission
 from core.database import get_db
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import (
     get_nautobot_service,
     get_inventory_persistence_service,
@@ -103,8 +104,7 @@ def send_command(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to send command: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.post(
@@ -145,8 +145,7 @@ def git_pull(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Git pull failed: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.post(
@@ -185,8 +184,7 @@ def docker_restart(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Docker restart failed: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 _DEVICE_IPS_QUERY = """
@@ -311,8 +309,7 @@ async def ping_devices(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Ping job submission failed: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 def _conditions_to_operations(conditions: list) -> List[LogicalOperation]:
@@ -465,8 +462,7 @@ def get_agent_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to get agent status: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get(
@@ -489,8 +485,7 @@ def list_agents(
         return {"agents": agents}
 
     except Exception as e:
-        logger.error("Failed to list agents: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get(
@@ -519,8 +514,7 @@ def get_command_history(
         }
 
     except Exception as e:
-        logger.error("Failed to get command history: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get(
@@ -548,5 +542,4 @@ def get_all_command_history(
         }
 
     except Exception as e:
-        logger.error("Failed to get command history: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)

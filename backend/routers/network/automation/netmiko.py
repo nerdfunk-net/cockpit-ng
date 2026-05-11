@@ -21,6 +21,8 @@ from models.netmiko import (
     TemplateExecutionResponse,
 )
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/netmiko", tags=["netmiko"])
 
@@ -169,11 +171,7 @@ async def cancel_execution(
             "session_id": session_id,
         }
     except Exception as e:
-        logger.error("Error cancelling session %s: %s", session_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to cancel session: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to cancel session: ", e)
 
 
 @router.post("/execute-template", response_model=TemplateExecutionResponse)

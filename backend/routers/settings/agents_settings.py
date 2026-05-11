@@ -5,10 +5,12 @@ Agents settings router.
 from __future__ import annotations
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from core.auth import require_permission
 from models.settings import AgentsSettingsRequest, AgentsTestRequest
+
+from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -29,11 +31,7 @@ async def get_agents_settings(
         return {"success": True, "data": settings}
 
     except Exception as e:
-        logger.error("Error getting Agents settings: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get Agents settings: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get Agents settings: ", e)
 
 
 @router.post("/agents")

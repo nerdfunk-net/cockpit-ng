@@ -22,6 +22,8 @@ from models.checkmk import (
 )
 from services.checkmk.exceptions import CheckMKClientError
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkmk"])
 
@@ -42,11 +44,7 @@ async def get_host_groups(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting host groups: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get host groups: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get host groups: ", e)
 
 
 @router.post("/host-groups", response_model=CheckMKOperationResponse)
@@ -68,10 +66,8 @@ async def create_host_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error creating host group %s: %s", request.name, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create host group {request.name}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to create host group {request.name}", e
         )
 
 
@@ -97,11 +93,7 @@ async def bulk_update_host_groups(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error bulk updating host groups: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to bulk update host groups: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to bulk update host groups: ", e)
 
 
 @router.delete("/host-groups/bulk-delete", response_model=CheckMKOperationResponse)
@@ -123,11 +115,7 @@ async def bulk_delete_host_groups(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error bulk deleting host groups: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to bulk delete host groups: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to bulk delete host groups: ", e)
 
 
 @router.get("/host-groups/{group_name}", response_model=CheckMKOperationResponse)
@@ -149,11 +137,7 @@ async def get_host_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting host group %s: %s", group_name, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get host group {group_name}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to get host group {group_name}", e)
 
 
 @router.put("/host-groups/{name}", response_model=CheckMKOperationResponse)
@@ -174,11 +158,7 @@ async def update_host_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating host group %s: %s", name, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update host group {name}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to update host group {name}", e)
 
 
 @router.delete("/host-groups/{name}", response_model=CheckMKOperationResponse)
@@ -198,8 +178,4 @@ async def delete_host_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting host group %s: %s", name, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete host group {name}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to delete host group {name}", e)

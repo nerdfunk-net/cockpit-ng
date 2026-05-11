@@ -12,6 +12,8 @@ from core.database import get_db
 from core.auth import verify_token, require_permission
 from services.network.configs.backup_service import BackupService
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/network/configs/backup", tags=["network-backup"])
 
@@ -99,8 +101,7 @@ async def get_backup_devices(
         return result
 
     except Exception as e:
-        logger.error("Error getting backup devices: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.post(
@@ -137,8 +138,7 @@ async def trigger_backup(
         logger.error("Validation error triggering backup: %s", e)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error("Error triggering backup: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.post(
@@ -178,8 +178,7 @@ async def trigger_bulk_backup(
         logger.error("Validation error triggering bulk backup: %s", e)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error("Error triggering bulk backup: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get(
@@ -198,8 +197,7 @@ async def get_filter_options(
     try:
         return await backup_service.get_filter_options()
     except Exception as e:
-        logger.error("Error getting filter options: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get(
@@ -238,8 +236,7 @@ async def get_backup_history(
         return history
 
     except Exception as e:
-        logger.error("Error getting backup history: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get(
@@ -281,8 +278,7 @@ async def download_backup(
         logger.error("Backup not found: %s", e)
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error("Error downloading backup: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.post(
@@ -321,5 +317,4 @@ async def restore_backup(
         logger.error("Validation error restoring backup: %s", e)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error("Error restoring backup: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)

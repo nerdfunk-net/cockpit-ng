@@ -8,10 +8,12 @@ import difflib
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import require_permission
 from models.files import FileCompareRequest
+
+from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/file-compare", tags=["file-compare"])
@@ -179,8 +181,4 @@ async def compare_files(
         return result
 
     except Exception as e:
-        logger.error("Error comparing files: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to compare files: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to compare files: ", e)

@@ -18,6 +18,8 @@ from models.jobs import (
 import logging
 from repositories.audit_log_repository import audit_log_repo
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/job-schedules", tags=["job-schedules"])
@@ -90,11 +92,7 @@ async def create_job_schedule(
         return JobScheduleResponse(**job_schedule)
 
     except Exception as e:
-        logger.error("Error creating job schedule: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create job schedule: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create job schedule: ", e)
 
 
 @router.get("", response_model=List[JobScheduleResponse])
@@ -125,11 +123,7 @@ async def list_job_schedules(
         return [JobScheduleResponse(**job) for job in jobs]
 
     except Exception as e:
-        logger.error("Error listing job schedules: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list job schedules: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to list job schedules: ", e)
 
 
 @router.get("/{job_id}", response_model=JobScheduleResponse)
@@ -159,11 +153,7 @@ async def get_job_schedule(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting job schedule: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get job schedule: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get job schedule: ", e)
 
 
 @router.put("/{job_id}", response_model=JobScheduleResponse)
@@ -225,11 +215,7 @@ async def update_job_schedule(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating job schedule: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update job schedule: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update job schedule: ", e)
 
 
 @router.delete("/{job_id}")
@@ -301,11 +287,7 @@ async def delete_job_schedule(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting job schedule: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete job schedule: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete job schedule: ", e)
 
 
 @router.post("/execute")
@@ -390,11 +372,7 @@ async def execute_job(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error executing job: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to execute job: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to execute job: ", e)
 
 
 @router.get("/debug/scheduler-status")
@@ -502,11 +480,7 @@ async def get_scheduler_debug_status(
         }
 
     except Exception as e:
-        logger.error("Error getting scheduler debug status: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get scheduler status: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get scheduler status: ", e)
 
 
 @router.post("/debug/recalculate-next-runs")
@@ -528,8 +502,4 @@ async def recalculate_all_next_runs(
         }
 
     except Exception as e:
-        logger.error("Error recalculating next runs: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to recalculate next runs: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to recalculate next runs: ", e)

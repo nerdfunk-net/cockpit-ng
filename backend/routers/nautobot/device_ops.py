@@ -23,6 +23,8 @@ from services.nautobot.offboarding.virtual_chassis_cleanup import (
 )
 from repositories.audit_log_repository import audit_log_repo
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-device-ops"])
 
@@ -79,11 +81,7 @@ async def get_device_details(
             detail=str(e),
         )
     except Exception as e:
-        logger.error("Error fetching device details for %s: %s", device_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch device details: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch device details: ", e)
 
 
 @router.delete("/devices/{device_id}", summary="🔶 REST: Delete Device")
@@ -138,11 +136,7 @@ async def delete_device(
             detail=f"Device {device_id} not found",
         )
     except Exception as e:
-        logger.error("Error deleting device %s: %s", device_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete device: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete device: ", e)
 
 
 @router.post("/offboard/{device_id}", summary="🟠 Mixed API: Offboard Device")

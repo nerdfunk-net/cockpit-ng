@@ -9,6 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from core.auth import require_permission
 from models.settings import CacheSettingsRequest
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -59,11 +61,7 @@ async def update_cache_settings(
                 detail="Failed to update Cache settings",
             )
     except Exception as e:
-        logger.error("Error updating Cache settings: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update Cache settings: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update Cache settings: ", e)
 
 
 @router.post("/cache")

@@ -18,6 +18,8 @@ from dependencies import get_nautobot_service
 from models.nautobot import RackReservationCreate
 from services.nautobot.client import NautobotService
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["nautobot-rack-reservations"])
@@ -48,11 +50,7 @@ async def delete_rack_reservations(
             data=payload,
         )
     except Exception as e:
-        logger.error("Failed to delete rack reservation(s): %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete rack reservation(s): {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete rack reservation(s): ", e)
 
 
 @router.get("/rack-reservation", summary="🔷 GraphQL: Get Rack Reservations")
@@ -89,11 +87,7 @@ async def get_rack_reservations(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to fetch rack reservations: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch rack reservations: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch rack reservations: ", e)
 
 
 @router.post(
@@ -130,8 +124,4 @@ async def create_rack_reservation(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to create rack reservation: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create rack reservation: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create rack reservation: ", e)

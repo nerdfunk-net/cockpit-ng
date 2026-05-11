@@ -12,6 +12,8 @@ from services.network.compliance.check import ComplianceCheckService
 from dependencies import get_compliance_service
 from services.compliance.compliance_service import ComplianceService
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/compliance", tags=["compliance-check"])
 
@@ -261,8 +263,4 @@ async def check_compliance(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error performing compliance check: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Compliance check failed: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Compliance check failed: ", e)

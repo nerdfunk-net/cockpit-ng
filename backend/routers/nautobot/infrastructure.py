@@ -4,11 +4,13 @@ Nautobot infrastructure endpoints: racks, rack groups, interface types, secret g
 
 from __future__ import annotations
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from core.auth import require_permission
 from services.nautobot.client import NautobotService
 from dependencies import get_nautobot_service, get_cache_service
+
+from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-infrastructure"])
@@ -83,10 +85,7 @@ async def get_racks(
         cache_service.set(cache_key, racks, ttl)
         return racks
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch racks: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch racks: ", e)
 
 
 @router.get("/rack-groups", summary="🔶 REST: List Rack Groups")
@@ -124,10 +123,7 @@ async def get_rack_groups(
         cache_service.set(cache_key, rack_groups, ttl)
         return rack_groups
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch rack groups: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch rack groups: ", e)
 
 
 @router.get("/interface-types", summary="🔶 REST: List Interface Types")
@@ -218,7 +214,4 @@ async def get_interface_types(
         cache_service.set(cache_key, interface_types, ttl)
         return interface_types
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch interface types: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch interface types: ", e)

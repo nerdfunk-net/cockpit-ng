@@ -17,6 +17,8 @@ from models.job_templates import (
 import logging
 from repositories.audit_log_repository import audit_log_repo
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/job-templates", tags=["job-templates"])
@@ -149,11 +151,7 @@ async def create_job_template(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        logger.error("Error creating job template: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create job template: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create job template: ", e)
 
 
 @router.get("", response_model=JobTemplateListResponse)
@@ -180,11 +178,7 @@ async def list_job_templates(
         )
 
     except Exception as e:
-        logger.error("Error listing job templates: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list job templates: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to list job templates: ", e)
 
 
 @router.get("/types")
@@ -226,11 +220,7 @@ async def get_job_template(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting job template: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get job template: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get job template: ", e)
 
 
 @router.put("/{template_id}", response_model=JobTemplateResponse)
@@ -369,11 +359,7 @@ async def update_job_template(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating job template: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update job template: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update job template: ", e)
 
 
 @router.delete("/{template_id}")
@@ -438,8 +424,4 @@ async def delete_job_template(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting job template: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete job template: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete job template: ", e)

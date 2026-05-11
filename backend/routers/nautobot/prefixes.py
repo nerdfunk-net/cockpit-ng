@@ -13,6 +13,8 @@ from dependencies import get_nautobot_service
 from services.nautobot.client import NautobotService
 from repositories.audit_log_repository import audit_log_repo
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ipam/prefixes", tags=["nautobot-ipam-prefixes"])
 
@@ -73,11 +75,7 @@ async def get_ipam_prefixes(
         return result
 
     except Exception as e:
-        logger.error("Failed to get IPAM prefixes: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve IPAM prefixes: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve IPAM prefixes: ", e)
 
 
 @router.get("/{prefix_id}", summary="🔶 REST: Get IP Prefix")
@@ -105,11 +103,7 @@ async def get_ipam_prefix(
             detail=f"IPAM prefix not found: {prefix_id}",
         )
     except Exception as e:
-        logger.error("Failed to get IPAM prefix %s: %s", prefix_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve IPAM prefix: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve IPAM prefix: ", e)
 
 
 @router.post("", summary="🔶 REST: Create IP Prefix")
@@ -179,11 +173,7 @@ async def create_ipam_prefix(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to create IPAM prefix: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create IPAM prefix: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create IPAM prefix: ", e)
 
 
 @router.put("/{prefix_id}", summary="🔶 REST: Update IP Prefix (Full)")
@@ -241,11 +231,7 @@ async def update_ipam_prefix(
             detail=f"IPAM prefix not found: {prefix_id}",
         )
     except Exception as e:
-        logger.error("Failed to update IPAM prefix %s: %s", prefix_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update IPAM prefix: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update IPAM prefix: ", e)
 
 
 @router.delete("/{prefix_id}", summary="🔶 REST: Delete IP Prefix")
@@ -285,8 +271,4 @@ async def delete_ipam_prefix(
             detail=f"IPAM prefix not found: {prefix_id}",
         )
     except Exception as e:
-        logger.error("Failed to delete IPAM prefix %s: %s", prefix_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete IPAM prefix: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete IPAM prefix: ", e)

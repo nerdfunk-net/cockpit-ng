@@ -4,11 +4,13 @@ Nautobot status endpoints.
 
 from __future__ import annotations
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from core.auth import require_permission
 from services.nautobot.client import NautobotService
 from dependencies import get_nautobot_service
+
+from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-statuses"])
@@ -24,10 +26,7 @@ async def get_nautobot_statuses(
         result = await nautobot_service.rest_request("extras/statuses/")
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch statuses: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch statuses: ", e)
 
 
 @router.get("/statuses/device", summary="🔶 REST: List Device Statuses")
@@ -42,10 +41,7 @@ async def get_nautobot_device_statuses(
         )
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch device statuses: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch device statuses: ", e)
 
 
 @router.get("/statuses/interface", summary="🔶 REST: List Interface Statuses")
@@ -60,10 +56,7 @@ async def get_nautobot_interface_statuses(
         )
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch interface statuses: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch interface statuses: ", e)
 
 
 @router.get("/statuses/ipaddress", summary="🔶 REST: List IP Address Statuses")
@@ -78,10 +71,7 @@ async def get_nautobot_ipaddress_statuses(
         )
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch IP address statuses: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch IP address statuses: ", e)
 
 
 @router.get("/statuses/prefix", summary="🔶 REST: List Prefix Statuses")
@@ -96,10 +86,7 @@ async def get_nautobot_prefix_statuses(
         )
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch prefix statuses: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch prefix statuses: ", e)
 
 
 @router.get("/statuses/vm", summary="🔶 REST: List Virtual Machine Statuses")
@@ -114,10 +101,7 @@ async def get_nautobot_vm_statuses(
         )
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch VM statuses: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch VM statuses: ", e)
 
 
 @router.get("/statuses/combined", summary="🔶 REST: List All Statuses (Combined)")
@@ -130,7 +114,4 @@ async def get_nautobot_combined_statuses(
         result = await nautobot_service.rest_request("extras/statuses/")
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch combined statuses: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch combined statuses: ", e)

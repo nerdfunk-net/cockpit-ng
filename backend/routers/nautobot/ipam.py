@@ -4,11 +4,13 @@ Nautobot IPAM metadata endpoints: namespaces, VLANs, software versions and image
 
 from __future__ import annotations
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from core.auth import require_permission
 from services.nautobot.client import NautobotService
 from dependencies import get_nautobot_service, get_cache_service
+
+from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-ipam"])
@@ -36,17 +38,16 @@ async def get_namespaces(
         result = await nautobot_service.graphql_query(query)
 
         if "errors" in result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL errors: {result['errors']}",
+            raise_internal_server_error(
+                logger,
+                "Nautobot GraphQL returned errors",
+                None,
+                extra={"graphql_errors": result.get("errors")},
             )
 
         return result["data"]["namespaces"]
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch namespaces: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch namespaces: ", e)
 
 
 @router.get("/software-versions", summary="🔷 GraphQL: List Software Versions")
@@ -109,9 +110,11 @@ async def get_software_versions(
         result = await nautobot_service.graphql_query(query, variables)
 
         if "errors" in result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL errors: {result['errors']}",
+            raise_internal_server_error(
+                logger,
+                "Nautobot GraphQL returned errors",
+                None,
+                extra={"graphql_errors": result.get("errors")},
             )
 
         software_versions = result["data"]["software_versions"]
@@ -119,10 +122,7 @@ async def get_software_versions(
         cache_service.set(cache_key, software_versions, ttl)
         return software_versions
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch software versions: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch software versions: ", e)
 
 
 @router.get("/software-image-files", summary="🔷 GraphQL: List Software Image Files")
@@ -163,9 +163,11 @@ async def get_software_image_files(
         result = await nautobot_service.graphql_query(query, variables)
 
         if "errors" in result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL errors: {result['errors']}",
+            raise_internal_server_error(
+                logger,
+                "Nautobot GraphQL returned errors",
+                None,
+                extra={"graphql_errors": result.get("errors")},
             )
 
         image_files = result["data"]["software_image_files"]
@@ -173,10 +175,7 @@ async def get_software_image_files(
         cache_service.set(cache_key, image_files, ttl)
         return image_files
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch software image files: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch software image files: ", e)
 
 
 @router.get("/vlans", summary="🔷 GraphQL: List VLANs")
@@ -250,9 +249,11 @@ async def get_vlans(
             result = await nautobot_service.graphql_query(query, variables)
 
             if "errors" in result:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"GraphQL errors: {result['errors']}",
+                raise_internal_server_error(
+                    logger,
+                    "Nautobot GraphQL returned errors",
+                    None,
+                    extra={"graphql_errors": result.get("errors")},
                 )
 
             all_vlans = result["data"]["vlans"]
@@ -275,9 +276,11 @@ async def get_vlans(
             result = await nautobot_service.graphql_query(query, variables)
 
             if "errors" in result:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"GraphQL errors: {result['errors']}",
+                raise_internal_server_error(
+                    logger,
+                    "Nautobot GraphQL returned errors",
+                    None,
+                    extra={"graphql_errors": result.get("errors")},
                 )
 
             vlans = result["data"]["vlans"]
@@ -286,7 +289,4 @@ async def get_vlans(
         cache_service.set(cache_key, vlans, ttl)
         return vlans
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch VLANs: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch VLANs: ", e)

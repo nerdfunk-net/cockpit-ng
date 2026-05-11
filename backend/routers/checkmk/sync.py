@@ -10,6 +10,8 @@ from core.auth import require_permission
 from dependencies import get_nb2cmk_service, get_nb2cmk_db_service
 from utils.audit_logger import log_checkmk_sync_event
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nb2cmk", tags=["nb2cmk"])
 
@@ -271,11 +273,7 @@ async def list_comparison_jobs(
         return {"jobs": job_list, "total": len(job_list)}
 
     except Exception as e:
-        logger.error("Error listing comparison jobs: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list comparison jobs: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to list comparison jobs: ", e)
 
 
 @router.get("/jobs/{job_id}")
@@ -344,11 +342,7 @@ async def get_comparison_job_details(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting comparison job %s: %s", job_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get comparison job: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get comparison job: ", e)
 
 
 @router.delete("/jobs/{job_id}")
@@ -394,11 +388,7 @@ async def delete_comparison_job(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting comparison job %s: %s", job_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete comparison job: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete comparison job: ", e)
 
 
 @router.post("/jobs/clear")
@@ -440,8 +430,4 @@ async def clear_all_comparison_jobs(
         return {"message": message, "deleted": deleted_count, "skipped": skipped_count}
 
     except Exception as e:
-        logger.error("Error clearing comparison jobs: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear comparison jobs: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to clear comparison jobs: ", e)

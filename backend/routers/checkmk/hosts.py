@@ -30,6 +30,8 @@ from services.checkmk.exceptions import (
     HostNotFoundError,
 )
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkmk"])
 
@@ -55,11 +57,7 @@ async def get_all_hosts(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting hosts: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get hosts: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get hosts: ", e)
 
 
 # Static POST paths before parameterised /{hostname}/... paths
@@ -93,10 +91,8 @@ async def create_host_v2(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error creating host %s: %s", request.host_name, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create host {request.host_name}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to create host {request.host_name}", e
         )
 
 
@@ -119,11 +115,7 @@ async def bulk_create_hosts(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error bulk creating hosts: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to bulk create hosts: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to bulk create hosts: ", e)
 
 
 @router.post("/hosts/bulk-update", response_model=CheckMKOperationResponse)
@@ -145,11 +137,7 @@ async def bulk_update_hosts(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error bulk updating hosts: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to bulk update hosts: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to bulk update hosts: ", e)
 
 
 @router.post("/hosts/bulk-delete", response_model=CheckMKOperationResponse)
@@ -171,11 +159,7 @@ async def bulk_delete_hosts(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error bulk deleting hosts: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to bulk delete hosts: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to bulk delete hosts: ", e)
 
 
 @router.post("/hosts", response_model=CheckMKOperationResponse)
@@ -204,10 +188,8 @@ async def create_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error creating host %s: %s", request.host_name, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create host {request.host_name}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to create host {request.host_name}", e
         )
 
 
@@ -242,11 +224,7 @@ async def get_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting host %s: %s", hostname, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get host {hostname}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to get host {hostname}", e)
 
 
 @router.put("/hosts/{hostname}", response_model=CheckMKOperationResponse)
@@ -267,11 +245,7 @@ async def update_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating host %s: %s", hostname, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update host {hostname}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to update host {hostname}", e)
 
 
 @router.delete("/hosts/{hostname}", response_model=CheckMKOperationResponse)
@@ -291,11 +265,7 @@ async def delete_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting host %s: %s", hostname, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete host {hostname}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to delete host {hostname}", e)
 
 
 @router.post("/hosts/{hostname}/move", response_model=CheckMKOperationResponse)
@@ -330,11 +300,7 @@ async def move_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error moving host %s: %s", hostname, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to move host {hostname}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to move host {hostname}", e)
 
 
 @router.post("/hosts/{hostname}/rename", response_model=CheckMKOperationResponse)
@@ -357,8 +323,4 @@ async def rename_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error renaming host %s: %s", hostname, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to rename host {hostname}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to rename host {hostname}", e)

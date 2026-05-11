@@ -9,6 +9,8 @@ from services.settings.git.repository_service import (
     GitRepositoryService as GitRepositoryManager,
 )
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 
 # Initialize git repository manager - shared instance
@@ -62,17 +64,13 @@ def get_git_repo_by_id(repo_id: int):
             repo = service_factory.build_git_service().open_or_clone(repository)
             return repo
         except Exception as e:
-            logger.error("Failed to prepare repository %s: %s", repository["name"], e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to open/clone Git repository: {str(e)}",
+            raise_internal_server_error(
+                logger,
+                f"Failed to open/clone Git repository {repository['name']}",
+                e,
             )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting Git repository %s: %s", repo_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Git repository error: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Git repository error: ", e)

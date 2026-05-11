@@ -11,6 +11,8 @@ from core.auth import require_permission
 from repositories.audit_log_repository import audit_log_repo
 from models.settings import GitSettingsRequest, GitTestRequest
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -70,11 +72,7 @@ async def update_git_settings(
             )
 
     except Exception as e:
-        logger.error("Error updating Git settings: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update Git settings: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update Git settings: ", e)
 
 
 @router.post("/git")

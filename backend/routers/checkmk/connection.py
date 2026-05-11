@@ -22,6 +22,8 @@ from services.checkmk.exceptions import (
     HostNotFoundError,
 )
 
+from core.safe_http_errors import raise_internal_server_error
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkmk"])
 
@@ -48,11 +50,7 @@ async def test_checkmk_connection(
             connection_source="manual_test",
         )
     except Exception as e:
-        logger.error("Error testing CheckMK connection: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to test CheckMK connection: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to test CheckMK connection: ", e)
 
 
 @router.get("/test")
@@ -68,11 +66,7 @@ async def test_current_checkmk_connection(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error testing CheckMK connection: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to test CheckMK connection: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to test CheckMK connection: ", e)
 
 
 @router.get("/stats")
@@ -95,11 +89,7 @@ async def get_checkmk_stats(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error fetching CheckMK stats: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch CheckMK statistics: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch CheckMK statistics: ", e)
 
 
 @router.get("/version", response_model=CheckMKVersionResponse)
@@ -120,11 +110,7 @@ async def get_version(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting CheckMK version: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get CheckMK version: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get CheckMK version: ", e)
 
 
 @router.get("/inventory/{hostname}", response_model=CheckMKOperationResponse)
@@ -153,8 +139,6 @@ async def get_host_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting inventory for %s: %s", hostname, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get inventory for {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to get inventory for {hostname}", e
         )
