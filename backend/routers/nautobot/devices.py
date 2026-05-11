@@ -365,13 +365,16 @@ async def check_ip(
 
 
 @router.post("/devices/onboard", summary="⚙️ Nautobot Job: Onboard Device")
-async def onboard_device(
+def onboard_device(
     request: DeviceOnboardRequest,
     current_user: dict = Depends(require_permission("devices.onboard", "execute")),
 ):
     """Onboard a new device to Nautobot.
 
     **⚙️ This endpoint triggers a Nautobot Job** (Sync Devices From Network).
+
+    Sync route — blocking ``requests.post`` (up to 30s) runs in Starlette's
+    thread pool instead of starving the asyncio event loop.
     """
     try:
         # Get nautobot config
@@ -596,13 +599,16 @@ async def update_device(
 
 
 @router.post("/sync-network-data", summary="⚙️ Nautobot Job: Sync Network Data")
-async def sync_network_data(
+def sync_network_data(
     request: SyncNetworkDataRequest,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
 ):
     """Sync network data with Nautobot.
 
     **⚙️ This endpoint triggers a Nautobot Job** (Sync Network Data From Network).
+
+    Sync route — blocking ``requests.post`` (up to 30s) runs in Starlette's
+    thread pool instead of starving the asyncio event loop.
     """
     try:
         # Get nautobot config

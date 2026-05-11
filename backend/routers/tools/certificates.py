@@ -29,13 +29,15 @@ SYSTEM_CA_DIR = Path("/usr/local/share/ca-certificates")
 
 
 @router.get("/scan", response_model=ScanResponse)
-async def scan_certificates(
+def scan_certificates(
     current_user: dict = Depends(require_permission("settings.nautobot", "read")),
 ) -> ScanResponse:
     """
     Scan the config/certs directory for .crt files.
 
     Returns a list of certificate files found in the directory.
+
+    Sync route — blocking filesystem reads run in Starlette's thread pool.
     """
     try:
         certs_dir = CONFIG_CERTS_DIR.resolve()
@@ -156,7 +158,7 @@ async def upload_certificate(
 
 
 @router.post("/add-to-system", response_model=AddCertificateResponse)
-async def add_certificate_to_system(
+def add_certificate_to_system(
     request: AddCertificateRequest,
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ) -> AddCertificateResponse:
@@ -168,6 +170,9 @@ async def add_certificate_to_system(
     2. Runs update-ca-certificates to update the system trust store
 
     Requires appropriate system permissions (typically root/sudo).
+
+    Sync route — blocking ``subprocess.run`` (up to 60s) runs in Starlette's
+    thread pool instead of starving the asyncio event loop.
     """
     try:
         # Validate filename (prevent path traversal)
@@ -266,7 +271,7 @@ async def add_certificate_to_system(
 
 
 @router.delete("/{filename}")
-async def delete_certificate(
+def delete_certificate(
     filename: str,
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ) -> dict:
@@ -274,6 +279,8 @@ async def delete_certificate(
     Delete a certificate from the config/certs directory.
 
     Note: This does NOT remove the certificate from the system CA store.
+
+    Sync route — blocking filesystem unlink runs in Starlette's thread pool.
     """
     try:
         # Validate filename (prevent path traversal)

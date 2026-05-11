@@ -6,7 +6,7 @@ Background jobs for adding and updating devices in CheckMK from Nautobot.
 import asyncio
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from celery import shared_task
 from fastapi import HTTPException
 
@@ -14,6 +14,28 @@ from services.checkmk.sync.database import JobStatus as NB2CMKJobStatus
 from services.checkmk.exceptions import CheckMKAPIError
 
 logger = logging.getLogger(__name__)
+
+
+async def _update_or_add_in_checkmk(nb2cmk_service, device_id: str) -> Tuple[str, Any]:
+    """
+    Run update→fallback-add inside a single event loop.
+
+    Returns ``(operation, result)`` where ``operation`` is ``"update"`` if the
+    device already existed in CheckMK or ``"add"`` if it had to be created.
+
+    Consolidates the two ``asyncio.run`` calls previously made per device into
+    one. See ``doc/refactoring/CURSOR_ASYNC_PLAN.md`` §5.4 / Phase 3.
+    """
+    try:
+        result = await nb2cmk_service.update_device_in_checkmk(device_id)
+        return "update", result
+    except Exception as update_error:
+        msg = str(update_error)
+        if "404" in msg or "not found" in msg.lower():
+            logger.info("Device %s not in CheckMK, attempting to add...", device_id)
+            result = await nb2cmk_service.add_device_to_checkmk(device_id)
+            return "add", result
+        raise
 
 
 @shared_task(bind=True, name="add_device_to_checkmk")
@@ -275,85 +297,35 @@ def sync_devices_to_checkmk_task(
                     message=f"Syncing device {i + 1}/{total_devices}",
                 )
 
-                # Try to update device first (most common case)
-                try:
-                    result = asyncio.run(
-                        nb2cmk_service.update_device_in_checkmk(device_id)
-                    )
-                    success_count += 1
+                # One asyncio.run per device: try update, fall back to add.
+                operation, result = asyncio.run(
+                    _update_or_add_in_checkmk(nb2cmk_service, device_id)
+                )
+                success_count += 1
 
-                    # Get device name for result tracking
-                    device_name = (
-                        result.hostname if hasattr(result, "hostname") else device_id
-                    )
+                device_name = getattr(result, "hostname", device_id)
+                checkmk_status = "synced" if operation == "update" else "added"
 
-                    # Store success result in database
-                    nb2cmk_db_service.add_device_result(
-                        job_id=job_id,
-                        device_id=device_id,
-                        device_name=device_name,
-                        checkmk_status="synced",
-                        diff="",
-                        normalized_config={},
-                        checkmk_config=None,
-                        ignored_attributes=[],
-                    )
+                nb2cmk_db_service.add_device_result(
+                    job_id=job_id,
+                    device_id=device_id,
+                    device_name=device_name,
+                    checkmk_status=checkmk_status,
+                    diff="",
+                    normalized_config={},
+                    checkmk_config=None,
+                    ignored_attributes=[],
+                )
 
-                    results.append(
-                        {
-                            "device_id": device_id,
-                            "hostname": device_name,
-                            "operation": "update",
-                            "success": True,
-                            "message": result.message,
-                        }
-                    )
-
-                except Exception as update_error:
-                    # If device not found in CheckMK, try to add it
-                    if (
-                        "404" in str(update_error)
-                        or "not found" in str(update_error).lower()
-                    ):
-                        logger.info(
-                            "Device %s not in CheckMK, attempting to add...", device_id
-                        )
-                        result = asyncio.run(
-                            nb2cmk_service.add_device_to_checkmk(device_id)
-                        )
-                        success_count += 1
-
-                        # Get device name for result tracking
-                        device_name = (
-                            result.hostname
-                            if hasattr(result, "hostname")
-                            else device_id
-                        )
-
-                        # Store success result in database
-                        nb2cmk_db_service.add_device_result(
-                            job_id=job_id,
-                            device_id=device_id,
-                            device_name=device_name,
-                            checkmk_status="added",
-                            diff="",
-                            normalized_config={},
-                            checkmk_config=None,
-                            ignored_attributes=[],
-                        )
-
-                        results.append(
-                            {
-                                "device_id": device_id,
-                                "hostname": device_name,
-                                "operation": "add",
-                                "success": True,
-                                "message": result.message,
-                            }
-                        )
-                    else:
-                        # Other error, log and continue
-                        raise
+                results.append(
+                    {
+                        "device_id": device_id,
+                        "hostname": device_name,
+                        "operation": operation,
+                        "success": True,
+                        "message": result.message,
+                    }
+                )
 
             except Exception as e:
                 failed_count += 1

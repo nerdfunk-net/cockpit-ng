@@ -42,7 +42,7 @@ router = APIRouter(
     response_model=CommandResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
-async def send_command(
+def send_command(
     request: CommandRequest,
     user: dict = Depends(verify_token),
     db: Session = Depends(get_db),
@@ -53,6 +53,9 @@ async def send_command(
     When **timeout** is omitted the endpoint returns immediately with
     ``status: pending``.  Set **timeout** (seconds) to block until the agent
     replies or the deadline expires.
+
+    Declared as a sync route so the blocking Redis pub/sub wait runs in
+    Starlette's thread pool instead of starving the asyncio event loop.
     """
     try:
         service = CockpitAgentService(db)
@@ -109,7 +112,7 @@ async def send_command(
     response_model=CommandResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
-async def git_pull(
+def git_pull(
     agent_id: str,
     user: dict = Depends(verify_token),
     db: Session = Depends(get_db),
@@ -117,6 +120,8 @@ async def git_pull(
     """
     Send git pull command and wait for response (30s timeout)
     Uses repository path and branch configured locally on agent via .env
+
+    Sync route — blocking Redis wait runs in Starlette's thread pool.
     """
     try:
         service = CockpitAgentService(db)
@@ -149,7 +154,7 @@ async def git_pull(
     response_model=CommandResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
-async def docker_restart(
+def docker_restart(
     agent_id: str,
     user: dict = Depends(verify_token),
     db: Session = Depends(get_db),
@@ -157,6 +162,8 @@ async def docker_restart(
     """
     Send docker restart command and wait for response (60s timeout)
     Container name is configured in agent's .env file
+
+    Sync route — blocking Redis wait runs in Starlette's thread pool.
     """
     try:
         service = CockpitAgentService(db)
@@ -434,12 +441,14 @@ def _extract_ip_addresses(graphql_result: dict, device_name: str) -> List[str]:
     response_model=AgentStatusResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "read"))],
 )
-async def get_agent_status(
+def get_agent_status(
     agent_id: str,
     db: Session = Depends(get_db),
 ):
     """
-    Get health status for specific agent
+    Get health status for specific agent.
+
+    Sync route — synchronous Redis hash read; nothing to await.
     """
     try:
         service = CockpitAgentService(db)
@@ -465,11 +474,13 @@ async def get_agent_status(
     response_model=AgentListResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "read"))],
 )
-async def list_agents(
+def list_agents(
     db: Session = Depends(get_db),
 ):
     """
-    List all registered Grafana Agents
+    List all registered Grafana Agents.
+
+    Sync route — synchronous Redis keys scan; nothing to await.
     """
     try:
         service = CockpitAgentService(db)
@@ -487,13 +498,15 @@ async def list_agents(
     response_model=CommandHistoryResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "read"))],
 )
-async def get_command_history(
+def get_command_history(
     agent_id: str,
     limit: int = 50,
     db: Session = Depends(get_db),
 ):
     """
-    Get command history for specific agent
+    Get command history for specific agent.
+
+    Sync route — synchronous SQLAlchemy reads; nothing to await.
     """
     try:
         service = CockpitAgentService(db)
@@ -515,12 +528,14 @@ async def get_command_history(
     response_model=CommandHistoryResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "read"))],
 )
-async def get_all_command_history(
+def get_all_command_history(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
     """
-    Get command history for all agents
+    Get command history for all agents.
+
+    Sync route — synchronous SQLAlchemy reads; nothing to await.
     """
     try:
         service = CockpitAgentService(db)
