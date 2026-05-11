@@ -19,11 +19,8 @@ export function DiffTableRow({ device, index, isSelected, onSelectDevice, onGetD
   const displayIp = device.ip_address || device.checkmk_ip || 'N/A'
   const canViewDiff = !!device.nautobot_id
 
-  // Enable sync when: 1) Nautobot Only OR 2) Both Systems with Differ status
-  const canSync = device.nautobot_id && (
-    device.source === 'nautobot' ||
-    (device.source === 'both' && device.checkmk_diff_status && device.checkmk_diff_status !== 'equal' && device.checkmk_diff_status !== 'host_not_found')
-  )
+  // Sync pushes from Nautobot to CheckMK; require a Nautobot device id (excludes CheckMK-only rows).
+  const canSync = Boolean(device.nautobot_id)
 
   return (
     <tr className={alternatingRowClass}>
@@ -99,7 +96,13 @@ export function DiffTableRow({ device, index, isSelected, onSelectDevice, onGetD
             variant="ghost"
             onClick={() => onSync(device)}
             disabled={!canSync}
-            title={canSync ? 'Sync Device' : 'Sync not available for this device'}
+            title={
+              canSync
+                ? 'Sync Device'
+                : device.source === 'checkmk'
+                  ? 'Sync is not available for CheckMK-only hosts'
+                  : 'Sync not available for this device'
+            }
             className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 disabled:text-gray-400"
           >
             <RefreshCw className="h-4 w-4" />
