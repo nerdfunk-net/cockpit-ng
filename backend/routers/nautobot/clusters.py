@@ -10,14 +10,14 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from repositories.audit_log_repository import audit_log_repo
+from dependencies import get_audit_log_service, get_nautobot_service
 from models.nautobot import (
     Cluster,
     ClusterGroup,
     AddVirtualMachineRequest,
     AddVirtualInterfaceRequest,
 )
-from dependencies import get_nautobot_service
+from services.audit.audit_log_service import AuditLogService
 from services.nautobot.client import NautobotService
 from services.nautobot.resolvers import (
     ClusterResolver,
@@ -163,6 +163,7 @@ async def create_virtual_machine(
     vm_request: AddVirtualMachineRequest,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Create a new virtual machine in Nautobot with interfaces and IP addresses.
@@ -586,7 +587,7 @@ async def create_virtual_machine(
             len(response_data["warnings"]),
         )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-vm-created",

@@ -9,9 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from services.nautobot.common.exceptions import NautobotNotFoundError
-from dependencies import get_nautobot_service
+from dependencies import get_audit_log_service, get_nautobot_service
+from services.audit.audit_log_service import AuditLogService
 from services.nautobot.client import NautobotService
-from repositories.audit_log_repository import audit_log_repo
 
 from core.safe_http_errors import raise_internal_server_error
 
@@ -508,6 +508,7 @@ async def create_ipam_ip_address(
     ip_address_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Create a new IP address in Nautobot IPAM.
@@ -549,7 +550,7 @@ async def create_ipam_ip_address(
             "Created IP address %s in Nautobot IPAM", ip_address_data.get("address")
         )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-ip-created",
@@ -579,6 +580,7 @@ async def update_ipam_ip_address(
     ip_address_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Update an existing IP address in Nautobot IPAM.
@@ -606,7 +608,7 @@ async def update_ipam_ip_address(
 
         logger.info("Updated IP address %s in Nautobot IPAM", ip_address_id)
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-ip-updated",
@@ -633,6 +635,7 @@ async def delete_ipam_ip_address(
     ip_address_id: str,
     current_user: dict = Depends(require_permission("nautobot.locations", "delete")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Delete an IP address from Nautobot IPAM.
@@ -646,7 +649,7 @@ async def delete_ipam_ip_address(
 
         logger.info("Deleted IP address %s from Nautobot IPAM", ip_address_id)
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-ip-deleted",

@@ -7,9 +7,9 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from dependencies import get_nautobot_service
+from dependencies import get_audit_log_service, get_nautobot_service
+from services.audit.audit_log_service import AuditLogService
 from services.nautobot.client import NautobotService
-from repositories.audit_log_repository import audit_log_repo
 
 from core.safe_http_errors import raise_internal_server_error
 
@@ -22,6 +22,7 @@ async def assign_ip_address_to_interface(
     assignment_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Assign an IP address to an interface in Nautobot.
@@ -67,7 +68,7 @@ async def assign_ip_address_to_interface(
             assignment_data.get("interface"),
         )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-ip-assigned",

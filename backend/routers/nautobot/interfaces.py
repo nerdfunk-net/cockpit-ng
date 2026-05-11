@@ -9,9 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from services.nautobot.common.exceptions import NautobotNotFoundError
-from dependencies import get_nautobot_service
+from dependencies import get_audit_log_service, get_nautobot_service
+from services.audit.audit_log_service import AuditLogService
 from services.nautobot.client import NautobotService
-from repositories.audit_log_repository import audit_log_repo
 
 from core.safe_http_errors import raise_internal_server_error
 
@@ -128,6 +128,7 @@ async def create_dcim_interface(
     interface_data: dict,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Create a new interface in Nautobot DCIM.
@@ -184,7 +185,7 @@ async def create_dcim_interface(
             interface_data.get("device"),
         )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-interface-created",
@@ -214,6 +215,7 @@ async def update_dcim_interface(
     interface_data: dict,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Update an existing interface in Nautobot DCIM.
@@ -249,7 +251,7 @@ async def update_dcim_interface(
 
         logger.info("Updated interface %s in Nautobot DCIM", interface_id)
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-interface-updated",
@@ -276,6 +278,7 @@ async def delete_dcim_interface(
     interface_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Delete an interface from Nautobot DCIM.
@@ -289,7 +292,7 @@ async def delete_dcim_interface(
 
         logger.info("Deleted interface %s from Nautobot DCIM", interface_id)
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-interface-deleted",

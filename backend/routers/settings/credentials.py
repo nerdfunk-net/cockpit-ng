@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.auth import require_permission, get_current_username
 from models.credentials import CredentialCreate, CredentialUpdate
-from repositories.audit_log_repository import audit_log_repo
-from dependencies import get_credentials_service
+from dependencies import get_audit_log_service, get_credentials_service
+from services.audit.audit_log_service import AuditLogService
 from services.settings.credentials_service import CredentialsService
 
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
@@ -62,6 +62,7 @@ def create_credential(
     payload: CredentialCreate,
     current_user: dict = Depends(require_permission("settings.credentials", "write")),
     cred_mgr: CredentialsService = Depends(get_credentials_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ) -> dict:
     try:
         result = cred_mgr.create_credential(
@@ -76,7 +77,7 @@ def create_credential(
             ssh_private_key=payload.ssh_private_key,
             ssh_passphrase=payload.ssh_passphrase,
         )
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="credential-created",
@@ -97,6 +98,7 @@ def update_credential(
     payload: CredentialUpdate,
     current_user: dict = Depends(require_permission("settings.credentials", "write")),
     cred_mgr: CredentialsService = Depends(get_credentials_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ) -> dict:
     try:
         result = cred_mgr.update_credential(
@@ -112,7 +114,7 @@ def update_credential(
             ssh_private_key=payload.ssh_private_key,
             ssh_passphrase=payload.ssh_passphrase,
         )
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="credential-updated",
@@ -134,10 +136,11 @@ def delete_credential(
     cred_id: int,
     current_user: dict = Depends(require_permission("settings.credentials", "delete")),
     cred_mgr: CredentialsService = Depends(get_credentials_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ) -> dict:
     try:
         cred_mgr.delete_credential(cred_id)
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="credential-deleted",

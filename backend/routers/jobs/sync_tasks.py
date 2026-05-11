@@ -12,7 +12,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
-from repositories.audit_log_repository import audit_log_repo
+from dependencies import get_audit_log_service
+from services.audit.audit_log_service import AuditLogService
 from models.celery import (
     SyncDevicesToCheckmkRequest,
     TaskResponse,
@@ -124,6 +125,7 @@ async def trigger_update_device_in_checkmk(
 async def trigger_sync_devices_to_checkmk(
     request: SyncDevicesToCheckmkRequest,
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Manually trigger the sync_devices_to_checkmk background task.
@@ -154,7 +156,7 @@ async def trigger_sync_devices_to_checkmk(
     job_id = f"sync_devices_{task.id}"
 
     try:
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username", "unknown"),
             user_id=current_user.get("user_id"),
             event_type="checkmk_sync",

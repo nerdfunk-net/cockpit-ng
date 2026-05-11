@@ -8,7 +8,9 @@ from fastapi import APIRouter, HTTPException, status, Depends, Request
 from models.auth import UserLogin, LoginResponse
 from core.auth import create_access_token, get_api_key_user
 from core.limiter import limiter
-from repositories.audit_log_repository import audit_log_repo
+from dependencies import get_audit_log_service, get_login_recording_service
+from services.audit.audit_log_service import AuditLogService
+from services.auth.login_recording_service import LoginRecordingService
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +19,11 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 
 @router.post("/login", response_model=LoginResponse)
 @limiter.limit("10/minute")
-async def login(request: Request, user_data: UserLogin):
+async def login(
+    request: Request,
+    user_data: UserLogin,
+    login_recording: LoginRecordingService = Depends(get_login_recording_service),
+):
     """
     Authenticate user against new user database.
     """
@@ -89,25 +95,11 @@ async def login(request: Request, user_data: UserLogin):
                 "debug": user_with_roles.get("debug", False),
             }
 
-            # Update last_login timestamp
-            from repositories.auth.user_repository import UserRepository
-
-            UserRepository().update_last_login(user["id"])
-
-            # Log successful login to audit log
-            audit_log_repo.create_log(
-                username=user["username"],
-                user_id=user["id"],
-                event_type="login",
-                message=f"User '{user['username']}' logged in",
-                resource_type="authentication",
-                resource_id=str(user["id"]),
-                resource_name=user["username"],
-                severity="info",
-                extra_data={
-                    "authentication_method": "password",
-                    "roles": role_names,
-                },
+            login_recording.record_successful_login(
+                user["id"],
+                user["username"],
+                role_names,
+                authentication_method="password",
             )
 
             return LoginResponse(
@@ -263,7 +255,10 @@ async def refresh_token(request: Request):
 
 
 @router.post("/api-key-login", response_model=LoginResponse)
-async def api_key_login(user_info: dict = Depends(get_api_key_user)):
+async def api_key_login(
+    user_info: dict = Depends(get_api_key_user),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
+):
     """
     Authenticate using API key and return JWT token.
     This endpoint allows API key holders to get JWT tokens for accessing protected endpoints.
@@ -282,8 +277,7 @@ async def api_key_login(user_info: dict = Depends(get_api_key_user)):
             expires_delta=access_token_expires,
         )
 
-        # Log API key login to audit log
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=user_info["username"],
             user_id=user_info["user_id"],
             event_type="login",
@@ -318,7 +312,10 @@ async def api_key_login(user_info: dict = Depends(get_api_key_user)):
 
 
 @router.post("/logout")
-async def logout(request: Request):
+async def logout(
+    request: Request,
+    audit_log: AuditLogService = Depends(get_audit_log_service),
+):
     """
     Log user logout event.
 
@@ -348,7 +345,7 @@ async def logout(request: Request):
             user_id = payload.get("user_id")
 
             if username:
-                audit_log_repo.create_log(
+                audit_log.log_event(
                     username=username,
                     user_id=user_id,
                     event_type="logout",

@@ -5,6 +5,7 @@ User repository for user-specific database operations.
 from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy import or_
+from sqlalchemy.orm import Session
 from repositories.base import BaseRepository
 from core.models import User
 from core.database import get_db_session
@@ -157,26 +158,39 @@ class UserRepository(BaseRepository[User]):
         finally:
             db.close()
 
-    def update_last_login(self, user_id: int) -> bool:
+    def update_last_login(
+        self,
+        user_id: int,
+        db: Optional[Session] = None,
+        auto_commit: bool = True,
+    ) -> bool:
         """
         Update the last_login timestamp for a user.
 
         Args:
             user_id: User ID
+            db: Optional session (e.g. from ``db_transaction``)
+            auto_commit: When False with *db*, only flush; caller commits.
 
         Returns:
             True if updated, False if user not found
         """
-        db = get_db_session()
+        own_session = db is None
+        if own_session:
+            db = get_db_session()
         try:
             user = db.query(User).filter(User.id == user_id).first()
             if user:
                 user.last_login = datetime.now(timezone.utc)
-                db.commit()
+                if auto_commit:
+                    db.commit()
+                else:
+                    db.flush()
                 return True
             return False
         finally:
-            db.close()
+            if own_session and db:
+                db.close()
 
     def search_users(self, query: str) -> List[User]:
         """

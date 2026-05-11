@@ -212,6 +212,21 @@ def get_cache_service(request: Request):
 # ---------------------------------------------------------------------------
 
 
+def get_client_data_service():
+    """Provide a ClientDataService instance."""
+    return service_factory.build_client_data_service()
+
+
+def get_audit_log_service():
+    """Provide an AuditLogService instance."""
+    return service_factory.build_audit_log_service()
+
+
+def get_login_recording_service():
+    """Provide a LoginRecordingService instance."""
+    return service_factory.build_login_recording_service()
+
+
 def get_oidc_service(request: Request):
     """Provide the app-scoped OIDCService from app.state."""
     return request.app.state.oidc_service

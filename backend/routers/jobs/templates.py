@@ -6,7 +6,8 @@ API endpoints for managing job templates
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Optional
 from core.auth import verify_token
-from dependencies import get_job_template_service
+from dependencies import get_audit_log_service, get_job_template_service
+from services.audit.audit_log_service import AuditLogService
 from services.jobs.job_template_service import JobTemplateService
 from models.job_templates import (
     JobTemplateCreate,
@@ -15,7 +16,6 @@ from models.job_templates import (
     JobTemplateListResponse,
 )
 import logging
-from repositories.audit_log_repository import audit_log_repo
 
 from core.safe_http_errors import raise_internal_server_error
 
@@ -29,6 +29,7 @@ async def create_job_template(
     template_data: JobTemplateCreate,
     current_user: dict = Depends(verify_token),
     job_template_service: JobTemplateService = Depends(get_job_template_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Create a new job template
@@ -131,7 +132,7 @@ async def create_job_template(
             is_global=template_data.is_global,
         )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="job-template-created",
@@ -229,6 +230,7 @@ async def update_job_template(
     update_data: JobTemplateUpdate,
     current_user: dict = Depends(verify_token),
     job_template_service: JobTemplateService = Depends(get_job_template_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Update a job template"""
     try:
@@ -337,7 +339,7 @@ async def update_job_template(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
             )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="job-template-updated",
@@ -367,6 +369,7 @@ async def delete_job_template(
     template_id: int,
     current_user: dict = Depends(verify_token),
     job_template_service: JobTemplateService = Depends(get_job_template_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Delete a job template"""
     try:
@@ -404,7 +407,7 @@ async def delete_job_template(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
             )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="job-template-deleted",

@@ -7,7 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
 from datetime import datetime, timezone
 from core.auth import verify_token, require_permission
-from dependencies import get_job_schedule_service
+from dependencies import get_audit_log_service, get_job_schedule_service
+from services.audit.audit_log_service import AuditLogService
 from services.jobs.job_schedule_service import JobScheduleService
 from models.jobs import (
     JobScheduleCreate,
@@ -16,7 +17,6 @@ from models.jobs import (
     JobExecutionRequest,
 )
 import logging
-from repositories.audit_log_repository import audit_log_repo
 
 from core.safe_http_errors import raise_internal_server_error
 
@@ -30,6 +30,7 @@ async def create_job_schedule(
     job_data: JobScheduleCreate,
     current_user: dict = Depends(verify_token),
     job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Create a new job schedule
@@ -73,7 +74,7 @@ async def create_job_schedule(
             job_parameters=job_data.job_parameters,
         )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="job-schedule-created",
@@ -223,6 +224,7 @@ async def delete_job_schedule(
     job_id: int,
     current_user: dict = Depends(verify_token),
     job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Delete a job schedule"""
     try:
@@ -266,7 +268,7 @@ async def delete_job_schedule(
                 detail="Failed to delete job schedule",
             )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="job-schedule-deleted",

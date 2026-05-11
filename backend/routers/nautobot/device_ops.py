@@ -10,6 +10,7 @@ from core.auth import require_permission
 from services.nautobot.common.exceptions import NautobotNotFoundError
 from models.nautobot import DeviceVirtualChassisStatus, OffboardDeviceRequest
 from dependencies import (
+    get_audit_log_service,
     get_nautobot_service,
     get_offboarding_service,
     get_device_query_service,
@@ -21,7 +22,7 @@ from services.nautobot.offboarding.service import OffboardingService
 from services.nautobot.offboarding.virtual_chassis_cleanup import (
     VirtualChassisCleanupManager,
 )
-from repositories.audit_log_repository import audit_log_repo
+from services.audit.audit_log_service import AuditLogService
 
 from core.safe_http_errors import raise_internal_server_error
 
@@ -90,6 +91,7 @@ async def delete_device(
     current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
     cache_service=Depends(get_cache_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Delete a device from Nautobot."""
     try:
@@ -113,7 +115,7 @@ async def delete_device(
         for key in cache_keys_to_clear:
             cache_service.delete(key)
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-device-deleted",

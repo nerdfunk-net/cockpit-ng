@@ -270,6 +270,27 @@ def build_user_service():
     return UserService()
 
 
+def build_client_data_service():
+    """Create a ClientDataService for collected ARP/MAC/hostname data."""
+    from services.clients.client_data_service import ClientDataService
+
+    return ClientDataService()
+
+
+def build_audit_log_service():
+    """Create an AuditLogService (routers use this instead of the repository)."""
+    from services.audit.audit_log_service import AuditLogService
+
+    return AuditLogService()
+
+
+def build_login_recording_service():
+    """Create LoginRecordingService (last_login + audit in one transaction)."""
+    from services.auth.login_recording_service import LoginRecordingService
+
+    return LoginRecordingService()
+
+
 def build_rbac_service():
     """Create a fresh RBACService instance (with UserService injected)."""
     from services.auth.rbac_service import RBACService

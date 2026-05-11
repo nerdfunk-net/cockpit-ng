@@ -18,8 +18,8 @@ from models.auth import (
 )
 from core.auth import create_access_token, require_role
 from core.safe_http_errors import raise_internal_server_error
-from dependencies import get_oidc_service
-from repositories.audit_log_repository import audit_log_repo
+from dependencies import get_login_recording_service, get_oidc_service
+from services.auth.login_recording_service import LoginRecordingService
 from config import settings
 from services.settings.manager import SettingsManager as _SM
 
@@ -192,6 +192,7 @@ async def oidc_callback(
     provider_id: str,
     callback_data: OIDCCallbackRequest,
     oidc_service=Depends(get_oidc_service),
+    login_recording: LoginRecordingService = Depends(get_login_recording_service),
 ):
     """
     Handle OIDC callback with authorization code for specific provider.
@@ -308,25 +309,14 @@ async def oidc_callback(
             provider_id,
         )
 
-        # Update last_login timestamp
-        from repositories.auth.user_repository import UserRepository
-
-        UserRepository().update_last_login(user["id"])
-
-        # Log successful OIDC login to audit log
-        audit_log_repo.create_log(
-            username=user["username"],
-            user_id=user["id"],
-            event_type="login",
+        login_recording.record_successful_login(
+            user["id"],
+            user["username"],
+            role_names,
+            authentication_method="oidc",
             message=f"User '{user['username']}' logged in via OIDC",
-            resource_type="authentication",
-            resource_id=str(user["id"]),
-            resource_name=user["username"],
-            severity="info",
             extra_data={
-                "authentication_method": "oidc",
                 "oidc_provider": provider_id,
-                "roles": role_names,
                 "is_new_user": is_new_user,
             },
         )
