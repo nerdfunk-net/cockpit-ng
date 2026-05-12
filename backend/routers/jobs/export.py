@@ -15,6 +15,7 @@ import service_factory
 from celery_app import celery_app
 from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_nautobot_service
 from models.celery import (
     CsvExportRequest,
@@ -116,10 +117,7 @@ async def preview_export_devices(
         raise
     except Exception as exc:
         logger.error("Error previewing export: %s", exc, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to preview export: {str(exc)}",
-        )
+        raise_internal_server_error(logger, "Failed to preview export", exc)
 
 
 @router.post("/tasks/export-devices", response_model=TaskWithJobResponse)

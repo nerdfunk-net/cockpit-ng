@@ -81,10 +81,11 @@ async def get_checkmk_stats(
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except CheckMKAPIError as e:
-        logger.error("CheckMK API error: %s", str(e))
-        raise HTTPException(
+        raise_internal_server_error(
+            logger,
+            "CheckMK API error while fetching statistics",
+            e,
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"CheckMK API error: {str(e)}",
         )
     except HTTPException:
         raise
@@ -130,12 +131,21 @@ async def get_host_inventory(
     except HostNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except CheckMKAPIError as e:
-        raise HTTPException(
+        raise_internal_server_error(
+            logger,
+            f"CheckMK inventory API error for {hostname}",
+            e,
+            extra={"hostname": hostname},
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"CheckMK inventory API error: {str(e)}",
         )
     except CheckMKClientError as e:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
+        raise_internal_server_error(
+            logger,
+            f"CheckMK client error retrieving inventory for {hostname}",
+            e,
+            extra={"hostname": hostname},
+            status_code=status.HTTP_502_BAD_GATEWAY,
+        )
     except HTTPException:
         raise
     except Exception as e:

@@ -7,6 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_template_import_service, get_template_scan_service
 from models.templates import (
     TemplateImportRequest,
@@ -27,11 +28,7 @@ async def scan_import_directory(
     try:
         return scan_service.scan_import_directory()
     except Exception as exc:
-        logger.error("Failed to scan import directory: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to scan import directory: {exc}",
-        )
+        raise_internal_server_error(logger, "Failed to scan import directory", exc)
 
 
 @router.post("/import", response_model=TemplateImportResponse)
@@ -47,8 +44,4 @@ async def import_templates(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
-        logger.error("Error importing templates: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to import templates: {exc}",
-        )
+        raise_internal_server_error(logger, "Failed to import templates", exc)

@@ -12,6 +12,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_client_data_service
 from services.clients.client_data_service import ClientDataService
 
@@ -26,8 +27,11 @@ async def get_client_devices(
     client_data: ClientDataService = Depends(get_client_data_service),
 ) -> dict:
     """Return a sorted list of distinct device names from collected ARP data."""
-    devices = client_data.get_device_names()
-    return {"devices": devices}
+    try:
+        devices = client_data.get_device_names()
+        return {"devices": devices}
+    except Exception as exc:
+        raise_internal_server_error(logger, "Failed to list client devices", exc)
 
 
 @router.get("/data")
@@ -46,22 +50,25 @@ async def get_client_data(
     client_data: ClientDataService = Depends(get_client_data_service),
 ) -> dict:
     """Return paginated correlated client data (ARP + MAC table + hostname)."""
-    items, total = client_data.get_client_data(
-        device_name=device_name,
-        ip_address=ip_address,
-        mac_address=mac_address,
-        port=port,
-        vlan=vlan,
-        hostname=hostname,
-        page=page,
-        page_size=page_size,
-    )
-    return {
-        "items": items,
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-    }
+    try:
+        items, total = client_data.get_client_data(
+            device_name=device_name,
+            ip_address=ip_address,
+            mac_address=mac_address,
+            port=port,
+            vlan=vlan,
+            hostname=hostname,
+            page=page,
+            page_size=page_size,
+        )
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
+    except Exception as exc:
+        raise_internal_server_error(logger, "Failed to get client data", exc)
 
 
 @router.get("/history")
@@ -79,8 +86,11 @@ async def get_client_history(
     """
     if not any([ip_address, mac_address, hostname]):
         return {"ip_history": [], "mac_history": [], "hostname_history": []}
-    return client_data.get_client_history(
-        ip_address=ip_address,
-        mac_address=mac_address,
-        hostname=hostname,
-    )
+    try:
+        return client_data.get_client_history(
+            ip_address=ip_address,
+            mac_address=mac_address,
+            hostname=hostname,
+        )
+    except Exception as exc:
+        raise_internal_server_error(logger, "Failed to get client history", exc)

@@ -68,11 +68,11 @@ async def compare_device_config(
             detail=error_msg,
         )
     except Exception as e:
-        error_msg = f"Unexpected error comparing device {device_id}: {str(e)}"
-        logger.error("[ROUTER] %s", error_msg, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_msg,
+        raise_internal_server_error(
+            logger,
+            f"Unexpected error comparing device {device_id}",
+            e,
+            extra={"device_id": device_id},
         )
 
 
@@ -133,8 +133,11 @@ async def add_device_to_checkmk(
             detail=error_msg,
         )
     except Exception as e:
-        error_msg = f"Unexpected error adding device {device_id} to CheckMK: {str(e)}"
-        logger.error("[ROUTER] %s", error_msg, exc_info=True)
+        logger.error(
+            "[ROUTER] Unexpected error adding device %s to CheckMK",
+            device_id,
+            exc_info=True,
+        )
         log_checkmk_sync_event(
             username=username,
             action="add",
@@ -144,9 +147,11 @@ async def add_device_to_checkmk(
             success=False,
             error_message=str(e),
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_msg,
+        raise_internal_server_error(
+            logger,
+            f"Unexpected error adding device {device_id} to CheckMK",
+            e,
+            extra={"device_id": device_id},
         )
 
 
@@ -207,8 +212,11 @@ async def update_device_in_checkmk(
             detail=error_msg,
         )
     except Exception as e:
-        error_msg = f"Unexpected error updating device {device_id} in CheckMK: {str(e)}"
-        logger.error("[ROUTER] %s", error_msg, exc_info=True)
+        logger.error(
+            "[ROUTER] Unexpected error updating device %s in CheckMK",
+            device_id,
+            exc_info=True,
+        )
         log_checkmk_sync_event(
             username=username,
             action="update",
@@ -218,9 +226,11 @@ async def update_device_in_checkmk(
             success=False,
             error_message=str(e),
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_msg,
+        raise_internal_server_error(
+            logger,
+            f"Unexpected error updating device {device_id} in CheckMK",
+            e,
+            extra={"device_id": device_id},
         )
 
 

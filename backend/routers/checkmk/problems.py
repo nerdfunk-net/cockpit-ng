@@ -44,12 +44,11 @@ async def acknowledge_host_problem(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error acknowledging problem for host %s: %s", request.host_name, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to acknowledge problem for host {request.host_name}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to acknowledge problem for host {request.host_name}",
+            e,
+            extra={"host_name": request.host_name},
         )
 
 
@@ -118,12 +117,11 @@ async def create_host_downtime(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error creating downtime for host %s: %s", request.host_name, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create downtime for host {request.host_name}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to create downtime for host {request.host_name}",
+            e,
+            extra={"host_name": request.host_name},
         )
 
 

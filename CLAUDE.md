@@ -515,6 +515,7 @@ PORT=3000
 - ✅ Check permissions with `require_permission()`
 - ✅ Use HTTPS in production
 - ✅ Never commit `.env` files
+- ✅ **5xx errors:** Never put raw exception text (`str(e)`, `{exc}`, etc.) in `HTTPException(detail=…)` for server errors. Use `core.safe_http_errors.raise_internal_server_error` (and optional `status_code` for sanitized non-500 5xx such as 502) so clients only see `{message, error_id}`; correlate via logs.
 
 ## Development Workflow
 ```bash
@@ -527,6 +528,10 @@ cd frontend && npm run dev
 # Default credentials: admin/admin
 # Frontend: http://localhost:3000
 # Backend: http://localhost:8000
+
+# Router regression guards (from backend/)
+python scripts/check_asyncio_run.py
+python scripts/check_http_500_leaks.py
 ```
 
 When implementing configuration changes, include verification steps that confirm the change works (e.g., run a quick test, check logs, or validate config loads)
@@ -702,6 +707,7 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 - ❌ Creating monolithic God Object services (note: DeviceCommonService is a facade, not a God Object)
 - ❌ Mixing validation/transformation logic with API calls
 - ❌ using f-string in Logging
+- ❌ Embedding raw exception text (`str(e)`, `{exc}`, f-strings interpolating exceptions, etc.) in `HTTPException(detail=…)` for any **5xx** response. Use `core.safe_http_errors.raise_internal_server_error` and let the client see only `{message, error_id}` (optionally pass `status_code` for sanitized 502/503 responses).
 
 **Frontend:**
 - ❌ Placing components at `/components/` root without feature grouping

@@ -611,9 +611,11 @@ async def create_virtual_machine(
         logger.error("======= FATAL ERROR =======")
         logger.error("=" * 80)
         logger.error("Error: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create virtual machine: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            "Failed to create virtual machine",
+            e,
+            extra={"vm_name": vm_request.name},
         )
 
 

@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from models.templates import (
     TemplateListResponse,
     TemplateRequest,
@@ -53,11 +54,7 @@ async def list_templates(
         )
 
     except Exception as exc:
-        logger.error("Error listing templates: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list templates: {exc}",
-        )
+        raise_internal_server_error(logger, "Failed to list templates", exc)
 
 
 @router.post("/", response_model=TemplateResponse)
@@ -89,11 +86,7 @@ async def create_template(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Error creating template: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create template: {exc}",
-        )
+        raise_internal_server_error(logger, "Failed to create template", exc)
 
 
 @router.get("/categories")
@@ -109,11 +102,7 @@ async def get_template_categories(
         return template_manager.get_categories()
 
     except Exception as exc:
-        logger.error("Error getting template categories: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get categories: {exc}",
-        )
+        raise_internal_server_error(logger, "Failed to get template categories", exc)
 
 
 @router.get("/name/{template_name}", response_model=TemplateResponse)
@@ -138,10 +127,11 @@ async def get_template_by_name(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Error getting template by name '%s': %s", template_name, exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get template: {exc}",
+        raise_internal_server_error(
+            logger,
+            "Failed to get template by name",
+            exc,
+            extra={"template_name": template_name},
         )
 
 
@@ -167,10 +157,11 @@ async def get_template(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Error getting template %s: %s", template_id, exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get template: {exc}",
+        raise_internal_server_error(
+            logger,
+            "Failed to get template",
+            exc,
+            extra={"template_id": template_id},
         )
 
 
@@ -215,10 +206,11 @@ async def update_template(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Error updating template %s: %s", template_id, exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update template: {exc}",
+        raise_internal_server_error(
+            logger,
+            "Failed to update template",
+            exc,
+            extra={"template_id": template_id},
         )
 
 
@@ -246,8 +238,9 @@ async def delete_template(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Error deleting template %s: %s", template_id, exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete template: {exc}",
+        raise_internal_server_error(
+            logger,
+            "Failed to delete template",
+            exc,
+            extra={"template_id": template_id},
         )

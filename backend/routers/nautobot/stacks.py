@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import require_permission
 from core.safe_http_errors import raise_internal_server_error
@@ -209,11 +209,7 @@ async def get_stack_devices(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Error fetching stack devices: %s", str(exc))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch stack devices: {str(exc)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch stack devices", exc)
 
 
 @router.post(

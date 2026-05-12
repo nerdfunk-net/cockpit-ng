@@ -211,15 +211,12 @@ async def get_host(
     except HostNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except CheckMKAPIError as e:
-        logger.error(
-            "CheckMK API error getting host %s: %s (status: %s)",
-            hostname,
-            str(e),
-            e.status_code,
-        )
-        raise HTTPException(
+        raise_internal_server_error(
+            logger,
+            f"CheckMK API error getting host {hostname}",
+            e,
+            extra={"hostname": hostname, "checkmk_status": e.status_code},
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"CheckMK API error: {str(e)}",
         )
     except HTTPException:
         raise

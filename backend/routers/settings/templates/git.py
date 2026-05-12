@@ -5,9 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from models.templates import (
     TemplateGitTestRequest,
     TemplateSyncRequest,
@@ -70,7 +71,4 @@ async def sync_templates(
 
     except Exception as exc:
         logger.error("Error syncing templates: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to sync templates: {exc}",
-        )
+        raise_internal_server_error(logger, "Failed to sync templates", exc)

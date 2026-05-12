@@ -283,9 +283,11 @@ async def resolve_inventory_to_devices(
         logger.error(
             "Error resolving inventory '%s': %s", inventory_id, e, exc_info=True
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to resolve inventory: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            "Failed to resolve inventory",
+            e,
+            extra={"inventory_id": inventory_id},
         )
 
 
@@ -392,9 +394,11 @@ async def resolve_inventory_to_devices_detailed(
         logger.error(
             "Error resolving detailed inventory %s: %s", inventory_id, e, exc_info=True
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to resolve detailed inventory: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            "Failed to resolve detailed inventory",
+            e,
+            extra={"inventory_id": inventory_id},
         )
 
 

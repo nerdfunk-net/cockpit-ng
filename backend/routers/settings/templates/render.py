@@ -7,6 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_template_render_orchestrator
 from models.templates import (
     AdvancedTemplateRenderRequest,
@@ -33,11 +34,7 @@ async def advanced_render_template(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
-        logger.error("Error in advanced template rendering: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to render template: {exc}",
-        )
+        raise_internal_server_error(logger, "Failed to render template", exc)
 
 
 @router.post("/execute-and-sync", response_model=TemplateExecuteAndSyncResponse)
@@ -55,8 +52,6 @@ async def execute_template_and_sync_to_nautobot(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     except Exception as exc:
-        logger.error("Error in execute-and-sync: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to execute template and sync: {exc}",
+        raise_internal_server_error(
+            logger, "Failed to execute template and sync", exc
         )

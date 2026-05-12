@@ -111,10 +111,11 @@ async def get_job_results(
                 detail=f"Job result not found: {job_id}",
             )
 
-        logger.error("Error fetching job result %s: %s", job_id, error_msg)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch job result: {error_msg}",
+        raise_internal_server_error(
+            logger,
+            "Failed to fetch job result",
+            e,
+            extra={"job_id": job_id},
         )
 
 

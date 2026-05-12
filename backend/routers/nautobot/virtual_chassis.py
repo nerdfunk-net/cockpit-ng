@@ -11,6 +11,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_nautobot_service
 from models.nautobot import (
     CreateVirtualChassisRequest,
@@ -51,17 +52,11 @@ async def list_virtual_chassis(
         result = await nautobot_service.graphql_query(query)
         return result["data"]["virtual_chassis"]
     except NautobotAPIError as exc:
-        logger.error("Failed to list virtual chassis: %s", exc, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list virtual chassis: {exc}",
+        raise_internal_server_error(
+            logger, "Failed to list virtual chassis (Nautobot API error)", exc
         )
     except Exception as exc:
-        logger.error("Failed to list virtual chassis: %s", exc, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list virtual chassis: {exc}",
-        )
+        raise_internal_server_error(logger, "Failed to list virtual chassis", exc)
 
 
 VIRTUAL_CHASSIS_DETAIL_QUERY = """
@@ -124,20 +119,18 @@ async def get_virtual_chassis_detail(
     except HTTPException:
         raise
     except NautobotAPIError as exc:
-        logger.error(
-            "Failed to get virtual chassis detail %s: %s", vc_id, exc, exc_info=True
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get virtual chassis detail: {exc}",
+        raise_internal_server_error(
+            logger,
+            "Failed to get virtual chassis detail (Nautobot API error)",
+            exc,
+            extra={"vc_id": vc_id},
         )
     except Exception as exc:
-        logger.error(
-            "Failed to get virtual chassis detail %s: %s", vc_id, exc, exc_info=True
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get virtual chassis detail: {exc}",
+        raise_internal_server_error(
+            logger,
+            "Failed to get virtual chassis detail",
+            exc,
+            extra={"vc_id": vc_id},
         )
 
 
@@ -187,22 +180,18 @@ async def create_virtual_chassis(
         return result
     except NautobotAPIError as exc:
         error_msg = str(exc)
-        logger.error("Failed to create virtual chassis: %s", error_msg, exc_info=True)
         if "status 400" in error_msg:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=error_msg,
             )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create virtual chassis: {error_msg}",
+        raise_internal_server_error(
+            logger,
+            "Failed to create virtual chassis (Nautobot API error)",
+            exc,
         )
     except Exception as exc:
-        logger.error("Failed to create virtual chassis: %s", exc, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create virtual chassis: {exc}",
-        )
+        raise_internal_server_error(logger, "Failed to create virtual chassis", exc)
 
 
 @router.delete(
@@ -238,25 +227,23 @@ async def delete_virtual_chassis(
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except NautobotAPIError as exc:
         error_msg = str(exc)
-        logger.error(
-            "Failed to delete virtual chassis %s: %s", vc_id, error_msg, exc_info=True
-        )
         if "404" in error_msg or "Not Found" in error_msg:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Virtual chassis {vc_id} not found",
             )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete virtual chassis: {error_msg}",
+        raise_internal_server_error(
+            logger,
+            "Failed to delete virtual chassis (Nautobot API error)",
+            exc,
+            extra={"vc_id": vc_id},
         )
     except Exception as exc:
-        logger.error(
-            "Failed to delete virtual chassis %s: %s", vc_id, exc, exc_info=True
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete virtual chassis: {exc}",
+        raise_internal_server_error(
+            logger,
+            "Failed to delete virtual chassis",
+            exc,
+            extra={"vc_id": vc_id},
         )
 
 
@@ -295,9 +282,6 @@ async def update_virtual_chassis(
         return result
     except NautobotAPIError as exc:
         error_msg = str(exc)
-        logger.error(
-            "Failed to update virtual chassis %s: %s", vc_id, error_msg, exc_info=True
-        )
         if "404" in error_msg or "Not Found" in error_msg:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -308,15 +292,16 @@ async def update_virtual_chassis(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=error_msg,
             )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update virtual chassis: {error_msg}",
+        raise_internal_server_error(
+            logger,
+            "Failed to update virtual chassis (Nautobot API error)",
+            exc,
+            extra={"vc_id": vc_id},
         )
     except Exception as exc:
-        logger.error(
-            "Failed to update virtual chassis %s: %s", vc_id, exc, exc_info=True
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update virtual chassis: {exc}",
+        raise_internal_server_error(
+            logger,
+            "Failed to update virtual chassis",
+            exc,
+            extra={"vc_id": vc_id},
         )

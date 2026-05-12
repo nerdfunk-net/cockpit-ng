@@ -77,9 +77,11 @@ async def get_device_details(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=str(e),
             )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+        raise_internal_server_error(
+            logger,
+            "Failed to fetch device details (unexpected ValueError)",
+            e,
+            extra={"device_id": device_id},
         )
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch device details: ", e)
@@ -161,12 +163,9 @@ async def offboard_device(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Unexpected error during offboard process for device %s: %s",
-            device_id,
-            str(e),
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Offboarding failed: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            "Unexpected error during offboard process",
+            e,
+            extra={"device_id": device_id},
         )

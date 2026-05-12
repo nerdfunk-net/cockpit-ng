@@ -73,9 +73,12 @@ async def get_all_folders(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Parent folder '{parent}' not found in CheckMK",
             )
-        raise HTTPException(
+        raise_internal_server_error(
+            logger,
+            "CheckMK API error while listing folders",
+            e,
+            extra={"parent": parent, "checkmk_status": e.status_code},
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"CheckMK API error: {str(e)}",
         )
     except HTTPException:
         raise
@@ -180,15 +183,12 @@ async def get_folder(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Folder '{folder_path}' not found in CheckMK",
             )
-        logger.error(
-            "CheckMK API error getting folder %s: %s (status: %s)",
-            folder_path,
-            str(e),
-            e.status_code,
-        )
-        raise HTTPException(
+        raise_internal_server_error(
+            logger,
+            f"CheckMK API error getting folder {folder_path}",
+            e,
+            extra={"folder_path": folder_path, "checkmk_status": e.status_code},
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"CheckMK API error: {str(e)}",
         )
     except HTTPException:
         raise

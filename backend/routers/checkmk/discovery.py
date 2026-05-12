@@ -45,12 +45,11 @@ async def get_service_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error getting service discovery for host %s: %s", hostname, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get service discovery for host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to get service discovery for host {hostname}",
+            e,
+            extra={"hostname": hostname},
         )
 
 
@@ -76,12 +75,11 @@ async def start_service_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error starting service discovery for host %s: %s", hostname, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start service discovery for host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to start service discovery for host {hostname}",
+            e,
+            extra={"hostname": hostname},
         )
 
 
@@ -106,12 +104,11 @@ async def wait_for_service_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error waiting for service discovery for host %s: %s", hostname, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to wait for service discovery for host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to wait for service discovery for host {hostname}",
+            e,
+            extra={"hostname": hostname},
         )
 
 

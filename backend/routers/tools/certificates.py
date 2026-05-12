@@ -13,6 +13,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from models.tools import (
     CertificateInfo,
     ScanResponse,
@@ -81,10 +82,7 @@ def scan_certificates(
         )
     except Exception as e:
         logger.error("Error scanning certificates: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to scan certificates: {e}",
-        )
+        raise_internal_server_error(logger, "Failed to scan certificates", e)
 
 
 @router.post("/upload")
@@ -151,10 +149,7 @@ async def upload_certificate(
         raise
     except Exception as e:
         logger.error("Error uploading certificate: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload certificate: {e}",
-        )
+        raise_internal_server_error(logger, "Failed to upload certificate", e)
 
 
 @router.post("/add-to-system", response_model=AddCertificateResponse)
@@ -313,7 +308,4 @@ def delete_certificate(
         raise
     except Exception as e:
         logger.error("Error deleting certificate: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete certificate: {e}",
-        )
+        raise_internal_server_error(logger, "Failed to delete certificate", e)

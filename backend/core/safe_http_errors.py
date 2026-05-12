@@ -27,11 +27,14 @@ def raise_internal_server_error(
     exc: BaseException | None = None,
     *,
     extra: dict[str, Any] | None = None,
+    status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
 ) -> NoReturn:
     """
-    Log a server failure (with optional traceback) and raise HTTP 500 with a safe body.
+    Log a server failure (with optional traceback) and raise HTTP 5xx with a safe body.
 
     Call from ``except`` blocks; when ``exc`` is passed, traceback is logged via ``exc_info``.
+    Use ``status_code`` for non-500 failures (e.g. ``HTTP_502_BAD_GATEWAY``) while keeping
+    the same sanitized ``detail`` shape.
     """
     error_id = str(uuid.uuid4())
     log_extra: dict[str, Any] = {"error_id": error_id}
@@ -53,6 +56,6 @@ def raise_internal_server_error(
             extra=log_extra,
         )
     raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        status_code=status_code,
         detail=internal_error_detail(error_id=error_id),
     )

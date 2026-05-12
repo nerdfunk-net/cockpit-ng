@@ -121,10 +121,9 @@ async def show_service(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error showing service %s for host %s: %s", service, hostname, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to show service {service} for host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to show service {service} for host {hostname}",
+            e,
+            extra={"hostname": hostname, "service": service},
         )

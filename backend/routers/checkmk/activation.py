@@ -132,12 +132,11 @@ async def get_activation_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error getting activation status for %s: %s", activation_id, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get activation status for {activation_id}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to get activation status for {activation_id}",
+            e,
+            extra={"activation_id": activation_id},
         )
 
 

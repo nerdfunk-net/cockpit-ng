@@ -4,6 +4,34 @@ This document records findings from a backend architecture and Python best-pract
 
 ---
 
+## 0. Implementation status (snapshot)
+
+Status legend: ✅ **done** · 🟡 **partial** · ⬜ **not started**.
+
+| Phase | Item | Status | Notes |
+|-------|------|--------|-------|
+| P0.A | Inventory of blocking async + `asyncio.run` | ✅ | Captured in companion doc `CURSOR_ASYNC_PLAN.md`; CI script `backend/scripts/check_asyncio_run.py` enforces "no `asyncio.run` in `routers/`". |
+| P0.B | `cockpit_agent` router blocking routes | ✅ | All blocking handlers converted to sync `def` so Starlette runs them in its thread pool (see `backend/routers/cockpit_agent.py`). |
+| P0.C | `asyncio.run` reachable from HTTP | ✅ | No `asyncio.run` remains in `routers/`. `services/nautobot/onboarding/onboarding_service.py` keeps its `asyncio.run` but is now documented as Celery-only (worker boundary). Other service-layer call sites are tracked in `CURSOR_ASYNC_PLAN.md` for later phases and are not reachable from `async def` routes. |
+| P1.A | 5xx sanitization policy | ✅ | `backend/core/safe_http_errors.py` adds `raise_internal_server_error(logger, msg, exc)` returning `{message, error_id}` and logging `exc_info`. |
+| P1.B¹ | `core/error_handlers.py` decorators | ✅ | `handle_errors`, `handle_not_found`, `handle_validation_errors` route 5xx through `raise_internal_server_error`. |
+| P1.B² | `main.py` GraphQL compatibility handler | ✅ | Uses `raise_internal_server_error` instead of `detail=str(e)`. |
+| P1.B³ | Batch-fix router `detail=str(e)` for 5xx | ✅ | Completed sweep per `doc/refactoring/REFACTORE_SANITIZED_ERRORS.md`; `backend/scripts/check_http_500_leaks.py` guards routers; optional `status_code` on `raise_internal_server_error` preserves 502/503 semantics with sanitized bodies. |
+| P1.C | Logging with `error_id` | ✅ | Built into `safe_http_errors.py`. |
+| P2.A | `ClientDataService` + clean clients router | ✅ | `backend/services/clients/client_data_service.py`, DI via `get_client_data_service`; `routers/clients.py` no longer instantiates the repository. |
+| P2.B | Login/audit/last_login in single service + transaction | ✅ | `services/auth/login_recording_service.py` performs `update_last_login` + audit log in one `db_transaction()`; `routers/auth/auth.py` calls it. |
+| P2.C | `AuditLogService` + migrate routers | ✅ | `services/audit/audit_log_service.py`; `get_audit_log_service` dependency; only `routers/agents/deploy.py` still imports a repository directly (settings + git repo lookups). |
+| P3.A | Policy decision documented in `CLAUDE.md` | ⬜ | `CLAUDE.md` still states the strict "never raw SQL" rule. A pragmatic exception for read-only repository-confined SQL has been adopted in practice but not yet written into `CLAUDE.md`. |
+| P3.B | `ClientDataRepository` SQL refactor + tests | 🟡 | `get_client_data` rewritten with SQLAlchemy CTEs (`_client_data_combined_cte`). `get_device_names`, `delete_old_sessions`, `get_client_history` still use `text()` (SQL hoisted into module-level `_LATEST_SESSION_SUBQUERY` constant where shared, but not yet ORM-converted). Integration tests against PostgreSQL still TODO. |
+| P3.C | Move dashboard stats SQL into repository | ⬜ | `services/jobs/job_run_service.py.get_dashboard_stats` still opens its own session and runs two `text()` queries. |
+| P4.1 | Single `if __name__ == "__main__"` in `main.py` | ⬜ | Two blocks remain (lines 315 and 592). |
+| P4.2 | Git template stub endpoints honest status | ⬜ | `routers/settings/templates/git.py` still returns fake-success payloads and carries `TODO`. |
+| P4.3 | Architecture import guard (routers → repositories) | 🟡 | `check_asyncio_run.py` enforces a similar guard for `asyncio.run`; no equivalent script yet bans `from repositories` inside `routers/` (one remaining hit: `routers/agents/deploy.py`). |
+
+> Update this table when finishing a sub-item; the per-phase sections below carry the same status flags inline.
+
+---
+
 ## 1. Findings summary (what is wrong or risky)
 
 Use this section as the single overview before diving into phases.
@@ -39,9 +67,11 @@ Order is chosen by **user-visible risk**, **correctness under concurrency**, the
 
 ## 3. Detailed refactor plans by priority
 
-### P0 — Async/blocking and `asyncio.run` (do first)
+### P0 — Async/blocking and `asyncio.run` (do first) — ✅ done (see notes)
 
-#### P0.A — Inventory (before coding)
+> Detailed plan and remaining service-layer work tracked in `doc/refactoring/CURSOR_ASYNC_PLAN.md`. HTTP-reachable risk is closed; further `asyncio.run` cleanup in Celery/services is sequenced there.
+
+#### P0.A — Inventory (before coding) — ✅ done
 
 1. Run: `rg "async def" backend/routers -l` and for each file, check whether the body `await`s I/O or calls sync DB/Redis/HTTP/`time.sleep`.
 2. Run: `rg "asyncio\\.run\\(" backend -g'*.py'` and list every call site with file + function name.
@@ -50,7 +80,9 @@ Order is chosen by **user-visible risk**, **correctness under concurrency**, the
    - **Inside Celery task** (often OK in worker process; still prefer one consistent async strategy).
    - **Inside sync script** (`start_celery.py`, `scripts/*`) — lower priority.
 
-#### P0.B — `cockpit_agent` router and service (concrete example)
+#### P0.B — `cockpit_agent` router and service (concrete example) — ✅ done
+
+**Implemented:** All blocking handlers (`send_command`, `git_pull`, `docker_restart`, status/list/history reads) declared as sync `def`; docstrings note that the blocking Redis pub/sub wait runs in Starlette's thread pool. The remaining `async def` (`ping_devices`) only `await`s real I/O and dispatches a Celery job (no blocking work on the loop).
 
 **Problem:** `backend/routers/cockpit_agent.py` defines `async def send_command`, `git_pull`, `docker_restart`, etc., but calls `CockpitAgentService.send_command`, `wait_for_response`, … which are **sync** and perform **blocking** Redis operations.
 
@@ -65,7 +97,9 @@ Order is chosen by **user-visible risk**, **correctness under concurrency**, the
 - Load test or manual parallel requests: event loop remains responsive (e.g. health endpoint stays fast while agent commands run).
 - No `async def` route that blocks > ~50 ms without offload (document a numeric SLO if the team agrees).
 
-#### P0.C — `asyncio.run` removal (`onboarding_service` and others)
+#### P0.C — `asyncio.run` removal (`onboarding_service` and others) — ✅ done for HTTP paths
+
+**Implemented:** `backend/scripts/check_asyncio_run.py` is the regression guard ("no `asyncio.run` under `backend/routers/`"). `services/nautobot/onboarding/onboarding_service.py` retains a single `asyncio.run` at line 369 but its module docstring now states it is **Celery-only** (invoked exclusively from `tasks/onboard_device_task.py`) — see also `CURSOR_ASYNC_PLAN.md §5.5`. Other service-layer `asyncio.run` sites are inventoried and sequenced in `CURSOR_ASYNC_PLAN.md` (Phase 3 onwards) and are not reachable from `async def` routes.
 
 **Problem:** `asyncio.run()` from sync code that may be invoked under an existing loop is fragile.
 
@@ -82,9 +116,9 @@ Order is chosen by **user-visible risk**, **correctness under concurrency**, the
 
 ---
 
-### P1 — Sanitize error responses (do second)
+### P1 — Sanitize error responses (do second) — ✅ done (see status table)
 
-#### P1.A — Policy
+#### P1.A — Policy — ✅ done
 
 - **5xx:** Return a **generic** message to clients, e.g. `"An internal error occurred"`, plus optional **opaque** `error_id` (UUID) that appears in server logs.
 - **4xx:** Keep specific validation messages where safe.
@@ -92,11 +126,20 @@ Order is chosen by **user-visible risk**, **correctness under concurrency**, the
 
 #### P1.B — Central places to change first
 
-1. `backend/core/error_handlers.py` — `handle_errors`, `handle_not_found`, `handle_validation_errors`: replace `detail=f"Failed to {operation}: {str(e)}"` with generic detail + log `exc_info` including `error_id`.
-2. `backend/main.py` — `/api/nautobot/graphql` compatibility handler: do not return `str(e)` in 500 body; log full exception server-side.
-3. Routers with explicit `raise HTTPException(..., detail=str(e))`: fix in batches (start with auth, settings, checkmk, cockpit_agent — high traffic / sensitive).
+1. ✅ `backend/core/error_handlers.py` — `handle_errors`, `handle_not_found`, `handle_validation_errors` now delegate 5xx to `raise_internal_server_error` (generic message + `error_id`, traceback logged).
+2. ✅ `backend/main.py` — `/api/nautobot/graphql` compatibility handler routes its 500 path through `raise_internal_server_error`.
+3. ✅ Routers: explicit `HTTPException` 5xx paths use `raise_internal_server_error` (or that helper with a non-500 `status_code` for sanitized 502/503). Regression guard: `backend/scripts/check_http_500_leaks.py`. Legitimate `str(e)` / `detail=str(exc)` remains on **4xx** paths only (e.g. `CheckMKClientError → 400`).
 
-#### P1.C — Logging
+**Helper API** (for future fixes):
+
+```python
+from core.safe_http_errors import raise_internal_server_error
+
+except Exception as e:
+    raise_internal_server_error(logger, "Failed to <operation>", e)
+```
+
+#### P1.C — Logging — ✅ done
 
 - Keep rich logging server-side: `logger.exception("msg", extra={"error_id": ...})` or `logger.error("...", exc_info=True)`.
 - Ensure request correlation if you have middleware (optional follow-up).
@@ -107,46 +150,46 @@ Order is chosen by **user-visible risk**, **correctness under concurrency**, the
 
 ---
 
-### P2 — Service layer for router bypasses (do third)
+### P2 — Service layer for router bypasses (do third) — ✅ done
 
-#### P2.A — Clients feature
+#### P2.A — Clients feature — ✅ done
 
 **Current:** `backend/routers/clients.py` instantiates `ClientDataRepository()` at module level and calls it from route handlers.
 
 **Target:**
 
-1. Add `backend/services/clients/client_data_service.py` (name to match domain) with methods: `get_device_names()`, `get_client_data(...)`, `get_client_history(...)` delegating to `ClientDataRepository`.
-2. Optionally add Pydantic response models under `backend/models/` for typed OpenAPI (today handlers return `dict`).
-3. Router depends on service via `Depends()` factory or thin `get_client_data_service()` in `dependencies.py` for testability.
-4. Remove module-level repository singleton from router.
+1. ✅ `backend/services/clients/client_data_service.py` provides `get_device_names()`, `get_client_data(...)`, `get_client_history(...)` and delegates to `ClientDataRepository`.
+2. ⬜ Optional Pydantic response models for typed OpenAPI — not done; handlers still return `dict`.
+3. ✅ Router uses `Depends(get_client_data_service)` from `dependencies.py`.
+4. ✅ Module-level repository singleton removed from `routers/clients.py`.
 
-#### P2.B — Auth router and audit logging
+#### P2.B — Auth router and audit logging — ✅ done
 
 **Current:** `UserRepository().update_last_login`, `audit_log_repo.create_log` inside `routers/auth/auth.py`.
 
 **Target:**
 
-1. Extend `services/auth/...` (existing user management module) with `record_successful_login(user_id, username, ...)` that performs last_login update + audit log inside **one transaction** where appropriate (`core.database.db_transaction()`).
-2. Router calls only that service method after `authenticate_user` / RBAC enrichment.
+1. ✅ `services/auth/login_recording_service.py` exposes `record_successful_login(user_id, username, role_names, *, authentication_method, ...)` and runs `update_last_login` + `create_log` inside a single `db_transaction()` (`auto_commit=False`).
+2. ✅ `routers/auth/auth.py` calls `login_recording.record_successful_login(...)` after RBAC enrichment; uses `Depends(get_login_recording_service)`.
 
-#### P2.C — `audit_log_repo` used across many routers
+#### P2.C — `audit_log_repo` used across many routers — ✅ done
 
 **Target (incremental):**
 
-1. Introduce `AuditLogService` with `log_event(event_type, message, **kwargs)` used by routers **or** accept that routers may call audit service only (not repository).
-2. Migrate routers file-by-file (settings, nautobot, jobs) to depend on the service.
-3. Keep repository as internal implementation detail.
+1. ✅ `services/audit/audit_log_service.py` exposes `log_event(**kwargs)` over `AuditLogRepository`.
+2. ✅ Routers consume it via `Depends(get_audit_log_service)`; auth router (api-key login, logout), audit-emitting settings/jobs routers, etc. now use the service.
+3. ✅ Repository remains internal — only one router (`routers/agents/deploy.py`) still imports `from repositories.settings.*` for git-repo + agents-settings lookups; tracked as an exception.
 
 **Acceptance criteria:**
 
-- Grep `from repositories` under `backend/routers/` trends to zero except where team explicitly allows (document exceptions).
+- ✅ `rg "from repositories" backend/routers/` returns a single file (`routers/agents/deploy.py`); all other router→repository imports have been removed.
 - New endpoints follow Router → Service → Repository in reviews.
 
 ---
 
-### P3 — Runtime raw SQL (`text()`) vs ORM (do fourth; largest)
+### P3 — Runtime raw SQL (`text()`) vs ORM (do fourth; largest) — 🟡 in progress
 
-#### P3.A — Clarify policy with stakeholders
+#### P3.A — Clarify policy with stakeholders — ⬜ not done
 
 `CLAUDE.md` says “never raw SQL”. Complex reporting (CTEs, `DISTINCT ON`, correlated aggregates) may be **legitimately** clearer or faster in SQL.
 
@@ -155,29 +198,31 @@ Order is chosen by **user-visible risk**, **correctness under concurrency**, the
 - **Strict:** Rewrite everything with SQLAlchemy Core/ORM expressions (may be verbose).
 - **Pragmatic:** Allow **read-only** SQL in **repository-only** modules, with mandatory tests and named constants for SQL strings; update `CLAUDE.md` to match reality.
 
-This plan assumes **Pragmatic** unless product owners insist on strict ORM.
+This plan assumes **Pragmatic** unless product owners insist on strict ORM. `CLAUDE.md` still carries the strict wording; a "pragmatic exception for read-only repository-confined SQL" should be added there once accepted.
 
-#### P3.B — `ClientDataRepository`
+#### P3.B — `ClientDataRepository` — 🟡 partial
 
 **Files:** `backend/repositories/client_data_repository.py`
 
 **Steps:**
 
-1. Document each public method’s contract (inputs, sorting, pagination).
-2. For `get_client_data` / `get_device_names` / `get_client_history`:
-   - If staying with SQL: move large SQL strings to private module-level constants; ensure **all** user filters go through **bound parameters** (already partly true; review f-string composition for injection risk on any future change).
-   - If rewriting to ORM: build query in stages; verify PostgreSQL-specific `DISTINCT ON` maps to `distinct(Model.col1, Model.col2)` or use subqueries.
-3. Add integration tests against **PostgreSQL** (or Testcontainers) for at least one “latest session” scenario and one filter combination.
+1. ✅ Public methods documented inline (see docstrings in `client_data_repository.py`).
+2. Per-method status:
+   - ✅ `get_client_data` — fully rewritten with SQLAlchemy CTEs (`_latest_session_cte`, `_client_data_combined_cte`), all filters via `bindparam`.
+   - 🟡 `get_device_names` — still uses `text()` but the shared sub-query lives in module-level constant `_LATEST_SESSION_SUBQUERY`.
+   - 🟡 `delete_old_sessions` — still uses `text()` with the same constant.
+   - 🟡 `get_client_history` — still uses `text()` with `DISTINCT ON` per branch (IP / MAC / hostname).
+3. ⬜ Integration tests against PostgreSQL (or Testcontainers) — not added yet.
 
-#### P3.C — `JobRunService.get_dashboard_stats`
+#### P3.C — `JobRunService.get_dashboard_stats` — ⬜ not started
 
-**Current:** Opens `get_db_session()`, runs raw `text()` aggregates + JSON parsing in service.
+**Current:** Opens `get_db_session()`, runs raw `text()` aggregates + JSON parsing in service — **unchanged** (see `backend/services/jobs/job_run_service.py:177-233`).
 
 **Target:**
 
-1. Move SQL to `JobRunRepository` (or extend existing `job_run_repository`) with named methods: `aggregate_status_counts()`, `recent_backup_results(since=...)`.
-2. Service composes dict response only.
-3. Consider single query or database view if performance matters.
+1. ⬜ Move SQL to `JobRunRepository` (or extend existing `job_run_repository`) with named methods: `aggregate_status_counts()`, `recent_backup_results(since=...)`.
+2. ⬜ Service composes dict response only.
+3. ⬜ Consider single query or database view if performance matters.
 
 **Acceptance criteria:**
 
@@ -186,11 +231,11 @@ This plan assumes **Pragmatic** unless product owners insist on strict ORM.
 
 ---
 
-### P4 — Cleanup and consistency (do last)
+### P4 — Cleanup and consistency (do last) — ⬜ not started
 
-1. **`main.py`:** Remove duplicate `if __name__ == "__main__":`; document single run command (`uvicorn main:app` vs `python start.py`).
-2. **Git template router stubs:** Implement real behaviour or return **501 Not Implemented** with clear message until done (avoid fake success).
-3. **Optional:** Add architecture tests — e.g. a simple script that fails CI if `routers/` imports `repositories.` (allow-list file for gradual migration).
+1. ⬜ **`main.py`:** Remove duplicate `if __name__ == "__main__":`; document single run command (`uvicorn main:app` vs `python start.py`). Two blocks remain at lines ~315 and ~592.
+2. ⬜ **Git template router stubs:** `routers/settings/templates/git.py` still returns fake-success payloads with `TODO` markers. Implement real behaviour or return **501 Not Implemented**.
+3. 🟡 **Optional architecture tests:** `backend/scripts/check_asyncio_run.py` already guards `asyncio.run` in routers; no equivalent script yet bans `from repositories` inside `routers/` (one remaining hit lives in `routers/agents/deploy.py`).
 
 ---
 
@@ -198,17 +243,19 @@ This plan assumes **Pragmatic** unless product owners insist on strict ORM.
 
 Use this as a sprint board; tick when done.
 
-- [ ] **P0:** List all blocking async routes; fix `cockpit_agent` (and any others found).
-- [ ] **P0:** Eliminate or quarantine every `asyncio.run(` reachable from HTTP.
-- [ ] **P1:** Update `core/error_handlers.py` + `main.py` GraphQL compatibility error handling.
-- [ ] **P1:** Batch-fix router `detail=str(e)` for 5xx paths.
-- [ ] **P2:** Add `ClientDataService`; refactor `routers/clients.py`.
-- [ ] **P2:** Consolidate login/audit/last_login in auth service; refactor `routers/auth/auth.py`.
-- [ ] **P2:** Introduce `AuditLogService`; migrate high-traffic routers first.
-- [ ] **P3:** Policy decision documented in `CLAUDE.md`.
-- [ ] **P3:** Refactor `client_data_repository` SQL per policy + tests.
-- [ ] **P3:** Move dashboard stats SQL to repository; slim service.
-- [ ] **P4:** `main.py` cleanup; stub endpoints honest status; optional import guard test.
+- [x] **P0:** List all blocking async routes; fix `cockpit_agent` (and any others found). _Inventory captured in `CURSOR_ASYNC_PLAN.md`; `cockpit_agent` handlers now sync._
+- [x] **P0:** Eliminate or quarantine every `asyncio.run(` reachable from HTTP. _Enforced by `backend/scripts/check_asyncio_run.py`; `onboarding_service` documented as Celery-only._
+- [x] **P1:** Update `core/error_handlers.py` + `main.py` GraphQL compatibility error handling. _Both delegate 5xx to `core/safe_http_errors.raise_internal_server_error`._
+- [x] **P1:** Batch-fix router `detail=str(e)` for 5xx paths. _Sweep complete; `backend/scripts/check_http_500_leaks.py` enforces no leaky 5xx `HTTPException` detail under `routers/`._
+- [x] **P2:** Add `ClientDataService`; refactor `routers/clients.py`. _`services/clients/client_data_service.py` + `get_client_data_service` DI._
+- [x] **P2:** Consolidate login/audit/last_login in auth service; refactor `routers/auth/auth.py`. _`services/auth/login_recording_service.py` runs both writes in one `db_transaction()`._
+- [x] **P2:** Introduce `AuditLogService`; migrate high-traffic routers first. _`services/audit/audit_log_service.py` + `get_audit_log_service`; only `routers/agents/deploy.py` still imports a repository directly._
+- [ ] **P3:** Policy decision documented in `CLAUDE.md`. _`CLAUDE.md` still carries the strict "never raw SQL" wording._
+- [~] **P3:** Refactor `client_data_repository` SQL per policy + tests. _`get_client_data` rewritten as ORM/CTEs; `get_device_names`/`delete_old_sessions`/`get_client_history` still use `text()`; PostgreSQL integration tests still TODO._
+- [ ] **P3:** Move dashboard stats SQL to repository; slim service. _`JobRunService.get_dashboard_stats` still runs `text()` queries inside the service._
+- [ ] **P4:** `main.py` cleanup; stub endpoints honest status; optional import guard test. _Two `if __name__` blocks remain; `routers/settings/templates/git.py` still returns fake-success payloads; no router→repository import guard script yet._
+
+Legend: `[x]` done · `[~]` partial · `[ ]` not started.
 
 ---
 
@@ -216,6 +263,8 @@ Use this as a sprint board; tick when done.
 
 ```bash
 cd backend && ruff check .
+cd backend && python scripts/check_asyncio_run.py
+cd backend && python scripts/check_http_500_leaks.py
 cd backend && pytest tests/ -q --tb=short   # adjust scope as needed
 ```
 
@@ -227,15 +276,21 @@ For P0 specifically, add a short concurrent smoke test (script or pytest) that h
 
 | Topic | Location |
 |--------|----------|
+| Companion plan (async / `asyncio.run`) | `doc/refactoring/CURSOR_ASYNC_PLAN.md` |
 | DB session + transactions | `backend/core/database.py` (`get_db`, `db_transaction`) |
 | Repository base | `backend/repositories/base.py` |
 | Auth / permissions | `backend/core/auth.py` |
 | Error helper decorators | `backend/core/error_handlers.py` |
-| Example blocking async route | `backend/routers/cockpit_agent.py` |
-| Example router → repository bypass | `backend/routers/clients.py` |
-| Example raw SQL repository | `backend/repositories/client_data_repository.py` |
-| Example raw SQL in service | `backend/services/jobs/job_run_service.py` |
-| `asyncio.run` smell | `backend/services/nautobot/onboarding/onboarding_service.py` |
+| Safe 5xx helper (P1) | `backend/core/safe_http_errors.py` |
+| Router→repository guard (asyncio variant) | `backend/scripts/check_asyncio_run.py` |
+| Sanitized 5xx router `HTTPException` detail (P1) | `backend/scripts/check_http_500_leaks.py` |
+| `cockpit_agent` (P0.B implementation) | `backend/routers/cockpit_agent.py` |
+| Clients router (P2.A implementation) | `backend/routers/clients.py`, `backend/services/clients/client_data_service.py` |
+| Auth login (P2.B implementation) | `backend/routers/auth/auth.py`, `backend/services/auth/login_recording_service.py` |
+| Audit service (P2.C implementation) | `backend/services/audit/audit_log_service.py` |
+| Example raw SQL repository (P3.B partial) | `backend/repositories/client_data_repository.py` |
+| Example raw SQL in service (P3.C pending) | `backend/services/jobs/job_run_service.py` |
+| `asyncio.run` smell (P0.C — now Celery-only) | `backend/services/nautobot/onboarding/onboarding_service.py` |
 
 ---
 
