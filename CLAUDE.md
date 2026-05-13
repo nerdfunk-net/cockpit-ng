@@ -535,6 +535,7 @@ cd frontend && npm run dev
 # Router regression guards (from backend/)
 python scripts/check_asyncio_run.py
 python scripts/check_http_500_leaks.py
+python scripts/check_router_repositories.py
 python scripts/check_text_sql.py
 ```
 

@@ -134,13 +134,22 @@ async def sync_templates(
 
         # Sync all git templates (metadata): mirror all template-category repos first
         if not repos:
+            if all_git_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={
+                        "message": (
+                            "No git repositories registered with category 'templates'. "
+                            "Add one under Settings → Git, then sync again."
+                        ),
+                        "affected_template_ids": all_git_ids,
+                    },
+                )
             return TemplateSyncResponse(
                 synced_templates=[],
-                failed_templates=all_git_ids if all_git_ids else [],
-                errors={
-                    "_": "No git repositories registered with category 'templates'."
-                },
-                message="No template-category git repositories configured.",
+                failed_templates=[],
+                errors={},
+                message="No git templates and no template-category git repositories.",
             )
 
         if repo_errors:
@@ -148,11 +157,12 @@ async def sync_templates(
                 template_manager.mark_git_templates_sync_metadata(
                     all_git_ids, sync_status="error", username=username
                 )
-            return TemplateSyncResponse(
-                synced_templates=[],
-                failed_templates=all_git_ids,
-                errors=repo_errors,
-                message="One or more template git mirrors failed to sync.",
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail={
+                    "repository_errors": repo_errors,
+                    "failed_template_ids": all_git_ids,
+                },
             )
 
         if all_git_ids:

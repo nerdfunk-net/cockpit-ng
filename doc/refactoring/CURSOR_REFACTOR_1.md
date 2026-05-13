@@ -18,15 +18,17 @@ Status legend: ✅ **done** · 🟡 **partial** · ⬜ **not started**.
 | P1.B² | `main.py` GraphQL compatibility handler | ✅ | Uses `raise_internal_server_error` instead of `detail=str(e)`. |
 | P1.B³ | Batch-fix router `detail=str(e)` for 5xx | ✅ | Completed sweep per `doc/refactoring/REFACTORE_SANITIZED_ERRORS.md`; `backend/scripts/check_http_500_leaks.py` guards routers; optional `status_code` on `raise_internal_server_error` preserves 502/503 semantics with sanitized bodies. |
 | P1.C | Logging with `error_id` | ✅ | Built into `safe_http_errors.py`. |
-| P2.A | `ClientDataService` + clean clients router | ✅ | `backend/services/clients/client_data_service.py`, DI via `get_client_data_service`; `routers/clients.py` no longer instantiates the repository. |
+| P2.A | `ClientDataService` + clean clients router | ✅ | `backend/services/clients/client_data_service.py`, DI via `get_client_data_service`; `routers/clients.py` no longer instantiates the repository. Optional OpenAPI: `ClientDevicesApiResponse`, `ClientDataPageResponse`, `ClientHistoryApiResponse` in `backend/models/client_data.py`. |
 | P2.B | Login/audit/last_login in single service + transaction | ✅ | `services/auth/login_recording_service.py` performs `update_last_login` + audit log in one `db_transaction()`; `routers/auth/auth.py` calls it. |
-| P2.C | `AuditLogService` + migrate routers | ✅ | `services/audit/audit_log_service.py`; `get_audit_log_service` dependency; only `routers/agents/deploy.py` still imports a repository directly (settings + git repo lookups). |
+| P2.C | `AuditLogService` + migrate routers | ✅ | `services/audit/audit_log_service.py`; `get_audit_log_service` dependency; routers do not import repositories (`deploy` uses `AgentDeploymentService`). |
 | P3.A | Policy decision documented in `CLAUDE.md` | ✅ | Pragmatic repository `text()` rules + link to `REFACTORING_RAW_SQL.md` §3; `backend/scripts/check_text_sql.py` enforces allow-list. |
 | P3.B | `ClientDataRepository` SQL refactor + tests | ✅ | `get_client_data`, `get_device_names`, `delete_old_sessions`, `get_client_history`, and `delete_records_older_than` use ORM/Core; PostgreSQL tests under `tests/integration/repositories/`. |
 | P3.C | Move dashboard stats SQL into repository | ✅ | `JobRunRepository.aggregate_status_counts` / `recent_backup_results`; `JobRunService.get_dashboard_stats` composes JSON only. Client cleanup task calls `ClientDataRepository.delete_records_older_than`. |
-| P4.1 | Single `if __name__ == "__main__"` in `main.py` | ⬜ | Two blocks remain (lines 315 and 592). |
-| P4.2 | Git template stub endpoints honest status | ⬜ | `routers/settings/templates/git.py` still returns fake-success payloads and carries `TODO`. |
-| P4.3 | Architecture import guard (routers → repositories) | 🟡 | `check_asyncio_run.py` enforces a similar guard for `asyncio.run`; no equivalent script yet bans `from repositories` inside `routers/` (one remaining hit: `routers/agents/deploy.py`). |
+| P4.1 | Single `if __name__ == "__main__"` in `main.py` | ✅ | Single block at EOF; `UVICORN_RELOAD` opt-in; `python start.py` preferred for full bootstrap. |
+| P4.2 | Git template stub endpoints honest status | ✅ | `routers/settings/templates/git.py`: real connection test via `GitConnectionService`; sync via `GitOperationsService` on category `templates` repos + template sync metadata; bulk mirror failures return HTTP 502 with structured `detail`. |
+| P4.3 | Architecture import guard (routers → repositories) | ✅ | `backend/scripts/check_router_repositories.py` (CI: `backend-tests.yml`); no `from repositories` under `routers/`. |
+
+> **Closure:** All tracked items in this plan (including optional OpenAPI for clients and the router→repository guard) are implemented. Remaining async/service-layer `asyncio.run` work stays in `CURSOR_ASYNC_PLAN.md`.
 
 > Update this table when finishing a sub-item; the per-phase sections below carry the same status flags inline.
 
@@ -159,7 +161,7 @@ except Exception as e:
 **Target:**
 
 1. ✅ `backend/services/clients/client_data_service.py` provides `get_device_names()`, `get_client_data(...)`, `get_client_history(...)` and delegates to `ClientDataRepository`.
-2. ⬜ Optional Pydantic response models for typed OpenAPI — not done; handlers still return `dict`.
+2. ✅ Optional Pydantic response models for typed OpenAPI — `ClientDevicesApiResponse`, `ClientDataPageResponse`, `ClientHistoryApiResponse` in `backend/models/client_data.py`; `routers/clients.py` uses `response_model=...`.
 3. ✅ Router uses `Depends(get_client_data_service)` from `dependencies.py`.
 4. ✅ Module-level repository singleton removed from `routers/clients.py`.
 
@@ -178,11 +180,11 @@ except Exception as e:
 
 1. ✅ `services/audit/audit_log_service.py` exposes `log_event(**kwargs)` over `AuditLogRepository`.
 2. ✅ Routers consume it via `Depends(get_audit_log_service)`; auth router (api-key login, logout), audit-emitting settings/jobs routers, etc. now use the service.
-3. ✅ Repository remains internal — only one router (`routers/agents/deploy.py`) still imports `from repositories.settings.*` for git-repo + agents-settings lookups; tracked as an exception.
+3. ✅ Repository remains internal — no router imports `repositories` (enforced by `scripts/check_router_repositories.py`).
 
 **Acceptance criteria:**
 
-- ✅ `rg "from repositories" backend/routers/` returns a single file (`routers/agents/deploy.py`); all other router→repository imports have been removed.
+- ✅ `rg "from repositories" backend/routers/` returns no matches; `python scripts/check_router_repositories.py` enforces the rule.
 - New endpoints follow Router → Service → Repository in reviews.
 
 ---
@@ -215,11 +217,11 @@ except Exception as e:
 
 ---
 
-### P4 — Cleanup and consistency (do last) — ⬜ not started
+### P4 — Cleanup and consistency (do last) — ✅ done
 
-1. ⬜ **`main.py`:** Remove duplicate `if __name__ == "__main__":`; document single run command (`uvicorn main:app` vs `python start.py`). Two blocks remain at lines ~315 and ~592.
-2. ⬜ **Git template router stubs:** `routers/settings/templates/git.py` still returns fake-success payloads with `TODO` markers. Implement real behaviour or return **501 Not Implemented**.
-3. 🟡 **Optional architecture tests:** `backend/scripts/check_asyncio_run.py` already guards `asyncio.run` in routers; no equivalent script yet bans `from repositories` inside `routers/` (one remaining hit lives in `routers/agents/deploy.py`).
+1. ✅ **`main.py`:** Single `if __name__ == "__main__":` at end of file; `UVICORN_RELOAD` for optional reload; operators use `python start.py` for certificates and DB bootstrap.
+2. ✅ **Git template router:** `routers/settings/templates/git.py` implements real connection testing and template-category mirror sync + metadata updates; mirror failures use HTTP 400/502 with explicit `detail`.
+3. ✅ **Architecture test:** `backend/scripts/check_router_repositories.py` bans `from repositories` / `import repositories` under `routers/` (runs in CI).
 
 ---
 
@@ -237,7 +239,7 @@ Use this as a sprint board; tick when done.
 - [x] **P3:** Policy decision documented in `CLAUDE.md`. _Pragmatic rules + `check_text_sql.py`._
 - [x] **P3:** Refactor `client_data_repository` SQL per policy + tests. _ORM for D/E/F/H helpers; PG tests in `tests/integration/repositories/`._
 - [x] **P3:** Move dashboard stats SQL to repository; slim service. _`JobRunRepository` dashboard methods + `FakeJobRunRepository`; CI runs PG-backed repository tests._
-- [ ] **P4:** `main.py` cleanup; stub endpoints honest status; optional import guard test. _Two `if __name__` blocks remain; `routers/settings/templates/git.py` still returns fake-success payloads; no router→repository import guard script yet._
+- [x] **P4:** `main.py` cleanup; stub endpoints honest status; optional import guard test. _Single `__main__` block; real git test/sync in `templates/git.py`; `check_router_repositories.py` in CI._
 
 Legend: `[x]` done · `[~]` partial · `[ ]` not started.
 
@@ -249,6 +251,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` not started.
 cd backend && ruff check .
 cd backend && python scripts/check_asyncio_run.py
 cd backend && python scripts/check_http_500_leaks.py
+cd backend && python scripts/check_router_repositories.py
 cd backend && python scripts/check_text_sql.py
 cd backend && pytest tests/ -q --tb=short   # adjust scope as needed
 ```
@@ -268,6 +271,7 @@ For P0 specifically, add a short concurrent smoke test (script or pytest) that h
 | Error helper decorators | `backend/core/error_handlers.py` |
 | Safe 5xx helper (P1) | `backend/core/safe_http_errors.py` |
 | Router→repository guard (asyncio variant) | `backend/scripts/check_asyncio_run.py` |
+| Router→repository import guard | `backend/scripts/check_router_repositories.py` |
 | Sanitized 5xx router `HTTPException` detail (P1) | `backend/scripts/check_http_500_leaks.py` |
 | `cockpit_agent` (P0.B implementation) | `backend/routers/cockpit_agent.py` |
 | Clients router (P2.A implementation) | `backend/routers/clients.py`, `backend/services/clients/client_data_service.py` |
