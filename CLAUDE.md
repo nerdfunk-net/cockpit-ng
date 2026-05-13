@@ -14,7 +14,7 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 ### Core Principles
 - **Complete separation**: Frontend (port 3000) ↔ Backend (port 8000)
 - **API proxy pattern**: Frontend → Next.js `/api/proxy/*` → Backend (NEVER direct backend calls)
-- **PostgreSQL single database** with 40+ tables (defined in `/backend/core/models.py`)
+- **PostgreSQL single database** with 40+ tables (defined in `/backend/core/models/`)
 - **Layered backend**: Model → Repository → Service → Router
 - **Feature-based organization**: Group by domain, not by technical role
 - **Server Components default**: Use `'use client'` only when necessary
@@ -25,7 +25,7 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 
 ### Backend Layer Pattern
 ```
-1. SQLAlchemy Model    → /backend/core/models.py (tables, indexes, relationships)
+1. SQLAlchemy Model    → /backend/core/models/{domain}.py (tables, indexes, relationships)
 2. Pydantic Models     → /backend/models/{domain}.py (request/response schemas)
 3. Repository          → /backend/repositories/{domain}_repository.py (data access)
 4. Service             → /backend/services/{domain}_service.py (business logic)
@@ -44,8 +44,29 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
   ├── types/          # TypeScript types
   └── utils/          # Utility functions
 
-/app/(dashboard)/{feature}/page.tsx  # Route pages
+/app/(dashboard)/{feature}/page.tsx  # Route pages — stubs only (see rule below)
 ```
+
+### Route File Rule — Stubs Only
+
+`/app/(dashboard)/*/page.tsx` files MUST be pure route stubs.
+
+**CORRECT:**
+```tsx
+import { MyFeaturePage } from '@/components/features/domain/my-feature-page'
+
+export default function MyFeatureRoute() {
+  return <MyFeaturePage />
+}
+```
+
+**Rules:**
+- ❌ No logic, state, or hooks in route files
+- ❌ No `'use client'` directive on route files (add it to the feature component instead)
+- ❌ No `components/` or `dialogs/` subdirectories inside route directories
+- ✅ Optional: `export const metadata: Metadata = { title: '...' }` is allowed
+- ✅ Optional: `export const dynamic = 'force-dynamic'` and similar Next.js segment config is allowed
+- ✅ All feature logic lives in `components/features/{domain}/`
 
 ### Naming Conventions
 - **Database**: `snake_case` (tables: `job_templates`, columns: `created_at`)
