@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from dependencies import get_agent_template_render_service, get_git_service
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from core.safe_http_errors import raise_internal_server_error
 
@@ -19,6 +19,8 @@ router = APIRouter(prefix="/api/agents/deploy", tags=["agents"])
 
 class DryRunRequest(BaseModel):
     """Request model for agent deployment dry run."""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     templateId: int = Field(
         ..., alias="templateId", description="Template ID to render"
@@ -41,9 +43,6 @@ class DryRunRequest(BaseModel):
         alias="inventoryId",
         description="Inventory ID selected by user (overrides template's inventory_id)",
     )
-
-    class Config:
-        populate_by_name = True
 
 
 class DryRunResultItem(BaseModel):

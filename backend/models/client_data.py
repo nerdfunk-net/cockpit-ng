@@ -12,7 +12,7 @@ All three share a session_id (UUID string) as the cross-table join key.
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 # ============================================================================
@@ -30,11 +30,10 @@ class ClientIpAddressCreate(BaseModel):
 
 
 class ClientIpAddressResponse(ClientIpAddressCreate):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     collected_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # ============================================================================
@@ -52,11 +51,10 @@ class ClientMacAddressCreate(BaseModel):
 
 
 class ClientMacAddressResponse(ClientMacAddressCreate):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     collected_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # ============================================================================
@@ -73,8 +71,7 @@ class ClientHostnameCreate(BaseModel):
 
 
 class ClientHostnameResponse(ClientHostnameCreate):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     collected_at: datetime
-
-    class Config:
-        from_attributes = True

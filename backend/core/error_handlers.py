@@ -7,10 +7,11 @@ across the entire codebase.
 """
 
 from functools import wraps
-from fastapi import HTTPException, status
+import inspect
 import logging
-import asyncio
-from typing import Callable, Any
+from typing import Any, Callable
+
+from fastapi import HTTPException, status
 
 from core.safe_http_errors import raise_internal_server_error
 
@@ -73,7 +74,7 @@ def handle_errors(
 
     def decorator(func: Callable) -> Callable:
         # Handle async functions
-        if asyncio.iscoroutinefunction(func):
+        if inspect.iscoroutinefunction(func):
 
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -184,7 +185,7 @@ def handle_not_found(operation: str, resource_name: str = "Resource"):
     """
 
     def decorator(func: Callable) -> Callable:
-        if asyncio.iscoroutinefunction(func):
+        if inspect.iscoroutinefunction(func):
 
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -277,7 +278,7 @@ def handle_validation_errors(operation: str):
     """
 
     def decorator(func: Callable) -> Callable:
-        if asyncio.iscoroutinefunction(func):
+        if inspect.iscoroutinefunction(func):
 
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:

@@ -2,7 +2,7 @@
 Pydantic models for network snapshots API.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
@@ -29,12 +29,11 @@ class SnapshotCommandCreate(SnapshotCommandBase):
 class SnapshotCommandResponse(SnapshotCommandBase):
     """Model for snapshot command response."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     template_id: int
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # ============================================================================
@@ -70,15 +69,14 @@ class SnapshotCommandTemplateUpdate(BaseModel):
 class SnapshotCommandTemplateResponse(SnapshotCommandTemplateBase):
     """Model for snapshot command template response."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     created_by: str
     is_active: bool
     created_at: datetime
     updated_at: datetime
     commands: List[SnapshotCommandResponse] = Field(default_factory=list)
-
-    class Config:
-        from_attributes = True
 
 
 # ============================================================================
@@ -96,7 +94,7 @@ class SnapshotExecuteRequest(BaseModel):
     commands: List[SnapshotCommandCreate] = Field(
         ...,
         description="List of commands to execute with use_textfsm flags",
-        min_items=1,
+        min_length=1,
     )
     git_repository_id: int = Field(..., description="Git repository to store results")
     snapshot_path: str = Field(
@@ -104,7 +102,7 @@ class SnapshotExecuteRequest(BaseModel):
         description="Path template with placeholders: {device_name}, {timestamp}, {template_name}, {custom_field.*}. MUST include filename with .json extension",
     )
     devices: List[Dict[str, Any]] = Field(
-        ..., description="List of devices to snapshot", min_items=1
+        ..., description="List of devices to snapshot", min_length=1
     )
     credential_id: Optional[int] = Field(
         None, description="ID of stored credential to use (optional)"
@@ -126,6 +124,8 @@ class SnapshotExecuteRequest(BaseModel):
 class SnapshotResultResponse(BaseModel):
     """Model for snapshot result response."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     snapshot_id: int
     device_name: str
@@ -140,12 +140,11 @@ class SnapshotResultResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 class SnapshotResponse(BaseModel):
     """Model for snapshot response."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
@@ -165,12 +164,11 @@ class SnapshotResponse(BaseModel):
     updated_at: datetime
     results: List[SnapshotResultResponse] = Field(default_factory=list)
 
-    class Config:
-        from_attributes = True
-
 
 class SnapshotListResponse(BaseModel):
     """Model for snapshot list response (without results)."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
@@ -188,9 +186,6 @@ class SnapshotListResponse(BaseModel):
     completed_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # ============================================================================

@@ -2,7 +2,7 @@
 Pydantic models for job management
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Literal
 from datetime import datetime
 
@@ -69,6 +69,8 @@ class JobScheduleUpdate(BaseModel):
 class JobScheduleResponse(JobScheduleBase):
     """Model for job schedule response"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     job_template_id: Optional[int] = Field(
         None, description="ID of the job template to use"
@@ -85,9 +87,6 @@ class JobScheduleResponse(JobScheduleBase):
     template_job_type: Optional[str] = Field(
         None, description="Job type from the template"
     )
-
-    class Config:
-        from_attributes = True
 
 
 class JobExecutionRequest(BaseModel):
@@ -144,6 +143,8 @@ class JobRunUpdate(BaseModel):
 class JobRunResponse(BaseModel):
     """Model for job run response"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     job_schedule_id: Optional[int] = None
     job_template_id: Optional[int] = None
@@ -169,9 +170,6 @@ class JobRunResponse(BaseModel):
     template_name: Optional[str] = Field(
         None, description="Name of the template (if still exists)"
     )
-
-    class Config:
-        from_attributes = True
 
 
 class JobRunListResponse(BaseModel):

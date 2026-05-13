@@ -12,7 +12,7 @@ class DeviceCommand(BaseModel):
         description="List of devices with 'ip' or 'primary_ip4' and 'platform' fields",
     )
     commands: List[str] = Field(
-        ..., description="List of commands to execute", min_items=1
+        ..., description="List of commands to execute", min_length=1
     )
     credential_id: Optional[int] = Field(default=None)
     username: Optional[str] = Field(default=None)
@@ -42,7 +42,7 @@ class CommandExecutionResponse(BaseModel):
 
 class TemplateExecutionRequest(BaseModel):
     device_ids: List[str] = Field(
-        ..., description="List of device UUIDs from Nautobot", min_items=1
+        ..., description="List of device UUIDs from Nautobot", min_length=1
     )
     template_id: Optional[int] = Field(default=None)
     template_content: Optional[str] = Field(default=None)

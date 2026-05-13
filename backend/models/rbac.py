@@ -1,6 +1,6 @@
 """Pydantic models for RBAC system."""
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import List, Optional
 
 
@@ -30,11 +30,10 @@ class PermissionCreate(PermissionBase):
 class Permission(PermissionBase):
     """Full permission model with ID."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     created_at: str
-
-    class Config:
-        from_attributes = True
 
 
 class PermissionWithGrant(Permission):
@@ -78,13 +77,12 @@ class RoleUpdate(BaseModel):
 class Role(RoleBase):
     """Full role model with ID."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     is_system: bool
     created_at: str
     updated_at: str
-
-    class Config:
-        from_attributes = True
 
 
 class RoleWithPermissions(Role):
@@ -242,6 +240,8 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     """Full user model with ID and metadata."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     last_login: Optional[str] = Field(
         None, description="Timestamp of most recent login"
@@ -252,9 +252,6 @@ class UserResponse(UserBase):
     permissions: List[PermissionWithGrant] = Field(
         default_factory=list, description="User's effective permissions"
     )
-
-    class Config:
-        from_attributes = True
 
 
 class UserListResponse(BaseModel):
@@ -268,5 +265,5 @@ class BulkUserDelete(BaseModel):
     """Bulk delete users."""
 
     user_ids: List[int] = Field(
-        ..., min_items=1, description="List of user IDs to delete"
+        ..., min_length=1, description="List of user IDs to delete"
     )
