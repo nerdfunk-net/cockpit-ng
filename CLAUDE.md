@@ -558,6 +558,10 @@ python scripts/check_asyncio_run.py
 python scripts/check_http_500_leaks.py
 python scripts/check_router_repositories.py
 python scripts/check_text_sql.py
+
+# Ruff (Python lint/format rules in backend/pyproject.toml) — run from time to time
+# or before larger backend changes; from backend/: `ruff check .` (optionally `--fix`)
+ruff check .
 ```
 
 When implementing configuration changes, include verification steps that confirm the change works (e.g., run a quick test, check logs, or validate config loads)
