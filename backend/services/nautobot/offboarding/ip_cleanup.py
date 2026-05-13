@@ -8,14 +8,14 @@ from typing import Any, Dict, List
 from fastapi import HTTPException
 
 from models.nautobot import OffboardDeviceRequest
+from services.nautobot.common.exceptions import translate_http_exception
+from services.nautobot.offboarding.types import OffboardingResult
 from services.nautobot_helpers import (
     get_device_cache_key,
     get_device_details_cache_key,
     get_device_list_cache_key,
     get_ip_address_cache_key,
 )
-from services.nautobot.common.exceptions import translate_http_exception
-from services.nautobot.offboarding.types import OffboardingResult
 
 logger = logging.getLogger(__name__)
 

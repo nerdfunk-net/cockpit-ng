@@ -7,18 +7,17 @@ import pytest
 
 from core.auth import get_password_hash, verify_password
 from services.auth.user_service import (
-    UserService,
-    PERMISSION_READ,
-    PERMISSION_WRITE,
     PERMISSION_ADMIN,
     PERMISSION_DELETE,
+    PERMISSION_READ,
     PERMISSION_USER_MANAGE,
-    PERMISSIONS_VIEWER,
-    PERMISSIONS_USER,
+    PERMISSION_WRITE,
     PERMISSIONS_ADMIN,
+    PERMISSIONS_USER,
+    PERMISSIONS_VIEWER,
+    UserService,
 )
 from tests.mocks.fake_auth_repositories import FakeUserRepository
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

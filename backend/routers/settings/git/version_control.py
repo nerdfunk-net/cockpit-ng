@@ -4,17 +4,17 @@ Handles Git-specific version control functionality.
 """
 
 from __future__ import annotations
+
 import difflib
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from git import InvalidGitRepositoryError, GitCommandError
+from git import GitCommandError, InvalidGitRepositoryError
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_cache_service
 from services.settings.git.shared_utils import get_git_repo_by_id
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git/{repo_id}", tags=["git-version-control"])

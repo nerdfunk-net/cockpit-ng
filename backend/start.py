@@ -8,6 +8,7 @@ import logging
 import os
 
 import uvicorn
+
 from cert_installer import install_certificates
 from config import settings
 from services.settings.manager import SettingsManager as _SM

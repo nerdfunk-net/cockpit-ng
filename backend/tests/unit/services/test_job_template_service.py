@@ -10,7 +10,6 @@ import pytest
 from services.jobs.job_template_service import JobTemplateService
 from tests.mocks.fake_job_repositories import FakeJobTemplateRepository
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

@@ -1,3 +1,36 @@
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+exclude = [
+    "migrations/",
+    ".venv/",
+    "venv/",
+    "__pycache__/",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = [
+    # FastAPI: Depends() / Header() / Query() in function default args is intentional
+    "B008",
+    # Typing modernisation (List→list, Optional→X|None, Union→X|Y) needs
+    # from __future__ import annotations or Python 3.10+ — baseline for now
+    "UP006",
+    "UP007",
+    "UP035",
+    "UP045",
+    # raise ... from exc inside except — 100+ locations, tracked separately
+    "B904",
+    # Line-length violations are reported but not enforced beyond 120
+    "E501",
+    # %-style format strings — 113 locations, migrate to f-strings separately
+    "UP031",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Migration files are auto-generated; only enforce import order
+"migrations/*" = ["E", "F", "B", "UP"]
+
 [tool.pytest.ini_options]
 # Pytest configuration for Cockpit-NG backend tests
 

@@ -6,10 +6,9 @@ All tests run offline — no database required.
 import pytest
 
 from core.auth import get_password_hash
-from services.auth.user_service import UserService, PERMISSIONS_USER
 from services.auth.rbac_service import RBACService
-from tests.mocks.fake_auth_repositories import FakeUserRepository, FakeRBACRepository
-
+from services.auth.user_service import PERMISSIONS_USER, UserService
+from tests.mocks.fake_auth_repositories import FakeRBACRepository, FakeUserRepository
 
 # ---------------------------------------------------------------------------
 # Fixtures

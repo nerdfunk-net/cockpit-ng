@@ -6,11 +6,13 @@ Executes migrations to add missing tables and columns.
 Now coordinated with the versioned migration system to avoid conflicts.
 """
 
-from sqlalchemy import inspect, text, Table, Column
-from sqlalchemy.engine import Engine
-from typing import List, Dict, Any
 import logging
-from core.database import engine, Base
+from typing import Any, Dict, List
+
+from sqlalchemy import Column, Table, inspect, text
+from sqlalchemy.engine import Engine
+
+from core.database import Base, engine
 
 logger = logging.getLogger(__name__)
 

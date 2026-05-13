@@ -1,7 +1,7 @@
 """SNMP configuration normalization for device data."""
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 from models.nb2cmk import DeviceExtensions
 

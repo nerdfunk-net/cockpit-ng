@@ -6,12 +6,14 @@ duplicated across git_version_control.py and git_compare.py.
 """
 
 from __future__ import annotations
+
 import difflib
 import logging
 from typing import List, Tuple
+
 from git import Repo
 
-from models.git import DiffResult, DiffLine, DiffStats
+from models.git import DiffLine, DiffResult, DiffStats
 
 logger = logging.getLogger(__name__)
 

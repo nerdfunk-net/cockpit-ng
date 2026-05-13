@@ -5,9 +5,10 @@ This task processes multiple devices from a CSV upload, creating a single tracka
 job in the Jobs/View interface while processing each device individually.
 """
 
-from celery import shared_task
 import logging
 from typing import Dict, List
+
+from celery import shared_task
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,9 @@ def bulk_onboard_devices_task(
     """
     # Import helper functions from onboard_device_task
     from tasks.onboard_device_task import (
+        _process_single_device,
         _trigger_nautobot_onboarding,
         _wait_for_job_completion,
-        _process_single_device,
     )
 
     device_count = len(devices)

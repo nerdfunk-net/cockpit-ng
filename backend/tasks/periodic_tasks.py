@@ -3,11 +3,13 @@ Periodic tasks executed by Celery Beat.
 These tasks run on a schedule defined in beat_schedule.py
 """
 
-from celery import shared_task
-from celery_app import celery_app
 import logging
 from datetime import datetime, timezone
 from typing import Optional
+
+from celery import shared_task
+
+from celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +18,7 @@ def _get_last_cache_run(cache_type: str) -> Optional[datetime]:
     """Read last run timestamp for a cache type from Redis."""
     try:
         import redis
+
         from config import settings
 
         r = redis.from_url(settings.redis_url)
@@ -33,6 +36,7 @@ def _set_last_cache_run(cache_type: str, ts: datetime) -> None:
     """Write last run timestamp for a cache type to Redis (TTL: 7 days)."""
     try:
         import redis
+
         from config import settings
 
         r = redis.from_url(settings.redis_url)
@@ -229,10 +233,12 @@ def cleanup_celery_data_task() -> dict:
         from services.settings.manager import SettingsManager
 
         settings_manager = SettingsManager()
-        from datetime import datetime, timezone, timedelta
-        from config import settings
-        import redis
         import json
+        from datetime import datetime, timedelta, timezone
+
+        import redis
+
+        from config import settings
 
         # Get cleanup settings
         celery_settings = settings_manager.get_celery_settings()
@@ -329,7 +335,7 @@ def cleanup_client_data_task() -> dict:
         from services.settings.manager import SettingsManager
 
         settings_manager = SettingsManager()
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta, timezone
 
         celery_settings = settings_manager.get_celery_settings()
 
@@ -511,8 +517,9 @@ def cleanup_audit_logs_task() -> dict:
         dict: Result with number of deleted rows
     """
     try:
+        from datetime import datetime, timedelta, timezone
+
         from config import settings
-        from datetime import datetime, timezone, timedelta
         from core.database import db_transaction
         from core.models import AuditLog
 

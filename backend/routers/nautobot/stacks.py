@@ -18,8 +18,8 @@ from dependencies import get_nautobot_service
 from models.nautobot import (
     AddDeviceRequest,
     ProcessStacksRequest,
-    StackProcessingResult,
     ProcessStacksResponse,
+    StackProcessingResult,
 )
 from services.nautobot.client import NautobotService
 from services.nautobot.devices.creation import DeviceCreationService

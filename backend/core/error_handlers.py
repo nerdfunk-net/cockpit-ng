@@ -6,9 +6,9 @@ Created in Phase 4 of Celery refactoring to eliminate repetitive try/except bloc
 across the entire codebase.
 """
 
-from functools import wraps
 import inspect
 import logging
+from functools import wraps
 from typing import Any, Callable
 
 from fastapi import HTTPException, status

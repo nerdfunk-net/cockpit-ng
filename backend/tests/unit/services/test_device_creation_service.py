@@ -3,20 +3,20 @@
 All tests run offline - no real Nautobot instance required.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from models.nautobot import AddDeviceRequest, InterfaceData, IpAddressData
 from services.nautobot.devices.creation import DeviceCreationService
 from tests.mocks import (
-    FakeNautobotService,
-    STATUS_ACTIVE_ID,
     DT_NETWORKA_ID,
     LOC_CITYA_ID,
-    ROLE_NETWORK_ID,
     PLATFORM_IOS_ID,
+    ROLE_NETWORK_ID,
+    STATUS_ACTIVE_ID,
+    FakeNautobotService,
 )
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 

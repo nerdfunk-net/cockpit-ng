@@ -5,7 +5,8 @@ Background jobs for caching device data from Nautobot into Redis.
 
 import asyncio
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
+
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
@@ -34,8 +35,8 @@ def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
         nautobot_service = service_factory.build_nautobot_service()
         cache_service = service_factory.build_cache_service()
         from services.background_jobs.base import (
-            format_progress_message,
             extract_device_essentials,
+            format_progress_message,
             safe_graphql_query,
         )
 

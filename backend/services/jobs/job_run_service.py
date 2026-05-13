@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from repositories.jobs.job_run_repository import job_run_repository as repo
 
@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 class JobRunService:
     def __init__(
         self,
-        schedule_service: "JobScheduleService",
-        template_service: "JobTemplateService",
+        schedule_service: JobScheduleService,
+        template_service: JobTemplateService,
     ) -> None:
         self._repo = repo
         self._schedule_service = schedule_service

@@ -3,14 +3,15 @@ Nautobot device taxonomy endpoints: platforms, device types, manufacturers, role
 """
 
 from __future__ import annotations
+
 import logging
+
 from fastapi import APIRouter, Depends
 
 from core.auth import require_permission
-from services.nautobot.client import NautobotService
-from dependencies import get_nautobot_service
-
 from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_nautobot_service
+from services.nautobot.client import NautobotService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-taxonomy"])

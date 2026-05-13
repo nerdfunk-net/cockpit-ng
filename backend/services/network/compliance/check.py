@@ -4,28 +4,30 @@ Performs SSH login checks, SNMP credential validation, and configuration pattern
 """
 
 from __future__ import annotations
+
 import logging
-from typing import Dict, List, Any, Optional
+import re
+from typing import Any, Dict, List, Optional
+
 from netmiko import ConnectHandler
 from pysnmp.hlapi.v3arch import (
-    SnmpEngine,
     CommunityData,
-    UsmUserData,
-    UdpTransportTarget,
     ContextData,
-    ObjectType,
     ObjectIdentity,
+    ObjectType,
+    SnmpEngine,
+    UdpTransportTarget,
+    UsmUserData,
     get_cmd,
-    usmHMACMD5AuthProtocol,
-    usmHMACSHAAuthProtocol,
-    usmDESPrivProtocol,
     usmAesCfb128Protocol,
     usmAesCfb192Protocol,
     usmAesCfb256Protocol,
+    usmDESPrivProtocol,
+    usmHMACMD5AuthProtocol,
+    usmHMACSHAAuthProtocol,
     usmNoAuthProtocol,
     usmNoPrivProtocol,
 )
-import re
 
 logger = logging.getLogger(__name__)
 

@@ -6,11 +6,12 @@ It efficiently loads all Nautobot devices using pagination and then
 compares them with the CSV data.
 """
 
+import asyncio
 import csv
 import io
 import logging
-import asyncio
-from typing import Dict, Any
+from typing import Any, Dict
+
 import service_factory
 from celery_app import celery_app
 from services.settings.manager import SettingsManager as _SM

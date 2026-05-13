@@ -4,6 +4,7 @@ Minimal implementation supporting only the compare endpoint used by Config View.
 """
 
 from __future__ import annotations
+
 import difflib
 import logging
 from pathlib import Path
@@ -11,9 +12,8 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import require_permission
-from models.files import FileCompareRequest
-
 from core.safe_http_errors import raise_internal_server_error
+from models.files import FileCompareRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/file-compare", tags=["file-compare"])

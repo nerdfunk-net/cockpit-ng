@@ -110,7 +110,7 @@ class TemplateImportService:
         default_category: str | None,
         username: str | None,
     ) -> Dict[str, Any]:
-        with open(yaml_path, "r", encoding="utf-8") as fh:
+        with open(yaml_path, encoding="utf-8") as fh:
             yaml_data = yaml.safe_load(fh)
 
         template_path = yaml_data.get("path", "")
@@ -130,7 +130,7 @@ class TemplateImportService:
         if not os.path.exists(template_path):
             raise ValueError(f"Template file not found: {template_path}")
 
-        with open(template_path, "r", encoding="utf-8") as fh:
+        with open(template_path, encoding="utf-8") as fh:
             template_content = fh.read()
 
         template_name = properties.get(

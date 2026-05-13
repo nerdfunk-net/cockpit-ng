@@ -13,7 +13,6 @@ import pytest
 from services.jobs.job_schedule_service import JobScheduleService
 from tests.mocks.fake_job_repositories import FakeJobScheduleRepository
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

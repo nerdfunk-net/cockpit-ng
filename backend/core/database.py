@@ -3,12 +3,14 @@ Database connection and session management using SQLAlchemy with PostgreSQL.
 Replaces all SQLite-based database operations.
 """
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
-from config import settings
+import logging
 from contextlib import contextmanager
 from typing import Generator
-import logging
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
+
+from config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -6,12 +6,13 @@ Handles device listing with filtering, pagination, and caching.
 
 import logging
 from typing import Optional
+
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot_helpers.cache_helpers import (
     DEVICE_CACHE_TTL,
-    get_device_list_cache_key,
     cache_device_list,
     get_cached_device_list,
+    get_device_list_cache_key,
 )
 
 logger = logging.getLogger(__name__)

@@ -3,8 +3,8 @@ JobRun Repository
 Handles database operations for job run tracking.
 """
 
-from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import case, desc, func, select
 
@@ -401,8 +401,9 @@ class JobRunRepository(BaseRepository[JobRun]):
 
     def cleanup_old_runs(self, days: int = 30) -> int:
         """Delete job runs older than specified days. Returns count deleted."""
-        from core.database import get_db_session
         from datetime import timedelta
+
+        from core.database import get_db_session
 
         session = get_db_session()
         try:
@@ -420,8 +421,9 @@ class JobRunRepository(BaseRepository[JobRun]):
 
     def cleanup_old_runs_hours(self, hours: int = 24) -> int:
         """Delete job runs older than specified hours. Returns count deleted."""
-        from core.database import get_db_session
         from datetime import timedelta
+
+        from core.database import get_db_session
 
         session = get_db_session()
         try:

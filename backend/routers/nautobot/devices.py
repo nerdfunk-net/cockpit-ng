@@ -3,30 +3,30 @@ Nautobot device management endpoints.
 """
 
 from __future__ import annotations
+
 import logging
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_device_creation_service, get_device_query_service, get_nautobot_service
 from models.nautobot import (
+    AddDeviceRequest,
     CheckIPRequest,
     DeviceOnboardRequest,
     SyncNetworkDataRequest,
-    AddDeviceRequest,
     UpdateDeviceRequest,
 )
-from dependencies import get_nautobot_service, get_device_query_service
 from services.nautobot.client import NautobotService
 from services.nautobot.common.exceptions import NautobotAPIError
-from dependencies import get_device_creation_service
 from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.devices.update import DeviceUpdateService
 from services.nautobot_helpers.cache_helpers import (
     cache_device,
     get_cached_device,
 )
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 

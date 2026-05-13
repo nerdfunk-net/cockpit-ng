@@ -13,8 +13,9 @@ Data captured: 2026-01-03
 CheckMK Version: REST API v1.0
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from services.checkmk.sync.base import NautobotToCheckMKService
 

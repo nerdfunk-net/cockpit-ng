@@ -9,7 +9,7 @@ by DeviceUpdateService and other services that need to manipulate device interfa
 from __future__ import annotations
 
 import logging
-from typing import Dict, Any, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 from services.nautobot import NautobotService
 from services.nautobot.devices.common import DeviceCommonService

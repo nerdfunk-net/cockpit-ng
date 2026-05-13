@@ -5,21 +5,21 @@ Orchestrates device backup operations including validation,
 execution, and result aggregation.
 """
 
-import logging
-from typing import Optional, List
-from pathlib import Path
-from datetime import datetime
-
-from models.backup_models import (
-    DeviceBackupInfo,
-    GitStatus,
-    CredentialInfo,
-    GitCommitStatus,
-    TimestampUpdateStatus,
-    BackupResult,
-)
 import asyncio
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import List, Optional
+
 import service_factory
+from models.backup_models import (
+    BackupResult,
+    CredentialInfo,
+    DeviceBackupInfo,
+    GitCommitStatus,
+    GitStatus,
+    TimestampUpdateStatus,
+)
 from services.nautobot.configs.config import DeviceConfigService
 from utils.netmiko_platform_mapper import NetmikoPlatformMapper
 
@@ -70,8 +70,8 @@ class DeviceBackupService:
         Raises:
             ValueError: If validation fails
         """
-        from services.settings.git.shared_utils import git_repo_manager
         import service_factory
+        from services.settings.git.shared_utils import git_repo_manager
 
         credentials_manager = service_factory.build_credentials_service()
 

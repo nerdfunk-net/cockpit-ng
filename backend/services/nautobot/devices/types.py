@@ -6,7 +6,8 @@ These Pydantic models provide type safety and validation for device update workf
 
 from __future__ import annotations
 
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 

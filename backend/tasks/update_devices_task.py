@@ -10,13 +10,13 @@ This task is a thin wrapper that:
 4. Aggregates results
 """
 
-from celery_app import celery_app
-import logging
 import asyncio
-from typing import List, Dict, Any, Optional
+import logging
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 import service_factory
+from celery_app import celery_app
 from services.nautobot.devices.update import DeviceUpdateService
 
 logger = logging.getLogger(__name__)

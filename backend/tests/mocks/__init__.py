@@ -1,29 +1,21 @@
 """Mock implementations for unit testing."""
 
-from .fake_auth_repositories import FakeUserRepository, FakeRBACRepository
-from .fake_job_repositories import (
-    FakeJobTemplateRepository,
-    FakeJobScheduleRepository,
-    FakeJobRunRepository,
-)
+from .fake_auth_repositories import FakeRBACRepository, FakeUserRepository
 from .fake_checkmk_client import (
-    FakeCheckMKClient,
-    FOLDER_ROOT,
     FOLDER_DC1,
     FOLDER_DC2,
-    TAG_GROUP_AGENT_ID,
+    FOLDER_ROOT,
     HOST_GROUP_NETWORK,
     HOST_GROUP_SERVERS,
+    TAG_GROUP_AGENT_ID,
+    FakeCheckMKClient,
+)
+from .fake_job_repositories import (
+    FakeJobRunRepository,
+    FakeJobScheduleRepository,
+    FakeJobTemplateRepository,
 )
 from .fake_nautobot_service import (
-    FakeNautobotService,
-    STATUS_ACTIVE_ID,
-    STATUS_PLANNED_ID,
-    STATUS_STAGED_ID,
-    STATUS_DECOM_ID,
-    PLATFORM_IOS_ID,
-    PLATFORM_NXOS_ID,
-    PLATFORM_JUNOS_ID,
     DT_NETWORKA_ID,
     DT_NETWORKB_ID,
     DT_SERVER_ID,
@@ -31,9 +23,17 @@ from .fake_nautobot_service import (
     LOC_CITYB_ID,
     LOC_DC_ID,
     NS_GLOBAL_ID,
+    PLATFORM_IOS_ID,
+    PLATFORM_JUNOS_ID,
+    PLATFORM_NXOS_ID,
+    ROLE_FIREWALL_ID,
     ROLE_NETWORK_ID,
     ROLE_SERVER_ID,
-    ROLE_FIREWALL_ID,
+    STATUS_ACTIVE_ID,
+    STATUS_DECOM_ID,
+    STATUS_PLANNED_ID,
+    STATUS_STAGED_ID,
+    FakeNautobotService,
 )
 
 __all__ = [

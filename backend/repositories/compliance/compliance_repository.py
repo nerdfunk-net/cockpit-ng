@@ -3,8 +3,9 @@ Compliance Repository
 Handles database operations for regex patterns, login credentials, and SNMP mappings.
 """
 
-from typing import Optional, List
-from core.models import RegexPattern, LoginCredential, SNMPMapping
+from typing import List, Optional
+
+from core.models import LoginCredential, RegexPattern, SNMPMapping
 from repositories.base import BaseRepository
 
 

@@ -8,8 +8,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import backref
+from sqlalchemy.orm import backref, relationship
 from sqlalchemy.sql import func
 
 from core.database import Base

@@ -178,10 +178,10 @@ class TemplateRenderOrchestrator:
     ) -> Tuple[Dict[str, Any], List[str]]:
         if request.inventory_id:
             try:
+                import service_factory as _sf
                 from utils.inventory_converter import (
                     convert_saved_inventory_to_operations,
                 )
-                import service_factory as _sf
 
                 persistence = _sf.build_inventory_persistence_service()
                 inventory = persistence.get_inventory(request.inventory_id)
@@ -250,8 +250,8 @@ class TemplateRenderOrchestrator:
         username: str | None,
     ) -> TemplateExecuteAndSyncResponse:
         """Render template per device, parse output, queue Celery update task."""
-        from tasks.update_devices_task import update_devices_task
         import service_factory
+        from tasks.update_devices_task import update_devices_task
 
         _jrs = service_factory.build_job_run_service()
 

@@ -3,12 +3,14 @@ User repository for user-specific database operations.
 """
 
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import List, Optional
+
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from repositories.base import BaseRepository
-from core.models import User
+
 from core.database import get_db_session
+from core.models import User
+from repositories.base import BaseRepository
 
 
 class UserRepository(BaseRepository[User]):

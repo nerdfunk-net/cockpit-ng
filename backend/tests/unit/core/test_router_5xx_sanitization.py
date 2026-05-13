@@ -6,8 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from core.auth import verify_token
-from main import app
 from dependencies import get_client_data_service
+from main import app
 
 
 @pytest.fixture

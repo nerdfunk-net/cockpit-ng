@@ -4,7 +4,7 @@ Pure data transformation and normalization functions.
 This module contains stateless utility logic with zero service dependencies.
 """
 
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 
 def flatten_nested_fields(data: Dict[str, Any]) -> Dict[str, Any]:

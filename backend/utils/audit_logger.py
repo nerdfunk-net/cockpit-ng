@@ -2,6 +2,7 @@
 
 import logging
 from typing import Optional
+
 from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)

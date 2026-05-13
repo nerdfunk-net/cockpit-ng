@@ -126,7 +126,7 @@ IMPORT_DEFAULTS: dict[str, str] = {
 
 def read_csv_rows(path: str) -> list[dict[str, str]]:
     """Open the CSV file and return all data rows as dicts."""
-    with open(path, "r", encoding="utf-8-sig") as fh:
+    with open(path, encoding="utf-8-sig") as fh:
         content = fh.read()
     reader = csv.DictReader(io.StringIO(content))
     return list(reader)

@@ -6,8 +6,8 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from repositories import ProfileRepository
 from core.models import UserProfile
+from repositories import ProfileRepository
 
 logger = logging.getLogger(__name__)
 

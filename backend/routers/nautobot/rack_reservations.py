@@ -14,11 +14,10 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_nautobot_service
 from models.nautobot import RackReservationCreate
 from services.nautobot.client import NautobotService
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 

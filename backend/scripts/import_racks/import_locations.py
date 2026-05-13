@@ -22,8 +22,8 @@ import argparse
 import asyncio
 import csv
 import logging
-import sys
 import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -481,7 +481,7 @@ def main() -> None:
         print(f"ERROR: CSV file not found: {args.csv}", file=sys.stderr)
         sys.exit(1)
 
-    with open(config_path, "r", encoding="utf-8") as f:
+    with open(config_path, encoding="utf-8") as f:
         config_data = yaml.safe_load(f)
 
     if not config_data:

@@ -12,8 +12,9 @@ Used by:
 """
 
 import logging
-from typing import List, Dict, Any
-from models.inventory import LogicalOperation, LogicalCondition
+from typing import Any, Dict, List
+
+from models.inventory import LogicalCondition, LogicalOperation
 
 logger = logging.getLogger(__name__)
 

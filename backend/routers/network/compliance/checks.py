@@ -3,16 +3,17 @@ Compliance check router for performing device compliance verification.
 """
 
 from __future__ import annotations
+
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from models.settings import ComplianceCheckRequest
-from services.network.compliance.check import ComplianceCheckService
-from dependencies import get_compliance_service
-from services.compliance.compliance_service import ComplianceService
-
 from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_compliance_service
+from models.settings import ComplianceCheckRequest
+from services.compliance.compliance_service import ComplianceService
+from services.network.compliance.check import ComplianceCheckService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/compliance", tags=["compliance-check"])

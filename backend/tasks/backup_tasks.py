@@ -4,17 +4,18 @@ Backup tasks for backing up device configurations to Git repository.
 Refactored to use service layer for better separation of concerns.
 """
 
-from celery import shared_task, group
 import logging
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from git.exc import GitCommandError
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from celery import group, shared_task
+from git.exc import GitCommandError
 
 from models.backup_models import (
-    GitStatus,
     CredentialInfo,
     GitCommitStatus,
+    GitStatus,
     TimestampUpdateStatus,
 )
 from services.nautobot.configs.backup import DeviceBackupService

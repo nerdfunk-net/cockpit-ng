@@ -35,7 +35,7 @@ _BULK_CACHE_KEY = "nautobot:devices:all"
 class InventoryQueryService:
     """Handles all Nautobot GraphQL queries for inventory device lookups."""
 
-    def __init__(self, cache_service: Optional["RedisCacheService"] = None):
+    def __init__(self, cache_service: Optional[RedisCacheService] = None):
         self._cache_service = cache_service
         # Per-instance warm cache — populated on first use, avoids repeated Redis reads
         self._devices_cache: Optional[List[DeviceInfo]] = None

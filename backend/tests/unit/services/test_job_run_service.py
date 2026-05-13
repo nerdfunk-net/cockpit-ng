@@ -13,7 +13,6 @@ import pytest
 from services.jobs.job_run_service import JobRunService
 from tests.mocks.fake_job_repositories import FakeJobRunRepository
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

@@ -21,25 +21,26 @@ Each sub-router handles a specific domain:
 
 from fastapi import APIRouter
 
+from .clusters import router as clusters_router
+from .device_ops import router as device_ops_router
+
 # Import sub-routers from new feature-based structure
 from .devices import router as devices_router
-from .locations import router as locations_router
-from .taxonomy import router as taxonomy_router
-from .statuses import router as statuses_router
-from .tags import router as tags_router
-from .ipam import router as ipam_metadata_router
 from .infrastructure import router as infrastructure_router
-from .device_ops import router as device_ops_router
-from .utils import router as nautobot_utils_router
-from .prefixes import router as ipam_prefixes_router
+from .interfaces import router as dcim_interfaces_router
 from .ip_addresses import router as ipam_addresses_router
 from .ip_interface_mapping import router as ipam_ip_address_to_interface_router
-from .interfaces import router as dcim_interfaces_router
-from .clusters import router as clusters_router
-from .virtual_chassis import router as virtual_chassis_router
-from .rack_reservations import router as rack_reservations_router
+from .ipam import router as ipam_metadata_router
+from .locations import router as locations_router
+from .prefixes import router as ipam_prefixes_router
 from .rack_mappings import router as rack_mappings_router
+from .rack_reservations import router as rack_reservations_router
 from .stacks import router as stacks_router
+from .statuses import router as statuses_router
+from .tags import router as tags_router
+from .taxonomy import router as taxonomy_router
+from .utils import router as nautobot_utils_router
+from .virtual_chassis import router as virtual_chassis_router
 
 # Create main Nautobot router
 router = APIRouter(prefix="/api/nautobot")

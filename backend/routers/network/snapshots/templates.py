@@ -2,15 +2,17 @@
 Router for snapshot command template management.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from core.auth import require_permission
-from services.network.snapshots import SnapshotTemplateService
 from models.snapshots import (
     SnapshotCommandTemplateCreate,
-    SnapshotCommandTemplateUpdate,
     SnapshotCommandTemplateResponse,
+    SnapshotCommandTemplateUpdate,
 )
+from services.network.snapshots import SnapshotTemplateService
 
 router = APIRouter(prefix="/api/network/snapshots/templates", tags=["snapshots"])
 

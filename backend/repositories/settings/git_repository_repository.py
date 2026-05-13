@@ -1,8 +1,9 @@
 """Repository for git repository operations."""
 
-from typing import Optional, List
-from core.models import GitRepository
+from typing import List, Optional
+
 from core.database import get_db_session
+from core.models import GitRepository
 from repositories.base import BaseRepository
 
 

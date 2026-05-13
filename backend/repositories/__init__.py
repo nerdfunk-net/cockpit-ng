@@ -6,21 +6,21 @@ All database operations should go through repositories to ensure consistent patt
 and easier testing.
 """
 
-from .base import BaseRepository
-from .auth.user_repository import UserRepository
-from .auth.rbac_repository import RBACRepository
 from .auth.profile_repository import ProfileRepository
-from .settings.credentials_repository import CredentialsRepository
-from .settings.template_repository import TemplateRepository
-from .settings.git_repository_repository import GitRepositoryRepository
-from .jobs.job_schedule_repository import JobScheduleRepository
-from .jobs.job_template_repository import JobTemplateRepository
-from .jobs.job_run_repository import JobRunRepository, job_run_repository
+from .auth.rbac_repository import RBACRepository
+from .auth.user_repository import UserRepository
+from .base import BaseRepository
 from .compliance.compliance_repository import (
-    RegexPatternRepository,
     LoginCredentialRepository,
+    RegexPatternRepository,
     SNMPMappingRepository,
 )
+from .jobs.job_run_repository import JobRunRepository, job_run_repository
+from .jobs.job_schedule_repository import JobScheduleRepository
+from .jobs.job_template_repository import JobTemplateRepository
+from .settings.credentials_repository import CredentialsRepository
+from .settings.git_repository_repository import GitRepositoryRepository
+from .settings.template_repository import TemplateRepository
 
 __all__ = [
     "BaseRepository",

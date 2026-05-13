@@ -3,10 +3,12 @@ Pydantic models for Nautobot to CheckMK device synchronization.
 """
 
 from __future__ import annotations
-from typing import Dict, Any, Optional, List
+
 from datetime import datetime
-from pydantic import BaseModel, Field
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class JobStatus(str, Enum):

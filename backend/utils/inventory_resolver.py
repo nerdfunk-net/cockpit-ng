@@ -12,9 +12,9 @@ to actual lists of device IDs. This functionality is used across multiple featur
 The resolver ensures consistent behavior across all parts of the application.
 """
 
-import logging
 import asyncio
-from typing import Optional, List
+import logging
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 

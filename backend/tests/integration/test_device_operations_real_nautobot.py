@@ -13,14 +13,16 @@ They require:
 - Baseline test data loaded (from contributing-data/tests_baseline/baseline.yaml)
 """
 
-import pytest
 import logging
 from typing import Dict
+
+import pytest
+
+from models.nautobot import AddDeviceRequest, InterfaceData, IpAddressData
 from services.nautobot import NautobotService
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.devices.creation import DeviceCreationService
 from services.nautobot.devices.update import DeviceUpdateService
-from models.nautobot import AddDeviceRequest, InterfaceData, IpAddressData
 
 logger = logging.getLogger(__name__)
 

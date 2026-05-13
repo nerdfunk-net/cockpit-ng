@@ -7,19 +7,19 @@ required.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from models.user_management import UserRole
 from services.auth import user_management as um
 from services.auth.user_service import (
-    UserService,
     PERMISSIONS_ADMIN,
     PERMISSIONS_USER,
     PERMISSIONS_VIEWER,
+    UserService,
 )
 from tests.mocks.fake_auth_repositories import FakeUserRepository
-
 
 # ---------------------------------------------------------------------------
 # Patch target and helper
@@ -96,7 +96,7 @@ class TestCreateUser:
         svc = _make_svc()
         with patch(_PATCH_TARGET, return_value=svc):
             um.create_user("dupe", "First", "pw1234")
-            with pytest.raises(Exception):
+            with pytest.raises(ValueError, match="already exists"):
                 um.create_user("dupe", "Second", "pw5678")
 
 

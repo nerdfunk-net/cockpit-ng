@@ -3,20 +3,21 @@ Nautobot settings router.
 """
 
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_audit_log_service
-from services.audit.audit_log_service import AuditLogService
 from models.settings import (
-    NautobotSettingsRequest,
     ConnectionTestRequest,
     NautobotDefaultsRequest,
+    NautobotSettingsRequest,
 )
-
-from core.safe_http_errors import raise_internal_server_error
+from services.audit.audit_log_service import AuditLogService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["settings"])

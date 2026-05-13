@@ -6,11 +6,13 @@ and CheckMK to identify differences.
 """
 
 from __future__ import annotations
+
 import logging
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from fastapi import HTTPException, status
 
-from models.nb2cmk import DeviceListWithStatus, DeviceComparison
+from models.nb2cmk import DeviceComparison, DeviceListWithStatus
 
 logger = logging.getLogger(__name__)
 
@@ -210,8 +212,8 @@ class DeviceComparisonService:
             try:
                 import service_factory
                 from services.checkmk.exceptions import (
-                    HostNotFoundError,
                     CheckMKAPIError,
+                    HostNotFoundError,
                 )
 
                 try:

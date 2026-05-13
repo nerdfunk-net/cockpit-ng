@@ -7,13 +7,13 @@ from typing import Any, Dict
 
 from fastapi import HTTPException
 
+from services.nautobot.common.exceptions import translate_http_exception
+from services.nautobot.offboarding.types import DEVICE_CACHE_TTL, OffboardingResult
 from services.nautobot_helpers import (
     get_device_cache_key,
     get_device_details_cache_key,
     get_device_list_cache_key,
 )
-from services.nautobot.common.exceptions import translate_http_exception
-from services.nautobot.offboarding.types import DEVICE_CACHE_TTL, OffboardingResult
 
 logger = logging.getLogger(__name__)
 

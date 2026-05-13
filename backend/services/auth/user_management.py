@@ -5,8 +5,10 @@ with modern permission handling and secure password management.
 """
 
 from __future__ import annotations
-from typing import Any, Dict, List, Optional, Tuple
+
 import logging
+from typing import Any, Dict, List, Optional, Tuple
+
 import service_factory as _sf
 from models.user_management import UserRole
 
@@ -50,8 +52,8 @@ def create_user(
         user["role"] = user_db.get_role_name(user["permissions"])
         return user
 
-    except ValueError as e:
-        raise Exception(str(e))
+    except ValueError:
+        raise
     except Exception as e:
         raise Exception(f"Failed to create user: {str(e)}")
 

@@ -3,24 +3,27 @@ OIDC authentication router for OpenID Connect integration with multiple provider
 """
 
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Union
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from models.auth import (
-    LoginResponse,
-    OIDCCallbackRequest,
-    OIDCProvidersResponse,
-    OIDCProvider,
-    ApprovalPendingResponse,
-    OIDCTestLoginRequest,
-)
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from config import settings
 from core.auth import create_access_token, require_role
 from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_login_recording_service, get_oidc_service
+from models.auth import (
+    ApprovalPendingResponse,
+    LoginResponse,
+    OIDCCallbackRequest,
+    OIDCProvider,
+    OIDCProvidersResponse,
+    OIDCTestLoginRequest,
+)
 from services.auth.login_recording_service import LoginRecordingService
-from config import settings
 from services.settings.manager import SettingsManager as _SM
 
 settings_manager = _SM()

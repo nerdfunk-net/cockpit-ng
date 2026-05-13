@@ -6,7 +6,8 @@ framework dependencies (FastAPI, etc.).
 """
 
 import logging
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from services.nautobot.client import NautobotService
 
 logger = logging.getLogger(__name__)

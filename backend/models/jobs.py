@@ -2,9 +2,10 @@
 Pydantic models for job management
 """
 
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional, Literal
 from datetime import datetime
+from typing import Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class JobScheduleBase(BaseModel):

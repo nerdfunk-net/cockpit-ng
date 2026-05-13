@@ -15,9 +15,9 @@ Usage::
 
 from __future__ import annotations
 
+import logging
 import re
 import uuid
-import logging
 from typing import Any
 from urllib.parse import parse_qs
 

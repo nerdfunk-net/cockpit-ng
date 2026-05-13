@@ -4,11 +4,13 @@ Authentication router for login and token management.
 
 import logging
 from datetime import timedelta
-from fastapi import APIRouter, HTTPException, status, Depends, Request
-from models.auth import UserLogin, LoginResponse
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
 from core.auth import create_access_token, get_api_key_user
 from core.limiter import limiter
 from dependencies import get_audit_log_service, get_login_recording_service
+from models.auth import LoginResponse, UserLogin
 from services.audit.audit_log_service import AuditLogService
 from services.auth.login_recording_service import LoginRecordingService
 
@@ -27,9 +29,9 @@ async def login(
     """
     Authenticate user against new user database.
     """
+    import service_factory
     from config import settings
     from services.auth.user_management import authenticate_user
-    import service_factory
 
     rbac = service_factory.build_rbac_service()
 
@@ -128,9 +130,10 @@ async def refresh_token(request: Request):
     verify the token signature. This prevents race conditions where a token
     expires just before the refresh call.
     """
+    import jwt as pyjwt
+
     from config import settings
     from services.auth.user_management import get_user_by_username
-    import jwt as pyjwt
 
     # Extract Authorization header
     auth_header = request.headers.get("authorization") or request.headers.get(
@@ -323,8 +326,9 @@ async def logout(
     It logs the logout event to the audit log for tracking purposes.
     The actual token invalidation happens client-side by removing the token.
     """
-    from config import settings
     import jwt as pyjwt
+
+    from config import settings
 
     # Try to get user info from token if available
     try:

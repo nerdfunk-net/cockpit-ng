@@ -9,16 +9,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from core.safe_http_errors import raise_internal_server_error
-from services.network.snapshots import (
-    SnapshotExecutionService,
-    SnapshotComparisonService,
-)
 from models.snapshots import (
-    SnapshotExecuteRequest,
-    SnapshotResponse,
-    SnapshotListResponse,
     SnapshotCompareRequest,
     SnapshotCompareResponse,
+    SnapshotExecuteRequest,
+    SnapshotListResponse,
+    SnapshotResponse,
+)
+from services.network.snapshots import (
+    SnapshotComparisonService,
+    SnapshotExecutionService,
 )
 
 logger = logging.getLogger(__name__)

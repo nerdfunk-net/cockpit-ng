@@ -4,13 +4,15 @@ Unit tests for DeviceImportService.
 Tests device import workflow including validation, creation, and interface handling.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from services.nautobot.devices.import_service import DeviceImportService
-from services.nautobot.devices.types import InterfaceUpdateResult
+
+import pytest
+
 from services.nautobot import NautobotService
 from services.nautobot.devices.common import DeviceCommonService
+from services.nautobot.devices.import_service import DeviceImportService
 from services.nautobot.devices.interface_workflow import InterfaceManagerService
+from services.nautobot.devices.types import InterfaceUpdateResult
 
 
 @pytest.fixture

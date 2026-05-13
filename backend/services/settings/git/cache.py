@@ -9,11 +9,13 @@ for commits, file history, and other git data.
 """
 
 from __future__ import annotations
+
 import logging
 import subprocess
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from git import Repo
+
 from models.git import GitCommit, commit_to_dict
 
 logger = logging.getLogger(__name__)

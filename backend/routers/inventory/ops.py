@@ -11,10 +11,11 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import (
+    get_device_query_service,
     get_inventory_persistence_service,
     get_inventory_service,
-    get_device_query_service,
 )
 from models.inventory import (
     GroupsResponse,
@@ -26,8 +27,6 @@ from models.inventory import (
 from services.inventory.inventory import InventoryService
 from services.inventory.persistence_service import InventoryPersistenceService
 from services.nautobot.devices.query import DeviceQueryService
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/inventory", tags=["inventory"])

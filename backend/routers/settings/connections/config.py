@@ -3,16 +3,17 @@ Configuration file management router for editing YAML config files.
 """
 
 from __future__ import annotations
+
 import logging
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, status
+
 import yaml
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_checkmk_config_service
 from models.settings import ConfigFileContent
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/config", tags=["config"])
@@ -99,7 +100,7 @@ async def read_config_file(
 
         # Read file content
         try:
-            with open(config_file, "r", encoding="utf-8") as f:
+            with open(config_file, encoding="utf-8") as f:
                 content = f.read()
 
             logger.info(

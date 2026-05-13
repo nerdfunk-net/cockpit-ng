@@ -6,19 +6,28 @@ for better code organization and maintainability.
 """
 
 from __future__ import annotations
+
+import asyncio
 import logging
 import os
-import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime
+
 from fastapi import FastAPI, Request
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+
 from core.limiter import limiter
 from core.safe_http_errors import raise_internal_server_error
+
+# certificates_router is now part of routers.tools package
+from health import router as health_router
+
+# Agents routers
+from routers.agents import deploy_router as agents_deploy_router
 
 # Import routers
 # Auth routers now use feature-based structure (Phase 3.5 migration)
@@ -27,84 +36,90 @@ from routers.auth import auth_router, oidc_router, profile_router
 # CheckMK routers now use feature-based structure (Phase 3.6 migration)
 from routers.checkmk import checkmk_router, nb2cmk_router
 
-# Nautobot routers now use feature-based structure (Phase 3.8 migration)
-from routers.nautobot import (
-    nautobot_router,
-    scan_and_add_router,
-)
+# Clients router (query collected ARP/MAC/hostname data)
+from routers.clients import router as clients_router
 
-# Settings routers now use feature-based structure (Phase 3.1-3.3 migration)
-from routers.settings import (
-    git_router,
-    common_router as settings_router,
-    cache_router,
-    cache_settings_router,
-    credentials_router,
-    templates_router,
-    rbac_router,
-    nautobot_settings_router,
-    git_settings_router,
-    checkmk_settings_router,
-    agents_settings_router,
-    compliance_router,
-    config_router,
-)
+# Cockpit Agent router
+from routers.cockpit_agent import router as cockpit_agent_router
 
-# Network routers now use feature-based structure (Phase 3.4 migration - partial)
-from routers.network import (
-    file_compare_router,  # Minimal - only compare endpoint for Config View
-    backup_router,  # Configuration backup management
-    netmiko_router,
-    compliance_check_router,
-)
-
-# Snapshot routers (Network / Automation / Snapshots)
-from routers.network.snapshots import (
-    templates_router as snapshot_templates_router,
-    snapshots_router,
-)
-
-# Tools routers package (schema management, RBAC seeding, baseline, certificates)
-from routers.tools import tools_router, certificates_router
+# General routers
+from routers.general import logs_router
 
 # Inventory routers (ops must be registered before crud — see routers/inventory/__init__.py)
 from routers.inventory import (
-    inventory_ops_router,
     inventory_crud_router,
+    inventory_ops_router,
+)
+from routers.jobs import (
+    agent_deploy_router,
+    celery_admin_router,
+    check_ip_router,
+    client_data_router,
+    device_backup_router,
+    import_update_router,
+    network_tasks_router,
+    onboarding_router,
+    sync_tasks_router,
+)
+from routers.jobs import (
+    export_router as device_export_router,
+)
+from routers.jobs import (
+    runs_router as job_runs_router,
+)
+from routers.jobs import (
+    schedules_router as job_schedules_router,
 )
 
 # git_repositories_router is included via git_router - no need to import separately
 # Job routers now use feature-based structure (Phase 3.2 migration)
 from routers.jobs import (
     templates_router as job_templates_router,
-    schedules_router as job_schedules_router,
-    runs_router as job_runs_router,
-    celery_admin_router,
-    onboarding_router,
-    device_backup_router,
-    agent_deploy_router,
-    export_router as device_export_router,
-    import_update_router,
-    check_ip_router,
-    client_data_router,
-    sync_tasks_router,
-    network_tasks_router,
 )
 
-# certificates_router is now part of routers.tools package
-from health import router as health_router
+# Nautobot routers now use feature-based structure (Phase 3.8 migration)
+from routers.nautobot import (
+    nautobot_router,
+    scan_and_add_router,
+)
 
-# Clients router (query collected ARP/MAC/hostname data)
-from routers.clients import router as clients_router
+# Network routers now use feature-based structure (Phase 3.4 migration - partial)
+from routers.network import (
+    backup_router,  # Configuration backup management
+    compliance_check_router,
+    file_compare_router,  # Minimal - only compare endpoint for Config View
+    netmiko_router,
+)
+from routers.network.snapshots import (
+    snapshots_router,
+)
 
-# General routers
-from routers.general import logs_router
+# Snapshot routers (Network / Automation / Snapshots)
+from routers.network.snapshots import (
+    templates_router as snapshot_templates_router,
+)
 
-# Cockpit Agent router
-from routers.cockpit_agent import router as cockpit_agent_router
+# Settings routers now use feature-based structure (Phase 3.1-3.3 migration)
+from routers.settings import (
+    agents_settings_router,
+    cache_router,
+    cache_settings_router,
+    checkmk_settings_router,
+    compliance_router,
+    config_router,
+    credentials_router,
+    git_router,
+    git_settings_router,
+    nautobot_settings_router,
+    rbac_router,
+    templates_router,
+)
+from routers.settings import (
+    common_router as settings_router,
+)
 
-# Agents routers
-from routers.agents import deploy_router as agents_deploy_router
+# Tools routers package (schema management, RBAC seeding, baseline, certificates)
+from routers.tools import certificates_router, tools_router
 
 # Import auth dependency
 
@@ -591,6 +606,7 @@ if __name__ == "__main__":
         UVICORN_RELOAD=1 python main.py
     """
     import uvicorn
+
     from config import settings
 
     reload_flag = os.getenv("UVICORN_RELOAD", "").lower() in ("1", "true", "yes")

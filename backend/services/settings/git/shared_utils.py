@@ -4,12 +4,13 @@ Consolidates common functions to avoid duplication.
 """
 
 import logging
+
 from fastapi import HTTPException, status
+
+from core.safe_http_errors import raise_internal_server_error
 from services.settings.git.repository_service import (
     GitRepositoryService as GitRepositoryManager,
 )
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 

@@ -2,21 +2,21 @@
 Service for executing snapshots on devices.
 """
 
-import logging
 import json
+import logging
 from datetime import datetime
-from typing import List, Dict, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from repositories.snapshots import SnapshotTemplateRepository, SnapshotRepository
+import service_factory
 from models.snapshots import SnapshotExecuteRequest, SnapshotResponse
+from repositories.snapshots import SnapshotRepository, SnapshotTemplateRepository
 from services.network.automation.netmiko import NetmikoService
-from services.settings.git.service import GitService
 from services.settings.git.paths import repo_path
 from services.settings.git.repository_service import (
     GitRepositoryService as GitRepositoryManager,
 )
-import service_factory
+from services.settings.git.service import GitService
 
 logger = logging.getLogger(__name__)
 

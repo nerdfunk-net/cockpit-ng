@@ -7,16 +7,16 @@ each normalizer's logic can be exercised in full isolation.
 
 from __future__ import annotations
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from models.nb2cmk import DeviceExtensions
+from services.checkmk.normalization.device_normalizer import DeviceNormalizationService
+from services.checkmk.normalization.field_normalizer import FieldNormalizer
 from services.checkmk.normalization.ip_normalizer import IPNormalizer
 from services.checkmk.normalization.snmp_normalizer import SNMPNormalizer
-from services.checkmk.normalization.field_normalizer import FieldNormalizer
 from services.checkmk.normalization.tag_normalizer import TagNormalizer
-from services.checkmk.normalization.device_normalizer import DeviceNormalizationService
-from models.nb2cmk import DeviceExtensions
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -484,7 +484,7 @@ class TestDeviceNormalizationService:
         device_data: dict,
         site: str = "prod",
         folder: str = "/dc1",
-    ) -> "DeviceExtensions":
+    ) -> DeviceExtensions:
         with (
             patch(_PATCH_SITE, return_value=site),
             patch(_PATCH_FOLDER, return_value=folder),

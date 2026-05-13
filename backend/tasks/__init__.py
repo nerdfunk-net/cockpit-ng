@@ -44,77 +44,76 @@ Correct patterns:
 """
 
 # Import scheduling tasks
-from .scheduling import check_job_schedules_task, dispatch_job
+# Import background job tasks (outside tasks package)
+from services.background_jobs import (  # noqa: F401
+    add_device_to_checkmk_task,
+    cache_all_devices_task,
+    cache_all_locations_task,
+    cache_single_device_task,
+    sync_devices_to_checkmk_task,
+    update_device_in_checkmk_task,
+)
 
-# Import test tasks
-from .test_tasks import test_task, test_progress_task, debug_wait_task
+# Import agent deploy tasks
+from .agent_deploy_tasks import deploy_agent_task
 
-# Import onboard device task
-from .onboard_device_task import onboard_device_task
+# Import backup tasks
+from .backup_tasks import backup_single_device_task, finalize_backup_task
 
 # Import bulk onboard devices task
 from .bulk_onboard_task import bulk_onboard_devices_task
 
+# Import check IP task
+from .check_ip_task import check_ip_task
+
+# Import CSV export task
+from .csv_export_task import csv_export_task
+
 # Import export devices task
 from .export_devices_task import export_devices_task
 
-# Import update devices tasks
-from .update_devices_task import update_devices_task
-from .update_devices_from_csv_task import update_devices_from_csv_task
+# Import get client data task
+from .get_client_data_task import get_client_data_task
 
-# Import update IP prefixes task
-from .update_ip_prefixes_from_csv_task import update_ip_prefixes_from_csv_task
+# Import CSV import/update task
+from .import_or_update_from_csv_task import import_or_update_from_csv_task
 
-# Import update IP addresses task
-from .update_ip_addresses_from_csv_task import update_ip_addresses_from_csv_task
+# Import IP addresses task
+from .ip_addresses_task import ip_addresses_task
+
+# Import onboard device task
+from .onboard_device_task import onboard_device_task
+
+# Import periodic tasks
+from .periodic_tasks import (
+    check_stale_jobs_task,
+    cleanup_audit_logs_task,
+    cleanup_celery_data_task,
+    cleanup_client_data_task,
+    dispatch_cache_task,
+    load_cache_schedules_task,
+    worker_health_check,
+)
 
 # Import ping network task
 from .ping_network_task import ping_network_task
 
 # Import scan prefixes task
 from .scan_prefixes_task import scan_prefixes_task
+from .scheduling import check_job_schedules_task, dispatch_job
 
-# Import check IP task
-from .check_ip_task import check_ip_task
+# Import test tasks
+from .test_tasks import debug_wait_task, test_progress_task, test_task
+from .update_devices_from_csv_task import update_devices_from_csv_task
 
-# Import IP addresses task
-from .ip_addresses_task import ip_addresses_task
+# Import update devices tasks
+from .update_devices_task import update_devices_task
 
-# Import periodic tasks
-from .periodic_tasks import (
-    worker_health_check,
-    load_cache_schedules_task,
-    dispatch_cache_task,
-    cleanup_celery_data_task,
-    cleanup_client_data_task,
-    check_stale_jobs_task,
-    cleanup_audit_logs_task,
-)
+# Import update IP addresses task
+from .update_ip_addresses_from_csv_task import update_ip_addresses_from_csv_task
 
-# Import backup tasks
-from .backup_tasks import backup_single_device_task, finalize_backup_task
-
-# Import agent deploy tasks
-from .agent_deploy_tasks import deploy_agent_task
-
-# Import CSV import/update task
-from .import_or_update_from_csv_task import import_or_update_from_csv_task
-
-# Import CSV export task
-from .csv_export_task import csv_export_task
-
-# Import get client data task
-from .get_client_data_task import get_client_data_task
-
-# Import background job tasks (outside tasks package)
-from services.background_jobs import (  # noqa: F401
-    cache_all_devices_task,
-    cache_single_device_task,
-    cache_all_locations_task,
-    add_device_to_checkmk_task,
-    update_device_in_checkmk_task,
-    sync_devices_to_checkmk_task,
-)
+# Import update IP prefixes task
+from .update_ip_prefixes_from_csv_task import update_ip_prefixes_from_csv_task
 
 __all__ = [
     # Active tasks

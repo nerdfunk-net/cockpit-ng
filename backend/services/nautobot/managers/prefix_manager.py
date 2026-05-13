@@ -8,13 +8,14 @@ import logging
 from typing import TYPE_CHECKING, Optional
 
 from ..common.exceptions import NautobotAPIError
-from ..common.validators import is_valid_uuid
 from ..common.utils import normalize_tags
+from ..common.validators import is_valid_uuid
 
 if TYPE_CHECKING:
     from services.nautobot import NautobotService
-    from ..resolvers.network_resolver import NetworkResolver
+
     from ..resolvers.metadata_resolver import MetadataResolver
+    from ..resolvers.network_resolver import NetworkResolver
 
 logger = logging.getLogger(__name__)
 

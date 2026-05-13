@@ -5,14 +5,14 @@ API endpoints for viewing and managing job run history.
 
 import logging
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.auth import require_permission
-from dependencies import get_job_run_service
-from services.jobs.job_run_service import JobRunService
-from models.jobs import JobRunResponse, JobRunListResponse
-
 from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_job_run_service
+from models.jobs import JobRunListResponse, JobRunResponse
+from services.jobs.job_run_service import JobRunService
 
 logger = logging.getLogger(__name__)
 

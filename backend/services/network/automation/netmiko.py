@@ -3,13 +3,15 @@ Netmiko service for executing commands on network devices.
 """
 
 from __future__ import annotations
-import logging
-from typing import List, Dict, Any, Optional, Set
-from netmiko import ConnectHandler
-from netmiko.exceptions import NetmikoTimeoutException, NetmikoAuthenticationException
+
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
+import logging
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Dict, List, Optional, Set
+
+from netmiko import ConnectHandler
+from netmiko.exceptions import NetmikoAuthenticationException, NetmikoTimeoutException
 
 logger = logging.getLogger(__name__)
 

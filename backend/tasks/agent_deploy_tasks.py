@@ -8,10 +8,10 @@ Supports both single-template (legacy) and multi-template deployments.
 """
 
 import asyncio
+import logging
+from typing import Any, Dict, List, Optional
 
 from celery import shared_task
-import logging
-from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger(__name__)
 

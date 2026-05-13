@@ -3,10 +3,11 @@ Tools router for schema management, RBAC seeding, and test baseline operations.
 """
 
 from __future__ import annotations
+
 import logging
 import sys
 from io import StringIO
-from typing import Dict, Any
+from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 

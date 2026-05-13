@@ -251,7 +251,7 @@ class TestImportFromNautobotCsv:
         assert import_svc.import_device.call_count == _NAUTOBOT_DEVICE_COUNT
 
         # Every call must request automatic prefix creation
-        for positional, keyword in import_svc.import_device.call_args_list:
+        for _positional, keyword in import_svc.import_device.call_args_list:
             assert keyword.get("add_prefixes_automatically") is True
 
     def test_nautobot_null_sentinels_are_stripped(self, csv_repo_dir, task_context):
@@ -345,7 +345,7 @@ class TestImportFromCockpitCsv:
         assert import_svc.import_device.call_count == _COCKPIT_DEVICE_COUNT
 
         # Every call must request automatic prefix creation
-        for positional, keyword in import_svc.import_device.call_args_list:
+        for _positional, keyword in import_svc.import_device.call_args_list:
             assert keyword.get("add_prefixes_automatically") is True
 
     def test_all_interfaces_are_passed_per_device(self, csv_repo_dir, task_context):
@@ -372,7 +372,7 @@ class TestImportFromCockpitCsv:
             default_prefix_length="24",
         )
 
-        for positional, keyword in import_svc.import_device.call_args_list:
+        for _positional, keyword in import_svc.import_device.call_args_list:
             interface_config = keyword.get("interface_config")
             assert interface_config is not None, "interface_config must be provided"
             assert len(interface_config) == _COCKPIT_INTERFACES_PER_DEVICE, (
@@ -404,7 +404,7 @@ class TestImportFromCockpitCsv:
             default_prefix_length="24",
         )
 
-        for positional, keyword in import_svc.import_device.call_args_list:
+        for _positional, keyword in import_svc.import_device.call_args_list:
             interface_config = keyword.get("interface_config", [])
 
             ip_interfaces = [i for i in interface_config if i.get("ip_address")]

@@ -6,7 +6,7 @@ Moved from job_tasks.py to improve code organization.
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,9 @@ def execute_run_commands(
     Returns:
         dict: Command execution results with detailed per-device output
     """
+    import service_factory
     from services.network.automation.netmiko import NetmikoService
     from services.network.automation.render import RenderService
-    import service_factory
 
     credentials_manager = service_factory.build_credentials_service()
     template_manager = service_factory.build_template_service()
@@ -102,6 +102,7 @@ def execute_run_commands(
             )
 
             import asyncio
+
             import service_factory
 
             device_query_service = service_factory.build_device_query_service()

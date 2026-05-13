@@ -3,14 +3,15 @@ Ping Network Task for Celery
 Pings CIDR networks and optionally resolves DNS names.
 """
 
-from celery import shared_task
-import logging
 import ipaddress
-import subprocess
-import tempfile
+import logging
 import os
 import socket
-from typing import List, Dict, Any, Set
+import subprocess
+import tempfile
+from typing import Any, Dict, List, Set
+
+from celery import shared_task
 
 import service_factory
 
@@ -106,8 +107,7 @@ def _fping_networks(
         result = subprocess.run(
             full_cmd,
             shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             timeout=60,  # Allow up to 60 seconds for network scanning
             text=True,
         )
@@ -144,7 +144,7 @@ def _fping_networks(
             # Count lines with statistics format
             stats_lines = 0
 
-            for idx, line in enumerate(lines):
+            for _idx, line in enumerate(lines):
                 line = line.strip()
                 if not line:
                     continue
@@ -342,7 +342,7 @@ def ping_network_task(
             },
         )
 
-        for idx, cidr in enumerate(cidrs):
+        for _idx, cidr in enumerate(cidrs):
             try:
                 cidr_ips = _expand_cidr_to_ips(cidr)
                 all_ips.extend(cidr_ips)

@@ -11,13 +11,13 @@ The FakeCheckMKClient returns the same response shape as the real client:
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import patch
 
-from services.checkmk.monitoring_service import CheckMKMonitoringService
-from services.checkmk.exceptions import CheckMKAPIError
-from tests.mocks import FakeCheckMKClient
+import pytest
 
+from services.checkmk.exceptions import CheckMKAPIError
+from services.checkmk.monitoring_service import CheckMKMonitoringService
+from tests.mocks import FakeCheckMKClient
 
 _PATCH_TARGET = "services.checkmk.monitoring_service.CheckMKClientFactory.build_client_from_settings"
 

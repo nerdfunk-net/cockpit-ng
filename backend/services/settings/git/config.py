@@ -6,9 +6,11 @@ user.name and user.email settings required for git operations.
 """
 
 from __future__ import annotations
+
 import logging
 from contextlib import contextmanager
 from typing import Dict
+
 from git import Repo
 
 logger = logging.getLogger(__name__)

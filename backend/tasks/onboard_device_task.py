@@ -1,7 +1,8 @@
 """Celery task for device onboarding — thin entry point."""
 
-from celery import shared_task
 from typing import Dict, List, Optional
+
+from celery import shared_task
 
 from services.nautobot.onboarding.onboarding_service import DeviceOnboardingService
 

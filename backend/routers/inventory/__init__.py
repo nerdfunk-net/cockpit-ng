@@ -10,8 +10,8 @@ crud_router so that path parameters in CRUD (/{inventory_id}) do not capture
 static segments like /preview, /field-options, /custom-fields, etc.
 """
 
-from .ops import router as inventory_ops_router
 from .crud import router as inventory_crud_router
+from .ops import router as inventory_ops_router
 
 __all__ = [
     "inventory_ops_router",

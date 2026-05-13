@@ -88,13 +88,14 @@ def _run_csv_export(
         )
 
         # Reuse helpers from export_devices_task (module-level functions)
+        import asyncio
+
+        import service_factory
         from tasks.export_devices_task import (
             _build_graphql_query,
-            _filter_device_properties,
             _export_to_csv,
+            _filter_device_properties,
         )
-        import asyncio
-        import service_factory
 
         query = _build_graphql_query(properties)
         nautobot_client = service_factory.build_nautobot_service()
@@ -178,8 +179,8 @@ def _run_csv_export(
             meta={"current": 60, "total": 100, "status": "Syncing Git repository..."},
         )
 
-        from services.settings.git.shared_utils import git_repo_manager
         from services.settings.git.paths import repo_path as get_repo_path
+        from services.settings.git.shared_utils import git_repo_manager
 
         repository = git_repo_manager.get_repository(repo_id)
         if not repository:

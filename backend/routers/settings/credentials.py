@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from core.auth import require_permission, get_current_username
-from models.credentials import CredentialCreate, CredentialUpdate
+from core.auth import get_current_username, require_permission
 from dependencies import get_audit_log_service, get_credentials_service
+from models.credentials import CredentialCreate, CredentialUpdate
 from services.audit.audit_log_service import AuditLogService
 from services.settings.credentials_service import CredentialsService
 

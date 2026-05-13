@@ -1,11 +1,12 @@
+import logging
+from typing import Any, Dict
+
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any
 
 from core.auth import verify_token
 from core.safe_http_errors import raise_internal_server_error
 from core.schema_manager import SchemaManager
 from services.network.tools.baseline import TestBaselineService
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +43,10 @@ async def seed_rbac() -> Dict[str, Any]:
     This should be run after database migrations that add new tables.
     """
     try:
-        from tools import seed_rbac as seed_rbac_module
-        from io import StringIO
         import sys
+        from io import StringIO
+
+        from tools import seed_rbac as seed_rbac_module
 
         # Capture stdout to return to frontend
         captured_output = StringIO()

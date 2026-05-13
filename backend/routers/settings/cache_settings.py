@@ -3,13 +3,14 @@ Cache configuration settings router.
 """
 
 from __future__ import annotations
+
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from models.settings import CacheSettingsRequest
-
 from core.safe_http_errors import raise_internal_server_error
+from models.settings import CacheSettingsRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["settings"])

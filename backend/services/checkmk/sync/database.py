@@ -4,13 +4,15 @@ Uses PostgreSQL via repositories for nb2cmk background job operations.
 """
 
 from __future__ import annotations
+
 import json
-import uuid
 import logging
-from datetime import datetime
-from typing import Dict, Any, Optional, List
+import uuid
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
 from repositories.checkmk.nb2cmk_repository import (
     NB2CMKJobRepository,
     NB2CMKJobResultRepository,

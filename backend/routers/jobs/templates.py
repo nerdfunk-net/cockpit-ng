@@ -3,21 +3,22 @@ Job Templates Router
 API endpoints for managing job templates
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import logging
 from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from core.auth import verify_token
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_audit_log_service, get_job_template_service
-from services.audit.audit_log_service import AuditLogService
-from services.jobs.job_template_service import JobTemplateService
 from models.job_templates import (
     JobTemplateCreate,
-    JobTemplateUpdate,
-    JobTemplateResponse,
     JobTemplateListResponse,
+    JobTemplateResponse,
+    JobTemplateUpdate,
 )
-import logging
-
-from core.safe_http_errors import raise_internal_server_error
+from services.audit.audit_log_service import AuditLogService
+from services.jobs.job_template_service import JobTemplateService
 
 logger = logging.getLogger(__name__)
 

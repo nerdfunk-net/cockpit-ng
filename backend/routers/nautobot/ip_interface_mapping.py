@@ -3,15 +3,16 @@ Nautobot IPAM IP Address to Interface assignment endpoint.
 """
 
 from __future__ import annotations
+
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_audit_log_service, get_nautobot_service
 from services.audit.audit_log_service import AuditLogService
 from services.nautobot.client import NautobotService
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ipam", tags=["nautobot-ipam-addresses"])

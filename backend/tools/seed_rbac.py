@@ -8,6 +8,7 @@ This script initializes the RBAC system with:
 
 import argparse
 import sys
+
 import service_factory as _sf
 
 rbac = _sf.build_rbac_service()

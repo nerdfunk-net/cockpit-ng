@@ -3,22 +3,23 @@ Compliance settings router for configuration management.
 """
 
 from __future__ import annotations
+
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_compliance_service
 from models.settings import (
-    RegexPatternRequest,
-    RegexPatternUpdateRequest,
     LoginCredentialRequest,
     LoginCredentialUpdateRequest,
+    RegexPatternRequest,
+    RegexPatternUpdateRequest,
     SNMPMappingRequest,
     SNMPMappingUpdateRequest,
 )
-from dependencies import get_compliance_service
 from services.compliance.compliance_service import ComplianceService
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings/compliance", tags=["compliance-settings"])

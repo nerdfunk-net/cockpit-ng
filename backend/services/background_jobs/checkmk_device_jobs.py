@@ -6,12 +6,13 @@ Background jobs for adding and updating devices in CheckMK from Nautobot.
 import asyncio
 import json
 import logging
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
+
 from celery import shared_task
 from fastapi import HTTPException
 
-from services.checkmk.sync.database import JobStatus as NB2CMKJobStatus
 from services.checkmk.exceptions import CheckMKAPIError
+from services.checkmk.sync.database import JobStatus as NB2CMKJobStatus
 
 logger = logging.getLogger(__name__)
 
@@ -592,8 +593,9 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
     from services.settings.manager import SettingsManager
 
     settings_manager = SettingsManager()
-    from services.checkmk.client import CheckMKClient
     from urllib.parse import urlparse
+
+    from services.checkmk.client import CheckMKClient
 
     db_settings = settings_manager.get_checkmk_settings()
     if not db_settings or not all(

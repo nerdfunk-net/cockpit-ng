@@ -3,28 +3,29 @@ Nautobot device operation endpoints: device details, delete device, offboard dev
 """
 
 from __future__ import annotations
+
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from services.nautobot.common.exceptions import NautobotNotFoundError
-from models.nautobot import DeviceVirtualChassisStatus, OffboardDeviceRequest
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import (
     get_audit_log_service,
+    get_cache_service,
+    get_device_query_service,
     get_nautobot_service,
     get_offboarding_service,
-    get_device_query_service,
-    get_cache_service,
 )
+from models.nautobot import DeviceVirtualChassisStatus, OffboardDeviceRequest
+from services.audit.audit_log_service import AuditLogService
 from services.nautobot.client import NautobotService
+from services.nautobot.common.exceptions import NautobotNotFoundError
 from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.offboarding.service import OffboardingService
 from services.nautobot.offboarding.virtual_chassis_cleanup import (
     VirtualChassisCleanupManager,
 )
-from services.audit.audit_log_service import AuditLogService
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-device-ops"])

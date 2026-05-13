@@ -2,9 +2,11 @@
 Celery application configuration.
 """
 
-from celery import Celery
-from config import settings
 import logging
+
+from celery import Celery
+
+from config import settings
 
 logger = logging.getLogger(__name__)
 

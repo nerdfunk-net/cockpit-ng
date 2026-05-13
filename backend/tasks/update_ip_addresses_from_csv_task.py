@@ -19,15 +19,15 @@ Custom Fields:
 - Example: Column "cf_vlan_id" with value "100" becomes {"custom_fields": {"vlan_id": "100"}}
 """
 
-from celery_app import celery_app
-import logging
+import asyncio
 import csv
 import io
-import asyncio
-from typing import Optional, Dict, Any, Tuple
+import logging
 from datetime import datetime
+from typing import Any, Dict, Optional, Tuple
 
 import service_factory
+from celery_app import celery_app
 from services.nautobot import NautobotService
 
 logger = logging.getLogger(__name__)

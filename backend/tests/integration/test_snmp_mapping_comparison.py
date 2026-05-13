@@ -9,27 +9,28 @@ Tests cover:
 - Configuration reload without worker restart
 """
 
-import pytest
-from unittest.mock import AsyncMock, Mock, patch
-from pathlib import Path
-import yaml
 import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
 
-from services.checkmk.sync.base import NautobotToCheckMKService
-from services.checkmk.normalization import DeviceNormalizationService
+import pytest
+import yaml
+
 from services.checkmk.config import ConfigService
+from services.checkmk.normalization import DeviceNormalizationService
+from services.checkmk.sync.base import NautobotToCheckMKService
 
 # Import test fixtures
 from tests.fixtures.snmp_fixtures import (
-    SNMP_MAPPING_CONFIG,
-    SNMP_MAPPING_V3_AUTH_PRIVACY,
-    SNMP_MAPPING_V3_AUTH_NO_PRIVACY,
-    SNMP_MAPPING_V2_COMMUNITY,
-    NAUTOBOT_DEVICE_WITH_SNMP_V3,
-    NAUTOBOT_DEVICE_WITH_SNMP_V2,
-    NAUTOBOT_DEVICE_WITHOUT_SNMP,
-    CHECKMK_HOST_WITH_SNMP_V3_RESPONSE,
     CHECKMK_HOST_WITH_SNMP_V2_RESPONSE,
+    CHECKMK_HOST_WITH_SNMP_V3_RESPONSE,
+    NAUTOBOT_DEVICE_WITH_SNMP_V2,
+    NAUTOBOT_DEVICE_WITH_SNMP_V3,
+    NAUTOBOT_DEVICE_WITHOUT_SNMP,
+    SNMP_MAPPING_CONFIG,
+    SNMP_MAPPING_V2_COMMUNITY,
+    SNMP_MAPPING_V3_AUTH_NO_PRIVACY,
+    SNMP_MAPPING_V3_AUTH_PRIVACY,
     create_device_with_snmp,
 )
 

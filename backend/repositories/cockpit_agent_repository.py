@@ -4,8 +4,9 @@ Repository for Grafana Agent command history
 
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy.orm import Session
+
 from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
 from core.models import CockpitAgentCommand
 

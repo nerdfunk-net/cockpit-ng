@@ -3,14 +3,15 @@ Nautobot to CheckMK comparison router for device synchronization and comparison.
 """
 
 from __future__ import annotations
+
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from core.auth import require_permission
-from dependencies import get_nb2cmk_service, get_nb2cmk_db_service
-from utils.audit_logger import log_checkmk_sync_event
-
 from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_nb2cmk_db_service, get_nb2cmk_service
+from utils.audit_logger import log_checkmk_sync_event
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nb2cmk", tags=["nb2cmk"])

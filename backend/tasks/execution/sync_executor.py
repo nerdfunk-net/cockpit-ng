@@ -5,9 +5,9 @@ Syncs devices from Nautobot to CheckMK monitoring system.
 Moved from job_tasks.py to improve code organization.
 """
 
-import logging
 import asyncio
-from typing import Dict, Any, Optional
+import logging
+from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)

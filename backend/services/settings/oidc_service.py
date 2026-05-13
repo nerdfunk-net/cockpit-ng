@@ -30,7 +30,7 @@ class OidcService:
             logger.warning("OIDC providers config not found at %s", config_path)
             return _EMPTY_CONFIG.copy()
         try:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 config = yaml.safe_load(f)
             if not config:
                 logger.warning("OIDC providers config is empty")

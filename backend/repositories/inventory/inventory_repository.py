@@ -4,8 +4,9 @@ Manages Ansible inventory configurations stored in PostgreSQL.
 """
 
 from typing import List, Optional
-from core.models import Inventory
+
 from core.database import get_db_session
+from core.models import Inventory
 from repositories.base import BaseRepository
 
 

@@ -8,14 +8,14 @@ we use SimpleNamespace to build lightweight stand-ins.
 
 from __future__ import annotations
 
-import pytest
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from services.checkmk.tag_group_service import CheckMKTagGroupService
+import pytest
+
 from services.checkmk.exceptions import CheckMKAPIError
-from tests.mocks import FakeCheckMKClient, TAG_GROUP_AGENT_ID
-
+from services.checkmk.tag_group_service import CheckMKTagGroupService
+from tests.mocks import TAG_GROUP_AGENT_ID, FakeCheckMKClient
 
 _PATCH_TARGET = (
     "services.checkmk.tag_group_service.CheckMKClientFactory.build_client_from_settings"

@@ -7,14 +7,14 @@ start_bulk_discovery accepts a request object; we use SimpleNamespace.
 
 from __future__ import annotations
 
-import pytest
 from types import SimpleNamespace
 from unittest.mock import patch
+
+import pytest
 
 from services.checkmk.discovery_service import CheckMKDiscoveryService
 from services.checkmk.exceptions import CheckMKAPIError
 from tests.mocks import FakeCheckMKClient
-
 
 _PATCH_TARGET = (
     "services.checkmk.discovery_service.CheckMKClientFactory.build_client_from_settings"

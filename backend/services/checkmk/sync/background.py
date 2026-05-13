@@ -4,13 +4,15 @@ Handles async processing of device comparisons to prevent HTTP timeouts.
 """
 
 from __future__ import annotations
+
 import asyncio
 import logging
 from typing import Dict, Optional
+
 from fastapi import HTTPException, status
 
+from models.nb2cmk import JobProgressResponse, JobResultsResponse, JobStartResponse
 from services.checkmk.sync.database import JobStatus
-from models.nb2cmk import JobStartResponse, JobProgressResponse, JobResultsResponse
 
 logger = logging.getLogger(__name__)
 

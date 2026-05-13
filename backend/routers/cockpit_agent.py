@@ -8,23 +8,23 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from core.auth import verify_token, require_permission
+from core.auth import require_permission, verify_token
 from core.database import get_db
 from core.safe_http_errors import raise_internal_server_error
 from dependencies import (
-    get_nautobot_service,
     get_inventory_persistence_service,
     get_inventory_service,
+    get_nautobot_service,
 )
 from models.cockpit_agent import (
     AgentListResponse,
     AgentStatusResponse,
+    CommandHistoryItem,
+    CommandHistoryResponse,
     CommandRequest,
     CommandResponse,
-    CommandHistoryResponse,
-    CommandHistoryItem,
-    PingRequest,
     PingJobResponse,
+    PingRequest,
 )
 from models.inventory import LogicalOperation
 from services.cockpit_agent_service import CockpitAgentService

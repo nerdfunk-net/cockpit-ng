@@ -7,13 +7,13 @@ All tests run offline — no real OIDC provider required.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi import HTTPException
 
 from models.auth import OIDCConfig
 from services.auth.oidc import OIDCService
-
 
 # ---------------------------------------------------------------------------
 # Patch targets

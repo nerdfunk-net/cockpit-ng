@@ -5,20 +5,21 @@ This router handles scanning for certificates and adding them to the system CA s
 """
 
 from __future__ import annotations
+
 import logging
-import subprocess
 import shutil
+import subprocess
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from core.auth import require_permission
 from core.safe_http_errors import raise_internal_server_error
 from models.tools import (
-    CertificateInfo,
-    ScanResponse,
     AddCertificateRequest,
     AddCertificateResponse,
+    CertificateInfo,
+    ScanResponse,
 )
 
 logger = logging.getLogger(__name__)

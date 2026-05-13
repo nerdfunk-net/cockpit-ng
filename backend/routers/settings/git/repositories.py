@@ -4,24 +4,24 @@ Handles creation, reading, updating, and deletion of Git repository configuratio
 """
 
 from __future__ import annotations
+
 import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_git_connection_service
 from models.git_repositories import (
-    GitRepositoryRequest,
-    GitRepositoryResponse,
-    GitRepositoryListResponse,
-    GitRepositoryUpdateRequest,
     GitConnectionTestRequest,
     GitConnectionTestResponse,
+    GitRepositoryListResponse,
+    GitRepositoryRequest,
+    GitRepositoryResponse,
+    GitRepositoryUpdateRequest,
 )
 from services.settings.git.shared_utils import git_repo_manager
-from dependencies import get_git_connection_service
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git-repositories", tags=["git-repositories"])

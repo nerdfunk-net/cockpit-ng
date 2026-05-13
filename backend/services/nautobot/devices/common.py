@@ -15,18 +15,18 @@ fine-grained control, you can import resolvers/managers directly.
 """
 
 import logging
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
 from services.nautobot import NautobotService
-from services.nautobot.resolvers import (
-    DeviceResolver,
-    MetadataResolver,
-    NetworkResolver,
+from services.nautobot.common.exceptions import (
+    handle_already_exists_error,
+    is_duplicate_error,
 )
-from services.nautobot.managers import (
-    IPManager,
-    InterfaceManager,
-    PrefixManager,
-    DeviceManager,
+from services.nautobot.common.utils import (
+    extract_nested_value,
+    flatten_nested_fields,
+    normalize_tags,
+    prepare_update_data,
 )
 from services.nautobot.common.validators import (
     is_valid_uuid,
@@ -34,15 +34,16 @@ from services.nautobot.common.validators import (
     validate_mac_address,
     validate_required_fields,
 )
-from services.nautobot.common.utils import (
-    flatten_nested_fields,
-    extract_nested_value,
-    normalize_tags,
-    prepare_update_data,
+from services.nautobot.managers import (
+    DeviceManager,
+    InterfaceManager,
+    IPManager,
+    PrefixManager,
 )
-from services.nautobot.common.exceptions import (
-    is_duplicate_error,
-    handle_already_exists_error,
+from services.nautobot.resolvers import (
+    DeviceResolver,
+    MetadataResolver,
+    NetworkResolver,
 )
 
 logger = logging.getLogger(__name__)

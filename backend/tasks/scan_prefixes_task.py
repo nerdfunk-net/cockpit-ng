@@ -1,7 +1,8 @@
 """Scan Prefixes Task for Celery (thin entry point)."""
 
+from typing import Any, Dict, List, Optional
+
 from celery import shared_task
-from typing import List, Dict, Any, Optional
 
 from services.network.scanning.prefix_scan_service import PrefixScanService
 

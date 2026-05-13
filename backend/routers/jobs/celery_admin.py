@@ -13,8 +13,10 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from celery_app import celery_app
+from config import settings
 from core.auth import require_permission, verify_token
 from core.celery_error_handler import handle_celery_errors
+from core.safe_http_errors import raise_internal_server_error
 from models.celery import (
     CelerySettingsRequest,
     ProgressTaskRequest,
@@ -30,9 +32,6 @@ from services.celery import (
     purge_all_queues,
     purge_queue,
 )
-from config import settings
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/celery", tags=["celery"])

@@ -13,12 +13,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
 from dependencies import get_audit_log_service
-from services.audit.audit_log_service import AuditLogService
 from models.celery import (
     SyncDevicesToCheckmkRequest,
     TaskResponse,
     TaskWithJobResponse,
 )
+from services.audit.audit_log_service import AuditLogService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/celery", tags=["celery-sync-tasks"])

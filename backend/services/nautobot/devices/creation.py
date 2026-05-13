@@ -4,16 +4,17 @@ Device creation service for Nautobot.
 Handles the orchestrated workflow for creating devices with interfaces.
 """
 
-import logging
 import ipaddress
+import logging
 import re
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from models.nautobot import AddDeviceRequest, InterfaceData
+from repositories.audit_log_repository import audit_log_repo
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.common.validators import is_valid_uuid
 from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot.devices.interface_workflow import InterfaceManagerService
-from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 

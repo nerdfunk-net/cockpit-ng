@@ -5,9 +5,9 @@ Compares device configurations between Nautobot and CheckMK.
 Moved from job_tasks.py to improve code organization.
 """
 
-import logging
 import asyncio
-from typing import Dict, Any, Optional
+import logging
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

@@ -26,6 +26,7 @@ Setup:
 """
 
 import logging
+
 import pytest
 
 from models.nautobot import AddDeviceRequest, InterfaceData, IpAddressData

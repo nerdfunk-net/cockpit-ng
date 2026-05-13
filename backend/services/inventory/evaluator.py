@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class InventoryEvaluator:
     """Executes logical operations for inventory device filtering."""
 
-    def __init__(self, query_service: "InventoryQueryService"):
+    def __init__(self, query_service: InventoryQueryService):
         self.query_service = query_service
         self.field_to_query_map = {
             "name": query_service._query_devices_by_name,

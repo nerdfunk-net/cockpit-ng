@@ -7,9 +7,10 @@ commit author is sometimes a string and sometimes a dict.
 """
 
 from __future__ import annotations
-from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
 
+from typing import List, Literal, Optional
+
+from pydantic import BaseModel, Field
 
 # ============================================================================
 # Commit Models
@@ -39,7 +40,7 @@ class GitCommit(BaseModel):
 class GitCommitDetails(GitCommit):
     """Detailed commit information with stats and optional diff."""
 
-    stats: "CommitStats" = Field(..., description="Commit statistics")
+    stats: CommitStats = Field(..., description="Commit statistics")
     diff: Optional[str] = Field(None, description="Full diff content if requested")
 
 

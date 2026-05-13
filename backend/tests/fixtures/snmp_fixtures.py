@@ -4,7 +4,7 @@ SNMP mapping test fixtures for testing CheckMK device normalization and comparis
 This module provides test SNMP configuration data matching the format in config/snmp_mapping.yaml
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 # =============================================================================
 # SNMP Mapping Configuration Fixtures

@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import ipaddress
+import logging
+import os
 import platform
 import subprocess
-import logging
 import tempfile
-import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
 from datetime import datetime
+from typing import Dict, List, Optional, Set
 
 """Network Scan service for ICMP ping discovery operations.
 
@@ -312,8 +312,7 @@ class NetworkScanService:
             result = subprocess.run(
                 f"fping < {temp_file_path}",
                 shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 timeout=PING_TIMEOUT_SECONDS
                 * 10,  # Allow more time for network scanning
                 text=True,

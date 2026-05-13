@@ -16,8 +16,8 @@ Usage::
 
 from __future__ import annotations
 
-import uuid
 import logging
+import uuid
 from typing import Any
 
 from services.checkmk.exceptions import CheckMKAPIError
@@ -832,5 +832,5 @@ class FakeCheckMKClient:
         return response.json()
 
     @staticmethod
-    def _pending_changes_data(client: "FakeCheckMKClient") -> list:
+    def _pending_changes_data(client: FakeCheckMKClient) -> list:
         return client._pending_changes

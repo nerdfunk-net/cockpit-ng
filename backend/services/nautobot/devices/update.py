@@ -14,7 +14,8 @@ Based on the workflow from update_devices_task.py but redesigned to:
 from __future__ import annotations
 
 import logging
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
 from services.nautobot import NautobotService
 from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot.devices.interface_workflow import InterfaceManagerService

@@ -237,7 +237,7 @@ class CsvImportService:
                 )
 
                 try:
-                    with open(abs_file_resolved, "r", encoding="utf-8-sig") as f:
+                    with open(abs_file_resolved, encoding="utf-8-sig") as f:
                         content = f.read()
                 except UnicodeDecodeError:
                     failures.append(
@@ -646,7 +646,7 @@ class CsvImportService:
         """Process Cockpit-format CSV rows (multiple rows per device, one per interface)."""
         from collections import OrderedDict
 
-        groups: "OrderedDict[str, list[dict[str, str]]]" = OrderedDict()
+        groups: OrderedDict[str, list[dict[str, str]]] = OrderedDict()
         for row in rows:
             pk_val = row.get(pk_csv_col, "").strip()
             if pk_val:

@@ -2,10 +2,10 @@
 Pydantic models for job templates management
 """
 
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional, Literal, Dict, Any, List
 from datetime import datetime
+from typing import Any, Dict, List, Literal, Optional
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # Valid job template types (cache_devices removed - now handled by system tasks)
 JobTemplateType = Literal[

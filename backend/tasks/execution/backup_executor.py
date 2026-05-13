@@ -12,8 +12,9 @@ Both execution paths delegate to DeviceBackupService.backup_single_device():
 """
 
 import logging
-from typing import Dict, Any, Optional
 from datetime import datetime
+from typing import Any, Dict, Optional
+
 from git.exc import GitCommandError
 
 logger = logging.getLogger(__name__)
@@ -76,8 +77,8 @@ def execute_backup(
         )
 
         # Import services
-        from services.settings.git.shared_utils import git_repo_manager
         import service_factory
+        from services.settings.git.shared_utils import git_repo_manager
 
         git_service = service_factory.build_git_service()
         git_auth_service = service_factory.build_git_auth_service()
@@ -170,6 +171,7 @@ def execute_backup(
             )
 
             import asyncio
+
             import service_factory
 
             device_query_service = service_factory.build_device_query_service()
@@ -365,11 +367,12 @@ def execute_backup(
                 parallel_tasks,
             )
 
+            from celery import chord
+
             from tasks.backup_tasks import (
                 backup_single_device_task,
                 finalize_backup_task,
             )
-            from celery import chord
 
             # Create chord: group of parallel tasks + callback
             backup_chord = chord(

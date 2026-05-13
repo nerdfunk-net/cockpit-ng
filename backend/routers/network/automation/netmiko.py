@@ -3,25 +3,25 @@ Netmiko router for executing commands on network devices.
 """
 
 from __future__ import annotations
+
 import logging
 import uuid
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from dependencies import get_nautobot_service, get_device_query_service
-from services.nautobot.client import NautobotService
-from services.nautobot.devices.query import DeviceQueryService
-from dependencies import get_netmiko_service
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_device_query_service, get_nautobot_service, get_netmiko_service
 from models.netmiko import (
-    DeviceCommand,
-    CommandResult,
     CommandExecutionResponse,
+    CommandResult,
+    DeviceCommand,
     TemplateExecutionRequest,
     TemplateExecutionResponse,
 )
-
-from core.safe_http_errors import raise_internal_server_error
+from services.nautobot.client import NautobotService
+from services.nautobot.devices.query import DeviceQueryService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/netmiko", tags=["netmiko"])

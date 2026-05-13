@@ -2,20 +2,21 @@
 Settings Repository - handles database operations for application settings.
 """
 
+import logging
 from typing import Optional
+
+from core.database import get_db_session
 from core.models import (
-    NautobotSetting,
-    GitSetting,
-    CheckMKSetting,
     AgentsSetting,
     CacheSetting,
     CelerySetting,
+    CheckMKSetting,
+    GitSetting,
     NautobotDefault,
+    NautobotSetting,
     SettingsMetadata,
 )
-from core.database import get_db_session
 from repositories.base import BaseRepository
-import logging
 
 logger = logging.getLogger(__name__)
 

@@ -2,11 +2,13 @@
 RBAC repository for role and permission database operations.
 """
 
-from typing import Optional, List
+from typing import List, Optional
+
 from sqlalchemy import and_
-from repositories.base import BaseRepository
-from core.models import Role, Permission, RolePermission, UserRole, UserPermission
+
 from core.database import get_db_session
+from core.models import Permission, Role, RolePermission, UserPermission, UserRole
+from repositories.base import BaseRepository
 
 
 class RBACRepository(BaseRepository):

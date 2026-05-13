@@ -3,15 +3,18 @@ OIDC authentication service for handling OpenID Connect flows.
 """
 
 from __future__ import annotations
+
 import logging
 import secrets
 import ssl
-from pathlib import Path
-from typing import Dict, Any, Optional
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 import httpx
-from jose import jwt, JWTError
 from fastapi import HTTPException, status
+from jose import JWTError, jwt
+
 from models.auth import OIDCConfig
 from services.settings.manager import SettingsManager as _SM
 
@@ -629,12 +632,12 @@ class OIDCService:
         else:
             auto_provision = bool(auto_provision_config)
 
+        from models.user_management import UserRole
         from services.auth.user_management import (
-            get_user_by_username,
             create_user,
+            get_user_by_username,
             update_user,
         )
-        from models.user_management import UserRole
 
         username = user_data["username"]
         user = get_user_by_username(username)

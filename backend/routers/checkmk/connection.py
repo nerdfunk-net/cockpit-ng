@@ -9,20 +9,19 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from dependencies import get_checkmk_service, get_cache_service
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_cache_service, get_checkmk_service
 from models.checkmk import (
+    CheckMKOperationResponse,
     CheckMKTestConnectionRequest,
     CheckMKTestConnectionResponse,
     CheckMKVersionResponse,
-    CheckMKOperationResponse,
 )
 from services.checkmk.exceptions import (
-    CheckMKClientError,
     CheckMKAPIError,
+    CheckMKClientError,
     HostNotFoundError,
 )
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkmk"])

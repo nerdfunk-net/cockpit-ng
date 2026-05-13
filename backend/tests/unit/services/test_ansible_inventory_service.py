@@ -10,12 +10,13 @@ Tests inventory generation including:
 - Client-side filtering logic
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from services.inventory.inventory import InventoryService
-from models.inventory import LogicalOperation, LogicalCondition
-from tests.fixtures import create_devices_list
 
+import pytest
+
+from models.inventory import LogicalCondition, LogicalOperation
+from services.inventory.inventory import InventoryService
+from tests.fixtures import create_devices_list
 
 # ==============================================================================
 # Test Class: Inventory Preview

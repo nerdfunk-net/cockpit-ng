@@ -7,6 +7,7 @@ tree-based structure evaluation (version 2).
 """
 
 import logging
+
 from utils.inventory_converter import convert_saved_inventory_to_operations
 
 logger = logging.getLogger(__name__)

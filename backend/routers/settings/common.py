@@ -3,14 +3,15 @@ Settings router for general application configuration management.
 """
 
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from models.settings import AllSettingsRequest
-
 from core.safe_http_errors import raise_internal_server_error
+from models.settings import AllSettingsRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["settings"])

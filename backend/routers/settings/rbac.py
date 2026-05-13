@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import logging
 
-from core.auth import require_role, verify_token
-from dependencies import get_audit_log_service, get_rbac_service
-from services.audit.audit_log_service import AuditLogService
-from services.auth.rbac_service import RBACService
 from fastapi import APIRouter, Depends, HTTPException, status
+
+from core.auth import require_role, verify_token
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_audit_log_service, get_rbac_service
 from models.rbac import (
     BulkPermissionAssignment,
     BulkRoleAssignment,
@@ -39,8 +39,8 @@ from models.rbac import (
     UserRoleAssignment,
     UserUpdate,
 )
-
-from core.safe_http_errors import raise_internal_server_error
+from services.audit.audit_log_service import AuditLogService
+from services.auth.rbac_service import RBACService
 
 logger = logging.getLogger(__name__)
 

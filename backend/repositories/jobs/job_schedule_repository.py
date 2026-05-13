@@ -3,8 +3,10 @@ JobSchedule Repository
 Handles database operations for job schedules.
 """
 
-from typing import Optional, List
+from typing import List, Optional
+
 from sqlalchemy import or_
+
 from core.models import JobSchedule
 from repositories.base import BaseRepository
 

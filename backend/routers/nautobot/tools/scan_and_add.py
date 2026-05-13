@@ -10,9 +10,9 @@ from core.auth import require_permission
 from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_scan_service
 from models.nautobot import (
+    ScanProgress,
     ScanStartRequest,
     ScanStartResponse,
-    ScanProgress,
     ScanStatusResponse,
 )
 

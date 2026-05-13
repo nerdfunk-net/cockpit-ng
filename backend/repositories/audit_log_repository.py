@@ -1,9 +1,11 @@
 """Repository for audit log operations."""
 
-import logging
 import json
-from typing import Optional, List
+import logging
+from typing import List, Optional
+
 from sqlalchemy.orm import Session
+
 from core.database import get_db_session
 from core.models import AuditLog
 

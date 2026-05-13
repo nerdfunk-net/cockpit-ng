@@ -3,14 +3,16 @@ Nautobot service for handling GraphQL queries and REST API calls.
 """
 
 from __future__ import annotations
-import httpx
+
 import logging
 from typing import Any
 
+import httpx
+
 from .common.exceptions import (
-    NautobotValidationError,
     NautobotAPIError,
     NautobotNotFoundError,
+    NautobotValidationError,
 )
 
 logger = logging.getLogger(__name__)

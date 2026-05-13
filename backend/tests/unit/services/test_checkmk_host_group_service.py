@@ -5,13 +5,13 @@ All tests run offline — no real CheckMK instance required.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import patch
 
-from services.checkmk.host_group_service import CheckMKHostGroupService
-from services.checkmk.exceptions import CheckMKAPIError
-from tests.mocks import FakeCheckMKClient, HOST_GROUP_NETWORK, HOST_GROUP_SERVERS
+import pytest
 
+from services.checkmk.exceptions import CheckMKAPIError
+from services.checkmk.host_group_service import CheckMKHostGroupService
+from tests.mocks import HOST_GROUP_NETWORK, HOST_GROUP_SERVERS, FakeCheckMKClient
 
 _PATCH_TARGET = "services.checkmk.host_group_service.CheckMKClientFactory.build_client_from_settings"
 

@@ -3,9 +3,10 @@ Template rendering service with category-specific implementations.
 """
 
 import logging
-from typing import Dict, Any, List, Optional
-from jinja2 import Environment, TemplateError, UndefinedError
 import re
+from typing import Any, Dict, List, Optional
+
+from jinja2 import Environment, TemplateError, UndefinedError
 
 logger = logging.getLogger(__name__)
 
@@ -272,6 +273,7 @@ class RenderService:
                 - parse_error: Error message if TextFSM parsing failed
         """
         from netmiko import ConnectHandler
+
         import service_factory
 
         credentials_manager = service_factory.build_credentials_service()

@@ -4,6 +4,7 @@ Handles syncing, status checking, and operational tasks for Git repositories.
 """
 
 from __future__ import annotations
+
 import logging
 import os
 import shutil
@@ -13,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from git import GitCommandError, Repo
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import (
     get_git_auth_service,
     get_git_cache_service,
@@ -21,8 +23,6 @@ from dependencies import (
 from services.settings.git.env import set_ssl_env
 from services.settings.git.paths import repo_path as git_repo_path
 from services.settings.git.shared_utils import get_git_repo_by_id, git_repo_manager
-
-from core.safe_http_errors import raise_internal_server_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git/{repo_id}", tags=["git-operations"])
