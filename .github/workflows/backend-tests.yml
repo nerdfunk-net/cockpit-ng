@@ -56,6 +56,7 @@ jobs:
         run: |
           python scripts/check_asyncio_run.py
           python scripts/check_http_500_leaks.py
+          python scripts/check_router_repositories.py
           python scripts/check_text_sql.py
 
       - name: Apply database schema

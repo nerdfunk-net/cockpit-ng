@@ -399,6 +399,32 @@ class TemplateService:
             logger.error("Template database health check failed: %s", e)
             return {"status": "unhealthy", "error": str(e)}
 
+    def mark_git_templates_sync_metadata(
+        self,
+        template_ids: List[int],
+        *,
+        sync_status: str,
+        username: Optional[str] = None,
+    ) -> None:
+        """Update last_sync and sync_status for git-sourced templates after a mirror sync."""
+        from datetime import datetime, timezone
+
+        repo = TemplateRepository()
+        now = datetime.now(timezone.utc)
+        for tid in template_ids:
+            try:
+                obj = repo.get_by_id(tid)
+                if not obj or obj.source != "git":
+                    continue
+                if username and getattr(obj, "scope", None) == "private":
+                    if obj.created_by != username:
+                        continue
+                repo.update(tid, last_sync=now, sync_status=sync_status)
+            except Exception as exc:
+                logger.warning(
+                    "Could not update sync metadata for template %s: %s", tid, exc
+                )
+
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------

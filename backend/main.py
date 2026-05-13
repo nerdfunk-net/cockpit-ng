@@ -312,13 +312,6 @@ async def nautobot_graphql_endpoint(
         )
 
 
-if __name__ == "__main__":
-    import uvicorn
-    from config import settings
-
-    uvicorn.run(app, host="0.0.0.0", port=settings.port)
-
-
 # ---------------------------------------------------------------------------
 # Startup / shutdown logic (called by the lifespan context manager above)
 # ---------------------------------------------------------------------------
@@ -590,6 +583,21 @@ def _shutdown_event():
 
 
 if __name__ == "__main__":
-    import uvicorn
+    """Run the API with Uvicorn (development convenience).
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    Production / normal local use: ``python start.py`` from the backend directory
+    (certificates, logging, DB bootstrap). Optional auto-reload::
+
+        UVICORN_RELOAD=1 python main.py
+    """
+    import uvicorn
+    from config import settings
+
+    reload_flag = os.getenv("UVICORN_RELOAD", "").lower() in ("1", "true", "yes")
+    uvicorn.run(
+        "main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=reload_flag,
+        log_level=settings.log_level.lower(),
+    )

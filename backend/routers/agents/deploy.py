@@ -8,7 +8,10 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from dependencies import get_agent_template_render_service, get_git_service
+from dependencies import (
+    get_agent_deployment_service,
+    get_agent_template_render_service,
+)
 from pydantic import BaseModel, ConfigDict, Field
 
 from core.safe_http_errors import raise_internal_server_error
@@ -157,8 +160,7 @@ class DeployToGitResponse(BaseModel):
 async def agent_deploy_to_git(
     request: DryRunRequest,
     current_user: dict = Depends(require_permission("network.templates", "write")),
-    agent_template_render_service=Depends(get_agent_template_render_service),
-    git_service=Depends(get_git_service),
+    deployment_service=Depends(get_agent_deployment_service),
 ) -> DeployToGitResponse:
     """
     Deploy agent configuration to git repository.
@@ -169,158 +171,55 @@ async def agent_deploy_to_git(
     3. Commits with message: agent name + template name + date
     4. Pushes to remote git repository
     5. Returns success message with commit SHA
+
+    HTTP activation (git pull / docker restart on the agent) is not run here;
+    use the Celery deployment task if activation is required.
     """
     try:
-        import service_factory as _sf
-
-        template_manager = _sf.build_template_service()
-        from repositories.settings.git_repository_repository import (
-            GitRepositoryRepository,
-        )
-        from datetime import datetime
-        import os
-
-        # Fetch the template
-        template = template_manager.get_template(request.templateId)
-        if not template:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Template with ID {request.templateId} not found",
-            )
-
-        template_content = template_manager.get_template_content(request.templateId)
-        if not template_content:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Template content for ID {request.templateId} not found",
-            )
-
-        # Fetch agent settings and find the specific agent
-        from repositories.settings.settings_repository import AgentsSettingRepository
-
-        agents_repo = AgentsSettingRepository()
-        agents_settings = agents_repo.get_settings()
-
-        if not agents_settings or not agents_settings.agents:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No agents configured. Please configure agents in agent settings.",
-            )
-
-        # Find the specific agent by agent_id (string identifier)
-        agent = None
-        for a in agents_settings.agents:
-            if a.get("agent_id") == request.agentId:
-                agent = a
-                break
-
-        if not agent:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Agent with agent_id '{request.agentId}' not found in agent settings. Please configure the agent_id field for this agent in Settings → Connections → Agents.",
-            )
-
-        # Get the git repository ID from the agent configuration
-        agent_git_repo_id = agent.get("git_repository_id")
-        if not agent_git_repo_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"No git repository configured for agent '{agent.get('name', request.agentId)}'. Please configure a git repository for this agent.",
-            )
-
-        # Fetch the git repository configuration
-        git_repo_repo = GitRepositoryRepository()
-        git_repository = git_repo_repo.get_by_id(agent_git_repo_id)
-
-        if not git_repository:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Git repository with ID {agent_git_repo_id} not found",
-            )
-
-        # Convert SQLAlchemy model to dict for git_service
-        repo_dict = {
-            "id": git_repository.id,
-            "name": git_repository.name,
-            "url": git_repository.url,
-            "branch": git_repository.branch,
-            "auth_type": git_repository.auth_type,
-            "credential_name": git_repository.credential_name,
-            "path": git_repository.path,
-            "verify_ssl": git_repository.verify_ssl,
-            "git_author_name": git_repository.git_author_name,
-            "git_author_email": git_repository.git_author_email,
-        }
-
-        # Use user-selected inventory if provided, otherwise fall back to template's inventory
-        inventory_id = request.inventoryId or template.get("inventory_id")
-
-        # Render the template with stored variables and username
-        render_result = await agent_template_render_service.render_agent_template(
-            template_content=template_content,
-            inventory_id=inventory_id,
-            pass_snmp_mapping=template.get("pass_snmp_mapping", False),
-            user_variables=request.variables,
+        result = await deployment_service.deploy(
+            template_id=request.templateId,
+            agent_id=request.agentId,
+            custom_variables=request.variables,
             path=request.path,
-            stored_variables=template.get("variables"),
-            username=current_user.get("username"),
+            inventory_id=request.inventoryId,
+            activate_after_deploy=False,
+            username=current_user.get("username") or "system",
         )
 
-        # Determine file path
-        file_path = request.path or template.get("file_path")
-        if not file_path:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No file path provided. Please specify a deployment path or configure file_path in the template.",
-            )
-
-        # Open or clone the repository
-        repo = git_service.open_or_clone(repo_dict)
-        repo_path = git_service.get_repo_path(repo_dict)
-
-        # Write the rendered content to the file
-        full_file_path = os.path.join(repo_path, file_path.lstrip("/"))
-        os.makedirs(os.path.dirname(full_file_path), exist_ok=True)
-
-        with open(full_file_path, "w", encoding="utf-8") as f:
-            f.write(render_result.rendered_content)
-
-        logger.info("Wrote rendered template to %s", full_file_path)
-
-        # Get agent name (agent was already found earlier)
-        agent_name = agent.get("name", request.agentId)
-
-        # Prepare commit message
-        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        commit_message = f"Deploy {agent_name} - {template['name']} - {current_date}"
-
-        # Commit and push
-        result = git_service.commit_and_push(
-            repository=repo_dict,
-            message=commit_message,
-            files=[file_path.lstrip("/")],
-            repo=repo,
-        )
-
-        if result.success:
+        if result.get("success"):
             return DeployToGitResponse(
                 success=True,
-                message=f"Successfully deployed configuration to git repository '{git_repository.name}'",
-                commit_sha=result.commit_sha,
-                file_path=file_path,
+                message=result.get(
+                    "message",
+                    "Successfully deployed configuration to git repository",
+                ),
+                commit_sha=result.get("commit_sha"),
+                file_path=result.get("file_path"),
             )
-        else:
-            return DeployToGitResponse(
-                success=False,
-                message=f"Failed to commit/push to git: {result.message}",
-                commit_sha=None,
-                file_path=file_path,
-            )
+
+        err = result.get("error") or "Deployment failed"
+        el = err.lower()
+        if "not found" in el:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=err)
+        if (
+            "no agents configured" in el
+            or "agent_id" in el
+            or "no git repository configured" in el
+            or "no file path" in el
+        ):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err)
+
+        return DeployToGitResponse(
+            success=False,
+            message=err,
+            commit_sha=None,
+            file_path=result.get("file_path"),
+        )
 
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, "Failed to deploy to git: ", e)
+        raise_internal_server_error(logger, "Failed to deploy to git", e)
 
 
 @router.post("/activate")
