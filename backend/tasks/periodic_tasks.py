@@ -330,8 +330,6 @@ def cleanup_client_data_task() -> dict:
 
         settings_manager = SettingsManager()
         from datetime import datetime, timezone, timedelta
-        from core.database import get_db_session
-        from sqlalchemy import text
 
         celery_settings = settings_manager.get_celery_settings()
 
@@ -352,24 +350,12 @@ def cleanup_client_data_task() -> dict:
             age_hours,
         )
 
-        with get_db_session() as session:
-            r_ip = session.execute(
-                text("DELETE FROM client_ip_addresses WHERE collected_at < :cutoff"),
-                {"cutoff": cutoff_time},
-            )
-            r_mac = session.execute(
-                text("DELETE FROM client_mac_addresses WHERE collected_at < :cutoff"),
-                {"cutoff": cutoff_time},
-            )
-            r_host = session.execute(
-                text("DELETE FROM client_hostnames WHERE collected_at < :cutoff"),
-                {"cutoff": cutoff_time},
-            )
-            session.commit()
+        from repositories.client_data_repository import ClientDataRepository
 
-        removed_ip = r_ip.rowcount
-        removed_mac = r_mac.rowcount
-        removed_host = r_host.rowcount
+        cleanup = ClientDataRepository().delete_records_older_than(cutoff_time)
+        removed_ip = cleanup.ip
+        removed_mac = cleanup.mac
+        removed_host = cleanup.host
 
         logger.info(
             "Client data cleanup completed: %s IP, %s MAC, %s hostname rows removed",

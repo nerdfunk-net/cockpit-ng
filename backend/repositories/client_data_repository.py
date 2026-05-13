@@ -8,37 +8,31 @@ Provides bulk insert and query operations for the three client data tables:
 """
 
 import logging
-from typing import List, Optional, Tuple
+from datetime import datetime
+from typing import List, NamedTuple, Optional, Tuple
 
-from sqlalchemy import and_, bindparam, func, nulls_last, select, text, union, union_all
+from sqlalchemy import and_, bindparam, delete, func, nulls_last, select, union, union_all
 
 from core.database import get_db_session
 from core.models import ClientHostname, ClientIpAddress, ClientMacAddress
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Latest-session sub-query (reused across several methods).
-# Unions both tables so the correct session is found even when one table is
-# empty (e.g. collect_mac_address=False or collect_ip_address=False).
-# ---------------------------------------------------------------------------
-_LATEST_SESSION_SUBQUERY = """
-    SELECT session_id
-    FROM (
-        SELECT session_id, MAX(collected_at) AS ts
-          FROM client_mac_addresses GROUP BY session_id
-        UNION ALL
-        SELECT session_id, MAX(collected_at) AS ts
-          FROM client_ip_addresses  GROUP BY session_id
-    ) _combined_sessions
-    GROUP BY session_id
-    ORDER BY MAX(ts) DESC
-    LIMIT 1
-"""
+
+class ClientDataCleanupResult(NamedTuple):
+    """Row counts removed by ``delete_records_older_than``."""
+
+    ip: int
+    mac: int
+    host: int
 
 
-def _latest_session_cte():
-    """CTE: single session_id for the most recent collection (MAC + IP tables)."""
+def _ranked_session_ids_statement():
+    """Select session_id ordered by newest collection (union of MAC + IP tables).
+
+    Each row is one session_id with ordering key max(collected_at) across both
+    sources so MAC-only or IP-only runs rank correctly.
+    """
     mac_sessions = (
         select(
             ClientMacAddress.session_id,
@@ -62,8 +56,18 @@ def _latest_session_cte():
         select(combined_rows.c.session_id)
         .group_by(combined_rows.c.session_id)
         .order_by(func.max(combined_rows.c.ts).desc())
-        .limit(1)
-    ).cte("latest_session")
+    )
+
+
+def _latest_session_cte():
+    """CTE: single session_id for the most recent collection (MAC + IP tables)."""
+    return _ranked_session_ids_statement().limit(1).cte("latest_session")
+
+
+def _keep_sessions_cte(keep: int):
+    """CTE: the *keep* most recent session_id values (same ranking as latest session)."""
+    k = max(1, int(keep))
+    return _ranked_session_ids_statement().limit(k).cte("keep_sessions")
 
 
 def _client_data_combined_cte():
@@ -223,29 +227,55 @@ class ClientDataRepository:
         logger.debug("Inserted %s client hostname records", len(records))
         return len(records)
 
+    def delete_records_older_than(self, cutoff: datetime) -> ClientDataCleanupResult:
+        """Bulk-delete client rows with ``collected_at`` strictly before *cutoff*.
+
+        Deletes from IP, MAC, then hostname tables. Returns per-table delete counts.
+        """
+        with get_db_session() as session:
+            n_ip = (
+                session.query(ClientIpAddress)
+                .filter(ClientIpAddress.collected_at < cutoff)
+                .delete(synchronize_session=False)
+            )
+            n_mac = (
+                session.query(ClientMacAddress)
+                .filter(ClientMacAddress.collected_at < cutoff)
+                .delete(synchronize_session=False)
+            )
+            n_host = (
+                session.query(ClientHostname)
+                .filter(ClientHostname.collected_at < cutoff)
+                .delete(synchronize_session=False)
+            )
+            session.commit()
+        return ClientDataCleanupResult(ip=n_ip, mac=n_mac, host=n_host)
+
     def get_device_names(self) -> List[str]:
         """Return distinct device names from the latest collection session.
 
         Queries both client_mac_addresses and client_ip_addresses so that
         Layer-2-only devices (which have no ARP entries) are included.
         """
+        ls = _latest_session_cte()
+        mac = select(ClientMacAddress.device_name, ClientMacAddress.session_id).select_from(
+            ClientMacAddress
+        )
+        ip = (
+            select(ClientIpAddress.device_name, ClientIpAddress.session_id)
+            .select_from(ClientIpAddress)
+            .where(ClientIpAddress.mac_address.isnot(None))
+        )
+        combined = union(mac, ip).subquery("all_devices")
+        latest_id = select(ls.c.session_id).scalar_subquery()
+        stmt = (
+            select(combined.c.device_name)
+            .where(combined.c.session_id == latest_id)
+            .distinct()
+            .order_by(combined.c.device_name)
+        )
         with get_db_session() as session:
-            rows = session.execute(
-                text(
-                    f"""
-                    SELECT DISTINCT device_name
-                    FROM (
-                        SELECT device_name, session_id FROM client_mac_addresses
-                        UNION
-                        SELECT device_name, session_id
-                          FROM client_ip_addresses
-                         WHERE mac_address IS NOT NULL
-                    ) all_devices
-                    WHERE session_id = ({_LATEST_SESSION_SUBQUERY})
-                    ORDER BY device_name
-                    """
-                )
-            ).fetchall()
+            rows = session.execute(stmt).fetchall()
         return [row[0] for row in rows]
 
     def delete_old_sessions(self, keep: int = 5) -> None:
@@ -254,31 +284,14 @@ class ClientDataRepository:
         Anchors on the union of both tables so that sessions that only
         collected MAC data (no ARP) are counted correctly.
         """
-        keep_subquery = (
-            f"SELECT session_id FROM ("
-            f"  SELECT session_id, MAX(collected_at) AS ts"
-            f"    FROM client_mac_addresses GROUP BY session_id"
-            f"  UNION ALL"
-            f"  SELECT session_id, MAX(collected_at) AS ts"
-            f"    FROM client_ip_addresses  GROUP BY session_id"
-            f") _keep_sessions GROUP BY session_id ORDER BY MAX(ts) DESC LIMIT {keep}"
-        )
+        keep_cte = _keep_sessions_cte(keep)
+        keep_ids = select(keep_cte.c.session_id)
+
         with get_db_session() as session:
-            session.execute(
-                text(
-                    f"DELETE FROM client_hostnames WHERE session_id NOT IN ({keep_subquery})"
+            for model in (ClientHostname, ClientMacAddress, ClientIpAddress):
+                session.execute(
+                    delete(model).where(model.session_id.notin_(keep_ids))
                 )
-            )
-            session.execute(
-                text(
-                    f"DELETE FROM client_mac_addresses WHERE session_id NOT IN ({keep_subquery})"
-                )
-            )
-            session.execute(
-                text(
-                    f"DELETE FROM client_ip_addresses WHERE session_id NOT IN ({keep_subquery})"
-                )
-            )
             session.commit()
         logger.debug("Deleted client data sessions beyond the most recent %s", keep)
 
@@ -424,27 +437,31 @@ class ClientDataRepository:
 
         with get_db_session() as session:
             if ip_address:
-                rows = session.execute(
-                    text(
-                        """
-                        SELECT DISTINCT ON (i.session_id, i.device_name)
-                            i.ip_address,
-                            i.mac_address,
-                            COALESCE(m.port, i.interface) AS port,
-                            m.vlan,
-                            i.device_name,
-                            i.collected_at
-                        FROM client_ip_addresses i
-                        LEFT JOIN client_mac_addresses m
-                            ON m.mac_address = i.mac_address
-                           AND m.device_name  = i.device_name
-                           AND m.session_id   = i.session_id
-                        WHERE i.ip_address = :ip_address
-                        ORDER BY i.session_id, i.device_name, i.collected_at DESC
-                        """
-                    ),
-                    {"ip_address": ip_address},
-                ).fetchall()
+                i = ClientIpAddress
+                m = ClientMacAddress
+                ip_stmt = (
+                    select(
+                        i.ip_address,
+                        i.mac_address,
+                        func.coalesce(m.port, i.interface).label("port"),
+                        m.vlan,
+                        i.device_name,
+                        i.collected_at,
+                    )
+                    .select_from(i)
+                    .outerjoin(
+                        m,
+                        and_(
+                            m.mac_address == i.mac_address,
+                            m.device_name == i.device_name,
+                            m.session_id == i.session_id,
+                        ),
+                    )
+                    .where(i.ip_address == ip_address)
+                    .order_by(i.session_id, i.device_name, i.collected_at.desc())
+                    .distinct(i.session_id, i.device_name)
+                )
+                rows = session.execute(ip_stmt).fetchall()
                 result["ip_history"] = sorted(
                     [
                         {
@@ -462,27 +479,31 @@ class ClientDataRepository:
                 )
 
             if mac_address:
-                rows = session.execute(
-                    text(
-                        """
-                        SELECT DISTINCT ON (m.session_id, m.device_name)
-                            m.mac_address,
-                            m.port,
-                            m.vlan,
-                            m.device_name,
-                            m.collected_at,
-                            i.ip_address
-                        FROM client_mac_addresses m
-                        LEFT JOIN client_ip_addresses i
-                            ON i.mac_address = m.mac_address
-                           AND i.device_name  = m.device_name
-                           AND i.session_id   = m.session_id
-                        WHERE m.mac_address = :mac_address
-                        ORDER BY m.session_id, m.device_name, m.collected_at DESC
-                        """
-                    ),
-                    {"mac_address": mac_address},
-                ).fetchall()
+                m = ClientMacAddress
+                i = ClientIpAddress
+                mac_stmt = (
+                    select(
+                        m.mac_address,
+                        m.port,
+                        m.vlan,
+                        m.device_name,
+                        m.collected_at,
+                        i.ip_address,
+                    )
+                    .select_from(m)
+                    .outerjoin(
+                        i,
+                        and_(
+                            i.mac_address == m.mac_address,
+                            i.device_name == m.device_name,
+                            i.session_id == m.session_id,
+                        ),
+                    )
+                    .where(m.mac_address == mac_address)
+                    .order_by(m.session_id, m.device_name, m.collected_at.desc())
+                    .distinct(m.session_id, m.device_name)
+                )
+                rows = session.execute(mac_stmt).fetchall()
                 result["mac_history"] = sorted(
                     [
                         {
@@ -500,21 +521,20 @@ class ClientDataRepository:
                 )
 
             if hostname:
-                rows = session.execute(
-                    text(
-                        """
-                        SELECT DISTINCT ON (h.session_id, h.ip_address)
-                            h.hostname,
-                            h.ip_address,
-                            h.device_name,
-                            h.collected_at
-                        FROM client_hostnames h
-                        WHERE h.hostname = :hostname
-                        ORDER BY h.session_id, h.ip_address, h.collected_at DESC
-                        """
-                    ),
-                    {"hostname": hostname},
-                ).fetchall()
+                h = ClientHostname
+                hn_stmt = (
+                    select(
+                        h.hostname,
+                        h.ip_address,
+                        h.device_name,
+                        h.collected_at,
+                    )
+                    .select_from(h)
+                    .where(h.hostname == hostname)
+                    .order_by(h.session_id, h.ip_address, h.collected_at.desc())
+                    .distinct(h.session_id, h.ip_address)
+                )
+                rows = session.execute(hn_stmt).fetchall()
                 result["hostname_history"] = sorted(
                     [
                         {

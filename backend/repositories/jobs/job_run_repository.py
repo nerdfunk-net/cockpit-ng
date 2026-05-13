@@ -4,8 +4,10 @@ Handles database operations for job run tracking.
 """
 
 from typing import Optional, List, Dict, Any
-from datetime import datetime
-from sqlalchemy import desc
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import case, desc, func, select
+
 from core.models import JobRun
 from repositories.base import BaseRepository
 
@@ -253,6 +255,52 @@ class JobRunRepository(BaseRepository[JobRun]):
         finally:
             session.close()
 
+    def aggregate_status_counts(self) -> Dict[str, int]:
+        """Counts of job runs by status (total / completed / failed / running)."""
+        from core.database import get_db_session
+
+        session = get_db_session()
+        try:
+            stmt = select(
+                func.count().label("total"),
+                func.sum(
+                    case((self.model.status == "completed", 1), else_=0)
+                ).label("completed"),
+                func.sum(case((self.model.status == "failed", 1), else_=0)).label(
+                    "failed"
+                ),
+                func.sum(case((self.model.status == "running", 1), else_=0)).label(
+                    "running"
+                ),
+            ).select_from(self.model)
+            row = session.execute(stmt).one()
+            return {
+                "total": int(row.total or 0),
+                "completed": int(row.completed or 0),
+                "failed": int(row.failed or 0),
+                "running": int(row.running or 0),
+            }
+        finally:
+            session.close()
+
+    def recent_backup_results(self, days: int = 30) -> List[Any]:
+        """Raw ``result`` payloads for completed backup runs queued in the last *days*."""
+        from core.database import get_db_session
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        session = get_db_session()
+        try:
+            stmt = (
+                select(self.model.result)
+                .where(self.model.job_type == "backup")
+                .where(self.model.status == "completed")
+                .where(self.model.queued_at >= cutoff)
+            )
+            rows = session.execute(stmt).fetchall()
+            return [row[0] for row in rows]
+        finally:
+            session.close()
+
     def mark_started(
         self, job_run_id: int, celery_task_id: str
     ) -> Optional[Dict[str, Any]]:
@@ -483,7 +531,6 @@ class JobRunRepository(BaseRepository[JobRun]):
     def get_distinct_templates(self) -> List[Dict[str, Any]]:
         """Get distinct templates used in job runs."""
         from core.database import get_db_session
-        from sqlalchemy import func
 
         session = get_db_session()
         try:

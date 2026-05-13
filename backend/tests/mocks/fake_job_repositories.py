@@ -523,6 +523,34 @@ class FakeJobRunRepository:
     def get_pending_count(self) -> int:
         return sum(1 for r in self._runs.values() if r.get("status") == "pending")
 
+    def aggregate_status_counts(self) -> Dict[str, int]:
+        total = len(self._runs)
+        completed = sum(
+            1 for r in self._runs.values() if r.get("status") == "completed"
+        )
+        failed = sum(1 for r in self._runs.values() if r.get("status") == "failed")
+        running = sum(1 for r in self._runs.values() if r.get("status") == "running")
+        return {
+            "total": total,
+            "completed": completed,
+            "failed": failed,
+            "running": running,
+        }
+
+    def recent_backup_results(self, days: int = 30) -> List[Any]:
+        from datetime import timedelta
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        out: List[Any] = []
+        for r in self._runs.values():
+            if r.get("job_type") != "backup" or r.get("status") != "completed":
+                continue
+            qa = r.get("queued_at")
+            if qa is None or qa < cutoff:
+                continue
+            out.append(r.get("result"))
+        return out
+
     def cleanup_old_runs(self, days: int = 30) -> int:
         from datetime import timedelta
 

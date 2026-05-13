@@ -36,6 +36,7 @@ markers = [
     "slow: Tests that take >5 seconds",
     "asyncio: Async tests using pytest-asyncio",
     "real_nautobot: Tests that connect to real Nautobot instance (requires .env.test)",
+    "postgres: Tests that require PostgreSQL (set TEST_DATABASE_URL)",
 ]
 
 # Ignore warnings from third-party libraries

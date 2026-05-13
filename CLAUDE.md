@@ -58,7 +58,10 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 - ✅ Export all models from `/backend/core/models/__init__.py`
 - ✅ Add indexes, foreign keys, timestamps (`created_at`, `updated_at`)
 - ✅ Use repository pattern (BaseRepository in `/backend/repositories/base.py`)
-- ❌ NEVER use SQLite or raw SQL queries
+- ✅ Production database is PostgreSQL with SQLAlchemy ORM/Core (`./doc/MIGRATION_SYSTEM.md`). In-memory SQLite in **unit** tests is acceptable when queries do not rely on PostgreSQL-only features.
+- ✅ Prefer SQLAlchemy ORM/Core for all runtime application data access. Repository-layer `sqlalchemy.text()` is allowed only under the rules in `doc/refactoring/REFACTORING_RAW_SQL.md` §3 (bound parameters, named constants for non-trivial SQL, no string composition of values, PostgreSQL integration coverage for dialect-specific behaviour). Health checks (`SELECT 1` in `core/database.py`) and migration/schema tooling are exempt.
+- ❌ Never call `text()` from routers, services, or Celery tasks.
+- ❌ Never compose runtime values into raw SQL via f-strings or string concatenation.
 - ❌ NEVER bypass repository layer
 
 ## Key File Locations
@@ -532,6 +535,7 @@ cd frontend && npm run dev
 # Router regression guards (from backend/)
 python scripts/check_asyncio_run.py
 python scripts/check_http_500_leaks.py
+python scripts/check_text_sql.py
 ```
 
 When implementing configuration changes, include verification steps that confirm the change works (e.g., run a quick test, check logs, or validate config loads)
@@ -674,7 +678,7 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 - Service layer for business logic
 - Thin routers that delegate to services
 - Dependency injection for auth/permissions
-- SQLAlchemy ORM (no raw SQL)
+- SQLAlchemy ORM/Core for runtime data access; repository `text()` only as documented in `doc/refactoring/REFACTORING_RAW_SQL.md` §3
 
 **Frontend:**
 - Feature-based organization
@@ -700,9 +704,9 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 ## INCORRECT Practices (NEVER DO)
 
 **Backend:**
-- ❌ Creating SQLite databases
-- ❌ Writing raw SQL instead of SQLAlchemy ORM
-- ❌ Bypassing repository pattern for local database
+- ❌ Creating SQLite databases for **production** (in-memory SQLite in unit tests is allowed; see Database Requirements above)
+- ❌ Calling `sqlalchemy.text()` from routers, services, or tasks, or composing runtime values into SQL via string concatenation / f-strings (repository policy: `doc/refactoring/REFACTORING_RAW_SQL.md` §3)
+- ❌ Bypassing repository pattern for local database access
 - ❌ Business logic in routers
 - ❌ Creating monolithic God Object services (note: DeviceCommonService is a facade, not a God Object)
 - ❌ Mixing validation/transformation logic with API calls

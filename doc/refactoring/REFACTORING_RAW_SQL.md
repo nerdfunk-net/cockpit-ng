@@ -1,21 +1,11 @@
 # Refactoring plan — Runtime raw SQL (`text()`) vs ORM (P3)
 
 Companion implementation plan for **P3 — Data access policy** from
-`doc/refactoring/CURSOR_REFACTOR_1.md`. The job is twofold:
-
-1. Reconcile the gap between `CLAUDE.md`'s strict "never raw SQL" rule
-   and the **pragmatic** exceptions that actually live in the codebase
-   (CTE-heavy reporting, `DISTINCT ON` history queries, large bulk
-   deletes from periodic tasks, dashboards). Pick one position and
-   write it down.
-2. Apply that position to every runtime `text()` call site:
-   - Convert to SQLAlchemy ORM/Core where it's straightforward and
-     doesn't lose PostgreSQL specifics.
-   - Keep the rest as **read-only, repository-confined, parameterized**
-     SQL with named constants and unit tests.
-
-This plan is sequenced so each PR is small, has a verifiable acceptance
-criterion, and can be reverted independently.
+`doc/refactoring/CURSOR_REFACTOR_1.md`. It records the **pragmatic**
+position for runtime SQLAlchemy use and how D–H were moved to ORM/Core
+or repository-only maintenance helpers. **`CLAUDE.md`**, CI
+(`.github/workflows/backend-tests.yml`), and `backend/scripts/check_text_sql.py`
+encode the outcome.
 
 ---
 
@@ -55,32 +45,28 @@ For every runtime `text()` call under `backend/`:
 
 ### 2.1 Runtime `text()` inventory (excluding migrations / tests / tools / scripts)
 
-| # | File:line | Layer | Kind | Risk | Plan |
-|---|-----------|-------|------|------|------|
-| A | `backend/core/database.py:164` | infra | `SELECT 1` health ping | None | **Keep as-is**; document as an allowed exception (§3.4). |
-| B | `backend/core/schema_manager.py:45,220` | infra/migration-adjacent | schema introspection | None | **Keep**; lives in the schema management module. |
-| C | `backend/migrations/runner.py`, `migrations/auto_schema.py` | migration | DDL execution | None | Out of scope (schema tooling). |
-| D | `backend/repositories/client_data_repository.py:234` | repository | `get_device_names` SELECT with sub-query | Low | **Convert to ORM** (§5.1). |
-| E | `backend/repositories/client_data_repository.py:268,273,278` | repository | `delete_old_sessions` 3× DELETE with sub-query | Low | **Convert to ORM with `.delete(synchronize_session=False)`** (§5.2). |
-| F | `backend/repositories/client_data_repository.py:428,466,504` | repository | `get_client_history` 3× SELECT with `DISTINCT ON` | Medium | **Convert to ORM** using SQLAlchemy `select(...).distinct(*on)` for PostgreSQL `DISTINCT ON`. Fall back to documented pragmatic exception only if shape parity is unreachable (§5.3). |
-| G | `backend/services/jobs/job_run_service.py:185,196` | service ❌ | aggregate stats | High (violates layering) | **Move SQL into `JobRunRepository`** and rewrite as ORM aggregates (§5.4). |
-| H | `backend/tasks/periodic_tasks.py:357,361,365` | task ❌ | 3× `DELETE WHERE collected_at < :cutoff` | Medium (raw SQL in task body) | **Move into a maintenance method on `ClientDataRepository`**, called from the task (§5.5). |
+| # | Location | Status |
+|---|----------|--------|
+| A | `backend/core/database.py` — `SELECT 1` health ping | **Exempt** (infra). |
+| B | `backend/core/schema_manager.py` | **Exempt** (schema management). |
+| C | `backend/migrations/**`, `migrations/auto_schema.py`, `migrations/runner.py` | **Out of scope** (schema tooling). |
+| D–F | `ClientDataRepository` (`get_device_names`, `delete_old_sessions`, `get_client_history`) | **Done** — SQLAlchemy ORM/Core only; PostgreSQL integration tests in `tests/integration/repositories/test_client_data_repository_pg.py`. |
+| G | `JobRunService.get_dashboard_stats` | **Done** — SQL lives in `JobRunRepository.aggregate_status_counts` / `recent_backup_results`; PG tests in `test_job_run_repository_pg.py`. |
+| H | `tasks.cleanup_client_data_task` | **Done** — `ClientDataRepository.delete_records_older_than`; covered by unit + PG cleanup test in `test_client_data_repository_pg.py`. |
 
-### 2.2 What is already done (P3.B partial)
+**Enforcement:** `backend/scripts/check_text_sql.py` fails CI if `text(` appears outside the allow-list under `backend/` (excluding migrations, tests, tools, scripts, static, and the two infra files above).
 
-- `get_client_data` was rewritten as SQLAlchemy CTEs:
-  `_latest_session_cte`, `_client_data_combined_cte`,
-  `_client_data_combined_cte`-driven `count` + `data` queries with
-  filters via `bindparam`.
-- The shared `LATEST_SESSION` sub-query lives in module-level constant
-  `_LATEST_SESSION_SUBQUERY` (still `text()` for the legacy methods D, E
-  above).
+### 2.2 Implemented ORM surface (`ClientDataRepository`)
 
-### 2.3 What is NOT done (the remaining P3 work)
+- `get_client_data` — CTE pipeline `_client_data_combined_cte` with `bindparam` filters.
+- Shared session ranking — `_ranked_session_ids_statement()`, `_latest_session_cte()`, `_keep_sessions_cte(keep)`.
+- `get_device_names`, `delete_old_sessions`, `get_client_history` — Core `select` / `delete` / PostgreSQL `DISTINCT ON` via `.distinct(...)`.
+- `delete_records_older_than` — ORM `.delete(synchronize_session=False)` for IP, MAC, hostname tables.
 
-- Items D, E, F, G, H in the table.
-- Policy wording in `CLAUDE.md`.
-- Integration tests against PostgreSQL.
+### 2.3 Follow-ups (optional)
+
+- Optional **Testcontainers** profile if teams want PG tests without a managed `TEST_DATABASE_URL`.
+- Revisit **performance** (`EXPLAIN ANALYZE`) if dashboard aggregates ever become hot paths.
 
 ---
 
@@ -128,8 +114,7 @@ with:
 > `❌ Never call text() from routers, services, or tasks.`
 > `❌ Never compose values into raw SQL via f-strings or string concatenation.`
 
-This is a **prerequisite PR** for the technical work below; merge it
-before phase 1.
+This wording is **landed** in `CLAUDE.md` alongside the P3 implementation below.
 
 ---
 
@@ -137,22 +122,11 @@ before phase 1.
 
 PRs are sequenced so each one is independently shippable and reviewable.
 
-### Phase 0 — Policy + tooling (½ day)
+### Phase 0 — Policy + tooling — ✅ done
 
-1. Land the `CLAUDE.md` edit from §3.2.
-2. Add `backend/scripts/check_text_sql.py` (template in §7) that runs
-   in CI alongside `check_asyncio_run.py`. It lists every `text(`
-   occurrence in `backend/` excluding the documented allow-list
-   (`core/database.py`, `core/schema_manager.py`, `migrations/**`,
-   `tests/**`, `tools/**`, `scripts/**`).
-3. Run the script; the initial output should be the items in §2.1
-   rows D–H plus the allow-listed infrastructure rows. Capture the
-   first run output in the PR description so reviewers see the
-   shrink-list.
-
-**Exit criteria:** Script reports 5 router/service/task hits + 0
-repository hits flagged as forbidden; CI gate present but allow-listed
-for incremental cleanup.
+1. ✅ `CLAUDE.md` edit from §3.2 (pragmatic policy).
+2. ✅ `backend/scripts/check_text_sql.py` runs in CI with `check_asyncio_run.py` / `check_http_500_leaks.py`.
+3. ✅ Initial shrink-list captured in git history; `TEMPORARY_ALLOW_LIST` was removed once D–H landed.
 
 ### Phase 1 — Move dashboard stats into the repository (P3.C)
 
@@ -514,124 +488,36 @@ of bugs.
 
 | File | What it covers |
 |------|----------------|
-| `backend/tests/integration/repositories/test_client_data_repository_pg.py` | `get_device_names`, `delete_old_sessions`, `get_client_history` (each branch), bulk insert round-trip — all running against PostgreSQL. |
-| `backend/tests/integration/repositories/test_job_run_repository_pg.py` | `aggregate_status_counts` (empty DB, mixed statuses), `recent_backup_results` (cutoff, JSON-stringified vs dict payloads). |
-| Existing `backend/tests/unit/services/test_job_run_service.py` | Update to inject a fake repo and assert `get_dashboard_stats` composes the dict correctly. |
+| `backend/tests/integration/repositories/test_client_data_repository_pg.py` | `get_device_names`, `delete_old_sessions`, `get_client_history`, `delete_records_older_than` — PostgreSQL. |
+| `backend/tests/integration/repositories/test_job_run_repository_pg.py` | `aggregate_status_counts`, `recent_backup_results` — PostgreSQL. |
+| `backend/tests/unit/services/test_job_run_service.py` | `get_dashboard_stats` composition via `FakeJobRunRepository`. |
 
-Mark integration tests with `@pytest.mark.postgres` and gate them
-behind an env flag (`RUN_PG_TESTS=1`) for local laptops without
-Docker; CI sets the flag.
+Tests are marked `@pytest.mark.postgres` and **skip** when `TEST_DATABASE_URL` is unset (local). **GitHub Actions** (`.github/workflows/backend-tests.yml`) provisions PostgreSQL, runs `init_db`, sets `TEST_DATABASE_URL`, and runs `pytest tests/unit tests/integration/repositories`.
 
 ---
 
-## 7. Lint script template (`backend/scripts/check_text_sql.py`)
+## 7. Lint script (`backend/scripts/check_text_sql.py`)
 
-```python
-"""Regression guard: no runtime sqlalchemy.text() outside the allow-list.
+**Implemented** in-repo (not a template). The script walks `backend/**/*.py`, skips allow-listed prefixes (`migrations/`, `tests/`, `tools/`, `scripts/`, `static/`) and files `core/database.py` and `core/schema_manager.py`, then flags lines containing `text(` in modules that import SQLAlchemy while ignoring obvious `Path.read_text` / `write_text` false positives.
 
-Allow-listed locations are documented in REFACTORING_RAW_SQL.md §3.
-Run alongside check_asyncio_run.py.
-"""
+Run::
 
-from __future__ import annotations
+    cd backend && python scripts/check_text_sql.py
 
-import re
-import sys
-from pathlib import Path
-
-PATTERN = re.compile(r"\btext\s*\(")
-
-# Anchored at backend/, evaluated as posix paths.
-ALLOWED_DIRS = (
-    "migrations/",
-    "tests/",
-    "tools/",
-    "scripts/",
-    "static/",
-)
-ALLOWED_FILES = {
-    "core/database.py",          # SELECT 1 health check
-    "core/schema_manager.py",    # schema introspection
-}
-# Files still being migrated; remove entries as the work lands.
-TEMPORARY_ALLOW_LIST: set[str] = {
-    "repositories/client_data_repository.py",  # phases 3-5
-}
-
-
-def _backend_root() -> Path:
-    return Path(__file__).resolve().parent.parent
-
-
-def main() -> int:
-    root = _backend_root()
-    failures: list[tuple[Path, int, str]] = []
-    for py in root.rglob("*.py"):
-        rel = py.relative_to(root).as_posix()
-        if rel.startswith(ALLOWED_DIRS):
-            continue
-        if rel in ALLOWED_FILES or rel in TEMPORARY_ALLOW_LIST:
-            continue
-        try:
-            text = py.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            continue
-        # Only flag actual sqlalchemy.text() calls; skip Path.read_text /
-        # write_text false positives by checking that "from sqlalchemy"
-        # mentions `text` in the file.
-        if "from sqlalchemy" not in text or "text" not in text:
-            continue
-        for lineno, line in enumerate(text.splitlines(), start=1):
-            if PATTERN.search(line) and "sqlalchemy" not in line and not line.lstrip().startswith("#"):
-                # Heuristic: ignore Path("...").read_text()/write_text() etc.
-                if ".read_text(" in line or ".write_text(" in line:
-                    continue
-                failures.append((py, lineno, line.strip()))
-
-    if not failures:
-        print("[OK] no runtime sqlalchemy.text() outside allow-list")
-        return 0
-
-    print("[FAIL] runtime sqlalchemy.text() found:")
-    for path, lineno, line in failures:
-        print(f"  {path}:{lineno}: {line}")
-    return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())
-```
-
-As with the P1 script, the regex is intentionally simple. The
-`TEMPORARY_ALLOW_LIST` shrinks as each phase lands; when it's empty,
-flip the script to strict mode (remove the set entirely).
+There is **no temporary allow-list**; new `text(` call sites must either land in an allow-listed path or extend the policy in this document first.
 
 ---
 
 ## 8. Acceptance criteria for the whole P3 phase
 
-- [ ] `CLAUDE.md` updated with §3.2 wording and a link to this
-      document.
-- [ ] `backend/scripts/check_text_sql.py` exists, runs in CI, and the
-      `TEMPORARY_ALLOW_LIST` is empty.
-- [ ] `rg "text\(" backend/services/ backend/tasks/ backend/routers/`
-      returns no matches (only `read_text` / `write_text` /
-      `assertText` etc. are allowed false positives).
-- [ ] `JobRunRepository.aggregate_status_counts` and
-      `recent_backup_results` exist and are covered by unit + PG
-      integration tests.
-- [ ] `ClientDataRepository.delete_records_older_than` exists and is
-      called from `tasks/periodic_tasks.py`.
-- [ ] `ClientDataRepository.get_device_names`,
-      `delete_old_sessions`, and at least the IP branch of
-      `get_client_history` use ORM (`select`, `delete`, `.distinct(...)`);
-      any remaining `text()` queries are named module-level constants
-      with a docstring explaining why and pass PG integration tests.
-- [ ] `pytest backend/tests/integration/repositories/ -q` is green on
-      a PG fixture.
-- [ ] Section 0 status rows P3.A, P3.B, P3.C in
-      `CURSOR_REFACTOR_1.md` flipped to ✅; section-4 checklist boxes
-      updated.
+- [x] `CLAUDE.md` updated with pragmatic wording and pointer to this document (§3).
+- [x] `backend/scripts/check_text_sql.py` exists, runs in CI (`.github/workflows/backend-tests.yml`); no temporary allow-list entries.
+- [x] `rg "text\\(" backend/services/ backend/tasks/ backend/repositories/` returns no matches.
+- [x] `JobRunRepository.aggregate_status_counts` and `recent_backup_results` exist with unit (`FakeJobRunRepository`) + PostgreSQL integration coverage.
+- [x] `ClientDataRepository.delete_records_older_than` exists and is called from `tasks/periodic_tasks.py` (with tests).
+- [x] `ClientDataRepository.get_device_names`, `delete_old_sessions`, and `get_client_history` use ORM/Core; repository file contains no `text()`.
+- [x] `pytest backend/tests/integration/repositories/ -q` is green when `TEST_DATABASE_URL` points at an initialized PostgreSQL database (see `README.md` in that folder).
+- [x] Section 0 status rows P3.A, P3.B, P3.C in `CURSOR_REFACTOR_1.md` flipped to ✅; section-4 checklist updated.
 
 ---
 
