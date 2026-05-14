@@ -52,9 +52,7 @@ export default function AgentsSettingsForm() {
     try {
       setIsLoading(true)
       const data = (await apiCall('settings/agents')) as AgentsResponse
-      console.log('Loaded agents data:', data)
       if (data.success && data.data) {
-        console.log('Setting agents:', data.data.agents)
         setSettings(data.data)
         setAgents(data.data.agents || [])
       }
@@ -106,19 +104,14 @@ export default function AgentsSettingsForm() {
           agents: updatedAgents,
         }
 
-        console.log('Saving agents payload:', payload)
-
         const response = (await apiCall('settings/agents', {
           method: 'POST',
           body: JSON.stringify(payload),
         })) as AgentsResponse
 
-        console.log('Save response:', response)
-
         if (response.success) {
           showMessage('Agents saved successfully', 'success')
           if (response.data) {
-            console.log('Updating agents from response:', response.data.agents)
             setSettings(response.data)
             setAgents(response.data.agents || [])
           }

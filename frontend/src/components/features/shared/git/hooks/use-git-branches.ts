@@ -38,9 +38,7 @@ export function useGitBranches(
     setLoading(true)
     setError(null)
     try {
-      console.log('Loading branches for repo:', repoId)
       const response = await apiCallRef.current<Branch[]>(`git/${repoId}/branches`)
-      console.log('Branches loaded:', response)
       setBranches(response)
     } catch (err) {
       console.error('Error loading branches:', err)

@@ -153,9 +153,6 @@ export function useNetmikoExecution() {
 
       // Check if template is in "Sync to Nautobot" mode
       if (selectedTemplate?.execution_mode === 'sync_to_nautobot') {
-        // Use the new execute-and-sync endpoint
-        console.log('Using execute-and-sync endpoint for Sync to Nautobot mode')
-
         const response = await apiCall<{
           success: boolean
           message: string

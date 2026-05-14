@@ -297,12 +297,6 @@ export function DiffTableHeader({
                       empty: diffStatusFilters['empty'] !== false,
                     }
                     updated.match = !!checked
-                    console.log(
-                      '[CHECKBOX UPDATE] Match checked:',
-                      checked,
-                      'New state:',
-                      updated
-                    )
                     onDiffStatusFiltersChange(updated)
                   }}
                   onSelect={e => e.preventDefault()}
@@ -320,12 +314,6 @@ export function DiffTableHeader({
                       empty: diffStatusFilters['empty'] !== false,
                     }
                     updated.differ = !!checked
-                    console.log(
-                      '[CHECKBOX UPDATE] Differ checked:',
-                      checked,
-                      'New state:',
-                      updated
-                    )
                     onDiffStatusFiltersChange(updated)
                   }}
                   onSelect={e => e.preventDefault()}
@@ -343,12 +331,6 @@ export function DiffTableHeader({
                       empty: diffStatusFilters['empty'] !== false,
                     }
                     updated.not_found = !!checked
-                    console.log(
-                      '[CHECKBOX UPDATE] Not Found checked:',
-                      checked,
-                      'New state:',
-                      updated
-                    )
                     onDiffStatusFiltersChange(updated)
                   }}
                   onSelect={e => e.preventDefault()}
@@ -366,12 +348,6 @@ export function DiffTableHeader({
                       empty: diffStatusFilters['empty'] !== false,
                     }
                     updated.empty = !!checked
-                    console.log(
-                      '[CHECKBOX UPDATE] Empty checked:',
-                      checked,
-                      'New state:',
-                      updated
-                    )
                     onDiffStatusFiltersChange(updated)
                   }}
                   onSelect={e => e.preventDefault()}

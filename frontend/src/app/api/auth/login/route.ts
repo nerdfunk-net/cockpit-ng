@@ -6,8 +6,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    console.log('Frontend API: Proxying login request to backend...')
-
     // Forward the request to the backend
     const backendResponse = await fetch(`${BACKEND_URL}/auth/login`, {
       method: 'POST',
@@ -17,19 +15,12 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     })
 
-    console.log('Backend response status:', backendResponse.status)
-
     // Get the response data
     const responseData = await backendResponse.json()
 
-    console.log('Backend response data:', JSON.stringify(responseData, null, 2))
-
     if (!backendResponse.ok) {
-      console.log('Backend error response:', responseData)
       return NextResponse.json(responseData, { status: backendResponse.status })
     }
-
-    console.log('Login successful, returning response with enhanced security')
 
     // Return the successful response - let client handle cookies for now
     // This maintains compatibility with existing auth flow

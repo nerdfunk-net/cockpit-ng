@@ -189,24 +189,14 @@ export function EditableDeviceTable({
 
       // For location field, set the search value to the hierarchical label
       if (column.field === 'location') {
-        console.log('[BulkEdit] Clicked location field, current value:', currentValue)
-        console.log('[BulkEdit] Available locationOptions:', locationOptions.length)
         const locationOption = locationOptions.find(loc => loc.value === currentValue)
-        console.log('[BulkEdit] Found locationOption:', locationOption)
         setLocationSearchValue(locationOption?.label || currentValue)
-      }
-
-      // For device_type field, log the current device for debugging
-      if (column.field === 'device_type') {
-        console.log('[BulkEdit] Clicked device_type field, device:', device)
-        console.log('[BulkEdit] Current value:', currentValue)
-        console.log('[BulkEdit] Device type options:', deviceTypeOptions)
       }
 
       setEditingCell({ deviceId: device.id, field: column.field })
       setEditValue(normalizedValue)
     },
-    [getFieldValue, locationOptions, deviceTypeOptions]
+    [getFieldValue, locationOptions]
   )
 
   const handleCellBlur = useCallback(() => {
@@ -285,12 +275,6 @@ export function EditableDeviceTable({
               // If changing device type, also update manufacturer
               if (column.field === 'device_type') {
                 const manufacturer = deviceTypeToManufacturer.get(newValue)
-                console.log('[BulkEdit] Device type changed to:', newValue)
-                console.log('[BulkEdit] Manufacturer from mapping:', manufacturer)
-                console.log(
-                  '[BulkEdit] deviceTypeToManufacturer size:',
-                  deviceTypeToManufacturer.size
-                )
                 onDeviceModified(device.id, {
                   ...changes,
                   device_type: newValue,
@@ -353,15 +337,9 @@ export function EditableDeviceTable({
       if (isEditing) {
         // Special handling for location field - searchable dropdown
         if (column.field === 'location') {
-          console.log('[BulkEdit] Rendering location field')
-          console.log('[BulkEdit] locationSearchValue:', locationSearchValue)
-          console.log('[BulkEdit] showLocationDropdown:', showLocationDropdown)
-          console.log('[BulkEdit] locationOptions.length:', locationOptions.length)
-
           const filteredLocations = locationOptions.filter(loc =>
             loc.label.toLowerCase().includes(locationSearchValue.toLowerCase())
           )
-          console.log('[BulkEdit] filteredLocations.length:', filteredLocations.length)
 
           const updateDropdownPosition = () => {
             if (locationInputRef.current) {
@@ -381,19 +359,16 @@ export function EditableDeviceTable({
                 placeholder="Search locations..."
                 value={locationSearchValue}
                 onChange={e => {
-                  console.log('[BulkEdit] Input changed:', e.target.value)
                   setLocationSearchValue(e.target.value)
                   setShowLocationDropdown(true)
                   updateDropdownPosition()
                 }}
                 onFocus={() => {
-                  console.log('[BulkEdit] Input focused')
                   setShowLocationDropdown(true)
                   updateDropdownPosition()
                 }}
                 onKeyDown={e => {
                   if (e.key === 'Escape') {
-                    console.log('[BulkEdit] Escape pressed')
                     setShowLocationDropdown(false)
                     setLocationSearchValue('')
                     setEditingCell(null)
@@ -419,7 +394,6 @@ export function EditableDeviceTable({
                         key={location.value}
                         className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                         onClick={() => {
-                          console.log('[BulkEdit] Location clicked:', location.label)
                           const changes = modifiedDevices.get(device.id) || {}
                           onDeviceModified(device.id, {
                             ...changes,

@@ -72,11 +72,8 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password }),
       })
 
-      console.log('Login response status:', response.status)
-
       if (!response.ok) {
         const errorData = await response.json()
-        console.log('Login error response:', errorData)
 
         if (response.status === 401) {
           throw new Error('Invalid username or password')
@@ -90,18 +87,6 @@ export default function LoginPage() {
       }
 
       const data = await response.json()
-      console.log('='.repeat(80))
-      console.log('LOGIN SUCCESS - FULL DATA:')
-      console.log('='.repeat(80))
-      console.log('Token:', data.access_token ? 'PRESENT' : 'MISSING')
-      console.log('User object:', JSON.stringify(data.user, null, 2))
-      console.log('User.roles specifically:', data.user?.roles)
-      console.log(
-        'Type of roles:',
-        typeof data.user?.roles,
-        Array.isArray(data.user?.roles) ? 'ARRAY' : 'NOT ARRAY'
-      )
-      console.log('='.repeat(80))
 
       // Store in sessionStorage so we can check it after redirect
       if (typeof window !== 'undefined') {
@@ -124,7 +109,6 @@ export default function LoginPage() {
           permissions: data.user?.permissions,
         })
 
-        console.log('About to redirect to /')
         router.push('/')
       } else {
         throw new Error('No access token received')

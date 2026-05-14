@@ -26,11 +26,9 @@ export function useGitCommits(repoId: number | null, branch: string) {
     setLoading(true)
     setError(null)
     try {
-      console.log('Loading commits for branch:', branch, 'in repo:', repoId)
       const response = await apiCallRef.current<Commit[]>(
         `git/${repoId}/commits/${encodeURIComponent(branch)}`
       )
-      console.log('Commits loaded:', response.length, 'commits')
       setCommits(response)
     } catch (err) {
       console.error('Error loading commits:', err)

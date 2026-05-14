@@ -22,10 +22,8 @@ export function useGitRepositories() {
     setLoading(true)
     setError(null)
     try {
-      console.log('Loading repositories...')
       const response =
         await apiCallRef.current<RepositoriesResponse>('git-repositories')
-      console.log('Repositories loaded:', response)
       setRepositories(response.repositories || [])
     } catch (err) {
       console.error('Error loading repositories:', err)

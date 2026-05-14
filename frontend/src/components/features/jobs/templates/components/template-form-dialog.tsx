@@ -396,18 +396,6 @@ export function TemplateFormDialog({
       setFormIpMarkDescription(editingTemplate.ip_mark_description || '')
       setFormIpRemoveSkipAssigned(editingTemplate.ip_remove_skip_assigned ?? true)
       setFormCsvImportRepoId(editingTemplate.csv_import_repo_id || null)
-      // DEBUG: log raw CSV fields from the API response
-      console.debug('[CSV_DEBUG][RENDER] editingTemplate raw CSV fields:', {
-        csv_import_delimiter: editingTemplate.csv_import_delimiter,
-        csv_import_quote_char: editingTemplate.csv_import_quote_char,
-        csv_import_primary_key: editingTemplate.csv_import_primary_key,
-        csv_import_repo_id: editingTemplate.csv_import_repo_id,
-        csv_import_file_path: editingTemplate.csv_import_file_path,
-        csv_import_type: editingTemplate.csv_import_type,
-        csv_import_update_existing: editingTemplate.csv_import_update_existing,
-        csv_import_file_filter: editingTemplate.csv_import_file_filter,
-        csv_import_column_mapping: editingTemplate.csv_import_column_mapping,
-      })
       setFormCsvImportFilePath(editingTemplate.csv_import_file_path || '')
       setFormCsvImportType(editingTemplate.csv_import_type || '')
       setFormCsvImportPrimaryKey(editingTemplate.csv_import_primary_key || '')
@@ -422,11 +410,6 @@ export function TemplateFormDialog({
       setFormCsvImportDefaultPrefixLength(
         editingTemplate.csv_import_default_prefix_length || ''
       )
-      console.debug('[CSV_DEBUG][RENDER] form state after loading CSV fields:', {
-        formCsvImportDelimiter: editingTemplate.csv_import_delimiter || ',',
-        formCsvImportQuoteChar: editingTemplate.csv_import_quote_char || '"',
-        formCsvImportPrimaryKey: editingTemplate.csv_import_primary_key || '',
-      })
       setFormCsvExportRepoId(editingTemplate.csv_export_repo_id || null)
       setFormCsvExportFilePath(editingTemplate.csv_export_file_path || '')
       setFormCsvExportProperties(editingTemplate.csv_export_properties || [])
@@ -702,21 +685,6 @@ export function TemplateFormDialog({
       collect_hostname:
         formJobType === 'get_client_data' ? formCollectHostname : undefined,
       is_global: formIsGlobal,
-    }
-
-    // DEBUG: log CSV fields being submitted to the API
-    if (formJobType === 'csv_import') {
-      console.debug('[CSV_DEBUG][SUBMIT] CSV payload fields:', {
-        csv_import_delimiter: payload.csv_import_delimiter,
-        csv_import_quote_char: payload.csv_import_quote_char,
-        csv_import_primary_key: payload.csv_import_primary_key,
-        csv_import_repo_id: payload.csv_import_repo_id,
-        csv_import_file_path: payload.csv_import_file_path,
-        csv_import_type: payload.csv_import_type,
-        csv_import_update_existing: payload.csv_import_update_existing,
-        csv_import_file_filter: payload.csv_import_file_filter,
-        csv_import_column_mapping: payload.csv_import_column_mapping,
-      })
     }
 
     if (editingTemplate) {

@@ -338,10 +338,6 @@ export function buildDevicePayload(
         const ipRole =
           mapping.ipRole && mapping.ipRole !== 'none' ? mapping.ipRole : undefined
 
-        console.log(
-          `[DEBUG] Building interface payload: name=${mapping.interfaceName}, ip=${ipAddr}, isPrimary=${mapping.isPrimary}, ipRole=${mapping.ipRole}, sending_ip_role=${ipRole}`
-        )
-
         interfaces.push({
           name: mapping.interfaceName,
           type: 'other', // Default type, can be enhanced later
@@ -355,14 +351,6 @@ export function buildDevicePayload(
         })
       }
     })
-  }
-
-  console.log(`[DEBUG] Total interfaces in payload: ${interfaces.length}`)
-  if (interfaces.length > 0) {
-    console.log(
-      '[DEBUG] Interface payload details:',
-      JSON.stringify(interfaces, null, 2)
-    )
   }
 
   // Add interfaces to payload

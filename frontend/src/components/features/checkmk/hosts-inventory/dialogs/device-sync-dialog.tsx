@@ -417,57 +417,32 @@ export function DeviceSyncDialog({
         }
       }>('settings/nautobot/defaults')
 
-      console.log('[DeviceSyncModal] Default values received:', response)
-
       if (response?.data) {
         const defaults = response.data
 
         // Apply defaults to form
         if (defaults.device_role) {
-          console.log('[DeviceSyncModal] Setting device_role to:', defaults.device_role)
           form.setValue('selectedRole', defaults.device_role)
         }
         if (defaults.device_status) {
-          console.log(
-            '[DeviceSyncModal] Setting device_status to:',
-            defaults.device_status
-          )
           form.setValue('selectedStatus', defaults.device_status)
         }
         if (defaults.location) {
-          console.log('[DeviceSyncModal] Setting location to:', defaults.location)
           form.setValue('selectedLocation', defaults.location)
         }
         if (defaults.platform) {
-          console.log('[DeviceSyncModal] Setting platform to:', defaults.platform)
           form.setValue('selectedPlatform', defaults.platform)
         }
 
         // Apply interface status to all interfaces
         if (defaults.interface_status) {
-          console.log(
-            '[DeviceSyncModal] Setting interface_status to:',
-            defaults.interface_status
-          )
           const currentInterfaces = form.getValues('interfaces')
           if (currentInterfaces && currentInterfaces.length > 0) {
             currentInterfaces.forEach((_, index) => {
               form.setValue(`interfaces.${index}.status`, defaults.interface_status!)
             })
-            console.log(
-              '[DeviceSyncModal] Updated interface statuses for',
-              currentInterfaces.length,
-              'interfaces'
-            )
           }
         }
-
-        console.log('[DeviceSyncModal] Form values after setting:', {
-          selectedRole: form.getValues('selectedRole'),
-          selectedStatus: form.getValues('selectedStatus'),
-          selectedLocation: form.getValues('selectedLocation'),
-          selectedPlatform: form.getValues('selectedPlatform'),
-        })
 
         toast({
           title: 'Default Values Applied',

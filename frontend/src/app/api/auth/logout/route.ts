@@ -6,8 +6,6 @@ export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization')
 
-    console.log('Frontend API: Proxying logout request to backend...')
-
     // Forward the request to the backend
     const backendResponse = await fetch(`${BACKEND_URL}/auth/logout`, {
       method: 'POST',
@@ -17,15 +15,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    console.log('Backend logout response status:', backendResponse.status)
-
     if (!backendResponse.ok) {
       const responseData = await backendResponse.json()
-      console.log('Backend logout error response:', responseData)
       return NextResponse.json(responseData, { status: backendResponse.status })
     }
-
-    console.log('Logout successful')
 
     // Return successful response - client will handle cookie cleanup
     return NextResponse.json({ message: 'Logged out successfully' }, { status: 200 })

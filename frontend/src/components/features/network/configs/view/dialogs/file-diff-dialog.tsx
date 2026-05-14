@@ -288,18 +288,7 @@ export function FileDiffDialog({
 
   // Filter lines based on showChangesOnly toggle
   const displayLines = useMemo(() => {
-    console.log('[FileDiffDialog] displayLines calculation:', {
-      showChangesOnly,
-      totalUnifiedLines: unifiedLines.length,
-      changesCount: unifiedLines.filter(l => l.isChange).length,
-    })
-
     if (!showChangesOnly) {
-      console.log(
-        '[FileDiffDialog] showChangesOnly=false, returning all',
-        unifiedLines.length,
-        'lines'
-      )
       return unifiedLines
     }
 
@@ -339,11 +328,6 @@ export function FileDiffDialog({
       }
     }
 
-    console.log('[FileDiffDialog] Filtered result:', {
-      originalLines: unifiedLines.length,
-      filteredLines: filtered.length,
-      uniqueIds: addedIds.size,
-    })
     return filtered
   }, [unifiedLines, showChangesOnly])
 
@@ -541,13 +525,6 @@ export function FileDiffDialog({
                       data.left_lines.length,
                       data.right_lines.length
                     )
-                    console.log('[FileDiffDialog] Side-by-side rendering:', {
-                      showChangesOnly,
-                      maxLines,
-                      leftLinesCount: data.left_lines.length,
-                      rightLinesCount: data.right_lines.length,
-                    })
-
                     if (!showChangesOnly) {
                       // Show all lines
                       const rows = []
@@ -595,14 +572,12 @@ export function FileDiffDialog({
                     const linesToShow = new Set<number>()
 
                     // First pass: identify all lines that are changes and their context
-                    let changeLineCount = 0
                     for (let i = 0; i < maxLines; i++) {
                       const leftLine = data.left_lines[i]
                       const rightLine = data.right_lines[i]
                       const isChange = !(
                         leftLine?.type === 'equal' && rightLine?.type === 'equal'
                       )
-                      if (isChange) changeLineCount++
 
                       if (isChange) {
                         // Add the change line and context around it
@@ -615,12 +590,6 @@ export function FileDiffDialog({
                         }
                       }
                     }
-
-                    console.log('[FileDiffDialog] Side-by-side changes filter:', {
-                      totalLines: maxLines,
-                      changeLines: changeLineCount,
-                      linesToShow: linesToShow.size,
-                    })
 
                     // Second pass: render only the lines to show
                     const rows = []

@@ -85,8 +85,6 @@ async function handleRequest(
 
     const url = `${BACKEND_URL}/${backendPath}${searchParams ? `?${searchParams}` : ''}`
 
-    console.log(`[API Proxy] ${method} ${originalPath} → ${url}`)
-
     // Get request body for methods that can have one
     let body = undefined
     if (['POST', 'PUT', 'PATCH'].includes(method)) {
@@ -132,10 +130,6 @@ async function handleRequest(
       ...(body && { body }),
     })
 
-    console.log(
-      `[API Proxy] Backend response: ${backendResponse.status} ${backendResponse.statusText}`
-    )
-
     // Handle 204 No Content responses
     if (backendResponse.status === 204) {
       return new NextResponse(null, { status: 204 })
@@ -173,11 +167,6 @@ async function handleRequest(
         // Parse the JSON response from backend
         const openApiSpec = await backendResponse.json()
 
-        console.log(
-          '[API Proxy] Received OpenAPI spec, version:',
-          openApiSpec.openapi || openApiSpec.swagger
-        )
-
         // Update servers to use the /api prefix
         openApiSpec.servers = [
           {
@@ -202,12 +191,6 @@ async function handleRequest(
         }
 
         openApiSpec.paths = rewrittenPaths
-
-        console.log(
-          '[API Proxy] Rewrote',
-          Object.keys(openApiSpec.paths || {}).length,
-          'paths'
-        )
 
         // Return the modified spec
         return NextResponse.json(openApiSpec, {
@@ -304,10 +287,6 @@ async function handleRequest(
     if (contentType.includes('application/json')) {
       const data = await backendResponse.json()
 
-      if (!backendResponse.ok) {
-        console.log(`[API Proxy] Backend error:`, data)
-      }
-
       return NextResponse.json(data, {
         status: backendResponse.status,
         headers: responseHeaders,
@@ -316,10 +295,6 @@ async function handleRequest(
 
     // Plain text or unknown content type - return as text
     const text = await backendResponse.text()
-
-    if (!backendResponse.ok) {
-      console.log(`[API Proxy] Backend error:`, text)
-    }
 
     return new NextResponse(text, {
       status: backendResponse.status,

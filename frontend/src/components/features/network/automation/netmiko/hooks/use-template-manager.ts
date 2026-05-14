@@ -16,16 +16,11 @@ export function useTemplateManager() {
       const response = await apiCall<{ templates: Template[]; total: number }>(
         'templates?category=netmiko'
       )
-      console.log('Loaded templates with category=netmiko:', response.templates)
 
       // If no templates found, try with capital N (in case user created it manually)
       if (!response.templates || response.templates.length === 0) {
         const responseCapital = await apiCall<{ templates: Template[]; total: number }>(
           'templates?category=Netmiko'
-        )
-        console.log(
-          'Loaded templates with category=Netmiko:',
-          responseCapital.templates
         )
         setTemplates(responseCapital.templates || [])
       } else {

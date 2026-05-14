@@ -70,8 +70,6 @@ async function handleRequest(
       url = `${BACKEND_URL}/api/${pathAfterProxy}${searchParams ? `?${searchParams}` : ''}`
     }
 
-    console.log(`Frontend API: Proxying ${method} request to:`, url)
-
     // Get request body for methods that can have one
     let body = undefined
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -113,8 +111,6 @@ async function handleRequest(
       ...(body && { body }),
     })
 
-    console.log(`Backend ${method} response status:`, backendResponse.status)
-
     // Handle 204 No Content responses
     if (backendResponse.status === 204) {
       return new NextResponse(null, { status: 204 })
@@ -130,8 +126,6 @@ async function handleRequest(
       contentType?.includes('application/octet-stream') ||
       contentType?.includes('application/zip')
     ) {
-      console.log(`Backend ${method} file download, passing through...`)
-
       // Get the file as blob to preserve binary data
       const blob = await backendResponse.blob()
 
@@ -160,7 +154,6 @@ async function handleRequest(
     }
 
     if (!backendResponse.ok) {
-      console.log(`Backend ${method} error response:`, responseData)
       return NextResponse.json(
         typeof responseData === 'string' ? { error: responseData } : responseData,
         { status: backendResponse.status }

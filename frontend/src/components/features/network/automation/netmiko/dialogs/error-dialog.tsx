@@ -56,15 +56,6 @@ export function ErrorDialog({ open, onOpenChange, errorDetails }: ErrorDialogPro
             </ul>
           </div>
           <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                onOpenChange(false)
-                console.log('Full error details:', errorDetails)
-              }}
-            >
-              View in Console
-            </Button>
             <Button onClick={() => onOpenChange(false)}>Close</Button>
           </div>
         </div>
