@@ -22,7 +22,7 @@ import {
   Database,
   Terminal,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 interface TemplateRenderResultDialogProps {
@@ -57,6 +57,11 @@ function ContextDataViewer({
   depth?: number
 }) {
   const [isExpanded, setIsExpanded] = useState(depth < 2)
+
+  const arrayItemKeys = useMemo(
+    () => (Array.isArray(data) ? data.map(() => crypto.randomUUID()) : []),
+    [data]
+  )
 
   if (data === null || data === undefined) {
     return (
@@ -133,17 +138,14 @@ function ContextDataViewer({
         </button>
         {isExpanded && (
           <div className="border-l border-slate-200 ml-1.5">
-            {data.map((item, index) => {
-              // eslint-disable-next-line react/no-array-index-key
-              return (
-                <ContextDataViewer
-                  key={`${label}-item-${index}`}
-                  data={item}
-                  label={`[${index}]`}
-                  depth={depth + 1}
-                />
-              )
-            })}
+            {data.map((item, index) => (
+              <ContextDataViewer
+                key={arrayItemKeys[index]}
+                data={item}
+                label={`[${index}]`}
+                depth={depth + 1}
+              />
+            ))}
           </div>
         )}
       </div>

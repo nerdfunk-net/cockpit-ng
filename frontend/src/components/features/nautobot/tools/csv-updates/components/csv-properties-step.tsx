@@ -140,7 +140,10 @@ export function CsvPropertiesStep({
   }, [tryModalOpen, nameTransform, csvNameValues])
 
   const handleAddProperty = useCallback(() => {
-    onDefaultPropertiesChange([...defaultProperties, { field: '', value: '' }])
+    onDefaultPropertiesChange([
+      ...defaultProperties,
+      { field: '', value: '', rowKey: crypto.randomUUID() },
+    ])
   }, [defaultProperties, onDefaultPropertiesChange])
 
   const handleRemoveProperty = useCallback(
@@ -515,9 +518,8 @@ export function CsvPropertiesStep({
             </div>
 
             {defaultProperties.map((prop, index) => (
-              // eslint-disable-next-line react/no-array-index-key
               <div
-                key={index}
+                key={prop.rowKey}
                 className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center"
               >
                 <Select
