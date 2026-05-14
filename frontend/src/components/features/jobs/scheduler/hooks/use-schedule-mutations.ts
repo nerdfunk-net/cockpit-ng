@@ -15,10 +15,10 @@ export function useScheduleMutations() {
     mutationFn: async (data: ScheduleFormData) => {
       return apiCall<JobSchedule>('api/job-schedules', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.schedules() })
       toast({
         title: 'Success',
@@ -29,20 +29,26 @@ export function useScheduleMutations() {
       toast({
         title: 'Creation Failed',
         description: error.message || 'Failed to create schedule',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Update schedule
   const updateSchedule = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<ScheduleFormData> }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number
+      data: Partial<ScheduleFormData>
+    }) => {
       return apiCall<JobSchedule>(`api/job-schedules/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.schedules() })
       toast({
         title: 'Success',
@@ -53,16 +59,16 @@ export function useScheduleMutations() {
       toast({
         title: 'Update Failed',
         description: error.message || 'Failed to update schedule',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Delete schedule
   const deleteSchedule = useMutation({
     mutationFn: async (id: number) => {
       return apiCall(`api/job-schedules/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
     },
     onSuccess: () => {
@@ -76,9 +82,9 @@ export function useScheduleMutations() {
       toast({
         title: 'Deletion Failed',
         description: error.message || 'Failed to delete schedule',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Toggle active/inactive
@@ -86,7 +92,7 @@ export function useScheduleMutations() {
     mutationFn: async (job: JobSchedule) => {
       return apiCall<JobSchedule>(`api/job-schedules/${job.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ is_active: !job.is_active })
+        body: JSON.stringify({ is_active: !job.is_active }),
       })
     },
     onSuccess: () => {
@@ -96,16 +102,16 @@ export function useScheduleMutations() {
       toast({
         title: 'Toggle Failed',
         description: error.message || 'Failed to toggle schedule',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Run now
   const runNow = useMutation({
     mutationFn: async ({ id }: { id: number; identifier: string }) => {
       return apiCall(`job-runs/execute/${id}`, {
-        method: 'POST'
+        method: 'POST',
       })
     },
     onSuccess: (_, variables) => {
@@ -119,19 +125,22 @@ export function useScheduleMutations() {
       toast({
         title: 'Execution Failed',
         description: error.message || 'Failed to start job execution',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Recalculate next runs
   const recalculateNextRuns = useMutation({
     mutationFn: async () => {
-      return apiCall<{ message: string }>('api/job-schedules/debug/recalculate-next-runs', {
-        method: 'POST'
-      })
+      return apiCall<{ message: string }>(
+        'api/job-schedules/debug/recalculate-next-runs',
+        {
+          method: 'POST',
+        }
+      )
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.schedules() })
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.schedulerDebug() })
       toast({
@@ -143,18 +152,28 @@ export function useScheduleMutations() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to recalculate next runs',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Memoize return object to prevent re-renders
-  return useMemo(() => ({
-    createSchedule,
-    updateSchedule,
-    deleteSchedule,
-    toggleActive,
-    runNow,
-    recalculateNextRuns,
-  }), [createSchedule, updateSchedule, deleteSchedule, toggleActive, runNow, recalculateNextRuns])
+  return useMemo(
+    () => ({
+      createSchedule,
+      updateSchedule,
+      deleteSchedule,
+      toggleActive,
+      runNow,
+      recalculateNextRuns,
+    }),
+    [
+      createSchedule,
+      updateSchedule,
+      deleteSchedule,
+      toggleActive,
+      runNow,
+      recalculateNextRuns,
+    ]
+  )
 }

@@ -3,7 +3,11 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Calendar, Plus, Bug } from 'lucide-react'
-import { useJobSchedules, useJobTemplates, useCredentials } from '../hooks/use-schedule-queries'
+import {
+  useJobSchedules,
+  useJobTemplates,
+  useCredentials,
+} from '../hooks/use-schedule-queries'
 import { ScheduleDebugDialog } from './schedule-debug-dialog'
 import { ScheduleFormDialog } from './schedule-form-dialog'
 import { SchedulesGrid } from './schedules-grid'
@@ -51,7 +55,11 @@ export function JobsSchedulerPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsDebugDialogOpen(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsDebugDialogOpen(true)}
+          >
             <Bug className="mr-2 h-4 w-4" />
             Debug Scheduler
           </Button>

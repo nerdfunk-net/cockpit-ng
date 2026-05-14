@@ -9,15 +9,14 @@ interface SyncFormFooterProps {
   onValidate: () => void
 }
 
-export function SyncFormFooter({ isSyncing, onCancel, onValidate }: SyncFormFooterProps) {
+export function SyncFormFooter({
+  isSyncing,
+  onCancel,
+  onValidate,
+}: SyncFormFooterProps) {
   return (
     <div className="flex justify-end gap-3 pt-4 border-t">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onCancel}
-        disabled={isSyncing}
-      >
+      <Button type="button" variant="outline" onClick={onCancel} disabled={isSyncing}>
         Cancel
       </Button>
       <Button
@@ -29,11 +28,7 @@ export function SyncFormFooter({ isSyncing, onCancel, onValidate }: SyncFormFoot
         <CheckCircle className="h-4 w-4 mr-2" />
         Validate
       </Button>
-      <Button
-        type="submit"
-        disabled={isSyncing}
-        className="min-w-[140px]"
-      >
+      <Button type="submit" disabled={isSyncing} className="min-w-[140px]">
         {isSyncing ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

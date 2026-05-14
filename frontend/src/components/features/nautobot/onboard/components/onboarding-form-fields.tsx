@@ -9,11 +9,16 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from '@/components/ui/select'
 import { Search, Tags, FileText } from 'lucide-react'
 import { LocationSelector } from './location-selector'
-import type { DropdownOption, LocationItem, OnboardFormData, IPValidation } from '../types'
+import type {
+  DropdownOption,
+  LocationItem,
+  OnboardFormData,
+  IPValidation,
+} from '../types'
 import { EMPTY_DROPDOWN_OPTIONS } from '../constants'
 
 interface OnboardingFormFieldsProps {
@@ -69,7 +74,7 @@ export function OnboardingFormFields({
   onShowCustomFieldsModal,
   selectedTagsCount,
   isValidatingIP,
-  isSearchingDevice
+  isSearchingDevice,
 }: OnboardingFormFieldsProps) {
   return (
     <div className="space-y-4">
@@ -79,7 +84,9 @@ export function OnboardingFormFields({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xs font-semibold">Device Information</h3>
-              <p className="text-blue-100 text-[10px]">Enter IP address and verify availability</p>
+              <p className="text-blue-100 text-[10px]">
+                Enter IP address and verify availability
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -109,7 +116,9 @@ export function OnboardingFormFields({
             <div className="space-y-1">
               <Label htmlFor="ip_address" className="text-[11px] font-medium">
                 IP Address(es) <span className="text-red-500">*</span>
-                <span className="text-muted-foreground font-normal ml-1">(comma-separated for multiple)</span>
+                <span className="text-muted-foreground font-normal ml-1">
+                  (comma-separated for multiple)
+                </span>
               </Label>
               <div className="flex gap-2">
                 <div className="flex-1">
@@ -127,7 +136,9 @@ export function OnboardingFormFields({
                     }`}
                   />
                   {formData.ip_address && (
-                    <p className={`text-[10px] mt-0.5 ${ipValidation.isValid ? 'text-green-600' : 'text-red-600'}`}>
+                    <p
+                      className={`text-[10px] mt-0.5 ${ipValidation.isValid ? 'text-green-600' : 'text-red-600'}`}
+                    >
                       {ipValidation.message}
                     </p>
                   )}
@@ -191,14 +202,15 @@ export function OnboardingFormFields({
           </div>
         </div>
       </div>
-
       {/* Panel 2: Device Properties */}
       <div className="rounded-xl border shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-1.5 px-3">
           <div className="flex items-center space-x-1.5">
             <div>
               <h3 className="text-xs font-semibold">Device Properties</h3>
-              <p className="text-blue-100 text-[10px]">Configure device settings and network properties</p>
+              <p className="text-blue-100 text-[10px]">
+                Configure device settings and network properties
+              </p>
             </div>
           </div>
         </div>
@@ -213,183 +225,187 @@ export function OnboardingFormFields({
               onChange={onLocationSelect}
             />
 
-        <div className="space-y-1">
-          <Label className="text-[11px] font-medium">
-            Namespace <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={formData.namespace_id}
-            onValueChange={value => onFormDataChange('namespace_id', value)}
-          >
-            <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-              <SelectValue placeholder="Select namespace..." />
-            </SelectTrigger>
-            <SelectContent>
-              {namespaces.map(ns => (
-                <SelectItem key={ns.id} value={ns.id}>
-                  {ns.display || ns.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium">
+                Namespace <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.namespace_id}
+                onValueChange={value => onFormDataChange('namespace_id', value)}
+              >
+                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectValue placeholder="Select namespace..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {namespaces.map(ns => (
+                    <SelectItem key={ns.id} value={ns.id}>
+                      {ns.display || ns.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-1">
-          <Label className="text-[11px] font-medium">
-            Device Role <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={formData.role_id}
-            onValueChange={value => onFormDataChange('role_id', value)}
-          >
-            <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-              <SelectValue placeholder="Select device role..." />
-            </SelectTrigger>
-            <SelectContent>
-              {deviceRoles.map(role => (
-                <SelectItem key={role.id} value={role.id}>
-                  {role.display || role.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium">
+                Device Role <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.role_id}
+                onValueChange={value => onFormDataChange('role_id', value)}
+              >
+                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectValue placeholder="Select device role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {deviceRoles.map(role => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.display || role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-1">
-          <Label className="text-[11px] font-medium">Platform</Label>
-          <Select
-            value={formData.platform_id}
-            onValueChange={value => onFormDataChange('platform_id', value)}
-          >
-            <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-              <SelectValue placeholder="Select platform..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="detect">Auto-detect</SelectItem>
-              {platforms.map(platform => (
-                <SelectItem key={platform.id} value={platform.id}>
-                  {platform.display || platform.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium">Platform</Label>
+              <Select
+                value={formData.platform_id}
+                onValueChange={value => onFormDataChange('platform_id', value)}
+              >
+                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectValue placeholder="Select platform..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="detect">Auto-detect</SelectItem>
+                  {platforms.map(platform => (
+                    <SelectItem key={platform.id} value={platform.id}>
+                      {platform.display || platform.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-1">
-          <Label className="text-[11px] font-medium">
-            Device Status <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={formData.status_id}
-            onValueChange={value => onFormDataChange('status_id', value)}
-          >
-            <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-              <SelectValue placeholder="Select device status..." />
-            </SelectTrigger>
-            <SelectContent>
-              {deviceStatuses.map(status => (
-                <SelectItem key={status.id} value={status.id}>
-                  {status.display || status.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium">
+                Device Status <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.status_id}
+                onValueChange={value => onFormDataChange('status_id', value)}
+              >
+                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectValue placeholder="Select device status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {deviceStatuses.map(status => (
+                    <SelectItem key={status.id} value={status.id}>
+                      {status.display || status.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-1">
-          <Label className="text-[11px] font-medium">
-            Secret Group <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={formData.secret_groups_id}
-            onValueChange={value => onFormDataChange('secret_groups_id', value)}
-          >
-            <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-              <SelectValue placeholder="Select secret group..." />
-            </SelectTrigger>
-            <SelectContent>
-              {secretGroups.map(group => (
-                <SelectItem key={group.id} value={group.id}>
-                  {group.display || group.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium">
+                Secret Group <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.secret_groups_id}
+                onValueChange={value => onFormDataChange('secret_groups_id', value)}
+              >
+                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectValue placeholder="Select secret group..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {secretGroups.map(group => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.display || group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-1">
-          <Label className="text-[11px] font-medium">
-            Interface Status <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={formData.interface_status_id}
-            onValueChange={value => onFormDataChange('interface_status_id', value)}
-          >
-            <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-              <SelectValue placeholder="Select interface status..." />
-            </SelectTrigger>
-            <SelectContent>
-              {interfaceStatuses.map(status => (
-                <SelectItem key={status.id} value={status.id}>
-                  {status.display || status.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium">
+                Interface Status <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.interface_status_id}
+                onValueChange={value => onFormDataChange('interface_status_id', value)}
+              >
+                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectValue placeholder="Select interface status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {interfaceStatuses.map(status => (
+                    <SelectItem key={status.id} value={status.id}>
+                      {status.display || status.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-1">
-          <Label className="text-[11px] font-medium">
-            IP Address Status <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={formData.ip_address_status_id}
-            onValueChange={value => onFormDataChange('ip_address_status_id', value)}
-          >
-            <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-              <SelectValue placeholder="Select IP address status..." />
-            </SelectTrigger>
-            <SelectContent>
-              {ipAddressStatuses.map(status => (
-                <SelectItem key={status.id} value={status.id}>
-                  {status.display || status.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium">
+                IP Address Status <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.ip_address_status_id}
+                onValueChange={value => onFormDataChange('ip_address_status_id', value)}
+              >
+                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectValue placeholder="Select IP address status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {ipAddressStatuses.map(status => (
+                    <SelectItem key={status.id} value={status.id}>
+                      {status.display || status.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-1">
-          <Label className="text-[11px] font-medium">
-            Prefix Status <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={formData.prefix_status_id}
-            onValueChange={value => onFormDataChange('prefix_status_id', value)}
-          >
-            <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
-              <SelectValue placeholder="Select prefix status..." />
-            </SelectTrigger>
-            <SelectContent>
-              {prefixStatuses.map(status => (
-                <SelectItem key={status.id} value={status.id}>
-                  {status.display || status.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-          </div> {/* Close grid */}
-        </div> {/* Close p-3 bg-white */}
-      </div> {/* Close Panel 2: Device Properties */}
-
+            <div className="space-y-1">
+              <Label className="text-[11px] font-medium">
+                Prefix Status <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.prefix_status_id}
+                onValueChange={value => onFormDataChange('prefix_status_id', value)}
+              >
+                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectValue placeholder="Select prefix status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {prefixStatuses.map(status => (
+                    <SelectItem key={status.id} value={status.id}>
+                      {status.display || status.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>{' '}
+          {/* Close grid */}
+        </div>{' '}
+        {/* Close p-3 bg-white */}
+      </div>{' '}
+      {/* Close Panel 2: Device Properties */}
       {/* Panel 3: Connection & Sync Settings */}
       <div className="rounded-xl border shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-1.5 px-3">
           <div className="flex items-center space-x-1.5">
             <div>
               <h3 className="text-xs font-semibold">Connection & Sync Settings</h3>
-              <p className="text-blue-100 text-[10px]">Configure connection parameters and sync options</p>
+              <p className="text-blue-100 text-[10px]">
+                Configure connection parameters and sync options
+              </p>
             </div>
           </div>
         </div>
@@ -411,17 +427,23 @@ export function OnboardingFormFields({
               <Input
                 type="number"
                 value={formData.timeout}
-                onChange={e => onFormDataChange('timeout', parseInt(e.target.value, 10))}
+                onChange={e =>
+                  onFormDataChange('timeout', parseInt(e.target.value, 10))
+                }
                 className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
               />
             </div>
 
             <div className="space-y-1 w-32">
-              <Label className="text-[11px] font-medium">Onboarding Timeout (sec)</Label>
+              <Label className="text-[11px] font-medium">
+                Onboarding Timeout (sec)
+              </Label>
               <Input
                 type="number"
                 value={formData.onboarding_timeout}
-                onChange={e => onFormDataChange('onboarding_timeout', parseInt(e.target.value, 10))}
+                onChange={e =>
+                  onFormDataChange('onboarding_timeout', parseInt(e.target.value, 10))
+                }
                 className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                 title="Maximum time to wait for the onboarding job to complete (recommended: 120s for auto-detect)"
               />
@@ -432,15 +454,20 @@ export function OnboardingFormFields({
               { id: 'cables', label: 'Cables' },
               { id: 'software', label: 'Software' },
               { id: 'vlans', label: 'VLANs' },
-              { id: 'vrfs', label: 'VRFs' }
+              { id: 'vrfs', label: 'VRFs' },
             ].map(option => (
               <div key={option.id} className="flex items-center space-x-2 h-8">
                 <Checkbox
                   id={`sync-${option.id}`}
                   checked={formData.sync_options.includes(option.id)}
-                  onCheckedChange={(checked) => onSyncOptionChange(option.id, checked as boolean)}
+                  onCheckedChange={checked =>
+                    onSyncOptionChange(option.id, checked as boolean)
+                  }
                 />
-                <Label htmlFor={`sync-${option.id}`} className="text-sm font-medium cursor-pointer">
+                <Label
+                  htmlFor={`sync-${option.id}`}
+                  className="text-sm font-medium cursor-pointer"
+                >
                   {option.label}
                 </Label>
               </div>

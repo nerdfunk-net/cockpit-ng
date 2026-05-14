@@ -32,7 +32,7 @@ const CATEGORY_VARIABLES: Record<string, CategoryConfig> = {
 
 export function getDefaultVariables(category: string): TemplateVariable[] {
   const config = CATEGORY_VARIABLES[category] ?? CATEGORY_VARIABLES['__none__']!
-  return config.defaults.map((name) => ({
+  return config.defaults.map(name => ({
     id: `default-${name}`,
     name,
     value: '',
@@ -40,7 +40,7 @@ export function getDefaultVariables(category: string): TemplateVariable[] {
     isDefault: true,
     isAutoFilled: true,
     description: config.descriptions[name] || '',
-    requiresExecution: name.startsWith('pre_run.'),  // Mark pre_run variables as requiring execution
+    requiresExecution: name.startsWith('pre_run.'), // Mark pre_run variables as requiring execution
     isExecuting: false,
   }))
 }

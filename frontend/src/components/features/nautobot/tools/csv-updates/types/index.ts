@@ -40,6 +40,8 @@ export type MatchingStrategy = 'exact' | 'contains' | 'starts_with'
 export interface DefaultProperty {
   field: string
   value: string
+  /** Stable list key (client-only; not sent to the API). */
+  rowKey: string
 }
 
 /** How to transform the CSV name value before device lookup. */

@@ -16,9 +16,10 @@ export function useFileSearch(files: FileItem[]) {
   const filteredFiles = useMemo(() => {
     if (!searchQuery) return files
     const query = searchQuery.toLowerCase()
-    return files.filter(file =>
-      file.name.toLowerCase().includes(query) ||
-      file.path.toLowerCase().includes(query)
+    return files.filter(
+      file =>
+        file.name.toLowerCase().includes(query) ||
+        file.path.toLowerCase().includes(query)
     )
   }, [files, searchQuery])
 
@@ -45,15 +46,26 @@ export function useFileSearch(files: FileItem[]) {
     setSearchQuery('')
   }, [])
 
-  return useMemo(() => ({
-    searchQuery,
-    setSearchQuery,
-    showResults,
-    setShowResults,
-    selectedFile,
-    setSelectedFile: handleFileSelect,
-    clearSelection,
-    filteredFiles,
-    searchRef
-  }), [searchQuery, showResults, selectedFile, handleFileSelect, clearSelection, filteredFiles, searchRef])
+  return useMemo(
+    () => ({
+      searchQuery,
+      setSearchQuery,
+      showResults,
+      setShowResults,
+      selectedFile,
+      setSelectedFile: handleFileSelect,
+      clearSelection,
+      filteredFiles,
+      searchRef,
+    }),
+    [
+      searchQuery,
+      showResults,
+      selectedFile,
+      handleFileSelect,
+      clearSelection,
+      filteredFiles,
+      searchRef,
+    ]
+  )
 }

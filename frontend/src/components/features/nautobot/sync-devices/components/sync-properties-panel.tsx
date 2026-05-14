@@ -45,14 +45,17 @@ export function SyncPropertiesPanel({
   isSubmitting,
   onSync,
 }: SyncPropertiesPanelProps) {
-  const handlePropertyChange = (key: keyof Omit<SyncProperties, 'sync_options'>, value: string) => {
+  const handlePropertyChange = (
+    key: keyof Omit<SyncProperties, 'sync_options'>,
+    value: string
+  ) => {
     onSyncPropertiesChange({ ...syncProperties, [key]: value })
   }
 
   const handleSyncOptionChange = (option: string, checked: boolean) => {
     const newOptions = checked
       ? [...syncProperties.sync_options, option]
-      : syncProperties.sync_options.filter((o) => o !== option)
+      : syncProperties.sync_options.filter(o => o !== option)
     onSyncPropertiesChange({ ...syncProperties, sync_options: newOptions })
   }
 
@@ -78,13 +81,13 @@ export function SyncPropertiesPanel({
           </Label>
           <Select
             value={syncProperties.namespace}
-            onValueChange={(value) => handlePropertyChange('namespace', value)}
+            onValueChange={value => handlePropertyChange('namespace', value)}
           >
             <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
               <SelectValue placeholder="Select namespace..." />
             </SelectTrigger>
             <SelectContent>
-              {namespaces.map((ns) => (
+              {namespaces.map(ns => (
                 <SelectItem key={ns.id} value={ns.id}>
                   {ns.name}
                 </SelectItem>
@@ -100,13 +103,13 @@ export function SyncPropertiesPanel({
           </Label>
           <Select
             value={syncProperties.prefix_status}
-            onValueChange={(value) => handlePropertyChange('prefix_status', value)}
+            onValueChange={value => handlePropertyChange('prefix_status', value)}
           >
             <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
               <SelectValue placeholder="Select prefix status..." />
             </SelectTrigger>
             <SelectContent>
-              {prefixStatuses.map((status) => (
+              {prefixStatuses.map(status => (
                 <SelectItem key={status.id} value={status.id}>
                   {status.name}
                 </SelectItem>
@@ -122,13 +125,13 @@ export function SyncPropertiesPanel({
           </Label>
           <Select
             value={syncProperties.interface_status}
-            onValueChange={(value) => handlePropertyChange('interface_status', value)}
+            onValueChange={value => handlePropertyChange('interface_status', value)}
           >
             <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
               <SelectValue placeholder="Select interface status..." />
             </SelectTrigger>
             <SelectContent>
-              {interfaceStatuses.map((status) => (
+              {interfaceStatuses.map(status => (
                 <SelectItem key={status.id} value={status.id}>
                   {status.name}
                 </SelectItem>
@@ -144,13 +147,13 @@ export function SyncPropertiesPanel({
           </Label>
           <Select
             value={syncProperties.ip_address_status}
-            onValueChange={(value) => handlePropertyChange('ip_address_status', value)}
+            onValueChange={value => handlePropertyChange('ip_address_status', value)}
           >
             <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
               <SelectValue placeholder="Select IP address status..." />
             </SelectTrigger>
             <SelectContent>
-              {ipAddressStatuses.map((status) => (
+              {ipAddressStatuses.map(status => (
                 <SelectItem key={status.id} value={status.id}>
                   {status.name}
                 </SelectItem>
@@ -163,16 +166,19 @@ export function SyncPropertiesPanel({
         <div className="space-y-3">
           <Label>Sync Options</Label>
           <div className="space-y-2">
-            {SYNC_OPTIONS.map((option) => (
+            {SYNC_OPTIONS.map(option => (
               <div key={option.id} className="flex items-center space-x-2">
                 <Checkbox
                   id={option.id}
                   checked={syncProperties.sync_options.includes(option.id)}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={checked =>
                     handleSyncOptionChange(option.id, checked as boolean)
                   }
                 />
-                <Label htmlFor={option.id} className="text-sm font-medium cursor-pointer">
+                <Label
+                  htmlFor={option.id}
+                  className="text-sm font-medium cursor-pointer"
+                >
                   {option.label}
                 </Label>
               </div>

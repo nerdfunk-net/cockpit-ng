@@ -9,7 +9,7 @@ export function useDeviceLoader() {
   const [dropdownOptions, setDropdownOptions] = useState({
     roles: [] as DropdownOption[],
     locations: [] as DropdownOption[],
-    statuses: [] as DropdownOption[]
+    statuses: [] as DropdownOption[],
   })
 
   const extractFilterOptions = useCallback((deviceList: Device[]) => {
@@ -26,13 +26,13 @@ export function useDeviceLoader() {
     setDropdownOptions({
       roles: Array.from(roles).map(name => ({ id: name, name })),
       locations: Array.from(locations).map(name => ({ id: name, name })),
-      statuses: Array.from(statuses).map(name => ({ id: name, name }))
+      statuses: Array.from(statuses).map(name => ({ id: name, name })),
     })
 
     return {
       roles: Array.from(roles),
       locations: Array.from(locations),
-      statuses: Array.from(statuses)
+      statuses: Array.from(statuses),
     }
   }, [])
 
@@ -81,6 +81,6 @@ export function useDeviceLoader() {
     isLoading,
     dropdownOptions,
     loadDevices,
-    reloadDevices
+    reloadDevices,
   }
 }

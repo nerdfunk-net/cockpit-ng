@@ -57,13 +57,17 @@ export function useCheckmkDiscoveryMutations() {
     onSuccess: (data, variables) => {
       toast({
         title: 'Success',
-        description: data.message || `Bulk discovery started for ${variables.hostnames.length} host(s)`,
+        description:
+          data.message ||
+          `Bulk discovery started for ${variables.hostnames.length} host(s)`,
       })
     },
     onError: (error: Error, variables) => {
       toast({
         title: 'Error',
-        description: error.message || `Failed to start bulk discovery for ${variables.hostnames.length} host(s)`,
+        description:
+          error.message ||
+          `Failed to start bulk discovery for ${variables.hostnames.length} host(s)`,
         variant: 'destructive',
       })
     },

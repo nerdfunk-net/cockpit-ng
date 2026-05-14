@@ -4,7 +4,11 @@ import { useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Edit, Trash2, Shield, Lock, Settings } from 'lucide-react'
-import { useRbacRoles, useRbacPermissions, useRolePermissions } from '../hooks/use-rbac-queries'
+import {
+  useRbacRoles,
+  useRbacPermissions,
+  useRolePermissions,
+} from '../hooks/use-rbac-queries'
 import { useRbacMutations } from '../hooks/use-rbac-mutations'
 import { RoleDialog } from '../components/dialogs/role-dialog'
 import { RolePermissionsDialog } from '../components/dialogs/role-permissions-dialog'
@@ -19,7 +23,8 @@ export function RolesManager() {
   // TanStack Query hooks
   const { data: roles = EMPTY_ROLES, isLoading: rolesLoading } = useRbacRoles()
   const { data: allPermissions = EMPTY_PERMISSIONS } = useRbacPermissions()
-  const { createRole, updateRole, deleteRole, toggleRolePermission } = useRbacMutations()
+  const { createRole, updateRole, deleteRole, toggleRolePermission } =
+    useRbacMutations()
 
   // Confirm dialog
   const { confirmDialog, openConfirm } = useConfirmDialog()
@@ -33,34 +38,43 @@ export function RolesManager() {
 
   // Load role with permissions when managing permissions
   const { data: selectedRoleWithPermissions } = useRolePermissions(selectedRoleId, {
-    enabled: isPermissionsOpen && !!selectedRoleId
+    enabled: isPermissionsOpen && !!selectedRoleId,
   })
 
-  const handleCreateSubmit = useCallback((data: CreateRoleData) => {
-    createRole.mutate(data)
-    setIsCreateOpen(false)
-  }, [createRole])
+  const handleCreateSubmit = useCallback(
+    (data: CreateRoleData) => {
+      createRole.mutate(data)
+      setIsCreateOpen(false)
+    },
+    [createRole]
+  )
 
-  const handleEditSubmit = useCallback((data: UpdateRoleData) => {
-    if (editingRole) {
-      updateRole.mutate({ roleId: editingRole.id, data })
-      setIsEditOpen(false)
-      setEditingRole(null)
-    }
-  }, [editingRole, updateRole])
+  const handleEditSubmit = useCallback(
+    (data: UpdateRoleData) => {
+      if (editingRole) {
+        updateRole.mutate({ roleId: editingRole.id, data })
+        setIsEditOpen(false)
+        setEditingRole(null)
+      }
+    },
+    [editingRole, updateRole]
+  )
 
-  const handleDelete = useCallback((roleId: number, isSystem: boolean) => {
-    if (isSystem) {
-      alert('System roles cannot be deleted')
-      return
-    }
-    openConfirm({
-      title: 'Delete Role',
-      description: 'Are you sure you want to delete this role?',
-      variant: 'destructive',
-      onConfirm: () => deleteRole.mutate(roleId),
-    })
-  }, [deleteRole, openConfirm])
+  const handleDelete = useCallback(
+    (roleId: number, isSystem: boolean) => {
+      if (isSystem) {
+        alert('System roles cannot be deleted')
+        return
+      }
+      openConfirm({
+        title: 'Delete Role',
+        description: 'Are you sure you want to delete this role?',
+        variant: 'destructive',
+        onConfirm: () => deleteRole.mutate(roleId),
+      })
+    },
+    [deleteRole, openConfirm]
+  )
 
   const handleEditRole = useCallback((role: Role) => {
     setEditingRole(role)
@@ -72,11 +86,14 @@ export function RolesManager() {
     setIsPermissionsOpen(true)
   }, [])
 
-  const handleTogglePermission = useCallback((permissionId: number, granted: boolean) => {
-    if (selectedRoleId) {
-      toggleRolePermission.mutate({ roleId: selectedRoleId, permissionId, granted })
-    }
-  }, [selectedRoleId, toggleRolePermission])
+  const handleTogglePermission = useCallback(
+    (permissionId: number, granted: boolean) => {
+      if (selectedRoleId) {
+        toggleRolePermission.mutate({ roleId: selectedRoleId, permissionId, granted })
+      }
+    },
+    [selectedRoleId, toggleRolePermission]
+  )
 
   const handlePermissionsDialogClose = useCallback(() => {
     setIsPermissionsOpen(false)
@@ -92,9 +109,14 @@ export function RolesManager() {
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold">System Roles</h3>
-          <p className="text-sm text-muted-foreground">{roles.length} roles configured</p>
+          <p className="text-sm text-muted-foreground">
+            {roles.length} roles configured
+          </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2">
+        <Button
+          onClick={() => setIsCreateOpen(true)}
+          className="flex items-center gap-2"
+        >
           <Plus className="h-4 w-4" />
           Create Role
         </Button>
@@ -105,20 +127,22 @@ export function RolesManager() {
         columns={[
           {
             header: 'Name',
-            accessor: (role) => (
+            accessor: role => (
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-blue-500" />
                 <span className="font-medium">{role.name}</span>
               </div>
-            )
+            ),
           },
           {
             header: 'Description',
-            accessor: (role) => <span className="text-muted-foreground">{role.description}</span>
+            accessor: role => (
+              <span className="text-muted-foreground">{role.description}</span>
+            ),
           },
           {
             header: 'Type',
-            accessor: (role) =>
+            accessor: role =>
               role.is_system ? (
                 <Badge variant="secondary" className="flex items-center gap-1 w-fit">
                   <Lock className="h-3 w-3" />
@@ -126,10 +150,10 @@ export function RolesManager() {
                 </Badge>
               ) : (
                 <Badge variant="outline">Custom</Badge>
-              )
+              ),
           },
         ]}
-        actions={(role) => (
+        actions={role => (
           <div className="flex gap-1 justify-end">
             <Button
               size="sm"

@@ -20,7 +20,10 @@ export function useVlansQuery(options: UseVlansQueryOptions = DEFAULT_OPTIONS) {
   const { locationName, includeGlobal = true, enabled = false } = options
 
   return useQuery({
-    queryKey: queryKeys.nautobot.vlans({ location: locationName, global: includeGlobal }),
+    queryKey: queryKeys.nautobot.vlans({
+      location: locationName,
+      global: includeGlobal,
+    }),
     queryFn: async (): Promise<VlanItem[]> => {
       const url = 'nautobot/vlans'
       const params = new URLSearchParams()

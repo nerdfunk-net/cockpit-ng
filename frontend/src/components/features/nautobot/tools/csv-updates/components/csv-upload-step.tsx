@@ -38,7 +38,12 @@ interface CsvUploadStepProps {
   onClear: () => void
 }
 
-const OBJECT_TYPE_OPTIONS: ObjectType[] = ['devices', 'ip-prefixes', 'ip-addresses', 'locations']
+const OBJECT_TYPE_OPTIONS: ObjectType[] = [
+  'devices',
+  'ip-prefixes',
+  'ip-addresses',
+  'locations',
+]
 
 export function CsvUploadStep({
   objectType,
@@ -61,7 +66,10 @@ export function CsvUploadStep({
       {/* Object Type */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Object Type</Label>
-        <Select value={objectType} onValueChange={v => onObjectTypeChange(v as ObjectType)}>
+        <Select
+          value={objectType}
+          onValueChange={v => onObjectTypeChange(v as ObjectType)}
+        >
           <SelectTrigger className="w-56">
             <SelectValue />
           </SelectTrigger>
@@ -82,7 +90,9 @@ export function CsvUploadStep({
           <div className="flex items-center gap-3 p-3 border rounded-md bg-blue-50 border-blue-200">
             <FileSpreadsheet className="h-5 w-5 text-blue-600 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-blue-900 truncate">{csvFile.name}</p>
+              <p className="text-sm font-medium text-blue-900 truncate">
+                {csvFile.name}
+              </p>
               <p className="text-xs text-blue-700">
                 {(csvFile.size / 1024).toFixed(1)} KB
               </p>
@@ -102,9 +112,7 @@ export function CsvUploadStep({
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-600">
-              Click to select a CSV file
-            </p>
+            <p className="text-sm text-gray-600">Click to select a CSV file</p>
             <p className="text-xs text-gray-400 mt-1">Accepts .csv files</p>
           </div>
         )}
@@ -161,13 +169,15 @@ export function CsvUploadStep({
               </Badge>
             )}
             {validationSummary.isValid && (
-              <Badge className="bg-green-100 text-green-800 border-green-300">Valid</Badge>
+              <Badge className="bg-green-100 text-green-800 border-green-300">
+                Valid
+              </Badge>
             )}
           </div>
 
           {validationResults.length > 0 && (
             <div className="border rounded-md max-h-40 overflow-y-auto">
-              {validationResults.map((result) => (
+              {validationResults.map(result => (
                 <div
                   key={`${result.type}-${result.rowNumber ?? ''}-${result.message}`}
                   className={`px-3 py-1.5 text-xs border-b last:border-0 ${

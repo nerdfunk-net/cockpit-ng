@@ -23,7 +23,9 @@ export function useCustomFieldsQuery(
     queryKey: queryKeys.nautobotSettings.customFields(),
     queryFn: async () => {
       const response = await apiCall('nautobot/custom-fields/devices')
-      return Array.isArray(response) ? response as CustomField[] : EMPTY_ARRAY as CustomField[]
+      return Array.isArray(response)
+        ? (response as CustomField[])
+        : (EMPTY_ARRAY as CustomField[])
     },
     enabled,
     staleTime: CACHE_TIME.CUSTOM_FIELDS,
@@ -50,7 +52,9 @@ export function useCustomFieldChoicesQueries(customFields: CustomField[]) {
             const choices = await apiCall(`nautobot/custom-field-choices/${fieldName}`)
             return {
               fieldName,
-              choices: Array.isArray(choices) ? choices as CustomFieldChoice[] : EMPTY_ARRAY as CustomFieldChoice[],
+              choices: Array.isArray(choices)
+                ? (choices as CustomFieldChoice[])
+                : (EMPTY_ARRAY as CustomFieldChoice[]),
             }
           } catch (error) {
             console.error(`Error loading choices for ${fieldName}:`, error)

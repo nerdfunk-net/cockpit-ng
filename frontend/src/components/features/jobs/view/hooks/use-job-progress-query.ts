@@ -59,8 +59,8 @@ export function useJobProgressQuery(
 export function useAllJobsProgress(jobs: JobRun[]) {
   const { apiCall } = useApi()
 
-  const runningBackupJobs = jobs.filter(job =>
-    isJobActive(job.status) && isBackupJob(job.job_type)
+  const runningBackupJobs = jobs.filter(
+    job => isJobActive(job.status) && isBackupJob(job.job_type)
   )
 
   const hasRunningBackups = runningBackupJobs.length > 0
@@ -69,7 +69,7 @@ export function useAllJobsProgress(jobs: JobRun[]) {
     queryKey: [...queryKeys.jobs.all, 'all-progress', runningBackupJobs.map(j => j.id)],
     queryFn: async () => {
       // Fetch progress for all running backup jobs in parallel
-      const progressPromises = runningBackupJobs.map(async (job) => {
+      const progressPromises = runningBackupJobs.map(async job => {
         try {
           const response = await apiCall<JobProgressResponse>(
             `job-runs/${job.id}/progress`,

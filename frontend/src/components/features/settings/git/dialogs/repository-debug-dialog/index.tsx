@@ -1,6 +1,11 @@
 // Repository Debug Dialog - Main Component
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Bug, Info, FileText, Edit, X, Upload } from 'lucide-react'
 import { DiagnosticsTab } from '../../tabs/diagnostics-tab'

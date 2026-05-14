@@ -24,7 +24,7 @@ export function DeleteCredentialDialog({
   onOpenChange,
   credentialName,
   onConfirm,
-  isDeleting
+  isDeleting,
 }: DeleteCredentialDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

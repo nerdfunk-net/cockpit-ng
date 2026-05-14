@@ -18,7 +18,7 @@ export function useSnmpMutations() {
     mutationFn: async (content: string) => {
       const response = await apiCall<ValidationResponse>('config/validate', {
         method: 'POST',
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ content }),
       })
 
       if (!response.success || !response.valid) {
@@ -41,7 +41,7 @@ export function useSnmpMutations() {
     onError: (error: unknown) => {
       // Error will be handled by component (show dialog)
       console.error('YAML validation error:', error)
-    }
+    },
   })
 
   /**
@@ -51,7 +51,7 @@ export function useSnmpMutations() {
     mutationFn: async (content: string) => {
       const response = await apiCall<SaveResponse>(`config/${SNMP_FILE_NAME}`, {
         method: 'POST',
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ content }),
       })
 
       if (!response.success) {
@@ -62,7 +62,9 @@ export function useSnmpMutations() {
     },
     onSuccess: () => {
       // Invalidate cache to trigger refetch
-      queryClient.invalidateQueries({ queryKey: queryKeys.commonSettings.snmpMapping() })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.commonSettings.snmpMapping(),
+      })
 
       toast({
         title: 'Success',
@@ -73,14 +75,17 @@ export function useSnmpMutations() {
       toast({
         title: 'Error',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Memoize return object to prevent re-renders
-  return useMemo(() => ({
-    validateYaml,
-    saveMapping,
-  }), [validateYaml, saveMapping])
+  return useMemo(
+    () => ({
+      validateYaml,
+      saveMapping,
+    }),
+    [validateYaml, saveMapping]
+  )
 }

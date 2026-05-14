@@ -33,14 +33,14 @@ export function useDeviceSearchQuery({
       if (locationId) {
         params.append('location_id', locationId)
       }
-      const result = await apiCall<NautobotDeviceListItem[] | { devices?: NautobotDeviceListItem[] }>(
-        `nautobot/devices?${params.toString()}`
-      )
+      const result = await apiCall<
+        NautobotDeviceListItem[] | { devices?: NautobotDeviceListItem[] }
+      >(`nautobot/devices?${params.toString()}`)
       // Handle both array and paginated response
       const items = Array.isArray(result)
         ? result
-        : (result as { devices?: NautobotDeviceListItem[] }).devices ?? []
-      return items.map((d) => ({ id: d.id, name: d.name }))
+        : ((result as { devices?: NautobotDeviceListItem[] }).devices ?? [])
+      return items.map(d => ({ id: d.id, name: d.name }))
     },
     enabled: isEnabled,
     staleTime: 0,

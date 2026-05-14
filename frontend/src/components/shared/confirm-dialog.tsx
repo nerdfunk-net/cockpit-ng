@@ -35,7 +35,12 @@ export function ConfirmDialog({
   variant = 'default',
 }: ConfirmDialogProps) {
   return (
-    <AlertDialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onCancel() }}>
+    <AlertDialog
+      open={open}
+      onOpenChange={isOpen => {
+        if (!isOpen) onCancel()
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -45,7 +50,9 @@ export function ConfirmDialog({
           <AlertDialogCancel onClick={onCancel}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className={cn(variant === 'destructive' && buttonVariants({ variant: 'destructive' }))}
+            className={cn(
+              variant === 'destructive' && buttonVariants({ variant: 'destructive' })
+            )}
           >
             {confirmLabel}
           </AlertDialogAction>

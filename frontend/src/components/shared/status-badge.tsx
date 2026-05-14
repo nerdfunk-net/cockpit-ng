@@ -18,10 +18,7 @@ const variantClasses: Record<StatusVariant, string> = {
 
 export function StatusBadge({ variant, children, className }: StatusBadgeProps) {
   return (
-    <Badge
-      variant="outline"
-      className={cn(variantClasses[variant], className)}
-    >
+    <Badge variant="outline" className={cn(variantClasses[variant], className)}>
       {children}
     </Badge>
   )

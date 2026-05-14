@@ -51,10 +51,16 @@ function extractInterfaceParts(name: string): { prefix: string; suffix: string }
  * Smart matching of device name to interface name
  * Handles abbreviated names like "Et0/0" -> "Ethernet0/0"
  */
-function matchesInterface(deviceName: string, interfaceName: string, interfaceAlias: string): boolean {
+function matchesInterface(
+  deviceName: string,
+  interfaceName: string,
+  interfaceAlias: string
+): boolean {
   // Exact match (case-insensitive)
-  if (deviceName.toLowerCase() === interfaceName.toLowerCase() ||
-      deviceName.toLowerCase() === interfaceAlias.toLowerCase()) {
+  if (
+    deviceName.toLowerCase() === interfaceName.toLowerCase() ||
+    deviceName.toLowerCase() === interfaceAlias.toLowerCase()
+  ) {
     return true
   }
 
@@ -63,7 +69,9 @@ function matchesInterface(deviceName: string, interfaceName: string, interfaceAl
 
   // Extract parts from interface name (e.g., "Ethernet0/0" -> prefix="Ethernet", suffix="0/0")
   const ifaceParts = extractInterfaceParts(interfaceName)
-  const aliasParts = interfaceAlias ? extractInterfaceParts(interfaceAlias) : { prefix: '', suffix: '' }
+  const aliasParts = interfaceAlias
+    ? extractInterfaceParts(interfaceAlias)
+    : { prefix: '', suffix: '' }
 
   // Check if numeric/special suffix matches
   const suffixMatches = (parts: { prefix: string; suffix: string }) => {
@@ -88,8 +96,10 @@ function matchesInterface(deviceName: string, interfaceName: string, interfaceAl
   }
 
   // Fallback: check if interface name contains device name
-  if (interfaceName.toLowerCase().includes(deviceName.toLowerCase()) ||
-      interfaceAlias.toLowerCase().includes(deviceName.toLowerCase())) {
+  if (
+    interfaceName.toLowerCase().includes(deviceName.toLowerCase()) ||
+    interfaceAlias.toLowerCase().includes(deviceName.toLowerCase())
+  ) {
     return true
   }
 
@@ -99,7 +109,9 @@ function matchesInterface(deviceName: string, interfaceName: string, interfaceAl
 /**
  * Parse interfaces and addresses from CheckMK inventory data
  */
-export function parseInterfacesFromInventory(inventoryData: Record<string, unknown> | null): CheckMKInterface[] {
+export function parseInterfacesFromInventory(
+  inventoryData: Record<string, unknown> | null
+): CheckMKInterface[] {
   if (!inventoryData) return []
 
   try {
@@ -123,7 +135,8 @@ export function parseInterfacesFromInventory(inventoryData: Record<string, unkno
     // Extract interfaces
     const interfacesNode = networkingNodes.interfaces as Record<string, unknown>
     const interfacesTable = interfacesNode?.Table as Record<string, unknown>
-    const interfacesRows = (interfacesTable?.Rows as Array<Record<string, unknown>>) || []
+    const interfacesRows =
+      (interfacesTable?.Rows as Array<Record<string, unknown>>) || []
 
     // Extract addresses
     const addressesNode = networkingNodes.addresses as Record<string, unknown>
@@ -131,16 +144,16 @@ export function parseInterfacesFromInventory(inventoryData: Record<string, unkno
     const addressesRows = (addressesTable?.Rows as Array<Record<string, unknown>>) || []
 
     // Map interfaces and join with addresses
-    return interfacesRows.map((iface) => {
+    return interfacesRows.map(iface => {
       const ifaceDescription = String(iface.description || '')
       const ifaceAlias = String(iface.alias || '')
-      
+
       // Use alias as interface name, fall back to description if alias is empty
       const ifaceName = ifaceAlias || ifaceDescription
 
       // Find matching addresses using smart matching
       // Handles abbreviated names like "Et0/0" -> "Ethernet0/0"
-      const matchingAddresses = addressesRows.filter((addr) => {
+      const matchingAddresses = addressesRows.filter(addr => {
         const device = String(addr.device || '')
         return matchesInterface(device, ifaceDescription, ifaceAlias)
       })
@@ -155,7 +168,7 @@ export function parseInterfacesFromInventory(inventoryData: Record<string, unkno
         port_type: Number(iface.port_type || 0),
         speed: Number(iface.speed || 0),
         available: Boolean(iface.available),
-        ipAddresses: matchingAddresses.map((addr) => ({
+        ipAddresses: matchingAddresses.map(addr => ({
           address: String(addr.address || ''),
           broadcast: String(addr.broadcast || ''),
           cidr: Number(addr.cidr || 0),
@@ -219,7 +232,9 @@ export function formatSpeed(speed: number): string {
  * Uses addresses.Rows[] to extract interface and IP information
  * Default behavior: Interface status = Active, First IP role = None, Others = Secondary
  */
-export function parseInterfacesFromAddresses(inventoryData: Record<string, unknown> | null): CheckMKInterface[] {
+export function parseInterfacesFromAddresses(
+  inventoryData: Record<string, unknown> | null
+): CheckMKInterface[] {
   if (!inventoryData) return []
 
   try {
@@ -248,7 +263,7 @@ export function parseInterfacesFromAddresses(inventoryData: Record<string, unkno
     // Group addresses by interface name (device field)
     const interfaceMap = new Map<string, CheckMKAddress[]>()
 
-    addressesRows.forEach((addr) => {
+    addressesRows.forEach(addr => {
       const device = String(addr.device || '')
       if (!device) return
 
@@ -278,10 +293,10 @@ export function parseInterfacesFromAddresses(inventoryData: Record<string, unkno
         name: interfaceName,
         alias: interfaceName,
         admin_status: 1, // Default to Up
-        oper_status: 1,  // Default to Up
+        oper_status: 1, // Default to Up
         phys_address: '', // Not available from addresses table
-        port_type: 6,    // Default to Ethernet
-        speed: 0,        // Not available from addresses table
+        port_type: 6, // Default to Ethernet
+        speed: 0, // Not available from addresses table
         available: true, // Default to true
         ipAddresses: addresses,
       })

@@ -4,7 +4,13 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, FileCode, X, Lock } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
@@ -72,31 +78,34 @@ export function DeployTemplateEntryComponent({
   const [loadingDetail, setLoadingDetail] = useState(false)
 
   // Fetch template detail when templateId changes
-  const fetchTemplateDetail = useCallback(async (templateId: number) => {
-    if (!token) return
-    setLoadingDetail(true)
-    try {
-      const response = await fetch(`/api/proxy/api/templates/${templateId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setTemplateDetail(data)
+  const fetchTemplateDetail = useCallback(
+    async (templateId: number) => {
+      if (!token) return
+      setLoadingDetail(true)
+      try {
+        const response = await fetch(`/api/proxy/api/templates/${templateId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setTemplateDetail(data)
 
-        // Auto-fill path from template's default file_path if path is empty
-        if (data.file_path && !entry.path) {
-          onChange(index, { ...entry, path: data.file_path })
+          // Auto-fill path from template's default file_path if path is empty
+          if (data.file_path && !entry.path) {
+            onChange(index, { ...entry, path: data.file_path })
+          }
         }
+      } catch (error) {
+        console.error('Error fetching template detail:', error)
+      } finally {
+        setLoadingDetail(false)
       }
-    } catch (error) {
-      console.error('Error fetching template detail:', error)
-    } finally {
-      setLoadingDetail(false)
-    }
-  }, [token, entry, index, onChange])
+    },
+    [token, entry, index, onChange]
+  )
 
   useEffect(() => {
     if (entry.templateId) {
@@ -119,32 +128,56 @@ export function DeployTemplateEntryComponent({
       }))
   }, [templateDetail, entry.customVariables])
 
-  const handleTemplateChange = useCallback((value: string) => {
-    if (value === 'none') {
-      onChange(index, { _key: entry._key, templateId: null, inventoryId: entry.inventoryId, path: '', customVariables: {} })
-    } else {
-      onChange(index, { _key: entry._key, templateId: parseInt(value), inventoryId: entry.inventoryId, path: '', customVariables: {} })
-    }
-  }, [index, entry._key, entry.inventoryId, onChange])
+  const handleTemplateChange = useCallback(
+    (value: string) => {
+      if (value === 'none') {
+        onChange(index, {
+          _key: entry._key,
+          templateId: null,
+          inventoryId: entry.inventoryId,
+          path: '',
+          customVariables: {},
+        })
+      } else {
+        onChange(index, {
+          _key: entry._key,
+          templateId: parseInt(value),
+          inventoryId: entry.inventoryId,
+          path: '',
+          customVariables: {},
+        })
+      }
+    },
+    [index, entry._key, entry.inventoryId, onChange]
+  )
 
-  const handleInventoryChange = useCallback((value: string) => {
-    if (value === 'none') {
-      onChange(index, { ...entry, inventoryId: null })
-    } else {
-      onChange(index, { ...entry, inventoryId: parseInt(value) })
-    }
-  }, [index, entry, onChange])
+  const handleInventoryChange = useCallback(
+    (value: string) => {
+      if (value === 'none') {
+        onChange(index, { ...entry, inventoryId: null })
+      } else {
+        onChange(index, { ...entry, inventoryId: parseInt(value) })
+      }
+    },
+    [index, entry, onChange]
+  )
 
-  const handlePathChange = useCallback((value: string) => {
-    onChange(index, { ...entry, path: value })
-  }, [index, entry, onChange])
+  const handlePathChange = useCallback(
+    (value: string) => {
+      onChange(index, { ...entry, path: value })
+    },
+    [index, entry, onChange]
+  )
 
-  const handleVariableChange = useCallback((name: string, value: string) => {
-    onChange(index, {
-      ...entry,
-      customVariables: { ...entry.customVariables, [name]: value },
-    })
-  }, [index, entry, onChange])
+  const handleVariableChange = useCallback(
+    (name: string, value: string) => {
+      onChange(index, {
+        ...entry,
+        customVariables: { ...entry.customVariables, [name]: value },
+      })
+    },
+    [index, entry, onChange]
+  )
 
   return (
     <div className="rounded-lg border border-teal-200 bg-teal-50/20 p-4 space-y-3 relative">
@@ -181,11 +214,13 @@ export function DeployTemplateEntryComponent({
             disabled={loadingTemplates}
           >
             <SelectTrigger className="h-9 bg-white border-teal-200 focus:border-teal-400">
-              <SelectValue placeholder={loadingTemplates ? 'Loading...' : 'Select template...'} />
+              <SelectValue
+                placeholder={loadingTemplates ? 'Loading...' : 'Select template...'}
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">No template selected</SelectItem>
-              {templates.map((t) => (
+              {templates.map(t => (
                 <SelectItem key={t.id} value={t.id.toString()}>
                   {t.name} ({t.scope})
                 </SelectItem>
@@ -210,8 +245,10 @@ export function DeployTemplateEntryComponent({
                 <SelectValue placeholder="Select inventory..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No inventory (use template default)</SelectItem>
-                {savedInventories.map((inv) => (
+                <SelectItem value="none">
+                  No inventory (use template default)
+                </SelectItem>
+                {savedInventories.map(inv => (
                   <SelectItem key={inv.id} value={inv.id.toString()}>
                     <div className="flex items-center gap-2">
                       <span>{inv.name}</span>
@@ -240,12 +277,13 @@ export function DeployTemplateEntryComponent({
         </Label>
         <Input
           value={entry.path}
-          onChange={(e) => handlePathChange(e.target.value)}
+          onChange={e => handlePathChange(e.target.value)}
           placeholder="e.g., configs/telegraf.conf"
           className="h-9 bg-white border-teal-200 focus:border-teal-400"
         />
         <p className="text-xs text-teal-600">
-          File path relative to Git repo root. Defaults to template&apos;s file_path if not set.
+          File path relative to Git repo root. Defaults to template&apos;s file_path if
+          not set.
         </p>
       </div>
 
@@ -253,7 +291,9 @@ export function DeployTemplateEntryComponent({
       {loadingDetail && (
         <div className="flex items-center justify-center py-2">
           <Loader2 className="h-4 w-4 animate-spin text-teal-500" />
-          <span className="ml-2 text-xs text-gray-600">Loading template details...</span>
+          <span className="ml-2 text-xs text-gray-600">
+            Loading template details...
+          </span>
         </div>
       )}
 
@@ -270,7 +310,7 @@ export function DeployTemplateEntryComponent({
                 </div>
                 <Input
                   value={currentValue}
-                  onChange={(e) => handleVariableChange(name, e.target.value)}
+                  onChange={e => handleVariableChange(name, e.target.value)}
                   placeholder={`Override value for ${name}`}
                   className="h-8 text-sm bg-white border-teal-200 focus:border-teal-400"
                 />

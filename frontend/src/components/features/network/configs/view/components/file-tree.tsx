@@ -14,7 +14,12 @@ interface FileTreeProps {
   highlightedDirectories?: Set<string>
 }
 
-export function FileTree({ tree, selectedPath, onDirectorySelect, highlightedDirectories }: FileTreeProps) {
+export function FileTree({
+  tree,
+  selectedPath,
+  onDirectorySelect,
+  highlightedDirectories,
+}: FileTreeProps) {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set(['']))
 
   // Auto-expand highlighted directories when search is active
@@ -50,9 +55,12 @@ export function FileTree({ tree, selectedPath, onDirectorySelect, highlightedDir
     })
   }, [])
 
-  const handleDirectoryClick = useCallback((path: string) => {
-    onDirectorySelect(path)
-  }, [onDirectorySelect])
+  const handleDirectoryClick = useCallback(
+    (path: string) => {
+      onDirectorySelect(path)
+    },
+    [onDirectorySelect]
+  )
 
   if (!tree) {
     return (
@@ -128,7 +136,7 @@ const TreeNode = ({
             variant="ghost"
             size="sm"
             className="h-4 w-4 p-0 hover:bg-transparent"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation()
               handleToggle()
             }}
@@ -164,7 +172,7 @@ const TreeNode = ({
       {/* Children */}
       {hasChildren && isExpanded && (
         <div>
-          {node.children!.map((child) => (
+          {node.children!.map(child => (
             <TreeNode
               key={child.path}
               node={child}

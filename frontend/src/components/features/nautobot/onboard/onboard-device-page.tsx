@@ -13,7 +13,12 @@ import { HelpModal } from './steps/help-modal'
 import { ConfirmationModal } from './steps/confirmation-modal'
 import { FormSection } from './steps/form-section'
 import { ModalsHost } from './steps/modals-host'
-import type { StatusMessage, LocationItem, OnboardFormData, CSVLookupData } from './types'
+import type {
+  StatusMessage,
+  LocationItem,
+  OnboardFormData,
+  CSVLookupData,
+} from './types'
 import { useApi } from '@/hooks/use-api'
 
 interface TagItem {
@@ -63,7 +68,7 @@ export function OnboardDevicePage() {
     isLoading: isLoadingData,
     loadData,
     getDefaultFormValues,
-    getDefaultLocationDisplay
+    getDefaultLocationDisplay,
   } = useOnboardingData()
 
   // Form management
@@ -88,7 +93,7 @@ export function OnboardDevicePage() {
     isCheckingJob,
     checkJob,
     // startTracking - unused, using Celery task tracking instead
-    resetTracking
+    resetTracking,
   } = useJobTracking()
 
   // CSV upload
@@ -96,7 +101,8 @@ export function OnboardDevicePage() {
 
   // Local state
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null)
-  const [searchResults, setSearchResults] = useState<DeviceSearchResult[]>(EMPTY_SEARCH_RESULTS)
+  const [searchResults, setSearchResults] =
+    useState<DeviceSearchResult[]>(EMPTY_SEARCH_RESULTS)
   const [locationSearchValue, setLocationSearchValue] = useState('')
   const [deviceSearchQuery, setDeviceSearchQuery] = useState('')
 
@@ -110,7 +116,9 @@ export function OnboardDevicePage() {
   const [showCustomFieldsModal, setShowCustomFieldsModal] = useState(false)
   const [customFields, setCustomFields] = useState<CustomField[]>([])
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({})
-  const [customFieldChoices, setCustomFieldChoices] = useState<Record<string, string[]>>({})
+  const [customFieldChoices, setCustomFieldChoices] = useState<
+    Record<string, string[]>
+  >({})
   const [isLoadingCustomFields, setIsLoadingCustomFields] = useState(false)
 
   // Onboarding progress modal state
@@ -154,7 +162,13 @@ export function OnboardDevicePage() {
       const defaults = getDefaultFormValues(nautobotDefaults)
       updateFormData(defaults)
     }
-  }, [isLoadingData, nautobotDefaults, getDefaultLocationDisplay, getDefaultFormValues, updateFormData])
+  }, [
+    isLoadingData,
+    nautobotDefaults,
+    getDefaultLocationDisplay,
+    getDefaultFormValues,
+    updateFormData,
+  ])
 
   // Perform the actual onboarding submission
   const performOnboarding = async () => {
@@ -165,7 +179,8 @@ export function OnboardDevicePage() {
       const requestBody = {
         ...formData,
         tags: selectedTags.length > 0 ? selectedTags : undefined,
-        custom_fields: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined
+        custom_fields:
+          Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined,
       }
 
       // Submit to Celery task endpoint
@@ -175,7 +190,7 @@ export function OnboardDevicePage() {
         message: string
       }>('celery/tasks/onboard-device', {
         method: 'POST',
-        body: requestBody
+        body: requestBody,
       })
 
       if (response.task_id) {
@@ -184,19 +199,19 @@ export function OnboardDevicePage() {
         setShowProgressModal(true)
         setStatusMessage({
           type: 'success',
-          message: `✅ Onboarding task started successfully!`
+          message: `✅ Onboarding task started successfully!`,
         })
       } else {
         setStatusMessage({
           type: 'error',
-          message: '❌ Failed to start onboarding task: No task ID returned.'
+          message: '❌ Failed to start onboarding task: No task ID returned.',
         })
       }
     } catch (error) {
       console.error('Onboarding error:', error)
       setStatusMessage({
         type: 'error',
-        message: `❌ Failed to start onboarding: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `❌ Failed to start onboarding: ${error instanceof Error ? error.message : 'Unknown error'}`,
       })
     } finally {
       setIsSubmittingOnboard(false)
@@ -212,7 +227,10 @@ export function OnboardDevicePage() {
     // Validate form
     const validation = validateForm()
     if (!validation.isValid) {
-      setStatusMessage({ type: 'error', message: validation.message || 'Form validation failed' })
+      setStatusMessage({
+        type: 'error',
+        message: validation.message || 'Form validation failed',
+      })
       return
     }
 
@@ -240,7 +258,7 @@ export function OnboardDevicePage() {
     setShowConfirmationModal(false)
     setStatusMessage({
       type: 'info',
-      message: 'Onboarding cancelled.'
+      message: 'Onboarding cancelled.',
     })
     // Clear message after 3 seconds
     setTimeout(() => {
@@ -251,7 +269,10 @@ export function OnboardDevicePage() {
   // Handle device search
   const handleSearchDevice = async () => {
     if (!deviceSearchQuery.trim()) {
-      setStatusMessage({ type: 'error', message: 'Please enter a device name to search.' })
+      setStatusMessage({
+        type: 'error',
+        message: 'Please enter a device name to search.',
+      })
       return
     }
 
@@ -264,7 +285,7 @@ export function OnboardDevicePage() {
     } catch (error) {
       setStatusMessage({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Failed to search devices'
+        message: error instanceof Error ? error.message : 'Failed to search devices',
       })
     }
   }
@@ -276,7 +297,10 @@ export function OnboardDevicePage() {
   }
 
   // Wrapper for form field changes
-  const handleFormFieldChange = (field: keyof OnboardFormData, value: string | number) => {
+  const handleFormFieldChange = (
+    field: keyof OnboardFormData,
+    value: string | number
+  ) => {
     updateFormData({ [field]: value })
   }
 
@@ -289,19 +313,22 @@ export function OnboardDevicePage() {
     } catch (error) {
       setStatusMessage({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Failed to check IP address'
+        message: error instanceof Error ? error.message : 'Failed to check IP address',
       })
     }
   }
 
   // Handle sync option change
-  const handleSyncOptionChange = useCallback((option: string, checked: boolean) => {
-    updateFormData({
-      sync_options: checked
-        ? [...formData.sync_options, option]
-        : formData.sync_options.filter(o => o !== option)
-    })
-  }, [formData.sync_options, updateFormData])
+  const handleSyncOptionChange = useCallback(
+    (option: string, checked: boolean) => {
+      updateFormData({
+        sync_options: checked
+          ? [...formData.sync_options, option]
+          : formData.sync_options.filter(o => o !== option),
+      })
+    },
+    [formData.sync_options, updateFormData]
+  )
 
   // Toggle tag selection
   const handleToggleTag = useCallback((tagId: string) => {
@@ -317,7 +344,7 @@ export function OnboardDevicePage() {
   const handleUpdateCustomField = useCallback((key: string, value: string) => {
     setCustomFieldValues(prev => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }))
   }, [])
 
@@ -326,7 +353,9 @@ export function OnboardDevicePage() {
     if (availableTags.length === 0 && !isLoadingTags) {
       setIsLoadingTags(true)
       try {
-        const tagsData = await apiCall<TagItem[]>('nautobot/tags/devices', { method: 'GET' })
+        const tagsData = await apiCall<TagItem[]>('nautobot/tags/devices', {
+          method: 'GET',
+        })
         if (tagsData && Array.isArray(tagsData)) {
           setAvailableTags(tagsData)
         }
@@ -373,7 +402,7 @@ export function OnboardDevicePage() {
       secretGroups,
       availableTags: availableTags.map(tag => ({ id: tag.id, name: tag.name })),
       // Use form selections as defaults, fall back to backend settings
-      defaults: formDefaults
+      defaults: formDefaults,
     }
     return csvUpload.performBulkOnboarding(csvUpload.parsedData, lookupData)
   }, [
@@ -393,15 +422,18 @@ export function OnboardDevicePage() {
   ])
 
   // Handle network scan IPs selection
-  const handleNetworkScanIPsSelected = useCallback((ips: string[]) => {
-    // Add IPs to the existing IP address field as comma-separated
-    const currentIPs = formData.ip_address.trim()
-    const newIPs = ips.join(', ')
-    const combinedIPs = currentIPs ? `${currentIPs}, ${newIPs}` : newIPs
+  const handleNetworkScanIPsSelected = useCallback(
+    (ips: string[]) => {
+      // Add IPs to the existing IP address field as comma-separated
+      const currentIPs = formData.ip_address.trim()
+      const newIPs = ips.join(', ')
+      const combinedIPs = currentIPs ? `${currentIPs}, ${newIPs}` : newIPs
 
-    updateFormData({ ip_address: combinedIPs })
-    handleIPChange(combinedIPs)
-  }, [formData.ip_address, updateFormData, handleIPChange])
+      updateFormData({ ip_address: combinedIPs })
+      handleIPChange(combinedIPs)
+    },
+    [formData.ip_address, updateFormData, handleIPChange]
+  )
 
   return (
     <div className="space-y-6">

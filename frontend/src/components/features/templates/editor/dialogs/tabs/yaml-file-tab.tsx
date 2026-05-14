@@ -77,7 +77,9 @@ export function YamlFileTab({ onAdd, existingVariableNames }: YamlFileTabProps) 
       }
     }
     fetchRepos()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [apiCall])
 
   // Search files when repo changes or query changes
@@ -104,7 +106,10 @@ export function YamlFileTab({ onAdd, existingVariableNames }: YamlFileTabProps) 
       }
     }
     const timer = setTimeout(searchFiles, 300)
-    return () => { cancelled = true; clearTimeout(timer) }
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [apiCall, selectedRepoId, fileQuery])
 
   // Auto-suggest variable name from file path
@@ -116,11 +121,13 @@ export function YamlFileTab({ onAdd, existingVariableNames }: YamlFileTabProps) 
     }
   }, [selectedFilePath])
 
-  const nameError = variableName && existingVariableNames.includes(variableName)
-    ? 'A variable with this name already exists'
-    : ''
+  const nameError =
+    variableName && existingVariableNames.includes(variableName)
+      ? 'A variable with this name already exists'
+      : ''
 
-  const canFetch = selectedRepoId && selectedFilePath && variableName.trim() && !nameError
+  const canFetch =
+    selectedRepoId && selectedFilePath && variableName.trim() && !nameError
 
   const handleFetch = useCallback(async () => {
     if (!canFetch) return
@@ -138,7 +145,7 @@ export function YamlFileTab({ onAdd, existingVariableNames }: YamlFileTabProps) 
         type: 'yaml',
         metadata: {
           yaml_file_path: selectedFilePath,
-          yaml_file_id: parseInt(selectedRepoId),  // Store repo ID as file_id
+          yaml_file_id: parseInt(selectedRepoId), // Store repo ID as file_id
         },
       })
     } catch (error) {
@@ -155,10 +162,12 @@ export function YamlFileTab({ onAdd, existingVariableNames }: YamlFileTabProps) 
         <Label>Git Repository</Label>
         <Select value={selectedRepoId} onValueChange={setSelectedRepoId}>
           <SelectTrigger>
-            <SelectValue placeholder={loadingRepos ? 'Loading...' : 'Select a repository'} />
+            <SelectValue
+              placeholder={loadingRepos ? 'Loading...' : 'Select a repository'}
+            />
           </SelectTrigger>
           <SelectContent>
-            {repos.map((repo) => (
+            {repos.map(repo => (
               <SelectItem key={repo.id} value={String(repo.id)}>
                 {repo.name}
               </SelectItem>
@@ -173,7 +182,7 @@ export function YamlFileTab({ onAdd, existingVariableNames }: YamlFileTabProps) 
           <Input
             placeholder="Search for YAML files..."
             value={fileQuery}
-            onChange={(e) => setFileQuery(e.target.value)}
+            onChange={e => setFileQuery(e.target.value)}
           />
           {loadingFiles && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -187,7 +196,7 @@ export function YamlFileTab({ onAdd, existingVariableNames }: YamlFileTabProps) 
                 <SelectValue placeholder="Select a file" />
               </SelectTrigger>
               <SelectContent>
-                {files.map((file) => (
+                {files.map(file => (
                   <SelectItem key={file.path} value={file.path}>
                     {file.path}
                   </SelectItem>
@@ -207,12 +216,10 @@ export function YamlFileTab({ onAdd, existingVariableNames }: YamlFileTabProps) 
           <Input
             id="yaml-var-name"
             value={variableName}
-            onChange={(e) => setVariableName(e.target.value)}
+            onChange={e => setVariableName(e.target.value)}
             className={nameError ? 'border-red-300' : ''}
           />
-          {nameError && (
-            <p className="text-xs text-red-500">{nameError}</p>
-          )}
+          {nameError && <p className="text-xs text-red-500">{nameError}</p>}
         </div>
       )}
 

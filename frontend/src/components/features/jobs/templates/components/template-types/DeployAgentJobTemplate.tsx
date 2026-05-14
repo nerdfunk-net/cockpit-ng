@@ -4,7 +4,13 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Loader2, Rocket, Bot, RefreshCw, Plus } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { DeployTemplateEntryComponent } from './DeployTemplateEntry'
@@ -81,9 +87,18 @@ export function DeployAgentJobTemplate({
     [formDeployTemplateEntries]
   )
   useEffect(() => {
-    if (!Array.isArray(formDeployTemplateEntries) || formDeployTemplateEntries.length === 0) {
+    if (
+      !Array.isArray(formDeployTemplateEntries) ||
+      formDeployTemplateEntries.length === 0
+    ) {
       setFormDeployTemplateEntries([
-        { _key: generateEntryKey(), templateId: null, inventoryId: null, path: '', customVariables: {} },
+        {
+          _key: generateEntryKey(),
+          templateId: null,
+          inventoryId: null,
+          path: '',
+          customVariables: {},
+        },
       ])
     }
   }, [formDeployTemplateEntries, setFormDeployTemplateEntries])
@@ -100,7 +115,7 @@ export function DeployAgentJobTemplate({
     try {
       const response = await fetch('/api/proxy/api/templates?category=agent', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
@@ -122,14 +137,16 @@ export function DeployAgentJobTemplate({
     try {
       const response = await fetch('/api/proxy/settings/agents', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
       if (response.ok) {
         const data: AgentsResponse = await response.json()
         if (data.success && data.data?.agents) {
-          const configuredAgents = data.data.agents.filter(a => a.git_repository_id !== null)
+          const configuredAgents = data.data.agents.filter(
+            a => a.git_repository_id !== null
+          )
           setAgents(configuredAgents)
         }
       }
@@ -145,21 +162,33 @@ export function DeployAgentJobTemplate({
     fetchAgents()
   }, [fetchTemplates, fetchAgents])
 
-  const handleEntryChange = useCallback((index: number, entry: DeployTemplateEntryData) => {
-    const newEntries = [...entries]
-    newEntries[index] = entry
-    setFormDeployTemplateEntries(newEntries)
-  }, [entries, setFormDeployTemplateEntries])
+  const handleEntryChange = useCallback(
+    (index: number, entry: DeployTemplateEntryData) => {
+      const newEntries = [...entries]
+      newEntries[index] = entry
+      setFormDeployTemplateEntries(newEntries)
+    },
+    [entries, setFormDeployTemplateEntries]
+  )
 
-  const handleEntryRemove = useCallback((index: number) => {
-    const newEntries = entries.filter((_, i) => i !== index)
-    setFormDeployTemplateEntries(newEntries)
-  }, [entries, setFormDeployTemplateEntries])
+  const handleEntryRemove = useCallback(
+    (index: number) => {
+      const newEntries = entries.filter((_, i) => i !== index)
+      setFormDeployTemplateEntries(newEntries)
+    },
+    [entries, setFormDeployTemplateEntries]
+  )
 
   const handleAddEntry = useCallback(() => {
     setFormDeployTemplateEntries([
       ...entries,
-      { _key: generateEntryKey(), templateId: null, inventoryId: null, path: '', customVariables: {} },
+      {
+        _key: generateEntryKey(),
+        templateId: null,
+        inventoryId: null,
+        path: '',
+        customVariables: {},
+      },
     ])
   }, [entries, setFormDeployTemplateEntries])
 
@@ -178,24 +207,24 @@ export function DeployAgentJobTemplate({
           </Label>
           <Select
             value={formDeployAgentId || 'none'}
-            onValueChange={(value) => setFormDeployAgentId(value === 'none' ? '' : value)}
+            onValueChange={value => setFormDeployAgentId(value === 'none' ? '' : value)}
             disabled={loadingAgents}
           >
             <SelectTrigger className="bg-white border-teal-200 focus:border-teal-400 focus:ring-teal-400">
-              <SelectValue placeholder={loadingAgents ? 'Loading...' : 'Select an agent...'} />
+              <SelectValue
+                placeholder={loadingAgents ? 'Loading...' : 'Select an agent...'}
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">No agent selected</SelectItem>
-              {agents.map((a) => (
-                <SelectItem
-                  key={a.id}
-                  value={a.agent_id || ''}
-                  disabled={!a.agent_id}
-                >
+              {agents.map(a => (
+                <SelectItem key={a.id} value={a.agent_id || ''} disabled={!a.agent_id}>
                   <div className="flex items-center gap-2">
                     <Bot className="h-3 w-3" />
                     {a.name}
-                    {!a.agent_id && <span className="text-xs text-red-500">(no agent_id)</span>}
+                    {!a.agent_id && (
+                      <span className="text-xs text-red-500">(no agent_id)</span>
+                    )}
                   </div>
                 </SelectItem>
               ))}
@@ -212,7 +241,9 @@ export function DeployAgentJobTemplate({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Label className="text-sm font-semibold text-teal-900">Templates</Label>
-            {loadingTemplates && <Loader2 className="h-3 w-3 animate-spin text-teal-500" />}
+            {loadingTemplates && (
+              <Loader2 className="h-3 w-3 animate-spin text-teal-500" />
+            )}
           </div>
           <Button
             type="button"
@@ -246,7 +277,9 @@ export function DeployAgentJobTemplate({
       <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-4 space-y-3">
         <div className="flex items-center gap-2">
           <RefreshCw className="h-4 w-4 text-teal-600" />
-          <Label className="text-sm font-semibold text-teal-900">Agent Activation</Label>
+          <Label className="text-sm font-semibold text-teal-900">
+            Agent Activation
+          </Label>
         </div>
         <div className="flex items-center space-x-3">
           <Switch
@@ -254,12 +287,16 @@ export function DeployAgentJobTemplate({
             checked={formActivateAfterDeploy}
             onCheckedChange={setFormActivateAfterDeploy}
           />
-          <Label htmlFor="activate-after-deploy" className="text-sm text-teal-900 cursor-pointer">
+          <Label
+            htmlFor="activate-after-deploy"
+            className="text-sm text-teal-900 cursor-pointer"
+          >
             Activate (pull and restart) after deploying the agent
           </Label>
         </div>
         <p className="text-xs text-teal-700">
-          When enabled, the agent will automatically pull the latest changes from Git and restart after deployment completes.
+          When enabled, the agent will automatically pull the latest changes from Git
+          and restart after deployment completes.
         </p>
       </div>
     </>

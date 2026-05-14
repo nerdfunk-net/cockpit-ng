@@ -66,29 +66,37 @@ export function AgentsDeployPage() {
   }, [templateManager.selectedTemplate])
 
   // Check if execution is allowed
-  const canExecute = useMemo(() =>
-    selectedDeviceIds.length > 0 &&
-    templateManager.selectedTemplateId !== 'none' &&
-    agentSelector.selectedAgentId !== null,
-    [selectedDeviceIds.length, templateManager.selectedTemplateId, agentSelector.selectedAgentId]
+  const canExecute = useMemo(
+    () =>
+      selectedDeviceIds.length > 0 &&
+      templateManager.selectedTemplateId !== 'none' &&
+      agentSelector.selectedAgentId !== null,
+    [
+      selectedDeviceIds.length,
+      templateManager.selectedTemplateId,
+      agentSelector.selectedAgentId,
+    ]
   )
 
   // Build config for API calls
-  const buildDeployConfig = useCallback((): DeployConfig => ({
-    deviceIds: selectedDeviceIds,
-    templateId: Number(templateManager.selectedTemplateId),
-    variables: variableManager.variableOverrides,
-    agentId: agentSelector.selectedAgentId!,
-    path: deployPath || undefined,
-    inventoryId: selectedInventoryId || undefined
-  }), [
-    selectedDeviceIds,
-    templateManager.selectedTemplateId,
-    variableManager.variableOverrides,
-    agentSelector.selectedAgentId,
-    deployPath,
-    selectedInventoryId
-  ])
+  const buildDeployConfig = useCallback(
+    (): DeployConfig => ({
+      deviceIds: selectedDeviceIds,
+      templateId: Number(templateManager.selectedTemplateId),
+      variables: variableManager.variableOverrides,
+      agentId: agentSelector.selectedAgentId!,
+      path: deployPath || undefined,
+      inventoryId: selectedInventoryId || undefined,
+    }),
+    [
+      selectedDeviceIds,
+      templateManager.selectedTemplateId,
+      variableManager.variableOverrides,
+      agentSelector.selectedAgentId,
+      deployPath,
+      selectedInventoryId,
+    ]
+  )
 
   // Action handlers
   const handleDryRun = useCallback(async () => {
@@ -98,7 +106,7 @@ export function AgentsDeployPage() {
         setErrorDetails({
           title: 'Dry Run Failed',
           message: 'No template selected',
-          details: ['Please select a template before running dry run']
+          details: ['Please select a template before running dry run'],
         })
         setShowErrorDialog(true)
         return
@@ -115,7 +123,7 @@ export function AgentsDeployPage() {
       setErrorDetails({
         title: 'Dry Run Failed',
         message: 'Failed to render template',
-        details: [(error as Error).message]
+        details: [(error as Error).message],
       })
       setShowErrorDialog(true)
     }
@@ -127,13 +135,13 @@ export function AgentsDeployPage() {
       const response = await deployExecution.executeDeployToGit(config)
       toast({
         title: 'Success',
-        description: response?.message || 'Configuration deployed to git repository'
+        description: response?.message || 'Configuration deployed to git repository',
       })
     } catch (error) {
       setErrorDetails({
         title: 'Deploy Failed',
         message: 'Failed to deploy configuration to git',
-        details: [(error as Error).message]
+        details: [(error as Error).message],
       })
       setShowErrorDialog(true)
     }
@@ -145,23 +153,26 @@ export function AgentsDeployPage() {
       const response = await deployExecution.executeActivate(config)
       toast({
         title: 'Success',
-        description: response?.message || 'Container restarted successfully'
+        description: response?.message || 'Container restarted successfully',
       })
     } catch (error) {
       setErrorDetails({
         title: 'Activation Failed',
         message: 'Failed to restart docker container',
-        details: [(error as Error).message]
+        details: [(error as Error).message],
       })
       setShowErrorDialog(true)
     }
   }, [buildDeployConfig, deployExecution, toast])
 
-  const handleDevicesSelected = useCallback((devices: DeviceInfo[]) => {
-    setSelectedDeviceIds(devices.map(d => d.id))
-    setSelectedDevices(devices)
-    deployExecution.resetResults()
-  }, [deployExecution])
+  const handleDevicesSelected = useCallback(
+    (devices: DeviceInfo[]) => {
+      setSelectedDeviceIds(devices.map(d => d.id))
+      setSelectedDevices(devices)
+      deployExecution.resetResults()
+    },
+    [deployExecution]
+  )
 
   const handleInventoryLoaded = useCallback((inventoryId: number) => {
     setSelectedInventoryId(inventoryId)
@@ -177,61 +188,63 @@ export function AgentsDeployPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Agents Deploy</h1>
-            <p className="text-muted-foreground mt-2">Deploy Telegraf/InfluxDB/Grafana configurations to devices</p>
+            <p className="text-muted-foreground mt-2">
+              Deploy Telegraf/InfluxDB/Grafana configurations to devices
+            </p>
           </div>
         </div>
       </div>
 
       {/* Main Tabs */}
       <Tabs defaultValue="devices" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="devices">Devices</TabsTrigger>
-              <TabsTrigger value="variables">Variables & Templates</TabsTrigger>
-              <TabsTrigger value="deploy">Deploy</TabsTrigger>
-            </TabsList>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="devices">Devices</TabsTrigger>
+          <TabsTrigger value="variables">Variables & Templates</TabsTrigger>
+          <TabsTrigger value="deploy">Deploy</TabsTrigger>
+        </TabsList>
 
-            <TabsContent value="devices">
-              <DeviceSelectionTab
-                selectedDeviceIds={selectedDeviceIds}
-                selectedDevices={selectedDevices}
-                onDevicesSelected={handleDevicesSelected}
-                onInventoryLoaded={handleInventoryLoaded}
-              />
-            </TabsContent>
+        <TabsContent value="devices">
+          <DeviceSelectionTab
+            selectedDeviceIds={selectedDeviceIds}
+            selectedDevices={selectedDevices}
+            onDevicesSelected={handleDevicesSelected}
+            onInventoryLoaded={handleInventoryLoaded}
+          />
+        </TabsContent>
 
-            <TabsContent value="variables">
-              <VariablesAndTemplatesTab
-                templates={templateManager.templates}
-                selectedTemplateId={templateManager.selectedTemplateId}
-                selectedTemplate={templateManager.selectedTemplate}
-                isLoadingTemplate={templateManager.isLoadingTemplate}
-                onTemplateChange={templateManager.handleTemplateChange}
-                editedTemplateContent={templateManager.editedTemplateContent}
-                onTemplateContentChange={templateManager.setEditedTemplateContent}
-                variableOverrides={variableManager.variableOverrides}
-                onVariableOverrideChange={variableManager.updateVariableOverride}
-              />
-            </TabsContent>
+        <TabsContent value="variables">
+          <VariablesAndTemplatesTab
+            templates={templateManager.templates}
+            selectedTemplateId={templateManager.selectedTemplateId}
+            selectedTemplate={templateManager.selectedTemplate}
+            isLoadingTemplate={templateManager.isLoadingTemplate}
+            onTemplateChange={templateManager.handleTemplateChange}
+            editedTemplateContent={templateManager.editedTemplateContent}
+            onTemplateContentChange={templateManager.setEditedTemplateContent}
+            variableOverrides={variableManager.variableOverrides}
+            onVariableOverrideChange={variableManager.updateVariableOverride}
+          />
+        </TabsContent>
 
-            <TabsContent value="deploy">
-              <DeployTab
-                agents={agentSelector.agents}
-                selectedAgentId={agentSelector.selectedAgentId}
-                onAgentChange={agentSelector.setSelectedAgentId}
-                isAgentsLoading={agentSelector.loading}
-                deployPath={deployPath}
-                onDeployPathChange={setDeployPath}
-                canExecute={canExecute}
-                isDryRunning={deployExecution.isDryRunning}
-                isDeploying={deployExecution.isDeploying}
-                isActivating={deployExecution.isActivating}
-                onDryRun={handleDryRun}
-                onDeployToGit={handleDeployToGit}
-                onActivate={handleActivate}
-                selectedInventoryId={selectedInventoryId}
-              />
-            </TabsContent>
-          </Tabs>
+        <TabsContent value="deploy">
+          <DeployTab
+            agents={agentSelector.agents}
+            selectedAgentId={agentSelector.selectedAgentId}
+            onAgentChange={agentSelector.setSelectedAgentId}
+            isAgentsLoading={agentSelector.loading}
+            deployPath={deployPath}
+            onDeployPathChange={setDeployPath}
+            canExecute={canExecute}
+            isDryRunning={deployExecution.isDryRunning}
+            isDeploying={deployExecution.isDeploying}
+            isActivating={deployExecution.isActivating}
+            onDryRun={handleDryRun}
+            onDeployToGit={handleDeployToGit}
+            onActivate={handleActivate}
+            selectedInventoryId={selectedInventoryId}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Dialogs */}
       <DryRunResultDialog

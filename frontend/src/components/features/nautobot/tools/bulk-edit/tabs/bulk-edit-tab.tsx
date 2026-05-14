@@ -33,9 +33,21 @@ export interface ColumnDefinition {
 const DEFAULT_COLUMNS: ColumnDefinition[] = [
   { id: 'name', label: 'Name', field: 'name', editable: true, width: '200px' },
   { id: 'status', label: 'Status', field: 'status', editable: true, width: '150px' },
-  { id: 'device_type', label: 'Device Type', field: 'device_type', editable: true, width: '200px' },
+  {
+    id: 'device_type',
+    label: 'Device Type',
+    field: 'device_type',
+    editable: true,
+    width: '200px',
+  },
   { id: 'serial', label: 'Serial', field: 'serial', editable: true, width: '150px' },
-  { id: 'primary_ip4', label: 'Primary IPv4', field: 'primary_ip4', editable: true, width: '150px' },
+  {
+    id: 'primary_ip4',
+    label: 'Primary IPv4',
+    field: 'primary_ip4',
+    editable: true,
+    width: '150px',
+  },
 ]
 
 export function BulkEditTab({
@@ -49,7 +61,8 @@ export function BulkEditTab({
   onReloadData,
   isReloadingData = false,
 }: BulkEditTabProps) {
-  const [visibleColumns, setVisibleColumns] = useState<ColumnDefinition[]>(DEFAULT_COLUMNS)
+  const [visibleColumns, setVisibleColumns] =
+    useState<ColumnDefinition[]>(DEFAULT_COLUMNS)
   const [availableColumns, setAvailableColumns] = useState<ColumnDefinition[]>([])
   const [isLoadingColumns, setIsLoadingColumns] = useState(false)
 
@@ -60,14 +73,56 @@ export function BulkEditTab({
       // For now, use predefined columns
       const columns: ColumnDefinition[] = [
         { id: 'name', label: 'Name', field: 'name', editable: true, width: '200px' },
-        { id: 'status', label: 'Status', field: 'status', editable: true, width: '150px' },
-        { id: 'serial', label: 'Serial', field: 'serial', editable: true, width: '150px' },
-        { id: 'primary_ip4', label: 'Primary IPv4', field: 'primary_ip4', editable: true, width: '150px' },
-        { id: 'location', label: 'Location', field: 'location', editable: true, width: '250px' },
+        {
+          id: 'status',
+          label: 'Status',
+          field: 'status',
+          editable: true,
+          width: '150px',
+        },
+        {
+          id: 'serial',
+          label: 'Serial',
+          field: 'serial',
+          editable: true,
+          width: '150px',
+        },
+        {
+          id: 'primary_ip4',
+          label: 'Primary IPv4',
+          field: 'primary_ip4',
+          editable: true,
+          width: '150px',
+        },
+        {
+          id: 'location',
+          label: 'Location',
+          field: 'location',
+          editable: true,
+          width: '250px',
+        },
         { id: 'role', label: 'Role', field: 'role', editable: true, width: '150px' },
-        { id: 'device_type', label: 'Device Type', field: 'device_type', editable: true, width: '200px' },
-        { id: 'manufacturer', label: 'Manufacturer', field: 'manufacturer', editable: false, width: '150px' },
-        { id: 'platform', label: 'Platform', field: 'platform', editable: true, width: '150px' },
+        {
+          id: 'device_type',
+          label: 'Device Type',
+          field: 'device_type',
+          editable: true,
+          width: '200px',
+        },
+        {
+          id: 'manufacturer',
+          label: 'Manufacturer',
+          field: 'manufacturer',
+          editable: false,
+          width: '150px',
+        },
+        {
+          id: 'platform',
+          label: 'Platform',
+          field: 'platform',
+          editable: true,
+          width: '150px',
+        },
         { id: 'tags', label: 'Tags', field: 'tags', editable: true, width: '200px' },
       ]
       setAvailableColumns(columns)
@@ -83,12 +138,15 @@ export function BulkEditTab({
     loadAvailableColumns()
   }, [loadAvailableColumns])
 
-  const handleAddColumn = useCallback((columnId: string) => {
-    const column = availableColumns.find(c => c.id === columnId)
-    if (column && !visibleColumns.find(c => c.id === columnId)) {
-      setVisibleColumns(prev => [...prev, column])
-    }
-  }, [availableColumns, visibleColumns])
+  const handleAddColumn = useCallback(
+    (columnId: string) => {
+      const column = availableColumns.find(c => c.id === columnId)
+      if (column && !visibleColumns.find(c => c.id === columnId)) {
+        setVisibleColumns(prev => [...prev, column])
+      }
+    },
+    [availableColumns, visibleColumns]
+  )
 
   const handleRemoveColumn = useCallback((columnId: string) => {
     setVisibleColumns(prev => prev.filter(c => c.id !== columnId))
@@ -127,7 +185,9 @@ export function BulkEditTab({
                   size="sm"
                   className="bg-white/10 hover:bg-white/20 border-white/30 text-white"
                 >
-                  <RotateCcw className={`h-4 w-4 mr-2 ${isReloadingData ? 'animate-spin' : ''}`} />
+                  <RotateCcw
+                    className={`h-4 w-4 mr-2 ${isReloadingData ? 'animate-spin' : ''}`}
+                  />
                   {isReloadingData ? 'Reloading...' : 'Reload Data'}
                 </Button>
               )}
@@ -145,7 +205,8 @@ export function BulkEditTab({
           {/* Device count and modified count */}
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div>
-              Showing <strong>{selectedDevices.length}</strong> device{selectedDevices.length !== 1 ? 's' : ''}
+              Showing <strong>{selectedDevices.length}</strong> device
+              {selectedDevices.length !== 1 ? 's' : ''}
             </div>
             {modifiedCount > 0 && (
               <div className="text-red-600 font-medium">
@@ -184,11 +245,7 @@ export function BulkEditTab({
                 Preview Changes
               </Button>
             )}
-            <Button
-              onClick={onSaveDevices}
-              disabled={modifiedCount === 0}
-              size="lg"
-            >
+            <Button onClick={onSaveDevices} disabled={modifiedCount === 0} size="lg">
               <Save className="h-4 w-4 mr-2" />
               Save Devices
               {modifiedCount > 0 && ` (${modifiedCount})`}

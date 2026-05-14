@@ -9,7 +9,7 @@ import type { GitRepository } from '../types'
 
 interface UseRepositoryFormOptions {
   defaultValues?: Partial<RepositoryFormValues>
-  repository?: GitRepository  // For edit mode
+  repository?: GitRepository // For edit mode
 }
 
 const DEFAULT_OPTIONS: UseRepositoryFormOptions = {}
@@ -27,7 +27,8 @@ export function useRepositoryForm(
         category: repository.category as RepositoryFormValues['category'],
         url: repository.url,
         branch: repository.branch,
-        auth_type: (repository.auth_type || 'none') as RepositoryFormValues['auth_type'],
+        auth_type: (repository.auth_type ||
+          'none') as RepositoryFormValues['auth_type'],
         credential_name: repository.credential_name || '__none__',
         path: repository.path || '',
         verify_ssl: repository.verify_ssl,

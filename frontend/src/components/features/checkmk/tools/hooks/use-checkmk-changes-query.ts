@@ -138,7 +138,10 @@ export function useCheckmkPendingChangesQuery() {
  * const { data, isLoading } = useCheckmkActivationStatusQuery(activationId, { enabled: !!activationId })
  * ```
  */
-export function useCheckmkActivationStatusQuery(activationId: string | null, options?: { enabled?: boolean }) {
+export function useCheckmkActivationStatusQuery(
+  activationId: string | null,
+  options?: { enabled?: boolean }
+) {
   const { apiCall } = useApi()
 
   return useQuery({
@@ -150,7 +153,7 @@ export function useCheckmkActivationStatusQuery(activationId: string | null, opt
     },
 
     enabled: options?.enabled ?? !!activationId,
-    refetchInterval: (query) => {
+    refetchInterval: query => {
       // Poll every 2 seconds while activation is running
       const isRunning = query.state.data?.data?.extensions?.is_running
       return isRunning ? 2000 : false
@@ -175,7 +178,9 @@ export function useCheckmkActivationStatusQuery(activationId: string | null, opt
  * activateChangesWithEtag.mutate({ etag: '...' })
  * ```
  */
-export function useCheckmkChangesMutations(onActivationStart?: (activationId: string) => void) {
+export function useCheckmkChangesMutations(
+  onActivationStart?: (activationId: string) => void
+) {
   const { apiCall } = useApi()
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -187,7 +192,7 @@ export function useCheckmkChangesMutations(onActivationStart?: (activationId: st
         body: JSON.stringify({}),
       })
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Invalidate pending changes to refresh the list
       queryClient.invalidateQueries({ queryKey: queryKeys.checkmk.pendingChanges() })
 
@@ -211,13 +216,17 @@ export function useCheckmkChangesMutations(onActivationStart?: (activationId: st
   })
 
   const activateChangesWithEtag = useMutation({
-    mutationFn: async ({ etag }: { etag: string }): Promise<ActivateChangesResponse> => {
+    mutationFn: async ({
+      etag,
+    }: {
+      etag: string
+    }): Promise<ActivateChangesResponse> => {
       return apiCall(`checkmk/changes/activate/${etag}`, {
         method: 'POST',
         body: JSON.stringify({}),
       })
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Invalidate pending changes to refresh the list
       queryClient.invalidateQueries({ queryKey: queryKeys.checkmk.pendingChanges() })
 
@@ -246,4 +255,9 @@ export function useCheckmkChangesMutations(onActivationStart?: (activationId: st
   }
 }
 
-export type { PendingChange, PendingChangesResponse, ActivateChangesResponse, ActivationStatusResponse }
+export type {
+  PendingChange,
+  PendingChangesResponse,
+  ActivateChangesResponse,
+  ActivationStatusResponse,
+}

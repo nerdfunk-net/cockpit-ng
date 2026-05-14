@@ -35,6 +35,8 @@ export function buildLocationHierarchy(locations: LocationItem[]): LocationItem[
     return copy
   })
 
-  processed.sort((a, b) => (a.hierarchicalPath || '').localeCompare(b.hierarchicalPath || ''))
+  processed.sort((a, b) =>
+    (a.hierarchicalPath || '').localeCompare(b.hierarchicalPath || '')
+  )
   return processed
 }

@@ -39,7 +39,14 @@ export interface CeleryTaskResponse {
 
 export interface CeleryTaskStatus {
   task_id: string
-  status: 'PENDING' | 'STARTED' | 'PROGRESS' | 'SUCCESS' | 'FAILURE' | 'RETRY' | 'REVOKED'
+  status:
+    | 'PENDING'
+    | 'STARTED'
+    | 'PROGRESS'
+    | 'SUCCESS'
+    | 'FAILURE'
+    | 'RETRY'
+    | 'REVOKED'
   result?: {
     success: boolean
     message: string

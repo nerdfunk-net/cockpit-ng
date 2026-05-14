@@ -47,7 +47,8 @@ export function useComplianceSettings() {
   const [selectedRegexIds, setSelectedRegexIds] = useState<number[]>([])
 
   // Loaded data
-  const [loginCredentials, setLoginCredentials] = useState<LoginCredential[]>(EMPTY_ARRAY)
+  const [loginCredentials, setLoginCredentials] =
+    useState<LoginCredential[]>(EMPTY_ARRAY)
   const [snmpMappings, setSnmpMappings] = useState<SNMPMapping[]>(EMPTY_ARRAY)
   const [regexPatterns, setRegexPatterns] = useState<RegexPattern[]>(EMPTY_ARRAY)
 
@@ -59,9 +60,15 @@ export function useComplianceSettings() {
     try {
       // Load all settings in parallel
       const [loginResponse, snmpResponse, regexResponse] = await Promise.all([
-        apiCall('settings/compliance/login-credentials') as Promise<ApiResponse<LoginCredential[]>>,
-        apiCall('settings/compliance/snmp-mappings') as Promise<ApiResponse<SNMPMapping[]>>,
-        apiCall('settings/compliance/regex-patterns') as Promise<ApiResponse<RegexPattern[]>>,
+        apiCall('settings/compliance/login-credentials') as Promise<
+          ApiResponse<LoginCredential[]>
+        >,
+        apiCall('settings/compliance/snmp-mappings') as Promise<
+          ApiResponse<SNMPMapping[]>
+        >,
+        apiCall('settings/compliance/regex-patterns') as Promise<
+          ApiResponse<RegexPattern[]>
+        >,
       ])
 
       if (loginResponse?.success && loginResponse?.data) {

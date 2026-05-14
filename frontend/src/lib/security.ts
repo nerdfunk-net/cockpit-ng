@@ -42,7 +42,10 @@ export function stripHtml(input: string): string {
  * @param allowedDomains - Optional array of allowed domains
  * @returns True if the URL is safe
  */
-export function isSafeUrl(url: string, allowedDomains: string[] = EMPTY_DOMAINS): boolean {
+export function isSafeUrl(
+  url: string,
+  allowedDomains: string[] = EMPTY_DOMAINS
+): boolean {
   try {
     const parsed = new URL(url, window.location.origin)
 

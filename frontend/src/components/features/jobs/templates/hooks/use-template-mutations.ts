@@ -6,7 +6,10 @@ import type { JobTemplate } from '../types'
 import { useMemo } from 'react'
 
 // Type for creating/updating job templates (excludes auto-generated fields)
-type JobTemplatePayload = Omit<JobTemplate, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'created_by'>
+type JobTemplatePayload = Omit<
+  JobTemplate,
+  'id' | 'created_at' | 'updated_at' | 'user_id' | 'created_by'
+>
 
 export function useTemplateMutations() {
   const { apiCall } = useApi()
@@ -18,10 +21,10 @@ export function useTemplateMutations() {
     mutationFn: async (data: JobTemplatePayload) => {
       return apiCall<JobTemplate>('/api/job-templates', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.templates() })
       toast({
         title: 'Template Created',
@@ -32,20 +35,26 @@ export function useTemplateMutations() {
       toast({
         title: 'Creation Failed',
         description: error.message || 'Failed to create template.',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Update template
   const updateTemplate = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<JobTemplatePayload> }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number
+      data: Partial<JobTemplatePayload>
+    }) => {
       return apiCall<JobTemplate>(`/api/job-templates/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.templates() })
       toast({
         title: 'Template Updated',
@@ -56,16 +65,16 @@ export function useTemplateMutations() {
       toast({
         title: 'Update Failed',
         description: error.message || 'Failed to update template.',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Delete template
   const deleteTemplate = useMutation({
     mutationFn: async (id: number) => {
       return apiCall(`/api/job-templates/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
     },
     onSuccess: () => {
@@ -79,9 +88,9 @@ export function useTemplateMutations() {
       toast({
         title: 'Delete Failed',
         description: error.message || 'Failed to delete template.',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Copy template
@@ -108,17 +117,18 @@ export function useTemplateMutations() {
         scan_interval_ms: template.scan_interval_ms,
         scan_custom_field_name: template.scan_custom_field_name || undefined,
         scan_custom_field_value: template.scan_custom_field_value || undefined,
-        scan_response_custom_field_name: template.scan_response_custom_field_name || undefined,
+        scan_response_custom_field_name:
+          template.scan_response_custom_field_name || undefined,
         scan_max_ips: template.scan_max_ips,
-        is_global: template.is_global
+        is_global: template.is_global,
       }
 
       return apiCall<JobTemplate>('/api/job-templates', {
         method: 'POST',
-        body: JSON.stringify(copyPayload)
+        body: JSON.stringify(copyPayload),
       })
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.templates() })
       toast({
         title: 'Template Copied',
@@ -129,16 +139,19 @@ export function useTemplateMutations() {
       toast({
         title: 'Copy Failed',
         description: error.message || 'Failed to copy template.',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Memoize return object to prevent re-renders
-  return useMemo(() => ({
-    createTemplate,
-    updateTemplate,
-    deleteTemplate,
-    copyTemplate,
-  }), [createTemplate, updateTemplate, deleteTemplate, copyTemplate])
+  return useMemo(
+    () => ({
+      createTemplate,
+      updateTemplate,
+      deleteTemplate,
+      copyTemplate,
+    }),
+    [createTemplate, updateTemplate, deleteTemplate, copyTemplate]
+  )
 }

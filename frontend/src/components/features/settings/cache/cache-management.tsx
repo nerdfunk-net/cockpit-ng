@@ -2,7 +2,15 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Zap, BarChart3, Database, Clock, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  Zap,
+  BarChart3,
+  Database,
+  Clock,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react'
 import { CacheSettingsForm } from './components/cache-settings-form'
 import { CacheQuickStats } from './components/cache-quick-stats'
 import { CacheStatsPanel } from './components/cache-stats-panel'
@@ -21,7 +29,8 @@ export default function CacheManagement() {
   const handleClearAll = () => {
     openConfirm({
       title: 'Clear All Cache',
-      description: 'Are you sure you want to clear the entire cache? This will remove all cached data.',
+      description:
+        'Are you sure you want to clear the entire cache? This will remove all cached data.',
       variant: 'destructive',
       onConfirm: () => clearCache.mutate(undefined),
     })
@@ -56,7 +65,11 @@ export default function CacheManagement() {
             >
               <BarChart3 className="h-4 w-4" />
               {showStats ? 'Hide' : 'Show'} Stats
-              {showStats ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {showStats ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </Button>
 
             <Button
@@ -66,7 +79,11 @@ export default function CacheManagement() {
             >
               <Database className="h-4 w-4" />
               {showEntries ? 'Hide' : 'Show'} Entries
-              {showEntries ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {showEntries ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </Button>
 
             <Button
@@ -91,13 +108,9 @@ export default function CacheManagement() {
           </div>
 
           {/* Conditional Panels */}
-          {showStats && (
-            <CacheStatsPanel />
-          )}
+          {showStats && <CacheStatsPanel />}
 
-          {showEntries && (
-            <CacheEntriesList />
-          )}
+          {showEntries && <CacheEntriesList />}
         </div>
 
         {/* Quick Stats Sidebar */}

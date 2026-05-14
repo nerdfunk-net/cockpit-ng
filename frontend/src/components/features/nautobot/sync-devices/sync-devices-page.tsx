@@ -37,20 +37,28 @@ export function SyncDevicesPage() {
   const searchParams = useSearchParams()
 
   // TanStack Query hooks
-  const { data: devices = EMPTY_DEVICES, isLoading: devicesLoading, isFetching } = useDevicesQuery()
+  const {
+    data: devices = EMPTY_DEVICES,
+    isLoading: devicesLoading,
+    isFetching,
+  } = useDevicesQuery()
   const { data: namespaces = EMPTY_DROPDOWN_OPTIONS } = useNamespacesQuery()
   const { data: locations = EMPTY_LOCATIONS } = useLocationsQuery()
   const { data: defaults } = useNautobotDefaultsQuery()
   const { data: prefixStatuses = EMPTY_DROPDOWN_OPTIONS } = usePrefixStatusesQuery()
-  const { data: interfaceStatuses = EMPTY_DROPDOWN_OPTIONS } = useInterfaceStatusesQuery()
-  const { data: ipAddressStatuses = EMPTY_DROPDOWN_OPTIONS } = useIPAddressStatusesQuery()
+  const { data: interfaceStatuses = EMPTY_DROPDOWN_OPTIONS } =
+    useInterfaceStatusesQuery()
+  const { data: ipAddressStatuses = EMPTY_DROPDOWN_OPTIONS } =
+    useIPAddressStatusesQuery()
 
   const { reloadDevices } = useReloadDevices()
   const syncMutation = useSyncDevicesMutation()
 
   // Local state
   const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set())
-  const [syncProperties, setSyncProperties] = useState<SyncProperties>(INITIAL_SYNC_PROPERTIES)
+  const [syncProperties, setSyncProperties] = useState<SyncProperties>(
+    INITIAL_SYNC_PROPERTIES
+  )
   const [isReloading, setIsReloading] = useState(false)
 
   // Filter hook
@@ -84,7 +92,7 @@ export function SyncDevicesPage() {
   // Apply defaults when loaded
   useEffect(() => {
     if (defaults) {
-      setSyncProperties((prev) => ({
+      setSyncProperties(prev => ({
         ...prev,
         namespace: prev.namespace || defaults.namespace,
         prefix_status: prev.prefix_status || defaults.ip_prefix_status,
@@ -138,7 +146,9 @@ export function SyncDevicesPage() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Sync Devices</h1>
-          <p className="text-muted-foreground mt-2">Synchronize device data with Nautobot</p>
+          <p className="text-muted-foreground mt-2">
+            Synchronize device data with Nautobot
+          </p>
         </div>
       </div>
 

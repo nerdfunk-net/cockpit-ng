@@ -9,7 +9,11 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, FileText, ChevronDown, ChevronRight } from 'lucide-react'
-import { LogicalCondition, ConditionTree, ConditionItem } from '@/types/shared/device-selector'
+import {
+  LogicalCondition,
+  ConditionTree,
+  ConditionItem,
+} from '@/types/shared/device-selector'
 import { GroupTreePanel } from './group-tree-panel'
 import { generateConditionTreeAscii } from './group-utils'
 
@@ -42,12 +46,14 @@ function parseInventoryTree(
   // Legacy flat format → build simple tree
   const items = (conditions as LogicalCondition[])
     .filter(c => c.field && c.value)
-    .map((c): ConditionItem => ({
-      id: `${c.field}-${c.value}`,
-      field: c.field,
-      operator: c.operator,
-      value: c.value,
-    }))
+    .map(
+      (c): ConditionItem => ({
+        id: `${c.field}-${c.value}`,
+        field: c.field,
+        operator: c.operator,
+        value: c.value,
+      })
+    )
   return { type: 'root', internalLogic: 'AND', items }
 }
 
@@ -63,7 +69,8 @@ export function LoadInventoryModal({
   const [showTree, setShowTree] = useState(false)
 
   const inventoriesInGroup = useMemo(
-    () => savedInventories.filter(inv => (inv.group_path ?? '') === (selectedGroup ?? '')),
+    () =>
+      savedInventories.filter(inv => (inv.group_path ?? '') === (selectedGroup ?? '')),
     [savedInventories, selectedGroup]
   )
 
@@ -98,7 +105,9 @@ export function LoadInventoryModal({
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            <span className="ml-2 text-sm text-muted-foreground">Loading inventories...</span>
+            <span className="ml-2 text-sm text-muted-foreground">
+              Loading inventories...
+            </span>
           </div>
         ) : savedInventories.length === 0 ? (
           <div className="flex-1 flex items-center justify-center py-16">
@@ -107,7 +116,10 @@ export function LoadInventoryModal({
         ) : (
           <>
             {/* Main area: group tree (left) + files (right) */}
-            <div className="flex flex-1 min-h-0" style={{ minHeight: '280px', maxHeight: '360px' }}>
+            <div
+              className="flex flex-1 min-h-0"
+              style={{ minHeight: '280px', maxHeight: '360px' }}
+            >
               {/* Left: Group tree */}
               <div className="w-56 flex-shrink-0 border-r p-3 overflow-y-auto">
                 <GroupTreePanel
@@ -152,12 +164,18 @@ export function LoadInventoryModal({
                             onLoad(inv.id)
                           }}
                         >
-                          <FileText className={`h-4 w-4 flex-shrink-0 ${isSelected ? 'text-blue-500' : 'text-gray-400'}`} />
-                          <span className="flex-1 truncate font-medium">{inv.name}</span>
+                          <FileText
+                            className={`h-4 w-4 flex-shrink-0 ${isSelected ? 'text-blue-500' : 'text-gray-400'}`}
+                          />
+                          <span className="flex-1 truncate font-medium">
+                            {inv.name}
+                          </span>
                           <Badge variant="secondary" className="text-xs flex-shrink-0">
                             {inv.scope}
                           </Badge>
-                          <span className="text-xs text-gray-400 flex-shrink-0">{inv.created_by}</span>
+                          <span className="text-xs text-gray-400 flex-shrink-0">
+                            {inv.created_by}
+                          </span>
                         </div>
                       )
                     })}
@@ -177,9 +195,13 @@ export function LoadInventoryModal({
               {selectedInventory ? (
                 <>
                   {selectedInventory.description ? (
-                    <p className="text-sm text-gray-700">{selectedInventory.description}</p>
+                    <p className="text-sm text-gray-700">
+                      {selectedInventory.description}
+                    </p>
                   ) : (
-                    <p className="text-sm text-muted-foreground italic">No description</p>
+                    <p className="text-sm text-muted-foreground italic">
+                      No description
+                    </p>
                   )}
                   {selectedTree && (
                     <>
@@ -188,9 +210,11 @@ export function LoadInventoryModal({
                         className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
                         onClick={() => setShowTree(v => !v)}
                       >
-                        {showTree
-                          ? <ChevronDown className="h-3.5 w-3.5" />
-                          : <ChevronRight className="h-3.5 w-3.5" />}
+                        {showTree ? (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        )}
                         {showTree ? 'Hide' : 'Show'} condition tree
                       </button>
                       {showTree && (

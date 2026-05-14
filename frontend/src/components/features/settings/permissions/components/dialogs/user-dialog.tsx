@@ -1,10 +1,24 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { User } from '../../types'
 import { useCallback, useEffect } from 'react'
@@ -20,7 +34,11 @@ const createUserSchema = z.object({
 const updateUserSchema = z.object({
   realname: z.string().max(100).optional().or(z.literal('')),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
-  password: z.string().min(8, 'Password must be at least 8 characters').optional().or(z.literal('')),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .optional()
+    .or(z.literal('')),
   is_active: z.boolean().optional(),
 })
 
@@ -35,23 +53,30 @@ interface UserDialogProps {
   isEdit?: boolean
 }
 
-export function UserDialog({ open, onOpenChange, onSubmit, user, isEdit = false }: UserDialogProps) {
+export function UserDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  user,
+  isEdit = false,
+}: UserDialogProps) {
   const form = useForm<CreateUserFormData | UpdateUserFormData>({
     resolver: zodResolver(isEdit ? updateUserSchema : createUserSchema),
-    defaultValues: isEdit && user
-      ? {
-          realname: user.realname || '',
-          email: user.email || '',
-          password: '',
-          is_active: user.is_active,
-        }
-      : {
-          username: '',
-          realname: '',
-          email: '',
-          password: '',
-          is_active: true,
-        }
+    defaultValues:
+      isEdit && user
+        ? {
+            realname: user.realname || '',
+            email: user.email || '',
+            password: '',
+            is_active: user.is_active,
+          }
+        : {
+            username: '',
+            realname: '',
+            email: '',
+            password: '',
+            is_active: true,
+          },
   })
 
   // Reset form when user changes or dialog opens
@@ -76,7 +101,7 @@ export function UserDialog({ open, onOpenChange, onSubmit, user, isEdit = false 
     }
   }, [open, user, isEdit, form])
 
-  const handleSubmit = form.handleSubmit((data) => {
+  const handleSubmit = form.handleSubmit(data => {
     onSubmit(data)
     form.reset()
     onOpenChange(false)
@@ -148,7 +173,9 @@ export function UserDialog({ open, onOpenChange, onSubmit, user, isEdit = false 
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password {isEdit && '(leave blank to keep current)'}</FormLabel>
+                  <FormLabel>
+                    Password {isEdit && '(leave blank to keep current)'}
+                  </FormLabel>
                   <FormControl>
                     <Input {...field} type="password" placeholder="••••••••" />
                   </FormControl>
@@ -163,10 +190,7 @@ export function UserDialog({ open, onOpenChange, onSubmit, user, isEdit = false 
               render={({ field }) => (
                 <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                   <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>Active</FormLabel>
@@ -179,9 +203,7 @@ export function UserDialog({ open, onOpenChange, onSubmit, user, isEdit = false 
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button type="submit">
-                {isEdit ? 'Update' : 'Create'}
-              </Button>
+              <Button type="submit">{isEdit ? 'Update' : 'Create'}</Button>
             </DialogFooter>
           </form>
         </Form>

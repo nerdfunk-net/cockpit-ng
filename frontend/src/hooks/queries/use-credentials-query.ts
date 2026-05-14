@@ -10,7 +10,7 @@ interface GitCredential {
   source?: string
 }
 
-const CREDENTIALS_STALE_TIME = 5 * 60 * 1000  // 5 minutes
+const CREDENTIALS_STALE_TIME = 5 * 60 * 1000 // 5 minutes
 const EMPTY_CREDENTIALS: GitCredential[] = []
 
 interface UseCredentialsQueryOptions {
@@ -35,7 +35,9 @@ export function useCredentialsQuery(
     queryKey: queryKeys.credentials.list({ git: true }),
     queryFn: async (): Promise<GitCredential[]> => {
       try {
-        const response = await apiCall<GitCredential[]>('credentials/?include_expired=false')
+        const response = await apiCall<GitCredential[]>(
+          'credentials/?include_expired=false'
+        )
         // Filter for git-compatible credentials
         const filtered = (response || []).filter(
           c => c.type === 'token' || c.type === 'ssh_key' || c.type === 'generic'

@@ -26,8 +26,12 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
   const [offboardProperties, setOffboardProperties] = useState<OffboardProperties>(
     DEFAULT_OFFBOARD_PROPERTIES
   )
-  const [vcDecisions, setVcDecisions] = useState<Record<string, VirtualChassisDecision>>({})
-  const [ipRemovalDecisions, setIpRemovalDecisions] = useState<Record<string, boolean>>({})
+  const [vcDecisions, setVcDecisions] = useState<
+    Record<string, VirtualChassisDecision>
+  >({})
+  const [ipRemovalDecisions, setIpRemovalDecisions] = useState<Record<string, boolean>>(
+    {}
+  )
 
   const checkVCStatus = useCallback(
     async (deviceId: string): Promise<DeviceVirtualChassisStatus> => {
@@ -43,9 +47,12 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
     [apiCall]
   )
 
-  const setVcDecision = useCallback((deviceId: string, decision: VirtualChassisDecision) => {
-    setVcDecisions(prev => ({ ...prev, [deviceId]: decision }))
-  }, [])
+  const setVcDecision = useCallback(
+    (deviceId: string, decision: VirtualChassisDecision) => {
+      setVcDecisions(prev => ({ ...prev, [deviceId]: decision }))
+    },
+    []
+  )
 
   const setIpRemovalDecision = useCallback((deviceId: string, remove: boolean) => {
     setIpRemovalDecisions(prev => ({ ...prev, [deviceId]: remove }))
@@ -67,7 +74,10 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
 
         try {
           const ipOnly = ip.split('/')[0] ?? ip
-          const response = await apiCall<{ count: number; ip_addresses: Array<{ interface_assignments?: Array<unknown> }> }>(
+          const response = await apiCall<{
+            count: number
+            ip_addresses: Array<{ interface_assignments?: Array<unknown> }>
+          }>(
             `nautobot/ipam/ip-addresses/detailed?address=${encodeURIComponent(ipOnly)}&get_interface_assignments=true`,
             { method: 'GET' }
           )
@@ -77,7 +87,8 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
               deviceId: device.id,
               deviceName: device.name,
               ipAddress: ip,
-              assignments: assignments as IpAddressMultipleAssignmentWarning['assignments'],
+              assignments:
+                assignments as IpAddressMultipleAssignmentWarning['assignments'],
             })
           }
         } catch {
@@ -139,7 +150,8 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
             )
 
             const requestBody: Record<string, unknown> = {
-              remove_primary_ip: ipRemovalDecisions[deviceId] ?? offboardProperties.removePrimaryIp,
+              remove_primary_ip:
+                ipRemovalDecisions[deviceId] ?? offboardProperties.removePrimaryIp,
               remove_interface_ips: offboardProperties.removeInterfaceIps,
               remove_from_checkmk: offboardProperties.removeFromCheckMK,
             }
@@ -190,7 +202,8 @@ export function useOffboardOperations({ showMessage }: UseOffboardOperationsProp
             }
           } catch (error) {
             failedCount++
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+            const errorMessage =
+              error instanceof Error ? error.message : 'Unknown error'
             results.push({
               success: false,
               device_id: deviceId,

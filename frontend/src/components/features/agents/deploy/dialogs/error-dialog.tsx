@@ -21,7 +21,7 @@ export function ErrorDialog({
   onClose,
   title,
   message,
-  details
+  details,
 }: ErrorDialogProps) {
   return (
     <Dialog open={show} onOpenChange={onClose}>
@@ -37,7 +37,7 @@ export function ErrorDialog({
         {details && details.length > 0 && (
           <ScrollArea className="max-h-[400px] rounded-md border p-4">
             <ul className="space-y-2 list-none">
-              {details.map((detail) => (
+              {details.map(detail => (
                 <li key={detail} className="text-sm">
                   {detail}
                 </li>

@@ -62,7 +62,7 @@ export function RackSelectorBar({
     items: hierarchicalLocations,
     selectedId: selectedLocationId,
     onSelect: onSelectLocation,
-    getDisplayText: (loc) => loc.hierarchicalPath || loc.name,
+    getDisplayText: loc => loc.hierarchicalPath || loc.name,
     filterPredicate: locationFilterPredicate,
   })
 
@@ -70,7 +70,7 @@ export function RackSelectorBar({
     items: racks,
     selectedId: selectedRackId,
     onSelect: onSelectRack,
-    getDisplayText: (rack) => rack.name,
+    getDisplayText: rack => rack.name,
     filterPredicate: rackFilterPredicate,
   })
 
@@ -85,15 +85,17 @@ export function RackSelectorBar({
           required
           inputClassName="border-gray-400 bg-white shadow-sm"
           dropdownState={locationDropdown}
-          renderItem={(loc) => (
+          renderItem={loc => (
             <div className="flex flex-col">
               <span className="font-medium text-sm">{loc.name}</span>
               {loc.hierarchicalPath && loc.hierarchicalPath !== loc.name && (
-                <span className="text-xs text-muted-foreground">{loc.hierarchicalPath}</span>
+                <span className="text-xs text-muted-foreground">
+                  {loc.hierarchicalPath}
+                </span>
               )}
             </div>
           )}
-          getItemKey={(loc) => loc.id}
+          getItemKey={loc => loc.id}
         />
       </div>
 
@@ -107,14 +109,14 @@ export function RackSelectorBar({
             !selectedLocationId
               ? 'Select a location first'
               : isLoadingRacks
-              ? 'Loading racks...'
-              : racks.length === 0
-              ? 'No racks found'
-              : 'Search rack...'
+                ? 'Loading racks...'
+                : racks.length === 0
+                  ? 'No racks found'
+                  : 'Search rack...'
           }
           disabled={!selectedLocationId || isLoadingRacks}
           dropdownState={rackDropdown}
-          renderItem={(rack) => (
+          renderItem={rack => (
             <div className="flex flex-col">
               <span className="font-medium text-sm">{rack.name}</span>
               {rack.u_height && (
@@ -122,7 +124,7 @@ export function RackSelectorBar({
               )}
             </div>
           )}
-          getItemKey={(rack) => rack.id}
+          getItemKey={rack => rack.id}
         />
       </div>
 
@@ -132,15 +134,15 @@ export function RackSelectorBar({
           <Label htmlFor="rack-mode" className="text-xs font-medium">
             Mode
           </Label>
-          <Select
-            value={mode}
-            onValueChange={(val) => onModeChange(val as RackMode)}
-          >
-            <SelectTrigger id="rack-mode" className="border-gray-400 bg-white shadow-sm">
+          <Select value={mode} onValueChange={val => onModeChange(val as RackMode)}>
+            <SelectTrigger
+              id="rack-mode"
+              className="border-gray-400 bg-white shadow-sm"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {MODE_OPTIONS.map((opt) => (
+              {MODE_OPTIONS.map(opt => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
@@ -156,9 +158,12 @@ export function RackSelectorBar({
           <Checkbox
             id="overwrite-location"
             checked={overwriteLocation}
-            onCheckedChange={(checked) => onOverwriteLocationChange(checked === true)}
+            onCheckedChange={checked => onOverwriteLocationChange(checked === true)}
           />
-          <Label htmlFor="overwrite-location" className="text-xs font-medium cursor-pointer">
+          <Label
+            htmlFor="overwrite-location"
+            className="text-xs font-medium cursor-pointer"
+          >
             Overwrite Location
           </Label>
         </div>

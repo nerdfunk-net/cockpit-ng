@@ -52,8 +52,8 @@ describe('useHostsFilter', () => {
     })
 
     expect(result.current.filteredHosts).toHaveLength(2)
-    expect(result.current.filteredHosts[0].host_name).toBe('server-01')
-    expect(result.current.filteredHosts[1].host_name).toBe('server-02')
+    expect(result.current.filteredHosts[0]!.host_name).toBe('server-01')
+    expect(result.current.filteredHosts[1]!.host_name).toBe('server-02')
   })
 
   it('should filter hosts by name case-insensitively', () => {
@@ -64,14 +64,18 @@ describe('useHostsFilter', () => {
     })
 
     expect(result.current.filteredHosts).toHaveLength(2)
-    expect(result.current.filteredHosts[0].host_name).toBe('server-01')
+    expect(result.current.filteredHosts[0]!.host_name).toBe('server-01')
   })
 
   it('should filter hosts by folder', () => {
     const { result } = renderHook(() => useHostsFilter(mockHosts, mockFilterOptions))
 
     act(() => {
-      result.current.setFolderFilters({ '/prod': true, '/dev': false, '/staging': false })
+      result.current.setFolderFilters({
+        '/prod': true,
+        '/dev': false,
+        '/staging': false,
+      })
     })
 
     expect(result.current.filteredHosts).toHaveLength(2)
@@ -86,8 +90,8 @@ describe('useHostsFilter', () => {
     })
 
     expect(result.current.sortOrder).toBe('asc')
-    expect(result.current.filteredHosts[0].host_name).toBe('database-01')
-    expect(result.current.filteredHosts[3].host_name).toBe('web-01')
+    expect(result.current.filteredHosts[0]!.host_name).toBe('database-01')
+    expect(result.current.filteredHosts[3]!.host_name).toBe('web-01')
   })
 
   it('should sort hosts by name descending', () => {
@@ -104,8 +108,8 @@ describe('useHostsFilter', () => {
     })
 
     expect(result.current.sortOrder).toBe('desc')
-    expect(result.current.filteredHosts[0].host_name).toBe('web-01')
-    expect(result.current.filteredHosts[3].host_name).toBe('database-01')
+    expect(result.current.filteredHosts[0]!.host_name).toBe('web-01')
+    expect(result.current.filteredHosts[3]!.host_name).toBe('database-01')
   })
 
   it('should toggle sort order: none -> asc -> desc -> none', () => {
@@ -160,12 +164,16 @@ describe('useHostsFilter', () => {
 
     act(() => {
       result.current.setHostNameFilter('server')
-      result.current.setFolderFilters({ '/prod': true, '/dev': false, '/staging': false })
+      result.current.setFolderFilters({
+        '/prod': true,
+        '/dev': false,
+        '/staging': false,
+      })
     })
 
     expect(result.current.filteredHosts).toHaveLength(1)
-    expect(result.current.filteredHosts[0].host_name).toBe('server-01')
-    expect(result.current.filteredHosts[0].folder).toBe('/prod')
+    expect(result.current.filteredHosts[0]!.host_name).toBe('server-01')
+    expect(result.current.filteredHosts[0]!.folder).toBe('/prod')
   })
 
   it('should count active filters correctly', () => {
@@ -207,7 +215,7 @@ describe('useHostsFilter', () => {
     })
 
     expect(result.current.sortOrder).toBe('asc')
-    expect(result.current.filteredHosts[0].folder).toBe('/dev')
-    expect(result.current.filteredHosts[3].folder).toBe('/staging')
+    expect(result.current.filteredHosts[0]!.folder).toBe('/dev')
+    expect(result.current.filteredHosts[3]!.folder).toBe('/staging')
   })
 })

@@ -30,7 +30,10 @@ interface DeviceSearchResultsProps {
   searchQuery: string
 }
 
-export function DeviceSearchResults({ results, searchQuery }: DeviceSearchResultsProps) {
+export function DeviceSearchResults({
+  results,
+  searchQuery,
+}: DeviceSearchResultsProps) {
   if (!searchQuery) {
     return null
   }
@@ -46,8 +49,8 @@ export function DeviceSearchResults({ results, searchQuery }: DeviceSearchResult
         </CardHeader>
         <CardContent>
           <p className="text-green-700">
-            No device found with name &quot;{searchQuery}&quot; in Nautobot. You can proceed with
-            onboarding.
+            No device found with name &quot;{searchQuery}&quot; in Nautobot. You can
+            proceed with onboarding.
           </p>
         </CardContent>
       </Card>
@@ -82,7 +85,7 @@ export function DeviceSearchResults({ results, searchQuery }: DeviceSearchResult
                     variant="outline"
                     style={{
                       borderColor: device.status.color || '#64748b',
-                      color: device.status.color || '#64748b'
+                      color: device.status.color || '#64748b',
                     }}
                   >
                     {device.status.name}

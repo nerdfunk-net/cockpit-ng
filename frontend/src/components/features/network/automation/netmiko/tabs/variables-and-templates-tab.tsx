@@ -21,7 +21,6 @@ interface VariablesAndTemplatesTabProps {
 }
 
 export function VariablesAndTemplatesTab(props: VariablesAndTemplatesTabProps) {
-
   return (
     <div className="space-y-6">
       <VariableManagerPanel

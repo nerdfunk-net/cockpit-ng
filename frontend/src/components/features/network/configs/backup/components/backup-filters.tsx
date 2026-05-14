@@ -2,7 +2,13 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Filter, RotateCcw } from 'lucide-react'
@@ -19,7 +25,7 @@ export function BackupFilters({
   filters,
   onFiltersChange,
   onReset,
-  activeFiltersCount
+  activeFiltersCount,
 }: BackupFiltersProps) {
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
@@ -28,7 +34,9 @@ export function BackupFilters({
           <Filter className="h-4 w-4" />
           <div>
             <h3 className="text-sm font-semibold">Filter & Controls</h3>
-            <p className="text-blue-100 text-xs">Filter devices by backup date and manage display options</p>
+            <p className="text-blue-100 text-xs">
+              Filter devices by backup date and manage display options
+            </p>
           </div>
         </div>
       </div>
@@ -40,7 +48,9 @@ export function BackupFilters({
               id="backup-date-filter"
               type="date"
               value={filters.lastBackupDate || ''}
-              onChange={(e) => onFiltersChange({ ...filters, lastBackupDate: e.target.value })}
+              onChange={e =>
+                onFiltersChange({ ...filters, lastBackupDate: e.target.value })
+              }
               className="min-w-[150px] border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
             />
           </div>
@@ -48,11 +58,13 @@ export function BackupFilters({
           <div>
             <Label htmlFor="date-comparison">Date Comparison</Label>
             <Select
-              value={filters.dateComparison || "none"}
-              onValueChange={(value) => onFiltersChange({
-                ...filters,
-                dateComparison: value === "none" ? "" : value as 'lte' | 'lt'
-              })}
+              value={filters.dateComparison || 'none'}
+              onValueChange={value =>
+                onFiltersChange({
+                  ...filters,
+                  dateComparison: value === 'none' ? '' : (value as 'lte' | 'lt'),
+                })
+              }
             >
               <SelectTrigger className="min-w-[150px] border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                 <SelectValue placeholder="No Date Filter" />
@@ -71,9 +83,7 @@ export function BackupFilters({
               Clear All Filters
             </Button>
             {activeFiltersCount > 0 && (
-              <Badge variant="secondary">
-                {activeFiltersCount} active
-              </Badge>
+              <Badge variant="secondary">{activeFiltersCount} active</Badge>
             )}
           </div>
         </div>

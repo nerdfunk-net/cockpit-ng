@@ -8,12 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import type { PaginationState } from '../types'
 import { PAGE_SIZE_OPTIONS } from '../utils'
 
@@ -41,13 +36,13 @@ export function DevicesPagination({
         </span>
         <Select
           value={pageSize.toString()}
-          onValueChange={(value) => onPageSizeChange(parseInt(value))}
+          onValueChange={value => onPageSizeChange(parseInt(value))}
         >
           <SelectTrigger className="w-20 h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PAGE_SIZE_OPTIONS.map((size) => (
+            {PAGE_SIZE_OPTIONS.map(size => (
               <SelectItem key={size} value={size.toString()}>
                 {size}
               </SelectItem>

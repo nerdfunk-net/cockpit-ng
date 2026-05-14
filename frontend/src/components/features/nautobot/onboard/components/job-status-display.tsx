@@ -4,7 +4,14 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Settings } from 'lucide-react'
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  RefreshCw,
+  Settings,
+} from 'lucide-react'
 import type { JobStatus } from '../types'
 
 interface JobStatusDisplayProps {
@@ -20,7 +27,7 @@ export function JobStatusDisplay({
   jobStatus,
   onboardedIPAddress,
   isCheckingJob,
-  onCheckStatus
+  onCheckStatus,
 }: JobStatusDisplayProps) {
   const router = useRouter()
   if (!jobId) {
@@ -32,7 +39,10 @@ export function JobStatusDisplay({
 
   const handleGoToSyncDevices = () => {
     // Navigate to sync devices page with the IP address filter
-    const ipAddresses = onboardedIPAddress.split(',').map(ip => ip.trim()).filter(ip => ip.length > 0)
+    const ipAddresses = onboardedIPAddress
+      .split(',')
+      .map(ip => ip.trim())
+      .filter(ip => ip.length > 0)
     const firstIP = ipAddresses[0] || ''
 
     // Navigate with query parameters to pre-fill the filter
@@ -112,7 +122,9 @@ export function JobStatusDisplay({
                 variant="outline"
                 className="h-7 gap-1.5"
               >
-                <RefreshCw className={`h-3.5 w-3.5 ${isCheckingJob ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${isCheckingJob ? 'animate-spin' : ''}`}
+                />
                 Check Status
               </Button>
             )}
@@ -182,7 +194,9 @@ export function JobStatusDisplay({
           )}
 
           {isCheckingJob && (
-            <div className="text-sm text-blue-600 animate-pulse">Checking job status...</div>
+            <div className="text-sm text-blue-600 animate-pulse">
+              Checking job status...
+            </div>
           )}
         </div>
       </CardContent>

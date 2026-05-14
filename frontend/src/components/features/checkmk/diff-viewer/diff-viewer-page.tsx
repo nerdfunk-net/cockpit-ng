@@ -28,7 +28,8 @@ export default function DiffViewerPage() {
   const { toast } = useToast()
   const { statusMessage, showMessage, clearMessage } = useStatusMessages()
   const { confirmDialog, openConfirm } = useConfirmDialog()
-  const { selectedDevices, handleSelectDevice, handleSelectAll, clearSelection } = useDiffDeviceSelection()
+  const { selectedDevices, handleSelectDevice, handleSelectAll, clearSelection } =
+    useDiffDeviceSelection()
   const [isSyncingSelected, setIsSyncingSelected] = useState(false)
 
   // Diff loader
@@ -50,40 +51,43 @@ export default function DiffViewerPage() {
   const combinedSnapshotRef = useRef<DiffDataSnapshot | null>(null)
 
   // Track overlaid comparison statuses (must be before callbacks that use it)
-  const [comparisonOverlay, setComparisonOverlay] = useState<Map<string, string>>(new Map())
+  const [comparisonOverlay, setComparisonOverlay] = useState<Map<string, string>>(
+    new Map()
+  )
 
   // Overlay comparison job results onto devices
-  const overlayComparisonResults = useCallback((loadedDevices: Device[]) => {
-    const overlay = new Map<string, string>()
-    for (const device of loadedDevices) {
-      const key = device.name.toLowerCase()
-      if (device.checkmk_status) {
-        overlay.set(key, device.checkmk_status)
+  const overlayComparisonResults = useCallback(
+    (loadedDevices: Device[]) => {
+      const overlay = new Map<string, string>()
+      for (const device of loadedDevices) {
+        const key = device.name.toLowerCase()
+        if (device.checkmk_status) {
+          overlay.set(key, device.checkmk_status)
+        }
       }
-    }
-    setComparisonOverlay(overlay)
-    showMessage(`Loaded comparison results for ${loadedDevices.length} devices`, 'success')
-  }, [showMessage])
+      setComparisonOverlay(overlay)
+      showMessage(
+        `Loaded comparison results for ${loadedDevices.length} devices`,
+        'success'
+      )
+    },
+    [showMessage]
+  )
 
   // Job management for comparison results overlay
   const jobManagement = useJobManagement(
     token,
-    async (loadedDevices) => {
+    async loadedDevices => {
       // Overlay comparison results onto diff devices
       overlayComparisonResults(loadedDevices)
     },
-    (message) => showMessage(message, 'error'),
-    (message) => showMessage(message, 'success')
+    message => showMessage(message, 'error'),
+    message => showMessage(message, 'success')
   )
 
   // Diff comparison for individual devices
-  const {
-    diffResult,
-    loadingDiff,
-    parseConfigComparison,
-    getDiff,
-    setDiffResult,
-  } = useDiffComparison({ showMessage })
+  const { diffResult, loadingDiff, parseConfigComparison, getDiff, setDiffResult } =
+    useDiffComparison({ showMessage })
 
   // State for diff modal
   const [isDiffModalOpen, setIsDiffModalOpen] = useState(false)
@@ -140,72 +144,100 @@ export default function DiffViewerPage() {
   }, [loadNautobotDevices])
 
   // Handle mode selection
-  const handleModeChange = useCallback((newMode: ViewMode) => {
-    setMode(newMode)
-    resetFilters()
-    if (newMode === 'nautobot_only') {
-      if (nautobotSnapshotRef.current) {
-        restoreData(nautobotSnapshotRef.current)
-      } else {
-        loadNautobotDevices()
+  const handleModeChange = useCallback(
+    (newMode: ViewMode) => {
+      setMode(newMode)
+      resetFilters()
+      if (newMode === 'nautobot_only') {
+        if (nautobotSnapshotRef.current) {
+          restoreData(nautobotSnapshotRef.current)
+        } else {
+          loadNautobotDevices()
+        }
+      } else if (newMode === 'combined') {
+        if (combinedSnapshotRef.current) {
+          restoreData(combinedSnapshotRef.current)
+        } else {
+          runDiff()
+        }
       }
-    } else if (newMode === 'combined') {
-      if (combinedSnapshotRef.current) {
-        restoreData(combinedSnapshotRef.current)
-      } else {
-        runDiff()
-      }
-    }
-  }, [resetFilters, restoreData, loadNautobotDevices, runDiff])
+    },
+    [resetFilters, restoreData, loadNautobotDevices, runDiff]
+  )
 
   // Handle get diff for a device
-  const handleGetDiff = useCallback(async (diffDevice: DiffDevice) => {
-    if (!diffDevice.nautobot_id) return
-    // Convert DiffDevice to Device shape for the diff comparison hook
-    const device: Device = {
-      id: diffDevice.nautobot_id,
-      name: diffDevice.name,
-      role: diffDevice.role ? { name: diffDevice.role } : undefined,
-      location: diffDevice.location ? { name: diffDevice.location } : undefined,
-      status: diffDevice.status ? { name: diffDevice.status } : undefined,
-      primary_ip4: diffDevice.ip_address ? { address: diffDevice.ip_address } : undefined,
-    }
-    setSelectedDevice(device)
-    setIsDiffModalOpen(true)
-    await getDiff(device)
-  }, [getDiff])
+  const handleGetDiff = useCallback(
+    async (diffDevice: DiffDevice) => {
+      if (!diffDevice.nautobot_id) return
+      // Convert DiffDevice to Device shape for the diff comparison hook
+      const device: Device = {
+        id: diffDevice.nautobot_id,
+        name: diffDevice.name,
+        role: diffDevice.role ? { name: diffDevice.role } : undefined,
+        location: diffDevice.location ? { name: diffDevice.location } : undefined,
+        status: diffDevice.status ? { name: diffDevice.status } : undefined,
+        primary_ip4: diffDevice.ip_address
+          ? { address: diffDevice.ip_address }
+          : undefined,
+      }
+      setSelectedDevice(device)
+      setIsDiffModalOpen(true)
+      await getDiff(device)
+    },
+    [getDiff]
+  )
 
   // Handle sync device to CheckMK
-  const handleSync = useCallback(async (diffDevice: DiffDevice) => {
-    if (!diffDevice.nautobot_id) {
-      showMessage('Device ID is required for sync', 'error')
-      return
-    }
-
-    try {
-      toast({ title: 'Sync Started', description: `Starting sync for ${diffDevice.name}...` })
-
-      const response = await apiCall<CeleryTaskResponse>(`celery/tasks/sync-devices-to-checkmk`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          device_ids: [diffDevice.nautobot_id],
-          activate_changes_after_sync: true
-        })
-      })
-
-      if (response?.task_id) {
-        toast({ title: 'Success', description: `Sync task started for ${diffDevice.name}. Task ID: ${response.task_id}` })
-      } else {
-        toast({ title: 'Error', description: `Failed to queue sync task for ${diffDevice.name}`, variant: 'destructive' })
+  const handleSync = useCallback(
+    async (diffDevice: DiffDevice) => {
+      if (!diffDevice.nautobot_id) {
+        showMessage('Device ID is required for sync', 'error')
+        return
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to sync device'
-      toast({ title: 'Error', description: `Failed to sync ${diffDevice.name}: ${message}`, variant: 'destructive' })
-    }
-  }, [apiCall, toast, showMessage])
+
+      try {
+        toast({
+          title: 'Sync Started',
+          description: `Starting sync for ${diffDevice.name}...`,
+        })
+
+        const response = await apiCall<CeleryTaskResponse>(
+          `celery/tasks/sync-devices-to-checkmk`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              device_ids: [diffDevice.nautobot_id],
+              activate_changes_after_sync: true,
+            }),
+          }
+        )
+
+        if (response?.task_id) {
+          toast({
+            title: 'Success',
+            description: `Sync task started for ${diffDevice.name}. Task ID: ${response.task_id}`,
+          })
+        } else {
+          toast({
+            title: 'Error',
+            description: `Failed to queue sync task for ${diffDevice.name}`,
+            variant: 'destructive',
+          })
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to sync device'
+        toast({
+          title: 'Error',
+          description: `Failed to sync ${diffDevice.name}: ${message}`,
+          variant: 'destructive',
+        })
+      }
+    },
+    [apiCall, toast, showMessage]
+  )
 
   // Handle bulk sync of selected devices
   const handleSyncSelected = useCallback(async () => {
@@ -214,21 +246,42 @@ export default function DiffViewerPage() {
 
     setIsSyncingSelected(true)
     try {
-      toast({ title: 'Sync Started', description: `Starting sync for ${deviceIds.length} device(s)...` })
-      const response = await apiCall<CeleryTaskResponse>('celery/tasks/sync-devices-to-checkmk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ device_ids: deviceIds, activate_changes_after_sync: true })
+      toast({
+        title: 'Sync Started',
+        description: `Starting sync for ${deviceIds.length} device(s)...`,
       })
+      const response = await apiCall<CeleryTaskResponse>(
+        'celery/tasks/sync-devices-to-checkmk',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            device_ids: deviceIds,
+            activate_changes_after_sync: true,
+          }),
+        }
+      )
       if (response?.task_id) {
-        toast({ title: 'Success', description: `Sync task started for ${deviceIds.length} device(s). Task ID: ${response.task_id}` })
+        toast({
+          title: 'Success',
+          description: `Sync task started for ${deviceIds.length} device(s). Task ID: ${response.task_id}`,
+        })
         clearSelection()
       } else {
-        toast({ title: 'Error', description: 'Failed to queue bulk sync task', variant: 'destructive' })
+        toast({
+          title: 'Error',
+          description: 'Failed to queue bulk sync task',
+          variant: 'destructive',
+        })
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to sync selected devices'
-      toast({ title: 'Error', description: `Bulk sync failed: ${message}`, variant: 'destructive' })
+      const message =
+        err instanceof Error ? err.message : 'Failed to sync selected devices'
+      toast({
+        title: 'Error',
+        description: `Bulk sync failed: ${message}`,
+        variant: 'destructive',
+      })
     } finally {
       setIsSyncingSelected(false)
     }
@@ -246,7 +299,8 @@ export default function DiffViewerPage() {
   const handleClearResults = useCallback(() => {
     openConfirm({
       title: 'Delete Comparison Results',
-      description: 'Are you sure you want to delete all comparison results? This action cannot be undone.',
+      description:
+        'Are you sure you want to delete all comparison results? This action cannot be undone.',
       onConfirm: async () => {
         const success = await jobManagement.clearResults()
         if (success) {
@@ -288,7 +342,6 @@ export default function DiffViewerPage() {
           </CardContent>
         </Card>
       )}
-
 
       {/* Device Table */}
       <DiffDeviceTable

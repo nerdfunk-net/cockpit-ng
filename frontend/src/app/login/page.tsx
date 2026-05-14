@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { useAuthStore } from '@/lib/auth-store'
 import { Heart, AlertCircle, LogIn, Building2, FlaskConical } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -90,16 +96,23 @@ export default function LoginPage() {
       console.log('Token:', data.access_token ? 'PRESENT' : 'MISSING')
       console.log('User object:', JSON.stringify(data.user, null, 2))
       console.log('User.roles specifically:', data.user?.roles)
-      console.log('Type of roles:', typeof data.user?.roles, Array.isArray(data.user?.roles) ? 'ARRAY' : 'NOT ARRAY')
+      console.log(
+        'Type of roles:',
+        typeof data.user?.roles,
+        Array.isArray(data.user?.roles) ? 'ARRAY' : 'NOT ARRAY'
+      )
       console.log('='.repeat(80))
 
       // Store in sessionStorage so we can check it after redirect
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('last_login_data', JSON.stringify({
-          timestamp: new Date().toISOString(),
-          user: data.user,
-          roles: data.user?.roles,
-        }))
+        sessionStorage.setItem(
+          'last_login_data',
+          JSON.stringify({
+            timestamp: new Date().toISOString(),
+            user: data.user,
+            roles: data.user?.roles,
+          })
+        )
       }
 
       if (data.access_token) {
@@ -110,7 +123,7 @@ export default function LoginPage() {
           roles: data.user?.roles || [],
           permissions: data.user?.permissions,
         })
-        
+
         console.log('About to redirect to /')
         router.push('/')
       } else {
@@ -209,7 +222,7 @@ export default function LoginPage() {
                   Choose your organization to sign in
                 </p>
 
-                {oidcProviders.map((provider) => (
+                {oidcProviders.map(provider => (
                   <Button
                     key={provider.provider_id}
                     type="button"
@@ -229,7 +242,9 @@ export default function LoginPage() {
                         <div className="flex flex-col items-start text-left">
                           <span className="font-medium text-base">{provider.name}</span>
                           {provider.description && (
-                            <span className="text-xs text-gray-500">{provider.description}</span>
+                            <span className="text-xs text-gray-500">
+                              {provider.description}
+                            </span>
                           )}
                         </div>
                       </>
@@ -239,99 +254,103 @@ export default function LoginPage() {
               </div>
             ) : (
               // Traditional login form with optional SSO buttons
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="flex items-center space-x-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{error}</span>
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  className="h-11"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-11"
-                />
-              </div>
-              
-              <Button
-                type="submit"
-                className={cn(
-                  'w-full h-11 button-apple',
-                  'bg-gradient-to-r from-green-500 to-green-600',
-                  'hover:from-green-600 hover:to-green-700',
-                  'text-white font-medium shadow-apple-lg'
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                  <div className="flex items-center space-x-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{error}</span>
+                  </div>
                 )}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Signing in...</span>
-                  </div>
-                ) : (
-                  'Sign In'
-                )}
-              </Button>
 
-              {oidcProviders.length > 0 && allowTraditionalLogin && (
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white px-2 text-gray-500">Or continue with</span>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    required
+                    className="h-11"
+                  />
                 </div>
-              )}
 
-              {oidcProviders.map((provider) => (
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    className="h-11"
+                  />
+                </div>
+
                 <Button
-                  key={provider.provider_id}
-                  type="button"
-                  variant="outline"
-                  className="w-full h-11 flex items-center justify-center space-x-2"
-                  onClick={() => handleOidcLogin(provider.provider_id)}
-                  disabled={oidcLoadingProvider !== null}
+                  type="submit"
+                  className={cn(
+                    'w-full h-11 button-apple',
+                    'bg-gradient-to-r from-green-500 to-green-600',
+                    'hover:from-green-600 hover:to-green-700',
+                    'text-white font-medium shadow-apple-lg'
+                  )}
+                  disabled={isLoading}
                 >
-                  {oidcLoadingProvider === provider.provider_id ? (
+                  {isLoading ? (
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
-                      <span>Redirecting...</span>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Signing in...</span>
                     </div>
                   ) : (
-                    <>
-                      {getProviderIcon(provider.icon)}
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">{provider.name}</span>
-                        {provider.description && (
-                          <span className="text-xs text-gray-500">{provider.description}</span>
-                        )}
-                      </div>
-                    </>
+                    'Sign In'
                   )}
                 </Button>
-              ))}
-            </form>
+
+                {oidcProviders.length > 0 && allowTraditionalLogin && (
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white px-2 text-gray-500">
+                        Or continue with
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {oidcProviders.map(provider => (
+                  <Button
+                    key={provider.provider_id}
+                    type="button"
+                    variant="outline"
+                    className="w-full h-11 flex items-center justify-center space-x-2"
+                    onClick={() => handleOidcLogin(provider.provider_id)}
+                    disabled={oidcLoadingProvider !== null}
+                  >
+                    {oidcLoadingProvider === provider.provider_id ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                        <span>Redirecting...</span>
+                      </div>
+                    ) : (
+                      <>
+                        {getProviderIcon(provider.icon)}
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">{provider.name}</span>
+                          {provider.description && (
+                            <span className="text-xs text-gray-500">
+                              {provider.description}
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </Button>
+                ))}
+              </form>
             )}
           </CardContent>
         </Card>

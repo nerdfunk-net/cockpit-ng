@@ -1,11 +1,25 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form'
 import type { Role } from '../../types'
 import { useCallback } from 'react'
 
@@ -24,21 +38,28 @@ interface RoleDialogProps {
   isEdit?: boolean
 }
 
-export function RoleDialog({ open, onOpenChange, onSubmit, role, isEdit = false }: RoleDialogProps) {
+export function RoleDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  role,
+  isEdit = false,
+}: RoleDialogProps) {
   const form = useForm<RoleFormData>({
     resolver: zodResolver(roleSchema),
-    defaultValues: isEdit && role
-      ? {
-          name: role.name,
-          description: role.description,
-        }
-      : {
-          name: '',
-          description: '',
-        }
+    defaultValues:
+      isEdit && role
+        ? {
+            name: role.name,
+            description: role.description,
+          }
+        : {
+            name: '',
+            description: '',
+          },
   })
 
-  const handleSubmit = form.handleSubmit((data) => {
+  const handleSubmit = form.handleSubmit(data => {
     onSubmit(data)
     form.reset()
     onOpenChange(false)
@@ -93,9 +114,7 @@ export function RoleDialog({ open, onOpenChange, onSubmit, role, isEdit = false 
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button type="submit">
-                {isEdit ? 'Update' : 'Create'}
-              </Button>
+              <Button type="submit">{isEdit ? 'Update' : 'Create'}</Button>
             </DialogFooter>
           </form>
         </Form>

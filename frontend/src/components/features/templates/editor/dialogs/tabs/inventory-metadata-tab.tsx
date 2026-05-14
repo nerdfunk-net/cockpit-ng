@@ -45,10 +45,11 @@ export function InventoryMetadataTab({
   onAdd,
   existingVariableNames,
   category,
-  inventoryId
+  inventoryId,
 }: InventoryMetadataTabProps) {
   const { apiCall } = useApi()
-  const { data: inventoriesData, isLoading: loadingInventories } = useSavedInventoriesQuery()
+  const { data: inventoriesData, isLoading: loadingInventories } =
+    useSavedInventoriesQuery()
   const inventories = inventoriesData?.inventories || []
 
   // For agent category, use the inventory from Agent Options panel
@@ -60,7 +61,9 @@ export function InventoryMetadataTab({
   const [analyzeData, setAnalyzeData] = useState<AnalyzeResponse | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [analyzeError, setAnalyzeError] = useState('')
-  const [selectedDataType, setSelectedDataType] = useState<InventoryMetadataType | ''>('')
+  const [selectedDataType, setSelectedDataType] = useState<InventoryMetadataType | ''>(
+    ''
+  )
   const [selectedCustomField, setSelectedCustomField] = useState<string>('')
   const [variableName, setVariableName] = useState('')
 
@@ -87,14 +90,16 @@ export function InventoryMetadataTab({
     setAnalyzeError('')
 
     apiCall<AnalyzeResponse>(`inventory/${activeInventoryId}/analyze`)
-      .then((data) => {
+      .then(data => {
         if (!cancelled) {
           setAnalyzeData(data)
         }
       })
-      .catch((error) => {
+      .catch(error => {
         if (!cancelled) {
-          setAnalyzeError(error instanceof Error ? error.message : 'Failed to analyze inventory')
+          setAnalyzeError(
+            error instanceof Error ? error.message : 'Failed to analyze inventory'
+          )
         }
       })
       .finally(() => {
@@ -103,7 +108,9 @@ export function InventoryMetadataTab({
         }
       })
 
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [activeInventoryId, apiCall])
 
   // Auto-suggest variable name when data type changes
@@ -130,7 +137,7 @@ export function InventoryMetadataTab({
 
   // Build available data type options from analyze response
   const availableDataTypes: InventoryMetadataType[] = analyzeData
-    ? (Object.keys(DATA_TYPE_LABELS) as InventoryMetadataType[]).filter((key) => {
+    ? (Object.keys(DATA_TYPE_LABELS) as InventoryMetadataType[]).filter(key => {
         const value = analyzeData[key]
         if (key === 'custom_fields') {
           return value && typeof value === 'object' && Object.keys(value).length > 0
@@ -139,11 +146,14 @@ export function InventoryMetadataTab({
       })
     : []
 
-  const customFieldNames = analyzeData?.custom_fields ? Object.keys(analyzeData.custom_fields) : []
+  const customFieldNames = analyzeData?.custom_fields
+    ? Object.keys(analyzeData.custom_fields)
+    : []
 
-  const nameError = variableName && existingVariableNames.includes(variableName)
-    ? 'A variable with this name already exists'
-    : ''
+  const nameError =
+    variableName && existingVariableNames.includes(variableName)
+      ? 'A variable with this name already exists'
+      : ''
 
   const canAdd =
     activeInventoryId && // Must have an active inventory ID
@@ -177,21 +187,32 @@ export function InventoryMetadataTab({
           : {}),
       },
     })
-  }, [canAdd, analyzeData, selectedDataType, selectedCustomField, variableName, activeInventoryId, onAdd])
+  }, [
+    canAdd,
+    analyzeData,
+    selectedDataType,
+    selectedCustomField,
+    variableName,
+    activeInventoryId,
+    onAdd,
+  ])
 
   // Preview values for the current selection
   const previewValues: string[] | null = (() => {
     if (!analyzeData || !selectedDataType) return null
     if (selectedDataType === 'custom_fields') {
-      return selectedCustomField ? analyzeData.custom_fields[selectedCustomField] || [] : null
+      return selectedCustomField
+        ? analyzeData.custom_fields[selectedCustomField] || []
+        : null
     }
     return analyzeData[selectedDataType] || []
   })()
 
   // Get inventory name for agent category
-  const agentInventoryName = isAgentCategory && agentInventoryId
-    ? inventories.find(inv => String(inv.id) === agentInventoryId)?.name
-    : null
+  const agentInventoryName =
+    isAgentCategory && agentInventoryId
+      ? inventories.find(inv => String(inv.id) === agentInventoryId)?.name
+      : null
 
   return (
     <div className="space-y-4">
@@ -202,7 +223,8 @@ export function InventoryMetadataTab({
             <strong>No inventory selected.</strong>
           </p>
           <p className="text-xs text-yellow-700 mt-1">
-            Please select an inventory in the <strong>Agent Options</strong> panel above before adding inventory-based variables.
+            Please select an inventory in the <strong>Agent Options</strong> panel above
+            before adding inventory-based variables.
           </p>
         </div>
       ) : isAgentCategory && agentInventoryId ? (
@@ -219,10 +241,12 @@ export function InventoryMetadataTab({
           <Label>Saved Inventory</Label>
           <Select value={selectedInventoryId} onValueChange={setSelectedInventoryId}>
             <SelectTrigger>
-              <SelectValue placeholder={loadingInventories ? 'Loading...' : 'Select an inventory'} />
+              <SelectValue
+                placeholder={loadingInventories ? 'Loading...' : 'Select an inventory'}
+              />
             </SelectTrigger>
             <SelectContent>
-              {inventories.map((inv) => (
+              {inventories.map(inv => (
                 <SelectItem key={inv.id} value={String(inv.id)}>
                   {inv.name}
                 </SelectItem>
@@ -239,24 +263,26 @@ export function InventoryMetadataTab({
         </div>
       )}
 
-      {analyzeError && (
-        <p className="text-sm text-red-500">{analyzeError}</p>
-      )}
+      {analyzeError && <p className="text-sm text-red-500">{analyzeError}</p>}
 
       {analyzeData && (
         <>
           <div className="text-xs text-muted-foreground">
-            {analyzeData.device_count} device{analyzeData.device_count !== 1 ? 's' : ''} in inventory
+            {analyzeData.device_count} device{analyzeData.device_count !== 1 ? 's' : ''}{' '}
+            in inventory
           </div>
 
           <div className="space-y-2">
             <Label>Data Type</Label>
-            <Select value={selectedDataType} onValueChange={(v) => setSelectedDataType(v as InventoryMetadataType)}>
+            <Select
+              value={selectedDataType}
+              onValueChange={v => setSelectedDataType(v as InventoryMetadataType)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select data type" />
               </SelectTrigger>
               <SelectContent>
-                {availableDataTypes.map((key) => (
+                {availableDataTypes.map(key => (
                   <SelectItem key={key} value={key}>
                     {DATA_TYPE_LABELS[key]}
                   </SelectItem>
@@ -268,12 +294,15 @@ export function InventoryMetadataTab({
           {selectedDataType === 'custom_fields' && (
             <div className="space-y-2">
               <Label>Custom Field</Label>
-              <Select value={selectedCustomField} onValueChange={setSelectedCustomField}>
+              <Select
+                value={selectedCustomField}
+                onValueChange={setSelectedCustomField}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select custom field" />
                 </SelectTrigger>
                 <SelectContent>
-                  {customFieldNames.map((name) => (
+                  {customFieldNames.map(name => (
                     <SelectItem key={name} value={name}>
                       {name}
                     </SelectItem>
@@ -289,20 +318,20 @@ export function InventoryMetadataTab({
               <Input
                 id="inventory-var-name"
                 value={variableName}
-                onChange={(e) => setVariableName(e.target.value)}
+                onChange={e => setVariableName(e.target.value)}
                 className={nameError ? 'border-red-300' : ''}
               />
-              {nameError && (
-                <p className="text-xs text-red-500">{nameError}</p>
-              )}
+              {nameError && <p className="text-xs text-red-500">{nameError}</p>}
             </div>
           )}
 
           {previewValues && previewValues.length > 0 && (
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Preview ({previewValues.length} values)</Label>
+              <Label className="text-xs text-muted-foreground">
+                Preview ({previewValues.length} values)
+              </Label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                {previewValues.map((val) => (
+                {previewValues.map(val => (
                   <Badge key={val} variant="secondary" className="text-xs">
                     {val}
                   </Badge>

@@ -4,7 +4,10 @@ import { useState, useCallback, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, Settings, FileText, Shield } from 'lucide-react'
 import { useCheckMKSettingsQuery } from './hooks/use-checkmk-settings-query'
-import { useCheckMKYamlQuery, useCheckMKQueriesQuery } from './hooks/use-checkmk-yaml-queries'
+import {
+  useCheckMKYamlQuery,
+  useCheckMKQueriesQuery,
+} from './hooks/use-checkmk-yaml-queries'
 import { useCheckMKMutations } from './hooks/use-checkmk-mutations'
 import { ConnectionSettingsForm } from './components/connection-settings-form'
 import { YamlEditorCard } from './components/yaml-editor-card'
@@ -166,15 +169,24 @@ export default function CheckMKSettingsForm() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid grid-cols-3 w-full">
-          <TabsTrigger value={TAB_VALUES.CONNECTION} className="flex items-center space-x-2">
+          <TabsTrigger
+            value={TAB_VALUES.CONNECTION}
+            className="flex items-center space-x-2"
+          >
             <Settings className="h-4 w-4" />
             <span>Connection</span>
           </TabsTrigger>
-          <TabsTrigger value={TAB_VALUES.CHECKMK_CONFIG} className="flex items-center space-x-2">
+          <TabsTrigger
+            value={TAB_VALUES.CHECKMK_CONFIG}
+            className="flex items-center space-x-2"
+          >
             <FileText className="h-4 w-4" />
             <span>CheckMK Config</span>
           </TabsTrigger>
-          <TabsTrigger value={TAB_VALUES.QUERIES} className="flex items-center space-x-2">
+          <TabsTrigger
+            value={TAB_VALUES.QUERIES}
+            className="flex items-center space-x-2"
+          >
             <FileText className="h-4 w-4" />
             <span>Queries</span>
           </TabsTrigger>

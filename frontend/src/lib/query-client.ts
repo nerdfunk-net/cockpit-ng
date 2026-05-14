@@ -7,7 +7,13 @@ import {
 } from '@tanstack/react-query'
 
 // Toast integration (using existing Shadcn toast)
-let toastFunction: ((options: { title: string; description: string; variant?: 'default' | 'destructive' }) => void) | null = null
+let toastFunction:
+  | ((options: {
+      title: string
+      description: string
+      variant?: 'default' | 'destructive'
+    }) => void)
+  | null = null
 
 export function setToastFunction(toast: typeof toastFunction) {
   toastFunction = toast
@@ -17,11 +23,12 @@ function makeQueryClient() {
   return new QueryClient({
     // Global query error handling
     queryCache: new QueryCache({
-      onError: (error) => {
+      onError: error => {
         // Skip auth errors (useApi handles logout/redirect)
-        if (error instanceof Error &&
-            (error.message.includes('Session expired') ||
-             error.message.includes('401'))) {
+        if (
+          error instanceof Error &&
+          (error.message.includes('Session expired') || error.message.includes('401'))
+        ) {
           return
         }
 
@@ -30,19 +37,20 @@ function makeQueryClient() {
           toastFunction({
             title: 'Error loading data',
             description: error instanceof Error ? error.message : 'Unknown error',
-            variant: 'destructive'
+            variant: 'destructive',
           })
         }
-      }
+      },
     }),
 
     // Global mutation error handling
     mutationCache: new MutationCache({
-      onError: (error) => {
+      onError: error => {
         // Skip auth errors
-        if (error instanceof Error &&
-            (error.message.includes('Session expired') ||
-             error.message.includes('401'))) {
+        if (
+          error instanceof Error &&
+          (error.message.includes('Session expired') || error.message.includes('401'))
+        ) {
           return
         }
 
@@ -51,10 +59,10 @@ function makeQueryClient() {
           toastFunction({
             title: 'Operation failed',
             description: error instanceof Error ? error.message : 'Unknown error',
-            variant: 'destructive'
+            variant: 'destructive',
           })
         }
-      }
+      },
     }),
 
     defaultOptions: {
@@ -76,9 +84,11 @@ function makeQueryClient() {
           // CRITICAL: Never retry auth errors
           // Prevents infinite loops when token expires
           if (error instanceof Error) {
-            if (error.message.includes('401') ||
-                error.message.includes('403') ||
-                error.message.includes('Session expired')) {
+            if (
+              error.message.includes('401') ||
+              error.message.includes('403') ||
+              error.message.includes('Session expired')
+            ) {
               return false
             }
           }
@@ -94,9 +104,8 @@ function makeQueryClient() {
 
       dehydrate: {
         // Include pending queries in SSR/hydration
-        shouldDehydrateQuery: (query) =>
-          defaultShouldDehydrateQuery(query) ||
-          query.state.status === 'pending',
+        shouldDehydrateQuery: query =>
+          defaultShouldDehydrateQuery(query) || query.state.status === 'pending',
       },
     },
   })

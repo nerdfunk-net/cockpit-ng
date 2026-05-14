@@ -1,12 +1,22 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Clock, Play, Pause, Edit, Trash2, RefreshCw } from 'lucide-react'
 import type { JobSchedule } from '../types'
 import { useScheduleMutations } from '../hooks/use-schedule-mutations'
-import { getScheduleTypeLabel, getScheduleTypeColor, getJobTypeLabel } from '../utils/schedule-utils'
+import {
+  getScheduleTypeLabel,
+  getScheduleTypeColor,
+  getJobTypeLabel,
+} from '../utils/schedule-utils'
 
 interface ScheduleCardProps {
   schedule: JobSchedule
@@ -24,7 +34,9 @@ export function ScheduleCard({ schedule, onEdit }: ScheduleCardProps) {
             <CardTitle className="flex items-center gap-2">
               {schedule.job_identifier}
               {schedule.is_global && (
-                <Badge variant="secondary" className="text-xs">Global</Badge>
+                <Badge variant="secondary" className="text-xs">
+                  Global
+                </Badge>
               )}
             </CardTitle>
             <CardDescription className="flex items-center gap-2">
@@ -50,7 +62,9 @@ export function ScheduleCard({ schedule, onEdit }: ScheduleCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 rounded-full ${getScheduleTypeColor(schedule.schedule_type)}`} />
+          <div
+            className={`h-2 w-2 rounded-full ${getScheduleTypeColor(schedule.schedule_type)}`}
+          />
           <span className="text-sm font-medium">
             {getScheduleTypeLabel(schedule.schedule_type, schedule)}
           </span>
@@ -67,7 +81,9 @@ export function ScheduleCard({ schedule, onEdit }: ScheduleCardProps) {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => runNow.mutate({ id: schedule.id, identifier: schedule.job_identifier })}
+            onClick={() =>
+              runNow.mutate({ id: schedule.id, identifier: schedule.job_identifier })
+            }
             disabled={runNow.isPending}
             className="flex-1"
           >
@@ -83,11 +99,7 @@ export function ScheduleCard({ schedule, onEdit }: ScheduleCardProps) {
               </>
             )}
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onEdit(schedule)}
-          >
+          <Button size="sm" variant="outline" onClick={() => onEdit(schedule)}>
             <Edit className="h-4 w-4" />
           </Button>
           <Button

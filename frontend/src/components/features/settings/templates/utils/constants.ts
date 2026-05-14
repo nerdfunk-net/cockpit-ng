@@ -15,7 +15,7 @@ export const DEFAULT_TEMPLATE_FORM_DATA: TemplateFormData = {
   git_branch: 'main',
   git_path: '',
   git_username: '',
-  git_token: ''
+  git_token: '',
 } as const
 
 export const EMPTY_TEMPLATES: Template[] = []
@@ -23,9 +23,9 @@ export const EMPTY_CATEGORIES: string[] = []
 export const EMPTY_IMPORTABLE: ImportableTemplate[] = []
 
 export const STALE_TIME = {
-  TEMPLATES: 30 * 1000,      // 30 seconds - moderate frequency
+  TEMPLATES: 30 * 1000, // 30 seconds - moderate frequency
   CATEGORIES: 5 * 60 * 1000, // 5 minutes - rarely changes
-  CONTENT: 60 * 1000,        // 1 minute - content can change
+  CONTENT: 60 * 1000, // 1 minute - content can change
   IMPORTABLE: 2 * 60 * 1000, // 2 minutes - scan results
 } as const
 

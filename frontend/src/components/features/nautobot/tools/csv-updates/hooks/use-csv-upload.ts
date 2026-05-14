@@ -1,7 +1,11 @@
 import { useState, useCallback, useMemo } from 'react'
 import type { ObjectType, CSVConfig, ParsedCSVData, ValidationResult } from '../types'
 import { parseCSVContent, validateCSVData } from '../utils/csv-parser'
-import { DEFAULT_CSV_CONFIG, EMPTY_PARSED_DATA, EMPTY_VALIDATION_RESULTS } from '../constants'
+import {
+  DEFAULT_CSV_CONFIG,
+  EMPTY_PARSED_DATA,
+  EMPTY_VALIDATION_RESULTS,
+} from '../constants'
 
 interface UseCsvUploadOptions {
   objectType: ObjectType
@@ -19,7 +23,9 @@ export function useCsvUpload(options: UseCsvUploadOptions = DEFAULT_OPTIONS) {
   const [csvConfig, setCsvConfig] = useState<CSVConfig>(DEFAULT_CSV_CONFIG)
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [parsedData, setParsedData] = useState<ParsedCSVData>(EMPTY_PARSED_DATA)
-  const [validationResults, setValidationResults] = useState<ValidationResult[]>(EMPTY_VALIDATION_RESULTS)
+  const [validationResults, setValidationResults] = useState<ValidationResult[]>(
+    EMPTY_VALIDATION_RESULTS
+  )
   const [isParsing, setIsParsing] = useState(false)
   const [isValidating, setIsValidating] = useState(false)
 
@@ -58,7 +64,8 @@ export function useCsvUpload(options: UseCsvUploadOptions = DEFAULT_OPTIONS) {
 
       onParseComplete?.(data)
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to parse CSV'
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to parse CSV'
       const errorObj = error instanceof Error ? error : new Error(errorMessage)
 
       setValidationResults([
@@ -79,7 +86,11 @@ export function useCsvUpload(options: UseCsvUploadOptions = DEFAULT_OPTIONS) {
     (newObjectType: ObjectType) => {
       if (parsedData.headers.length > 0) {
         setIsValidating(true)
-        const results = validateCSVData(newObjectType, parsedData.headers, parsedData.rows)
+        const results = validateCSVData(
+          newObjectType,
+          parsedData.headers,
+          parsedData.rows
+        )
         setValidationResults(results)
         setIsValidating(false)
       }
@@ -103,8 +114,9 @@ export function useCsvUpload(options: UseCsvUploadOptions = DEFAULT_OPTIONS) {
       warningCount: validationResults.filter(r => r.type === 'warning').length,
       errorCount: validationResults.filter(r => r.type === 'error').length,
       hasErrors: validationResults.some(r => r.type === 'error'),
-      isValid: validationResults.some(r => r.type === 'success') &&
-               !validationResults.some(r => r.type === 'error'),
+      isValid:
+        validationResults.some(r => r.type === 'success') &&
+        !validationResults.some(r => r.type === 'error'),
     }),
     [validationResults]
   )

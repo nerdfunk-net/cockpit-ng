@@ -2,7 +2,13 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -13,7 +19,7 @@ import {
   ChevronRight,
   Database,
   FlaskConical,
-  Loader2
+  Loader2,
 } from 'lucide-react'
 
 interface ToolLink {
@@ -46,7 +52,7 @@ export default function ToolsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       })
 
@@ -65,12 +71,15 @@ export default function ToolsPage() {
 
       toast({
         title: 'Test Baseline Created',
-        description: counts ? `Created: ${counts}` : 'Test baseline created successfully',
+        description: counts
+          ? `Created: ${counts}`
+          : 'Test baseline created successfully',
       })
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create test baseline',
+        description:
+          error instanceof Error ? error.message : 'Failed to create test baseline',
         variant: 'destructive',
       })
     } finally {
@@ -81,25 +90,29 @@ export default function ToolsPage() {
   const tools: ToolLink[] = [
     {
       title: 'OIDC Test Dashboard',
-      description: 'Debug and test OpenID Connect authentication flows. View provider configurations, test login flows, and troubleshoot OIDC issues.',
+      description:
+        'Debug and test OpenID Connect authentication flows. View provider configurations, test login flows, and troubleshoot OIDC issues.',
       href: '/tools/oidc-test',
       icon: <Shield className="w-6 h-6" />,
     },
     {
       title: 'Add Certificate',
-      description: 'Upload or scan for CA certificates and add them to the system trust store. Manage SSL/TLS certificates for secure connections.',
+      description:
+        'Upload or scan for CA certificates and add them to the system trust store. Manage SSL/TLS certificates for secure connections.',
       href: '/tools/add-certificate',
       icon: <KeyRound className="w-6 h-6" />,
     },
     {
       title: 'Database Migration',
-      description: 'Analyze database schema status and perform migrations to match the application data models.',
+      description:
+        'Analyze database schema status and perform migrations to match the application data models.',
       href: '/tools/database-migration',
       icon: <Database className="w-6 h-6" />,
     },
     {
       title: 'Test Baseline',
-      description: 'Create test data in Nautobot including location types, locations, roles, tags, manufacturers, platforms, device types, and devices from YAML configuration.',
+      description:
+        'Create test data in Nautobot including location types, locations, roles, tags, manufacturers, platforms, device types, and devices from YAML configuration.',
       icon: <FlaskConical className="w-6 h-6" />,
       action: handleCreateBaseline,
     },
@@ -123,7 +136,7 @@ export default function ToolsPage() {
 
         {/* Tools Grid */}
         <div className="grid gap-4">
-          {tools.map((tool) => {
+          {tools.map(tool => {
             // Action-based card (button click)
             if (tool.action) {
               return (
@@ -211,7 +224,8 @@ export default function ToolsPage() {
                 <p className="font-medium mb-1">Developer Tools</p>
                 <p>
                   These tools are intended for debugging and administrative purposes.
-                  They are not shown in the main navigation but are accessible to authenticated users.
+                  They are not shown in the main navigation but are accessible to
+                  authenticated users.
                 </p>
               </div>
             </div>

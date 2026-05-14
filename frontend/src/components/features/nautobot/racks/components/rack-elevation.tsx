@@ -93,7 +93,8 @@ export function RackElevation({
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
       const outsideDevicePopover = !popoverRef || !popoverRef.contains(e.target as Node)
-      const outsideResPopover = !resPopoverRef || !resPopoverRef.contains(e.target as Node)
+      const outsideResPopover =
+        !resPopoverRef || !resPopoverRef.contains(e.target as Node)
       if (outsideDevicePopover && outsideResPopover) {
         onSetActiveSlot(null)
         onDeviceSearchQueryChange('')
@@ -123,16 +124,25 @@ export function RackElevation({
   }
 
   return (
-    <div className="inline-flex select-none relative" style={{ fontFamily: 'monospace', fontSize: 10 }}>
+    <div
+      className="inline-flex select-none relative"
+      style={{ fontFamily: 'monospace', fontSize: 10 }}
+    >
       {/* Rack frame — overlay with high z-index so background rows never cover it */}
       <div
         className="absolute pointer-events-none border-2 border-black"
-        style={{ left: RACK_GUTTER_WIDTH_PX, top: 0, width: RACK_BODY_WIDTH_PX, height: bodyHeight, zIndex: 20 }}
+        style={{
+          left: RACK_GUTTER_WIDTH_PX,
+          top: 0,
+          width: RACK_BODY_WIDTH_PX,
+          height: bodyHeight,
+          zIndex: 20,
+        }}
       />
 
       {/* Gutter: unit numbers — one fixed-height row per unit, always 1 to uHeight */}
       <div className="shrink-0" style={{ width: RACK_GUTTER_WIDTH_PX }}>
-        {rows.map((u) => (
+        {rows.map(u => (
           <div
             key={u}
             className="flex items-center justify-end pr-1 text-gray-400"
@@ -149,10 +159,14 @@ export function RackElevation({
         style={{ width: RACK_BODY_WIDTH_PX, height: bodyHeight }}
       >
         {/* Background grid: one row per unit, provides borders and empty-slot color */}
-        {rows.map((u) => {
+        {rows.map(u => {
           const isOccupied = occupiedUnits.has(u)
           const isReservationUnit = occupiedUnits.get(u) === true
-          const bgColor = isReservationUnit ? '#455a64' : isOccupied ? '#9e9e9e' : '#f7f7f7'
+          const bgColor = isReservationUnit
+            ? '#455a64'
+            : isOccupied
+              ? '#9e9e9e'
+              : '#f7f7f7'
           return (
             <div
               key={u}
@@ -181,28 +195,47 @@ export function RackElevation({
             <div
               key={posStr}
               className="absolute flex items-center overflow-hidden"
-              style={{ top, left: 0, right: 0, height, backgroundColor: bgColor, zIndex: 1 }}
+              style={{
+                top,
+                left: 0,
+                right: 0,
+                height,
+                backgroundColor: bgColor,
+                zIndex: 1,
+              }}
             >
               {isReservation ? (
                 /* Reservation: amber left stripe instead of status color */
                 <div
                   className="shrink-0 h-full"
-                  style={{ width: RACK_STATUS_INDICATOR_PX, backgroundColor: '#f59e0b' }}
+                  style={{
+                    width: RACK_STATUS_INDICATOR_PX,
+                    backgroundColor: '#f59e0b',
+                  }}
                 />
               ) : (
                 /* Normal device: status color indicator */
                 <div
                   className="shrink-0 h-full"
-                  style={{ width: RACK_STATUS_INDICATOR_PX, backgroundColor: getStatusColor('active') }}
+                  style={{
+                    width: RACK_STATUS_INDICATOR_PX,
+                    backgroundColor: getStatusColor('active'),
+                  }}
                 />
               )}
               {/* Device / reservation name */}
               <div
                 className="flex-1 text-center text-white truncate px-1"
                 style={{ fontSize: 10, textShadow: '1px 1px 2px black' }}
-                title={isReservation ? `Reserved: ${assignment.deviceName}` : assignment.deviceName}
+                title={
+                  isReservation
+                    ? `Reserved: ${assignment.deviceName}`
+                    : assignment.deviceName
+                }
               >
-                {isReservation ? `[res] ${assignment.deviceName}` : assignment.deviceName}
+                {isReservation
+                  ? `[res] ${assignment.deviceName}`
+                  : assignment.deviceName}
               </div>
               {/* Move button — to unpositioned for devices, to Unresolved CSV for reservations */}
               {isReservation ? (
@@ -241,20 +274,25 @@ export function RackElevation({
         })}
 
         {/* Empty slot buttons: one per unoccupied unit */}
-        {rows.map((u) => {
-          if (occupiedUnits.has(u)) return null  // occupied (device or reservation)
+        {rows.map(u => {
+          if (occupiedUnits.has(u)) return null // occupied (device or reservation)
           const isActive = activeSlot?.face === face && activeSlot?.position === u
           const isResActive = resSlot === u
           return (
             <div
               key={u}
               className={`absolute ${isActive || isResActive ? 'z-50' : 'z-10'}`}
-              style={{ top: unitTop(u), left: 0, right: 0, height: RACK_UNIT_HEIGHT_PX }}
+              style={{
+                top: unitTop(u),
+                left: 0,
+                right: 0,
+                height: RACK_UNIT_HEIGHT_PX,
+              }}
             >
               {isActive ? (
                 /* Device search popover */
                 <div
-                  ref={(el) => setPopoverRef(el)}
+                  ref={el => setPopoverRef(el)}
                   className="absolute left-0 top-0 w-full"
                   style={{ minHeight: RACK_UNIT_HEIGHT_PX, zIndex: 50 }}
                 >
@@ -265,11 +303,11 @@ export function RackElevation({
                     <Input
                       ref={inputRef}
                       value={deviceSearchQuery}
-                      onChange={(e) => onDeviceSearchQueryChange(e.target.value)}
+                      onChange={e => onDeviceSearchQueryChange(e.target.value)}
                       placeholder="Type device name..."
                       className="h-full border-0 focus-visible:ring-0 text-xs px-1 py-0"
                       style={{ fontSize: 10, height: RACK_UNIT_HEIGHT_PX }}
-                      onKeyDown={(e) => {
+                      onKeyDown={e => {
                         if (e.key === 'Escape') {
                           onSetActiveSlot(null)
                           onDeviceSearchQueryChange('')
@@ -290,11 +328,11 @@ export function RackElevation({
                   </div>
                   {deviceSearchResults.length > 0 && (
                     <div className="absolute left-0 right-0 top-full bg-white border border-gray-200 shadow-lg max-h-40 overflow-y-auto z-50 rounded-b-md">
-                      {deviceSearchResults.map((device) => (
+                      {deviceSearchResults.map(device => (
                         <div
                           key={device.id}
                           className="px-2 py-1 text-xs hover:bg-blue-50 cursor-pointer border-b last:border-b-0 text-gray-800"
-                          onMouseDown={(e) => {
+                          onMouseDown={e => {
                             e.preventDefault()
                             onAdd(u, device)
                             onSetActiveSlot(null)
@@ -319,7 +357,7 @@ export function RackElevation({
               ) : isResActive ? (
                 /* Reservation description input */
                 <div
-                  ref={(el) => setResPopoverRef(el)}
+                  ref={el => setResPopoverRef(el)}
                   className="absolute left-0 top-0 w-full"
                   style={{ zIndex: 50 }}
                 >
@@ -330,11 +368,11 @@ export function RackElevation({
                     <Input
                       ref={resInputRef}
                       value={resDesc}
-                      onChange={(e) => setResDesc(e.target.value)}
+                      onChange={e => setResDesc(e.target.value)}
                       placeholder="Reservation description…"
                       className="h-full border-0 focus-visible:ring-0 text-xs px-1 py-0"
                       style={{ fontSize: 10, height: RACK_UNIT_HEIGHT_PX }}
-                      onKeyDown={(e) => {
+                      onKeyDown={e => {
                         if (e.key === 'Escape') {
                           setResSlot(null)
                           setResDesc('')

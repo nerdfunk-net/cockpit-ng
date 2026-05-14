@@ -30,7 +30,9 @@ export function GetClientDataJobTemplate({
       <div className="rounded-lg border border-emerald-200 bg-emerald-50/30 p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Database className="h-4 w-4 text-emerald-600" />
-          <Label className="text-sm font-semibold text-emerald-900">Collect Properties</Label>
+          <Label className="text-sm font-semibold text-emerald-900">
+            Collect Properties
+          </Label>
         </div>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -40,7 +42,8 @@ export function GetClientDataJobTemplate({
               onCheckedChange={checked => setCollectIpAddress(checked === true)}
             />
             <Label htmlFor="collect-ip" className="text-sm font-normal cursor-pointer">
-              IP Address <span className="text-xs text-muted-foreground">(from ARP table)</span>
+              IP Address{' '}
+              <span className="text-xs text-muted-foreground">(from ARP table)</span>
             </Label>
           </div>
           <div className="flex items-center gap-2">
@@ -50,7 +53,10 @@ export function GetClientDataJobTemplate({
               onCheckedChange={checked => setCollectMacAddress(checked === true)}
             />
             <Label htmlFor="collect-mac" className="text-sm font-normal cursor-pointer">
-              MAC Address <span className="text-xs text-muted-foreground">(from MAC address table)</span>
+              MAC Address{' '}
+              <span className="text-xs text-muted-foreground">
+                (from MAC address table)
+              </span>
             </Label>
           </div>
           <div className="flex items-center gap-2">
@@ -59,24 +65,34 @@ export function GetClientDataJobTemplate({
               checked={collectHostname}
               onCheckedChange={checked => setCollectHostname(checked === true)}
             />
-            <Label htmlFor="collect-hostname" className="text-sm font-normal cursor-pointer">
-              Resolve Hostname <span className="text-xs text-muted-foreground">(DNS lookup)</span>
+            <Label
+              htmlFor="collect-hostname"
+              className="text-sm font-normal cursor-pointer"
+            >
+              Resolve Hostname{' '}
+              <span className="text-xs text-muted-foreground">(DNS lookup)</span>
             </Label>
           </div>
         </div>
         <p className="text-xs text-emerald-600">
-          Requires SSH credentials. All collected rows share a session ID as the join key.
+          Requires SSH credentials. All collected rows share a session ID as the join
+          key.
         </p>
       </div>
 
       <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-purple-600" />
-          <Label className="text-sm font-semibold text-purple-900">Parallel Execution</Label>
+          <Label className="text-sm font-semibold text-purple-900">
+            Parallel Execution
+          </Label>
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="parallel-tasks-gcd" className="text-sm text-purple-900 font-medium">
+            <Label
+              htmlFor="parallel-tasks-gcd"
+              className="text-sm text-purple-900 font-medium"
+            >
               Number of Parallel Tasks
             </Label>
             <Badge variant="secondary" className="text-xs">
@@ -96,9 +112,9 @@ export function GetClientDataJobTemplate({
             className="h-9 bg-white border-purple-200 focus:ring-purple-500 focus:border-purple-500"
           />
           <p className="text-xs text-purple-600 leading-relaxed">
-            <span className="font-semibold">Recommended:</span> 1 = sequential (safe, slow),
-            5–10 = moderate parallel execution, 20+ = high parallel execution (requires sufficient
-            Celery workers)
+            <span className="font-semibold">Recommended:</span> 1 = sequential (safe,
+            slow), 5–10 = moderate parallel execution, 20+ = high parallel execution
+            (requires sufficient Celery workers)
           </p>
         </div>
       </div>

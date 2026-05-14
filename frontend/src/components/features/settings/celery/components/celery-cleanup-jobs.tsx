@@ -3,11 +3,25 @@
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form'
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from '@/components/ui/form'
 import { Trash2, Save, RefreshCw, Database } from 'lucide-react'
 import { useCelerySettings } from '../hooks/use-celery-queries'
 import { useCeleryMutations } from '../hooks/use-celery-mutations'
@@ -27,7 +41,8 @@ type CleanupJobsFormData = z.infer<typeof cleanupJobsSchema>
 
 export function CeleryCleanupJobs() {
   const { data: settings, isLoading } = useCelerySettings()
-  const { saveSettings, triggerCleanup, triggerClientDataCleanup } = useCeleryMutations()
+  const { saveSettings, triggerCleanup, triggerClientDataCleanup } =
+    useCeleryMutations()
 
   const form = useForm<CleanupJobsFormData>({
     resolver: zodResolver(cleanupJobsSchema),
@@ -35,11 +50,17 @@ export function CeleryCleanupJobs() {
   })
 
   const cleanupEnabled = useWatch({ control: form.control, name: 'cleanup_enabled' })
-  const clientDataCleanupEnabled = useWatch({ control: form.control, name: 'client_data_cleanup_enabled' })
+  const clientDataCleanupEnabled = useWatch({
+    control: form.control,
+    name: 'client_data_cleanup_enabled',
+  })
 
-  const handleSubmit = form.handleSubmit((data) => {
+  const handleSubmit = form.handleSubmit(data => {
     // Merge with full settings so worker/queue fields are preserved
-    saveSettings.mutate({ ...(settings ?? DEFAULT_CELERY_SETTINGS), ...data } as CelerySettings)
+    saveSettings.mutate({
+      ...(settings ?? DEFAULT_CELERY_SETTINGS),
+      ...data,
+    } as CelerySettings)
   })
 
   if (isLoading) {
@@ -56,7 +77,9 @@ export function CeleryCleanupJobs() {
               <Trash2 className="h-5 w-5 text-red-500" />
               <div>
                 <CardTitle>Data Cleanup</CardTitle>
-                <CardDescription>Configure automatic cleanup of old task results and logs</CardDescription>
+                <CardDescription>
+                  Configure automatic cleanup of old task results and logs
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -96,7 +119,7 @@ export function CeleryCleanupJobs() {
                           min={1}
                           max={168}
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 6)}
+                          onChange={e => field.onChange(parseInt(e.target.value) || 6)}
                           disabled={!cleanupEnabled}
                         />
                       </FormControl>
@@ -120,7 +143,7 @@ export function CeleryCleanupJobs() {
                           min={1}
                           max={720}
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 24)}
+                          onChange={e => field.onChange(parseInt(e.target.value) || 24)}
                           disabled={!cleanupEnabled}
                         />
                       </FormControl>
@@ -161,7 +184,9 @@ export function CeleryCleanupJobs() {
               <Database className="h-5 w-5 text-orange-500" />
               <div>
                 <CardTitle>Cleanup Client Data</CardTitle>
-                <CardDescription>Configure automatic cleanup of old ARP, MAC address, and hostname data</CardDescription>
+                <CardDescription>
+                  Configure automatic cleanup of old ARP, MAC address, and hostname data
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -201,7 +226,7 @@ export function CeleryCleanupJobs() {
                           min={1}
                           max={168}
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 24)}
+                          onChange={e => field.onChange(parseInt(e.target.value) || 24)}
                           disabled={!clientDataCleanupEnabled}
                         />
                       </FormControl>
@@ -225,7 +250,9 @@ export function CeleryCleanupJobs() {
                           min={1}
                           max={8760}
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 168)}
+                          onChange={e =>
+                            field.onChange(parseInt(e.target.value) || 168)
+                          }
                           disabled={!clientDataCleanupEnabled}
                         />
                       </FormControl>
@@ -262,7 +289,10 @@ export function CeleryCleanupJobs() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSubmit} disabled={saveSettings.isPending || !form.formState.isDirty}>
+        <Button
+          onClick={handleSubmit}
+          disabled={saveSettings.isPending || !form.formState.isDirty}
+        >
           {saveSettings.isPending ? (
             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
           ) : (

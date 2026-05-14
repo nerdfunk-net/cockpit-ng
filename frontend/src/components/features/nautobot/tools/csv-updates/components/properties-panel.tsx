@@ -38,7 +38,7 @@ const ALWAYS_IGNORED_COLUMNS: Record<ObjectType, string[]> = {
     'broadcast',
     'prefix_length',
   ],
-  'devices': [
+  devices: [
     'display',
     'id',
     'object_type',
@@ -57,7 +57,7 @@ const ALWAYS_IGNORED_COLUMNS: Record<ObjectType, string[]> = {
     'last_updated',
     'url',
   ],
-  'locations': [
+  locations: [
     'display',
     'id',
     'object_type',
@@ -71,9 +71,9 @@ const ALWAYS_IGNORED_COLUMNS: Record<ObjectType, string[]> = {
 // Columns used for lookup (should not be updated)
 const LOOKUP_COLUMNS: Record<ObjectType, string[]> = {
   'ip-prefixes': ['prefix', 'namespace__name', 'namespace'],
-  'devices': ['name', 'ip_address'],
+  devices: ['name', 'ip_address'],
   'ip-addresses': ['address', 'parent__namespace__name'],
-  'locations': ['name', 'parent__name'],
+  locations: ['name', 'parent__name'],
 }
 
 export function PropertiesPanel({
@@ -128,20 +128,25 @@ export function PropertiesPanel({
               <div className="space-y-2 flex-1">
                 <Label className="text-sm font-medium">UUID Handling</Label>
                 <p className="text-xs text-muted-foreground">
-                  Your CSV contains an &quot;id&quot; column with UUIDs. Choose how to identify prefixes:
+                  Your CSV contains an &quot;id&quot; column with UUIDs. Choose how to
+                  identify prefixes:
                 </p>
               </div>
             </div>
 
             <RadioGroup
               value={ignoreUuid ? 'ignore' : 'use'}
-              onValueChange={(value) => onIgnoreUuidChange(value === 'ignore')}
+              onValueChange={value => onIgnoreUuidChange(value === 'ignore')}
               className="space-y-2 ml-6"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="ignore" id="ignore-uuid" />
-                <Label htmlFor="ignore-uuid" className="text-sm font-normal cursor-pointer">
-                  <span className="font-medium">Ignore UUID</span> - Use prefix + namespace to find entries
+                <Label
+                  htmlFor="ignore-uuid"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  <span className="font-medium">Ignore UUID</span> - Use prefix +
+                  namespace to find entries
                   <span className="block text-xs text-muted-foreground mt-0.5">
                     Recommended for CSV files from other Nautobot instances
                   </span>
@@ -149,7 +154,10 @@ export function PropertiesPanel({
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="use" id="use-uuid" />
-                <Label htmlFor="use-uuid" className="text-sm font-normal cursor-pointer">
+                <Label
+                  htmlFor="use-uuid"
+                  className="text-sm font-normal cursor-pointer"
+                >
                   <span className="font-medium">Use UUID</span> - Directly update by ID
                   <span className="block text-xs text-muted-foreground mt-0.5">
                     Only if UUIDs match your Nautobot instance
@@ -168,20 +176,25 @@ export function PropertiesPanel({
               <div className="space-y-2 flex-1">
                 <Label className="text-sm font-medium">Tags Handling</Label>
                 <p className="text-xs text-muted-foreground">
-                  Your CSV contains a &quot;tags&quot; column. Choose how to apply these tags:
+                  Your CSV contains a &quot;tags&quot; column. Choose how to apply these
+                  tags:
                 </p>
               </div>
             </div>
 
             <RadioGroup
               value={tagsMode}
-              onValueChange={(value) => onTagsModeChange(value as 'replace' | 'merge')}
+              onValueChange={value => onTagsModeChange(value as 'replace' | 'merge')}
               className="space-y-2 ml-6"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="replace" id="tags-replace" />
-                <Label htmlFor="tags-replace" className="text-sm font-normal cursor-pointer">
-                  <span className="font-medium">Replace tags</span> - Overwrite all existing tags
+                <Label
+                  htmlFor="tags-replace"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  <span className="font-medium">Replace tags</span> - Overwrite all
+                  existing tags
                   <span className="block text-xs text-muted-foreground mt-0.5">
                     CSV tags will replace any existing tags on the object
                   </span>
@@ -189,7 +202,10 @@ export function PropertiesPanel({
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="merge" id="tags-merge" />
-                <Label htmlFor="tags-merge" className="text-sm font-normal cursor-pointer">
+                <Label
+                  htmlFor="tags-merge"
+                  className="text-sm font-normal cursor-pointer"
+                >
                   <span className="font-medium">Merge tags</span> - Add to existing tags
                   <span className="block text-xs text-muted-foreground mt-0.5">
                     CSV tags will be added to any existing tags (no duplicates)
@@ -204,26 +220,28 @@ export function PropertiesPanel({
         <div className="space-y-3">
           <Label className="text-sm font-medium">Columns to Update</Label>
           <p className="text-xs text-muted-foreground">
-            Select which columns should be used to update {objectType}. Uncheck columns you want to ignore.
+            Select which columns should be used to update {objectType}. Uncheck columns
+            you want to ignore.
           </p>
 
           {updateableHeaders.length === 0 ? (
             <Alert>
               <AlertDescription>
-                No updateable columns found in CSV. All columns are either read-only or used for lookup.
+                No updateable columns found in CSV. All columns are either read-only or
+                used for lookup.
               </AlertDescription>
             </Alert>
           ) : (
             <div className="border rounded-md bg-white">
               <div className="max-h-64 overflow-y-auto p-3 space-y-2">
-                {updateableHeaders.map((header) => {
+                {updateableHeaders.map(header => {
                   const isIgnored = ignoredColumns.has(header)
                   return (
                     <div key={header} className="flex items-start space-x-2">
                       <Checkbox
                         id={`column-${header}`}
                         checked={!isIgnored}
-                        onCheckedChange={(checked) =>
+                        onCheckedChange={checked =>
                           handleColumnToggle(header, !checked)
                         }
                         className="mt-0.5"

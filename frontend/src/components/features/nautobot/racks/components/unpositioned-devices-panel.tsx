@@ -34,7 +34,7 @@ export function UnpositionedDevicesPanel({
 
   // Pre-fill position selector for devices that have a defaultPosition (e.g. from CSV import)
   useEffect(() => {
-    setSelectedPositions((prev) => {
+    setSelectedPositions(prev => {
       let changed = false
       const next = { ...prev }
       for (const device of devices) {
@@ -61,13 +61,13 @@ export function UnpositionedDevicesPanel({
   const availablePositions = useMemo(
     () =>
       Array.from({ length: uHeight }, (_, i) => uHeight - i).filter(
-        (p) => !occupiedPositions.has(p)
+        p => !occupiedPositions.has(p)
       ),
     [uHeight, occupiedPositions]
   )
 
   const handlePositionChange = useCallback((deviceId: string, value: string) => {
-    setSelectedPositions((prev) => ({ ...prev, [deviceId]: value }))
+    setSelectedPositions(prev => ({ ...prev, [deviceId]: value }))
   }, [])
 
   const handleAssign = useCallback(
@@ -75,7 +75,11 @@ export function UnpositionedDevicesPanel({
       const posStr = selectedPositions[device.id]
       if (!posStr || posStr === UNSET_VALUE) return
       const position = Number(posStr)
-      onAdd(position, face, { id: device.id, name: device.name, uHeight: device.uHeight })
+      onAdd(position, face, {
+        id: device.id,
+        name: device.name,
+        uHeight: device.uHeight,
+      })
     },
     [selectedPositions, onAdd]
   )
@@ -85,7 +89,11 @@ export function UnpositionedDevicesPanel({
       const posStr = selectedPositions[device.id]
       if (!posStr || posStr === UNSET_VALUE) return
       const position = Number(posStr)
-      onAddAsReservation(position, { id: device.id, name: device.name, uHeight: device.uHeight })
+      onAddAsReservation(position, {
+        id: device.id,
+        name: device.name,
+        uHeight: device.uHeight,
+      })
     },
     [selectedPositions, onAddAsReservation]
   )
@@ -102,17 +110,24 @@ export function UnpositionedDevicesPanel({
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-2 py-1.5 text-left font-medium text-gray-600">Name</th>
-              <th className="px-2 py-1.5 text-left font-medium text-gray-600">Position</th>
-              <th className="px-2 py-1.5 text-left font-medium text-gray-600">Action</th>
+              <th className="px-2 py-1.5 text-left font-medium text-gray-600">
+                Position
+              </th>
+              <th className="px-2 py-1.5 text-left font-medium text-gray-600">
+                Action
+              </th>
             </tr>
           </thead>
           <tbody>
-            {devices.map((device) => {
+            {devices.map(device => {
               const selectedPos = selectedPositions[device.id] ?? UNSET_VALUE
               const isPositionSet = selectedPos !== UNSET_VALUE
 
               return (
-                <tr key={device.id} className="border-b border-gray-100 last:border-b-0">
+                <tr
+                  key={device.id}
+                  className="border-b border-gray-100 last:border-b-0"
+                >
                   <td
                     className="px-2 py-1.5 text-gray-800 truncate max-w-[140px]"
                     title={device.name}
@@ -122,14 +137,14 @@ export function UnpositionedDevicesPanel({
                   <td className="px-2 py-1.5">
                     <Select
                       value={selectedPos}
-                      onValueChange={(v) => handlePositionChange(device.id, v)}
+                      onValueChange={v => handlePositionChange(device.id, v)}
                     >
                       <SelectTrigger className="h-6 text-xs w-20 px-1.5">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={UNSET_VALUE}>unset</SelectItem>
-                        {availablePositions.map((pos) => (
+                        {availablePositions.map(pos => (
                           <SelectItem key={pos} value={String(pos)}>
                             {pos}
                           </SelectItem>

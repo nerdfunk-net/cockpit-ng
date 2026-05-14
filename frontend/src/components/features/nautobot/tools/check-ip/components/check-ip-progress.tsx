@@ -24,7 +24,8 @@ export function CheckIPProgress({ taskStatus }: CheckIPProgressProps) {
         <div className="text-sm text-muted-foreground">
           {taskStatus.progress ? (
             <p>
-              Processed {taskStatus.progress.current} of {taskStatus.progress.total} devices
+              Processed {taskStatus.progress.current} of {taskStatus.progress.total}{' '}
+              devices
               {taskStatus.progress.message && ` - ${taskStatus.progress.message}`}
             </p>
           ) : (

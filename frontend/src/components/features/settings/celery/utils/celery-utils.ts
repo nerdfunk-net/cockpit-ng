@@ -9,7 +9,9 @@ export function isTaskActive(status: string | undefined): boolean {
 /**
  * Get status badge variant based on task status
  */
-export function getTaskStatusVariant(status: string): 'default' | 'destructive' | 'secondary' {
+export function getTaskStatusVariant(
+  status: string
+): 'default' | 'destructive' | 'secondary' {
   switch (status) {
     case 'SUCCESS':
       return 'default'

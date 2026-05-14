@@ -23,7 +23,7 @@ export function LocationSelector({
   onChange,
   label = 'Location',
   placeholder = 'Search location...',
-  required = true
+  required = true,
 }: LocationSelectorProps) {
   const [locationSearch, setLocationSearch] = useState<string>('')
   const [locationFiltered, setLocationFiltered] = useState<LocationItem[]>(locations)
@@ -64,7 +64,9 @@ export function LocationSelector({
     } else {
       setLocationFiltered(
         locations.filter(l =>
-          (l.hierarchicalPath || l.name || '').toLowerCase().includes(query.toLowerCase())
+          (l.hierarchicalPath || l.name || '')
+            .toLowerCase()
+            .includes(query.toLowerCase())
         )
       )
     }
@@ -87,7 +89,7 @@ export function LocationSelector({
         <Input
           placeholder={placeholder}
           value={locationSearch}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          onChange={e => handleSearchChange(e.target.value)}
           onFocus={() => setShowDropdown(true)}
           className={`h-7 text-xs border-2 ${
             selectedLocationId
@@ -96,9 +98,7 @@ export function LocationSelector({
           }`}
         />
         {showDropdown && (
-          <div
-            className="absolute z-[9999] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto w-full"
-          >
+          <div className="absolute z-[9999] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto w-full">
             {locationFiltered.length > 0 ? (
               locationFiltered.map(loc => (
                 <div
@@ -110,7 +110,9 @@ export function LocationSelector({
                 </div>
               ))
             ) : (
-              <div className="px-3 py-2 text-xs text-gray-500 italic">No locations found</div>
+              <div className="px-3 py-2 text-xs text-gray-500 italic">
+                No locations found
+              </div>
             )}
           </div>
         )}

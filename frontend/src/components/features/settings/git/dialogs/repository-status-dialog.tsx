@@ -1,6 +1,11 @@
 // Repository Status Dialog Component
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -61,19 +66,25 @@ export function RepositoryStatusDialog({
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Branch:</span>
-                      <Badge variant="outline">{statusData.current_branch || statusData.repository_branch}</Badge>
+                      <Badge variant="outline">
+                        {statusData.current_branch || statusData.repository_branch}
+                      </Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Status:</span>
-                      <div className={`flex items-center gap-2 ${
-                        statusData.is_synced ? 'text-green-600' : 'text-yellow-600'
-                      }`}>
+                      <div
+                        className={`flex items-center gap-2 ${
+                          statusData.is_synced ? 'text-green-600' : 'text-yellow-600'
+                        }`}
+                      >
                         {statusData.is_synced ? (
                           <CheckCircle className="h-4 w-4" />
                         ) : (
                           <AlertCircle className="h-4 w-4" />
                         )}
-                        {statusData.is_synced ? 'Clean working directory' : 'Modified files present'}
+                        {statusData.is_synced
+                          ? 'Clean working directory'
+                          : 'Modified files present'}
                       </div>
                     </div>
                     <div className="flex justify-between">
@@ -101,14 +112,21 @@ export function RepositoryStatusDialog({
                   <CardContent>
                     {statusData.branches && statusData.branches.length > 0 ? (
                       <div className="space-y-2">
-                        {statusData.branches.map((branch) => (
-                          <div key={branch} className={`flex items-center gap-2 ${
-                            branch === statusData.current_branch ? 'text-blue-600 font-medium' : ''
-                          }`}>
+                        {statusData.branches.map(branch => (
+                          <div
+                            key={branch}
+                            className={`flex items-center gap-2 ${
+                              branch === statusData.current_branch
+                                ? 'text-blue-600 font-medium'
+                                : ''
+                            }`}
+                          >
                             <GitBranch className="h-4 w-4" />
                             {branch}
                             {branch === statusData.current_branch && (
-                              <Badge variant="outline" className="text-xs">current</Badge>
+                              <Badge variant="outline" className="text-xs">
+                                current
+                              </Badge>
                             )}
                           </div>
                         ))}
@@ -121,59 +139,80 @@ export function RepositoryStatusDialog({
               </div>
 
               {/* Working Directory Changes */}
-              {(!statusData.is_synced && (statusData.modified_files?.length || statusData.untracked_files?.length || statusData.staged_files?.length)) && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Edit className="h-5 w-5" />
-                      Working Directory Changes
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {statusData.modified_files && statusData.modified_files.length > 0 && (
-                      <div>
-                        <h6 className="font-medium text-yellow-600 mb-2">Modified Files:</h6>
-                        <div className="space-y-1">
-                          {statusData.modified_files.map((file) => (
-                            <div key={file} className="flex items-center gap-2 text-sm">
-                              <Edit className="h-4 w-4 text-yellow-500" />
-                              {file}
+              {!statusData.is_synced &&
+                (statusData.modified_files?.length ||
+                  statusData.untracked_files?.length ||
+                  statusData.staged_files?.length) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Edit className="h-5 w-5" />
+                        Working Directory Changes
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {statusData.modified_files &&
+                        statusData.modified_files.length > 0 && (
+                          <div>
+                            <h6 className="font-medium text-yellow-600 mb-2">
+                              Modified Files:
+                            </h6>
+                            <div className="space-y-1">
+                              {statusData.modified_files.map(file => (
+                                <div
+                                  key={file}
+                                  className="flex items-center gap-2 text-sm"
+                                >
+                                  <Edit className="h-4 w-4 text-yellow-500" />
+                                  {file}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                          </div>
+                        )}
 
-                    {statusData.untracked_files && statusData.untracked_files.length > 0 && (
-                      <div>
-                        <h6 className="font-medium text-blue-600 mb-2">Untracked Files:</h6>
-                        <div className="space-y-1">
-                          {statusData.untracked_files.map((file) => (
-                            <div key={file} className="flex items-center gap-2 text-sm">
-                              <Plus className="h-4 w-4 text-blue-500" />
-                              {file}
+                      {statusData.untracked_files &&
+                        statusData.untracked_files.length > 0 && (
+                          <div>
+                            <h6 className="font-medium text-blue-600 mb-2">
+                              Untracked Files:
+                            </h6>
+                            <div className="space-y-1">
+                              {statusData.untracked_files.map(file => (
+                                <div
+                                  key={file}
+                                  className="flex items-center gap-2 text-sm"
+                                >
+                                  <Plus className="h-4 w-4 text-blue-500" />
+                                  {file}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                          </div>
+                        )}
 
-                    {statusData.staged_files && statusData.staged_files.length > 0 && (
-                      <div>
-                        <h6 className="font-medium text-green-600 mb-2">Staged Files:</h6>
-                        <div className="space-y-1">
-                          {statusData.staged_files.map((file) => (
-                            <div key={file} className="flex items-center gap-2 text-sm">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              {file}
+                      {statusData.staged_files &&
+                        statusData.staged_files.length > 0 && (
+                          <div>
+                            <h6 className="font-medium text-green-600 mb-2">
+                              Staged Files:
+                            </h6>
+                            <div className="space-y-1">
+                              {statusData.staged_files.map(file => (
+                                <div
+                                  key={file}
+                                  className="flex items-center gap-2 text-sm"
+                                >
+                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                  {file}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                          </div>
+                        )}
+                    </CardContent>
+                  </Card>
+                )}
 
               {/* Recent Commits */}
               {statusData.commits && statusData.commits.length > 0 && (
@@ -186,8 +225,11 @@ export function RepositoryStatusDialog({
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {statusData.commits.slice(0, 10).map((commit) => (
-                        <div key={commit.hash} className="border-l-2 border-gray-200 pl-4">
+                      {statusData.commits.slice(0, 10).map(commit => (
+                        <div
+                          key={commit.hash}
+                          className="border-l-2 border-gray-200 pl-4"
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Badge variant="outline" className="font-mono text-xs">

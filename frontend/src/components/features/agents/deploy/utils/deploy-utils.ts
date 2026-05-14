@@ -12,6 +12,10 @@ export function validateRepositorySelection(repoId: number | null): boolean {
   return repoId !== null && repoId > 0
 }
 
-export function formatDeploymentSummary(total: number, successful: number, failed: number): string {
+export function formatDeploymentSummary(
+  total: number,
+  successful: number,
+  failed: number
+): string {
   return `Total: ${total} | Success: ${successful} | Failed: ${failed}`
 }

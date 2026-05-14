@@ -64,18 +64,23 @@ export function ProgressDialog({
     if (!jobId) return
 
     try {
-      const data = await apiCall(`job-runs/${jobId}`) as JobStatus
+      const data = (await apiCall(`job-runs/${jobId}`)) as JobStatus
       setJobStatus(data)
 
       // Stop polling if job is complete
-      if (data.status === 'completed' || data.status === 'failed' || data.status === 'cancelled') {
+      if (
+        data.status === 'completed' ||
+        data.status === 'failed' ||
+        data.status === 'cancelled'
+      ) {
         setJobCompleted(true)
         if (onJobComplete) {
           onJobComplete(data)
         }
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch job status'
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to fetch job status'
       setError(errorMessage)
     }
   }, [jobId, apiCall, onJobComplete])
@@ -146,9 +151,10 @@ export function ProgressDialog({
       case 'running':
         // If we have result data, calculate based on that
         if (jobStatus.result?.devices_processed) {
-          const total = (jobStatus.result.successful_updates || 0) +
-                       (jobStatus.result.failed_updates || 0) +
-                       (jobStatus.result.skipped_updates || 0)
+          const total =
+            (jobStatus.result.successful_updates || 0) +
+            (jobStatus.result.failed_updates || 0) +
+            (jobStatus.result.skipped_updates || 0)
           return total > 0 ? (jobStatus.result.devices_processed / total) * 100 : 50
         }
         return 50 // Default to 50% for running jobs without progress data
@@ -250,7 +256,9 @@ export function ProgressDialog({
                   <div>Started: {new Date(jobStatus.started_at).toLocaleString()}</div>
                 )}
                 {jobStatus.completed_at && (
-                  <div>Completed: {new Date(jobStatus.completed_at).toLocaleString()}</div>
+                  <div>
+                    Completed: {new Date(jobStatus.completed_at).toLocaleString()}
+                  </div>
                 )}
               </div>
             </div>

@@ -13,7 +13,9 @@ const DEFAULT_OPTIONS: UseRackGroupsQueryOptions = {
   enabled: false,
 }
 
-export function useRackGroupsQuery(options: UseRackGroupsQueryOptions = DEFAULT_OPTIONS) {
+export function useRackGroupsQuery(
+  options: UseRackGroupsQueryOptions = DEFAULT_OPTIONS
+) {
   const { apiCall } = useApi()
   const { location, enabled = false } = options
 
@@ -25,7 +27,9 @@ export function useRackGroupsQuery(options: UseRackGroupsQueryOptions = DEFAULT_
         params.append('location', location)
       }
       const queryString = params.toString()
-      const url = queryString ? `nautobot/rack-groups?${queryString}` : 'nautobot/rack-groups'
+      const url = queryString
+        ? `nautobot/rack-groups?${queryString}`
+        : 'nautobot/rack-groups'
       const data = await apiCall<RackGroupItem[]>(url, { method: 'GET' })
       return data || []
     },

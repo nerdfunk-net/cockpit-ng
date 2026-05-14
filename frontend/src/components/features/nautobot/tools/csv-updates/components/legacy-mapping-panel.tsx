@@ -2,7 +2,13 @@
 
 import { useMemo } from 'react'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertTriangle } from 'lucide-react'
 import type { ObjectType } from '../types'
@@ -49,21 +55,21 @@ export function LegacyMappingPanel({
 
   const handleMappingChange = (csvColumn: string, nautobotField: string) => {
     const newMapping = { ...legacyMapping }
-    
+
     // If selecting 'none', remove the mapping
     if (nautobotField === 'none') {
       delete newMapping[csvColumn]
     } else {
       newMapping[csvColumn] = nautobotField
     }
-    
+
     onLegacyMappingChange(newMapping)
   }
 
   // Check if a field is available for selection (not already mapped by another column)
   const isFieldAvailable = (field: string, currentCsvColumn: string): boolean => {
     if (field === 'none') return true
-    
+
     // A field is available if:
     // 1. It's not mapped by any column, OR
     // 2. It's mapped by the current column
@@ -85,8 +91,9 @@ export function LegacyMappingPanel({
             <div className="text-sm">
               <p className="font-medium mb-1">Legacy CSV format detected</p>
               <p>
-                This CSV file does not match the standard Nautobot format. Please map your CSV columns
-                to Nautobot fields below. The <strong>address</strong> field must be mapped.
+                This CSV file does not match the standard Nautobot format. Please map
+                your CSV columns to Nautobot fields below. The <strong>address</strong>{' '}
+                field must be mapped.
               </p>
             </div>
           </AlertDescription>
@@ -97,7 +104,8 @@ export function LegacyMappingPanel({
             <AlertDescription className="flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <span className="text-sm">
-                <strong>Required:</strong> You must map at least one CSV column to the <strong>address</strong> field.
+                <strong>Required:</strong> You must map at least one CSV column to the{' '}
+                <strong>address</strong> field.
               </span>
             </AlertDescription>
           </Alert>
@@ -109,38 +117,46 @@ export function LegacyMappingPanel({
             <div>Nautobot Field</div>
           </div>
 
-          {csvHeaders.map((header) => {
+          {csvHeaders.map(header => {
             const currentMapping = legacyMapping[header] || 'none'
-            
+
             return (
               <div key={header} className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor={`mapping-${header}`} className="text-sm font-medium truncate" title={header}>
+                <Label
+                  htmlFor={`mapping-${header}`}
+                  className="text-sm font-medium truncate"
+                  title={header}
+                >
                   {header}
                 </Label>
                 <Select
                   value={currentMapping}
-                  onValueChange={(value) => handleMappingChange(header, value)}
+                  onValueChange={value => handleMappingChange(header, value)}
                 >
-                  <SelectTrigger 
-                    id={`mapping-${header}`} 
+                  <SelectTrigger
+                    id={`mapping-${header}`}
                     className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                   >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {NAUTOBOT_IP_ADDRESS_FIELDS.map((field) => {
+                    {NAUTOBOT_IP_ADDRESS_FIELDS.map(field => {
                       const isAvailable = isFieldAvailable(field.value, header)
                       const isRequired = field.required && field.value === 'address'
-                      
+
                       return (
-                        <SelectItem 
-                          key={field.value} 
+                        <SelectItem
+                          key={field.value}
                           value={field.value}
                           disabled={!isAvailable}
                         >
                           {field.label}
                           {isRequired && <span className="text-red-500 ml-1">*</span>}
-                          {!isAvailable && <span className="text-muted-foreground ml-1">(already mapped)</span>}
+                          {!isAvailable && (
+                            <span className="text-muted-foreground ml-1">
+                              (already mapped)
+                            </span>
+                          )}
                         </SelectItem>
                       )
                     })}

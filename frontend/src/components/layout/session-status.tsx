@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useSessionManager } from '@/hooks/use-session-manager'
 import { Badge } from '@/components/ui/badge'
@@ -11,7 +10,10 @@ interface SessionStatusProps {
   className?: string
 }
 
-export function SessionStatus({ showDetails = false, className = '' }: SessionStatusProps) {
+export function SessionStatus({
+  showDetails = false,
+  className = '',
+}: SessionStatusProps) {
   const { token, user } = useAuthStore()
   const { isUserActive, getTimeSinceActivity, refreshToken } = useSessionManager()
 
@@ -63,10 +65,16 @@ export function SessionStatus({ showDetails = false, className = '' }: SessionSt
           <Activity className="h-3 w-3 mr-1" />
           {isUserActive() ? 'Active' : 'Idle'}
         </Badge>
-        
+
         {tokenExpiry && (
-          <Badge 
-            variant={minutesUntilExpiry < 3 ? 'destructive' : minutesUntilExpiry < 5 ? 'secondary' : 'outline'} 
+          <Badge
+            variant={
+              minutesUntilExpiry < 3
+                ? 'destructive'
+                : minutesUntilExpiry < 5
+                  ? 'secondary'
+                  : 'outline'
+            }
             className="text-xs"
           >
             <Clock className="h-3 w-3 mr-1" />
@@ -79,7 +87,9 @@ export function SessionStatus({ showDetails = false, className = '' }: SessionSt
 
   // Detailed session information
   return (
-    <div className={`bg-white border border-slate-200 rounded-lg p-4 shadow-sm ${className}`}>
+    <div
+      className={`bg-white border border-slate-200 rounded-lg p-4 shadow-sm ${className}`}
+    >
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium text-slate-900">Session Status</h3>
         <button
@@ -90,13 +100,13 @@ export function SessionStatus({ showDetails = false, className = '' }: SessionSt
           Refresh
         </button>
       </div>
-      
+
       <div className="space-y-2 text-xs text-slate-600">
         <div className="flex justify-between">
           <span>User:</span>
           <span className="font-medium">{user.username}</span>
         </div>
-        
+
         <div className="flex justify-between">
           <span>Status:</span>
           <Badge variant={isUserActive() ? 'default' : 'secondary'} className="text-xs">
@@ -104,23 +114,29 @@ export function SessionStatus({ showDetails = false, className = '' }: SessionSt
             {isUserActive() ? 'Active' : 'Idle'}
           </Badge>
         </div>
-        
+
         <div className="flex justify-between">
           <span>Last Activity:</span>
           <span>{formatTimeSince(getTimeSinceActivity())} ago</span>
         </div>
-        
+
         {tokenExpiry && (
           <>
             <div className="flex justify-between">
               <span>Token Expires:</span>
               <span>{tokenExpiry.toLocaleTimeString()}</span>
             </div>
-            
+
             <div className="flex justify-between">
               <span>Time Remaining:</span>
-              <Badge 
-                variant={minutesUntilExpiry < 3 ? 'destructive' : minutesUntilExpiry < 5 ? 'secondary' : 'outline'} 
+              <Badge
+                variant={
+                  minutesUntilExpiry < 3
+                    ? 'destructive'
+                    : minutesUntilExpiry < 5
+                      ? 'secondary'
+                      : 'outline'
+                }
                 className="text-xs"
               >
                 <Clock className="h-3 w-3 mr-1" />

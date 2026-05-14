@@ -90,7 +90,8 @@ export function CsvFieldMappingPanel({
           <tbody>
             {headers.map(header => {
               const mapped = fieldMapping[header]
-              const selectValue = mapped === null || mapped === undefined ? NOT_USED : mapped
+              const selectValue =
+                mapped === null || mapped === undefined ? NOT_USED : mapped
               const isMapped = selectValue !== NOT_USED
 
               return (

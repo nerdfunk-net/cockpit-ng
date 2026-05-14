@@ -11,7 +11,9 @@ interface UseHostsPaginationReturn {
   resetPage: () => void
 }
 
-export function useHostsPagination(filteredHosts: CheckMKHost[]): UseHostsPaginationReturn {
+export function useHostsPagination(
+  filteredHosts: CheckMKHost[]
+): UseHostsPaginationReturn {
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(50)
 

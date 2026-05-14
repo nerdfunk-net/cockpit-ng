@@ -2,7 +2,14 @@
  * Dialog for previewing export data before downloading
  */
 
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Eye, Copy, Check, Loader2 } from 'lucide-react'
@@ -42,7 +49,7 @@ export function PreviewExportDialog({
     if (show && devices.length > 0) {
       fetchPreviewData()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show, devices, properties])
 
   const fetchPreviewData = async () => {
@@ -64,10 +71,12 @@ export function PreviewExportDialog({
           properties: properties,
           max_devices: 5,
           export_format: format,
-          csv_options: csvOptions ? {
-            ...csvOptions,
-            includeHeaders: csvOptions.includeHeaders?.toString() ?? 'true',
-          } : undefined,
+          csv_options: csvOptions
+            ? {
+                ...csvOptions,
+                includeHeaders: csvOptions.includeHeaders?.toString() ?? 'true',
+              }
+            : undefined,
         }),
       })
 
@@ -115,8 +124,8 @@ export function PreviewExportDialog({
             Export Preview
           </DialogTitle>
           <DialogDescription>
-            Preview of the first 5 devices in {format.toUpperCase()} format.
-            Full device data will be fetched from Nautobot during actual export.
+            Preview of the first 5 devices in {format.toUpperCase()} format. Full device
+            data will be fetched from Nautobot during actual export.
           </DialogDescription>
         </DialogHeader>
 
@@ -124,7 +133,9 @@ export function PreviewExportDialog({
         {isLoading && (
           <div className="p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-green-600" />
-            <p className="text-sm text-gray-600">Fetching full device data from Nautobot...</p>
+            <p className="text-sm text-gray-600">
+              Fetching full device data from Nautobot...
+            </p>
           </div>
         )}
 
@@ -141,8 +152,19 @@ export function PreviewExportDialog({
             {/* Success Notice */}
             <div className="p-3 bg-green-50 border-l-4 border-green-500 rounded">
               <p className="text-sm text-green-800">
-                <strong>✓ Real Data Preview:</strong> Showing complete device data fetched directly from Nautobot using the same GraphQL query as the export.
-                All properties including <code className="bg-green-100 px-1 py-0.5 rounded text-xs">serial</code>, <code className="bg-green-100 px-1 py-0.5 rounded text-xs">asset_tag</code>, <code className="bg-green-100 px-1 py-0.5 rounded text-xs">_custom_field_data</code>, etc. are shown with actual values.
+                <strong>✓ Real Data Preview:</strong> Showing complete device data
+                fetched directly from Nautobot using the same GraphQL query as the
+                export. All properties including{' '}
+                <code className="bg-green-100 px-1 py-0.5 rounded text-xs">serial</code>
+                ,{' '}
+                <code className="bg-green-100 px-1 py-0.5 rounded text-xs">
+                  asset_tag
+                </code>
+                ,{' '}
+                <code className="bg-green-100 px-1 py-0.5 rounded text-xs">
+                  _custom_field_data
+                </code>
+                , etc. are shown with actual values.
               </p>
             </div>
           </>
@@ -152,84 +174,97 @@ export function PreviewExportDialog({
           <>
             {/* Preview Stats */}
             <div className="flex items-center gap-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-white border-green-300 text-green-700">
-              {devices.length} device{devices.length !== 1 ? 's' : ''}
-            </Badge>
-            <Badge variant="outline" className="bg-white border-green-300 text-green-700">
-              {properties.length} propert{properties.length !== 1 ? 'ies' : 'y'}
-            </Badge>
-            <Badge variant="outline" className="bg-white border-green-300 text-green-700">
-              {format.toUpperCase()}
-            </Badge>
-          </div>
-          <div className="ml-auto text-xs text-green-700">
-            {lineCount} lines · {charCount.toLocaleString()} characters
-          </div>
-        </div>
-
-        {/* Format-specific info */}
-        {format === 'csv' && csvOptions && (
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm font-medium text-blue-800 mb-2">CSV Options:</p>
-            <div className="grid grid-cols-3 gap-4 text-xs text-blue-700">
-              <div>
-                <span className="font-medium">Delimiter:</span>{' '}
-                <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">
-                  {csvOptions.delimiter || '(empty)'}
-                </code>
-              </div>
-              <div>
-                <span className="font-medium">Quote:</span>{' '}
-                <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">
-                  {csvOptions.quoteChar || '(empty)'}
-                </code>
-              </div>
-              <div>
-                <span className="font-medium">Headers:</span>{' '}
-                <Badge variant={csvOptions.includeHeaders ? 'default' : 'secondary'} className="text-xs">
-                  {csvOptions.includeHeaders ? 'Yes' : 'No'}
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="bg-white border-green-300 text-green-700"
+                >
+                  {devices.length} device{devices.length !== 1 ? 's' : ''}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="bg-white border-green-300 text-green-700"
+                >
+                  {properties.length} propert{properties.length !== 1 ? 'ies' : 'y'}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="bg-white border-green-300 text-green-700"
+                >
+                  {format.toUpperCase()}
                 </Badge>
               </div>
+              <div className="ml-auto text-xs text-green-700">
+                {lineCount} lines · {charCount.toLocaleString()} characters
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* Preview Content */}
-        <div className="border rounded-lg overflow-hidden">
-          <div className="bg-gray-800 text-gray-100 px-4 py-2 flex items-center justify-between">
-            <span className="text-sm font-medium">Preview (First 5 devices)</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopy}
-              className="text-gray-100 hover:bg-gray-700 hover:text-white"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4 mr-1" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copy
-                </>
-              )}
-            </Button>
-          </div>
-          <div className="bg-gray-900 p-4 overflow-auto max-h-[400px]">
-            <pre className="text-sm font-mono text-gray-100 whitespace-pre">
-              {preview}
-            </pre>
-          </div>
-        </div>
+            {/* Format-specific info */}
+            {format === 'csv' && csvOptions && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm font-medium text-blue-800 mb-2">CSV Options:</p>
+                <div className="grid grid-cols-3 gap-4 text-xs text-blue-700">
+                  <div>
+                    <span className="font-medium">Delimiter:</span>{' '}
+                    <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">
+                      {csvOptions.delimiter || '(empty)'}
+                    </code>
+                  </div>
+                  <div>
+                    <span className="font-medium">Quote:</span>{' '}
+                    <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">
+                      {csvOptions.quoteChar || '(empty)'}
+                    </code>
+                  </div>
+                  <div>
+                    <span className="font-medium">Headers:</span>{' '}
+                    <Badge
+                      variant={csvOptions.includeHeaders ? 'default' : 'secondary'}
+                      className="text-xs"
+                    >
+                      {csvOptions.includeHeaders ? 'Yes' : 'No'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Preview Content */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="bg-gray-800 text-gray-100 px-4 py-2 flex items-center justify-between">
+                <span className="text-sm font-medium">Preview (First 5 devices)</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopy}
+                  className="text-gray-100 hover:bg-gray-700 hover:text-white"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4 mr-1" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copy
+                    </>
+                  )}
+                </Button>
+              </div>
+              <div className="bg-gray-900 p-4 overflow-auto max-h-[400px]">
+                <pre className="text-sm font-mono text-gray-100 whitespace-pre">
+                  {preview}
+                </pre>
+              </div>
+            </div>
 
             {devices.length > 5 && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <p className="text-sm text-amber-800">
                   <strong>Note:</strong> This preview shows only the first 5 devices.
-                  The full export will contain all <strong>{devices.length}</strong> selected devices.
+                  The full export will contain all <strong>{devices.length}</strong>{' '}
+                  selected devices.
                 </p>
               </div>
             )}

@@ -101,14 +101,8 @@ interface SortablePropertyItemProps {
 }
 
 function SortablePropertyItem({ property, onToggle }: SortablePropertyItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: property.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: property.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -122,9 +116,10 @@ function SortablePropertyItem({ property, onToggle }: SortablePropertyItemProps)
       className={`
         group relative flex items-center gap-2 p-2 rounded-md border transition-all
         ${isDragging ? 'border-blue-400 bg-blue-50 shadow-lg z-50 opacity-90' : ''}
-        ${property.enabled 
-          ? 'border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 hover:border-blue-300 hover:shadow' 
-          : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+        ${
+          property.enabled
+            ? 'border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 hover:border-blue-300 hover:shadow'
+            : 'border-gray-200 bg-gray-50 hover:border-gray-300'
         }
       `}
     >
@@ -151,7 +146,9 @@ function SortablePropertyItem({ property, onToggle }: SortablePropertyItemProps)
         >
           {property.label}
         </Label>
-        <p className={`text-xs leading-tight ${property.enabled ? 'text-gray-600' : 'text-gray-400'}`}>
+        <p
+          className={`text-xs leading-tight ${property.enabled ? 'text-gray-600' : 'text-gray-400'}`}
+        >
           {property.description}
         </p>
       </div>
@@ -161,9 +158,10 @@ function SortablePropertyItem({ property, onToggle }: SortablePropertyItemProps)
         onClick={() => onToggle(property.id)}
         className={`
           px-2 py-1 rounded transition-all flex items-center gap-1.5 font-medium text-xs
-          ${property.enabled 
-            ? 'bg-blue-600 text-white hover:bg-blue-700' 
-            : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
+          ${
+            property.enabled
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
           }
         `}
         aria-label={property.enabled ? 'Disable property' : 'Enable property'}
@@ -198,7 +196,7 @@ export function PropertiesTab({
     // Create initial order based on selectedProperties, then add remaining
     const selectedSet = new Set(selectedProperties)
     const orderedProps: PropertyItem[] = []
-    
+
     // First add selected properties in their order
     selectedProperties.forEach(id => {
       const prop = DEFAULT_PROPERTIES.find(p => p.id === id)
@@ -206,14 +204,14 @@ export function PropertiesTab({
         orderedProps.push({ ...prop, enabled: true })
       }
     })
-    
+
     // Then add unselected properties
     DEFAULT_PROPERTIES.forEach(prop => {
       if (!selectedSet.has(prop.id)) {
         orderedProps.push({ ...prop, enabled: false })
       }
     })
-    
+
     return orderedProps
   })
 
@@ -226,9 +224,7 @@ export function PropertiesTab({
 
   // Sync changes back to parent
   useEffect(() => {
-    const enabledPropertyIds = properties
-      .filter(p => p.enabled)
-      .map(p => p.id)
+    const enabledPropertyIds = properties.filter(p => p.enabled).map(p => p.id)
     onPropertiesChange(enabledPropertyIds)
   }, [properties, onPropertiesChange])
 
@@ -236,28 +232,26 @@ export function PropertiesTab({
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      setProperties((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id)
-        const newIndex = items.findIndex((item) => item.id === over.id)
+      setProperties(items => {
+        const oldIndex = items.findIndex(item => item.id === active.id)
+        const newIndex = items.findIndex(item => item.id === over.id)
         return arrayMove(items, oldIndex, newIndex)
       })
     }
   }
 
   const handleToggle = (id: string) => {
-    setProperties((items) =>
-      items.map((item) =>
-        item.id === id ? { ...item, enabled: !item.enabled } : item
-      )
+    setProperties(items =>
+      items.map(item => (item.id === id ? { ...item, enabled: !item.enabled } : item))
     )
   }
 
   const handleEnableAll = () => {
-    setProperties((items) => items.map((item) => ({ ...item, enabled: true })))
+    setProperties(items => items.map(item => ({ ...item, enabled: true })))
   }
 
   const handleDisableAll = () => {
-    setProperties((items) => items.map((item) => ({ ...item, enabled: false })))
+    setProperties(items => items.map(item => ({ ...item, enabled: false })))
   }
 
   const handleOnboardingPreset = () => {
@@ -271,19 +265,19 @@ export function PropertiesTab({
       'tags',
       '_custom_field_data',
     ]
-    
+
     const enabledIds = new Set(onboardingOrder)
-    
+
     // Create new ordered array: enabled properties first (in order), then disabled ones
     const enabledProps = onboardingOrder
       .map(id => properties.find(p => p.id === id))
       .filter((p): p is PropertyItem => p !== undefined)
       .map(p => ({ ...p, enabled: true }))
-    
+
     const disabledProps = properties
       .filter(p => !enabledIds.has(p.id))
       .map(p => ({ ...p, enabled: false }))
-    
+
     setProperties([...enabledProps, ...disabledProps])
   }
 
@@ -294,7 +288,8 @@ export function PropertiesTab({
       <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 py-2">
         <Info className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-900 text-sm">
-          <strong>Drag and drop</strong> to reorder (CSV column order). Click <strong>Export/Skip</strong> to toggle.
+          <strong>Drag and drop</strong> to reorder (CSV column order). Click{' '}
+          <strong>Export/Skip</strong> to toggle.
         </AlertDescription>
       </Alert>
 
@@ -336,7 +331,7 @@ export function PropertiesTab({
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-1 max-w-2xl mx-auto">
-                {properties.map((property) => (
+                {properties.map(property => (
                   <SortablePropertyItem
                     key={property.id}
                     property={property}
@@ -349,7 +344,8 @@ export function PropertiesTab({
 
           <div className="mt-3 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded border border-blue-200">
             <p className="text-xs font-medium text-gray-900">
-              <span className="text-blue-600 font-bold text-base">{enabledCount}</span> of {properties.length} properties enabled
+              <span className="text-blue-600 font-bold text-base">{enabledCount}</span>{' '}
+              of {properties.length} properties enabled
             </p>
             {enabledCount === 0 && (
               <p className="text-xs text-red-600 font-medium mt-0.5">

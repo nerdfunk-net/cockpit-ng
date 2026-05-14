@@ -46,13 +46,19 @@ export function InterfacePropertiesModal({
   const interfaces = watch('interfaces')
   const interfaceIndex = interfaces?.findIndex(iface => iface.id === interfaceId) ?? -1
 
-  if (interfaceIndex === -1 || !show || !interfaces || interfaceIndex >= interfaces.length) return null
+  if (
+    interfaceIndex === -1 ||
+    !show ||
+    !interfaces ||
+    interfaceIndex >= interfaces.length
+  )
+    return null
 
   const currentInterface = interfaces[interfaceIndex]
   if (!currentInterface) return null
 
   return (
-    <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={show} onOpenChange={open => !open && onClose()}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -67,14 +73,19 @@ export function InterfacePropertiesModal({
         <div className="space-y-4 py-4">
           {/* Basic Settings Section */}
           <div className="rounded-lg border bg-green-50 p-4">
-            <h4 className="text-sm font-semibold text-green-700 mb-3">Basic Settings</h4>
+            <h4 className="text-sm font-semibold text-green-700 mb-3">
+              Basic Settings
+            </h4>
             <div className="space-y-3">
               <div className="flex items-center gap-6">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     checked={watch(`interfaces.${interfaceIndex}.enabled`) ?? true}
-                    onCheckedChange={(checked) =>
-                      setValue(`interfaces.${interfaceIndex}.enabled`, checked as boolean)
+                    onCheckedChange={checked =>
+                      setValue(
+                        `interfaces.${interfaceIndex}.enabled`,
+                        checked as boolean
+                      )
                     }
                   />
                   <Label className="cursor-pointer text-sm">Enabled</Label>
@@ -82,8 +93,11 @@ export function InterfacePropertiesModal({
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     checked={watch(`interfaces.${interfaceIndex}.mgmt_only`) ?? false}
-                    onCheckedChange={(checked) =>
-                      setValue(`interfaces.${interfaceIndex}.mgmt_only`, checked as boolean)
+                    onCheckedChange={checked =>
+                      setValue(
+                        `interfaces.${interfaceIndex}.mgmt_only`,
+                        checked as boolean
+                      )
                     }
                   />
                   <Label className="cursor-pointer text-sm">Management Only</Label>
@@ -123,7 +137,9 @@ export function InterfacePropertiesModal({
 
           {/* VLAN Configuration Section */}
           <div className="rounded-lg border bg-blue-50 p-4">
-            <h4 className="text-sm font-semibold text-blue-700 mb-3">VLAN Configuration</h4>
+            <h4 className="text-sm font-semibold text-blue-700 mb-3">
+              VLAN Configuration
+            </h4>
             {isLoadingVlans && (
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -136,13 +152,15 @@ export function InterfacePropertiesModal({
                   <Label className="text-xs">Mode</Label>
                   <Select
                     value={watch(`interfaces.${interfaceIndex}.mode`) || 'none'}
-                    onValueChange={(value) => setValue(`interfaces.${interfaceIndex}.mode`, value)}
+                    onValueChange={value =>
+                      setValue(`interfaces.${interfaceIndex}.mode`, value)
+                    }
                   >
                     <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                       <SelectValue placeholder="Select mode" />
                     </SelectTrigger>
                     <SelectContent>
-                      {VLAN_MODES.map((mode) => (
+                      {VLAN_MODES.map(mode => (
                         <SelectItem key={mode.value} value={mode.value}>
                           {mode.label}
                         </SelectItem>
@@ -153,8 +171,10 @@ export function InterfacePropertiesModal({
                 <div className="space-y-1">
                   <Label className="text-xs">Untagged VLAN</Label>
                   <Select
-                    value={watch(`interfaces.${interfaceIndex}.untagged_vlan`) || 'none'}
-                    onValueChange={(value) =>
+                    value={
+                      watch(`interfaces.${interfaceIndex}.untagged_vlan`) || 'none'
+                    }
+                    onValueChange={value =>
                       setValue(
                         `interfaces.${interfaceIndex}.untagged_vlan`,
                         value === 'none' ? '' : value
@@ -163,11 +183,13 @@ export function InterfacePropertiesModal({
                     disabled={isLoadingVlans}
                   >
                     <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
-                      <SelectValue placeholder={isLoadingVlans ? 'Loading...' : 'Select VLAN'} />
+                      <SelectValue
+                        placeholder={isLoadingVlans ? 'Loading...' : 'Select VLAN'}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
-                      {vlans.map((vlan) => (
+                      {vlans.map(vlan => (
                         <SelectItem key={vlan.id} value={vlan.id}>
                           {`${vlan.vid} - ${vlan.name}${vlan.location ? ` (${vlan.location.name})` : ' (Global)'}`}
                         </SelectItem>
@@ -179,14 +201,19 @@ export function InterfacePropertiesModal({
                   <Label className="text-xs">Tagged VLANs</Label>
                   <Select
                     value=""
-                    onValueChange={(value) => {
-                      const current = watch(`interfaces.${interfaceIndex}.tagged_vlans`) || []
+                    onValueChange={value => {
+                      const current =
+                        watch(`interfaces.${interfaceIndex}.tagged_vlans`) || []
                       if (value && !current.includes(value)) {
-                        setValue(`interfaces.${interfaceIndex}.tagged_vlans`, [...current, value])
+                        setValue(`interfaces.${interfaceIndex}.tagged_vlans`, [
+                          ...current,
+                          value,
+                        ])
                       }
                     }}
                     disabled={
-                      isLoadingVlans || watch(`interfaces.${interfaceIndex}.mode`) !== 'tagged'
+                      isLoadingVlans ||
+                      watch(`interfaces.${interfaceIndex}.mode`) !== 'tagged'
                     }
                   >
                     <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
@@ -203,40 +230,47 @@ export function InterfacePropertiesModal({
                     <SelectContent>
                       {vlans
                         .filter(
-                          (vlan) =>
-                            !watch(`interfaces.${interfaceIndex}.tagged_vlans`)?.includes(vlan.id)
+                          vlan =>
+                            !watch(
+                              `interfaces.${interfaceIndex}.tagged_vlans`
+                            )?.includes(vlan.id)
                         )
-                        .map((vlan) => (
+                        .map(vlan => (
                           <SelectItem key={vlan.id} value={vlan.id}>
                             {`${vlan.vid} - ${vlan.name}${vlan.location ? ` (${vlan.location.name})` : ' (Global)'}`}
                           </SelectItem>
                         ))}
                     </SelectContent>
                   </Select>
-                  {watch(`interfaces.${interfaceIndex}.tagged_vlans`)?.length && watch(`interfaces.${interfaceIndex}.tagged_vlans`)!.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {watch(`interfaces.${interfaceIndex}.tagged_vlans`)!.map((vlanId) => {
-                        const vlan = vlans.find((v) => v.id === vlanId)
-                        return (
-                          <Badge
-                            key={vlanId}
-                            variant="secondary"
-                            className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground text-xs"
-                            onClick={() => {
-                              const current =
-                                watch(`interfaces.${interfaceIndex}.tagged_vlans`) || []
-                              setValue(
-                                `interfaces.${interfaceIndex}.tagged_vlans`,
-                                current.filter((id) => id !== vlanId)
-                              )
-                            }}
-                          >
-                            {vlan ? `${vlan.vid} - ${vlan.name}` : vlanId} ×
-                          </Badge>
-                        )
-                      })}
-                    </div>
-                  )}
+                  {watch(`interfaces.${interfaceIndex}.tagged_vlans`)?.length &&
+                    watch(`interfaces.${interfaceIndex}.tagged_vlans`)!.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {watch(`interfaces.${interfaceIndex}.tagged_vlans`)!.map(
+                          vlanId => {
+                            const vlan = vlans.find(v => v.id === vlanId)
+                            return (
+                              <Badge
+                                key={vlanId}
+                                variant="secondary"
+                                className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground text-xs"
+                                onClick={() => {
+                                  const current =
+                                    watch(
+                                      `interfaces.${interfaceIndex}.tagged_vlans`
+                                    ) || []
+                                  setValue(
+                                    `interfaces.${interfaceIndex}.tagged_vlans`,
+                                    current.filter(id => id !== vlanId)
+                                  )
+                                }}
+                              >
+                                {vlan ? `${vlan.vid} - ${vlan.name}` : vlanId} ×
+                              </Badge>
+                            )
+                          }
+                        )}
+                      </div>
+                    )}
                 </div>
               </div>
             </div>
@@ -244,7 +278,9 @@ export function InterfacePropertiesModal({
 
           {/* Advanced Settings Section */}
           <div className="rounded-lg border bg-purple-50 p-4">
-            <h4 className="text-sm font-semibold text-purple-700 mb-3">Advanced Settings</h4>
+            <h4 className="text-sm font-semibold text-purple-700 mb-3">
+              Advanced Settings
+            </h4>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Parent Interface</Label>
@@ -275,9 +311,12 @@ export function InterfacePropertiesModal({
               <Label className="text-xs">Tags (comma-separated)</Label>
               <Input
                 value={watch(`interfaces.${interfaceIndex}.tags`)?.join(', ') || ''}
-                onChange={(e) => {
+                onChange={e => {
                   const tags = e.target.value
-                    ? e.target.value.split(',').map((v) => v.trim()).filter(Boolean)
+                    ? e.target.value
+                        .split(',')
+                        .map(v => v.trim())
+                        .filter(Boolean)
                     : []
                   setValue(`interfaces.${interfaceIndex}.tags`, tags)
                 }}

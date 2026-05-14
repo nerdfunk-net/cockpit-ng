@@ -77,7 +77,8 @@ export function DeleteSnapshotDialog({
         <div className="space-y-4">
           <Alert>
             <AlertDescription>
-              You can remove the snapshot from the database only, or remove both the database entry and all associated files from the Git repository.
+              You can remove the snapshot from the database only, or remove both the
+              database entry and all associated files from the Git repository.
             </AlertDescription>
           </Alert>
 
@@ -85,13 +86,15 @@ export function DeleteSnapshotDialog({
             <div>
               <h4 className="font-medium text-sm mb-1">Remove from DB</h4>
               <p className="text-sm text-muted-foreground">
-                Removes the snapshot record from the database. Files in Git remain untouched.
+                Removes the snapshot record from the database. Files in Git remain
+                untouched.
               </p>
             </div>
             <div>
               <h4 className="font-medium text-sm mb-1">Remove DB & Files</h4>
               <p className="text-sm text-muted-foreground">
-                Removes the snapshot record from the database AND deletes all snapshot files from the Git repository.
+                Removes the snapshot record from the database AND deletes all snapshot
+                files from the Git repository.
               </p>
             </div>
           </div>

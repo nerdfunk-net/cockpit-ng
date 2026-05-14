@@ -50,14 +50,14 @@ async function handleRequest(
   try {
     const originalPath = request.nextUrl.pathname
     const proxyPrefix = '/api/proxy/'
-    
+
     // Extract the path after /api/proxy/
-    const pathAfterProxy = originalPath.startsWith(proxyPrefix) 
+    const pathAfterProxy = originalPath.startsWith(proxyPrefix)
       ? originalPath.slice(proxyPrefix.length)
       : pathSegments.join('/')
-    
+
     const searchParams = request.nextUrl.searchParams.toString()
-    
+
     // Handle auth and profile endpoints differently - they don't use /api/ prefix
     // Also don't add /api/ if the path already starts with api/
     let url: string
@@ -69,9 +69,9 @@ async function handleRequest(
     } else {
       url = `${BACKEND_URL}/api/${pathAfterProxy}${searchParams ? `?${searchParams}` : ''}`
     }
-    
+
     console.log(`Frontend API: Proxying ${method} request to:`, url)
-    
+
     // Get request body for methods that can have one
     let body = undefined
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -81,38 +81,38 @@ async function handleRequest(
         // No body or invalid body
       }
     }
-    
+
     // Get headers from the original request
     const headers: Record<string, string> = {}
-    
+
     // Copy important headers
     const headersToCopy = [
       'authorization',
       'content-type',
       'accept',
       'user-agent',
-      'x-forwarded-for'
+      'x-forwarded-for',
     ]
-    
+
     headersToCopy.forEach(headerName => {
       const value = request.headers.get(headerName)
       if (value) {
         headers[headerName] = value
       }
     })
-    
+
     // Set default content-type if not set and we have a body
     if (body && !headers['content-type']) {
       headers['content-type'] = 'application/json'
     }
-    
+
     // Forward the request to the backend
     const backendResponse = await fetch(url, {
       method,
       headers,
       ...(body && { body }),
     })
-    
+
     console.log(`Backend ${method} response status:`, backendResponse.status)
 
     // Handle 204 No Content responses
@@ -173,23 +173,19 @@ async function handleRequest(
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'Pragma': 'no-cache',
+        Pragma: 'no-cache',
       },
     })
-
   } catch (error) {
     console.error(`Frontend API ${method} error:`, error)
-    
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
       return NextResponse.json(
         { error: 'Cannot connect to backend server' },
         { status: 503 }
       )
     }
-    
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

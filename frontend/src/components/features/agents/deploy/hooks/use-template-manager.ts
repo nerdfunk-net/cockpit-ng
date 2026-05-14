@@ -60,28 +60,31 @@ export function useTemplateManager(category: string = 'agent') {
     loadTemplates()
   }, [loadTemplates])
 
-  const handleTemplateChange = useCallback(async (templateId: string) => {
-    setSelectedTemplateId(templateId)
-    if (templateId === 'none') {
-      setSelectedTemplate(null)
-      setEditedTemplateContent('')
-      return
-    }
+  const handleTemplateChange = useCallback(
+    async (templateId: string) => {
+      setSelectedTemplateId(templateId)
+      if (templateId === 'none') {
+        setSelectedTemplate(null)
+        setEditedTemplateContent('')
+        return
+      }
 
-    // Fetch full template details including variables
-    setIsLoadingTemplate(true)
-    try {
-      const template = await apiCall<Template>(`templates/${templateId}`)
-      setSelectedTemplate(template)
-      setEditedTemplateContent(template.content)
-    } catch (error) {
-      console.error('Error loading template details:', error)
-      setSelectedTemplate(null)
-      setEditedTemplateContent('')
-    } finally {
-      setIsLoadingTemplate(false)
-    }
-  }, [apiCall])
+      // Fetch full template details including variables
+      setIsLoadingTemplate(true)
+      try {
+        const template = await apiCall<Template>(`templates/${templateId}`)
+        setSelectedTemplate(template)
+        setEditedTemplateContent(template.content)
+      } catch (error) {
+        console.error('Error loading template details:', error)
+        setSelectedTemplate(null)
+        setEditedTemplateContent('')
+      } finally {
+        setIsLoadingTemplate(false)
+      }
+    },
+    [apiCall]
+  )
 
   const handleSaveTemplate = useCallback(async () => {
     if (!selectedTemplate || selectedTemplate.scope !== 'private') {
@@ -93,8 +96,8 @@ export function useTemplateManager(category: string = 'agent') {
       await apiCall(`templates/${selectedTemplate.id}`, {
         method: 'PUT',
         body: JSON.stringify({
-          content: editedTemplateContent
-        })
+          content: editedTemplateContent,
+        }),
       })
 
       // Update the local template
@@ -107,24 +110,27 @@ export function useTemplateManager(category: string = 'agent') {
     }
   }, [selectedTemplate, editedTemplateContent, apiCall])
 
-  return useMemo(() => ({
-    templates,
-    selectedTemplateId,
-    selectedTemplate,
-    editedTemplateContent,
-    isSavingTemplate,
-    isLoadingTemplate,
-    setEditedTemplateContent,
-    handleTemplateChange,
-    handleSaveTemplate,
-  }), [
-    templates,
-    selectedTemplateId,
-    selectedTemplate,
-    editedTemplateContent,
-    isSavingTemplate,
-    isLoadingTemplate,
-    handleTemplateChange,
-    handleSaveTemplate
-  ])
+  return useMemo(
+    () => ({
+      templates,
+      selectedTemplateId,
+      selectedTemplate,
+      editedTemplateContent,
+      isSavingTemplate,
+      isLoadingTemplate,
+      setEditedTemplateContent,
+      handleTemplateChange,
+      handleSaveTemplate,
+    }),
+    [
+      templates,
+      selectedTemplateId,
+      selectedTemplate,
+      editedTemplateContent,
+      isSavingTemplate,
+      isLoadingTemplate,
+      handleTemplateChange,
+      handleSaveTemplate,
+    ]
+  )
 }

@@ -3,7 +3,9 @@ import type { Template, TemplateFilters } from '../types'
 /**
  * Get badge variant based on template source
  */
-export function getSourceBadgeVariant(source: string): 'default' | 'secondary' | 'outline' {
+export function getSourceBadgeVariant(
+  source: string
+): 'default' | 'secondary' | 'outline' {
   switch (source) {
     case 'git':
       return 'default'
@@ -40,15 +42,18 @@ export function filterTemplates(
   filters: TemplateFilters
 ): Template[] {
   return templates.filter(template => {
-    const matchesSearch = !filters.search ||
+    const matchesSearch =
+      !filters.search ||
       template.name.toLowerCase().includes(filters.search.toLowerCase()) ||
       template.description?.toLowerCase().includes(filters.search.toLowerCase())
 
-    const matchesCategory = !filters.category ||
+    const matchesCategory =
+      !filters.category ||
       filters.category === '__all__' ||
       template.category === filters.category
 
-    const matchesSource = !filters.source ||
+    const matchesSource =
+      !filters.source ||
       filters.source === '__all__' ||
       template.source === filters.source
 
@@ -62,7 +67,7 @@ export function filterTemplates(
 export function readFileContent(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target?.result as string)
+    reader.onload = e => resolve(e.target?.result as string)
     reader.onerror = reject
     reader.readAsText(file)
   })

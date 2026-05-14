@@ -1,15 +1,15 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog'
 import {
   Table,
   TableBody,
@@ -17,12 +17,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from '@/components/ui/table'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   CheckCircle2,
   XCircle as XCircleIcon,
@@ -30,15 +26,17 @@ import {
   Key,
   Eye,
   Terminal,
-} from "lucide-react"
-import { RunCommandsJobResult, RunCommandsDeviceResult } from "../types/job-results"
+} from 'lucide-react'
+import { RunCommandsJobResult, RunCommandsDeviceResult } from '../types/job-results'
 
 interface RunCommandsResultProps {
   result: RunCommandsJobResult
 }
 
 export function RunCommandsResultView({ result }: RunCommandsResultProps) {
-  const [viewingDevice, setViewingDevice] = useState<RunCommandsDeviceResult | null>(null)
+  const [viewingDevice, setViewingDevice] = useState<RunCommandsDeviceResult | null>(
+    null
+  )
 
   // Combine all devices into a single list for the table
   const allDevices = [
@@ -53,30 +51,50 @@ export function RunCommandsResultView({ result }: RunCommandsResultProps) {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Terminal className="h-4 w-4 text-blue-600" />
-            <p className="text-xs text-blue-600 uppercase tracking-wide font-medium">Template</p>
+            <p className="text-xs text-blue-600 uppercase tracking-wide font-medium">
+              Template
+            </p>
           </div>
-          <p className="text-sm font-semibold text-blue-700 truncate">{result.command_template}</p>
+          <p className="text-sm font-semibold text-blue-700 truncate">
+            {result.command_template}
+          </p>
         </div>
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Server className="h-4 w-4 text-gray-600" />
-            <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">Total Devices</p>
+            <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">
+              Total Devices
+            </p>
           </div>
           <p className="text-2xl font-bold text-gray-700">{result.total}</p>
         </div>
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <p className="text-xs text-green-600 uppercase tracking-wide font-medium">Successful</p>
+            <p className="text-xs text-green-600 uppercase tracking-wide font-medium">
+              Successful
+            </p>
           </div>
           <p className="text-2xl font-bold text-green-700">{result.success_count}</p>
         </div>
-        <div className={`${result.failed_count > 0 ? 'status-error' : 'bg-gray-50 border-gray-200'} border rounded-lg p-3 text-center`}>
+        <div
+          className={`${result.failed_count > 0 ? 'status-error' : 'bg-gray-50 border-gray-200'} border rounded-lg p-3 text-center`}
+        >
           <div className="flex items-center justify-center gap-2 mb-1">
-            <XCircleIcon className={`h-4 w-4 ${result.failed_count > 0 ? 'text-red-600' : 'text-gray-400'}`} />
-            <p className={`text-xs uppercase tracking-wide font-medium ${result.failed_count > 0 ? 'text-red-600' : 'text-gray-500'}`}>Failed</p>
+            <XCircleIcon
+              className={`h-4 w-4 ${result.failed_count > 0 ? 'text-red-600' : 'text-gray-400'}`}
+            />
+            <p
+              className={`text-xs uppercase tracking-wide font-medium ${result.failed_count > 0 ? 'text-red-600' : 'text-gray-500'}`}
+            >
+              Failed
+            </p>
           </div>
-          <p className={`text-2xl font-bold ${result.failed_count > 0 ? 'text-red-700' : 'text-gray-400'}`}>{result.failed_count}</p>
+          <p
+            className={`text-2xl font-bold ${result.failed_count > 0 ? 'text-red-700' : 'text-gray-400'}`}
+          >
+            {result.failed_count}
+          </p>
         </div>
       </div>
 
@@ -85,7 +103,10 @@ export function RunCommandsResultView({ result }: RunCommandsResultProps) {
         <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
           <Key className="h-4 w-4 text-amber-600" />
           <span className="text-sm text-amber-700">
-            Credentials: <span className="font-medium">{result.credential_info.credential_name}</span>
+            Credentials:{' '}
+            <span className="font-medium">
+              {result.credential_info.credential_name}
+            </span>
             <span className="text-amber-500 mx-2">•</span>
             <span className="font-mono text-xs">{result.credential_info.username}</span>
           </span>
@@ -106,12 +127,17 @@ export function RunCommandsResultView({ result }: RunCommandsResultProps) {
                   <TableHead className="text-xs font-semibold">Device</TableHead>
                   <TableHead className="text-xs font-semibold">IP Address</TableHead>
                   <TableHead className="text-xs font-semibold">Platform</TableHead>
-                  <TableHead className="text-xs font-semibold text-right">Action</TableHead>
+                  <TableHead className="text-xs font-semibold text-right">
+                    Action
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {allDevices.map((device, index) => (
-                  <TableRow key={device.device_id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                  <TableRow
+                    key={device.device_id}
+                    className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}
+                  >
                     <TableCell className="py-2">
                       {device.success ? (
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -121,19 +147,27 @@ export function RunCommandsResultView({ result }: RunCommandsResultProps) {
                             <XCircleIcon className="h-4 w-4 text-red-500 cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent side="right" className="max-w-xs">
-                            <p className="text-xs">{device.error || 'Command execution failed'}</p>
+                            <p className="text-xs">
+                              {device.error || 'Command execution failed'}
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       )}
                     </TableCell>
                     <TableCell className="py-2">
-                      <span className="font-medium text-sm">{device.device_name || device.device_id.slice(0, 8)}</span>
+                      <span className="font-medium text-sm">
+                        {device.device_name || device.device_id.slice(0, 8)}
+                      </span>
                     </TableCell>
                     <TableCell className="py-2">
-                      <span className="font-mono text-xs text-gray-600">{device.device_ip || '-'}</span>
+                      <span className="font-mono text-xs text-gray-600">
+                        {device.device_ip || '-'}
+                      </span>
                     </TableCell>
                     <TableCell className="py-2">
-                      <Badge variant="outline" className="text-xs">{device.platform || 'Unknown'}</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {device.platform || 'Unknown'}
+                      </Badge>
                     </TableCell>
                     <TableCell className="py-2 text-right">
                       <Button
@@ -155,7 +189,10 @@ export function RunCommandsResultView({ result }: RunCommandsResultProps) {
       )}
 
       {/* Device Output Dialog */}
-      <Dialog open={!!viewingDevice} onOpenChange={(open) => !open && setViewingDevice(null)}>
+      <Dialog
+        open={!!viewingDevice}
+        onOpenChange={open => !open && setViewingDevice(null)}
+      >
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -185,17 +222,19 @@ export function RunCommandsResultView({ result }: RunCommandsResultProps) {
                 <p className="text-sm text-red-600">{viewingDevice.error}</p>
               </div>
             )}
-            
+
             {/* Commands executed */}
             {viewingDevice?.rendered_commands && (
               <div>
-                <p className="text-xs font-medium text-gray-700 mb-2">Commands Executed:</p>
+                <p className="text-xs font-medium text-gray-700 mb-2">
+                  Commands Executed:
+                </p>
                 <pre className="bg-gray-900 text-green-400 text-xs p-3 rounded-lg overflow-x-auto max-h-32 overflow-y-auto font-mono">
                   {viewingDevice.rendered_commands}
                 </pre>
               </div>
             )}
-            
+
             {/* Output */}
             {viewingDevice?.output ? (
               <div>

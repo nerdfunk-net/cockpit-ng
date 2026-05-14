@@ -2,7 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Network, Bot, Info } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
@@ -70,7 +76,9 @@ export function SetPrimaryIpJobTemplate({
     <div className="rounded-lg border border-cyan-200 bg-cyan-50/30 p-4 space-y-4">
       <div className="flex items-center gap-2">
         <Network className="h-4 w-4 text-cyan-600" />
-        <Label className="text-sm font-semibold text-cyan-900">Set Primary IP Settings</Label>
+        <Label className="text-sm font-semibold text-cyan-900">
+          Set Primary IP Settings
+        </Label>
       </div>
 
       {/* Strategy selector */}
@@ -129,8 +137,8 @@ export function SetPrimaryIpJobTemplate({
             </Select>
           )}
           <p className="text-xs text-cyan-600">
-            This agent will ping all IPs of each device. The single reachable IP will be set as primary.
-            Devices with multiple reachable IPs are skipped (ambiguous).
+            This agent will ping all IPs of each device. The single reachable IP will be
+            set as primary. Devices with multiple reachable IPs are skipped (ambiguous).
           </p>
         </div>
       )}
@@ -140,8 +148,9 @@ export function SetPrimaryIpJobTemplate({
         <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-3">
           <Info className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
           <p className="text-xs text-amber-700">
-            The <strong>Interface Name</strong> strategy will be implemented in a future release.
-            You can save this template now and it will return a scaffold response when executed.
+            The <strong>Interface Name</strong> strategy will be implemented in a future
+            release. You can save this template now and it will return a scaffold
+            response when executed.
           </p>
         </div>
       )}

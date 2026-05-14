@@ -1,10 +1,23 @@
-"use client"
+'use client'
 
-import { CheckCircle2, XCircle, AlertCircle, Info, ChevronDown, ChevronUp } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { UpdateDevicesJobResult } from "../types/job-results"
-import { useState } from "react"
+import {
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Info,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { UpdateDevicesJobResult } from '../types/job-results'
+import { useState } from 'react'
 
 interface UpdateDevicesResultViewProps {
   result: UpdateDevicesJobResult
@@ -78,7 +91,9 @@ export function UpdateDevicesResultView({ result }: UpdateDevicesResultViewProps
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Successful</p>
-              <p className="text-2xl font-bold text-green-600">{result.summary.successful}</p>
+              <p className="text-2xl font-bold text-green-600">
+                {result.summary.successful}
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Failed</p>
@@ -86,7 +101,9 @@ export function UpdateDevicesResultView({ result }: UpdateDevicesResultViewProps
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Skipped</p>
-              <p className="text-2xl font-bold text-yellow-600">{result.summary.skipped}</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {result.summary.skipped}
+              </p>
             </div>
           </div>
         </CardContent>
@@ -134,29 +151,50 @@ export function UpdateDevicesResultView({ result }: UpdateDevicesResultViewProps
                           <p className="font-medium text-gray-900">
                             {success.device_name || success.device_id || success.prefix}
                           </p>
-                          <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-green-100 text-green-700 border-green-300"
+                          >
                             Updated
                           </Badge>
                         </div>
                         {success.row && (
-                          <p className="text-xs text-gray-500 mb-2">Row: {success.row}</p>
+                          <p className="text-xs text-gray-500 mb-2">
+                            Row: {success.row}
+                          </p>
                         )}
                         {success.namespace && (
-                          <p className="text-xs text-gray-500 mb-2">Namespace: {success.namespace}</p>
+                          <p className="text-xs text-gray-500 mb-2">
+                            Namespace: {success.namespace}
+                          </p>
                         )}
                         {success.device_id && success.device_name && (
-                          <p className="text-xs text-gray-500 mb-2">ID: {success.device_id}</p>
+                          <p className="text-xs text-gray-500 mb-2">
+                            ID: {success.device_id}
+                          </p>
                         )}
-                        
+
                         {/* Show updates */}
                         {success.updates && Object.keys(success.updates).length > 0 && (
                           <div className="mt-2">
                             <button
                               type="button"
-                              onClick={() => toggleSuccess(success.device_id || success.device_name || success.prefix || '')}
+                              onClick={() =>
+                                toggleSuccess(
+                                  success.device_id ||
+                                    success.device_name ||
+                                    success.prefix ||
+                                    ''
+                                )
+                              }
                               className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                             >
-                              {expandedSuccesses.has(success.device_id || success.device_name || success.prefix || '') ? (
+                              {expandedSuccesses.has(
+                                success.device_id ||
+                                  success.device_name ||
+                                  success.prefix ||
+                                  ''
+                              ) ? (
                                 <>
                                   <ChevronUp className="h-3 w-3" />
                                   Hide changes
@@ -164,21 +202,34 @@ export function UpdateDevicesResultView({ result }: UpdateDevicesResultViewProps
                               ) : (
                                 <>
                                   <ChevronDown className="h-3 w-3" />
-                                  Show {Object.keys(success.updates).length} field(s) changed
+                                  Show {Object.keys(success.updates).length} field(s)
+                                  changed
                                 </>
                               )}
                             </button>
-                            
-                            {expandedSuccesses.has(success.device_id || success.device_name || success.prefix || '') && (
+
+                            {expandedSuccesses.has(
+                              success.device_id ||
+                                success.device_name ||
+                                success.prefix ||
+                                ''
+                            ) && (
                               <div className="mt-2 space-y-2 pl-4 border-l-2 border-green-300">
-                                {Object.entries(success.updates || EMPTY_OBJECT).map(([field, value]) => (
-                                  <div key={`${success.device_id || success.device_name || success.prefix}-${field}`} className="text-sm">
-                                    <span className="font-medium text-gray-700">{field}:</span>{' '}
-                                    <span className="text-gray-900 font-mono text-xs">
-                                      {formatValue(value)}
-                                    </span>
-                                  </div>
-                                ))}
+                                {Object.entries(success.updates || EMPTY_OBJECT).map(
+                                  ([field, value]) => (
+                                    <div
+                                      key={`${success.device_id || success.device_name || success.prefix}-${field}`}
+                                      className="text-sm"
+                                    >
+                                      <span className="font-medium text-gray-700">
+                                        {field}:
+                                      </span>{' '}
+                                      <span className="text-gray-900 font-mono text-xs">
+                                        {formatValue(value)}
+                                      </span>
+                                    </div>
+                                  )
+                                )}
                               </div>
                             )}
                           </div>
@@ -233,16 +284,25 @@ export function UpdateDevicesResultView({ result }: UpdateDevicesResultViewProps
                       <XCircle className="h-4 w-4 text-red-500 shrink-0 mt-1" />
                       <div className="flex-1">
                         <p className="font-medium text-gray-900">
-                          {failure.device_name || failure.device_id || failure.identifier || failure.prefix}
+                          {failure.device_name ||
+                            failure.device_id ||
+                            failure.identifier ||
+                            failure.prefix}
                         </p>
                         {failure.row && (
-                          <p className="text-xs text-gray-500 mt-1">Row: {failure.row}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Row: {failure.row}
+                          </p>
                         )}
                         {failure.namespace && (
-                          <p className="text-xs text-gray-500 mt-1">Namespace: {failure.namespace}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Namespace: {failure.namespace}
+                          </p>
                         )}
                         {failure.device_id && failure.device_name && (
-                          <p className="text-xs text-gray-500 mt-1">ID: {failure.device_id}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            ID: {failure.device_id}
+                          </p>
                         )}
                         <p className="text-sm text-red-700 mt-2 whitespace-pre-wrap">
                           {failure.error}
@@ -297,16 +357,25 @@ export function UpdateDevicesResultView({ result }: UpdateDevicesResultViewProps
                       <AlertCircle className="h-4 w-4 text-yellow-500 shrink-0 mt-1" />
                       <div className="flex-1">
                         <p className="font-medium text-gray-900">
-                          {skipped.device_name || skipped.device_id || skipped.identifier || skipped.prefix}
+                          {skipped.device_name ||
+                            skipped.device_id ||
+                            skipped.identifier ||
+                            skipped.prefix}
                         </p>
                         {skipped.row && (
-                          <p className="text-xs text-gray-500 mt-1">Row: {skipped.row}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Row: {skipped.row}
+                          </p>
                         )}
                         {skipped.namespace && (
-                          <p className="text-xs text-gray-500 mt-1">Namespace: {skipped.namespace}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Namespace: {skipped.namespace}
+                          </p>
                         )}
                         {skipped.device_id && skipped.device_name && (
-                          <p className="text-xs text-gray-500 mt-1">ID: {skipped.device_id}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            ID: {skipped.device_id}
+                          </p>
                         )}
                         <p className="text-sm text-yellow-700 mt-2 whitespace-pre-wrap">
                           {skipped.error}

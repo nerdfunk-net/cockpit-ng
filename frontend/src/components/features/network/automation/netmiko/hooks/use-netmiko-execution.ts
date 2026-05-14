@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { useApi } from '@/hooks/use-api'
-import type { 
-  CommandResult, 
+import type {
+  CommandResult,
   ExecutionSummary,
   TemplateVariable,
-  Template
+  Template,
 } from '../types'
 import type { DeviceInfo } from '@/components/shared/device-selector'
-import { 
-  prepareVariablesObject, 
-  buildCredentialRequestBody, 
-  formatExecutionResults 
+import {
+  prepareVariablesObject,
+  buildCredentialRequestBody,
+  formatExecutionResults,
 } from '../utils/netmiko-utils'
 
 export function useNetmikoExecution() {
@@ -20,7 +20,9 @@ export function useNetmikoExecution() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [executionResults, setExecutionResults] = useState<CommandResult[]>([])
   const [showResults, setShowResults] = useState(false)
-  const [executionSummary, setExecutionSummary] = useState<ExecutionSummary | null>(null)
+  const [executionSummary, setExecutionSummary] = useState<ExecutionSummary | null>(
+    null
+  )
 
   const executeCommands = async (params: {
     selectedDevices: DeviceInfo[]
@@ -31,14 +33,14 @@ export function useNetmikoExecution() {
     username: string
     password: string
   }) => {
-    const { 
-      selectedDevices, 
-      commands, 
-      enableMode, 
+    const {
+      selectedDevices,
+      commands,
+      enableMode,
       writeConfig,
       selectedCredentialId,
       username,
-      password
+      password,
     } = params
 
     const sessionId = crypto.randomUUID()
@@ -63,7 +65,7 @@ export function useNetmikoExecution() {
       const devices = selectedDevices.map(device => ({
         ip: device.primary_ip4 || '',
         name: device.name,
-        platform: device.platform || 'cisco_ios'
+        platform: device.platform || 'cisco_ios',
       }))
 
       const baseBody = {
@@ -71,7 +73,7 @@ export function useNetmikoExecution() {
         commands: commandList,
         enable_mode: enableMode,
         write_config: writeConfig,
-        session_id: sessionId
+        session_id: sessionId,
       }
 
       const requestBody = buildCredentialRequestBody(
@@ -90,7 +92,7 @@ export function useNetmikoExecution() {
         cancelled: number
       }>('netmiko/execute-commands', {
         method: 'POST',
-        body: requestBody
+        body: requestBody,
       })
 
       setExecutionResults(response.results)
@@ -98,7 +100,7 @@ export function useNetmikoExecution() {
         total: response.total_devices,
         successful: response.successful,
         failed: response.failed,
-        cancelled: response.cancelled
+        cancelled: response.cancelled,
       })
       setShowResults(true)
     } catch (error) {
@@ -135,7 +137,7 @@ export function useNetmikoExecution() {
       writeConfig,
       selectedCredentialId,
       username,
-      password
+      password,
     } = params
 
     const sessionId = crypto.randomUUID()
@@ -146,7 +148,8 @@ export function useNetmikoExecution() {
 
     try {
       const varsObject = prepareVariablesObject(variables)
-      const useEditedContent = selectedTemplate && editedTemplateContent !== selectedTemplate.content
+      const useEditedContent =
+        selectedTemplate && editedTemplateContent !== selectedTemplate.content
 
       // Check if template is in "Sync to Nautobot" mode
       if (selectedTemplate?.execution_mode === 'sync_to_nautobot') {
@@ -169,8 +172,8 @@ export function useNetmikoExecution() {
             device_ids: selectedDevices.map(d => d.id),
             user_variables: varsObject,
             dry_run: dryRun,
-            output_format: 'json' // Default to JSON, could be made configurable
-          }
+            output_format: 'json', // Default to JSON, could be made configurable
+          },
         })
 
         // Convert response to execution results format
@@ -185,11 +188,21 @@ export function useNetmikoExecution() {
               device: device?.name || deviceId,
               success: !hasError && response.success,
               output: dryRun
-                ? `Rendered Output:\n${output}\n\n${response.parsed_updates ? `Parsed Update:\n${JSON.stringify(response.parsed_updates.find(u => u.id === deviceId), null, 2)}` : ''}`
+                ? `Rendered Output:\n${output}\n\n${
+                    response.parsed_updates
+                      ? `Parsed Update:\n${JSON.stringify(
+                          response.parsed_updates.find(u => u.id === deviceId),
+                          null,
+                          2
+                        )}`
+                      : ''
+                  }`
                 : response.success
                   ? `✅ Successfully queued sync to Nautobot\nTask ID: ${response.task_id}\nJob ID: ${response.job_id}\n\nRendered Output:\n${output}`
                   : `❌ Failed to sync\n${response.errors?.filter(err => err.includes(deviceId)).join('\n')}`,
-              error: hasError ? response.errors?.filter(err => err.includes(deviceId)).join('\n') : undefined
+              error: hasError
+                ? response.errors?.filter(err => err.includes(deviceId)).join('\n')
+                : undefined,
             })
           })
         }
@@ -204,17 +217,18 @@ export function useNetmikoExecution() {
           total: selectedDevices.length,
           successful: convertedResults.filter(r => r.success).length,
           failed: convertedResults.filter(r => !r.success).length,
-          cancelled: 0
+          cancelled: 0,
         })
         setShowResults(true)
 
         // Show success message with job tracking info
         if (response.success && response.job_id) {
-          alert(`✅ ${response.message}\n\nJob ID: ${response.job_id}\nYou can track this job in the Jobs/Views page.`)
+          alert(
+            `✅ ${response.message}\n\nJob ID: ${response.job_id}\nYou can track this job in the Jobs/Views page.`
+          )
         } else if (!response.success) {
           alert(`❌ ${response.message}\n\n${response.errors?.join('\n') || ''}`)
         }
-
       } else {
         // Regular template execution (run on device or write to file)
         const baseBody = {
@@ -227,8 +241,7 @@ export function useNetmikoExecution() {
           session_id: sessionId,
           ...(useEditedContent
             ? { template_content: editedTemplateContent }
-            : { template_id: selectedTemplate?.id }
-          )
+            : { template_id: selectedTemplate?.id }),
         }
 
         const requestBody = buildCredentialRequestBody(
@@ -251,7 +264,7 @@ export function useNetmikoExecution() {
           summary: Record<string, number>
         }>('netmiko/execute-template', {
           method: 'POST',
-          body: requestBody
+          body: requestBody,
         })
 
         const convertedResults = formatExecutionResults(response.results, dryRun)
@@ -259,9 +272,11 @@ export function useNetmikoExecution() {
         setExecutionResults(convertedResults)
         setExecutionSummary({
           total: response.summary.total || 0,
-          successful: dryRun ? (response.summary.rendered_successfully || 0) : (response.summary.executed_successfully || 0),
+          successful: dryRun
+            ? response.summary.rendered_successfully || 0
+            : response.summary.executed_successfully || 0,
           failed: response.summary.failed || 0,
-          cancelled: response.summary.cancelled || 0
+          cancelled: response.summary.cancelled || 0,
         })
         setShowResults(true)
       }
@@ -283,7 +298,7 @@ export function useNetmikoExecution() {
     setIsCancelling(true)
     try {
       await apiCall(`netmiko/cancel/${currentSessionId}`, {
-        method: 'POST'
+        method: 'POST',
       })
     } catch (error) {
       console.error('Error cancelling execution:', error)

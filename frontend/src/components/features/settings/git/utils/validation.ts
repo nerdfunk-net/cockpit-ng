@@ -5,7 +5,14 @@ import { z } from 'zod'
 // Repository form schema
 export const repositoryFormSchema = z.object({
   name: z.string().min(1, 'Repository name is required'),
-  category: z.enum(['device_configs', 'cockpit_configs', 'templates', 'agent', 'csv_imports', 'csv_exports']),
+  category: z.enum([
+    'device_configs',
+    'cockpit_configs',
+    'templates',
+    'agent',
+    'csv_imports',
+    'csv_exports',
+  ]),
   url: z.string().url('Invalid repository URL'),
   branch: z.string().min(1, 'Branch name is required'),
   auth_type: z.enum(['none', 'token', 'ssh_key', 'generic']),
@@ -13,10 +20,11 @@ export const repositoryFormSchema = z.object({
   path: z.string(),
   verify_ssl: z.boolean(),
   git_author_name: z.string(),
-  git_author_email: z.string().refine(
-    (val) => val === '' || z.string().email().safeParse(val).success,
-    { message: 'Invalid email format' }
-  ),
+  git_author_email: z
+    .string()
+    .refine(val => val === '' || z.string().email().safeParse(val).success, {
+      message: 'Invalid email format',
+    }),
   description: z.string(),
 })
 

@@ -25,13 +25,16 @@ export function useHostsSelection(): UseHostsSelectionReturn {
     })
   }, [])
 
-  const handleSelectAll = useCallback((checked: boolean, paginatedHosts: CheckMKHost[]) => {
-    if (checked) {
-      setSelectedHosts(new Set(paginatedHosts.map(host => host.host_name)))
-    } else {
-      setSelectedHosts(new Set())
-    }
-  }, [])
+  const handleSelectAll = useCallback(
+    (checked: boolean, paginatedHosts: CheckMKHost[]) => {
+      if (checked) {
+        setSelectedHosts(new Set(paginatedHosts.map(host => host.host_name)))
+      } else {
+        setSelectedHosts(new Set())
+      }
+    },
+    []
+  )
 
   const clearSelection = useCallback(() => {
     setSelectedHosts(new Set())

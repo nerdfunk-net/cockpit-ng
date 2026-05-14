@@ -22,7 +22,7 @@ export function CredentialsTable({
   credentials,
   includeExpired,
   onIncludeExpiredChange,
-  onEdit
+  onEdit,
 }: CredentialsTableProps) {
   const { deleteCredential } = useCredentialMutations()
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -35,7 +35,7 @@ export function CredentialsTable({
       deleteCredential.mutate(deleteDialog.credential.id, {
         onSuccess: () => {
           setDeleteDialog({ open: false, credential: null })
-        }
+        },
       })
     }
   }
@@ -52,7 +52,8 @@ export function CredentialsTable({
                   System Credentials ({credentials.length})
                 </h3>
                 <p className="text-blue-100 text-xs">
-                  Shared system credentials. Passwords are encrypted and never displayed.
+                  Shared system credentials. Passwords are encrypted and never
+                  displayed.
                 </p>
               </div>
             </div>
@@ -85,15 +86,23 @@ export function CredentialsTable({
                 <thead>
                   <tr className="border-b bg-muted/50">
                     <th className="text-left py-3 px-4 font-semibold text-sm">Name</th>
-                    <th className="text-left py-3 px-4 font-semibold text-sm">Username</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm">
+                      Username
+                    </th>
                     <th className="text-left py-3 px-4 font-semibold text-sm">Type</th>
-                    <th className="text-left py-3 px-4 font-semibold text-sm">Valid Until</th>
-                    <th className="text-left py-3 px-4 font-semibold text-sm">Status</th>
-                    <th className="text-left py-3 px-4 font-semibold text-sm w-24">Actions</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm">
+                      Valid Until
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm">
+                      Status
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm w-24">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {credentials.map((credential) => (
+                  {credentials.map(credential => (
                     <tr key={credential.id} className="border-b hover:bg-muted/50">
                       <td className="py-3 px-4">
                         <div className="font-medium">{credential.name}</div>
@@ -110,9 +119,7 @@ export function CredentialsTable({
                       <td className="py-3 px-4 text-muted-foreground">
                         {credential.valid_until || '-'}
                       </td>
-                      <td className="py-3 px-4">
-                        {getStatusBadge(credential.status)}
-                      </td>
+                      <td className="py-3 px-4">{getStatusBadge(credential.status)}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1">
                           <Button
@@ -127,9 +134,7 @@ export function CredentialsTable({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() =>
-                              setDeleteDialog({ open: true, credential })
-                            }
+                            onClick={() => setDeleteDialog({ open: true, credential })}
                             disabled={deleteCredential.isPending}
                             className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                             title="Delete"
@@ -153,7 +158,7 @@ export function CredentialsTable({
 
       <DeleteCredentialDialog
         open={deleteDialog.open}
-        onOpenChange={(open) =>
+        onOpenChange={open =>
           setDeleteDialog({ open, credential: open ? deleteDialog.credential : null })
         }
         credentialName={deleteDialog.credential?.name || ''}

@@ -10,7 +10,12 @@ interface VMCreationResult {
   messageType: 'success' | 'error' | 'warning'
   vmId?: string
   interfaces?: Array<{ name: string; id: string; status: string }>
-  ipAddresses?: Array<{ address: string; id: string; interface: string; is_primary?: boolean }>
+  ipAddresses?: Array<{
+    address: string
+    id: string
+    interface: string
+    is_primary?: boolean
+  }>
   primaryIp?: string
   warnings?: string[]
 }
@@ -25,10 +30,13 @@ export function useVMMutations() {
       try {
         // Call the backend API to create the VM
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const response = await apiCall<any>('nautobot/virtualization/virtual-machines', {
-          method: 'POST',
-          body: JSON.stringify(data),
-        })
+        const response = await apiCall<any>(
+          'nautobot/virtualization/virtual-machines',
+          {
+            method: 'POST',
+            body: JSON.stringify(data),
+          }
+        )
 
         // Parse the response
         const statusMessages: string[] = []
@@ -54,7 +62,8 @@ export function useVMMutations() {
           }
 
           // Check if any interfaces failed
-          const failedInterfaces = response.interfaces.length - successfulInterfaces.length
+          const failedInterfaces =
+            response.interfaces.length - successfulInterfaces.length
           if (failedInterfaces > 0) {
             statusMessages.push(`⚠ ${failedInterfaces} interface(s) failed to create`)
             hasWarnings = true
@@ -83,7 +92,11 @@ export function useVMMutations() {
         }
 
         // Handle warnings from backend
-        if (response.warnings && Array.isArray(response.warnings) && response.warnings.length > 0) {
+        if (
+          response.warnings &&
+          Array.isArray(response.warnings) &&
+          response.warnings.length > 0
+        ) {
           response.warnings.forEach((warning: string) => {
             statusMessages.push(`⚠ ${warning}`)
           })
@@ -112,7 +125,7 @@ export function useVMMutations() {
         }
       }
     },
-    onSuccess: (result) => {
+    onSuccess: result => {
       if (result.success) {
         // Invalidate relevant queries to refresh data
         queryClient.invalidateQueries({ queryKey: queryKeys.nautobot.all })

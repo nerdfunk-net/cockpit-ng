@@ -15,13 +15,25 @@ import { ImportPositionsStepUpload } from './import-positions-step-upload'
 import { ImportPositionsStepMapping } from './import-positions-step-mapping'
 import { ImportPositionsStepProperties } from './import-positions-step-properties'
 import { ImportPositionsStepResolve } from './import-positions-step-resolve'
-import type { RackMetadata, RackFaceAssignments, RackDevice, RackImportApplyPayload, MatchingStrategy, NameTransform } from '../types'
+import type {
+  RackMetadata,
+  RackFaceAssignments,
+  RackDevice,
+  RackImportApplyPayload,
+  MatchingStrategy,
+  NameTransform,
+} from '../types'
 import type { LocationItem } from '../../add-device/types'
 
 const STEPS = ['Upload', 'Map Columns', 'Properties', 'Confirm'] as const
-type StepLabel = typeof STEPS[number]
+type StepLabel = (typeof STEPS)[number]
 
-const STEP_ORDER: Record<string, number> = { upload: 0, mapping: 1, properties: 2, resolve: 3 }
+const STEP_ORDER: Record<string, number> = {
+  upload: 0,
+  mapping: 1,
+  properties: 2,
+  resolve: 3,
+}
 
 function StepIndicator({ currentStep }: { currentStep: number }) {
   return (
@@ -192,7 +204,6 @@ export function ImportPositionsDialog({
                 Next
               </Button>
             ) : (
-
               <Button
                 onClick={wizard.handleFinish}
                 disabled={!wizard.canFinish || wizard.isResolving}

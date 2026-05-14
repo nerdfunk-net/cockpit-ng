@@ -2,7 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
-import type { CreateUserData, UpdateUserData, CreateRoleData, UpdateRoleData } from '../types'
+import type {
+  CreateUserData,
+  UpdateUserData,
+  CreateRoleData,
+  UpdateRoleData,
+} from '../types'
 import { useMemo } from 'react'
 
 export function useRbacMutations() {
@@ -15,7 +20,7 @@ export function useRbacMutations() {
     mutationFn: async (data: CreateUserData) => {
       return apiCall('rbac/users', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
     },
     onSuccess: () => {
@@ -29,16 +34,16 @@ export function useRbacMutations() {
       toast({
         title: 'Error',
         description: `Failed to create user: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   const updateUser = useMutation({
     mutationFn: async ({ userId, data }: { userId: number; data: UpdateUserData }) => {
       return apiCall(`rbac/users/${userId}`, {
         method: 'PUT',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
     },
     onSuccess: () => {
@@ -52,9 +57,9 @@ export function useRbacMutations() {
       toast({
         title: 'Error',
         description: `Failed to update user: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   const deleteUser = useMutation({
@@ -72,9 +77,9 @@ export function useRbacMutations() {
       toast({
         title: 'Error',
         description: `Failed to delete user: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Role mutations
@@ -82,7 +87,7 @@ export function useRbacMutations() {
     mutationFn: async (data: CreateRoleData) => {
       return apiCall('rbac/roles', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
     },
     onSuccess: () => {
@@ -93,16 +98,16 @@ export function useRbacMutations() {
       toast({
         title: 'Error',
         description: `Failed to create role: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   const updateRole = useMutation({
     mutationFn: async ({ roleId, data }: { roleId: number; data: UpdateRoleData }) => {
       return apiCall(`rbac/roles/${roleId}`, {
         method: 'PUT',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
     },
     onSuccess: () => {
@@ -113,9 +118,9 @@ export function useRbacMutations() {
       toast({
         title: 'Error',
         description: `Failed to update role: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   const deleteRole = useMutation({
@@ -130,9 +135,9 @@ export function useRbacMutations() {
       toast({
         title: 'Error',
         description: `Failed to delete role: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // User-role assignment mutations
@@ -140,7 +145,7 @@ export function useRbacMutations() {
     mutationFn: async ({ userId, roleId }: { userId: number; roleId: number }) => {
       return apiCall(`rbac/users/${userId}/roles`, {
         method: 'POST',
-        body: JSON.stringify({ user_id: userId, role_id: roleId })
+        body: JSON.stringify({ user_id: userId, role_id: roleId }),
       })
     },
     onSuccess: () => {
@@ -151,9 +156,9 @@ export function useRbacMutations() {
       toast({
         title: 'Error',
         description: `Failed to assign role: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   const removeRoleFromUser = useMutation({
@@ -168,107 +173,144 @@ export function useRbacMutations() {
       toast({
         title: 'Error',
         description: `Failed to remove role: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Permission assignment mutations
   const toggleRolePermission = useMutation({
-    mutationFn: async ({ roleId, permissionId, granted }: { roleId: number; permissionId: number; granted: boolean }) => {
+    mutationFn: async ({
+      roleId,
+      permissionId,
+      granted,
+    }: {
+      roleId: number
+      permissionId: number
+      granted: boolean
+    }) => {
       if (granted) {
         // Remove permission
-        return apiCall(`rbac/roles/${roleId}/permissions/${permissionId}`, { method: 'DELETE' })
+        return apiCall(`rbac/roles/${roleId}/permissions/${permissionId}`, {
+          method: 'DELETE',
+        })
       } else {
         // Add permission
         return apiCall(`rbac/roles/${roleId}/permissions`, {
           method: 'POST',
-          body: JSON.stringify({ role_id: roleId, permission_id: permissionId, granted: true })
+          body: JSON.stringify({
+            role_id: roleId,
+            permission_id: permissionId,
+            granted: true,
+          }),
         })
       }
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.rbac.rolePermissions(variables.roleId) })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.rbac.rolePermissions(variables.roleId),
+      })
       queryClient.invalidateQueries({ queryKey: queryKeys.rbac.roles() })
     },
     onError: (error: Error) => {
       toast({
         title: 'Error',
         description: `Failed to update permission: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   const setUserPermissionOverride = useMutation({
-    mutationFn: async ({ userId, permissionId, granted }: { userId: number; permissionId: number; granted: boolean }) => {
+    mutationFn: async ({
+      userId,
+      permissionId,
+      granted,
+    }: {
+      userId: number
+      permissionId: number
+      granted: boolean
+    }) => {
       return apiCall(`rbac/users/${userId}/permissions`, {
         method: 'POST',
-        body: JSON.stringify({ user_id: userId, permission_id: permissionId, granted })
+        body: JSON.stringify({ user_id: userId, permission_id: permissionId, granted }),
       })
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.rbac.userPermissions(variables.userId) })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.rbac.userPermissions(variables.userId),
+      })
       toast({
         title: 'Success',
-        description: `Permission ${variables.granted ? 'granted' : 'denied'} for user`
+        description: `Permission ${variables.granted ? 'granted' : 'denied'} for user`,
       })
     },
     onError: (error: Error) => {
       toast({
         title: 'Error',
         description: `Failed to set permission override: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   const removeUserPermissionOverride = useMutation({
-    mutationFn: async ({ userId, permissionId }: { userId: number; permissionId: number }) => {
+    mutationFn: async ({
+      userId,
+      permissionId,
+    }: {
+      userId: number
+      permissionId: number
+    }) => {
       return apiCall(`rbac/users/${userId}/permissions/${permissionId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.rbac.userPermissions(variables.userId) })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.rbac.userPermissions(variables.userId),
+      })
       toast({
         title: 'Success',
-        description: 'Override removed'
+        description: 'Override removed',
       })
     },
     onError: (error: Error) => {
       toast({
         title: 'Error',
         description: `Failed to remove override: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Memoize return object to prevent re-renders
-  return useMemo(() => ({
-    createUser,
-    updateUser,
-    deleteUser,
-    createRole,
-    updateRole,
-    deleteRole,
-    assignRoleToUser,
-    removeRoleFromUser,
-    toggleRolePermission,
-    setUserPermissionOverride,
-    removeUserPermissionOverride,
-  }), [
-    createUser,
-    updateUser,
-    deleteUser,
-    createRole,
-    updateRole,
-    deleteRole,
-    assignRoleToUser,
-    removeRoleFromUser,
-    toggleRolePermission,
-    setUserPermissionOverride,
-    removeUserPermissionOverride
-  ])
+  return useMemo(
+    () => ({
+      createUser,
+      updateUser,
+      deleteUser,
+      createRole,
+      updateRole,
+      deleteRole,
+      assignRoleToUser,
+      removeRoleFromUser,
+      toggleRolePermission,
+      setUserPermissionOverride,
+      removeUserPermissionOverride,
+    }),
+    [
+      createUser,
+      updateUser,
+      deleteUser,
+      createRole,
+      updateRole,
+      deleteRole,
+      assignRoleToUser,
+      removeRoleFromUser,
+      toggleRolePermission,
+      setUserPermissionOverride,
+      removeUserPermissionOverride,
+    ]
+  )
 }

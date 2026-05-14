@@ -110,7 +110,7 @@ async function handleRequest(
       'referer',
       'x-forwarded-for',
       'x-forwarded-proto',
-      'x-forwarded-host'
+      'x-forwarded-host',
     ]
 
     headersToCopy.forEach(headerName => {
@@ -132,7 +132,9 @@ async function handleRequest(
       ...(body && { body }),
     })
 
-    console.log(`[API Proxy] Backend response: ${backendResponse.status} ${backendResponse.statusText}`)
+    console.log(
+      `[API Proxy] Backend response: ${backendResponse.status} ${backendResponse.statusText}`
+    )
 
     // Handle 204 No Content responses
     if (backendResponse.status === 204) {
@@ -153,7 +155,7 @@ async function handleRequest(
       'cache-control',
       'etag',
       'last-modified',
-      'set-cookie'
+      'set-cookie',
     ]
 
     responseHeadersToCopy.forEach(header => {
@@ -171,14 +173,17 @@ async function handleRequest(
         // Parse the JSON response from backend
         const openApiSpec = await backendResponse.json()
 
-        console.log('[API Proxy] Received OpenAPI spec, version:', openApiSpec.openapi || openApiSpec.swagger)
+        console.log(
+          '[API Proxy] Received OpenAPI spec, version:',
+          openApiSpec.openapi || openApiSpec.swagger
+        )
 
         // Update servers to use the /api prefix
         openApiSpec.servers = [
           {
             url: '/api',
-            description: 'Frontend Proxy to Backend API'
-          }
+            description: 'Frontend Proxy to Backend API',
+          },
         ]
 
         // Rewrite paths to remove /api/ prefix to avoid double /api/api/ in URLs
@@ -198,7 +203,11 @@ async function handleRequest(
 
         openApiSpec.paths = rewrittenPaths
 
-        console.log('[API Proxy] Rewrote', Object.keys(openApiSpec.paths || {}).length, 'paths')
+        console.log(
+          '[API Proxy] Rewrote',
+          Object.keys(openApiSpec.paths || {}).length,
+          'paths'
+        )
 
         // Return the modified spec
         return NextResponse.json(openApiSpec, {
@@ -212,7 +221,10 @@ async function handleRequest(
 
         // Return error response
         return NextResponse.json(
-          { error: 'Failed to process OpenAPI specification', details: error instanceof Error ? error.message : 'Unknown error' },
+          {
+            error: 'Failed to process OpenAPI specification',
+            details: error instanceof Error ? error.message : 'Unknown error',
+          },
           { status: 500 }
         )
       }
@@ -229,10 +241,7 @@ async function handleRequest(
           /url:\s*['"]\/openapi\.json['"]/g,
           'url: "/api/openapi.json"'
         )
-        html = html.replace(
-          /"\/openapi\.json"/g,
-          '"/api/openapi.json"'
-        )
+        html = html.replace(/"\/openapi\.json"/g, '"/api/openapi.json"')
       } else if (pathAfterApi === 'redoc' || pathAfterApi.startsWith('redoc/')) {
         // ReDoc - rewrite the spec-url attribute
         html = html.replace(
@@ -269,10 +278,7 @@ async function handleRequest(
     }
 
     // Image files
-    if (
-      contentType.includes('image/') ||
-      contentType.includes('font/')
-    ) {
+    if (contentType.includes('image/') || contentType.includes('font/')) {
       const blob = await backendResponse.blob()
       return new NextResponse(blob, {
         status: backendResponse.status,
@@ -319,7 +325,6 @@ async function handleRequest(
       status: backendResponse.status,
       headers: responseHeaders,
     })
-
   } catch (error) {
     console.error(`[API Proxy] ${method} error:`, error)
 
@@ -330,9 +335,6 @@ async function handleRequest(
       )
     }
 
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

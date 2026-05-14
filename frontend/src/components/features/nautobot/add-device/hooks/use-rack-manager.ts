@@ -42,10 +42,11 @@ export function useRackManager(): RackManagerHook {
     location: locationId,
     enabled: showModal,
   })
-  const { data: availableRackGroups = EMPTY_RACK_GROUPS, isLoading: isLoadingGroups } = useRackGroupsQuery({
-    location: locationId,
-    enabled: showModal,
-  })
+  const { data: availableRackGroups = EMPTY_RACK_GROUPS, isLoading: isLoadingGroups } =
+    useRackGroupsQuery({
+      location: locationId,
+      enabled: showModal,
+    })
 
   const openModal = useCallback((locId?: string) => {
     setLocationId(locId)
@@ -72,11 +73,11 @@ export function useRackManager(): RackManagerHook {
   // Filter racks by selected rack group
   const availableRacks = useMemo(() => {
     if (!selectedRackGroup) return allRacks
-    return allRacks.filter((rack) => rack.rack_group?.id === selectedRackGroup)
+    return allRacks.filter(rack => rack.rack_group?.id === selectedRackGroup)
   }, [allRacks, selectedRackGroup])
 
   const selectedRackData = useMemo(
-    () => allRacks.find((r) => r.id === selectedRack),
+    () => allRacks.find(r => r.id === selectedRack),
     [allRacks, selectedRack]
   )
 

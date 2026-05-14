@@ -52,9 +52,9 @@ export const startDiffTask = async (token: string): Promise<{ task_id: string }>
   const response = await fetch('/api/proxy/celery/tasks/get-diff-between-nb-checkmk', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
   })
 
   if (!response.ok) {
@@ -66,5 +66,10 @@ export const startDiffTask = async (token: string): Promise<{ task_id: string }>
 }
 
 // Re-export from shared API for job management
-export { fetchJobs, loadJobResults, clearResults, startComparisonJob } from '../../shared/utils/api'
+export {
+  fetchJobs,
+  loadJobResults,
+  clearResults,
+  startComparisonJob,
+} from '../../shared/utils/api'
 export type { Job } from '../../shared/utils/api'

@@ -1,7 +1,14 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -43,7 +50,7 @@ export function CustomFieldsModal({
   customFieldChoices,
   setCustomFieldChoices,
   isLoadingCustomFields,
-  setIsLoadingCustomFields
+  setIsLoadingCustomFields,
 }: CustomFieldsModalProps) {
   const { apiCall } = useApi()
 
@@ -58,15 +65,23 @@ export function CustomFieldsModal({
   const loadCustomFields = useCallback(async () => {
     setIsLoadingCustomFields(true)
     try {
-      const fieldsData = await apiCall<CustomField[]>('nautobot/custom-fields/devices', { method: 'GET' })
+      const fieldsData = await apiCall<CustomField[]>(
+        'nautobot/custom-fields/devices',
+        { method: 'GET' }
+      )
       if (fieldsData && Array.isArray(fieldsData)) {
         setCustomFields(fieldsData)
 
         // Load choices for select-type fields
-        const selectFields = fieldsData.filter(f => f.type?.value === 'select' || f.type?.value === 'multi-select')
-        const choicesPromises = selectFields.map(async (field) => {
+        const selectFields = fieldsData.filter(
+          f => f.type?.value === 'select' || f.type?.value === 'multi-select'
+        )
+        const choicesPromises = selectFields.map(async field => {
           try {
-            const choices = await apiCall<string[]>(`nautobot/custom-field-choices/${field.key}`, { method: 'GET' })
+            const choices = await apiCall<string[]>(
+              `nautobot/custom-field-choices/${field.key}`,
+              { method: 'GET' }
+            )
             return { key: field.key, choices: choices || [] }
           } catch {
             return { key: field.key, choices: [] }
@@ -115,36 +130,54 @@ export function CustomFieldsModal({
               <table className="w-full">
                 <thead>
                   <tr className="bg-muted/50 border-b">
-                    <th className="text-left py-2 px-3 text-sm font-medium">Field Name</th>
+                    <th className="text-left py-2 px-3 text-sm font-medium">
+                      Field Name
+                    </th>
                     <th className="text-left py-2 px-3 text-sm font-medium">Value</th>
                   </tr>
                 </thead>
                 <tbody>
                   {customFields.map((field, index) => (
-                    <tr key={field.id} className={index % 2 === 0 ? 'bg-white' : 'bg-muted/20'}>
+                    <tr
+                      key={field.id}
+                      className={index % 2 === 0 ? 'bg-white' : 'bg-muted/20'}
+                    >
                       <td className="py-2 px-3 border-r">
                         <div>
                           <span className="text-sm font-medium">
                             {field.label}
-                            {field.required && <span className="text-destructive ml-1">*</span>}
+                            {field.required && (
+                              <span className="text-destructive ml-1">*</span>
+                            )}
                           </span>
                           {field.description && (
-                            <p className="text-xs text-muted-foreground">{field.description}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {field.description}
+                            </p>
                           )}
                         </div>
                       </td>
                       <td className="py-2 px-3">
-                        {field.type?.value === 'select' && customFieldChoices[field.key] ? (
+                        {field.type?.value === 'select' &&
+                        customFieldChoices[field.key] ? (
                           <FilterableSelect
                             value={customFieldValues[field.key] || ''}
-                            onValueChange={(value) => onUpdateCustomField(field.key, value)}
-                            options={(customFieldChoices[field.key] || []).map((choice) => {
-                              // Handle both string and object choices
-                              const choiceValue = typeof choice === 'object' && choice !== null
-                                ? (choice as { value?: string; id?: string }).value || (choice as { value?: string; id?: string }).id || JSON.stringify(choice)
-                                : String(choice)
-                              return choiceValue
-                            })}
+                            onValueChange={value =>
+                              onUpdateCustomField(field.key, value)
+                            }
+                            options={(customFieldChoices[field.key] || []).map(
+                              choice => {
+                                // Handle both string and object choices
+                                const choiceValue =
+                                  typeof choice === 'object' && choice !== null
+                                    ? (choice as { value?: string; id?: string })
+                                        .value ||
+                                      (choice as { value?: string; id?: string }).id ||
+                                      JSON.stringify(choice)
+                                    : String(choice)
+                                return choiceValue
+                              }
+                            )}
                             placeholder="Select..."
                             searchPlaceholder="Filter options..."
                             emptyMessage="No matching options found."
@@ -153,8 +186,11 @@ export function CustomFieldsModal({
                           <div className="flex items-center h-9">
                             <Checkbox
                               checked={customFieldValues[field.key] === 'true'}
-                              onCheckedChange={(checked) =>
-                                onUpdateCustomField(field.key, checked ? 'true' : 'false')
+                              onCheckedChange={checked =>
+                                onUpdateCustomField(
+                                  field.key,
+                                  checked ? 'true' : 'false'
+                                )
                               }
                             />
                           </div>
@@ -162,13 +198,17 @@ export function CustomFieldsModal({
                           <Input
                             type="number"
                             value={customFieldValues[field.key] || ''}
-                            onChange={(e) => onUpdateCustomField(field.key, e.target.value)}
+                            onChange={e =>
+                              onUpdateCustomField(field.key, e.target.value)
+                            }
                             className="h-9 bg-white border"
                           />
                         ) : (
                           <Input
                             value={customFieldValues[field.key] || ''}
-                            onChange={(e) => onUpdateCustomField(field.key, e.target.value)}
+                            onChange={e =>
+                              onUpdateCustomField(field.key, e.target.value)
+                            }
                             className="h-9 bg-white border"
                             placeholder="Enter value..."
                           />

@@ -39,53 +39,62 @@ export function useSnapshotTemplates() {
     loadTemplates()
   }, [loadTemplates])
 
-  const createTemplate = useCallback(async (template: SnapshotCommandTemplateCreate) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const created = await apiCall<SnapshotCommandTemplate>(
-        'network/snapshots/templates',
-        {
-          method: 'POST',
-          body: template,
-        }
-      )
-      setTemplates(prev => [...prev, created])
-      return created
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create template'
-      setError(message)
-      console.error('Error creating template:', err)
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }, [apiCall])
+  const createTemplate = useCallback(
+    async (template: SnapshotCommandTemplateCreate) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const created = await apiCall<SnapshotCommandTemplate>(
+          'network/snapshots/templates',
+          {
+            method: 'POST',
+            body: template,
+          }
+        )
+        setTemplates(prev => [...prev, created])
+        return created
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to create template'
+        setError(message)
+        console.error('Error creating template:', err)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [apiCall]
+  )
 
-  const deleteTemplate = useCallback(async (templateId: number) => {
-    setLoading(true)
-    setError(null)
-    try {
-      await apiCall(`network/snapshots/templates/${templateId}`, {
-        method: 'DELETE',
-      })
-      setTemplates(prev => prev.filter(t => t.id !== templateId))
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete template'
-      setError(message)
-      console.error('Error deleting template:', err)
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }, [apiCall])
+  const deleteTemplate = useCallback(
+    async (templateId: number) => {
+      setLoading(true)
+      setError(null)
+      try {
+        await apiCall(`network/snapshots/templates/${templateId}`, {
+          method: 'DELETE',
+        })
+        setTemplates(prev => prev.filter(t => t.id !== templateId))
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to delete template'
+        setError(message)
+        console.error('Error deleting template:', err)
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [apiCall]
+  )
 
-  return useMemo(() => ({
-    templates,
-    loading,
-    error,
-    loadTemplates,
-    createTemplate,
-    deleteTemplate,
-  }), [templates, loading, error, loadTemplates, createTemplate, deleteTemplate])
+  return useMemo(
+    () => ({
+      templates,
+      loading,
+      error,
+      loadTemplates,
+      createTemplate,
+      deleteTemplate,
+    }),
+    [templates, loading, error, loadTemplates, createTemplate, deleteTemplate]
+  )
 }

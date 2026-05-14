@@ -1,10 +1,20 @@
 import { useState } from 'react'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Info, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import type { ObjectType } from '../types'
 
 interface MappingPanelProps {
@@ -15,20 +25,27 @@ interface MappingPanelProps {
 }
 
 // Define required lookup fields for each object type
-const LOOKUP_FIELDS: Record<ObjectType, { field: string; label: string; required: boolean }[]> = {
+const LOOKUP_FIELDS: Record<
+  ObjectType,
+  { field: string; label: string; required: boolean }[]
+> = {
   'ip-prefixes': [
     { field: 'prefix', label: 'Prefix', required: true },
     { field: 'namespace', label: 'Namespace', required: true },
   ],
-  'devices': [
+  devices: [
     { field: 'name', label: 'Name', required: true },
     { field: 'ip_address', label: 'IP Address', required: false },
   ],
   'ip-addresses': [
     { field: 'address', label: 'Address', required: true },
-    { field: 'parent__namespace__name', label: 'Parent Namespace Name', required: false },
+    {
+      field: 'parent__namespace__name',
+      label: 'Parent Namespace Name',
+      required: false,
+    },
   ],
-  'locations': [
+  locations: [
     { field: 'name', label: 'Name', required: true },
     { field: 'parent__name', label: 'Parent Name', required: false },
   ],
@@ -96,8 +113,9 @@ export function MappingPanel({
               <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
               <div className="space-y-2 flex-1">
                 <p className="text-xs text-muted-foreground">
-                  Map CSV columns to lookup fields used for identifying and updating {objectType}.
-                  These fields are used to find existing objects in Nautobot.
+                  Map CSV columns to lookup fields used for identifying and updating{' '}
+                  {objectType}. These fields are used to find existing objects in
+                  Nautobot.
                 </p>
               </div>
             </div>
@@ -107,8 +125,11 @@ export function MappingPanel({
               <Alert className="status-warning">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  <strong>Required fields missing:</strong> {missingRequiredFields.join(', ')}
-                  <div className="mt-1">Please map all required lookup fields before processing updates.</div>
+                  <strong>Required fields missing:</strong>{' '}
+                  {missingRequiredFields.join(', ')}
+                  <div className="mt-1">
+                    Please map all required lookup fields before processing updates.
+                  </div>
                 </AlertDescription>
               </Alert>
             )}
@@ -123,7 +144,7 @@ export function MappingPanel({
                   </Label>
                   <Select
                     value={columnMapping[field] || '__none__'}
-                    onValueChange={(value) => handleMappingChange(field, value)}
+                    onValueChange={value => handleMappingChange(field, value)}
                   >
                     <SelectTrigger
                       id={`mapping-${field}`}
@@ -135,7 +156,7 @@ export function MappingPanel({
                       <SelectItem value="__none__">
                         <span className="text-muted-foreground">-- Not mapped --</span>
                       </SelectItem>
-                      {csvHeaders.map((header) => (
+                      {csvHeaders.map(header => (
                         <SelectItem key={header} value={header}>
                           <span className="font-mono text-xs">{header}</span>
                         </SelectItem>
@@ -144,7 +165,10 @@ export function MappingPanel({
                   </Select>
                   {columnMapping[field] && (
                     <p className="text-xs text-muted-foreground">
-                      Mapped to: <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">{columnMapping[field]}</span>
+                      Mapped to:{' '}
+                      <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">
+                        {columnMapping[field]}
+                      </span>
                     </p>
                   )}
                 </div>
@@ -155,9 +179,11 @@ export function MappingPanel({
             <Alert className="status-info">
               <Info className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                <strong>How it works:</strong> The mapped CSV columns will be used to identify existing {objectType} in Nautobot.
-                For example, if you map &quot;Prefix&quot; to CSV column &quot;network&quot;, the system will use the &quot;network&quot; column
-                values to find and update the corresponding prefixes.
+                <strong>How it works:</strong> The mapped CSV columns will be used to
+                identify existing {objectType} in Nautobot. For example, if you map
+                &quot;Prefix&quot; to CSV column &quot;network&quot;, the system will
+                use the &quot;network&quot; column values to find and update the
+                corresponding prefixes.
               </AlertDescription>
             </Alert>
           </div>

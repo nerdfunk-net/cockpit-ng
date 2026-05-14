@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Check if this is a Swagger UI or API docs request
@@ -49,9 +49,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/api/docs/:path*',
-    '/api/redoc/:path*',
-    '/api/openapi.json',
-  ],
+  matcher: ['/api/docs/:path*', '/api/redoc/:path*', '/api/openapi.json'],
 }

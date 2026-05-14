@@ -101,30 +101,34 @@ export function useHostsFilter(
     setFolderFilters(resetFolderFilters)
   }, [filterOptions.folders, onPageReset])
 
-  const handleSort = useCallback((column: string) => {
-    if (sortColumn === column) {
-      // Toggle through: none -> asc -> desc -> none
-      const nextOrder: Record<string, 'asc' | 'desc' | 'none'> = {
-        'none': 'asc',
-        'asc': 'desc',
-        'desc': 'none',
+  const handleSort = useCallback(
+    (column: string) => {
+      if (sortColumn === column) {
+        // Toggle through: none -> asc -> desc -> none
+        const nextOrder: Record<string, 'asc' | 'desc' | 'none'> = {
+          none: 'asc',
+          asc: 'desc',
+          desc: 'none',
+        }
+        const newOrder = nextOrder[sortOrder]
+        if (newOrder !== undefined) {
+          setSortOrder(newOrder)
+        }
+      } else {
+        setSortColumn(column)
+        setSortOrder('asc')
       }
-      const newOrder = nextOrder[sortOrder]
-      if (newOrder !== undefined) {
-        setSortOrder(newOrder)
-      }
-    } else {
-      setSortColumn(column)
-      setSortOrder('asc')
-    }
-  }, [sortColumn, sortOrder])
+    },
+    [sortColumn, sortOrder]
+  )
 
   // Calculate active filters count
-  const activeFiltersCount = [
-    hostNameFilter,
-    folderFilter
-  ].filter(Boolean).length +
-  (Object.keys(folderFilters).length > 0 && Object.values(folderFilters).filter(Boolean).length < filterOptions.folders.size ? 1 : 0)
+  const activeFiltersCount =
+    [hostNameFilter, folderFilter].filter(Boolean).length +
+    (Object.keys(folderFilters).length > 0 &&
+    Object.values(folderFilters).filter(Boolean).length < filterOptions.folders.size
+      ? 1
+      : 0)
 
   return {
     filteredHosts,

@@ -6,12 +6,16 @@ export function DeployInstructions() {
   return (
     <div className="space-y-3 text-sm">
       <p className="text-muted-foreground">
-        Cockpit agents run on remote servers to execute commands like git pull and docker restart.
+        Cockpit agents run on remote servers to execute commands like git pull and
+        docker restart.
       </p>
       <div className="space-y-2">
         <h4 className="font-medium">Quick Start</h4>
         <ol className="list-decimal list-inside space-y-1 text-muted-foreground text-xs">
-          <li>Go to <span className="font-medium">Agents &rarr; Deploy</span> to generate an agent package</li>
+          <li>
+            Go to <span className="font-medium">Agents &rarr; Deploy</span> to generate
+            an agent package
+          </li>
           <li>Transfer the package to your target server</li>
           <li>Run the install script to start the agent</li>
           <li>The agent will register automatically and appear above</li>

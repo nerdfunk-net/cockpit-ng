@@ -25,16 +25,14 @@ export function ErrorDialog({ open, onOpenChange, errorDetails }: ErrorDialogPro
             <XCircle className="h-5 w-5" />
             {errorDetails?.title || 'Error'}
           </DialogTitle>
-          <DialogDescription>
-            {errorDetails?.message}
-          </DialogDescription>
+          <DialogDescription>{errorDetails?.message}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {errorDetails?.details && errorDetails.details.length > 0 && (
             <div className="space-y-2 p-4 bg-red-50 border border-red-200 rounded-md">
               <Label className="text-sm font-semibold text-red-900">Details:</Label>
               <ul className="space-y-1 text-sm text-red-800">
-                {errorDetails.details.map((detail) => (
+                {errorDetails.details.map(detail => (
                   <li key={detail} className="flex items-start gap-2">
                     <span className="text-red-600 mt-0.5">•</span>
                     <span className="flex-1 font-mono">{detail}</span>
@@ -45,11 +43,15 @@ export function ErrorDialog({ open, onOpenChange, errorDetails }: ErrorDialogPro
           )}
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
             <p className="text-sm text-blue-900">
-              <strong>Tip:</strong> Make sure all variables used in the template are either:
+              <strong>Tip:</strong> Make sure all variables used in the template are
+              either:
             </p>
             <ul className="mt-2 space-y-1 text-sm text-blue-800 ml-4">
               <li>• Provided in the &quot;Variables&quot; section above</li>
-              <li>• Available from Nautobot context (enable &quot;Use Nautobot Context&quot;)</li>
+              <li>
+                • Available from Nautobot context (enable &quot;Use Nautobot
+                Context&quot;)
+              </li>
               <li>• Part of the standard variables (user_variables, nautobot)</li>
             </ul>
           </div>
@@ -63,9 +65,7 @@ export function ErrorDialog({ open, onOpenChange, errorDetails }: ErrorDialogPro
             >
               View in Console
             </Button>
-            <Button onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
+            <Button onClick={() => onOpenChange(false)}>Close</Button>
           </div>
         </div>
       </DialogContent>

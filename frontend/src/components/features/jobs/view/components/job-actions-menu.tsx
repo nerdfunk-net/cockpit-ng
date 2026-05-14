@@ -1,11 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Eye, XCircle, Trash2 } from 'lucide-react'
 import { isJobActive } from '../utils/job-utils'
 

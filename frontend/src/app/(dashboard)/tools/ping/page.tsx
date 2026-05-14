@@ -6,7 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Minus, Wifi, AlertCircle, Loader2, ChevronDown, ChevronRight } from 'lucide-react'
+import {
+  Plus,
+  Minus,
+  Wifi,
+  AlertCircle,
+  Loader2,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import PingResultsModal from '@/components/features/network/tools/ping/ping-results-modal'
@@ -20,7 +28,7 @@ interface CidrInput {
 // CIDR validation function
 const validateCIDR = (cidr: string): string => {
   if (!cidr.trim()) {
-    return ''  // Empty is allowed
+    return '' // Empty is allowed
   }
 
   // Check basic format: IP/netmask
@@ -52,7 +60,7 @@ const validateCIDR = (cidr: string): string => {
     }
   }
 
-  return ''  // Valid
+  return '' // Valid
 }
 
 export default function PingPage() {
@@ -61,7 +69,7 @@ export default function PingPage() {
 
   // State for CIDR inputs
   const [cidrInputs, setCidrInputs] = useState<CidrInput[]>([
-    { id: 1, value: '', error: '' }
+    { id: 1, value: '', error: '' },
   ])
   const [nextId, setNextId] = useState(2)
   const [resolveDns, setResolveDns] = useState(false)
@@ -85,30 +93,35 @@ export default function PingPage() {
   }, [nextId])
 
   // Remove CIDR input row
-  const handleRemoveRow = useCallback((id: number) => {
-    setCidrInputs(prev => {
-      // Don't allow removing if only one row left
-      if (prev.length === 1) {
-        toast({
-          title: 'Cannot remove',
-          description: 'At least one CIDR input is required',
-          variant: 'destructive',
-        })
-        return prev
-      }
-      return prev.filter(input => input.id !== id)
-    })
-  }, [toast])
+  const handleRemoveRow = useCallback(
+    (id: number) => {
+      setCidrInputs(prev => {
+        // Don't allow removing if only one row left
+        if (prev.length === 1) {
+          toast({
+            title: 'Cannot remove',
+            description: 'At least one CIDR input is required',
+            variant: 'destructive',
+          })
+          return prev
+        }
+        return prev.filter(input => input.id !== id)
+      })
+    },
+    [toast]
+  )
 
   // Update CIDR value and validate
   const handleCidrChange = useCallback((id: number, value: string) => {
-    setCidrInputs(prev => prev.map(input => {
-      if (input.id === id) {
-        const error = validateCIDR(value)
-        return { ...input, value, error }
-      }
-      return input
-    }))
+    setCidrInputs(prev =>
+      prev.map(input => {
+        if (input.id === id) {
+          const error = validateCIDR(value)
+          return { ...input, value, error }
+        }
+        return input
+      })
+    )
   }, [])
 
   // Submit ping request
@@ -145,7 +158,7 @@ export default function PingPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           cidrs: validCidrs,
@@ -172,7 +185,8 @@ export default function PingPage() {
       })
     } catch (error) {
       console.error('Failed to start ping task:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to start ping task'
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to start ping task'
       toast({
         title: 'Error',
         description: errorMessage,
@@ -194,7 +208,9 @@ export default function PingPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Network Ping Tool</h1>
-              <p className="text-gray-600 mt-1">Ping CIDR networks and resolve DNS names</p>
+              <p className="text-gray-600 mt-1">
+                Ping CIDR networks and resolve DNS names
+              </p>
             </div>
           </div>
         </div>
@@ -209,9 +225,11 @@ export default function PingPage() {
           <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
             {/* CIDR Networks Section */}
             <div className="space-y-4">
-              <Label className="text-base font-semibold text-slate-700">CIDR Networks</Label>
+              <Label className="text-base font-semibold text-slate-700">
+                CIDR Networks
+              </Label>
               <div className="space-y-3">
-                {cidrInputs.map((input) => (
+                {cidrInputs.map(input => (
                   <div key={input.id} className="space-y-2">
                     <div className="flex items-start gap-2">
                       <div className="flex-1">
@@ -219,10 +237,12 @@ export default function PingPage() {
                           type="text"
                           placeholder="e.g., 192.168.1.0/24"
                           value={input.value}
-                          onChange={(e) => handleCidrChange(input.id, e.target.value)}
-                          className={input.error
-                            ? 'border-red-500 focus:ring-red-500 bg-white'
-                            : 'focus:ring-blue-500 focus:border-blue-500 border-slate-300 bg-white font-mono text-slate-900 placeholder:text-slate-400 shadow-sm'}
+                          onChange={e => handleCidrChange(input.id, e.target.value)}
+                          className={
+                            input.error
+                              ? 'border-red-500 focus:ring-red-500 bg-white'
+                              : 'focus:ring-blue-500 focus:border-blue-500 border-slate-300 bg-white font-mono text-slate-900 placeholder:text-slate-400 shadow-sm'
+                          }
                         />
                         {input.error && (
                           <div className="flex items-center gap-1 mt-1 text-sm text-red-600 bg-red-50 p-2 rounded-md border border-red-200">
@@ -265,7 +285,7 @@ export default function PingPage() {
                 <Checkbox
                   id="resolve-dns"
                   checked={resolveDns}
-                  onCheckedChange={(checked) => setResolveDns(checked as boolean)}
+                  onCheckedChange={checked => setResolveDns(checked as boolean)}
                   className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                 />
                 <Label
@@ -287,14 +307,21 @@ export default function PingPage() {
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors"
               >
-                {showAdvanced ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                {showAdvanced ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
                 Advanced Options
               </button>
 
               {showAdvanced && (
                 <div className="mt-4 grid grid-cols-2 gap-4 bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
                   <div className="space-y-2">
-                    <Label htmlFor="count" className="text-sm font-medium text-slate-700">
+                    <Label
+                      htmlFor="count"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       Ping Count
                     </Label>
                     <Input
@@ -303,14 +330,19 @@ export default function PingPage() {
                       min="1"
                       max="10"
                       value={count}
-                      onChange={(e) => setCount(parseInt(e.target.value) || 3)}
+                      onChange={e => setCount(parseInt(e.target.value) || 3)}
                       className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
                     />
-                    <p className="text-xs text-slate-600">Number of pings per host (1-10)</p>
+                    <p className="text-xs text-slate-600">
+                      Number of pings per host (1-10)
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="timeout" className="text-sm font-medium text-slate-700">
+                    <Label
+                      htmlFor="timeout"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       Timeout (ms)
                     </Label>
                     <Input
@@ -320,14 +352,19 @@ export default function PingPage() {
                       max="5000"
                       step="100"
                       value={timeout}
-                      onChange={(e) => setTimeout(parseInt(e.target.value) || 500)}
+                      onChange={e => setTimeout(parseInt(e.target.value) || 500)}
                       className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
                     />
-                    <p className="text-xs text-slate-600">Individual target timeout (100-5000ms)</p>
+                    <p className="text-xs text-slate-600">
+                      Individual target timeout (100-5000ms)
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="retry" className="text-sm font-medium text-slate-700">
+                    <Label
+                      htmlFor="retry"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       Retries
                     </Label>
                     <Input
@@ -336,14 +373,17 @@ export default function PingPage() {
                       min="0"
                       max="10"
                       value={retry}
-                      onChange={(e) => setRetry(parseInt(e.target.value) || 3)}
+                      onChange={e => setRetry(parseInt(e.target.value) || 3)}
                       className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
                     />
                     <p className="text-xs text-slate-600">Number of retries (0-10)</p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="interval" className="text-sm font-medium text-slate-700">
+                    <Label
+                      htmlFor="interval"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       Interval (ms)
                     </Label>
                     <Input
@@ -352,10 +392,12 @@ export default function PingPage() {
                       min="1"
                       max="1000"
                       value={interval}
-                      onChange={(e) => setInterval(parseInt(e.target.value) || 10)}
+                      onChange={e => setInterval(parseInt(e.target.value) || 10)}
                       className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
                     />
-                    <p className="text-xs text-slate-600">Interval between packets (1-1000ms)</p>
+                    <p className="text-xs text-slate-600">
+                      Interval between packets (1-1000ms)
+                    </p>
                   </div>
                 </div>
               )}
@@ -387,10 +429,7 @@ export default function PingPage() {
 
       {/* Results Modal */}
       {showModal && taskId && (
-        <PingResultsModal
-          taskId={taskId}
-          onClose={() => setShowModal(false)}
-        />
+        <PingResultsModal taskId={taskId} onClose={() => setShowModal(false)} />
       )}
     </>
   )

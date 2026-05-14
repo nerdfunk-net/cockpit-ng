@@ -30,10 +30,15 @@ export default function SnapshotsPage() {
   // Template and commands state (shared between Commands and Snapshots tabs)
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null)
   const [selectedTemplateName, setSelectedTemplateName] = useState<string | null>(null)
-  const [commands, setCommands] = useState<Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]>(EMPTY_COMMANDS)
+  const [commands, setCommands] =
+    useState<Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]>(
+      EMPTY_COMMANDS
+    )
 
   // Snapshot properties state
-  const [snapshotPath, setSnapshotPath] = useState<string>('snapshots/{device_name}-{template_name}')
+  const [snapshotPath, setSnapshotPath] = useState<string>(
+    'snapshots/{device_name}-{template_name}'
+  )
   const [snapshotGitRepoId, setSnapshotGitRepoId] = useState<number | null>(null)
 
   // Credential management
@@ -47,7 +52,10 @@ export default function SnapshotsPage() {
     handleCredentialChange,
   } = useCredentialManager()
 
-  const handleDevicesSelected = (devices: DeviceInfo[], _conditions: LogicalCondition[]) => {
+  const handleDevicesSelected = (
+    devices: DeviceInfo[],
+    _conditions: LogicalCondition[]
+  ) => {
     const deviceIds = devices.map(d => d.id)
     setSelectedDeviceIds(deviceIds)
     setSelectedDevices(devices)
@@ -68,7 +76,9 @@ export default function SnapshotsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Network Snapshots</h1>
-            <p className="text-muted-foreground mt-2">Capture and compare device state snapshots</p>
+            <p className="text-muted-foreground mt-2">
+              Capture and compare device state snapshots
+            </p>
           </div>
         </div>
       </div>
@@ -84,9 +94,7 @@ export default function SnapshotsPage() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="commands">
-            Commands
-          </TabsTrigger>
+          <TabsTrigger value="commands">Commands</TabsTrigger>
           <TabsTrigger value="execute">Execute Snapshot</TabsTrigger>
           <TabsTrigger value="manage">Manage Snapshots</TabsTrigger>
         </TabsList>

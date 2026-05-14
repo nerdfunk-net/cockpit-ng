@@ -105,7 +105,7 @@ export function SaveTemplateDialog({
               id="template-name"
               placeholder="e.g., Routing Snapshot"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
             />
           </div>
 
@@ -115,14 +115,17 @@ export function SaveTemplateDialog({
               id="template-description"
               placeholder="Optional description of what this template does"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               rows={3}
             />
           </div>
 
           <div className="space-y-2">
             <Label>Template Scope</Label>
-            <RadioGroup value={scope} onValueChange={(val) => setScope(val as 'global' | 'private')}>
+            <RadioGroup
+              value={scope}
+              onValueChange={val => setScope(val as 'global' | 'private')}
+            >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="private" id="private" />
                 <Label htmlFor="private" className="font-normal">
@@ -139,12 +142,17 @@ export function SaveTemplateDialog({
           </div>
 
           <div className="text-sm text-muted-foreground">
-            This template will save {commands.length} command{commands.length !== 1 ? 's' : ''}.
+            This template will save {commands.length} command
+            {commands.length !== 1 ? 's' : ''}.
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={saving}
+          >
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving}>

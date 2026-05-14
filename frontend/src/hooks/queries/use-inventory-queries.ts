@@ -1,7 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import type { FieldOption, CustomField, LocationItem } from '@/types/shared/device-selector'
+import type {
+  FieldOption,
+  CustomField,
+  LocationItem,
+} from '@/types/shared/device-selector'
 
 /**
  * Hook for fetching inventory field options
@@ -32,7 +36,7 @@ export function useInventoryFieldOptionsQuery() {
 
     // Field options are static - cache aggressively
     staleTime: 15 * 60 * 1000, // 15 minutes
-    gcTime: 30 * 60 * 1000,    // 30 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   })
 }
 
@@ -66,11 +70,15 @@ export function useInventoryFieldValuesQuery(fieldName: string | null, enabled =
     },
 
     // Only run if fieldName exists and is not 'custom_fields' or 'has_primary'
-    enabled: !!fieldName && fieldName !== 'custom_fields' && fieldName !== 'has_primary' && enabled,
+    enabled:
+      !!fieldName &&
+      fieldName !== 'custom_fields' &&
+      fieldName !== 'has_primary' &&
+      enabled,
 
     // Field values change less frequently
-    staleTime: 5 * 60 * 1000,  // 5 minutes
-    gcTime: 10 * 60 * 1000,    // 10 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   })
 }
 
@@ -103,7 +111,7 @@ export function useInventoryCustomFieldsQuery(enabled = false) {
 
     // Custom fields are relatively static
     staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 20 * 60 * 1000,    // 20 minutes
+    gcTime: 20 * 60 * 1000, // 20 minutes
   })
 }
 
@@ -134,7 +142,7 @@ export function useNautobotLocationsQuery(enabled = false) {
 
     // Locations are relatively static
     staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 20 * 60 * 1000,    // 20 minutes
+    gcTime: 20 * 60 * 1000, // 20 minutes
   })
 }
 

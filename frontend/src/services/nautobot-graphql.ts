@@ -193,7 +193,7 @@ export async function executeNautobotQuery<T>(
 ): Promise<GraphQLResponse<T>> {
   return apiCall('nautobot/graphql', {
     method: 'POST',
-    body: JSON.stringify({ query })
+    body: JSON.stringify({ query }),
   })
 }
 
@@ -204,7 +204,10 @@ export async function fetchDeviceTypesWithManufacturer(
   apiCall: (path: string, options?: ApiOptions) => Promise<unknown>
 ): Promise<GraphQLResponse<{ device_types: GraphQLDeviceType[] }>> {
   return executeNautobotQuery(
-    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ device_types: GraphQLDeviceType[] }>>,
+    apiCall as (
+      path: string,
+      options?: ApiOptions
+    ) => Promise<GraphQLResponse<{ device_types: GraphQLDeviceType[] }>>,
     DEVICE_TYPES_WITH_MANUFACTURER
   )
 }
@@ -216,7 +219,10 @@ export async function fetchLocationsWithHierarchy(
   apiCall: (path: string, options?: ApiOptions) => Promise<unknown>
 ): Promise<GraphQLResponse<{ locations: GraphQLLocation[] }>> {
   return executeNautobotQuery(
-    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ locations: GraphQLLocation[] }>>,
+    apiCall as (
+      path: string,
+      options?: ApiOptions
+    ) => Promise<GraphQLResponse<{ locations: GraphQLLocation[] }>>,
     LOCATIONS_WITH_HIERARCHY
   )
 }
@@ -228,7 +234,10 @@ export async function fetchDevicesDetailed(
   apiCall: (path: string, options?: ApiOptions) => Promise<unknown>
 ): Promise<GraphQLResponse<{ devices: GraphQLDevice[] }>> {
   return executeNautobotQuery(
-    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ devices: GraphQLDevice[] }>>,
+    apiCall as (
+      path: string,
+      options?: ApiOptions
+    ) => Promise<GraphQLResponse<{ devices: GraphQLDevice[] }>>,
     DEVICES_DETAILED
   )
 }
@@ -315,7 +324,10 @@ export async function fetchRackMetadata(
   rackId: string
 ): Promise<GraphQLResponse<{ racks: GraphQLRackMetadata[] }>> {
   return executeNautobotQuery(
-    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ racks: GraphQLRackMetadata[] }>>,
+    apiCall as (
+      path: string,
+      options?: ApiOptions
+    ) => Promise<GraphQLResponse<{ racks: GraphQLRackMetadata[] }>>,
     RACK_METADATA_QUERY(rackId)
   )
 }
@@ -326,9 +338,28 @@ export async function fetchRackMetadata(
 export async function fetchRackDevices(
   apiCall: (path: string, options?: ApiOptions) => Promise<unknown>,
   rackId: string
-): Promise<GraphQLResponse<{ racks: Array<{ id: string; devices: GraphQLRackDevice[]; rack_reservations: GraphQLRackReservation[] }> }>> {
+): Promise<
+  GraphQLResponse<{
+    racks: Array<{
+      id: string
+      devices: GraphQLRackDevice[]
+      rack_reservations: GraphQLRackReservation[]
+    }>
+  }>
+> {
   return executeNautobotQuery(
-    apiCall as (path: string, options?: ApiOptions) => Promise<GraphQLResponse<{ racks: Array<{ id: string; devices: GraphQLRackDevice[]; rack_reservations: GraphQLRackReservation[] }> }>>,
+    apiCall as (
+      path: string,
+      options?: ApiOptions
+    ) => Promise<
+      GraphQLResponse<{
+        racks: Array<{
+          id: string
+          devices: GraphQLRackDevice[]
+          rack_reservations: GraphQLRackReservation[]
+        }>
+      }>
+    >,
     RACK_DEVICES_QUERY(rackId)
   )
 }

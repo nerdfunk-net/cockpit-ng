@@ -15,7 +15,11 @@ interface TestResultDialogProps {
   testResult: string
 }
 
-export function TestResultDialog({ open, onOpenChange, testResult }: TestResultDialogProps) {
+export function TestResultDialog({
+  open,
+  onOpenChange,
+  testResult,
+}: TestResultDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh]">
@@ -36,9 +40,7 @@ export function TestResultDialog({ open, onOpenChange, testResult }: TestResultD
             />
           </div>
           <div className="flex justify-end">
-            <Button onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
+            <Button onClick={() => onOpenChange(false)}>Close</Button>
           </div>
         </div>
       </DialogContent>

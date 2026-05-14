@@ -15,7 +15,7 @@ export function useCacheMutations() {
     mutationFn: async (settings: CacheSettings) => {
       const response = await apiCall<CacheActionResponse>('settings/cache', {
         method: 'PUT',
-        body: JSON.stringify(settings)
+        body: JSON.stringify(settings),
       })
       if (!response?.success) {
         throw new Error(response?.message || 'Failed to save settings')
@@ -34,9 +34,9 @@ export function useCacheMutations() {
       toast({
         title: 'Error',
         description: `Failed to save settings: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Clear cache
@@ -45,14 +45,14 @@ export function useCacheMutations() {
       const body = namespace ? { namespace } : {}
       const response = await apiCall<CacheActionResponse>('cache/clear', {
         method: 'POST',
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       })
       if (!response?.success) {
         throw new Error(response?.message || 'Failed to clear cache')
       }
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Invalidate all cache queries
       queryClient.invalidateQueries({ queryKey: queryKeys.cache.stats() })
       queryClient.invalidateQueries({ queryKey: queryKeys.cache.entries() })
@@ -65,43 +65,47 @@ export function useCacheMutations() {
       toast({
         title: 'Error',
         description: `Failed to clear cache: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Cleanup expired entries
   const cleanupExpired = useMutation({
     mutationFn: async (_?: void) => {
       const response = await apiCall<CacheActionResponse>('cache/cleanup', {
-        method: 'POST'
+        method: 'POST',
       })
       if (!response?.success) {
         throw new Error(response?.message || 'Failed to cleanup expired entries')
       }
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cache.stats() })
       queryClient.invalidateQueries({ queryKey: queryKeys.cache.entries() })
       toast({
         title: 'Success',
-        description: data.message || `Removed ${data.removed_count || 0} expired entries`,
+        description:
+          data.message || `Removed ${data.removed_count || 0} expired entries`,
       })
     },
     onError: (error: Error) => {
       toast({
         title: 'Error',
         description: `Failed to cleanup: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Memoize return object to prevent re-renders
-  return useMemo(() => ({
-    saveSettings,
-    clearCache,
-    cleanupExpired,
-  }), [saveSettings, clearCache, cleanupExpired])
+  return useMemo(
+    () => ({
+      saveSettings,
+      clearCache,
+      cleanupExpired,
+    }),
+    [saveSettings, clearCache, cleanupExpired]
+  )
 }

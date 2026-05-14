@@ -3,12 +3,25 @@
  */
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Save } from 'lucide-react'
 
 interface SaveInventoryDialogProps {
@@ -70,7 +83,7 @@ export function SaveInventoryDialog({
             <Input
               id="inventory-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               placeholder="e.g., dc1-switches"
               disabled={isSaving}
             />
@@ -81,7 +94,7 @@ export function SaveInventoryDialog({
             <Textarea
               id="inventory-description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               placeholder="Optional description of this inventory"
               rows={3}
               disabled={isSaving}
@@ -95,9 +108,7 @@ export function SaveInventoryDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="global">
-                  Global (accessible to all users)
-                </SelectItem>
+                <SelectItem value="global">Global (accessible to all users)</SelectItem>
                 <SelectItem value="private">
                   Private (only accessible to you)
                 </SelectItem>
@@ -106,18 +117,13 @@ export function SaveInventoryDialog({
             <p className="text-sm text-gray-500">
               {scope === 'global'
                 ? 'All users can use this inventory configuration'
-                : 'Only you can see and use this inventory configuration'
-              }
+                : 'Only you can see and use this inventory configuration'}
             </p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={isSaving}
-          >
+          <Button variant="outline" onClick={handleClose} disabled={isSaving}>
             Cancel
           </Button>
           <Button

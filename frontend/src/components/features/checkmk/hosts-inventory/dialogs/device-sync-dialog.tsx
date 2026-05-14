@@ -3,8 +3,14 @@
  * Uses shared form components from add-device for consistent UX
  */
 
-import React, { useEffect, useMemo, useCallback, useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { useEffect, useMemo, useCallback, useState, type FormEvent } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import { useApi } from '@/hooks/use-api'
@@ -17,7 +23,10 @@ import {
 } from '@/components/features/nautobot/add-device/components'
 
 // Shared form utilities
-import { useDeviceForm, transformCheckMKToFormData } from '@/components/shared/device-form'
+import {
+  useDeviceForm,
+  transformCheckMKToFormData,
+} from '@/components/shared/device-form'
 import type { DeviceFormValues } from '@/components/shared/device-form'
 
 // CheckMK types
@@ -117,31 +126,41 @@ export function DeviceSyncDialog({
         ipRoles: fullDropdownData?.ipRoles,
       }
     )
-  }, [propertyMappings, nautobotMetadata, interfaceMappings, open, loadingMetadata, fullDropdownData])
+  }, [
+    propertyMappings,
+    nautobotMetadata,
+    interfaceMappings,
+    open,
+    loadingMetadata,
+    fullDropdownData,
+  ])
 
   // Merge CheckMK metadata with full dropdown data
-  const dropdownData: NautobotDropdownsResponse = useMemo(() => ({
-    roles: nautobotMetadata?.roles || [],
-    statuses: nautobotMetadata?.statuses || [],
-    locations: nautobotMetadata?.locations || [],
-    deviceTypes: (nautobotMetadata?.deviceTypes || []).map(dt => ({
-      id: dt.id,
-      model: dt.name || '',
-      manufacturer: { id: '', name: '' },
-      display: dt.name,
-    })),
-    platforms: (nautobotMetadata?.platforms || []).map(p => ({
-      id: p.id,
-      name: p.name,
-      display: p.name,
-    })),
-    softwareVersions: fullDropdownData?.softwareVersions || [],
-    interfaceTypes: fullDropdownData?.interfaceTypes || [],
-    interfaceStatuses: fullDropdownData?.interfaceStatuses || ipAddressStatuses || [],
-    namespaces: fullDropdownData?.namespaces || [{ id: 'Global', name: 'Global' }],
-    ipRoles: fullDropdownData?.ipRoles || [],
-    nautobotDefaults: fullDropdownData?.nautobotDefaults || null,
-  }), [nautobotMetadata, ipAddressStatuses, fullDropdownData])
+  const dropdownData: NautobotDropdownsResponse = useMemo(
+    () => ({
+      roles: nautobotMetadata?.roles || [],
+      statuses: nautobotMetadata?.statuses || [],
+      locations: nautobotMetadata?.locations || [],
+      deviceTypes: (nautobotMetadata?.deviceTypes || []).map(dt => ({
+        id: dt.id,
+        model: dt.name || '',
+        manufacturer: { id: '', name: '' },
+        display: dt.name,
+      })),
+      platforms: (nautobotMetadata?.platforms || []).map(p => ({
+        id: p.id,
+        name: p.name,
+        display: p.name,
+      })),
+      softwareVersions: fullDropdownData?.softwareVersions || [],
+      interfaceTypes: fullDropdownData?.interfaceTypes || [],
+      interfaceStatuses: fullDropdownData?.interfaceStatuses || ipAddressStatuses || [],
+      namespaces: fullDropdownData?.namespaces || [{ id: 'Global', name: 'Global' }],
+      ipRoles: fullDropdownData?.ipRoles || [],
+      nautobotDefaults: fullDropdownData?.nautobotDefaults || null,
+    }),
+    [nautobotMetadata, ipAddressStatuses, fullDropdownData]
+  )
 
   // Initialize form with CheckMK data
   const form = useDeviceForm({
@@ -153,7 +172,9 @@ export function DeviceSyncDialog({
 
   // Validation modal state
   const [showValidationModal, setShowValidationModal] = useState(false)
-  const [validationResults, setValidationResults] = useState<ValidationResults>(DEFAULT_VALIDATION_RESULTS)
+  const [validationResults, setValidationResults] = useState<ValidationResults>(
+    DEFAULT_VALIDATION_RESULTS
+  )
 
   // Reset form when initial data changes or device changes
   useEffect(() => {
@@ -176,18 +197,19 @@ export function DeviceSyncDialog({
   }, [open, reset])
 
   // Searchable dropdowns
-  const locationFilterPredicate = React.useCallback(
+  const locationFilterPredicate = useCallback(
     (loc: LocationItem, query: string) =>
       (loc.hierarchicalPath || loc.name).toLowerCase().includes(query),
     []
   )
 
-  const deviceTypeFilterPredicate = React.useCallback(
-    (dt: DeviceType, query: string) => (dt.display || dt.model || '').toLowerCase().includes(query),
+  const deviceTypeFilterPredicate = useCallback(
+    (dt: DeviceType, query: string) =>
+      (dt.display || dt.model || '').toLowerCase().includes(query),
     []
   )
 
-  const softwareVersionFilterPredicate = React.useCallback(
+  const softwareVersionFilterPredicate = useCallback(
     (sv: SoftwareVersion, query: string) =>
       `${sv.platform?.name || ''} ${sv.version}`.toLowerCase().includes(query),
     []
@@ -199,24 +221,24 @@ export function DeviceSyncDialog({
       [dropdownData.locations]
     ),
     selectedId: watch('selectedLocation'),
-    onSelect: (id) => form.setValue('selectedLocation', id),
-    getDisplayText: (loc) => loc.hierarchicalPath || loc.name,
+    onSelect: id => form.setValue('selectedLocation', id),
+    getDisplayText: loc => loc.hierarchicalPath || loc.name,
     filterPredicate: locationFilterPredicate,
   })
 
   const deviceTypeDropdown = useSearchableDropdown({
     items: dropdownData.deviceTypes,
     selectedId: watch('selectedDeviceType'),
-    onSelect: (id) => form.setValue('selectedDeviceType', id),
-    getDisplayText: (dt) => dt.display || dt.model || 'Unknown',
+    onSelect: id => form.setValue('selectedDeviceType', id),
+    getDisplayText: dt => dt.display || dt.model || 'Unknown',
     filterPredicate: deviceTypeFilterPredicate,
   })
 
   const softwareVersionDropdown = useSearchableDropdown({
     items: dropdownData.softwareVersions,
     selectedId: watch('selectedSoftwareVersion') || '',
-    onSelect: (id) => form.setValue('selectedSoftwareVersion', id),
-    getDisplayText: (sv) => `${sv.platform?.name || ''} ${sv.version}`.trim(),
+    onSelect: id => form.setValue('selectedSoftwareVersion', id),
+    getDisplayText: sv => `${sv.platform?.name || ''} ${sv.version}`.trim(),
     filterPredicate: softwareVersionFilterPredicate,
   })
 
@@ -226,8 +248,8 @@ export function DeviceSyncDialog({
   const customFieldsManager = useCustomFieldsManager()
 
   // Handle form submission with validation
-  const handleSync = React.useCallback(
-    async (e: React.FormEvent) => {
+  const handleSync = useCallback(
+    async (e: FormEvent) => {
       e.preventDefault()
 
       // Get current form values
@@ -258,31 +280,48 @@ export function DeviceSyncDialog({
       interfaces.forEach((iface, idx) => {
         if (!iface.status) {
           allInterfacesHaveStatus = false
-          errorMessages.push(`Interface ${idx + 1} (${iface.name || 'unnamed'}) is missing status`)
+          errorMessages.push(
+            `Interface ${idx + 1} (${iface.name || 'unnamed'}) is missing status`
+          )
         }
 
         // Check IP addresses
         const ipAddresses = iface.ip_addresses || []
         ipAddresses.forEach((ip, ipIdx) => {
           if (ip.address) {
-            const isValidCidr = ipv4CidrRegex.test(ip.address) || ipv6CidrRegex.test(ip.address)
+            const isValidCidr =
+              ipv4CidrRegex.test(ip.address) || ipv6CidrRegex.test(ip.address)
             if (!isValidCidr) {
               allIpAddressesValid = false
-              errorMessages.push(`Interface ${idx + 1}, IP ${ipIdx + 1}: Invalid CIDR format (${ip.address})`)
+              errorMessages.push(
+                `Interface ${idx + 1}, IP ${ipIdx + 1}: Invalid CIDR format (${ip.address})`
+              )
             }
           } else {
             allIpAddressesValid = false
-            errorMessages.push(`Interface ${idx + 1}, IP ${ipIdx + 1}: IP address is required`)
+            errorMessages.push(
+              `Interface ${idx + 1}, IP ${ipIdx + 1}: IP address is required`
+            )
           }
         })
       })
 
-      const isValid = deviceRole && deviceStatus && deviceType && location && allInterfacesHaveStatus && allIpAddressesValid
+      const isValid =
+        deviceRole &&
+        deviceStatus &&
+        deviceType &&
+        location &&
+        allInterfacesHaveStatus &&
+        allIpAddressesValid
 
       if (!isValid) {
         toast({
           title: 'Validation Failed',
-          description: errorMessages.slice(0, 5).join('\n') + (errorMessages.length > 5 ? `\n...and ${errorMessages.length - 5} more` : ''),
+          description:
+            errorMessages.slice(0, 5).join('\n') +
+            (errorMessages.length > 5
+              ? `\n...and ${errorMessages.length - 5} more`
+              : ''),
           variant: 'destructive',
         })
         return
@@ -295,69 +334,73 @@ export function DeviceSyncDialog({
   )
 
   // Handle manual validation
-  const handleValidate = React.useCallback(
-    async () => {
-      // Get current form values
-      const values = form.getValues()
+  const handleValidate = useCallback(async () => {
+    // Get current form values
+    const values = form.getValues()
 
-      // Check required fields
-      const deviceRole = !!values.selectedRole
-      const deviceStatus = !!values.selectedStatus
-      const deviceType = !!values.selectedDeviceType
-      const location = !!values.selectedLocation
+    // Check required fields
+    const deviceRole = !!values.selectedRole
+    const deviceStatus = !!values.selectedStatus
+    const deviceType = !!values.selectedDeviceType
+    const location = !!values.selectedLocation
 
-      // Check interface statuses and IP addresses
-      const interfaces = values.interfaces || []
-      let interfaceIssues = 0
-      let allInterfacesHaveStatus = true
-      let ipAddressIssues = 0
-      let allIpAddressesValid = true
+    // Check interface statuses and IP addresses
+    const interfaces = values.interfaces || []
+    let interfaceIssues = 0
+    let allInterfacesHaveStatus = true
+    let ipAddressIssues = 0
+    let allIpAddressesValid = true
 
-      // IP address validation regex: xxx.xxx.xxx.xxx/yy or xxxx:xxxx::/yy
-      const ipv4CidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/
-      const ipv6CidrRegex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\/\d{1,3}$/
+    // IP address validation regex: xxx.xxx.xxx.xxx/yy or xxxx:xxxx::/yy
+    const ipv4CidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/
+    const ipv6CidrRegex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\/\d{1,3}$/
 
-      interfaces.forEach(iface => {
-        if (!iface.status) {
-          allInterfacesHaveStatus = false
-          interfaceIssues++
-        }
+    interfaces.forEach(iface => {
+      if (!iface.status) {
+        allInterfacesHaveStatus = false
+        interfaceIssues++
+      }
 
-        // Check IP addresses
-        const ipAddresses = iface.ip_addresses || []
-        ipAddresses.forEach(ip => {
-          if (ip.address) {
-            const isValidCidr = ipv4CidrRegex.test(ip.address) || ipv6CidrRegex.test(ip.address)
-            if (!isValidCidr) {
-              allIpAddressesValid = false
-              ipAddressIssues++
-            }
-          } else {
-            // Empty IP address is also invalid
+      // Check IP addresses
+      const ipAddresses = iface.ip_addresses || []
+      ipAddresses.forEach(ip => {
+        if (ip.address) {
+          const isValidCidr =
+            ipv4CidrRegex.test(ip.address) || ipv6CidrRegex.test(ip.address)
+          if (!isValidCidr) {
             allIpAddressesValid = false
             ipAddressIssues++
           }
-        })
+        } else {
+          // Empty IP address is also invalid
+          allIpAddressesValid = false
+          ipAddressIssues++
+        }
       })
+    })
 
-      const isValid = deviceRole && deviceStatus && deviceType && location && allInterfacesHaveStatus && allIpAddressesValid
+    const isValid =
+      deviceRole &&
+      deviceStatus &&
+      deviceType &&
+      location &&
+      allInterfacesHaveStatus &&
+      allIpAddressesValid
 
-      setValidationResults({
-        isValid,
-        deviceRole,
-        deviceStatus,
-        deviceType,
-        location,
-        interfaceStatus: allInterfacesHaveStatus,
-        interfaceIssues,
-        ipAddresses: allIpAddressesValid,
-        ipAddressIssues,
-      })
+    setValidationResults({
+      isValid,
+      deviceRole,
+      deviceStatus,
+      deviceType,
+      location,
+      interfaceStatus: allInterfacesHaveStatus,
+      interfaceIssues,
+      ipAddresses: allIpAddressesValid,
+      ipAddressIssues,
+    })
 
-      setShowValidationModal(true)
-    },
-    [form]
-  )
+    setShowValidationModal(true)
+  }, [form])
 
   // Load and apply default values from Nautobot settings
   const handleUseDefaultValues = useCallback(async () => {
@@ -385,7 +428,10 @@ export function DeviceSyncDialog({
           form.setValue('selectedRole', defaults.device_role)
         }
         if (defaults.device_status) {
-          console.log('[DeviceSyncModal] Setting device_status to:', defaults.device_status)
+          console.log(
+            '[DeviceSyncModal] Setting device_status to:',
+            defaults.device_status
+          )
           form.setValue('selectedStatus', defaults.device_status)
         }
         if (defaults.location) {
@@ -399,13 +445,20 @@ export function DeviceSyncDialog({
 
         // Apply interface status to all interfaces
         if (defaults.interface_status) {
-          console.log('[DeviceSyncModal] Setting interface_status to:', defaults.interface_status)
+          console.log(
+            '[DeviceSyncModal] Setting interface_status to:',
+            defaults.interface_status
+          )
           const currentInterfaces = form.getValues('interfaces')
           if (currentInterfaces && currentInterfaces.length > 0) {
             currentInterfaces.forEach((_, index) => {
               form.setValue(`interfaces.${index}.status`, defaults.interface_status!)
             })
-            console.log('[DeviceSyncModal] Updated interface statuses for', currentInterfaces.length, 'interfaces')
+            console.log(
+              '[DeviceSyncModal] Updated interface statuses for',
+              currentInterfaces.length,
+              'interfaces'
+            )
           }
         }
 
@@ -454,7 +507,9 @@ export function DeviceSyncDialog({
           } | null
         }>
         count: number
-      }>(`nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(deviceName)}`)
+      }>(
+        `nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(deviceName)}`
+      )
 
       if (!response?.devices || response.devices.length === 0) {
         toast({
@@ -537,7 +592,10 @@ export function DeviceSyncDialog({
       console.error('Failed to fetch primary IP:', error)
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to fetch primary IP from Nautobot',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch primary IP from Nautobot',
         variant: 'destructive',
       })
     }
@@ -555,10 +613,7 @@ export function DeviceSyncDialog({
         </DialogHeader>
 
         {/* Compact Header */}
-        <SyncDialogHeader
-          deviceName={form.watch('deviceName')}
-          isUpdate={isUpdate}
-        />
+        <SyncDialogHeader deviceName={form.watch('deviceName')} isUpdate={isUpdate} />
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto bg-gray-50/50">
@@ -595,9 +650,9 @@ export function DeviceSyncDialog({
               <InterfaceTable
                 form={form}
                 dropdownData={dropdownData}
-                onOpenProperties={(id) => {
+                onOpenProperties={id => {
                   const location = dropdownData.locations.find(
-                    (l) => l.id === watch('selectedLocation')
+                    l => l.id === watch('selectedLocation')
                   )
                   propertiesModal.openModal(id, location?.name)
                 }}

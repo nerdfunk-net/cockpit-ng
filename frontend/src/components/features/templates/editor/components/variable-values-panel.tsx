@@ -43,7 +43,7 @@ export function VariableValuesPanel({
   onExecutePreRun,
 }: VariableValuesPanelProps) {
   const selectedVariable = selectedVariableId
-    ? variables.find((v) => v.id === selectedVariableId)
+    ? variables.find(v => v.id === selectedVariableId)
     : null
 
   // Format the selected variable's value if it's JSON
@@ -83,7 +83,7 @@ export function VariableValuesPanel({
                 <Label className="text-xs text-gray-500">Name</Label>
                 <Input
                   value={selectedVariable.name}
-                  onChange={(e) =>
+                  onChange={e =>
                     onUpdateVariable(selectedVariable.id, 'name', e.target.value)
                   }
                   placeholder="variable_name"
@@ -110,7 +110,15 @@ export function VariableValuesPanel({
                     <div className="text-xs text-orange-600 bg-orange-50 px-3 py-2 rounded border border-orange-200">
                       <p className="font-medium mb-1">⚡ Command Execution Required</p>
                       <p className="text-gray-600">
-                        Execute the pre-run command to populate both <code className="font-mono bg-orange-100 px-1">pre_run.raw</code> and <code className="font-mono bg-orange-100 px-1">pre_run.parsed</code> variables.
+                        Execute the pre-run command to populate both{' '}
+                        <code className="font-mono bg-orange-100 px-1">
+                          pre_run.raw
+                        </code>{' '}
+                        and{' '}
+                        <code className="font-mono bg-orange-100 px-1">
+                          pre_run.parsed
+                        </code>{' '}
+                        variables.
                       </p>
                     </div>
                     <Button
@@ -141,7 +149,7 @@ export function VariableValuesPanel({
               ) : formattedValue.isJSON ? (
                 <Textarea
                   value={formattedValue.formatted}
-                  onChange={(e) =>
+                  onChange={e =>
                     onUpdateVariable(selectedVariable.id, 'value', e.target.value)
                   }
                   placeholder="Enter value..."
@@ -151,7 +159,7 @@ export function VariableValuesPanel({
               ) : (
                 <Input
                   value={selectedVariable.value}
-                  onChange={(e) =>
+                  onChange={e =>
                     onUpdateVariable(selectedVariable.id, 'value', e.target.value)
                   }
                   placeholder="Enter value..."
@@ -165,15 +173,17 @@ export function VariableValuesPanel({
         {/* Quick overview of all variables when none selected */}
         {!selectedVariable && variables.length > 0 && (
           <div className="space-y-2 mt-2">
-            {variables.map((v) => (
+            {variables.map(v => (
               <div key={v.id} className="flex items-start gap-2 text-xs">
                 <span className="font-mono text-gray-700 font-medium min-w-[100px] flex-shrink-0">
                   {v.name || '(unnamed)'}
                 </span>
                 <span className="text-gray-400 truncate">
-                  {v.isAutoFilled 
-                    ? (v.value ? `${v.value.substring(0, 50)}...` : 'auto-filled') 
-                    : (v.value || '(empty)')}
+                  {v.isAutoFilled
+                    ? v.value
+                      ? `${v.value.substring(0, 50)}...`
+                      : 'auto-filled'
+                    : v.value || '(empty)'}
                 </span>
               </div>
             ))}

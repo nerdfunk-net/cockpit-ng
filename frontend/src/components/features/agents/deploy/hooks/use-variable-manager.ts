@@ -6,12 +6,13 @@ export type VariableOverrides = Record<string, string>
 const EMPTY_OVERRIDES: VariableOverrides = {}
 
 export function useVariableManager() {
-  const [variableOverrides, setVariableOverrides] = useState<VariableOverrides>(EMPTY_OVERRIDES)
+  const [variableOverrides, setVariableOverrides] =
+    useState<VariableOverrides>(EMPTY_OVERRIDES)
 
   const updateVariableOverride = useCallback((name: string, value: string) => {
     setVariableOverrides(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }))
   }, [])
 
@@ -19,13 +20,12 @@ export function useVariableManager() {
     setVariableOverrides(EMPTY_OVERRIDES)
   }, [])
 
-  return useMemo(() => ({
-    variableOverrides,
-    updateVariableOverride,
-    clearOverrides,
-  }), [
-    variableOverrides,
-    updateVariableOverride,
-    clearOverrides
-  ])
+  return useMemo(
+    () => ({
+      variableOverrides,
+      updateVariableOverride,
+      clearOverrides,
+    }),
+    [variableOverrides, updateVariableOverride, clearOverrides]
+  )
 }

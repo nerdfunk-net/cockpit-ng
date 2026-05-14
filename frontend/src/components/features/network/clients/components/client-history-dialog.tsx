@@ -50,16 +50,28 @@ function LoadingState() {
   )
 }
 
-function IpHistoryTab({ rows, isLoading }: { rows: IpHistoryEntry[]; isLoading: boolean }) {
+function IpHistoryTab({
+  rows,
+  isLoading,
+}: {
+  rows: IpHistoryEntry[]
+  isLoading: boolean
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left px-3 py-2 font-medium text-gray-700">Collected At</th>
+            <th className="text-left px-3 py-2 font-medium text-gray-700">
+              Collected At
+            </th>
             <th className="text-left px-3 py-2 font-medium text-gray-700">Device</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">IP Address</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">MAC Address</th>
+            <th className="text-left px-3 py-2 font-medium text-gray-700">
+              IP Address
+            </th>
+            <th className="text-left px-3 py-2 font-medium text-gray-700">
+              MAC Address
+            </th>
             <th className="text-left px-3 py-2 font-medium text-gray-700">Port</th>
             <th className="text-left px-3 py-2 font-medium text-gray-700">VLAN</th>
           </tr>
@@ -70,7 +82,7 @@ function IpHistoryTab({ rows, isLoading }: { rows: IpHistoryEntry[]; isLoading: 
           ) : rows.length === 0 ? (
             <EmptyState message="No IP address history found" />
           ) : (
-            rows.map((row) => (
+            rows.map(row => (
               <tr
                 key={`${row.collected_at}-${row.device_name}-${row.ip_address}`}
                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -78,9 +90,15 @@ function IpHistoryTab({ rows, isLoading }: { rows: IpHistoryEntry[]; isLoading: 
                 <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">
                   {formatDate(row.collected_at)}
                 </td>
-                <td className="px-3 py-1.5 font-medium text-gray-800">{row.device_name}</td>
-                <td className="px-3 py-1.5 font-mono text-gray-800">{row.ip_address}</td>
-                <td className="px-3 py-1.5 font-mono text-gray-600">{row.mac_address ?? '—'}</td>
+                <td className="px-3 py-1.5 font-medium text-gray-800">
+                  {row.device_name}
+                </td>
+                <td className="px-3 py-1.5 font-mono text-gray-800">
+                  {row.ip_address}
+                </td>
+                <td className="px-3 py-1.5 font-mono text-gray-600">
+                  {row.mac_address ?? '—'}
+                </td>
                 <td className="px-3 py-1.5 text-gray-600">{row.port ?? '—'}</td>
                 <td className="px-3 py-1.5 text-gray-600">{row.vlan ?? '—'}</td>
               </tr>
@@ -92,16 +110,28 @@ function IpHistoryTab({ rows, isLoading }: { rows: IpHistoryEntry[]; isLoading: 
   )
 }
 
-function MacHistoryTab({ rows, isLoading }: { rows: MacHistoryEntry[]; isLoading: boolean }) {
+function MacHistoryTab({
+  rows,
+  isLoading,
+}: {
+  rows: MacHistoryEntry[]
+  isLoading: boolean
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left px-3 py-2 font-medium text-gray-700">Collected At</th>
+            <th className="text-left px-3 py-2 font-medium text-gray-700">
+              Collected At
+            </th>
             <th className="text-left px-3 py-2 font-medium text-gray-700">Device</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">MAC Address</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">IP Address</th>
+            <th className="text-left px-3 py-2 font-medium text-gray-700">
+              MAC Address
+            </th>
+            <th className="text-left px-3 py-2 font-medium text-gray-700">
+              IP Address
+            </th>
             <th className="text-left px-3 py-2 font-medium text-gray-700">Port</th>
             <th className="text-left px-3 py-2 font-medium text-gray-700">VLAN</th>
           </tr>
@@ -112,7 +142,7 @@ function MacHistoryTab({ rows, isLoading }: { rows: MacHistoryEntry[]; isLoading
           ) : rows.length === 0 ? (
             <EmptyState message="No MAC address history found" />
           ) : (
-            rows.map((row) => (
+            rows.map(row => (
               <tr
                 key={`${row.collected_at}-${row.device_name}-${row.mac_address}`}
                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -120,9 +150,15 @@ function MacHistoryTab({ rows, isLoading }: { rows: MacHistoryEntry[]; isLoading
                 <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">
                   {formatDate(row.collected_at)}
                 </td>
-                <td className="px-3 py-1.5 font-medium text-gray-800">{row.device_name}</td>
-                <td className="px-3 py-1.5 font-mono text-gray-800">{row.mac_address}</td>
-                <td className="px-3 py-1.5 font-mono text-gray-600">{row.ip_address ?? '—'}</td>
+                <td className="px-3 py-1.5 font-medium text-gray-800">
+                  {row.device_name}
+                </td>
+                <td className="px-3 py-1.5 font-mono text-gray-800">
+                  {row.mac_address}
+                </td>
+                <td className="px-3 py-1.5 font-mono text-gray-600">
+                  {row.ip_address ?? '—'}
+                </td>
                 <td className="px-3 py-1.5 text-gray-600">{row.port ?? '—'}</td>
                 <td className="px-3 py-1.5 text-gray-600">{row.vlan ?? '—'}</td>
               </tr>
@@ -146,10 +182,14 @@ function HostnameHistoryTab({
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left px-3 py-2 font-medium text-gray-700">Collected At</th>
+            <th className="text-left px-3 py-2 font-medium text-gray-700">
+              Collected At
+            </th>
             <th className="text-left px-3 py-2 font-medium text-gray-700">Device</th>
             <th className="text-left px-3 py-2 font-medium text-gray-700">Hostname</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">IP Address</th>
+            <th className="text-left px-3 py-2 font-medium text-gray-700">
+              IP Address
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -158,7 +198,7 @@ function HostnameHistoryTab({
           ) : rows.length === 0 ? (
             <EmptyState message="No hostname history found" />
           ) : (
-            rows.map((row) => (
+            rows.map(row => (
               <tr
                 key={`${row.collected_at}-${row.device_name}-${row.hostname}`}
                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -166,9 +206,13 @@ function HostnameHistoryTab({
                 <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">
                   {formatDate(row.collected_at)}
                 </td>
-                <td className="px-3 py-1.5 font-medium text-gray-800">{row.device_name}</td>
+                <td className="px-3 py-1.5 font-medium text-gray-800">
+                  {row.device_name}
+                </td>
                 <td className="px-3 py-1.5 text-gray-800">{row.hostname}</td>
-                <td className="px-3 py-1.5 font-mono text-gray-600">{row.ip_address ?? '—'}</td>
+                <td className="px-3 py-1.5 font-mono text-gray-600">
+                  {row.ip_address ?? '—'}
+                </td>
               </tr>
             ))
           )}
@@ -200,8 +244,13 @@ export function ClientHistoryDialog({ item, onClose }: ClientHistoryDialogProps)
   }, [item])
 
   return (
-    <Dialog open={item !== null} onOpenChange={(open) => { if (!open) onClose() }}>
-        <DialogContent className="!max-w-[67rem] max-h-[80vh] flex flex-col">
+    <Dialog
+      open={item !== null}
+      onOpenChange={open => {
+        if (!open) onClose()
+      }}
+    >
+      <DialogContent className="!max-w-[67rem] max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <History className="h-5 w-5 text-blue-600" />

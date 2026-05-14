@@ -13,7 +13,10 @@ import {
 import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/hooks/use-toast'
 import { queryKeys } from '@/lib/query-keys'
-import { useRackMappingsQuery, type RackMapping } from '../hooks/use-rack-mappings-query'
+import {
+  useRackMappingsQuery,
+  type RackMapping,
+} from '../hooks/use-rack-mappings-query'
 
 const EMPTY_MAPPINGS: RackMapping[] = []
 
@@ -49,9 +52,15 @@ export function RackMappingsDialog({
         { method: 'DELETE' }
       )
       queryClient.invalidateQueries({
-        queryKey: queryKeys.nautobot.rackMappings({ rack_name: rackName, location_id: locationId }),
+        queryKey: queryKeys.nautobot.rackMappings({
+          rack_name: rackName,
+          location_id: locationId,
+        }),
       })
-      toast({ title: 'Mappings cleared', description: `All name mappings for ${rackName} have been removed.` })
+      toast({
+        title: 'Mappings cleared',
+        description: `All name mappings for ${rackName} have been removed.`,
+      })
     } catch (err) {
       toast({
         title: 'Failed to clear mappings',
@@ -73,7 +82,8 @@ export function RackMappingsDialog({
         </DialogHeader>
 
         <p className="text-xs text-muted-foreground -mt-2">
-          These mappings are applied automatically when &ldquo;Use Mapping from DB&rdquo; is enabled during import.
+          These mappings are applied automatically when &ldquo;Use Mapping from
+          DB&rdquo; is enabled during import.
         </p>
 
         <div className="rounded-md border border-gray-200 overflow-hidden">
@@ -89,17 +99,27 @@ export function RackMappingsDialog({
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-3 py-2 text-left font-medium text-gray-600">CSV Name</th>
-                  <th className="px-3 py-2 text-left font-medium text-gray-600">Nautobot Name</th>
+                  <th className="px-3 py-2 text-left font-medium text-gray-600">
+                    CSV Name
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium text-gray-600">
+                    Nautobot Name
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {mappings.map(m => (
                   <tr key={m.origin_name}>
-                    <td className="px-3 py-2 font-mono text-gray-700 truncate max-w-[180px]" title={m.origin_name}>
+                    <td
+                      className="px-3 py-2 font-mono text-gray-700 truncate max-w-[180px]"
+                      title={m.origin_name}
+                    >
                       {m.origin_name}
                     </td>
-                    <td className="px-3 py-2 font-mono text-gray-700 truncate max-w-[180px]" title={m.mapped_name}>
+                    <td
+                      className="px-3 py-2 font-mono text-gray-700 truncate max-w-[180px]"
+                      title={m.mapped_name}
+                    >
                       {m.mapped_name}
                     </td>
                   </tr>

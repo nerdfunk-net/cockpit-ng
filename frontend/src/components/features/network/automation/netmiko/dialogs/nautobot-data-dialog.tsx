@@ -17,7 +17,11 @@ interface NautobotDataDialogProps {
   nautobotData: any
 }
 
-export function NautobotDataDialog({ open, onOpenChange, nautobotData }: NautobotDataDialogProps) {
+export function NautobotDataDialog({
+  open,
+  onOpenChange,
+  nautobotData,
+}: NautobotDataDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
@@ -109,14 +113,15 @@ export function NautobotDataDialog({ open, onOpenChange, nautobotData }: Nautobo
               )}
 
               {/* Config Context */}
-              {nautobotData.config_context && Object.keys(nautobotData.config_context).length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Config Context</Label>
-                  <pre className="p-3 bg-gray-900 text-green-400 text-xs font-mono rounded-md overflow-x-auto max-h-60 overflow-y-auto">
-                    {JSON.stringify(nautobotData.config_context, null, 2)}
-                  </pre>
-                </div>
-              )}
+              {nautobotData.config_context &&
+                Object.keys(nautobotData.config_context).length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Config Context</Label>
+                    <pre className="p-3 bg-gray-900 text-green-400 text-xs font-mono rounded-md overflow-x-auto max-h-60 overflow-y-auto">
+                      {JSON.stringify(nautobotData.config_context, null, 2)}
+                    </pre>
+                  </div>
+                )}
 
               {/* Tags */}
               {nautobotData.tags && nautobotData.tags.length > 0 && (
@@ -124,7 +129,11 @@ export function NautobotDataDialog({ open, onOpenChange, nautobotData }: Nautobo
                   <Label className="text-sm font-semibold">Tags</Label>
                   <div className="flex flex-wrap gap-2">
                     {nautobotData.tags.map((tag: { id: number; name: string }) => (
-                      <Badge key={tag.id} variant="outline" className="status-info border">
+                      <Badge
+                        key={tag.id}
+                        variant="outline"
+                        className="status-info border"
+                      >
                         {tag.name}
                       </Badge>
                     ))}
@@ -143,9 +152,7 @@ export function NautobotDataDialog({ open, onOpenChange, nautobotData }: Nautobo
           )}
         </div>
         <div className="flex justify-end pt-4 border-t">
-          <Button onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
+          <Button onClick={() => onOpenChange(false)}>Close</Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -53,14 +53,16 @@ export function CustomFieldsTable({
               <th className="px-2 py-2 text-left text-xs font-medium text-gray-900">
                 Custom Field
               </th>
-              <th className="px-2 py-2 text-left text-xs font-medium text-gray-900">Value</th>
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-900">
+                Value
+              </th>
               <th className="px-2 py-2 text-center text-xs font-medium text-gray-900">
                 Clear Custom Field
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {customFields.map((field) => {
+            {customFields.map(field => {
               const fieldName = field.name || field.key || field.id
               if (!fieldName) return null
 
@@ -84,14 +86,14 @@ export function CustomFieldsTable({
                     {field.type?.value === 'select' ? (
                       <Select
                         value={fieldValue}
-                        onValueChange={(value) => onChange(fieldName, value)}
+                        onValueChange={value => onChange(fieldName, value)}
                         disabled={disabled || isClearSelected}
                       >
                         <SelectTrigger className="h-6 text-xs">
                           <SelectValue placeholder="Select a value" />
                         </SelectTrigger>
                         <SelectContent>
-                          {customFieldChoices[fieldName]?.map((choice) => (
+                          {customFieldChoices[fieldName]?.map(choice => (
                             <SelectItem key={choice.id} value={choice.value}>
                               {choice.display}
                             </SelectItem>
@@ -103,7 +105,7 @@ export function CustomFieldsTable({
                         type="text"
                         placeholder={field.default || 'Enter value'}
                         value={fieldValue}
-                        onChange={(e) => onChange(fieldName, e.target.value)}
+                        onChange={e => onChange(fieldName, e.target.value)}
                         disabled={disabled || isClearSelected}
                         className="h-6 text-xs"
                       />
@@ -112,7 +114,7 @@ export function CustomFieldsTable({
                   <td className="px-2 py-2 text-center">
                     <Checkbox
                       checked={isClearSelected}
-                      onCheckedChange={(checked) =>
+                      onCheckedChange={checked =>
                         onChange(fieldName, checked ? 'clear' : '')
                       }
                       disabled={disabled}

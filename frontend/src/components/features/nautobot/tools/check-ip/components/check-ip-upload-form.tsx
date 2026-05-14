@@ -5,9 +5,22 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form'
 import { Upload, FileText, Search } from 'lucide-react'
 import type { UploadFormData } from '../types'
 
@@ -28,7 +41,7 @@ export function CheckIPUploadForm({
   onSubmit,
   isDisabled,
   defaultDelimiter,
-  defaultQuoteChar
+  defaultQuoteChar,
 }: CheckIPUploadFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -37,27 +50,30 @@ export function CheckIPUploadForm({
     defaultValues: {
       delimiter: defaultDelimiter,
       quoteChar: defaultQuoteChar,
-    }
+    },
   })
 
   const selectedFile = useWatch({ control: form.control, name: 'file' })
 
-  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
-        form.setValue('file', file)
-        form.clearErrors('file')
-      } else {
-        form.setError('file', {
-          type: 'manual',
-          message: 'Please select a valid CSV file'
-        })
+  const handleFileSelect = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (file) {
+        if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+          form.setValue('file', file)
+          form.clearErrors('file')
+        } else {
+          form.setError('file', {
+            type: 'manual',
+            message: 'Please select a valid CSV file',
+          })
+        }
       }
-    }
-  }, [form])
+    },
+    [form]
+  )
 
-  const handleFormSubmit = form.handleSubmit((data) => {
+  const handleFormSubmit = form.handleSubmit(data => {
     onSubmit(data)
   })
 
@@ -79,8 +95,8 @@ export function CheckIPUploadForm({
           <span>Upload CSV File</span>
         </CardTitle>
         <CardDescription className="text-white/90 text-xs mt-1">
-          Select a CSV file with device information to compare with Nautobot.
-          Required columns: ip_address, name
+          Select a CSV file with device information to compare with Nautobot. Required
+          columns: ip_address, name
         </CardDescription>
       </CardHeader>
       <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
@@ -105,7 +121,8 @@ export function CheckIPUploadForm({
                       />
                     </FormControl>
                     <p className="text-xs text-muted-foreground">
-                      Character that separates values (e.g., &quot;,&quot; or &quot;;&quot;)
+                      Character that separates values (e.g., &quot;,&quot; or
+                      &quot;;&quot;)
                     </p>
                     <FormMessage />
                   </FormItem>
@@ -159,7 +176,8 @@ export function CheckIPUploadForm({
               </Button>
               {selectedFile && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                  Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)}{' '}
+                  KB)
                 </p>
               )}
               {form.formState.errors.file && (

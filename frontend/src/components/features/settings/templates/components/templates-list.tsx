@@ -12,7 +12,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from '@/components/ui/select'
 import {
   FileCode,
@@ -26,7 +26,7 @@ import {
   Square,
   GitBranch,
   Upload,
-  Code as CodeIcon
+  Code as CodeIcon,
 } from 'lucide-react'
 import { useTemplates, useTemplateCategories } from '../hooks/use-template-queries'
 import { useTemplateMutations } from '../hooks/use-template-mutations'
@@ -53,7 +53,7 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
   const handleFilterChange = (key: keyof TemplateFilters, value: string) => {
     setFilters(prev => ({
       ...prev,
-      [key]: value === '__all__' ? undefined : value
+      [key]: value === '__all__' ? undefined : value,
     }))
   }
 
@@ -123,13 +123,13 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
             <Input
               placeholder="Search templates..."
               value={filters.search || ''}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
+              onChange={e => handleFilterChange('search', e.target.value)}
               className="pl-10"
             />
           </div>
           <Select
             value={filters.category || '__all__'}
-            onValueChange={(value) => handleFilterChange('category', value)}
+            onValueChange={value => handleFilterChange('category', value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="All Categories" />
@@ -137,13 +137,15 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
             <SelectContent>
               <SelectItem value="__all__">All Categories</SelectItem>
               {categories.map(category => (
-                <SelectItem key={category} value={category}>{category}</SelectItem>
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select
             value={filters.source || '__all__'}
-            onValueChange={(value) => handleFilterChange('source', value)}
+            onValueChange={value => handleFilterChange('source', value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="All Sources" />
@@ -196,19 +198,32 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
                 <tr>
                   <th className="px-4 py-3 text-left">
                     <button onClick={toggleSelectAll}>
-                      {selectedTemplates.size === templates.length && templates.length > 0 ? (
+                      {selectedTemplates.size === templates.length &&
+                      templates.length > 0 ? (
                         <CheckSquare className="h-4 w-4 text-blue-600" />
                       ) : (
                         <Square className="h-4 w-4 text-gray-400" />
                       )}
                     </button>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Source
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -226,14 +241,11 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
                     </td>
                   </tr>
                 ) : (
-                  templates.map((template) => {
+                  templates.map(template => {
                     const SourceIcon = getSourceIcon(template.source)
                     const isSelected = selectedTemplates.has(template.id)
                     return (
-                      <tr
-                        key={template.id}
-                        className={isSelected ? 'bg-blue-50' : ''}
-                      >
+                      <tr key={template.id} className={isSelected ? 'bg-blue-50' : ''}>
                         <td className="px-4 py-4">
                           <button onClick={() => toggleSelection(template.id)}>
                             {isSelected ? (
@@ -243,22 +255,41 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
                             )}
                           </button>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap font-medium">{template.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap font-medium">
+                          {template.name}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge variant={getSourceBadgeVariant(template.source)} className="flex items-center space-x-1 w-fit">
+                          <Badge
+                            variant={getSourceBadgeVariant(template.source)}
+                            className="flex items-center space-x-1 w-fit"
+                          >
                             <SourceIcon className="h-3 w-3" />
                             <span>{template.source}</span>
                           </Badge>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">{template.template_type}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">{template.category || '-'}</td>
-                        <td className="px-6 py-4 max-w-xs truncate">{template.description || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {template.template_type}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {template.category || '-'}
+                        </td>
+                        <td className="px-6 py-4 max-w-xs truncate">
+                          {template.description || '-'}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-2">
-                            <Button size="sm" variant="outline" onClick={() => onView(template.id)}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onView(template.id)}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => onEdit(template)}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onEdit(template)}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
                             {template.source === 'git' && (
@@ -277,7 +308,8 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
                               onClick={() => {
                                 openConfirm({
                                   title: 'Delete template?',
-                                  description: 'Are you sure you want to delete this template?',
+                                  description:
+                                    'Are you sure you want to delete this template?',
                                   onConfirm: () => deleteTemplate.mutate(template.id),
                                   variant: 'destructive',
                                 })

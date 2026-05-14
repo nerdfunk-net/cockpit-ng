@@ -1,4 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { CheckCircle, AlertCircle, Minus } from 'lucide-react'
@@ -53,8 +58,11 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
             {summary.results.map(result => (
               <div
                 key={result.device_id}
-                className={`border rounded-lg p-4 ${result.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-                  }`}
+                className={`border rounded-lg p-4 ${
+                  result.success
+                    ? 'border-green-200 bg-green-50'
+                    : 'border-red-200 bg-red-50'
+                }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
@@ -68,10 +76,11 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
                     </span>
                   </div>
                   <Badge
-                    className={`${result.success
-                      ? 'bg-green-500 hover:bg-green-600'
-                      : 'bg-red-500 hover:bg-red-600'
-                      } text-white`}
+                    className={`${
+                      result.success
+                        ? 'bg-green-500 hover:bg-green-600'
+                        : 'bg-red-500 hover:bg-red-600'
+                    } text-white`}
                   >
                     {result.success ? 'Success' : 'Failed'}
                   </Badge>
@@ -85,7 +94,7 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
                   <div className="mb-3">
                     <strong className="text-sm text-green-700">Items Removed:</strong>
                     <ul className="list-disc list-inside mt-1 text-sm text-green-600">
-                      {result.removed_items.map((item) => (
+                      {result.removed_items.map(item => (
                         <li key={item}>{item}</li>
                       ))}
                     </ul>
@@ -96,7 +105,7 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
                   <div className="mb-3">
                     <strong className="text-sm text-yellow-700">Items Skipped:</strong>
                     <ul className="list-disc list-inside mt-1 text-sm text-yellow-600">
-                      {result.skipped_items.map((item) => (
+                      {result.skipped_items.map(item => (
                         <li key={item}>{item}</li>
                       ))}
                     </ul>
@@ -107,7 +116,7 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
                   <div className="mb-3">
                     <strong className="text-sm text-red-700">Errors:</strong>
                     <ul className="list-disc list-inside mt-1 text-sm text-red-600">
-                      {result.errors.map((error) => (
+                      {result.errors.map(error => (
                         <li key={error}>{error}</li>
                       ))}
                     </ul>
@@ -119,10 +128,7 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
 
           {/* Close Button */}
           <div className="flex justify-end pt-4 border-t">
-            <Button
-              onClick={onClose}
-              variant="outline"
-            >
+            <Button onClick={onClose} variant="outline">
               Close
             </Button>
           </div>

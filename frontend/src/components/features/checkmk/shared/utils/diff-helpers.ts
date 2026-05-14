@@ -10,7 +10,7 @@ export function renderConfigComparison(
 ): ConfigAttribute[] {
   const allKeys = new Set([
     ...Object.keys(nautobot?.attributes || {}),
-    ...Object.keys(checkmk?.attributes || {})
+    ...Object.keys(checkmk?.attributes || {}),
   ])
 
   return Array.from(allKeys).map(key => {
@@ -28,7 +28,7 @@ export function renderConfigComparison(
       isDifferent,
       nautobotMissing,
       checkmkMissing,
-      isIgnored
+      isIgnored,
     }
   })
 }
@@ -42,7 +42,10 @@ export function formatValue(value: unknown): string {
 }
 
 // Helper function to get row color based on diff results
-export function getRowColorClass(deviceId: string, diffResults: Record<string, 'equal' | 'diff' | 'host_not_found'>): string {
+export function getRowColorClass(
+  deviceId: string,
+  diffResults: Record<string, 'equal' | 'diff' | 'host_not_found'>
+): string {
   const result = diffResults[deviceId]
   if (!result) return ''
 

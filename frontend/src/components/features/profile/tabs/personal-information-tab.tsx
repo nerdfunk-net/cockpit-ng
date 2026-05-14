@@ -2,7 +2,13 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Mail, User } from 'lucide-react'
 
 interface PersonalInformationTabProps {
@@ -35,12 +41,7 @@ export function PersonalInformationTab({
         {/* Username (read-only) */}
         <div className="space-y-2">
           <Label htmlFor="username">Username</Label>
-          <Input
-            id="username"
-            value={username}
-            disabled
-            className="bg-slate-50"
-          />
+          <Input id="username" value={username} disabled className="bg-slate-50" />
           <p className="text-sm text-slate-500">Username cannot be changed</p>
         </div>
 
@@ -50,7 +51,7 @@ export function PersonalInformationTab({
           <Input
             id="realname"
             value={realname}
-            onChange={(e) => onRealnameChange(e.target.value)}
+            onChange={e => onRealnameChange(e.target.value)}
             placeholder="Enter your full name"
           />
         </div>
@@ -65,7 +66,7 @@ export function PersonalInformationTab({
             id="email"
             type="email"
             value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
+            onChange={e => onEmailChange(e.target.value)}
             placeholder="Enter your email address"
           />
         </div>

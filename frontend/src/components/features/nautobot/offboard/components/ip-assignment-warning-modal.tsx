@@ -1,5 +1,10 @@
 import { AlertTriangle } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import type { IpAddressMultipleAssignmentWarning } from '@/types/features/nautobot/offboard'
 
@@ -34,8 +39,9 @@ export function IpAssignmentWarningModal({
 
         <div className="space-y-4 py-2">
           <p className="text-sm text-muted-foreground">
-            The following device{warnings.length > 1 ? 's have' : ' has'} a primary IP address
-            assigned to multiple devices. Decide whether to remove the IP from Nautobot or keep it.
+            The following device{warnings.length > 1 ? 's have' : ' has'} a primary IP
+            address assigned to multiple devices. Decide whether to remove the IP from
+            Nautobot or keep it.
           </p>
 
           {warnings.map(warning => {
@@ -48,16 +54,24 @@ export function IpAssignmentWarningModal({
               <div key={warning.deviceId} className="rounded-md border p-4 space-y-3">
                 <div>
                   <p className="font-medium text-sm">{warning.deviceName}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{warning.ipAddress}</p>
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {warning.ipAddress}
+                  </p>
                 </div>
 
                 <div className="text-sm">
                   <p className="text-muted-foreground mb-1">Also assigned to:</p>
                   <ul className="space-y-0.5">
                     {otherDevices.map(a => (
-                      <li key={`${a.interface.device.name}:${a.interface.name}`} className="text-sm">
+                      <li
+                        key={`${a.interface.device.name}:${a.interface.name}`}
+                        className="text-sm"
+                      >
                         <span className="font-medium">{a.interface.device.name}</span>
-                        <span className="text-muted-foreground"> — {a.interface.name}</span>
+                        <span className="text-muted-foreground">
+                          {' '}
+                          — {a.interface.name}
+                        </span>
                       </li>
                     ))}
                   </ul>

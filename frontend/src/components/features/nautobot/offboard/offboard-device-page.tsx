@@ -169,7 +169,13 @@ export function OffboardDevicePage() {
     } finally {
       setIsCheckingIp(false)
     }
-  }, [offboardProperties.removePrimaryIp, devices, selectedDevices, checkIpAssignments, showMessage])
+  }, [
+    offboardProperties.removePrimaryIp,
+    devices,
+    selectedDevices,
+    checkIpAssignments,
+    showMessage,
+  ])
 
   // Handlers
   const handleReloadDevices = useCallback(async () => {
@@ -230,7 +236,8 @@ export function OffboardDevicePage() {
         const filtered =
           decision.action === 'remove_all'
             ? prev.filter(
-                item => item.status.virtual_chassis?.id !== vcId || item.deviceId === deviceId
+                item =>
+                  item.status.virtual_chassis?.id !== vcId || item.deviceId === deviceId
               )
             : prev
 

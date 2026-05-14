@@ -14,7 +14,14 @@ import {
   FormDescription,
   FormMessage,
 } from '@/components/ui/form'
-import { Loader2, CheckCircle, XCircle, Server, Settings, RotateCcw } from 'lucide-react'
+import {
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Server,
+  Settings,
+  RotateCcw,
+} from 'lucide-react'
 import type { CheckMKSettings } from '../types'
 
 const settingsSchema = z.object({
@@ -54,11 +61,11 @@ export function ConnectionSettingsForm({
     values: settings, // Sync with external settings
   })
 
-  const handleSave = form.handleSubmit((data) => {
+  const handleSave = form.handleSubmit(data => {
     onSave(data)
   })
 
-  const handleTest = form.handleSubmit((data) => {
+  const handleTest = form.handleSubmit(data => {
     onTest(data)
   })
 
@@ -84,9 +91,15 @@ export function ConnectionSettingsForm({
                       CheckMK Server URL <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input type="url" placeholder="https://checkmk.example.com" {...field} />
+                      <Input
+                        type="url"
+                        placeholder="https://checkmk.example.com"
+                        {...field}
+                      />
                     </FormControl>
-                    <FormDescription>The base URL of your CheckMK instance</FormDescription>
+                    <FormDescription>
+                      The base URL of your CheckMK instance
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -109,7 +122,8 @@ export function ConnectionSettingsForm({
                       />
                     </FormControl>
                     <FormDescription>
-                      The CheckMK site name (usually &apos;cmk&apos; for default installations)
+                      The CheckMK site name (usually &apos;cmk&apos; for default
+                      installations)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -126,7 +140,11 @@ export function ConnectionSettingsForm({
                       Username <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input type="text" placeholder="Enter your CheckMK username" {...field} />
+                      <Input
+                        type="text"
+                        placeholder="Enter your CheckMK username"
+                        {...field}
+                      />
                     </FormControl>
                     <FormDescription>Your CheckMK login username</FormDescription>
                     <FormMessage />
@@ -144,9 +162,15 @@ export function ConnectionSettingsForm({
                       Password <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Enter your CheckMK password" {...field} />
+                      <Input
+                        type="password"
+                        placeholder="Enter your CheckMK password"
+                        {...field}
+                      />
                     </FormControl>
-                    <FormDescription>Your CheckMK login password or API key</FormDescription>
+                    <FormDescription>
+                      Your CheckMK login password or API key
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -161,11 +185,18 @@ export function ConnectionSettingsForm({
                     <FormLabel>SSL Verification</FormLabel>
                     <div className="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
                       <FormControl>
-                        <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
+                        <Checkbox
+                          checked={field.value ?? false}
+                          onCheckedChange={field.onChange}
+                        />
                       </FormControl>
-                      <label className="text-sm text-gray-700">Verify SSL certificates</label>
+                      <label className="text-sm text-gray-700">
+                        Verify SSL certificates
+                      </label>
                     </div>
-                    <FormDescription>Uncheck only for development environments</FormDescription>
+                    <FormDescription>
+                      Uncheck only for development environments
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -196,7 +227,9 @@ export function ConnectionSettingsForm({
                     {testStatus === 'success' && (
                       <div className="flex items-center space-x-2 text-green-600">
                         <CheckCircle className="h-4 w-4" />
-                        <span className="text-sm font-medium">Connection successful!</span>
+                        <span className="text-sm font-medium">
+                          Connection successful!
+                        </span>
                       </div>
                     )}
 

@@ -3,7 +3,13 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Eye, EyeOff, Lock } from 'lucide-react'
 
 interface PasswordState {
@@ -52,8 +58,8 @@ export function ChangePasswordTab({
               id="newPassword"
               type={showPassword ? 'text' : 'password'}
               value={passwords.newPassword}
-              onChange={(e) => {
-                onPasswordsChange((prev) => ({ ...prev, newPassword: e.target.value }))
+              onChange={e => {
+                onPasswordsChange(prev => ({ ...prev, newPassword: e.target.value }))
                 onPasswordErrorChange('')
               }}
               placeholder="Enter new password"
@@ -65,7 +71,11 @@ export function ChangePasswordTab({
               className="absolute right-0 top-0 h-full px-3 py-2"
               onClick={onShowPasswordToggle}
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
@@ -78,8 +88,11 @@ export function ChangePasswordTab({
               id="confirmPassword"
               type={showConfirmPassword ? 'text' : 'password'}
               value={passwords.confirmPassword}
-              onChange={(e) => {
-                onPasswordsChange((prev) => ({ ...prev, confirmPassword: e.target.value }))
+              onChange={e => {
+                onPasswordsChange(prev => ({
+                  ...prev,
+                  confirmPassword: e.target.value,
+                }))
                 onPasswordErrorChange('')
               }}
               placeholder="Confirm new password"
@@ -91,14 +104,20 @@ export function ChangePasswordTab({
               className="absolute right-0 top-0 h-full px-3 py-2"
               onClick={onShowConfirmPasswordToggle}
             >
-              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showConfirmPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
 
         {/* Password Error */}
         {passwordError && (
-          <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{passwordError}</div>
+          <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+            {passwordError}
+          </div>
         )}
       </CardContent>
     </Card>

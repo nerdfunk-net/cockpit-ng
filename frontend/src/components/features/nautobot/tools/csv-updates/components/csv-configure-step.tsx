@@ -41,11 +41,13 @@ function PrimaryKeySelector({
     <div className="border rounded-md p-4 space-y-3 bg-amber-50 border-amber-200">
       <div className="flex items-center gap-2">
         <Key className="h-4 w-4 text-amber-600 flex-shrink-0" />
-        <Label className="text-sm font-medium text-amber-900">Identify objects by</Label>
+        <Label className="text-sm font-medium text-amber-900">
+          Identify objects by
+        </Label>
       </div>
       <p className="text-xs text-amber-700">
-        Select which CSV column is used to look up existing objects in Nautobot.
-        Use <code className="bg-amber-100 px-1 rounded">id</code> for exact UUID match, or a
+        Select which CSV column is used to look up existing objects in Nautobot. Use{' '}
+        <code className="bg-amber-100 px-1 rounded">id</code> for exact UUID match, or a
         name / address column for lookup by value.
       </p>
       <Select value={primaryKeyColumn} onValueChange={onPrimaryKeyColumnChange}>
@@ -107,14 +109,22 @@ export function CsvConfigureStep({
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="replace" id="tags-replace" />
-              <Label htmlFor="tags-replace" className="text-sm font-normal cursor-pointer">
-                <span className="font-medium">Replace</span> — overwrite all existing tags
+              <Label
+                htmlFor="tags-replace"
+                className="text-sm font-normal cursor-pointer"
+              >
+                <span className="font-medium">Replace</span> — overwrite all existing
+                tags
               </Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="merge" id="tags-merge" />
-              <Label htmlFor="tags-merge" className="text-sm font-normal cursor-pointer">
-                <span className="font-medium">Merge</span> — add to existing tags (no duplicates)
+              <Label
+                htmlFor="tags-merge"
+                className="text-sm font-normal cursor-pointer"
+              >
+                <span className="font-medium">Merge</span> — add to existing tags (no
+                duplicates)
               </Label>
             </div>
           </RadioGroup>

@@ -33,9 +33,9 @@ export function buildLocationPath(
  */
 export function buildLocationHierarchy(locations: LocationItem[]): LocationItem[] {
   const map = new Map<string, LocationItem>()
-  locations.forEach((l) => map.set(l.id, { ...l }))
+  locations.forEach(l => map.set(l.id, { ...l }))
 
-  const processed = locations.map((loc) => {
+  const processed = locations.map(loc => {
     const copy = { ...loc }
     copy.hierarchicalPath = buildLocationPath(copy, map)
     return copy
@@ -60,14 +60,12 @@ export function filterDevices(
   // Device name filter
   if (filters.deviceName) {
     const search = filters.deviceName.toLowerCase()
-    filtered = filtered.filter((device) =>
-      device.name?.toLowerCase().includes(search)
-    )
+    filtered = filtered.filter(device => device.name?.toLowerCase().includes(search))
   }
 
   // Role filter (multi-select)
   if (Object.keys(roleFilters).length > 0) {
-    filtered = filtered.filter((device) => {
+    filtered = filtered.filter(device => {
       const deviceRole = device.role?.name || ''
       // If the device's role isn't in our filter list, show it (backward compatibility)
       if (!(deviceRole in roleFilters)) return true
@@ -77,24 +75,20 @@ export function filterDevices(
 
   // Location filter
   if (filters.location && filters.location !== 'all') {
-    filtered = filtered.filter(
-      (device) => device.location?.name === filters.location
-    )
+    filtered = filtered.filter(device => device.location?.name === filters.location)
   }
 
   // IP address filter
   if (filters.ipAddress) {
     const search = filters.ipAddress.toLowerCase()
-    filtered = filtered.filter((device) =>
+    filtered = filtered.filter(device =>
       device.primary_ip4?.address?.toLowerCase().includes(search)
     )
   }
 
   // Status filter
   if (filters.status && filters.status !== 'all') {
-    filtered = filtered.filter(
-      (device) => device.status?.name === filters.status
-    )
+    filtered = filtered.filter(device => device.status?.name === filters.status)
   }
 
   return filtered
@@ -112,16 +106,22 @@ export function extractFilterOptions(devices: Device[]): {
   const locations = new Set<string>()
   const statuses = new Set<string>()
 
-  devices.forEach((device) => {
+  devices.forEach(device => {
     if (device.role?.name) roles.add(device.role.name)
     if (device.location?.name) locations.add(device.location.name)
     if (device.status?.name) statuses.add(device.status.name)
   })
 
   return {
-    roles: Array.from(roles).sort().map((name) => ({ id: name, name })),
-    locations: Array.from(locations).sort().map((name) => ({ id: name, name })),
-    statuses: Array.from(statuses).sort().map((name) => ({ id: name, name })),
+    roles: Array.from(roles)
+      .sort()
+      .map(name => ({ id: name, name })),
+    locations: Array.from(locations)
+      .sort()
+      .map(name => ({ id: name, name })),
+    statuses: Array.from(statuses)
+      .sort()
+      .map(name => ({ id: name, name })),
   }
 }
 

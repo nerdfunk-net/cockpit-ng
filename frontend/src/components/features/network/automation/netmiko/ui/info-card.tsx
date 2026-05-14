@@ -20,13 +20,13 @@ const colorClasses = {
 export function InfoCard({ label, value, colorScheme, sublabel }: InfoCardProps) {
   return (
     <div className={`p-3 border rounded-md ${colorClasses[colorScheme]}`}>
-      <Label className={`text-xs font-semibold ${colorClasses[colorScheme].split(' ')[2]}`}>
+      <Label
+        className={`text-xs font-semibold ${colorClasses[colorScheme].split(' ')[2]}`}
+      >
         {label}
       </Label>
       <p className="text-sm font-medium mt-1">{value || 'N/A'}</p>
-      {sublabel && (
-        <p className="text-xs text-gray-600 mt-1">{sublabel}</p>
-      )}
+      {sublabel && <p className="text-xs text-gray-600 mt-1">{sublabel}</p>}
     </div>
   )
 }

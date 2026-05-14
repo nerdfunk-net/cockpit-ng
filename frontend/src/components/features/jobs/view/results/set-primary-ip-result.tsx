@@ -1,8 +1,13 @@
 'use client'
 
-import React from 'react'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   CheckCircle2,
   XCircle,
@@ -11,7 +16,10 @@ import {
   SkipForward,
   Info,
 } from 'lucide-react'
-import type { SetPrimaryIpJobResult, SetPrimaryIpDeviceResult } from '../types/job-results'
+import type {
+  SetPrimaryIpJobResult,
+  SetPrimaryIpDeviceResult,
+} from '../types/job-results'
 
 interface SetPrimaryIpResultViewProps {
   result: SetPrimaryIpJobResult
@@ -100,20 +108,34 @@ export function SetPrimaryIpResultView({ result }: SetPrimaryIpResultViewProps) 
         <CardContent>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Total</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                Total
+              </p>
               <p className="text-2xl font-bold">{result.total_devices ?? 0}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Assigned</p>
-              <p className="text-2xl font-bold text-green-600">{result.assigned_count ?? 0}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                Assigned
+              </p>
+              <p className="text-2xl font-bold text-green-600">
+                {result.assigned_count ?? 0}
+              </p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Skipped</p>
-              <p className="text-2xl font-bold text-amber-500">{result.skipped_count ?? 0}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                Skipped
+              </p>
+              <p className="text-2xl font-bold text-amber-500">
+                {result.skipped_count ?? 0}
+              </p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Unreachable</p>
-              <p className="text-2xl font-bold text-red-600">{result.unreachable_count ?? 0}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                Unreachable
+              </p>
+              <p className="text-2xl font-bold text-red-600">
+                {result.unreachable_count ?? 0}
+              </p>
             </div>
           </div>
           {(result.failed_count ?? 0) > 0 && (
@@ -152,7 +174,9 @@ export function SetPrimaryIpResultView({ result }: SetPrimaryIpResultViewProps) 
                   {device.status === 'assigned' && device.primary_ip && (
                     <p className="text-xs text-green-700 ml-1">
                       Primary IP set to{' '}
-                      <code className="font-mono bg-green-50 px-1 rounded">{device.primary_ip}</code>
+                      <code className="font-mono bg-green-50 px-1 rounded">
+                        {device.primary_ip}
+                      </code>
                     </p>
                   )}
 
@@ -160,7 +184,10 @@ export function SetPrimaryIpResultView({ result }: SetPrimaryIpResultViewProps) 
                     <p className="text-xs text-amber-600 ml-1">
                       Multiple IPs reachable:{' '}
                       {device.reachable_ips.map(ip => (
-                        <code key={ip} className="font-mono bg-amber-50 px-1 rounded mr-1">
+                        <code
+                          key={ip}
+                          className="font-mono bg-amber-50 px-1 rounded mr-1"
+                        >
                           {ip}
                         </code>
                       ))}
@@ -172,7 +199,9 @@ export function SetPrimaryIpResultView({ result }: SetPrimaryIpResultViewProps) 
                   )}
 
                   {device.status === 'unreachable' && (
-                    <p className="text-xs text-muted-foreground ml-1">No reachable IPs found</p>
+                    <p className="text-xs text-muted-foreground ml-1">
+                      No reachable IPs found
+                    </p>
                   )}
                 </div>
               ))}

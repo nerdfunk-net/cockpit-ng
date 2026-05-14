@@ -1,6 +1,12 @@
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { CheckCircle2 } from 'lucide-react'
 import { LoadingButton } from '../ui/loading-button'
@@ -47,7 +53,7 @@ export function TemplateSelectionPanel({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">No Template</SelectItem>
-              {templates.map((template) => (
+              {templates.map(template => (
                 <SelectItem key={template.id} value={template.id.toString()}>
                   {template.name}
                 </SelectItem>
@@ -70,7 +76,7 @@ export function TemplateSelectionPanel({
               </div>
               <Textarea
                 value={editedTemplateContent}
-                onChange={(e) => setEditedTemplateContent(e.target.value)}
+                onChange={e => setEditedTemplateContent(e.target.value)}
                 readOnly={selectedTemplate.scope !== 'private'}
                 rows={12}
                 className={`font-mono text-sm border-2 resize-none ${
@@ -78,7 +84,11 @@ export function TemplateSelectionPanel({
                     ? 'border-blue-300 bg-white'
                     : 'border-slate-300 bg-gray-50'
                 }`}
-                placeholder={selectedTemplate.scope === 'private' ? 'Edit your private template...' : ''}
+                placeholder={
+                  selectedTemplate.scope === 'private'
+                    ? 'Edit your private template...'
+                    : ''
+                }
               />
               {selectedTemplate.scope === 'private' && (
                 <div className="flex justify-end">

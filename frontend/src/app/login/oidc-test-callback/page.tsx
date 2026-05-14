@@ -2,7 +2,13 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,7 +23,7 @@ import {
   FileText,
   RefreshCw,
   Copy,
-  Check
+  Check,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -55,7 +61,7 @@ function OIDCTestCallbackContent() {
 
   useEffect(() => {
     analyzeCallback()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
   const analyzeCallback = async () => {
@@ -284,7 +290,9 @@ function OIDCTestCallbackContent() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-600">Authorization Code</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Authorization Code
+                </span>
                 {debugInfo.query_params.code ? (
                   <Badge variant="default" className="gap-1">
                     <CheckCircle2 className="w-3 h-3" />
@@ -299,7 +307,9 @@ function OIDCTestCallbackContent() {
               </div>
 
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-600">State Validation</span>
+                <span className="text-sm font-medium text-gray-600">
+                  State Validation
+                </span>
                 {debugInfo.state_match ? (
                   <Badge variant="default" className="gap-1">
                     <CheckCircle2 className="w-3 h-3" />
@@ -314,7 +324,9 @@ function OIDCTestCallbackContent() {
               </div>
 
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-600">Callback Error</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Callback Error
+                </span>
                 {debugInfo.query_params.error ? (
                   <Badge variant="destructive" className="gap-1">
                     <AlertCircle className="w-3 h-3" />
@@ -368,7 +380,9 @@ function OIDCTestCallbackContent() {
 
             {debugInfo.stored_state && (
               <div className="flex flex-col space-y-1 pt-3 border-t">
-                <span className="text-sm font-medium text-gray-700">Stored State (Session)</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Stored State (Session)
+                </span>
                 <code className="text-xs font-mono bg-gray-100 p-2 rounded border border-gray-200 break-all">
                   {debugInfo.stored_state}
                 </code>
@@ -378,38 +392,40 @@ function OIDCTestCallbackContent() {
         </Card>
 
         {/* Token Exchange */}
-        {debugInfo.query_params.code && !debugInfo.token_response && !debugInfo.error && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="w-5 h-5" />
-                Token Exchange
-              </CardTitle>
-              <CardDescription>
-                Exchange the authorization code for access tokens
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={handleTokenExchange}
-                disabled={exchangingToken}
-                className="w-full gap-2"
-              >
-                {exchangingToken ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Exchanging Code for Tokens...
-                  </>
-                ) : (
-                  <>
-                    <Key className="w-4 h-4" />
-                    Exchange Code for Tokens
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        {debugInfo.query_params.code &&
+          !debugInfo.token_response &&
+          !debugInfo.error && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="w-5 h-5" />
+                  Token Exchange
+                </CardTitle>
+                <CardDescription>
+                  Exchange the authorization code for access tokens
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={handleTokenExchange}
+                  disabled={exchangingToken}
+                  className="w-full gap-2"
+                >
+                  {exchangingToken ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Exchanging Code for Tokens...
+                    </>
+                  ) : (
+                    <>
+                      <Key className="w-4 h-4" />
+                      Exchange Code for Tokens
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
         {/* Token Response */}
         {debugInfo.token_response && (
@@ -435,15 +451,21 @@ function OIDCTestCallbackContent() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
                     <div className="p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm font-medium text-gray-600">Token Type</div>
+                      <div className="text-sm font-medium text-gray-600">
+                        Token Type
+                      </div>
                       <div className="text-lg font-semibold text-gray-900">
                         {debugInfo.token_response.token_type || 'N/A'}
                       </div>
                     </div>
                     <div className="p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm font-medium text-gray-600">Expires In</div>
+                      <div className="text-sm font-medium text-gray-600">
+                        Expires In
+                      </div>
                       <div className="text-lg font-semibold text-gray-900">
-                        {debugInfo.token_response.expires_in ? `${debugInfo.token_response.expires_in}s` : 'N/A'}
+                        {debugInfo.token_response.expires_in
+                          ? `${debugInfo.token_response.expires_in}s`
+                          : 'N/A'}
                       </div>
                     </div>
                     <div className="p-3 bg-gray-50 rounded-lg">
@@ -459,9 +481,14 @@ function OIDCTestCallbackContent() {
                   {debugInfo.decoded_id_token ? (
                     <>
                       {renderJSON(debugInfo.decoded_id_token.header, 'Header')}
-                      {renderJSON(debugInfo.decoded_id_token.payload, 'Payload (Claims)')}
+                      {renderJSON(
+                        debugInfo.decoded_id_token.payload,
+                        'Payload (Claims)'
+                      )}
                       <div className="space-y-2">
-                        <h4 className="text-sm font-semibold text-gray-700">Signature</h4>
+                        <h4 className="text-sm font-semibold text-gray-700">
+                          Signature
+                        </h4>
                         <code className="text-xs font-mono bg-gray-900 text-red-400 p-4 rounded-lg block break-all">
                           {debugInfo.decoded_id_token.signature}
                         </code>
@@ -470,7 +497,9 @@ function OIDCTestCallbackContent() {
                   ) : (
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>No ID token available to decode</AlertDescription>
+                      <AlertDescription>
+                        No ID token available to decode
+                      </AlertDescription>
                     </Alert>
                   )}
                 </TabsContent>
@@ -479,9 +508,14 @@ function OIDCTestCallbackContent() {
                   {debugInfo.decoded_access_token ? (
                     <>
                       {renderJSON(debugInfo.decoded_access_token.header, 'Header')}
-                      {renderJSON(debugInfo.decoded_access_token.payload, 'Payload (Claims)')}
+                      {renderJSON(
+                        debugInfo.decoded_access_token.payload,
+                        'Payload (Claims)'
+                      )}
                       <div className="space-y-2">
-                        <h4 className="text-sm font-semibold text-gray-700">Signature</h4>
+                        <h4 className="text-sm font-semibold text-gray-700">
+                          Signature
+                        </h4>
                         <code className="text-xs font-mono bg-gray-900 text-red-400 p-4 rounded-lg block break-all">
                           {debugInfo.decoded_access_token.signature}
                         </code>
@@ -490,7 +524,9 @@ function OIDCTestCallbackContent() {
                   ) : (
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>No access token available to decode</AlertDescription>
+                      <AlertDescription>
+                        No access token available to decode
+                      </AlertDescription>
                     </Alert>
                   )}
                 </TabsContent>
@@ -507,10 +543,13 @@ function OIDCTestCallbackContent() {
           <CardContent className="space-y-2 text-sm text-gray-600">
             <p>To use this debug callback endpoint:</p>
             <ol className="list-decimal list-inside space-y-1 ml-2">
-              <li>Configure your OIDC provider (e.g., Keycloak) with this callback URL</li>
+              <li>
+                Configure your OIDC provider (e.g., Keycloak) with this callback URL
+              </li>
               <li>
                 <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                  {typeof window !== 'undefined' ? window.location.origin : ''}/login/oidc-test-callback
+                  {typeof window !== 'undefined' ? window.location.origin : ''}
+                  /login/oidc-test-callback
                 </code>
               </li>
               <li>When testing with custom redirect_uri, use this URL</li>
@@ -525,17 +564,19 @@ function OIDCTestCallbackContent() {
 
 export default function OIDCTestCallbackPage() {
   return (
-    <Suspense fallback={
-      <div className="container mx-auto p-6">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Loading OIDC Callback...</CardTitle>
-            </CardHeader>
-          </Card>
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-6">
+          <div className="max-w-6xl mx-auto space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Loading OIDC Callback...</CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <OIDCTestCallbackContent />
     </Suspense>
   )

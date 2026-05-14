@@ -52,8 +52,16 @@ export function useJobTracking() {
       // Actions
       checkJob,
       startTracking,
-      resetTracking
+      resetTracking,
     }),
-    [jobId, jobStatus, onboardedIPAddress, isCheckingJob, checkJob, startTracking, resetTracking]
+    [
+      jobId,
+      jobStatus,
+      onboardedIPAddress,
+      isCheckingJob,
+      checkJob,
+      startTracking,
+      resetTracking,
+    ]
   )
 }

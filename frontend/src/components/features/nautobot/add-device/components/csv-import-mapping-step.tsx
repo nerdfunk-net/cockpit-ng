@@ -1,7 +1,13 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { CSV_IMPORT_NAUTOBOT_FIELDS } from '@/components/features/jobs/templates/utils/constants'
 
 const NOT_USED = '__not_used__'
@@ -32,7 +38,8 @@ export function CsvImportMappingStep({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">
-          Map each CSV column to a Nautobot field. Select &quot;Not Used&quot; to skip a column.
+          Map each CSV column to a Nautobot field. Select &quot;Not Used&quot; to skip a
+          column.
         </p>
         {mappedCount > 0 && (
           <Badge variant="secondary" className="text-xs">
@@ -50,16 +57,23 @@ export function CsvImportMappingStep({
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-white">
               <tr className="border-b">
-                <th className="text-left py-2 px-3 text-gray-600 font-medium w-1/2">CSV Column</th>
-                <th className="text-left py-2 px-3 text-gray-600 font-medium w-1/2">Nautobot Field</th>
+                <th className="text-left py-2 px-3 text-gray-600 font-medium w-1/2">
+                  CSV Column
+                </th>
+                <th className="text-left py-2 px-3 text-gray-600 font-medium w-1/2">
+                  Nautobot Field
+                </th>
               </tr>
             </thead>
             <tbody>
-              {headers.map((header) => {
+              {headers.map(header => {
                 const mapped = columnMapping[header]
-                const selectValue = mapped === null
-                  ? NOT_USED
-                  : (mapped && mapped.trim() !== '' ? mapped : header)
+                const selectValue =
+                  mapped === null
+                    ? NOT_USED
+                    : mapped && mapped.trim() !== ''
+                      ? mapped
+                      : header
                 return (
                   <tr key={header} className="border-b last:border-0">
                     <td className="py-2 px-3">
@@ -70,7 +84,7 @@ export function CsvImportMappingStep({
                     <td className="py-2 px-3">
                       <Select
                         value={selectValue}
-                        onValueChange={(val) => handleFieldChange(header, val)}
+                        onValueChange={val => handleFieldChange(header, val)}
                       >
                         <SelectTrigger className="h-7 text-xs">
                           <SelectValue />
@@ -79,16 +93,14 @@ export function CsvImportMappingStep({
                           <SelectItem value={NOT_USED} className="text-gray-400 italic">
                             Not Used
                           </SelectItem>
-                          <SelectItem value={header}>
-                            {header} (auto)
-                          </SelectItem>
-                          {DEVICE_FIELDS
-                            .filter(f => f !== header && f.trim() !== '')
-                            .map((field) => (
-                              <SelectItem key={field} value={field}>
-                                {field}
-                              </SelectItem>
-                            ))}
+                          <SelectItem value={header}>{header} (auto)</SelectItem>
+                          {DEVICE_FIELDS.filter(
+                            f => f !== header && f.trim() !== ''
+                          ).map(field => (
+                            <SelectItem key={field} value={field}>
+                              {field}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </td>

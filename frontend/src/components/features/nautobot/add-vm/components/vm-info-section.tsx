@@ -53,7 +53,10 @@ export function VMInfoSection({
             <Tags className="h-3.5 w-3.5 mr-1.5" />
             Tags
             {selectedTagsCount > 0 && (
-              <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs bg-white/20 text-white hover:bg-white/20">
+              <Badge
+                variant="secondary"
+                className="ml-1.5 h-5 px-1.5 text-xs bg-white/20 text-white hover:bg-white/20"
+              >
                 {selectedTagsCount}
               </Badge>
             )}
@@ -96,14 +99,17 @@ export function VMInfoSection({
             </Label>
             <Select
               value={watch('role') ?? ''}
-              onValueChange={(value) => setValue('role', value)}
+              onValueChange={value => setValue('role', value)}
               disabled={isLoading}
             >
-              <SelectTrigger id="role" className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+              <SelectTrigger
+                id="role"
+                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+              >
                 <SelectValue placeholder="Select role..." />
               </SelectTrigger>
               <SelectContent>
-                {dropdownData.roles.map((role) => (
+                {dropdownData.roles.map(role => (
                   <SelectItem key={role.id} value={role.id}>
                     {role.name}
                   </SelectItem>
@@ -119,14 +125,17 @@ export function VMInfoSection({
             </Label>
             <Select
               value={watch('status') ?? ''}
-              onValueChange={(value) => setValue('status', value)}
+              onValueChange={value => setValue('status', value)}
               disabled={isLoading}
             >
-              <SelectTrigger id="status" className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+              <SelectTrigger
+                id="status"
+                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+              >
                 <SelectValue placeholder="Select status..." />
               </SelectTrigger>
               <SelectContent>
-                {dropdownData.statuses.map((status) => (
+                {dropdownData.statuses.map(status => (
                   <SelectItem key={status.id} value={status.id}>
                     {status.name}
                   </SelectItem>

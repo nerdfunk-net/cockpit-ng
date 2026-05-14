@@ -1,4 +1,11 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { ReactNode } from 'react'
 
 interface Column<T> {
@@ -25,7 +32,7 @@ export function RBACDataTable<T extends { id: number }>({
       <Table>
         <TableHeader>
           <TableRow>
-            {columns.map((col) => (
+            {columns.map(col => (
               <TableHead key={col.header} className={col.className}>
                 {col.header}
               </TableHead>
@@ -36,14 +43,17 @@ export function RBACDataTable<T extends { id: number }>({
         <TableBody>
           {data.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="text-center py-8 text-muted-foreground">
+              <TableCell
+                colSpan={columns.length + (actions ? 1 : 0)}
+                className="text-center py-8 text-muted-foreground"
+              >
                 {emptyMessage}
               </TableCell>
             </TableRow>
           ) : (
-            data.map((item) => (
+            data.map(item => (
               <TableRow key={item.id}>
-                {columns.map((col) => (
+                {columns.map(col => (
                   <TableCell key={col.header} className={col.className}>
                     {typeof col.accessor === 'function'
                       ? col.accessor(item)
@@ -51,9 +61,7 @@ export function RBACDataTable<T extends { id: number }>({
                   </TableCell>
                 ))}
                 {actions && (
-                  <TableCell className="text-right">
-                    {actions(item)}
-                  </TableCell>
+                  <TableCell className="text-right">{actions(item)}</TableCell>
                 )}
               </TableRow>
             ))

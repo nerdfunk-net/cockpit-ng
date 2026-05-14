@@ -86,7 +86,7 @@ export function CsvPreviewStep({
       {/* Validation Issues */}
       {validationResults.length > 0 && (
         <div className="border rounded-md max-h-36 overflow-y-auto">
-          {validationResults.map((result) => (
+          {validationResults.map(result => (
             <div
               key={`${result.type}-${result.rowNumber ?? ''}-${result.message}`}
               className={`px-3 py-1.5 text-xs border-b last:border-0 flex items-start gap-1.5 ${

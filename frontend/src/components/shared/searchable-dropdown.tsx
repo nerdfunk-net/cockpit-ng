@@ -25,12 +25,16 @@ export function SearchableDropdown({
   onClear,
   className = '',
   inputClassName = '',
-  disabled = false
+  disabled = false,
 }: SearchableDropdownProps) {
   const [searchText, setSearchText] = useState<string>(value)
   const [showDropdown, setShowDropdown] = useState<boolean>(false)
   const [filteredOptions, setFilteredOptions] = useState<string[]>(options)
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null)
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number
+    left: number
+    width: number
+  } | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
 
   // Update searchText when value prop changes
@@ -46,7 +50,10 @@ export function SearchableDropdown({
   // Click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setShowDropdown(false)
       }
     }
@@ -69,9 +76,7 @@ export function SearchableDropdown({
       }
     } else {
       setFilteredOptions(
-        options.filter(opt =>
-          opt.toLowerCase().includes(query.toLowerCase())
-        )
+        options.filter(opt => opt.toLowerCase().includes(query.toLowerCase()))
       )
     }
     setShowDropdown(true)
@@ -90,7 +95,7 @@ export function SearchableDropdown({
       setDropdownPosition({
         top: rect.bottom,
         left: rect.left,
-        width: rect.width
+        width: rect.width,
       })
     } else {
       setDropdownPosition(null)
@@ -104,31 +109,34 @@ export function SearchableDropdown({
         <Input
           placeholder={placeholder}
           value={searchText}
-          onChange={(e) => handleInputChange(e.target.value)}
+          onChange={e => handleInputChange(e.target.value)}
           onFocus={() => setShowDropdown(true)}
           disabled={disabled}
           className={`h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 ${inputClassName}`}
         />
-        {showDropdown && filteredOptions.length > 0 && !disabled && dropdownPosition && (
-          <div
-            className="fixed z-[99999] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto min-w-[200px]"
-            style={{
-              top: dropdownPosition.top,
-              left: dropdownPosition.left,
-              width: dropdownPosition.width
-            }}
-          >
-            {filteredOptions.map(option => (
-              <div
-                key={option}
-                className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
-                onClick={() => handleSelect(option)}
-              >
-                {option}
-              </div>
-            ))}
-          </div>
-        )}
+        {showDropdown &&
+          filteredOptions.length > 0 &&
+          !disabled &&
+          dropdownPosition && (
+            <div
+              className="fixed z-[99999] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto min-w-[200px]"
+              style={{
+                top: dropdownPosition.top,
+                left: dropdownPosition.left,
+                width: dropdownPosition.width,
+              }}
+            >
+              {filteredOptions.map(option => (
+                <div
+                  key={option}
+                  className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                  onClick={() => handleSelect(option)}
+                >
+                  {option}
+                </div>
+              ))}
+            </div>
+          )}
       </div>
     </div>
   )

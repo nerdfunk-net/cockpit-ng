@@ -17,7 +17,7 @@ interface SnmpValidationDialogProps {
 export function SnmpValidationDialog({
   open,
   onOpenChange,
-  error
+  error,
 }: SnmpValidationDialogProps) {
   if (!error) return null
 
@@ -32,18 +32,14 @@ export function SnmpValidationDialog({
           <DialogDescription>
             <div className="space-y-2 mt-4">
               <p className="font-semibold">{error.message}</p>
-              {error.error && (
-                <p className="text-sm text-gray-600">{error.error}</p>
-              )}
+              {error.error && <p className="text-sm text-gray-600">{error.error}</p>}
               {error.line && (
                 <p className="text-sm text-gray-600">
                   Line {error.line}
                   {error.column && `, Column ${error.column}`}
                 </p>
               )}
-              <p className="text-sm text-gray-500 mt-4">
-                Common YAML syntax issues:
-              </p>
+              <p className="text-sm text-gray-500 mt-4">Common YAML syntax issues:</p>
               <ul className="text-sm text-gray-500 list-disc list-inside">
                 <li>Incorrect indentation (use spaces, not tabs)</li>
                 <li>Missing quotes around special characters</li>

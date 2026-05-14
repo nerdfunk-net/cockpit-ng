@@ -1,13 +1,31 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { RefreshCw, Layers, Users, Clock, AlertCircle, Eraser } from 'lucide-react'
 import { useCeleryQueues } from '../hooks/use-celery-queries'
 import { useCeleryMutations } from '../hooks/use-celery-mutations'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,7 +72,10 @@ export function CeleryQueuesList() {
   const totalPendingTasks = queues?.reduce((sum, q) => sum + q.pending_tasks, 0) || 0
 
   // Queue color coding based on usage
-  const getQueueVariant = (pendingTasks: number, workerCount: number): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  const getQueueVariant = (
+    pendingTasks: number,
+    workerCount: number
+  ): 'default' | 'secondary' | 'destructive' | 'outline' => {
     if (workerCount === 0 && pendingTasks > 0) return 'destructive' // No workers but tasks waiting
     if (pendingTasks > 10) return 'default' // High load
     if (pendingTasks > 0) return 'secondary' // Some tasks
@@ -71,7 +92,12 @@ export function CeleryQueuesList() {
               Queue metrics, task routing, and worker assignments
             </CardDescription>
           </div>
-          <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isLoading}>
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            size="sm"
+            disabled={isLoading}
+          >
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -103,7 +129,10 @@ export function CeleryQueuesList() {
                     </div>
                     <TooltipProvider>
                       <Tooltip>
-                        <AlertDialog open={purgeAllDialogOpen} onOpenChange={setPurgeAllDialogOpen}>
+                        <AlertDialog
+                          open={purgeAllDialogOpen}
+                          onOpenChange={setPurgeAllDialogOpen}
+                        >
                           <TooltipTrigger asChild>
                             <AlertDialogTrigger asChild>
                               <Button
@@ -123,16 +152,19 @@ export function CeleryQueuesList() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Purge All Queues</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to purge all {totalPendingTasks} pending task(s) from all queues?
+                                Are you sure you want to purge all {totalPendingTasks}{' '}
+                                pending task(s) from all queues?
                                 <br />
                                 <br />
-                                <strong>This action cannot be undone.</strong> Only pending tasks will be removed; running tasks will not be affected.
+                                <strong>This action cannot be undone.</strong> Only
+                                pending tasks will be removed; running tasks will not be
+                                affected.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={(e) => {
+                                onClick={e => {
                                   e.preventDefault()
                                   handlePurgeAllQueues()
                                 }}
@@ -148,9 +180,7 @@ export function CeleryQueuesList() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
-                    {totalPendingTasks}
-                  </div>
+                  <div className="text-2xl font-bold">{totalPendingTasks}</div>
                 </CardContent>
               </Card>
 
@@ -179,7 +209,9 @@ export function CeleryQueuesList() {
                   <div className="text-2xl font-bold">
                     {queues.filter(q => q.worker_count === 0).length}
                   </div>
-                  <p className="text-xs text-muted-foreground">Queues without workers</p>
+                  <p className="text-xs text-muted-foreground">
+                    Queues without workers
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -198,34 +230,49 @@ export function CeleryQueuesList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {queues.map((queue) => (
+                {queues.map(queue => (
                   <TableRow key={queue.name}>
                     <TableCell>
                       <div>
-                        <div className="font-mono text-sm font-medium">{queue.name}</div>
+                        <div className="font-mono text-sm font-medium">
+                          {queue.name}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {queue.routing_key}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getQueueVariant(queue.pending_tasks, queue.worker_count)}>
+                      <Badge
+                        variant={getQueueVariant(
+                          queue.pending_tasks,
+                          queue.worker_count
+                        )}
+                      >
                         {queue.worker_count === 0 && queue.pending_tasks > 0
                           ? 'No Workers'
                           : queue.pending_tasks > 10
-                          ? 'High Load'
-                          : queue.pending_tasks > 0
-                          ? 'Active'
-                          : 'Idle'}
+                            ? 'High Load'
+                            : queue.pending_tasks > 0
+                              ? 'Active'
+                              : 'Idle'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <span className={queue.pending_tasks > 0 ? 'font-bold text-orange-600' : ''}>
+                      <span
+                        className={
+                          queue.pending_tasks > 0 ? 'font-bold text-orange-600' : ''
+                        }
+                      >
                         {queue.pending_tasks}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <span className={queue.active_tasks > 0 ? 'font-bold text-blue-600' : ''}>
+                      <span
+                        className={
+                          queue.active_tasks > 0 ? 'font-bold text-blue-600' : ''
+                        }
+                      >
                         {queue.active_tasks}
                       </span>
                     </TableCell>
@@ -235,20 +282,23 @@ export function CeleryQueuesList() {
                           <TooltipTrigger asChild>
                             <div className="flex items-center gap-2">
                               <Badge variant="outline">
-                                {queue.worker_count} worker{queue.worker_count !== 1 ? 's' : ''}
+                                {queue.worker_count} worker
+                                {queue.worker_count !== 1 ? 's' : ''}
                               </Badge>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
                             <div className="space-y-1">
                               {queue.workers_consuming.length > 0 ? (
-                                queue.workers_consuming.map((worker) => (
+                                queue.workers_consuming.map(worker => (
                                   <div key={worker} className="font-mono text-xs">
                                     {worker}
                                   </div>
                                 ))
                               ) : (
-                                <div className="text-xs text-muted-foreground">No workers assigned</div>
+                                <div className="text-xs text-muted-foreground">
+                                  No workers assigned
+                                </div>
                               )}
                             </div>
                           </TooltipContent>
@@ -260,19 +310,22 @@ export function CeleryQueuesList() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Badge variant="secondary">
-                              {queue.routed_tasks.length} task type{queue.routed_tasks.length !== 1 ? 's' : ''}
+                              {queue.routed_tasks.length} task type
+                              {queue.routed_tasks.length !== 1 ? 's' : ''}
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent>
                             <div className="space-y-1 max-w-md">
                               {queue.routed_tasks.length > 0 ? (
-                                queue.routed_tasks.map((task) => (
+                                queue.routed_tasks.map(task => (
                                   <div key={task} className="font-mono text-xs">
                                     {task}
                                   </div>
                                 ))
                               ) : (
-                                <div className="text-xs text-muted-foreground">No tasks routed</div>
+                                <div className="text-xs text-muted-foreground">
+                                  No tasks routed
+                                </div>
                               )}
                             </div>
                           </TooltipContent>
@@ -282,13 +335,21 @@ export function CeleryQueuesList() {
                     <TableCell className="text-right">
                       <TooltipProvider>
                         <Tooltip>
-                          <AlertDialog open={purgeDialogOpen === queue.name} onOpenChange={(open) => setPurgeDialogOpen(open ? queue.name : null)}>
+                          <AlertDialog
+                            open={purgeDialogOpen === queue.name}
+                            onOpenChange={open =>
+                              setPurgeDialogOpen(open ? queue.name : null)
+                            }
+                          >
                             <TooltipTrigger asChild>
                               <AlertDialogTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  disabled={queue.pending_tasks === 0 || purgingQueue === queue.name}
+                                  disabled={
+                                    queue.pending_tasks === 0 ||
+                                    purgingQueue === queue.name
+                                  }
                                   className="h-8 w-8 p-0"
                                 >
                                   <Eraser className="h-4 w-4 text-orange-600" />
@@ -300,18 +361,24 @@ export function CeleryQueuesList() {
                             </TooltipContent>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Purge Queue: {queue.name}</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Purge Queue: {queue.name}
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to purge all {queue.pending_tasks} pending task(s) from the &quot;{queue.name}&quot; queue?
+                                  Are you sure you want to purge all{' '}
+                                  {queue.pending_tasks} pending task(s) from the &quot;
+                                  {queue.name}&quot; queue?
                                   <br />
                                   <br />
-                                  <strong>This action cannot be undone.</strong> Only pending tasks will be removed; running tasks will not be affected.
+                                  <strong>This action cannot be undone.</strong> Only
+                                  pending tasks will be removed; running tasks will not
+                                  be affected.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={(e) => {
+                                  onClick={e => {
                                     e.preventDefault()
                                     handlePurgeQueue(queue.name)
                                   }}

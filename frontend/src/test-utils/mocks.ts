@@ -3,10 +3,7 @@ import { vi } from 'vitest'
 /**
  * Mock implementation for useApi hook
  */
-export const createMockApiCall = (
-  mockResponse?: unknown,
-  mockError?: Error | null
-) => {
+export const createMockApiCall = (mockResponse?: unknown, mockError?: Error | null) => {
   return vi.fn().mockImplementation(() => {
     if (mockError) {
       return Promise.reject(mockError)

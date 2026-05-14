@@ -40,12 +40,15 @@ export function UserRolesManager() {
   const [selectedRoleId, setSelectedRoleId] = useState<string>('')
 
   // Derived state with useMemo
-  const getAvailableRoles = useCallback((userId: number) => {
-    const user = users.find(u => u.id === userId)
-    if (!user || !user.roles) return roles
-    const userRoleIds = new Set(user.roles.map(r => r.id))
-    return roles.filter(role => !userRoleIds.has(role.id))
-  }, [users, roles])
+  const getAvailableRoles = useCallback(
+    (userId: number) => {
+      const user = users.find(u => u.id === userId)
+      if (!user || !user.roles) return roles
+      const userRoleIds = new Set(user.roles.map(r => r.id))
+      return roles.filter(role => !userRoleIds.has(role.id))
+    },
+    [users, roles]
+  )
 
   const usersWithRoles = useMemo(() => {
     return users.filter(u => u.roles && u.roles.length > 0).length
@@ -57,24 +60,27 @@ export function UserRolesManager() {
     assignRoleToUser.mutate(
       {
         userId: selectedUserId,
-        roleId: parseInt(selectedRoleId)
+        roleId: parseInt(selectedRoleId),
       },
       {
         onSuccess: () => {
           setSelectedRoleId('')
-        }
+        },
       }
     )
   }, [selectedUserId, selectedRoleId, assignRoleToUser])
 
-  const handleRemoveRole = useCallback((userId: number, roleId: number) => {
-    openConfirm({
-      title: 'Remove Role',
-      description: 'Are you sure you want to remove this role from the user?',
-      variant: 'destructive',
-      onConfirm: () => removeRoleFromUser.mutate({ userId, roleId }),
-    })
-  }, [removeRoleFromUser, openConfirm])
+  const handleRemoveRole = useCallback(
+    (userId: number, roleId: number) => {
+      openConfirm({
+        title: 'Remove Role',
+        description: 'Are you sure you want to remove this role from the user?',
+        variant: 'destructive',
+        onConfirm: () => removeRoleFromUser.mutate({ userId, roleId }),
+      })
+    },
+    [removeRoleFromUser, openConfirm]
+  )
 
   if (usersLoading || rolesLoading) {
     return <RBACLoading message="Loading users and roles..." />
@@ -102,7 +108,7 @@ export function UserRolesManager() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => {
+            {users.map(user => {
               const currentRoles = user.roles || []
               const availableRoles = getAvailableRoles(user.id)
               const isExpanded = selectedUserId === user.id
@@ -112,14 +118,16 @@ export function UserRolesManager() {
                   <TableCell>
                     <div>
                       <div className="font-medium">{user.realname}</div>
-                      <div className="text-sm text-muted-foreground">@{user.username}</div>
+                      <div className="text-sm text-muted-foreground">
+                        @{user.username}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{user.email}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-2">
                       {currentRoles.length > 0 ? (
-                        currentRoles.map((role) => (
+                        currentRoles.map(role => (
                           <Badge
                             key={role.id}
                             variant={role.is_system ? 'default' : 'secondary'}
@@ -136,26 +144,35 @@ export function UserRolesManager() {
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-sm text-muted-foreground">No roles assigned</span>
+                        <span className="text-sm text-muted-foreground">
+                          No roles assigned
+                        </span>
                       )}
                     </div>
                   </TableCell>
                   <TableCell className="text-right w-[360px]">
                     {isExpanded ? (
                       <div className="flex items-center justify-end gap-2">
-                        <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                        <Select
+                          value={selectedRoleId}
+                          onValueChange={setSelectedRoleId}
+                        >
                           <SelectTrigger className="w-[200px]">
                             <SelectValue placeholder="Select role..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableRoles.map((role) => (
+                            {availableRoles.map(role => (
                               <SelectItem key={role.id} value={String(role.id)}>
                                 {role.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <Button size="sm" onClick={handleAssignRole} disabled={!selectedRoleId}>
+                        <Button
+                          size="sm"
+                          onClick={handleAssignRole}
+                          disabled={!selectedRoleId}
+                        >
                           Add
                         </Button>
                         <Button

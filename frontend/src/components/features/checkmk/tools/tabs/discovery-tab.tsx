@@ -6,8 +6,21 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useApi } from '@/hooks/use-api'
 import { useCheckmkDiscoveryMutations } from '../hooks/use-checkmk-discovery-mutations'
 import type { Device } from '../../shared/types'
@@ -117,7 +130,9 @@ export function DiscoveryTab() {
     })
   }
 
-  const allSelected = filteredDevices.length > 0 && filteredDevices.every(device => selectedDevices.has(device.id))
+  const allSelected =
+    filteredDevices.length > 0 &&
+    filteredDevices.every(device => selectedDevices.has(device.id))
 
   // Auto-load devices when tab is opened
   useEffect(() => {
@@ -135,7 +150,9 @@ export function DiscoveryTab() {
             <div className="flex items-center space-x-2">
               <Search className="h-4 w-4" />
               <div>
-                <h3 className="text-sm font-semibold">Device Synchronization Management</h3>
+                <h3 className="text-sm font-semibold">
+                  Device Synchronization Management
+                </h3>
                 <p className="text-blue-100 text-xs">
                   Showing {filteredDevices.length} of {devices.length} devices
                 </p>
@@ -168,50 +185,65 @@ export function DiscoveryTab() {
               <thead className="bg-slate-50">
                 <tr className="border-b border-slate-200">
                   <th className="p-2 text-left w-12">
-                    <Checkbox
-                      checked={allSelected}
-                      onCheckedChange={handleSelectAll}
-                    />
+                    <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} />
                   </th>
                   <th className="p-2 text-left">
                     <div className="space-y-1">
-                      <span className="text-xs font-medium text-slate-700">Device Name</span>
+                      <span className="text-xs font-medium text-slate-700">
+                        Device Name
+                      </span>
                       <input
                         type="text"
                         placeholder="Filter by name..."
                         value={deviceNameFilter}
-                        onChange={(e) => setDeviceNameFilter(e.target.value)}
+                        onChange={e => setDeviceNameFilter(e.target.value)}
                         className="w-full px-2 py-1 text-xs border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
                   </th>
-                  <th className="p-2 text-left text-xs font-medium text-slate-700">Role</th>
-                  <th className="p-2 text-left text-xs font-medium text-slate-700">Location</th>
-                  <th className="p-2 text-left text-xs font-medium text-slate-700">IP Address</th>
-                  <th className="p-2 text-left text-xs font-medium text-slate-700">Status</th>
-                  <th className="p-2 text-center text-xs font-medium text-slate-700">Actions</th>
+                  <th className="p-2 text-left text-xs font-medium text-slate-700">
+                    Role
+                  </th>
+                  <th className="p-2 text-left text-xs font-medium text-slate-700">
+                    Location
+                  </th>
+                  <th className="p-2 text-left text-xs font-medium text-slate-700">
+                    IP Address
+                  </th>
+                  <th className="p-2 text-left text-xs font-medium text-slate-700">
+                    Status
+                  </th>
+                  <th className="p-2 text-center text-xs font-medium text-slate-700">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredDevices.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center p-8 text-muted-foreground">
-                      {devices.length === 0 ? 'No devices loaded. Click "Load Devices" to start.' : 'No devices found'}
+                      {devices.length === 0
+                        ? 'No devices loaded. Click "Load Devices" to start.'
+                        : 'No devices found'}
                     </td>
                   </tr>
                 ) : (
-                  filteredDevices.map((device) => (
+                  filteredDevices.map(device => (
                     <tr key={device.id} className="hover:bg-slate-50">
                       <td className="p-2">
                         <Checkbox
                           checked={selectedDevices.has(device.id)}
-                          onCheckedChange={(checked) => handleSelectDevice(device.id, checked as boolean)}
+                          onCheckedChange={checked =>
+                            handleSelectDevice(device.id, checked as boolean)
+                          }
                         />
                       </td>
                       <td className="p-2 text-sm">{device.name}</td>
                       <td className="p-2 text-sm">{device.role?.name || 'N/A'}</td>
                       <td className="p-2 text-sm">{device.location?.name || 'N/A'}</td>
-                      <td className="p-2 text-sm">{device.primary_ip4?.address || 'N/A'}</td>
+                      <td className="p-2 text-sm">
+                        {device.primary_ip4?.address || 'N/A'}
+                      </td>
                       <td className="p-2">
                         <Badge className="bg-green-100 text-green-800 border-green-300">
                           {device.status?.name || 'Unknown'}
@@ -233,27 +265,47 @@ export function DiscoveryTab() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Discovery Mode</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleStartDiscovery(device, 'fix_all')}>
+                              <DropdownMenuItem
+                                onClick={() => handleStartDiscovery(device, 'fix_all')}
+                              >
                                 Accept all
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStartDiscovery(device, 'new')}>
+                              <DropdownMenuItem
+                                onClick={() => handleStartDiscovery(device, 'new')}
+                              >
                                 Monitor undecided services
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStartDiscovery(device, 'remove')}>
+                              <DropdownMenuItem
+                                onClick={() => handleStartDiscovery(device, 'remove')}
+                              >
                                 Remove vanished services
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleStartDiscovery(device, 'refresh')}>
+                              <DropdownMenuItem
+                                onClick={() => handleStartDiscovery(device, 'refresh')}
+                              >
                                 Rescan (background)
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStartDiscovery(device, 'tabula_rasa')}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStartDiscovery(device, 'tabula_rasa')
+                                }
+                              >
                                 Remove all and find new (background)
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleStartDiscovery(device, 'only_host_labels')}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStartDiscovery(device, 'only_host_labels')
+                                }
+                              >
                                 Update host labels
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStartDiscovery(device, 'only_service_labels')}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleStartDiscovery(device, 'only_service_labels')
+                                }
+                              >
                                 Update service labels
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -276,7 +328,8 @@ export function DiscoveryTab() {
                 {selectedDevices.size > 0 ? (
                   <>
                     <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                      {selectedDevices.size} device{selectedDevices.size !== 1 ? 's' : ''} selected
+                      {selectedDevices.size} device
+                      {selectedDevices.size !== 1 ? 's' : ''} selected
                     </Badge>
                     <Button
                       variant="ghost"
@@ -293,7 +346,9 @@ export function DiscoveryTab() {
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="discovery-mode" className="text-sm">Discovery Mode:</Label>
+                  <Label htmlFor="discovery-mode" className="text-sm">
+                    Discovery Mode:
+                  </Label>
                   <Select value={discoveryMode} onValueChange={setDiscoveryMode}>
                     <SelectTrigger id="discovery-mode" className="w-[280px]">
                       <SelectValue />

@@ -53,18 +53,14 @@ export function RenderedOutputDialog({
           {result?.error && (
             <Alert className="status-error">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                {result.error}
-              </AlertDescription>
+              <AlertDescription>{result.error}</AlertDescription>
             </Alert>
           )}
 
           {result?.warnings && result.warnings.length > 0 && (
             <Alert className="status-warning">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                {result.warnings.join(', ')}
-              </AlertDescription>
+              <AlertDescription>{result.warnings.join(', ')}</AlertDescription>
             </Alert>
           )}
 

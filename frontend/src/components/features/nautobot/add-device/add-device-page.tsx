@@ -6,7 +6,12 @@ import { FieldErrors, useWatch } from 'react-hook-form'
 import { Server, Loader2 } from 'lucide-react'
 
 // TanStack Query Hooks
-import { useNautobotDropdownsQuery, useDeviceMutations, useVirtualChassisQuery, useVirtualChassisDetailQuery } from './hooks/queries'
+import {
+  useNautobotDropdownsQuery,
+  useDeviceMutations,
+  useVirtualChassisQuery,
+  useVirtualChassisDetailQuery,
+} from './hooks/queries'
 
 // Custom Hooks
 import { useDeviceForm } from './hooks/use-device-form'
@@ -145,7 +150,10 @@ export function AddDevicePage() {
   const customFieldsManager = useCustomFieldsManager()
   const rackManager = useRackManager()
   const vcManager = useVirtualChassisManager()
-  const { data: virtualChassisList = EMPTY_VIRTUAL_CHASSIS_LIST, isLoading: isLoadingVirtualChassis } = useVirtualChassisQuery()
+  const {
+    data: virtualChassisList = EMPTY_VIRTUAL_CHASSIS_LIST,
+    isLoading: isLoadingVirtualChassis,
+  } = useVirtualChassisQuery()
   const { data: vcDetail } = useVirtualChassisDetailQuery(vcManager.selectedVcId)
   const propertiesModal = usePropertiesModal()
 
@@ -168,9 +176,11 @@ export function AddDevicePage() {
     if (master.role?.id) form.setValue('selectedRole', master.role.id)
     if (master.status?.id) form.setValue('selectedStatus', master.status.id)
     if (master.location?.id) form.setValue('selectedLocation', master.location.id)
-    if (master.device_type?.id) form.setValue('selectedDeviceType', master.device_type.id)
+    if (master.device_type?.id)
+      form.setValue('selectedDeviceType', master.device_type.id)
     if (master.platform?.id) form.setValue('selectedPlatform', master.platform.id)
-    if (master.software_version?.id) form.setValue('selectedSoftwareVersion', master.software_version.id)
+    if (master.software_version?.id)
+      form.setValue('selectedSoftwareVersion', master.software_version.id)
   }, [vcDetail, form])
 
   // Build form defaults for CSV import wizard — useWatch creates reactive subscriptions
@@ -320,7 +330,10 @@ export function AddDevicePage() {
   // Form submission
   const onSubmit = useCallback(
     async (data: DeviceFormValues) => {
-      toast({ title: 'Adding device', description: 'Starting device addition workflow...' })
+      toast({
+        title: 'Adding device',
+        description: 'Starting device addition workflow...',
+      })
 
       form.setValue('selectedTags', tagsManager.selectedTags)
       form.setValue('customFieldValues', customFieldsManager.customFieldValues)
@@ -348,7 +361,15 @@ export function AddDevicePage() {
         })
       }
     },
-    [createDevice, form, tagsManager, customFieldsManager, rackManager, vcManager, toast]
+    [
+      createDevice,
+      form,
+      tagsManager,
+      customFieldsManager,
+      rackManager,
+      vcManager,
+      toast,
+    ]
   )
 
   const handleClearForm = useCallback(() => {
@@ -411,7 +432,9 @@ export function AddDevicePage() {
           onOpenCustomFields={customFieldsManager.openModal}
           onOpenStack={vcManager.openModal}
           isStackConfigured={vcManager.isConfigured}
-          onOpenRack={() => rackManager.openModal(watch('selectedLocation') || undefined)}
+          onOpenRack={() =>
+            rackManager.openModal(watch('selectedLocation') || undefined)
+          }
           selectedTagsCount={tagsManager.selectedTags.length}
           isRackConfigured={rackManager.isConfigured}
         />
@@ -475,7 +498,9 @@ export function AddDevicePage() {
           selectedRack={rackManager.selectedRack}
           onSelectRack={rackManager.setSelectedRack}
           selectedFace={rackManager.selectedFace}
-          onSelectFace={(face) => rackManager.setSelectedFace(face as 'front' | 'rear' | '')}
+          onSelectFace={face =>
+            rackManager.setSelectedFace(face as 'front' | 'rear' | '')
+          }
           position={rackManager.position}
           onSetPosition={rackManager.setPosition}
           isLoading={rackManager.isLoading}

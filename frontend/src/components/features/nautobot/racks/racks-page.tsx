@@ -35,13 +35,25 @@ import type {
 import type { PendingMapping } from './hooks/use-rack-save-mutation'
 
 function buildFaceAssignments(
-  devices: { id: string; name: string; position: number | null; face: 'front' | 'rear' | null; uHeight: number; isReservation?: boolean }[],
+  devices: {
+    id: string
+    name: string
+    position: number | null
+    face: 'front' | 'rear' | null
+    uHeight: number
+    isReservation?: boolean
+  }[],
   face: 'front' | 'rear'
 ): RackFaceAssignments {
   const assignments: RackFaceAssignments = {}
   for (const device of devices) {
     if (device.face === face && device.position !== null) {
-      assignments[device.position] = { deviceId: device.id, deviceName: device.name, uHeight: device.uHeight, isReservation: device.isReservation }
+      assignments[device.position] = {
+        deviceId: device.id,
+        deviceName: device.name,
+        uHeight: device.uHeight,
+        isReservation: device.isReservation,
+      }
     }
   }
   return assignments
@@ -157,20 +169,27 @@ export function RacksPage() {
   const handleAdd = useCallback(
     (position: number, face: 'front' | 'rear', device: DeviceSearchResult) => {
       const setter = face === 'front' ? setLocalFront : setLocalRear
-      setter((prev) => ({ ...prev, [position]: { deviceId: device.id, deviceName: device.name, uHeight: device.uHeight ?? 1 } }))
+      setter(prev => ({
+        ...prev,
+        [position]: {
+          deviceId: device.id,
+          deviceName: device.name,
+          uHeight: device.uHeight ?? 1,
+        },
+      }))
     },
     []
   )
 
   const handleRemove = useCallback((position: number, face: 'front' | 'rear') => {
     const setter = face === 'front' ? setLocalFront : setLocalRear
-    setter((prev) => ({ ...prev, [position]: null }))
+    setter(prev => ({ ...prev, [position]: null }))
   }, [])
 
   const handleAddSlotReservation = useCallback(
     (position: number, face: 'front' | 'rear', description: string) => {
       const setter = face === 'front' ? setLocalFront : setLocalRear
-      setter((prev) => ({
+      setter(prev => ({
         ...prev,
         [position]: {
           deviceId: `__reservation__::${description}`,
@@ -190,13 +209,19 @@ export function RacksPage() {
       if (!assignment) return
 
       const setter = face === 'front' ? setLocalFront : setLocalRear
-      setter((prev) => ({ ...prev, [position]: null }))
+      setter(prev => ({ ...prev, [position]: null }))
 
-      setLocalUnpositioned((prev) => {
-        if (prev.some((d) => d.id === assignment.deviceId)) return prev
+      setLocalUnpositioned(prev => {
+        if (prev.some(d => d.id === assignment.deviceId)) return prev
         return [
           ...prev,
-          { id: assignment.deviceId, name: assignment.deviceName, position: null, face: null, uHeight: assignment.uHeight },
+          {
+            id: assignment.deviceId,
+            name: assignment.deviceName,
+            position: null,
+            face: null,
+            uHeight: assignment.uHeight,
+          },
         ]
       })
     },
@@ -210,11 +235,11 @@ export function RacksPage() {
       if (!assignment?.isReservation) return
 
       const setter = face === 'front' ? setLocalFront : setLocalRear
-      setter((prev) => ({ ...prev, [position]: null }))
+      setter(prev => ({ ...prev, [position]: null }))
 
       const csvName = assignment.deviceId.replace('__reservation__::', '')
-      setUnknownCsvDevices((prev) => {
-        if (prev.some((d) => d.csvName === csvName)) return prev
+      setUnknownCsvDevices(prev => {
+        if (prev.some(d => d.csvName === csvName)) return prev
         return [...prev, { csvName, csvPosition: position, csvFace: face }]
       })
     },
@@ -222,7 +247,12 @@ export function RacksPage() {
   )
 
   const handleImportApply = useCallback(
-    ({ newFront, newRear, newUnpositioned, unknownCsvDevices }: RackImportApplyPayload) => {
+    ({
+      newFront,
+      newRear,
+      newUnpositioned,
+      unknownCsvDevices,
+    }: RackImportApplyPayload) => {
       setLocalFront(newFront)
       setLocalRear(newRear)
       setLocalUnpositioned(newUnpositioned)
@@ -232,7 +262,12 @@ export function RacksPage() {
   )
 
   const handleMapUnknownDevice = useCallback(
-    (csvName: string, device: DeviceSearchResult, csvPosition: number | null, csvFace: 'front' | 'rear' | null) => {
+    (
+      csvName: string,
+      device: DeviceSearchResult,
+      csvPosition: number | null,
+      csvFace: 'front' | 'rear' | null
+    ) => {
       setUnknownCsvDevices(prev => prev.filter(d => d.csvName !== csvName))
       // Record the mapping so it can be persisted when the rack is saved
       setPendingMappings(prev => [
@@ -243,19 +278,26 @@ export function RacksPage() {
         const setter = csvFace === 'front' ? setLocalFront : setLocalRear
         setter(prev => ({
           ...prev,
-          [csvPosition]: { deviceId: device.id, deviceName: device.name, uHeight: device.uHeight ?? 1 },
+          [csvPosition]: {
+            deviceId: device.id,
+            deviceName: device.name,
+            uHeight: device.uHeight ?? 1,
+          },
         }))
       } else {
         setLocalUnpositioned(prev => {
           if (prev.some(d => d.id === device.id)) return prev
-          return [...prev, {
-            id: device.id,
-            name: device.name,
-            position: null,
-            face: null,
-            uHeight: device.uHeight ?? 1,
-            ...(csvPosition !== null ? { defaultPosition: csvPosition } : {}),
-          }]
+          return [
+            ...prev,
+            {
+              id: device.id,
+              name: device.name,
+              position: null,
+              face: null,
+              uHeight: device.uHeight ?? 1,
+              ...(csvPosition !== null ? { defaultPosition: csvPosition } : {}),
+            },
+          ]
         })
       }
     },
@@ -358,14 +400,34 @@ export function RacksPage() {
         },
       }
     )
-  }, [saveRack, selectedRackId, selectedLocationId, overwriteLocation, localFront, localRear, originalFront, originalRear, localUnpositioned, originalUnpositioned, pendingMappings, rackMetadata?.name])
+  }, [
+    saveRack,
+    selectedRackId,
+    selectedLocationId,
+    overwriteLocation,
+    localFront,
+    localRear,
+    originalFront,
+    originalRear,
+    localUnpositioned,
+    originalUnpositioned,
+    pendingMappings,
+    rackMetadata?.name,
+  ])
 
   const hasChanges = useMemo(
     () =>
       !assignmentsEqual(localFront, originalFront) ||
       !assignmentsEqual(localRear, originalRear) ||
       localUnpositioned.length !== originalUnpositioned.length,
-    [localFront, localRear, originalFront, originalRear, localUnpositioned, originalUnpositioned]
+    [
+      localFront,
+      localRear,
+      originalFront,
+      originalRear,
+      localUnpositioned,
+      originalUnpositioned,
+    ]
   )
 
   const unpositionedDevices = useMemo(() => {
@@ -375,19 +437,19 @@ export function RacksPage() {
 
     // Server-side unpositioned devices not yet locally assigned
     const serverUnpositioned = rackDevices.filter(
-      (d) => d.position === null && !assignedIds.has(d.id)
+      d => d.position === null && !assignedIds.has(d.id)
     )
 
     // Locally moved-to-unpositioned devices not yet re-assigned
-    const serverIds = new Set(serverUnpositioned.map((d) => d.id))
+    const serverIds = new Set(serverUnpositioned.map(d => d.id))
     const locallyMoved = localUnpositioned.filter(
-      (d) => !assignedIds.has(d.id) && !serverIds.has(d.id)
+      d => !assignedIds.has(d.id) && !serverIds.has(d.id)
     )
 
     return [...serverUnpositioned, ...locallyMoved]
   }, [rackDevices, localFront, localRear, localUnpositioned])
 
-  const selectedRack = racks.find((r) => r.id === selectedRackId)
+  const selectedRack = racks.find(r => r.id === selectedRackId)
   const uHeight = rackMetadata?.u_height ?? 42
   const isLoadingRackData = isLoadingMetadata || isLoadingDevices
 

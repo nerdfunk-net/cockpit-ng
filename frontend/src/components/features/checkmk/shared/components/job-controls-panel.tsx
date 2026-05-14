@@ -1,5 +1,11 @@
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Play, RefreshCw, Download, Trash2 } from 'lucide-react'
 import type { Job } from '../utils/api'
@@ -23,7 +29,7 @@ export function JobControlsPanel({
   onSelectJob,
   onLoadResults,
   onRefreshJobs,
-  onClearResults
+  onClearResults,
 }: JobControlsPanelProps) {
   return (
     <div className="bg-white border rounded-lg shadow-sm">
@@ -31,7 +37,9 @@ export function JobControlsPanel({
       <div className="bg-white p-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 mb-1">Start New Comparison Job</h3>
+            <h3 className="font-semibold text-gray-900 mb-1">
+              Start New Comparison Job
+            </h3>
             <p className="text-sm text-gray-600">
               Start a new comprehensive device comparison job that processes all devices
             </p>
@@ -50,7 +58,9 @@ export function JobControlsPanel({
       <div className="bg-gray-50 p-4 border-t">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Label className="text-sm font-medium text-gray-700">Load Job Results:</Label>
+            <Label className="text-sm font-medium text-gray-700">
+              Load Job Results:
+            </Label>
             <Select value={selectedJobId} onValueChange={onSelectJob}>
               <SelectTrigger className="h-10 text-sm min-w-[300px]">
                 <SelectValue placeholder="Select a completed job to load results..." />
@@ -58,11 +68,14 @@ export function JobControlsPanel({
               <SelectContent>
                 {availableJobs.map((job: Job) => (
                   <SelectItem key={job.id} value={job.id}>
-                    {new Date(job.created_at).toLocaleDateString()} - {job.processed_devices} devices ({job.id.slice(0, 8)}...)
+                    {new Date(job.created_at).toLocaleDateString()} -{' '}
+                    {job.processed_devices} devices ({job.id.slice(0, 8)}...)
                   </SelectItem>
                 ))}
                 {availableJobs.length === 0 && (
-                  <SelectItem value="no-jobs" disabled>No completed jobs found</SelectItem>
+                  <SelectItem value="no-jobs" disabled>
+                    No completed jobs found
+                  </SelectItem>
                 )}
               </SelectContent>
             </Select>

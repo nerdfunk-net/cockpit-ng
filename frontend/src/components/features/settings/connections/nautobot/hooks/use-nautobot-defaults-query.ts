@@ -22,7 +22,9 @@ export function useNautobotDefaultsQuery(
   return useQuery({
     queryKey: queryKeys.nautobotSettings.defaults(),
     queryFn: async () => {
-      const response = await apiCall<ApiResponse<NautobotDefaults>>('settings/nautobot/defaults')
+      const response = await apiCall<ApiResponse<NautobotDefaults>>(
+        'settings/nautobot/defaults'
+      )
 
       if (response.success && response.data) {
         return response.data

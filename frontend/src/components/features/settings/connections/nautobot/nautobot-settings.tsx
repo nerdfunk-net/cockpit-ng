@@ -1,21 +1,42 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Loader2, Server, Settings, RotateCcw, Database } from 'lucide-react'
 import { useNautobotSettingsQuery } from './hooks/use-nautobot-settings-query'
 import { useNautobotDefaultsQuery } from './hooks/use-nautobot-defaults-query'
 import { useNautobotOptionsQuery } from './hooks/use-nautobot-options-query'
 import { useNautobotMutations } from './hooks/use-nautobot-mutations'
 import { LocationSearchDropdown } from './components/location-search-dropdown'
-import { DEFAULT_NAUTOBOT_SETTINGS, DEFAULT_NAUTOBOT_DEFAULTS, EMPTY_ARRAY } from './utils/constants'
-import type { NautobotSettings, NautobotDefaults, NautobotOption, LocationItem } from './types'
+import {
+  DEFAULT_NAUTOBOT_SETTINGS,
+  DEFAULT_NAUTOBOT_DEFAULTS,
+  EMPTY_ARRAY,
+} from './utils/constants'
+import type {
+  NautobotSettings,
+  NautobotDefaults,
+  NautobotOption,
+  LocationItem,
+} from './types'
 
 export default function NautobotSettingsForm() {
   // Query hooks
@@ -26,9 +47,16 @@ export default function NautobotSettingsForm() {
   const { saveSettings, testConnection, saveDefaults } = useNautobotMutations()
 
   // Local state for form editing
-  const [localSettings, setLocalSettings] = useState<NautobotSettings>(DEFAULT_NAUTOBOT_SETTINGS)
-  const [localDefaults, setLocalDefaults] = useState<NautobotDefaults>(DEFAULT_NAUTOBOT_DEFAULTS)
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [localSettings, setLocalSettings] = useState<NautobotSettings>(
+    DEFAULT_NAUTOBOT_SETTINGS
+  )
+  const [localDefaults, setLocalDefaults] = useState<NautobotDefaults>(
+    DEFAULT_NAUTOBOT_DEFAULTS
+  )
+  const [testResult, setTestResult] = useState<{
+    success: boolean
+    message: string
+  } | null>(null)
 
   // Sync server data to local state (same pattern as CheckMK settings)
   useEffect(() => {
@@ -44,9 +72,12 @@ export default function NautobotSettingsForm() {
   }, [defaults])
 
   // Update handlers
-  const updateSetting = useCallback((key: keyof NautobotSettings, value: string | number | boolean) => {
-    setLocalSettings(prev => ({ ...prev, [key]: value }))
-  }, [])
+  const updateSetting = useCallback(
+    (key: keyof NautobotSettings, value: string | number | boolean) => {
+      setLocalSettings(prev => ({ ...prev, [key]: value }))
+    },
+    []
+  )
 
   const updateDefault = useCallback((key: keyof NautobotDefaults, value: string) => {
     setLocalDefaults(prev => ({ ...prev, [key]: value }))
@@ -95,7 +126,9 @@ export default function NautobotSettingsForm() {
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">Nautobot Settings</h1>
-            <p className="text-gray-600">Configure your Nautobot server connection and default values</p>
+            <p className="text-gray-600">
+              Configure your Nautobot server connection and default values
+            </p>
           </div>
         </div>
       </div>
@@ -126,7 +159,10 @@ export default function NautobotSettingsForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Nautobot URL */}
                 <div className="space-y-2">
-                  <Label htmlFor="nautobot-url" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="nautobot-url"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Nautobot Server URL <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -134,7 +170,7 @@ export default function NautobotSettingsForm() {
                     type="url"
                     placeholder="https://nautobot.example.com"
                     value={localSettings.url}
-                    onChange={(e) => updateSetting('url', e.target.value)}
+                    onChange={e => updateSetting('url', e.target.value)}
                     required
                     className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -145,7 +181,10 @@ export default function NautobotSettingsForm() {
 
                 {/* API Token */}
                 <div className="space-y-2">
-                  <Label htmlFor="nautobot-token" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="nautobot-token"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     API Token <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -153,18 +192,22 @@ export default function NautobotSettingsForm() {
                     type="password"
                     placeholder="Enter your Nautobot API token"
                     value={localSettings.token}
-                    onChange={(e) => updateSetting('token', e.target.value)}
+                    onChange={e => updateSetting('token', e.target.value)}
                     required
                     className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                   />
                   <p className="text-xs text-gray-500">
-                    Get your API token from Nautobot: Admin → Users → [Your User] → API Tokens
+                    Get your API token from Nautobot: Admin → Users → [Your User] → API
+                    Tokens
                   </p>
                 </div>
 
                 {/* Connection Timeout */}
                 <div className="space-y-2">
-                  <Label htmlFor="nautobot-timeout" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="nautobot-timeout"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Connection Timeout (seconds)
                   </Label>
                   <Input
@@ -173,7 +216,9 @@ export default function NautobotSettingsForm() {
                     min="5"
                     max="300"
                     value={localSettings.timeout}
-                    onChange={(e) => updateSetting('timeout', parseInt(e.target.value) || 30)}
+                    onChange={e =>
+                      updateSetting('timeout', parseInt(e.target.value) || 30)
+                    }
                     className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                   />
                   <p className="text-xs text-gray-500">
@@ -183,14 +228,19 @@ export default function NautobotSettingsForm() {
 
                 {/* SSL Verification */}
                 <div className="space-y-2">
-                  <Label htmlFor="nautobot-ssl" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="nautobot-ssl"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     SSL Verification
                   </Label>
                   <div className="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
                     <Checkbox
                       id="nautobot-ssl"
                       checked={localSettings.verify_ssl}
-                      onCheckedChange={(checked) => updateSetting('verify_ssl', !!checked)}
+                      onCheckedChange={checked =>
+                        updateSetting('verify_ssl', !!checked)
+                      }
                       className="border-gray-300"
                     />
                     <Label htmlFor="nautobot-ssl" className="text-sm text-gray-700">
@@ -214,21 +264,28 @@ export default function NautobotSettingsForm() {
                         onClick={() => {
                           setTestResult(null)
                           testConnection.mutate(localSettings, {
-                            onSuccess: (data) => {
-                              setTestResult({ 
-                                success: true, 
-                                message: data.message || 'Connection successful!' 
+                            onSuccess: data => {
+                              setTestResult({
+                                success: true,
+                                message: data.message || 'Connection successful!',
                               })
                             },
-                            onError: (error) => {
-                              setTestResult({ 
-                                success: false, 
-                                message: error instanceof Error ? error.message : 'Connection failed' 
+                            onError: error => {
+                              setTestResult({
+                                success: false,
+                                message:
+                                  error instanceof Error
+                                    ? error.message
+                                    : 'Connection failed',
                               })
-                            }
+                            },
                           })
                         }}
-                        disabled={testConnection.isPending || !localSettings.url || !localSettings.token}
+                        disabled={
+                          testConnection.isPending ||
+                          !localSettings.url ||
+                          !localSettings.token
+                        }
                         className="flex items-center space-x-2 border-blue-300 text-blue-700 hover:bg-blue-100"
                       >
                         {testConnection.isPending ? (
@@ -236,33 +293,58 @@ export default function NautobotSettingsForm() {
                         ) : (
                           <Server className="h-4 w-4" />
                         )}
-                        <span>{testConnection.isPending ? 'Testing...' : 'Test Connection'}</span>
+                        <span>
+                          {testConnection.isPending ? 'Testing...' : 'Test Connection'}
+                        </span>
                       </Button>
                     </div>
                     <div className="text-xs text-blue-600 font-medium">
                       Test your connection before saving
                     </div>
                   </div>
-                  
+
                   {/* Test Result Message */}
                   {testResult && (
-                    <div className={`mt-3 p-3 rounded-md ${
-                      testResult.success 
-                        ? 'bg-green-50 border border-green-200 text-green-800' 
-                        : 'bg-red-50 border border-red-200 text-red-800'
-                    }`}>
+                    <div
+                      className={`mt-3 p-3 rounded-md ${
+                        testResult.success
+                          ? 'bg-green-50 border border-green-200 text-green-800'
+                          : 'bg-red-50 border border-red-200 text-red-800'
+                      }`}
+                    >
                       <div className="flex items-center space-x-2">
                         {testResult.success ? (
-                          <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <svg
+                            className="h-5 w-5 text-green-600"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
                           </svg>
                         ) : (
-                          <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <svg
+                            className="h-5 w-5 text-red-600"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
                           </svg>
                         )}
                         <span className="text-sm font-medium">
-                          {testResult.success ? 'Success' : 'Failed'}: {testResult.message}
+                          {testResult.success ? 'Success' : 'Failed'}:{' '}
+                          {testResult.message}
                         </span>
                       </div>
                     </div>
@@ -288,7 +370,9 @@ export default function NautobotSettingsForm() {
               <Button
                 type="button"
                 onClick={() => saveSettings.mutate(localSettings)}
-                disabled={saveSettings.isPending || !localSettings.url || !localSettings.token}
+                disabled={
+                  saveSettings.isPending || !localSettings.url || !localSettings.token
+                }
                 className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base font-medium"
               >
                 {saveSettings.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -314,13 +398,16 @@ export default function NautobotSettingsForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Location */}
                 <div className="space-y-2">
-                  <Label htmlFor="default-location" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="default-location"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Location
                   </Label>
                   <LocationSearchDropdown
                     locations={locations}
                     value={localDefaults.location}
-                    onChange={(locationId) => updateDefault('location', locationId)}
+                    onChange={locationId => updateDefault('location', locationId)}
                     placeholder="Search location..."
                   />
                   <p className="text-xs text-gray-500">
@@ -330,18 +417,22 @@ export default function NautobotSettingsForm() {
 
                 {/* Platform */}
                 <div className="space-y-2">
-                  <Label htmlFor="default-platform" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="default-platform"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Platform
                   </Label>
-                  <Select value={localDefaults.platform ?? ''} onValueChange={(value) => updateDefault('platform', value)}>
+                  <Select
+                    value={localDefaults.platform ?? ''}
+                    onValueChange={value => updateDefault('platform', value)}
+                  >
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a platform" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="detect">
-                        Auto-Detect Platform
-                      </SelectItem>
-                      {platforms.map((platform) => (
+                      <SelectItem value="detect">Auto-Detect Platform</SelectItem>
+                      {platforms.map(platform => (
                         <SelectItem key={platform.id} value={platform.id}>
                           {platform.name}
                         </SelectItem>
@@ -355,19 +446,28 @@ export default function NautobotSettingsForm() {
 
                 {/* Interface Status */}
                 <div className="space-y-2">
-                  <Label htmlFor="default-interface-status" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="default-interface-status"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Interface Status
                   </Label>
-                  <Select value={localDefaults.interface_status ?? ''} onValueChange={(value) => updateDefault('interface_status', value)}>
+                  <Select
+                    value={localDefaults.interface_status ?? ''}
+                    onValueChange={value => updateDefault('interface_status', value)}
+                  >
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select interface status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {interfaceStatuses.map((status) => (
+                      {interfaceStatuses.map(status => (
                         <SelectItem key={status.id} value={status.id}>
                           <div className="flex items-center space-x-2">
                             {status.color && (
-                              <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: `#${status.color}` }} />
+                              <div
+                                className={`w-3 h-3 rounded-full`}
+                                style={{ backgroundColor: `#${status.color}` }}
+                              />
                             )}
                             <span>{status.name}</span>
                           </div>
@@ -382,19 +482,28 @@ export default function NautobotSettingsForm() {
 
                 {/* Device Status */}
                 <div className="space-y-2">
-                  <Label htmlFor="default-device-status" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="default-device-status"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Device Status
                   </Label>
-                  <Select value={localDefaults.device_status ?? ''} onValueChange={(value) => updateDefault('device_status', value)}>
+                  <Select
+                    value={localDefaults.device_status ?? ''}
+                    onValueChange={value => updateDefault('device_status', value)}
+                  >
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select device status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {deviceStatuses.map((status) => (
+                      {deviceStatuses.map(status => (
                         <SelectItem key={status.id} value={status.id}>
                           <div className="flex items-center space-x-2">
                             {status.color && (
-                              <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: `#${status.color}` }} />
+                              <div
+                                className={`w-3 h-3 rounded-full`}
+                                style={{ backgroundColor: `#${status.color}` }}
+                              />
                             )}
                             <span>{status.name}</span>
                           </div>
@@ -409,19 +518,28 @@ export default function NautobotSettingsForm() {
 
                 {/* IP Address Status */}
                 <div className="space-y-2">
-                  <Label htmlFor="default-ip-status" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="default-ip-status"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     IP Address Status
                   </Label>
-                  <Select value={localDefaults.ip_address_status ?? ''} onValueChange={(value) => updateDefault('ip_address_status', value)}>
+                  <Select
+                    value={localDefaults.ip_address_status ?? ''}
+                    onValueChange={value => updateDefault('ip_address_status', value)}
+                  >
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select IP address status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {ipAddressStatuses.map((status) => (
+                      {ipAddressStatuses.map(status => (
                         <SelectItem key={status.id} value={status.id}>
                           <div className="flex items-center space-x-2">
                             {status.color && (
-                              <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: `#${status.color}` }} />
+                              <div
+                                className={`w-3 h-3 rounded-full`}
+                                style={{ backgroundColor: `#${status.color}` }}
+                              />
                             )}
                             <span>{status.name}</span>
                           </div>
@@ -436,19 +554,28 @@ export default function NautobotSettingsForm() {
 
                 {/* IP Prefix Status */}
                 <div className="space-y-2">
-                  <Label htmlFor="default-ip-prefix-status" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="default-ip-prefix-status"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     IP Prefix Status
                   </Label>
-                  <Select value={localDefaults.ip_prefix_status ?? ''} onValueChange={(value) => updateDefault('ip_prefix_status', value)}>
+                  <Select
+                    value={localDefaults.ip_prefix_status ?? ''}
+                    onValueChange={value => updateDefault('ip_prefix_status', value)}
+                  >
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select IP prefix status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {ipPrefixStatuses.map((status) => (
+                      {ipPrefixStatuses.map(status => (
                         <SelectItem key={status.id} value={status.id}>
                           <div className="flex items-center space-x-2">
                             {status.color && (
-                              <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: `#${status.color}` }} />
+                              <div
+                                className={`w-3 h-3 rounded-full`}
+                                style={{ backgroundColor: `#${status.color}` }}
+                              />
                             )}
                             <span>{status.name}</span>
                           </div>
@@ -463,15 +590,21 @@ export default function NautobotSettingsForm() {
 
                 {/* Namespace */}
                 <div className="space-y-2">
-                  <Label htmlFor="default-namespace" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="default-namespace"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Namespace
                   </Label>
-                  <Select value={localDefaults.namespace ?? ''} onValueChange={(value) => updateDefault('namespace', value)}>
+                  <Select
+                    value={localDefaults.namespace ?? ''}
+                    onValueChange={value => updateDefault('namespace', value)}
+                  >
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a namespace" />
                     </SelectTrigger>
                     <SelectContent>
-                      {namespaces.map((namespace) => (
+                      {namespaces.map(namespace => (
                         <SelectItem key={namespace.id} value={namespace.id}>
                           {namespace.name}
                         </SelectItem>
@@ -485,19 +618,28 @@ export default function NautobotSettingsForm() {
 
                 {/* Device Role */}
                 <div className="space-y-2">
-                  <Label htmlFor="default-device-role" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="default-device-role"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Device Role
                   </Label>
-                  <Select value={localDefaults.device_role ?? ''} onValueChange={(value) => updateDefault('device_role', value)}>
+                  <Select
+                    value={localDefaults.device_role ?? ''}
+                    onValueChange={value => updateDefault('device_role', value)}
+                  >
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a device role" />
                     </SelectTrigger>
                     <SelectContent>
-                      {deviceRoles.map((role) => (
+                      {deviceRoles.map(role => (
                         <SelectItem key={role.id} value={role.id}>
                           <div className="flex items-center space-x-2">
                             {role.color && (
-                              <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: `#${role.color}` }} />
+                              <div
+                                className={`w-3 h-3 rounded-full`}
+                                style={{ backgroundColor: `#${role.color}` }}
+                              />
                             )}
                             <span>{role.name}</span>
                           </div>
@@ -505,22 +647,26 @@ export default function NautobotSettingsForm() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-gray-500">
-                    Default role for new devices
-                  </p>
+                  <p className="text-xs text-gray-500">Default role for new devices</p>
                 </div>
 
                 {/* Secret Group */}
                 <div className="space-y-2">
-                  <Label htmlFor="default-secret-group" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="default-secret-group"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Secret Group
                   </Label>
-                  <Select value={localDefaults.secret_group ?? ''} onValueChange={(value) => updateDefault('secret_group', value)}>
+                  <Select
+                    value={localDefaults.secret_group ?? ''}
+                    onValueChange={value => updateDefault('secret_group', value)}
+                  >
                     <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                       <SelectValue placeholder="Select a secret group" />
                     </SelectTrigger>
                     <SelectContent>
-                      {secretGroups.map((group) => (
+                      {secretGroups.map(group => (
                         <SelectItem key={group.id} value={group.id}>
                           {group.name}
                         </SelectItem>
@@ -534,7 +680,10 @@ export default function NautobotSettingsForm() {
 
                 {/* CSV Delimiter */}
                 <div className="space-y-2">
-                  <Label htmlFor="default-csv-delimiter" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="default-csv-delimiter"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     CSV Delimiter
                   </Label>
                   <Input
@@ -543,7 +692,7 @@ export default function NautobotSettingsForm() {
                     maxLength={1}
                     placeholder=","
                     value={localDefaults.csv_delimiter}
-                    onChange={(e) => updateDefault('csv_delimiter', e.target.value)}
+                    onChange={e => updateDefault('csv_delimiter', e.target.value)}
                     className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                   />
                   <p className="text-xs text-gray-500">
@@ -553,7 +702,10 @@ export default function NautobotSettingsForm() {
 
                 {/* CSV Quote Character */}
                 <div className="space-y-2">
-                  <Label htmlFor="default-csv-quote-char" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="default-csv-quote-char"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     CSV Quote Character
                   </Label>
                   <Input
@@ -562,7 +714,7 @@ export default function NautobotSettingsForm() {
                     maxLength={1}
                     placeholder='"'
                     value={localDefaults.csv_quote_char}
-                    onChange={(e) => updateDefault('csv_quote_char', e.target.value)}
+                    onChange={e => updateDefault('csv_quote_char', e.target.value)}
                     className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                   />
                   <p className="text-xs text-gray-500">
@@ -598,7 +750,6 @@ export default function NautobotSettingsForm() {
             </div>
           </div>
         </TabsContent>
-
       </Tabs>
     </div>
   )

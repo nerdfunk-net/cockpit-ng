@@ -9,11 +9,11 @@ import { useRouter } from 'next/navigation'
  */
 export default function TemplatesRedirect() {
   const router = useRouter()
-  
+
   useEffect(() => {
     router.replace('/settings/templates?category=netmiko')
   }, [router])
-  
+
   return (
     <div className="flex items-center justify-center h-screen">
       <p className="text-gray-600">Redirecting to Templates...</p>

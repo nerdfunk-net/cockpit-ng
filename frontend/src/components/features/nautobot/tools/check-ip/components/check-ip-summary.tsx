@@ -9,12 +9,15 @@ interface CheckIPSummaryProps {
 }
 
 export function CheckIPSummary({ results }: CheckIPSummaryProps) {
-  const stats = useMemo(() => ({
-    total: results.length,
-    matches: results.filter(r => r.status === RESULT_STATUS.MATCH).length,
-    mismatches: results.filter(r => r.status === RESULT_STATUS.NAME_MISMATCH).length,
-    notFound: results.filter(r => r.status === RESULT_STATUS.IP_NOT_FOUND).length
-  }), [results])
+  const stats = useMemo(
+    () => ({
+      total: results.length,
+      matches: results.filter(r => r.status === RESULT_STATUS.MATCH).length,
+      mismatches: results.filter(r => r.status === RESULT_STATUS.NAME_MISMATCH).length,
+      notFound: results.filter(r => r.status === RESULT_STATUS.IP_NOT_FOUND).length,
+    }),
+    [results]
+  )
 
   return (
     <Card className="shadow-lg border-0 overflow-hidden p-0">
@@ -32,21 +35,15 @@ export function CheckIPSummary({ results }: CheckIPSummaryProps) {
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Matches</p>
-            <p className="text-2xl font-bold text-green-600">
-              {stats.matches}
-            </p>
+            <p className="text-2xl font-bold text-green-600">{stats.matches}</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Mismatches</p>
-            <p className="text-2xl font-bold text-yellow-600">
-              {stats.mismatches}
-            </p>
+            <p className="text-2xl font-bold text-yellow-600">{stats.mismatches}</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Not Found</p>
-            <p className="text-2xl font-bold text-red-600">
-              {stats.notFound}
-            </p>
+            <p className="text-2xl font-bold text-red-600">{stats.notFound}</p>
           </div>
         </div>
       </CardContent>

@@ -43,5 +43,5 @@ export const AUTH_TYPES = [
 
 // TanStack Query stale times
 export const QUERY_STALE_TIMES = {
-  CREDENTIALS: 5 * 60 * 1000,  // 5 minutes
+  CREDENTIALS: 5 * 60 * 1000, // 5 minutes
 } as const

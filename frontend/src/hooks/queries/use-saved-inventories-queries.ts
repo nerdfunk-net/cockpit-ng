@@ -2,7 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
-import type { LogicalCondition, BackendConditionsResponse } from '@/types/shared/device-selector'
+import type {
+  LogicalCondition,
+  BackendConditionsResponse,
+} from '@/types/shared/device-selector'
 
 interface SavedInventory {
   id: number
@@ -71,8 +74,8 @@ export function useSavedInventoriesQuery(enabled = true) {
     enabled,
 
     // Inventories can be cached for a short time
-    staleTime: 60 * 1000,     // 1 minute
-    gcTime: 5 * 60 * 1000,    // 5 minutes
+    staleTime: 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
   })
 }
 
@@ -99,7 +102,9 @@ export function useInventoryByNameQuery(inventoryName: string | null, enabled = 
     queryFn: async () => {
       if (!inventoryName) return null
 
-      return apiCall<BackendConditionsResponse>(`inventory/by-name/${encodeURIComponent(inventoryName)}`)
+      return apiCall<BackendConditionsResponse>(
+        `inventory/by-name/${encodeURIComponent(inventoryName)}`
+      )
     },
 
     enabled: !!inventoryName && enabled,
@@ -166,7 +171,7 @@ export function useSaveInventoryMutation() {
     mutationFn: async (payload: SaveInventoryPayload) => {
       return apiCall('inventory', {
         method: 'POST',
-        body: payload
+        body: payload,
       })
     },
 
@@ -184,9 +189,9 @@ export function useSaveInventoryMutation() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to save inventory',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 }
 
@@ -215,7 +220,7 @@ export function useUpdateInventoryMutation() {
     mutationFn: async ({ id, data }: { id: number; data: UpdateInventoryPayload }) => {
       return apiCall(`inventory/${id}`, {
         method: 'PUT',
-        body: data
+        body: data,
       })
     },
 
@@ -233,9 +238,9 @@ export function useUpdateInventoryMutation() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to update inventory',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 }
 
@@ -257,7 +262,7 @@ export function useDeleteInventoryMutation() {
   return useMutation({
     mutationFn: async (id: number) => {
       return apiCall(`inventory/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
     },
 
@@ -275,9 +280,9 @@ export function useDeleteInventoryMutation() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete inventory',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 }
 
@@ -311,4 +316,11 @@ export function useRenameGroupMutation() {
   })
 }
 
-export type { SavedInventory, SavedInventoriesResponse, SaveInventoryPayload, UpdateInventoryPayload, RenameGroupPayload, RenameGroupResponse }
+export type {
+  SavedInventory,
+  SavedInventoriesResponse,
+  SaveInventoryPayload,
+  UpdateInventoryPayload,
+  RenameGroupPayload,
+  RenameGroupResponse,
+}

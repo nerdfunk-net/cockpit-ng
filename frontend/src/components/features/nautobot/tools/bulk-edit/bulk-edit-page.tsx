@@ -6,7 +6,10 @@ import { Edit } from 'lucide-react'
 import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
 import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/hooks/use-toast'
-import { convertModifiedDevicesToJSON, validateModifiedDevices } from './utils/json-converter'
+import {
+  convertModifiedDevicesToJSON,
+  validateModifiedDevices,
+} from './utils/json-converter'
 
 // Tab Components
 import { DeviceSelectionTab } from './tabs/device-selection-tab'
@@ -68,7 +71,8 @@ export default function BulkEditPage() {
 
   // Device selection state
   const [previewDevices, setPreviewDevices] = useState<DeviceInfo[]>(EMPTY_DEVICES)
-  const [deviceConditions, setDeviceConditions] = useState<LogicalCondition[]>(EMPTY_CONDITIONS)
+  const [deviceConditions, setDeviceConditions] =
+    useState<LogicalCondition[]>(EMPTY_CONDITIONS)
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>(EMPTY_DEVICE_IDS)
   const [selectedDevices, setSelectedDevices] = useState<DeviceInfo[]>(EMPTY_DEVICES)
 
@@ -76,7 +80,8 @@ export default function BulkEditPage() {
   const [properties, setProperties] = useState<BulkEditProperties>(DEFAULT_PROPERTIES)
 
   // Bulk edit state
-  const [modifiedDevices, setModifiedDevices] = useState<Map<string, Partial<DeviceInfo>>>(EMPTY_MAP)
+  const [modifiedDevices, setModifiedDevices] =
+    useState<Map<string, Partial<DeviceInfo>>>(EMPTY_MAP)
 
   // Dialog state
   const [showPreviewDialog, setShowPreviewDialog] = useState(false)
@@ -88,30 +93,39 @@ export default function BulkEditPage() {
   // Reload state
   const [isReloadingData, setIsReloadingData] = useState(false)
 
-  const handleDevicesSelected = useCallback((devices: DeviceInfo[], conditions: LogicalCondition[]) => {
-    setPreviewDevices(devices)
-    setDeviceConditions(conditions)
-    const deviceIds = devices.map(d => d.id)
-    setSelectedDeviceIds(deviceIds)
-    setSelectedDevices(devices)
-  }, [])
+  const handleDevicesSelected = useCallback(
+    (devices: DeviceInfo[], conditions: LogicalCondition[]) => {
+      setPreviewDevices(devices)
+      setDeviceConditions(conditions)
+      const deviceIds = devices.map(d => d.id)
+      setSelectedDeviceIds(deviceIds)
+      setSelectedDevices(devices)
+    },
+    []
+  )
 
-  const handleSelectionChange = useCallback((selectedIds: string[], devices: DeviceInfo[]) => {
-    setSelectedDeviceIds(selectedIds)
-    setSelectedDevices(devices)
-  }, [])
+  const handleSelectionChange = useCallback(
+    (selectedIds: string[], devices: DeviceInfo[]) => {
+      setSelectedDeviceIds(selectedIds)
+      setSelectedDevices(devices)
+    },
+    []
+  )
 
   const handlePropertiesChange = useCallback((newProperties: BulkEditProperties) => {
     setProperties(newProperties)
   }, [])
 
-  const handleDeviceModified = useCallback((deviceId: string, changes: Partial<DeviceInfo>) => {
-    setModifiedDevices(prev => {
-      const next = new Map(prev)
-      next.set(deviceId, changes)
-      return next
-    })
-  }, [])
+  const handleDeviceModified = useCallback(
+    (deviceId: string, changes: Partial<DeviceInfo>) => {
+      setModifiedDevices(prev => {
+        const next = new Map(prev)
+        next.set(deviceId, changes)
+        return next
+      })
+    },
+    []
+  )
 
   const handleSaveDevices = useCallback(async () => {
     try {
@@ -134,13 +148,13 @@ export default function BulkEditPage() {
       })
 
       // Call the new JSON update endpoint
-      const result = await apiCall('/api/celery/tasks/update-devices', {
+      const result = (await apiCall('/api/celery/tasks/update-devices', {
         method: 'POST',
         body: JSON.stringify({
           devices: devicesJson,
           dry_run: false,
         }),
-      }) as { job_id: string; task_id: string; message: string }
+      })) as { job_id: string; task_id: string; message: string }
 
       // Set job tracking info
       setCurrentJobId(result.job_id)
@@ -153,7 +167,8 @@ export default function BulkEditPage() {
       setModifiedDevices(EMPTY_MAP)
     } catch (error) {
       // Show error toast
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save devices'
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to save devices'
       toast({
         title: 'Error',
         description: errorMessage,
@@ -161,7 +176,15 @@ export default function BulkEditPage() {
       })
       console.error('Failed to save devices:', error)
     }
-  }, [modifiedDevices, properties.interfaceConfig, properties.ipConfig.namespace, properties.ipConfig.addPrefixesAutomatically, properties.ipConfig.useAssignedIpIfExists, apiCall, toast])
+  }, [
+    modifiedDevices,
+    properties.interfaceConfig,
+    properties.ipConfig.namespace,
+    properties.ipConfig.addPrefixesAutomatically,
+    properties.ipConfig.useAssignedIpIfExists,
+    apiCall,
+    toast,
+  ])
 
   const handlePreviewChanges = useCallback(() => {
     setShowPreviewDialog(true)
@@ -201,7 +224,14 @@ export default function BulkEditPage() {
         changes?: Record<string, unknown>
       }>
     }
-  }, [modifiedDevices, properties.interfaceConfig, properties.ipConfig.namespace, properties.ipConfig.addPrefixesAutomatically, properties.ipConfig.useAssignedIpIfExists, apiCall])
+  }, [
+    modifiedDevices,
+    properties.interfaceConfig,
+    properties.ipConfig.namespace,
+    properties.ipConfig.addPrefixesAutomatically,
+    properties.ipConfig.useAssignedIpIfExists,
+    apiCall,
+  ])
 
   const handleJobComplete = useCallback(() => {
     toast({
@@ -227,15 +257,17 @@ export default function BulkEditPage() {
     setIsReloadingData(true)
     try {
       // Build operations from the original device conditions
-      const andConditions: Array<{ field: string; operator: string; value: string }> = []
+      const andConditions: Array<{ field: string; operator: string; value: string }> =
+        []
       const orConditions: Array<{ field: string; operator: string; value: string }> = []
-      const notConditions: Array<{ field: string; operator: string; value: string }> = []
+      const notConditions: Array<{ field: string; operator: string; value: string }> =
+        []
 
       deviceConditions.forEach((condition, index) => {
         const conditionData = {
           field: condition.field,
           operator: condition.operator,
-          value: condition.value
+          value: condition.value,
         }
 
         if (index === 0) {
@@ -261,13 +293,13 @@ export default function BulkEditPage() {
         operations.push({
           operation_type: 'OR',
           conditions: [...andConditions, ...orConditions],
-          nested_operations: []
+          nested_operations: [],
         })
       } else if (andConditions.length > 0) {
         operations.push({
           operation_type: 'AND',
           conditions: andConditions,
-          nested_operations: []
+          nested_operations: [],
         })
       }
 
@@ -275,7 +307,7 @@ export default function BulkEditPage() {
         operations.push({
           operation_type: 'NOT',
           conditions: [condition],
-          nested_operations: []
+          nested_operations: [],
         })
       })
 
@@ -286,13 +318,13 @@ export default function BulkEditPage() {
         operations_executed: number
       }>('inventory/preview', {
         method: 'POST',
-        body: { operations }
+        body: { operations },
       })
 
       // Update devices with fresh data
       setPreviewDevices(response.devices)
       setSelectedDevices(response.devices)
-      
+
       // Update selected device IDs
       const deviceIds = response.devices.map(d => d.id)
       setSelectedDeviceIds(deviceIds)
@@ -305,7 +337,8 @@ export default function BulkEditPage() {
         description: `Successfully reloaded ${response.devices.length} device(s)`,
       })
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to reload data'
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to reload data'
       toast({
         title: 'Error reloading data',
         description: errorMessage,
@@ -317,14 +350,24 @@ export default function BulkEditPage() {
     }
   }, [deviceConditions, apiCall, toast])
 
-  const stableState = useMemo(() => ({
-    previewDevices,
-    deviceConditions,
-    selectedDeviceIds,
-    selectedDevices,
-    properties,
-    modifiedDevices,
-  }), [previewDevices, deviceConditions, selectedDeviceIds, selectedDevices, properties, modifiedDevices])
+  const stableState = useMemo(
+    () => ({
+      previewDevices,
+      deviceConditions,
+      selectedDeviceIds,
+      selectedDevices,
+      properties,
+      modifiedDevices,
+    }),
+    [
+      previewDevices,
+      deviceConditions,
+      selectedDeviceIds,
+      selectedDevices,
+      properties,
+      modifiedDevices,
+    ]
+  )
 
   return (
     <div className="space-y-6">
@@ -336,7 +379,9 @@ export default function BulkEditPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Bulk Edit Devices</h1>
-            <p className="text-muted-foreground mt-2">Edit multiple device properties efficiently</p>
+            <p className="text-muted-foreground mt-2">
+              Edit multiple device properties efficiently
+            </p>
           </div>
         </div>
       </div>

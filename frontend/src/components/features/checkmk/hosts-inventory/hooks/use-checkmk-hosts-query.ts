@@ -37,7 +37,9 @@ const DEFAULT_OPTIONS: UseCheckmkHostsQueryOptions = {}
  * const hosts = data?.hosts || []
  * ```
  */
-export function useCheckmkHostsQuery(options: UseCheckmkHostsQueryOptions = DEFAULT_OPTIONS) {
+export function useCheckmkHostsQuery(
+  options: UseCheckmkHostsQueryOptions = DEFAULT_OPTIONS
+) {
   const { apiCall } = useApi()
   const { filters, enabled = true } = options
 

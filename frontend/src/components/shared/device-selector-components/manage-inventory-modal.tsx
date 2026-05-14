@@ -41,7 +41,11 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { LogicalCondition, ConditionTree, ConditionItem } from '@/types/shared/device-selector'
+import {
+  LogicalCondition,
+  ConditionTree,
+  ConditionItem,
+} from '@/types/shared/device-selector'
 import { GroupTreePanel } from './group-tree-panel'
 import { useRenameGroupMutation } from '@/hooks/queries/use-saved-inventories-queries'
 import { generateConditionTreeAscii } from './group-utils'
@@ -84,12 +88,14 @@ function parseInventoryTree(
   }
   const items = (conditions as LogicalCondition[])
     .filter(c => c.field && c.value)
-    .map((c): ConditionItem => ({
-      id: `${c.field}-${c.value}`,
-      field: c.field,
-      operator: c.operator,
-      value: c.value,
-    }))
+    .map(
+      (c): ConditionItem => ({
+        id: `${c.field}-${c.value}`,
+        field: c.field,
+        operator: c.operator,
+        value: c.value,
+      })
+    )
   return { type: 'root', internalLogic: 'AND', items }
 }
 
@@ -118,7 +124,9 @@ export function ManageInventoryModal({
 
   const allGroupPaths = useMemo(() => {
     const paths = new Set<string>()
-    savedInventories.forEach(inv => { if (inv.group_path) paths.add(inv.group_path) })
+    savedInventories.forEach(inv => {
+      if (inv.group_path) paths.add(inv.group_path)
+    })
     localGroupPaths.forEach(p => paths.add(p))
     return [...paths].sort()
   }, [savedInventories, localGroupPaths])
@@ -129,7 +137,8 @@ export function ManageInventoryModal({
   const [isImporting, setIsImporting] = useState(false)
 
   const inventoriesInGroup = useMemo(
-    () => savedInventories.filter(inv => (inv.group_path ?? '') === (selectedGroup ?? '')),
+    () =>
+      savedInventories.filter(inv => (inv.group_path ?? '') === (selectedGroup ?? '')),
     [savedInventories, selectedGroup]
   )
 
@@ -161,29 +170,39 @@ export function ManageInventoryModal({
     setEditingId(null)
   }
 
-  const handleCreateGroup = useCallback((parentPath: string | null, groupName: string) => {
-    const newPath = parentPath ? `${parentPath}/${groupName}` : groupName
-    setLocalGroupPaths(prev => [...prev, newPath])
-    setSelectedGroup(newPath)
-  }, [])
+  const handleCreateGroup = useCallback(
+    (parentPath: string | null, groupName: string) => {
+      const newPath = parentPath ? `${parentPath}/${groupName}` : groupName
+      setLocalGroupPaths(prev => [...prev, newPath])
+      setSelectedGroup(newPath)
+    },
+    []
+  )
 
   const renameGroupMutation = useRenameGroupMutation()
 
-  const handleRenameGroup = useCallback(async (oldPath: string, newName: string) => {
-    const result = await renameGroupMutation.mutateAsync({ old_path: oldPath, new_name: newName })
-    if (selectedGroup === oldPath) {
-      setSelectedGroup(result.new_path)
-    } else if (selectedGroup?.startsWith(oldPath + '/')) {
-      setSelectedGroup(result.new_path + selectedGroup.slice(oldPath.length))
-    }
-    setLocalGroupPaths(prev =>
-      prev.map(p => {
-        if (p === oldPath) return result.new_path
-        if (p.startsWith(oldPath + '/')) return result.new_path + p.slice(oldPath.length)
-        return p
+  const handleRenameGroup = useCallback(
+    async (oldPath: string, newName: string) => {
+      const result = await renameGroupMutation.mutateAsync({
+        old_path: oldPath,
+        new_name: newName,
       })
-    )
-  }, [renameGroupMutation, selectedGroup])
+      if (selectedGroup === oldPath) {
+        setSelectedGroup(result.new_path)
+      } else if (selectedGroup?.startsWith(oldPath + '/')) {
+        setSelectedGroup(result.new_path + selectedGroup.slice(oldPath.length))
+      }
+      setLocalGroupPaths(prev =>
+        prev.map(p => {
+          if (p === oldPath) return result.new_path
+          if (p.startsWith(oldPath + '/'))
+            return result.new_path + p.slice(oldPath.length)
+          return p
+        })
+      )
+    },
+    [renameGroupMutation, selectedGroup]
+  )
 
   const saveEdit = async (id: number) => {
     if (!editName.trim()) return
@@ -230,7 +249,7 @@ export function ManageInventoryModal({
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = '.json'
-    input.onchange = async (e) => {
+    input.onchange = async e => {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (file) {
         setIsImporting(true)
@@ -254,7 +273,9 @@ export function ManageInventoryModal({
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            <span className="ml-2 text-sm text-muted-foreground">Loading inventories...</span>
+            <span className="ml-2 text-sm text-muted-foreground">
+              Loading inventories...
+            </span>
           </div>
         ) : savedInventories.length === 0 ? (
           <div className="flex-1 flex items-center justify-center py-16">
@@ -263,7 +284,10 @@ export function ManageInventoryModal({
         ) : (
           <>
             {/* Main area: group tree (left) + files (right) */}
-            <div className="flex flex-1 min-h-0" style={{ minHeight: '280px', maxHeight: '380px' }}>
+            <div
+              className="flex flex-1 min-h-0"
+              style={{ minHeight: '280px', maxHeight: '380px' }}
+            >
               {/* Left: Group tree */}
               <div className="w-56 flex-shrink-0 border-r p-3 overflow-y-auto">
                 <GroupTreePanel
@@ -302,7 +326,9 @@ export function ManageInventoryModal({
                         <div
                           key={inv.id}
                           className={`border rounded-lg transition-colors ${
-                            isSelected && !isEditing ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'
+                            isSelected && !isEditing
+                              ? 'border-blue-200 bg-blue-50'
+                              : 'border-gray-200 bg-white'
                           }`}
                         >
                           {isEditing ? (
@@ -318,7 +344,10 @@ export function ManageInventoryModal({
                                 </div>
                                 <div className="space-y-1">
                                   <Label className="text-xs">Scope</Label>
-                                  <Select value={editScope} onValueChange={setEditScope}>
+                                  <Select
+                                    value={editScope}
+                                    onValueChange={setEditScope}
+                                  >
                                     <SelectTrigger className="h-7 text-sm">
                                       <SelectValue />
                                     </SelectTrigger>
@@ -354,13 +383,21 @@ export function ManageInventoryModal({
                                       aria-expanded={groupPopoverOpen}
                                       className="h-7 text-sm w-full justify-between font-normal px-2"
                                     >
-                                      <span className={cn('truncate', !editGroup && 'text-muted-foreground')}>
+                                      <span
+                                        className={cn(
+                                          'truncate',
+                                          !editGroup && 'text-muted-foreground'
+                                        )}
+                                      >
                                         {editGroup || 'Root (no group)'}
                                       </span>
                                       <ChevronsUpDown className="h-3 w-3 opacity-50 flex-shrink-0 ml-1" />
                                     </Button>
                                   </PopoverTrigger>
-                                  <PopoverContent className="p-0 w-[280px]" align="start">
+                                  <PopoverContent
+                                    className="p-0 w-[280px]"
+                                    align="start"
+                                  >
                                     <Command>
                                       <CommandInput
                                         placeholder="Filter groups…"
@@ -378,7 +415,14 @@ export function ManageInventoryModal({
                                               setGroupFilter('')
                                             }}
                                           >
-                                            <Check className={cn('h-3 w-3 mr-2 flex-shrink-0', editGroup === '' ? 'opacity-100' : 'opacity-0')} />
+                                            <Check
+                                              className={cn(
+                                                'h-3 w-3 mr-2 flex-shrink-0',
+                                                editGroup === ''
+                                                  ? 'opacity-100'
+                                                  : 'opacity-0'
+                                              )}
+                                            />
                                             Root (no group)
                                           </CommandItem>
                                           {allGroupPaths.map(path => (
@@ -391,7 +435,14 @@ export function ManageInventoryModal({
                                                 setGroupFilter('')
                                               }}
                                             >
-                                              <Check className={cn('h-3 w-3 mr-2 flex-shrink-0', editGroup === path ? 'opacity-100' : 'opacity-0')} />
+                                              <Check
+                                                className={cn(
+                                                  'h-3 w-3 mr-2 flex-shrink-0',
+                                                  editGroup === path
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0'
+                                                )}
+                                              />
                                               {path}
                                             </CommandItem>
                                           ))}
@@ -402,10 +453,19 @@ export function ManageInventoryModal({
                                 </Popover>
                               </div>
                               <div className="flex justify-end gap-2">
-                                <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 text-xs">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={cancelEdit}
+                                  className="h-7 text-xs"
+                                >
                                   <X className="h-3 w-3 mr-1" /> Cancel
                                 </Button>
-                                <Button size="sm" onClick={() => saveEdit(inv.id)} className="h-7 text-xs">
+                                <Button
+                                  size="sm"
+                                  onClick={() => saveEdit(inv.id)}
+                                  className="h-7 text-xs"
+                                >
                                   <Check className="h-3 w-3 mr-1" /> Save
                                 </Button>
                               </div>
@@ -418,18 +478,29 @@ export function ManageInventoryModal({
                                 setShowTree(false)
                               }}
                             >
-                              <FileText className={`h-4 w-4 flex-shrink-0 ${isSelected ? 'text-blue-500' : 'text-gray-400'}`} />
+                              <FileText
+                                className={`h-4 w-4 flex-shrink-0 ${isSelected ? 'text-blue-500' : 'text-gray-400'}`}
+                              />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium truncate">{inv.name}</span>
-                                  <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                  <span className="text-sm font-medium truncate">
+                                    {inv.name}
+                                  </span>
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs flex-shrink-0"
+                                  >
                                     {inv.scope}
                                   </Badge>
                                 </div>
                                 <div className="text-xs text-gray-400">
                                   {inv.created_by}
                                   {inv.created_at && (
-                                    <> &bull; {new Date(inv.created_at).toLocaleDateString()}</>
+                                    <>
+                                      {' '}
+                                      &bull;{' '}
+                                      {new Date(inv.created_at).toLocaleDateString()}
+                                    </>
                                   )}
                                 </div>
                               </div>
@@ -438,21 +509,33 @@ export function ManageInventoryModal({
                               <div className="flex items-center gap-1 flex-shrink-0">
                                 {deleteConfirmId === inv.id ? (
                                   <div className="flex items-center gap-1 bg-red-50 px-2 py-1 rounded border border-red-200">
-                                    <span className="text-xs text-red-600 font-medium">Sure?</span>
+                                    <span className="text-xs text-red-600 font-medium">
+                                      Sure?
+                                    </span>
                                     <Button
                                       size="sm"
                                       variant="destructive"
                                       className="h-6 px-2 text-xs"
-                                      onClick={e => { e.stopPropagation(); confirmDelete(inv.id) }}
+                                      onClick={e => {
+                                        e.stopPropagation()
+                                        confirmDelete(inv.id)
+                                      }}
                                       disabled={isDeleting === inv.id}
                                     >
-                                      {isDeleting === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes'}
+                                      {isDeleting === inv.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        'Yes'
+                                      )}
                                     </Button>
                                     <Button
                                       size="sm"
                                       variant="ghost"
                                       className="h-6 w-6 p-0"
-                                      onClick={e => { e.stopPropagation(); setDeleteConfirmId(null) }}
+                                      onClick={e => {
+                                        e.stopPropagation()
+                                        setDeleteConfirmId(null)
+                                      }}
                                     >
                                       <X className="h-3 w-3" />
                                     </Button>
@@ -464,7 +547,10 @@ export function ManageInventoryModal({
                                       variant="ghost"
                                       className="h-7 w-7 p-0 hover:bg-gray-100"
                                       title="Edit"
-                                      onClick={e => { e.stopPropagation(); startEdit(inv) }}
+                                      onClick={e => {
+                                        e.stopPropagation()
+                                        startEdit(inv)
+                                      }}
                                     >
                                       <Pencil className="h-3.5 w-3.5" />
                                     </Button>
@@ -473,19 +559,27 @@ export function ManageInventoryModal({
                                       variant="ghost"
                                       className="h-7 w-7 p-0 text-blue-600 hover:bg-blue-50"
                                       title="Export"
-                                      onClick={e => { e.stopPropagation(); handleExport(inv.id) }}
+                                      onClick={e => {
+                                        e.stopPropagation()
+                                        handleExport(inv.id)
+                                      }}
                                       disabled={isExporting === inv.id}
                                     >
-                                      {isExporting === inv.id
-                                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                        : <Download className="h-3.5 w-3.5" />}
+                                      {isExporting === inv.id ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                      ) : (
+                                        <Download className="h-3.5 w-3.5" />
+                                      )}
                                     </Button>
                                     <Button
                                       size="sm"
                                       variant="ghost"
                                       className="h-7 w-7 p-0 text-red-600 hover:bg-red-50"
                                       title="Delete"
-                                      onClick={e => { e.stopPropagation(); handleDeleteClick(inv.id) }}
+                                      onClick={e => {
+                                        e.stopPropagation()
+                                        handleDeleteClick(inv.id)
+                                      }}
                                     >
                                       <Trash2 className="h-3.5 w-3.5" />
                                     </Button>
@@ -513,9 +607,13 @@ export function ManageInventoryModal({
               {selectedInventory ? (
                 <>
                   {selectedInventory.description ? (
-                    <p className="text-sm text-gray-700">{selectedInventory.description}</p>
+                    <p className="text-sm text-gray-700">
+                      {selectedInventory.description}
+                    </p>
                   ) : (
-                    <p className="text-sm text-muted-foreground italic">No description</p>
+                    <p className="text-sm text-muted-foreground italic">
+                      No description
+                    </p>
                   )}
                   {selectedTree && (
                     <>
@@ -524,9 +622,11 @@ export function ManageInventoryModal({
                         className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
                         onClick={() => setShowTree(v => !v)}
                       >
-                        {showTree
-                          ? <ChevronDown className="h-3.5 w-3.5" />
-                          : <ChevronRight className="h-3.5 w-3.5" />}
+                        {showTree ? (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        )}
                         {showTree ? 'Hide' : 'Show'} condition tree
                       </button>
                       {showTree && (
@@ -554,7 +654,11 @@ export function ManageInventoryModal({
               disabled={isImporting}
               className="flex items-center gap-2"
             >
-              {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {isImporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
               Import Inventory
             </Button>
             <Button variant="outline" onClick={onClose}>

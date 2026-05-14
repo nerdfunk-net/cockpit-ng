@@ -3,7 +3,13 @@
 import { AlertCircle, CheckCircle, XCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 
 export interface ValidationResults {
   isValid: boolean
@@ -32,7 +38,13 @@ interface ValidationRowProps {
   useAlertIcon?: boolean
 }
 
-function ValidationRow({ label, isValid, validLabel = 'Valid', invalidLabel = 'Required', useAlertIcon = false }: ValidationRowProps) {
+function ValidationRow({
+  label,
+  isValid,
+  validLabel = 'Valid',
+  invalidLabel = 'Required',
+  useAlertIcon = false,
+}: ValidationRowProps) {
   return (
     <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
       <div className="flex items-center gap-2">
@@ -52,7 +64,11 @@ function ValidationRow({ label, isValid, validLabel = 'Valid', invalidLabel = 'R
   )
 }
 
-export function ValidationSummaryModal({ open, onOpenChange, results }: ValidationSummaryModalProps) {
+export function ValidationSummaryModal({
+  open,
+  onOpenChange,
+  results,
+}: ValidationSummaryModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">

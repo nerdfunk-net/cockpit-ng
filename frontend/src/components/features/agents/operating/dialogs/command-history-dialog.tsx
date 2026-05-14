@@ -26,7 +26,9 @@ interface CommandHistoryDialogProps {
   agentId: string
 }
 
-function statusVariant(status: string | null): 'default' | 'destructive' | 'outline' | 'secondary' {
+function statusVariant(
+  status: string | null
+): 'default' | 'destructive' | 'outline' | 'secondary' {
   switch (status) {
     case 'success':
       return 'default'
@@ -39,8 +41,14 @@ function statusVariant(status: string | null): 'default' | 'destructive' | 'outl
   }
 }
 
-export function CommandHistoryDialog({ open, onOpenChange, agentId }: CommandHistoryDialogProps) {
-  const { data, isLoading } = useAgentHistoryQuery(agentId, { enabled: open && !!agentId })
+export function CommandHistoryDialog({
+  open,
+  onOpenChange,
+  agentId,
+}: CommandHistoryDialogProps) {
+  const { data, isLoading } = useAgentHistoryQuery(agentId, {
+    enabled: open && !!agentId,
+  })
   const commands = data?.commands ?? EMPTY_HISTORY
 
   return (
@@ -73,7 +81,7 @@ export function CommandHistoryDialog({ open, onOpenChange, agentId }: CommandHis
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {commands.map((cmd) => (
+                {commands.map(cmd => (
                   <TableRow key={cmd.id}>
                     <TableCell className="font-mono text-xs">{cmd.command}</TableCell>
                     <TableCell>

@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Github, GitBranch, Plus, RefreshCw } from 'lucide-react'
@@ -20,10 +26,7 @@ import { useRepositoryDebug } from '../hooks/use-repository-debug'
 import { useConnectionTest } from '../hooks/use-connection-test'
 
 // Components
-import {
-  RepositoryList,
-  RepositoryForm,
-} from '.'
+import { RepositoryList, RepositoryForm } from '.'
 import {
   RepositoryEditDialog,
   RepositoryStatusDialog,
@@ -44,7 +47,11 @@ const GitManagement: React.FC = () => {
   const { confirmDialog, openConfirm } = useConfirmDialog()
 
   // TanStack Query - Repositories
-  const { data: reposData, isLoading: loadingRepos, refetch: refetchRepositories } = useGitRepositoriesQuery()
+  const {
+    data: reposData,
+    isLoading: loadingRepos,
+    refetch: refetchRepositories,
+  } = useGitRepositoriesQuery()
   const repositories = reposData?.repositories || []
 
   // TanStack Query - Mutations
@@ -76,25 +83,28 @@ const GitManagement: React.FC = () => {
   const repositoryDebug = useRepositoryDebug()
 
   // Form submission
-  const handleFormSubmit = useCallback(async (data: RepositoryFormValues) => {
-    setIsSubmitting(true)
-    try {
-      const credentialName = extractCredentialName(data.credential_name)
+  const handleFormSubmit = useCallback(
+    async (data: RepositoryFormValues) => {
+      setIsSubmitting(true)
+      try {
+        const credentialName = extractCredentialName(data.credential_name)
 
-      await createRepoMutation.mutateAsync({
-        ...data,
-        auth_type: data.auth_type || 'none',
-        credential_name: credentialName,
-      })
+        await createRepoMutation.mutateAsync({
+          ...data,
+          auth_type: data.auth_type || 'none',
+          credential_name: credentialName,
+        })
 
-      createForm.reset(DEFAULT_FORM_DATA)
-      connectionTest.clearStatus()
-    } catch {
-      // Error already handled by mutation's onError
-    } finally {
-      setIsSubmitting(false)
-    }
-  }, [createRepoMutation, createForm, connectionTest])
+        createForm.reset(DEFAULT_FORM_DATA)
+        connectionTest.clearStatus()
+      } catch {
+        // Error already handled by mutation's onError
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
+    [createRepoMutation, createForm, connectionTest]
+  )
 
   // Connection test handler
   const handleConnectionTest = useCallback(() => {
@@ -116,43 +126,52 @@ const GitManagement: React.FC = () => {
     setShowEditDialog(true)
   }, [])
 
-  const handleDeleteRepository = useCallback((repo: GitRepository) => {
-    openConfirm({
-      title: 'Delete Repository',
-      description: `Are you sure you want to delete "${repo.name}"?`,
-      variant: 'destructive',
-      onConfirm: async () => {
-        try {
-          await deleteRepoMutation.mutateAsync(repo.id)
-        } catch {
-          // Error already handled by mutation's onError
-        }
-      },
-    })
-  }, [deleteRepoMutation, openConfirm])
+  const handleDeleteRepository = useCallback(
+    (repo: GitRepository) => {
+      openConfirm({
+        title: 'Delete Repository',
+        description: `Are you sure you want to delete "${repo.name}"?`,
+        variant: 'destructive',
+        onConfirm: async () => {
+          try {
+            await deleteRepoMutation.mutateAsync(repo.id)
+          } catch {
+            // Error already handled by mutation's onError
+          }
+        },
+      })
+    },
+    [deleteRepoMutation, openConfirm]
+  )
 
-  const handleSyncRepository = useCallback(async (repo: GitRepository) => {
-    try {
-      await syncRepoMutation.mutateAsync(repo.id)
-    } catch {
-      // Error already handled by mutation's onError
-    }
-  }, [syncRepoMutation])
+  const handleSyncRepository = useCallback(
+    async (repo: GitRepository) => {
+      try {
+        await syncRepoMutation.mutateAsync(repo.id)
+      } catch {
+        // Error already handled by mutation's onError
+      }
+    },
+    [syncRepoMutation]
+  )
 
-  const handleRemoveAndSyncRepository = useCallback((repo: GitRepository) => {
-    openConfirm({
-      title: 'Remove and Re-clone Repository',
-      description: `Are you sure you want to remove and re-clone "${repo.name}"? This will permanently delete the local copy and create a fresh clone.`,
-      variant: 'destructive',
-      onConfirm: async () => {
-        try {
-          await removeAndSyncRepoMutation.mutateAsync(repo.id)
-        } catch {
-          // Error already handled by mutation's onError
-        }
-      },
-    })
-  }, [removeAndSyncRepoMutation, openConfirm])
+  const handleRemoveAndSyncRepository = useCallback(
+    (repo: GitRepository) => {
+      openConfirm({
+        title: 'Remove and Re-clone Repository',
+        description: `Are you sure you want to remove and re-clone "${repo.name}"? This will permanently delete the local copy and create a fresh clone.`,
+        variant: 'destructive',
+        onConfirm: async () => {
+          try {
+            await removeAndSyncRepoMutation.mutateAsync(repo.id)
+          } catch {
+            // Error already handled by mutation's onError
+          }
+        },
+      })
+    },
+    [removeAndSyncRepoMutation, openConfirm]
+  )
 
   return (
     <div className="space-y-4">
@@ -169,11 +188,13 @@ const GitManagement: React.FC = () => {
 
       {/* Status Message */}
       {message && (
-        <div className={`p-4 rounded-md ${
-          message.type === 'success'
-            ? 'bg-green-50 border border-green-200 text-green-800'
-            : 'bg-red-50 border border-red-200 text-red-800'
-        }`}>
+        <div
+          className={`p-4 rounded-md ${
+            message.type === 'success'
+              ? 'bg-green-50 border border-green-200 text-green-800'
+              : 'bg-red-50 border border-red-200 text-red-800'
+          }`}
+        >
           {message.text}
         </div>
       )}
@@ -214,11 +235,15 @@ const GitManagement: React.FC = () => {
                 Add New Git Repository
               </CardTitle>
               <CardDescription className="text-blue-50 text-sm">
-                Configure a new Git repository for configurations, templates, or other resources
+                Configure a new Git repository for configurations, templates, or other
+                resources
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={createForm.handleSubmit(handleFormSubmit)} className="space-y-6">
+              <form
+                onSubmit={createForm.handleSubmit(handleFormSubmit)}
+                className="space-y-6"
+              >
                 <RepositoryForm
                   form={createForm}
                   credentials={credentials}

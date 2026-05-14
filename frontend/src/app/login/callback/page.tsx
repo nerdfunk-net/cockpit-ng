@@ -2,7 +2,13 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { useAuthStore } from '@/lib/auth-store'
 import { Heart, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -65,7 +71,9 @@ function OIDCCallbackContent() {
 
         if (!response.ok) {
           const errorData = await response.json()
-          throw new Error(errorData.detail || `Authentication failed with provider '${providerId}'`)
+          throw new Error(
+            errorData.detail || `Authentication failed with provider '${providerId}'`
+          )
         }
 
         const data = await response.json()
@@ -183,25 +191,27 @@ function OIDCCallbackContent() {
 
 export default function OIDCCallbackPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-apple-lg">
-              <Heart className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Cockpit</h1>
-          </div>
-          <Card className="glass backdrop-blur-xl border-white/20 shadow-apple-xl">
-            <CardContent className="pt-6 pb-6">
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <div className="text-center mb-8">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-apple-lg">
+                <Heart className="w-8 h-8 text-white" />
               </div>
-            </CardContent>
-          </Card>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Cockpit</h1>
+            </div>
+            <Card className="glass backdrop-blur-xl border-white/20 shadow-apple-xl">
+              <CardContent className="pt-6 pb-6">
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <OIDCCallbackContent />
     </Suspense>
   )

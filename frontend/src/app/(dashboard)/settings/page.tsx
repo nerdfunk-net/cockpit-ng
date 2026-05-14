@@ -1,5 +1,11 @@
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Server, FileCode, GitBranch, Zap, Key, Users } from 'lucide-react'
 
 const settingsPages = [
@@ -9,7 +15,7 @@ const settingsPages = [
     href: '/settings/nautobot',
     icon: Server,
     color: 'text-blue-600',
-    bgColor: 'bg-blue-100'
+    bgColor: 'bg-blue-100',
   },
   {
     title: 'Templates',
@@ -17,7 +23,7 @@ const settingsPages = [
     href: '/settings/templates',
     icon: FileCode,
     color: 'text-green-600',
-    bgColor: 'bg-green-100'
+    bgColor: 'bg-green-100',
   },
   {
     title: 'Git Management',
@@ -25,7 +31,7 @@ const settingsPages = [
     href: '/settings/git',
     icon: GitBranch,
     color: 'text-purple-600',
-    bgColor: 'bg-purple-100'
+    bgColor: 'bg-purple-100',
   },
   {
     title: 'Cache',
@@ -33,7 +39,7 @@ const settingsPages = [
     href: '/settings/cache',
     icon: Zap,
     color: 'text-yellow-600',
-    bgColor: 'bg-yellow-100'
+    bgColor: 'bg-yellow-100',
   },
   {
     title: 'Credentials',
@@ -41,7 +47,7 @@ const settingsPages = [
     href: '/settings/credentials',
     icon: Key,
     color: 'text-red-600',
-    bgColor: 'bg-red-100'
+    bgColor: 'bg-red-100',
   },
   {
     title: 'Users & Permissions',
@@ -49,8 +55,8 @@ const settingsPages = [
     href: '/settings/permissions',
     icon: Users,
     color: 'text-indigo-600',
-    bgColor: 'bg-indigo-100'
-  }
+    bgColor: 'bg-indigo-100',
+  },
 ]
 
 export default function SettingsPage() {
@@ -71,14 +77,16 @@ export default function SettingsPage() {
 
       {/* Settings Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {settingsPages.map((setting) => {
+        {settingsPages.map(setting => {
           const IconComponent = setting.icon
           return (
             <Link key={setting.href} href={setting.href}>
               <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
                 <CardHeader>
                   <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-lg ${setting.bgColor} group-hover:scale-110 transition-transform`}>
+                    <div
+                      className={`p-2 rounded-lg ${setting.bgColor} group-hover:scale-110 transition-transform`}
+                    >
                       <IconComponent className={`h-6 w-6 ${setting.color}`} />
                     </div>
                     <div>

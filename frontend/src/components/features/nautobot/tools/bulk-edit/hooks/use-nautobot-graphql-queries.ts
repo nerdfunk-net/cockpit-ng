@@ -8,7 +8,7 @@ import {
   type GraphQLDeviceType,
   type GraphQLLocation,
   type GraphQLDevice,
-  type GraphQLResponse
+  type GraphQLResponse,
 } from '@/services/nautobot-graphql'
 
 interface UseNautobotGraphQLQueryOptions {
@@ -32,7 +32,9 @@ const DEFAULT_OPTIONS: UseNautobotGraphQLQueryOptions = {}
  * const deviceTypes = data?.data?.device_types || []
  * ```
  */
-export function useNautobotDeviceTypesQuery(options: UseNautobotGraphQLQueryOptions = DEFAULT_OPTIONS) {
+export function useNautobotDeviceTypesQuery(
+  options: UseNautobotGraphQLQueryOptions = DEFAULT_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 
@@ -69,7 +71,9 @@ export function useNautobotDeviceTypesQuery(options: UseNautobotGraphQLQueryOpti
  * const locations = data?.data?.locations || []
  * ```
  */
-export function useNautobotLocationsQuery(options: UseNautobotGraphQLQueryOptions = DEFAULT_OPTIONS) {
+export function useNautobotLocationsQuery(
+  options: UseNautobotGraphQLQueryOptions = DEFAULT_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 
@@ -106,7 +110,9 @@ export function useNautobotLocationsQuery(options: UseNautobotGraphQLQueryOption
  * const devices = data?.data?.devices || []
  * ```
  */
-export function useNautobotDevicesQuery(options: UseNautobotGraphQLQueryOptions = DEFAULT_OPTIONS) {
+export function useNautobotDevicesQuery(
+  options: UseNautobotGraphQLQueryOptions = DEFAULT_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 
@@ -129,9 +135,4 @@ export function useNautobotDevicesQuery(options: UseNautobotGraphQLQueryOptions 
 }
 
 // Export types
-export type {
-  GraphQLDeviceType,
-  GraphQLLocation,
-  GraphQLDevice,
-  GraphQLResponse
-}
+export type { GraphQLDeviceType, GraphQLLocation, GraphQLDevice, GraphQLResponse }

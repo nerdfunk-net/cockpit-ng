@@ -13,11 +13,15 @@ const DEFAULT_FONT_SIZE = 12
 // Helper function to get initial font size from localStorage
 const getInitialFontSize = (): number => {
   if (typeof window === 'undefined') return DEFAULT_FONT_SIZE
-  
+
   const stored = localStorage.getItem(FONT_SIZE_KEY)
   if (stored) {
     const parsedSize = parseInt(stored, 10)
-    if (!isNaN(parsedSize) && parsedSize >= MIN_FONT_SIZE && parsedSize <= MAX_FONT_SIZE) {
+    if (
+      !isNaN(parsedSize) &&
+      parsedSize >= MIN_FONT_SIZE &&
+      parsedSize <= MAX_FONT_SIZE
+    ) {
       return parsedSize
     }
   }
@@ -70,47 +74,50 @@ export function useDiffNavigation(totalDiffs: number = 0) {
     setHideUnchanged(prev => !prev)
   }, [])
 
-  return useMemo(() => ({
-    // Navigation state
-    currentIndex,
-    setCurrentIndex,
-    totalDiffs,
+  return useMemo(
+    () => ({
+      // Navigation state
+      currentIndex,
+      setCurrentIndex,
+      totalDiffs,
 
-    // Navigation controls
-    nextDiff,
-    prevDiff,
-    goToFirstDiff,
-    goToLastDiff,
+      // Navigation controls
+      nextDiff,
+      prevDiff,
+      goToFirstDiff,
+      goToLastDiff,
 
-    // Display controls
-    hideUnchanged,
-    setHideUnchanged,
-    toggleHideUnchanged,
+      // Display controls
+      hideUnchanged,
+      setHideUnchanged,
+      toggleHideUnchanged,
 
-    // Font controls
-    fontSize,
-    setFontSize,
-    increaseFontSize,
-    decreaseFontSize,
-    resetFontSize,
+      // Font controls
+      fontSize,
+      setFontSize,
+      increaseFontSize,
+      decreaseFontSize,
+      resetFontSize,
 
-    // Computed values
-    hasPrevious: currentIndex > 0,
-    hasNext: currentIndex < totalDiffs - 1,
-    canIncreaseFontSize: fontSize < MAX_FONT_SIZE,
-    canDecreaseFontSize: fontSize > MIN_FONT_SIZE
-  }), [
-    currentIndex,
-    totalDiffs,
-    nextDiff,
-    prevDiff,
-    goToFirstDiff,
-    goToLastDiff,
-    hideUnchanged,
-    toggleHideUnchanged,
-    fontSize,
-    increaseFontSize,
-    decreaseFontSize,
-    resetFontSize
-  ])
+      // Computed values
+      hasPrevious: currentIndex > 0,
+      hasNext: currentIndex < totalDiffs - 1,
+      canIncreaseFontSize: fontSize < MAX_FONT_SIZE,
+      canDecreaseFontSize: fontSize > MIN_FONT_SIZE,
+    }),
+    [
+      currentIndex,
+      totalDiffs,
+      nextDiff,
+      prevDiff,
+      goToFirstDiff,
+      goToLastDiff,
+      hideUnchanged,
+      toggleHideUnchanged,
+      fontSize,
+      increaseFontSize,
+      decreaseFontSize,
+      resetFontSize,
+    ]
+  )
 }

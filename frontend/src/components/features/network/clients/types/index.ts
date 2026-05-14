@@ -1,1 +1,5 @@
-export type { ClientDataItem, ClientDataResponse, ClientDataFilters } from '@/hooks/queries/use-clients-query'
+export type {
+  ClientDataItem,
+  ClientDataResponse,
+  ClientDataFilters,
+} from '@/hooks/queries/use-clients-query'

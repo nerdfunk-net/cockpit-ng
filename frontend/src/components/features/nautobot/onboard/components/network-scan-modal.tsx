@@ -54,12 +54,16 @@ interface UnreachableRange {
 
 const EMPTY_CIDR_LINE = ''
 
-export function NetworkScanModal({ open, onClose, onIPsSelected }: NetworkScanModalProps) {
+export function NetworkScanModal({
+  open,
+  onClose,
+  onIPsSelected,
+}: NetworkScanModalProps) {
   const { apiCall } = useApi()
 
   // CIDR input lines with unique IDs
   const [cidrLines, setCidrLines] = useState<Array<{ id: string; value: string }>>([
-    { id: crypto.randomUUID(), value: EMPTY_CIDR_LINE }
+    { id: crypto.randomUUID(), value: EMPTY_CIDR_LINE },
   ])
   const [cidrErrors, setCidrErrors] = useState<Record<string, string>>({})
 
@@ -106,23 +110,26 @@ export function NetworkScanModal({ open, onClose, onIPsSelected }: NetworkScanMo
   }, [])
 
   // Handle CIDR line change with validation
-  const handleCIDRChange = useCallback((id: string, value: string) => {
-    setCidrLines(prev =>
-      prev.map(line => (line.id === id ? { ...line, value } : line))
-    )
+  const handleCIDRChange = useCallback(
+    (id: string, value: string) => {
+      setCidrLines(prev =>
+        prev.map(line => (line.id === id ? { ...line, value } : line))
+      )
 
-    // Validate
-    const error = validateCIDR(value)
-    setCidrErrors(prev => {
-      const newErrors = { ...prev }
-      if (error) {
-        newErrors[id] = error
-      } else {
-        delete newErrors[id]
-      }
-      return newErrors
-    })
-  }, [validateCIDR])
+      // Validate
+      const error = validateCIDR(value)
+      setCidrErrors(prev => {
+        const newErrors = { ...prev }
+        if (error) {
+          newErrors[id] = error
+        } else {
+          delete newErrors[id]
+        }
+        return newErrors
+      })
+    },
+    [validateCIDR]
+  )
 
   // Add new CIDR line
   const handleAddLine = useCallback(() => {
@@ -144,7 +151,7 @@ export function NetworkScanModal({ open, onClose, onIPsSelected }: NetworkScanMo
     async function poll(jobId: string): Promise<void> {
       try {
         const status = await apiCall<ScanStatus>(`scan/${jobId}/status`, {
-          method: 'GET'
+          method: 'GET',
         })
 
         if (status) {
@@ -160,11 +167,13 @@ export function NetworkScanModal({ open, onClose, onIPsSelected }: NetworkScanMo
             // A more sophisticated algorithm could compute ranges
             const unreachableCount = status.progress.unreachable
             if (unreachableCount > 0) {
-              setUnreachableRanges([{
-                start: 'N/A',
-                end: 'N/A',
-                count: unreachableCount
-              }])
+              setUnreachableRanges([
+                {
+                  start: 'N/A',
+                  end: 'N/A',
+                  count: unreachableCount,
+                },
+              ])
             }
           } else {
             // Continue polling - schedule next poll
@@ -182,7 +191,9 @@ export function NetworkScanModal({ open, onClose, onIPsSelected }: NetworkScanMo
   // Start network scan
   const handleStartScan = useCallback(async () => {
     // Filter out empty lines and validate
-    const validCIDRs = cidrLines.filter(line => line.value.trim() !== '').map(line => line.value)
+    const validCIDRs = cidrLines
+      .filter(line => line.value.trim() !== '')
+      .map(line => line.value)
 
     if (validCIDRs.length === 0) {
       return
@@ -201,17 +212,18 @@ export function NetworkScanModal({ open, onClose, onIPsSelected }: NetworkScanMo
     setSelectedIPs(new Set())
 
     try {
-      const response = await apiCall<{ job_id: string; total_targets: number; state: string }>(
-        'scan/start',
-        {
-          method: 'POST',
-          body: {
-            cidrs: validCIDRs,
-            ping_mode: 'fping'
-            // No credential_ids = ping-only mode
-          }
-        }
-      )
+      const response = await apiCall<{
+        job_id: string
+        total_targets: number
+        state: string
+      }>('scan/start', {
+        method: 'POST',
+        body: {
+          cidrs: validCIDRs,
+          ping_mode: 'fping',
+          // No credential_ids = ping-only mode
+        },
+      })
 
       if (response?.job_id) {
         setScanState(response.state)
@@ -222,7 +234,7 @@ export function NetworkScanModal({ open, onClose, onIPsSelected }: NetworkScanMo
           authenticated: 0,
           unreachable: 0,
           auth_failed: 0,
-          driver_not_supported: 0
+          driver_not_supported: 0,
         })
 
         // Start polling
@@ -301,13 +313,13 @@ export function NetworkScanModal({ open, onClose, onIPsSelected }: NetworkScanMo
           {!isScanning && scanResults.length === 0 && (
             <div className="space-y-3">
               <Label>Network Addresses (CIDR Notation)</Label>
-              {cidrLines.map((line) => (
+              {cidrLines.map(line => (
                 <div key={line.id} className="flex items-start gap-2">
                   <div className="flex-1">
                     <Input
                       placeholder="e.g., 192.168.1.0/24"
                       value={line.value}
-                      onChange={(e) => handleCIDRChange(line.id, e.target.value)}
+                      onChange={e => handleCIDRChange(line.id, e.target.value)}
                       className={cidrErrors[line.id] ? 'border-red-500' : ''}
                     />
                     {cidrErrors[line.id] && (
@@ -429,7 +441,7 @@ export function NetworkScanModal({ open, onClose, onIPsSelected }: NetworkScanMo
                     </thead>
                     <tbody>
                       {/* Reachable IPs */}
-                      {scanResults.map((result) => (
+                      {scanResults.map(result => (
                         <tr key={result.ip} className="border-t hover:bg-muted/50">
                           <td className="p-2 text-center">
                             <Checkbox
@@ -451,8 +463,11 @@ export function NetworkScanModal({ open, onClose, onIPsSelected }: NetworkScanMo
                       ))}
 
                       {/* Unreachable ranges */}
-                      {unreachableRanges.map((range) => (
-                        <tr key={`unreachable-${range.start}-${range.end}-${range.count}`} className="border-t bg-muted/30">
+                      {unreachableRanges.map(range => (
+                        <tr
+                          key={`unreachable-${range.start}-${range.end}-${range.count}`}
+                          className="border-t bg-muted/30"
+                        >
                           <td className="p-2"></td>
                           <td className="p-2 text-sm text-muted-foreground">
                             {range.count} host{range.count !== 1 ? 's' : ''}
@@ -476,10 +491,7 @@ export function NetworkScanModal({ open, onClose, onIPsSelected }: NetworkScanMo
                   {selectedIPs.size} IP{selectedIPs.size !== 1 ? 's' : ''} selected
                 </p>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={handleClose}
-                  >
+                  <Button variant="outline" onClick={handleClose}>
                     Cancel
                   </Button>
                   <Button

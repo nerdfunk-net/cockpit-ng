@@ -6,13 +6,30 @@
 import { useState, useMemo } from 'react'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
-import { Settings, Search, Globe, Lock, Eye, Edit2, Trash2, X, Check } from 'lucide-react'
+import {
+  Settings,
+  Search,
+  Globe,
+  Lock,
+  Eye,
+  Edit2,
+  Trash2,
+  X,
+  Check,
+} from 'lucide-react'
 import { conditionTreeToExpression } from '@/hooks/shared/device-selector/condition-tree-utils'
 import type { ConditionTree, ConditionGroup } from '@/types/shared/device-selector'
 
@@ -60,7 +77,9 @@ export function ManageInventoryDialog({
 }: ManageInventoryDialogProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const { confirmDialog, openConfirm } = useConfirmDialog()
-  const [selectedInventory, setSelectedInventory] = useState<SavedInventory | null>(null)
+  const [selectedInventory, setSelectedInventory] = useState<SavedInventory | null>(
+    null
+  )
   const [viewMode, setViewMode] = useState<'list' | 'view' | 'edit'>('list')
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
@@ -72,7 +91,7 @@ export function ManageInventoryDialog({
     }
     const term = searchTerm.toLowerCase()
     return inventories.filter(
-      (inv) =>
+      inv =>
         inv.name.toLowerCase().includes(term) ||
         (inv.description?.toLowerCase().includes(term) ?? false)
     )
@@ -150,7 +169,12 @@ export function ManageInventoryDialog({
     const firstItem = inventory.conditions[0]
 
     // Check if this is version 2 (tree structure)
-    if (firstItem && typeof firstItem === 'object' && 'version' in firstItem && firstItem.version === 2) {
+    if (
+      firstItem &&
+      typeof firstItem === 'object' &&
+      'version' in firstItem &&
+      firstItem.version === 2
+    ) {
       // New tree structure format
       const tree = firstItem.tree as ConditionTree
       return conditionTreeToExpression(tree)
@@ -170,10 +194,12 @@ export function ManageInventoryDialog({
       return `${c.field} ${c.operator} "${c.value}"`
     }
 
-    return flatConditions.map((c, index) => {
-      const expr = `${c.field} ${c.operator} "${c.value}"`
-      return index === 0 ? expr : `${c.logic} ${expr}`
-    }).join(' ')
+    return flatConditions
+      .map((c, index) => {
+        const expr = `${c.field} ${c.operator} "${c.value}"`
+        return index === 0 ? expr : `${c.logic} ${expr}`
+      })
+      .join(' ')
   }
 
   const getConditionCount = (inventory: SavedInventory): number => {
@@ -184,7 +210,12 @@ export function ManageInventoryDialog({
     const firstItem = inventory.conditions[0]
 
     // Version 2: count items in tree
-    if (firstItem && typeof firstItem === 'object' && 'version' in firstItem && firstItem.version === 2) {
+    if (
+      firstItem &&
+      typeof firstItem === 'object' &&
+      'version' in firstItem &&
+      firstItem.version === 2
+    ) {
       const tree = firstItem.tree as ConditionTree
       return countTreeItems(tree)
     }
@@ -197,7 +228,7 @@ export function ManageInventoryDialog({
     if (!tree || !tree.items) return 0
 
     let count = 0
-    tree.items.forEach((item) => {
+    tree.items.forEach(item => {
       if ('type' in item && item.type === 'group') {
         count += countTreeItems(item)
       } else {
@@ -228,7 +259,7 @@ export function ManageInventoryDialog({
               <Input
                 placeholder="Search inventories..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -251,13 +282,15 @@ export function ManageInventoryDialog({
                     <>
                       <Settings className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                       <p>No saved inventories yet</p>
-                      <p className="text-sm mt-1">Create device filters and save them to get started</p>
+                      <p className="text-sm mt-1">
+                        Create device filters and save them to get started
+                      </p>
                     </>
                   )}
                 </div>
               ) : (
                 <div className="divide-y">
-                  {filteredInventories.map((inventory) => (
+                  {filteredInventories.map(inventory => (
                     <div
                       key={inventory.id}
                       className="p-4 hover:bg-purple-50/50 transition-colors group"
@@ -269,7 +302,9 @@ export function ManageInventoryDialog({
                               {inventory.name}
                             </h4>
                             <Badge
-                              variant={inventory.scope === 'global' ? 'default' : 'secondary'}
+                              variant={
+                                inventory.scope === 'global' ? 'default' : 'secondary'
+                              }
                               className="shrink-0"
                             >
                               {inventory.scope === 'global' ? (
@@ -376,8 +411,14 @@ export function ManageInventoryDialog({
 
             <div className="border rounded-lg p-4 bg-gradient-to-br from-blue-50 to-purple-50">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">{selectedInventory.name}</h3>
-                <Badge variant={selectedInventory.scope === 'global' ? 'default' : 'secondary'}>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedInventory.name}
+                </h3>
+                <Badge
+                  variant={
+                    selectedInventory.scope === 'global' ? 'default' : 'secondary'
+                  }
+                >
                   {selectedInventory.scope === 'global' ? (
                     <>
                       <Globe className="h-3 w-3 mr-1" />
@@ -393,23 +434,28 @@ export function ManageInventoryDialog({
               </div>
 
               {selectedInventory.description && (
-                <p className="text-sm text-gray-700 mb-3">{selectedInventory.description}</p>
+                <p className="text-sm text-gray-700 mb-3">
+                  {selectedInventory.description}
+                </p>
               )}
 
               <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-4">
                 <div>
-                  <span className="font-medium">Created by:</span> {selectedInventory.created_by}
+                  <span className="font-medium">Created by:</span>{' '}
+                  {selectedInventory.created_by}
                 </div>
                 {selectedInventory.updated_at && (
                   <div>
-                    <span className="font-medium">Updated:</span> {formatDate(selectedInventory.updated_at)}
+                    <span className="font-medium">Updated:</span>{' '}
+                    {formatDate(selectedInventory.updated_at)}
                   </div>
                 )}
               </div>
 
               <div className="border-t pt-3">
                 <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                  Logical Expression ({getConditionCount(selectedInventory)} condition{getConditionCount(selectedInventory) !== 1 ? 's' : ''})
+                  Logical Expression ({getConditionCount(selectedInventory)} condition
+                  {getConditionCount(selectedInventory) !== 1 ? 's' : ''})
                 </Label>
                 <div className="bg-white rounded-md p-3 border border-gray-200 font-mono text-sm text-gray-800 break-words">
                   {getLogicalExpression(selectedInventory)}
@@ -443,7 +489,7 @@ export function ManageInventoryDialog({
                   <Input
                     id="edit-name"
                     value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
+                    onChange={e => setEditName(e.target.value)}
                     placeholder="Enter inventory name"
                     disabled={isSaving}
                     className="bg-white"
@@ -455,7 +501,7 @@ export function ManageInventoryDialog({
                   <Textarea
                     id="edit-description"
                     value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
+                    onChange={e => setEditDescription(e.target.value)}
                     placeholder="Optional description"
                     rows={3}
                     disabled={isSaving}
@@ -465,12 +511,17 @@ export function ManageInventoryDialog({
 
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                   <p className="text-xs text-blue-800 mb-2">
-                    <strong>Note:</strong> You cannot edit the logical conditions or scope.
-                    To change conditions, create a new inventory.
+                    <strong>Note:</strong> You cannot edit the logical conditions or
+                    scope. To change conditions, create a new inventory.
                   </p>
                   <div className="text-xs text-blue-700">
                     <span className="font-medium">Current Scope:</span>{' '}
-                    <Badge variant={selectedInventory.scope === 'global' ? 'default' : 'secondary'} className="text-xs">
+                    <Badge
+                      variant={
+                        selectedInventory.scope === 'global' ? 'default' : 'secondary'
+                      }
+                      className="text-xs"
+                    >
                       {selectedInventory.scope === 'global' ? 'Global' : 'Private'}
                     </Badge>
                   </div>
@@ -478,7 +529,8 @@ export function ManageInventoryDialog({
 
                 <div className="border-t pt-3">
                   <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                    Logical Expression ({getConditionCount(selectedInventory)} condition{getConditionCount(selectedInventory) !== 1 ? 's' : ''})
+                    Logical Expression ({getConditionCount(selectedInventory)} condition
+                    {getConditionCount(selectedInventory) !== 1 ? 's' : ''})
                   </Label>
                   <div className="bg-gray-50 rounded-md p-3 border border-gray-300 font-mono text-sm text-gray-700 break-words">
                     {getLogicalExpression(selectedInventory)}

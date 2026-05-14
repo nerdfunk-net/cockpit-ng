@@ -7,8 +7,12 @@ import { EMPTY_STRING_ARRAY } from '../constants'
 export function validateIPAddress(ip: string): boolean {
   if (!ip.trim()) return false
 
-  const ipAddresses = ip.split(',').map(addr => addr.trim()).filter(addr => addr.length > 0)
-  const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+  const ipAddresses = ip
+    .split(',')
+    .map(addr => addr.trim())
+    .filter(addr => addr.length > 0)
+  const ipRegex =
+    /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
 
   return ipAddresses.length > 0 && ipAddresses.every(addr => ipRegex.test(addr))
 }
@@ -60,7 +64,7 @@ export function buildLocationHierarchy(locations: LocationItem[]): LocationItem[
     const hierarchicalPath = buildLocationPath(location, locationMap)
     return {
       ...location,
-      hierarchicalPath
+      hierarchicalPath,
     }
   })
 
@@ -147,10 +151,7 @@ function resolveToId<T extends ResolvableItem>(
  * Also checks network_driver field for platforms (e.g., "cisco_ios").
  * Returns empty string if no match found.
  */
-export function resolveNameToId(
-  value: string,
-  options: DropdownOption[]
-): string {
+export function resolveNameToId(value: string, options: DropdownOption[]): string {
   return resolveToId(value, options as ResolvableItem[], ['network_driver', 'slug'], '')
 }
 
@@ -183,6 +184,6 @@ export function validateCSVHeaders(
   return {
     isValid: missingHeaders.length === 0,
     missingHeaders,
-    extraHeaders
+    extraHeaders,
   }
 }

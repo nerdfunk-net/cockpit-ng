@@ -5,7 +5,15 @@ import { parseCSVContent } from '../../shared/csv/utils/csv-parser'
 import { RACK_IMPORT_FIELDS } from '../constants'
 import { applyNameTransform } from '../utils/name-transform'
 import type { CSVConfig, ParsedCSVData } from '../../shared/csv/types'
-import type { RackMetadata, RackFaceAssignments, RackDevice, RackImportApplyPayload, MatchingStrategy, NameTransform, UnknownCsvDevice } from '../types'
+import type {
+  RackMetadata,
+  RackFaceAssignments,
+  RackDevice,
+  RackImportApplyPayload,
+  MatchingStrategy,
+  NameTransform,
+  UnknownCsvDevice,
+} from '../types'
 import type { LocationItem } from '../../add-device/types'
 
 export type ImportStep = 'upload' | 'mapping' | 'properties' | 'resolve'
@@ -62,7 +70,9 @@ export function useImportPositions({
   const [locationColumn, setLocationColumn] = useState<string | null>(null)
   const [clearRackBeforeImport, setClearRackBeforeImport] = useState(true)
   const [useMappingFromDb, setUseMappingFromDb] = useState(true)
-  const [loadDevicesUpToLocationTypeId, setLoadDevicesUpToLocationTypeId] = useState<string | null>(null)
+  const [loadDevicesUpToLocationTypeId, setLoadDevicesUpToLocationTypeId] = useState<
+    string | null
+  >(null)
   const [isResolving, setIsResolving] = useState(false)
 
   const selectedLocation = useMemo(
@@ -105,7 +115,9 @@ export function useImportPositions({
       setFieldMapping(mapping)
 
       // Auto-detect location column
-      const locCol = headers.find(h => ['location', 'site', 'standort'].includes(h.toLowerCase())) ?? null
+      const locCol =
+        headers.find(h => ['location', 'site', 'standort'].includes(h.toLowerCase())) ??
+        null
       setLocationColumn(locCol)
     } catch (err) {
       toast({
@@ -133,7 +145,8 @@ export function useImportPositions({
   }, [fieldMapping, parsedData.headers])
 
   const posColIdx = useMemo(() => {
-    const col = Object.entries(fieldMapping).find(([, v]) => v === 'position')?.[0] ?? null
+    const col =
+      Object.entries(fieldMapping).find(([, v]) => v === 'position')?.[0] ?? null
     return col ? parsedData.headers.indexOf(col) : -1
   }, [fieldMapping, parsedData.headers])
 
@@ -181,7 +194,14 @@ export function useImportPositions({
       }
       return true
     }).length
-  }, [parsedData.rows, parsedData.rowCount, rackMetadata, selectedLocation, rackColIdx, locationColIdx])
+  }, [
+    parsedData.rows,
+    parsedData.rowCount,
+    rackMetadata,
+    selectedLocation,
+    rackColIdx,
+    locationColIdx,
+  ])
 
   // Navigation guards
   const canGoNext = useMemo(() => {
@@ -250,7 +270,9 @@ export function useImportPositions({
       const dbMappingMap = new Map<string, string>() // csvName → mappedNautobotName
       if (useMappingFromDb) {
         try {
-          const dbMappings = await apiCall<{ origin_name: string; mapped_name: string }[]>(
+          const dbMappings = await apiCall<
+            { origin_name: string; mapped_name: string }[]
+          >(
             `nautobot/rack-mappings?rack_name=${encodeURIComponent(rackMetadata.name)}&location_id=${encodeURIComponent(selectedLocationId)}`
           )
           for (const m of dbMappings) {
@@ -294,12 +316,12 @@ export function useImportPositions({
 
           const params = new URLSearchParams({ name_ic: lookupName })
           if (effectiveLocationId) params.append('location_id', effectiveLocationId)
-          const result = await apiCall<NautobotDeviceListItem[] | { devices?: NautobotDeviceListItem[] }>(
-            `nautobot/devices?${params.toString()}`
-          )
+          const result = await apiCall<
+            NautobotDeviceListItem[] | { devices?: NautobotDeviceListItem[] }
+          >(`nautobot/devices?${params.toString()}`)
           const items = Array.isArray(result)
             ? result
-            : (result as { devices?: NautobotDeviceListItem[] }).devices ?? []
+            : ((result as { devices?: NautobotDeviceListItem[] }).devices ?? [])
 
           let matched: NautobotDeviceListItem | undefined
           if (hasDbMapping) {
@@ -323,9 +345,13 @@ export function useImportPositions({
       )
 
       // 4. Build new assignments — start from empty if clearing, else overlay on existing
-      const newFront: RackFaceAssignments = clearRackBeforeImport ? {} : { ...localFront }
+      const newFront: RackFaceAssignments = clearRackBeforeImport
+        ? {}
+        : { ...localFront }
       const newRear: RackFaceAssignments = clearRackBeforeImport ? {} : { ...localRear }
-      const newUnpositioned: RackDevice[] = clearRackBeforeImport ? [] : [...localUnpositioned]
+      const newUnpositioned: RackDevice[] = clearRackBeforeImport
+        ? []
+        : [...localUnpositioned]
 
       for (const row of matchedRows) {
         const csvName = row[nameColIdx]?.trim()
@@ -349,7 +375,13 @@ export function useImportPositions({
           }
         } else {
           if (!newUnpositioned.some(d => d.id === deviceId)) {
-            newUnpositioned.push({ id: deviceId, name: deviceName, position: null, face: null, uHeight: 1 })
+            newUnpositioned.push({
+              id: deviceId,
+              name: deviceName,
+              position: null,
+              face: null,
+              uHeight: 1,
+            })
           }
         }
       }
@@ -359,7 +391,8 @@ export function useImportPositions({
         const row = matchedRows.find(r => r[nameColIdx]?.trim() === csvName)
         const posRaw = row && posColIdx >= 0 ? row[posColIdx]?.trim() : undefined
         const position = posRaw ? parseInt(posRaw, 10) : NaN
-        const faceRaw = (row && faceColIdx >= 0 ? row[faceColIdx]?.trim().toLowerCase() : '') ?? ''
+        const faceRaw =
+          (row && faceColIdx >= 0 ? row[faceColIdx]?.trim().toLowerCase() : '') ?? ''
         return {
           csvName,
           csvPosition: !isNaN(position) && position > 0 ? position : null,
@@ -373,7 +406,8 @@ export function useImportPositions({
       // 7. Warn about unresolved devices
       if (notFoundNames.length > 0) {
         const preview = notFoundNames.slice(0, 3).join(', ')
-        const suffix = notFoundNames.length > 3 ? ` and ${notFoundNames.length - 3} more` : ''
+        const suffix =
+          notFoundNames.length > 3 ? ` and ${notFoundNames.length - 3} more` : ''
         toast({
           title: `${notFoundNames.length} device(s) not found in Nautobot`,
           description: `Could not resolve: ${preview}${suffix}`,

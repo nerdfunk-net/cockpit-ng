@@ -2,7 +2,14 @@ import { Fragment, useState } from 'react'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { CheckCircle2, XCircle, ChevronDown, ChevronUp, Terminal } from 'lucide-react'
 import type { CommandResult, ExecutionSummary } from '../types'
 
@@ -46,7 +53,8 @@ export function ExecutionResults({ results, summary }: ExecutionResultsProps) {
           <span className="text-sm font-medium">Execution Results</span>
         </div>
         <div className="text-xs text-green-100">
-          {summary.successful} successful, {summary.failed} failed of {summary.total} devices
+          {summary.successful} successful, {summary.failed} failed of {summary.total}{' '}
+          devices
         </div>
       </div>
       <div className="p-6 bg-gradient-to-b from-white to-gray-50">
@@ -54,14 +62,20 @@ export function ExecutionResults({ results, summary }: ExecutionResultsProps) {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card className="border-2 border-blue-200 bg-blue-50">
             <CardHeader className="pb-3">
-              <CardDescription className="text-xs text-blue-600">Total Devices</CardDescription>
+              <CardDescription className="text-xs text-blue-600">
+                Total Devices
+              </CardDescription>
               <CardTitle className="text-2xl text-blue-800">{summary.total}</CardTitle>
             </CardHeader>
           </Card>
           <Card className="border-2 border-green-200 bg-green-50">
             <CardHeader className="pb-3">
-              <CardDescription className="text-xs text-green-600">Successful</CardDescription>
-              <CardTitle className="text-2xl text-green-800">{summary.successful}</CardTitle>
+              <CardDescription className="text-xs text-green-600">
+                Successful
+              </CardDescription>
+              <CardTitle className="text-2xl text-green-800">
+                {summary.successful}
+              </CardTitle>
             </CardHeader>
           </Card>
           <Card className="border-2 border-red-200 bg-red-50">
@@ -73,8 +87,12 @@ export function ExecutionResults({ results, summary }: ExecutionResultsProps) {
           {summary.cancelled > 0 && (
             <Card className="border-2 border-orange-200 bg-orange-50">
               <CardHeader className="pb-3">
-                <CardDescription className="text-xs text-orange-600">Cancelled</CardDescription>
-                <CardTitle className="text-2xl text-orange-800">{summary.cancelled}</CardTitle>
+                <CardDescription className="text-xs text-orange-600">
+                  Cancelled
+                </CardDescription>
+                <CardTitle className="text-2xl text-orange-800">
+                  {summary.cancelled}
+                </CardTitle>
               </CardHeader>
             </Card>
           )}
@@ -96,17 +114,13 @@ export function ExecutionResults({ results, summary }: ExecutionResultsProps) {
               {results.map((result, index) => (
                 <Fragment key={result.device || `result-${index}`}>
                   <TableRow className="hover:bg-gray-50">
-                    <TableCell>
-                      {getResultIcon(result.success)}
-                    </TableCell>
+                    <TableCell>{getResultIcon(result.success)}</TableCell>
                     <TableCell className="font-medium">{result.device}</TableCell>
-                    <TableCell>
-                      {getResultBadge(result.success)}
-                    </TableCell>
+                    <TableCell>{getResultBadge(result.success)}</TableCell>
                     <TableCell className="text-sm text-gray-600">
-                      {result.success 
-                        ? 'Commands executed successfully' 
-                        : (result.error || 'Execution failed')}
+                      {result.success
+                        ? 'Commands executed successfully'
+                        : result.error || 'Execution failed'}
                     </TableCell>
                     <TableCell className="text-right">
                       {result.output && (

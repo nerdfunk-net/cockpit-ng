@@ -90,13 +90,10 @@ export function ClientsPage() {
     setPage(1)
   }, [])
 
-  const handleFilterChange = useCallback(
-    (key: keyof ColumnFilters, value: string) => {
-      filterChangedRef.current = true
-      setColumnFilters((prev) => ({ ...prev, [key]: value }))
-    },
-    []
-  )
+  const handleFilterChange = useCallback((key: keyof ColumnFilters, value: string) => {
+    filterChangedRef.current = true
+    setColumnFilters(prev => ({ ...prev, [key]: value }))
+  }, [])
 
   const handleDeviceSearchChange = useCallback((value: string) => {
     deviceSearchChangedRef.current = true
@@ -133,15 +130,12 @@ export function ClientsPage() {
     setDevicePage(1)
   }, [])
 
-  const items = useMemo(
-    () => dataQuery.data?.items ?? [],
-    [dataQuery.data]
-  )
+  const items = useMemo(() => dataQuery.data?.items ?? [], [dataQuery.data])
   const total = dataQuery.data?.total ?? 0
 
   const latestCollectedAt = useMemo(() => {
     const timestamps = items
-      .map((item) => item.collected_at)
+      .map(item => item.collected_at)
       .filter((ts): ts is string => ts !== null)
     if (timestamps.length === 0) return null
     return timestamps.reduce((max, ts) => (ts > max ? ts : max))
@@ -166,7 +160,7 @@ export function ClientsPage() {
         : (nautobotDevicesQuery.data?.devices ?? []),
     [deviceFilter, filteredDevicesQuery.data, nautobotDevicesQuery.data]
   )
-  const devices = useMemo(() => deviceObjects.map((d) => d.name), [deviceObjects])
+  const devices = useMemo(() => deviceObjects.map(d => d.name), [deviceObjects])
   const deviceTotal = deviceFilter
     ? (filteredDevicesQuery.data?.count ?? 0)
     : (nautobotDevicesQuery.data?.count ?? 0)
@@ -257,10 +251,7 @@ export function ClientsPage() {
         onClose={() => setLiveStatusDevice(null)}
       />
 
-      <ClientHistoryDialog
-        item={historyItem}
-        onClose={() => setHistoryItem(null)}
-      />
+      <ClientHistoryDialog item={historyItem} onClose={() => setHistoryItem(null)} />
     </div>
   )
 }

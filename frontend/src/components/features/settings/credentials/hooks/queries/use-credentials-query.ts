@@ -30,9 +30,7 @@ export function useCredentialsQuery(
       if (filters?.source) params.set('source', filters.source)
       if (filters?.includeExpired) params.set('include_expired', 'true')
 
-      const response = await apiCall<Credential[]>(
-        `credentials?${params.toString()}`
-      )
+      const response = await apiCall<Credential[]>(`credentials?${params.toString()}`)
       return response || EMPTY_CREDENTIALS
     },
     enabled,

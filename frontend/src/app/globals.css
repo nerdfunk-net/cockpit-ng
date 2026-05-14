@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -56,100 +56,100 @@
   --radius: 0.75rem;
   /* Modern Cockpit Dashboard - Light Mode */
   /* Primary Blue Palette */
-  --background: #fafbfc;                    /* Soft gray-blue background */
-  --foreground: #1a202c;                   /* Dark blue-gray text */
-  --card: #ffffff;                         /* Pure white cards */
-  --card-foreground: #2d3748;             /* Medium blue-gray text */
-  --popover: #ffffff;                      /* White popovers */
-  --popover-foreground: #2d3748;          /* Medium blue-gray text */
-  --primary: #2563eb;                      /* Professional blue */
-  --primary-foreground: #ffffff;          /* White on blue */
-  --secondary: #f7fafc;                    /* Very light blue-gray */
-  --secondary-foreground: #4a5568;        /* Medium gray text */
-  --muted: #edf2f7;                       /* Light gray background */
-  --muted-foreground: #718096;            /* Muted gray text */
-  --accent: #3182ce;                      /* Accent blue */
-  --accent-foreground: #ffffff;           /* White on accent */
-  --destructive: #e53e3e;                 /* Red for errors */
-  --border: #e2e8f0;                      /* Light gray borders */
-  --input: #ffffff;                       /* White input backgrounds */
-  --ring: #3182ce;                        /* Blue focus rings */
+  --background: #fafbfc; /* Soft gray-blue background */
+  --foreground: #1a202c; /* Dark blue-gray text */
+  --card: #ffffff; /* Pure white cards */
+  --card-foreground: #2d3748; /* Medium blue-gray text */
+  --popover: #ffffff; /* White popovers */
+  --popover-foreground: #2d3748; /* Medium blue-gray text */
+  --primary: #2563eb; /* Professional blue */
+  --primary-foreground: #ffffff; /* White on blue */
+  --secondary: #f7fafc; /* Very light blue-gray */
+  --secondary-foreground: #4a5568; /* Medium gray text */
+  --muted: #edf2f7; /* Light gray background */
+  --muted-foreground: #718096; /* Muted gray text */
+  --accent: #3182ce; /* Accent blue */
+  --accent-foreground: #ffffff; /* White on accent */
+  --destructive: #e53e3e; /* Red for errors */
+  --border: #e2e8f0; /* Light gray borders */
+  --input: #ffffff; /* White input backgrounds */
+  --ring: #3182ce; /* Blue focus rings */
   /* Chart Colors - Analytics Blue Palette */
-  --chart-1: #2563eb;                     /* Primary blue */
-  --chart-2: #06b6d4;                     /* Cyan blue */
-  --chart-3: #3b82f6;                     /* Light blue */
-  --chart-4: #1e40af;                     /* Dark blue */
-  --chart-5: #0ea5e9;                     /* Sky blue */
+  --chart-1: #2563eb; /* Primary blue */
+  --chart-2: #06b6d4; /* Cyan blue */
+  --chart-3: #3b82f6; /* Light blue */
+  --chart-4: #1e40af; /* Dark blue */
+  --chart-5: #0ea5e9; /* Sky blue */
   /* Sidebar - Clean Analytics Style */
-  --sidebar: #ffffff;                     /* White sidebar */
-  --sidebar-foreground: #2d3748;         /* Dark text */
-  --sidebar-primary: #2563eb;            /* Blue primary */
+  --sidebar: #ffffff; /* White sidebar */
+  --sidebar-foreground: #2d3748; /* Dark text */
+  --sidebar-primary: #2563eb; /* Blue primary */
   --sidebar-primary-foreground: #ffffff; /* White on blue */
-  --sidebar-accent: #f7fafc;             /* Light hover state */
-  --sidebar-accent-foreground: #4a5568;  /* Medium gray on hover */
-  --sidebar-border: #e2e8f0;             /* Light border */
-  --sidebar-ring: #3182ce;               /* Blue focus ring */
+  --sidebar-accent: #f7fafc; /* Light hover state */
+  --sidebar-accent-foreground: #4a5568; /* Medium gray on hover */
+  --sidebar-border: #e2e8f0; /* Light border */
+  --sidebar-ring: #3182ce; /* Blue focus ring */
   /* Status state colors - Light Mode */
-  --success: #f0fdf4;             /* green-50 */
-  --success-foreground: #15803d;  /* green-700 */
-  --success-border: #bbf7d0;      /* green-200 */
-  --warning: #fffbeb;             /* amber-50 */
-  --warning-foreground: #b45309;  /* amber-700 */
-  --warning-border: #fde68a;      /* amber-200 */
-  --error: #fef2f2;               /* red-50 */
-  --error-foreground: #b91c1c;    /* red-700 */
-  --error-border: #fecaca;        /* red-200 */
-  --info: #eff6ff;                /* blue-50 */
-  --info-foreground: #1d4ed8;     /* blue-700 */
-  --info-border: #bfdbfe;         /* blue-200 */
+  --success: #f0fdf4; /* green-50 */
+  --success-foreground: #15803d; /* green-700 */
+  --success-border: #bbf7d0; /* green-200 */
+  --warning: #fffbeb; /* amber-50 */
+  --warning-foreground: #b45309; /* amber-700 */
+  --warning-border: #fde68a; /* amber-200 */
+  --error: #fef2f2; /* red-50 */
+  --error-foreground: #b91c1c; /* red-700 */
+  --error-border: #fecaca; /* red-200 */
+  --info: #eff6ff; /* blue-50 */
+  --info-foreground: #1d4ed8; /* blue-700 */
+  --info-border: #bfdbfe; /* blue-200 */
 }
 
 .dark {
   /* Dark mode - subtle and minimal for analytics */
-  --background: #0f172a;                   /* Very dark blue-gray */
-  --foreground: #f1f5f9;                  /* Light gray text */
-  --card: #1e293b;                        /* Dark cards */
-  --card-foreground: #e2e8f0;            /* Light text on cards */
-  --popover: #1e293b;                     /* Dark popovers */
-  --popover-foreground: #e2e8f0;         /* Light text */
-  --primary: #3b82f6;                     /* Bright blue */
-  --primary-foreground: #ffffff;         /* White on blue */
-  --secondary: #334155;                   /* Medium dark gray */
-  --secondary-foreground: #f1f5f9;       /* Light text */
-  --muted: #1e293b;                      /* Dark muted background */
-  --muted-foreground: #94a3b8;           /* Medium gray text */
-  --accent: #3b82f6;                     /* Blue accent */
-  --accent-foreground: #ffffff;          /* White on accent */
-  --destructive: #ef4444;                /* Red for errors */
-  --border: #334155;                     /* Dark borders */
-  --input: #1e293b;                      /* Dark input backgrounds */
-  --ring: #3b82f6;                       /* Blue focus rings */
-  --chart-1: #3b82f6;                    /* Bright blue */
-  --chart-2: #06b6d4;                    /* Cyan */
-  --chart-3: #8b5cf6;                    /* Purple */
-  --chart-4: #10b981;                    /* Green */
-  --chart-5: #f59e0b;                    /* Orange */
-  --sidebar: #1e293b;                    /* Dark sidebar */
-  --sidebar-foreground: #e2e8f0;        /* Light text */
-  --sidebar-primary: #3b82f6;           /* Blue primary */
+  --background: #0f172a; /* Very dark blue-gray */
+  --foreground: #f1f5f9; /* Light gray text */
+  --card: #1e293b; /* Dark cards */
+  --card-foreground: #e2e8f0; /* Light text on cards */
+  --popover: #1e293b; /* Dark popovers */
+  --popover-foreground: #e2e8f0; /* Light text */
+  --primary: #3b82f6; /* Bright blue */
+  --primary-foreground: #ffffff; /* White on blue */
+  --secondary: #334155; /* Medium dark gray */
+  --secondary-foreground: #f1f5f9; /* Light text */
+  --muted: #1e293b; /* Dark muted background */
+  --muted-foreground: #94a3b8; /* Medium gray text */
+  --accent: #3b82f6; /* Blue accent */
+  --accent-foreground: #ffffff; /* White on accent */
+  --destructive: #ef4444; /* Red for errors */
+  --border: #334155; /* Dark borders */
+  --input: #1e293b; /* Dark input backgrounds */
+  --ring: #3b82f6; /* Blue focus rings */
+  --chart-1: #3b82f6; /* Bright blue */
+  --chart-2: #06b6d4; /* Cyan */
+  --chart-3: #8b5cf6; /* Purple */
+  --chart-4: #10b981; /* Green */
+  --chart-5: #f59e0b; /* Orange */
+  --sidebar: #1e293b; /* Dark sidebar */
+  --sidebar-foreground: #e2e8f0; /* Light text */
+  --sidebar-primary: #3b82f6; /* Blue primary */
   --sidebar-primary-foreground: #ffffff; /* White on blue */
-  --sidebar-accent: #334155;            /* Dark hover state */
+  --sidebar-accent: #334155; /* Dark hover state */
   --sidebar-accent-foreground: #f1f5f9; /* Light text on hover */
-  --sidebar-border: #334155;            /* Dark border */
-  --sidebar-ring: #3b82f6;              /* Blue focus ring */
+  --sidebar-border: #334155; /* Dark border */
+  --sidebar-ring: #3b82f6; /* Blue focus ring */
   /* Status state colors - Dark Mode */
-  --success: rgba(20, 83, 45, 0.3);          /* green-900/30 */
-  --success-foreground: #86efac;             /* green-300 */
-  --success-border: rgba(21, 128, 61, 0.5);  /* green-700/50 */
-  --warning: rgba(120, 53, 15, 0.3);         /* amber-900/30 */
-  --warning-foreground: #fcd34d;             /* amber-300 */
-  --warning-border: rgba(180, 83, 9, 0.5);   /* amber-700/50 */
-  --error: rgba(127, 29, 29, 0.3);           /* red-900/30 */
-  --error-foreground: #fca5a5;               /* red-300 */
-  --error-border: rgba(185, 28, 28, 0.5);    /* red-700/50 */
-  --info: rgba(30, 58, 138, 0.3);            /* blue-900/30 */
-  --info-foreground: #93c5fd;                /* blue-300 */
-  --info-border: rgba(29, 78, 216, 0.5);     /* blue-700/50 */
+  --success: rgba(20, 83, 45, 0.3); /* green-900/30 */
+  --success-foreground: #86efac; /* green-300 */
+  --success-border: rgba(21, 128, 61, 0.5); /* green-700/50 */
+  --warning: rgba(120, 53, 15, 0.3); /* amber-900/30 */
+  --warning-foreground: #fcd34d; /* amber-300 */
+  --warning-border: rgba(180, 83, 9, 0.5); /* amber-700/50 */
+  --error: rgba(127, 29, 29, 0.3); /* red-900/30 */
+  --error-foreground: #fca5a5; /* red-300 */
+  --error-border: rgba(185, 28, 28, 0.5); /* red-700/50 */
+  --info: rgba(30, 58, 138, 0.3); /* blue-900/30 */
+  --info-foreground: #93c5fd; /* blue-300 */
+  --info-border: rgba(29, 78, 216, 0.5); /* blue-700/50 */
 }
 
 @layer base {
@@ -158,110 +158,124 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      sans-serif;
   }
-  
+
   /* Modern Cockpit Dashboard Glass Effects */
   .glass {
     @apply bg-white/80 backdrop-blur-xl border border-white/20;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   }
-  
+
   .glass-dark {
     @apply bg-slate-800/80 backdrop-blur-xl border border-white/10;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   }
-  
+
   /* Modern Cockpit Dashboard Card Styles */
   .analytics-card {
     @apply bg-white border border-slate-200 rounded-xl;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
     transition: all 0.2s ease-in-out;
   }
-  
+
   .analytics-card:hover {
     box-shadow: 0 4px 20px rgba(15, 23, 42, 0.12);
     transform: translateY(-1px);
   }
-  
+
   .dark .analytics-card {
     @apply bg-slate-800 border-slate-700;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
-  
+
   .dark .analytics-card:hover {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   }
-  
+
   /* Professional Shadows */
   .shadow-analytics {
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+    box-shadow:
+      0 1px 3px rgba(15, 23, 42, 0.08),
+      0 1px 2px rgba(15, 23, 42, 0.04);
   }
-  
+
   .shadow-analytics-lg {
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.08);
+    box-shadow:
+      0 4px 20px rgba(15, 23, 42, 0.12),
+      0 2px 8px rgba(15, 23, 42, 0.08);
   }
-  
+
   .shadow-analytics-xl {
-    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.15), 0 10px 25px rgba(15, 23, 42, 0.10);
+    box-shadow:
+      0 25px 50px rgba(15, 23, 42, 0.15),
+      0 10px 25px rgba(15, 23, 42, 0.1);
   }
-  
+
   /* Smooth scrolling like modern dashboards */
   html {
     scroll-behavior: smooth;
   }
-  
+
   /* Professional scrollbar styling */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
-  
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   ::-webkit-scrollbar-thumb {
     background: rgba(100, 116, 139, 0.3);
     border-radius: 10px;
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(100, 116, 139, 0.5);
   }
-  
+
   .dark ::-webkit-scrollbar-thumb {
     background: rgba(148, 163, 184, 0.3);
   }
-  
+
   .dark ::-webkit-scrollbar-thumb:hover {
     background: rgba(148, 163, 184, 0.5);
   }
-  
+
   /* Modern button effects */
   .button-analytics {
     @apply transition-all duration-200 ease-out;
     transform: scale(1);
   }
-  
+
   .button-analytics:hover {
     transform: scale(1.02);
     box-shadow: 0 4px 20px rgba(37, 99, 235, 0.15);
   }
-  
+
   .button-analytics:active {
     transform: scale(0.98);
   }
-  
+
   /* Smooth fade animations */
   .fade-in {
     animation: fadeIn 0.4s ease-out;
   }
-  
+
   .fade-in-delayed {
     animation: fadeIn 0.6s ease-out;
   }
-  
+
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -272,14 +286,14 @@
       transform: translateY(0);
     }
   }
-  
+
   /* Cockpit Dashboard Grid */
   .analytics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
   }
-  
+
   /* Status indicator utility classes — auto dark mode via CSS vars */
   .status-success {
     background-color: var(--success);

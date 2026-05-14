@@ -1,6 +1,14 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronDown, ChevronRight, Folder, FolderOpen, FolderPlus, Pencil, Plus } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  FolderOpen,
+  FolderPlus,
+  Pencil,
+  Plus,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -35,7 +43,11 @@ export function GroupTreePanel({
   const [isCreatingGroup, setIsCreatingGroup] = useState(false)
   const [creatingUnderPath, setCreatingUnderPath] = useState<string | null>(null)
   const [newGroupName, setNewGroupName] = useState('')
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; path: string | null } | null>(null)
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+    path: string | null
+  } | null>(null)
   const [renamingPath, setRenamingPath] = useState<string | undefined>(undefined)
   const [renameValue, setRenameValue] = useState('')
   const newGroupInputRef = useRef<HTMLInputElement>(null)
@@ -77,7 +89,10 @@ export function GroupTreePanel({
   useEffect(() => {
     if (!contextMenu) return
     const handler = (e: MouseEvent) => {
-      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+      if (
+        contextMenuRef.current &&
+        !contextMenuRef.current.contains(e.target as Node)
+      ) {
         setContextMenu(null)
       }
     }
@@ -184,10 +199,14 @@ export function GroupTreePanel({
           )}
           style={{ paddingLeft: `${depth * 14 + 6}px` }}
           onClick={() => onSelectGroup(node.path)}
-          onContextMenu={allowContextCreate ? (e) => {
-            e.preventDefault()
-            setContextMenu({ x: e.clientX, y: e.clientY, path: node.path })
-          } : undefined}
+          onContextMenu={
+            allowContextCreate
+              ? e => {
+                  e.preventDefault()
+                  setContextMenu({ x: e.clientX, y: e.clientY, path: node.path })
+                }
+              : undefined
+          }
         >
           <button
             className="w-4 h-4 flex items-center justify-center flex-shrink-0 rounded hover:bg-gray-200"
@@ -197,15 +216,18 @@ export function GroupTreePanel({
             }}
           >
             {hasChildren ? (
-              isExpanded
-                ? <ChevronDown className="h-3 w-3" />
-                : <ChevronRight className="h-3 w-3" />
+              isExpanded ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )
             ) : null}
           </button>
-          {isExpanded && hasChildren
-            ? <FolderOpen className="h-3.5 w-3.5 flex-shrink-0" />
-            : <Folder className="h-3.5 w-3.5 flex-shrink-0" />
-          }
+          {isExpanded && hasChildren ? (
+            <FolderOpen className="h-3.5 w-3.5 flex-shrink-0" />
+          ) : (
+            <Folder className="h-3.5 w-3.5 flex-shrink-0" />
+          )}
           {renamingPath !== undefined && renamingPath === node.path ? (
             <Input
               ref={renameInputRef}
@@ -220,7 +242,9 @@ export function GroupTreePanel({
             <span className="flex-1 truncate">{node.name}</span>
           )}
           {invCount > 0 && (
-            <span className="text-xs text-gray-400 flex-shrink-0 tabular-nums">{invCount}</span>
+            <span className="text-xs text-gray-400 flex-shrink-0 tabular-nums">
+              {invCount}
+            </span>
           )}
         </div>
 
@@ -294,41 +318,42 @@ export function GroupTreePanel({
       )}
 
       {/* Right-click context menu — rendered via portal to escape Dialog's CSS transform */}
-      {contextMenu && createPortal(
-        <div
-          ref={contextMenuRef}
-          className="fixed z-50 bg-white border border-gray-200 rounded-md shadow-lg py-1 min-w-[160px]"
-          style={{ top: contextMenu.y, left: contextMenu.x, pointerEvents: 'auto' }}
-        >
-          <button
-            className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 flex items-center gap-2"
-            onMouseDown={e => {
-              e.preventDefault()
-              const parentPath = contextMenu.path
-              setContextMenu(null)
-              startCreatingUnder(parentPath)
-            }}
+      {contextMenu &&
+        createPortal(
+          <div
+            ref={contextMenuRef}
+            className="fixed z-50 bg-white border border-gray-200 rounded-md shadow-lg py-1 min-w-[160px]"
+            style={{ top: contextMenu.y, left: contextMenu.x, pointerEvents: 'auto' }}
           >
-            <FolderPlus className="h-3.5 w-3.5 text-blue-500" />
-            New subgroup here
-          </button>
-          {contextMenu.path !== null && (
             <button
               className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 flex items-center gap-2"
               onMouseDown={e => {
                 e.preventDefault()
-                const nodePath = contextMenu.path!
-                const nodeName = nodePath.split('/').at(-1) ?? nodePath
-                startRenaming(nodePath, nodeName)
+                const parentPath = contextMenu.path
+                setContextMenu(null)
+                startCreatingUnder(parentPath)
               }}
             >
-              <Pencil className="h-3.5 w-3.5 text-gray-500" />
-              Rename Group
+              <FolderPlus className="h-3.5 w-3.5 text-blue-500" />
+              New subgroup here
             </button>
-          )}
-        </div>,
-        document.body
-      )}
+            {contextMenu.path !== null && (
+              <button
+                className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 flex items-center gap-2"
+                onMouseDown={e => {
+                  e.preventDefault()
+                  const nodePath = contextMenu.path!
+                  const nodeName = nodePath.split('/').at(-1) ?? nodePath
+                  startRenaming(nodePath, nodeName)
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                Rename Group
+              </button>
+            )}
+          </div>,
+          document.body
+        )}
     </div>
   )
 }

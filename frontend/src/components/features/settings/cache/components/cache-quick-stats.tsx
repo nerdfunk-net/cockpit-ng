@@ -29,7 +29,9 @@ export function CacheQuickStats({ hasChanges = false }: CacheQuickStatsProps) {
         <CardContent className="space-y-3">
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-600">Cache Status:</span>
-            <span className={`font-medium ${settings.enabled ? 'text-green-600' : 'text-red-600'}`}>
+            <span
+              className={`font-medium ${settings.enabled ? 'text-green-600' : 'text-red-600'}`}
+            >
               {settings.enabled ? 'Enabled' : 'Disabled'}
             </span>
           </div>
@@ -47,7 +49,9 @@ export function CacheQuickStats({ hasChanges = false }: CacheQuickStatsProps) {
               <Separator />
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Cache Size:</span>
-                <span className="font-medium">{stats.overview.total_size_mb.toFixed(2)} MB</span>
+                <span className="font-medium">
+                  {stats.overview.total_size_mb.toFixed(2)} MB
+                </span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Total Entries:</span>
@@ -55,19 +59,27 @@ export function CacheQuickStats({ hasChanges = false }: CacheQuickStatsProps) {
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Valid Entries:</span>
-                <span className="font-medium text-green-600">{stats.overview.valid_items}</span>
+                <span className="font-medium text-green-600">
+                  {stats.overview.valid_items}
+                </span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Expired Entries:</span>
-                <span className="font-medium text-red-600">{stats.overview.expired_items}</span>
+                <span className="font-medium text-red-600">
+                  {stats.overview.expired_items}
+                </span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Hit Rate:</span>
-                <span className="font-medium text-blue-600">{stats.performance.hit_rate_percent.toFixed(1)}%</span>
+                <span className="font-medium text-blue-600">
+                  {stats.performance.hit_rate_percent.toFixed(1)}%
+                </span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Uptime:</span>
-                <span className="font-medium">{Math.floor(stats.overview.uptime_seconds / 60)}m</span>
+                <span className="font-medium">
+                  {Math.floor(stats.overview.uptime_seconds / 60)}m
+                </span>
               </div>
             </>
           )}

@@ -1,6 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { InventoryRenderer } from '../components/inventory-renderer'
 import { useApi } from '@/hooks/use-api'
 import type { CheckMKHost } from '../types'
@@ -13,22 +19,31 @@ interface InventoryDialogProps {
 
 export function InventoryDialog({ open, onOpenChange, host }: InventoryDialogProps) {
   const { apiCall } = useApi()
-  const [inventoryData, setInventoryData] = useState<Record<string, unknown> | null>(null)
+  const [inventoryData, setInventoryData] = useState<Record<string, unknown> | null>(
+    null
+  )
   const [loadingInventory, setLoadingInventory] = useState(false)
 
-  const loadInventory = useCallback(async (hostName: string) => {
-    try {
-      setLoadingInventory(true)
-      const response = await apiCall<{ success: boolean; message: string; data: Record<string, unknown> }>(`checkmk/inventory/${hostName}`)
-      // Extract the actual inventory data from the CheckMKOperationResponse wrapper
-      setInventoryData(response?.data || null)
-    } catch (err) {
-      console.error('Failed to load inventory:', err)
-      setInventoryData(null)
-    } finally {
-      setLoadingInventory(false)
-    }
-  }, [apiCall])
+  const loadInventory = useCallback(
+    async (hostName: string) => {
+      try {
+        setLoadingInventory(true)
+        const response = await apiCall<{
+          success: boolean
+          message: string
+          data: Record<string, unknown>
+        }>(`checkmk/inventory/${hostName}`)
+        // Extract the actual inventory data from the CheckMKOperationResponse wrapper
+        setInventoryData(response?.data || null)
+      } catch (err) {
+        console.error('Failed to load inventory:', err)
+        setInventoryData(null)
+      } finally {
+        setLoadingInventory(false)
+      }
+    },
+    [apiCall]
+  )
 
   // Load inventory when modal opens or host changes
   useEffect(() => {
@@ -46,10 +61,15 @@ export function InventoryDialog({ open, onOpenChange, host }: InventoryDialogPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-[64vw] !w-[64vw] max-h-[90vh] overflow-hidden flex flex-col p-0" style={{ maxWidth: '64vw', width: '64vw' }}>
+      <DialogContent
+        className="!max-w-[64vw] !w-[64vw] max-h-[90vh] overflow-hidden flex flex-col p-0"
+        style={{ maxWidth: '64vw', width: '64vw' }}
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>Inventory - {host?.host_name}</DialogTitle>
-          <DialogDescription>View inventory data for the selected host</DialogDescription>
+          <DialogDescription>
+            View inventory data for the selected host
+          </DialogDescription>
         </DialogHeader>
 
         {/* Compact Blue Header */}
@@ -66,14 +86,17 @@ export function InventoryDialog({ open, onOpenChange, host }: InventoryDialogPro
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                <p className="mt-2 text-sm text-muted-foreground">Loading inventory...</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Loading inventory...
+                </p>
               </div>
             </div>
           ) : inventoryData ? (
             <div className="p-4">
               {/* Check if result exists and has data */}
               {(inventoryData.result as Record<string, unknown>) &&
-               Object.keys(inventoryData.result as Record<string, unknown>).length > 0 ? (
+              Object.keys(inventoryData.result as Record<string, unknown>).length >
+                0 ? (
                 (() => {
                   const result = inventoryData.result as Record<string, unknown>
                   const hostname = Object.keys(result)[0]
@@ -106,10 +129,18 @@ export function InventoryDialog({ open, onOpenChange, host }: InventoryDialogPro
 
                         return (
                           <div key={nodeName} className="mb-4">
-                            <div className={`flex items-center mb-2 pb-1.5 border-b ${borderColor}`}>
-                              <h3 className={`text-sm font-semibold capitalize ${textColor}`}>{nodeName}</h3>
+                            <div
+                              className={`flex items-center mb-2 pb-1.5 border-b ${borderColor}`}
+                            >
+                              <h3
+                                className={`text-sm font-semibold capitalize ${textColor}`}
+                              >
+                                {nodeName}
+                              </h3>
                             </div>
-                            <div className={`${bgColor} rounded-md p-4 border ${borderColor}`}>
+                            <div
+                              className={`${bgColor} rounded-md p-4 border ${borderColor}`}
+                            >
                               <InventoryRenderer data={nodeData} />
                             </div>
                           </div>

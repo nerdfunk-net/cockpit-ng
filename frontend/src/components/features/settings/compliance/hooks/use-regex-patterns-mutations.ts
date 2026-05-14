@@ -42,13 +42,7 @@ export function useRegexPatternsMutations() {
    * Update an existing regex pattern
    */
   const updatePattern = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: number
-      data: RegexPatternFormData
-    }) => {
+    mutationFn: async ({ id, data }: { id: number; data: RegexPatternFormData }) => {
       return apiCall(`settings/compliance/regex-patterns/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),

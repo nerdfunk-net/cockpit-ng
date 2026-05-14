@@ -18,13 +18,19 @@ export interface CustomFieldsManagerHook {
 }
 
 export function useCustomFieldsManager(): CustomFieldsManagerHook {
-  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>(EMPTY_OBJECT)
-  const [customFieldChoices, setCustomFieldChoices] = useState<Record<string, string[]>>({})
+  const [customFieldValues, setCustomFieldValues] =
+    useState<Record<string, string>>(EMPTY_OBJECT)
+  const [customFieldChoices, setCustomFieldChoices] = useState<
+    Record<string, string[]>
+  >({})
   const [showModal, setShowModal] = useState(false)
   const { apiCall } = useApi()
 
   // Fetch custom fields when modal opens
-  const { data: customFields = EMPTY_STRING_ARRAY as unknown as CustomField[], isLoading } = useCustomFieldsQuery({
+  const {
+    data: customFields = EMPTY_STRING_ARRAY as unknown as CustomField[],
+    isLoading,
+  } = useCustomFieldsQuery({
     enabled: showModal,
   })
 
@@ -32,12 +38,12 @@ export function useCustomFieldsManager(): CustomFieldsManagerHook {
   useEffect(() => {
     if (customFields.length > 0) {
       const selectFields = customFields.filter(
-        (f) => f.type?.value === 'select' || f.type?.value === 'multi-select'
+        f => f.type?.value === 'select' || f.type?.value === 'multi-select'
       )
-      
+
       if (selectFields.length > 0) {
         Promise.all(
-          selectFields.map(async (field) => {
+          selectFields.map(async field => {
             try {
               const choices = await apiCall<string[]>(
                 `nautobot/custom-field-choices/${field.key}`,
@@ -48,9 +54,9 @@ export function useCustomFieldsManager(): CustomFieldsManagerHook {
               return { key: field.key, choices: [] }
             }
           })
-        ).then((results) => {
+        ).then(results => {
           const choicesMap: Record<string, string[]> = {}
-          results.forEach((result) => {
+          results.forEach(result => {
             choicesMap[result.key] = result.choices
           })
           setCustomFieldChoices(choicesMap)
@@ -68,7 +74,7 @@ export function useCustomFieldsManager(): CustomFieldsManagerHook {
   }, [])
 
   const updateFieldValue = useCallback((key: string, value: string) => {
-    setCustomFieldValues((prev) => ({
+    setCustomFieldValues(prev => ({
       ...prev,
       [key]: value,
     }))

@@ -1,6 +1,12 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
   Plus,
@@ -136,9 +142,11 @@ export default function HelpPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-slate-700 leading-relaxed">
-              Cockpit-NG is a modern network management dashboard designed specifically for network engineers and NetDevOps teams.
-              It provides a comprehensive platform for managing network devices, configurations, and automation workflows with
-              seamless integration to industry-standard tools like Nautobot and CheckMK.
+              Cockpit-NG is a modern network management dashboard designed specifically
+              for network engineers and NetDevOps teams. It provides a comprehensive
+              platform for managing network devices, configurations, and automation
+              workflows with seamless integration to industry-standard tools like
+              Nautobot and CheckMK.
             </p>
 
             <div className="bg-slate-50 p-4 rounded-lg">
@@ -146,27 +154,45 @@ export default function HelpPage() {
               <ul className="space-y-2 text-slate-700">
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>Device Management:</strong> Add, onboard, sync, and offboard network devices</span>
+                  <span>
+                    <strong>Device Management:</strong> Add, onboard, sync, and offboard
+                    network devices
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>Configuration Management:</strong> Backup, view, compare, and track device configuration changes</span>
+                  <span>
+                    <strong>Configuration Management:</strong> Backup, view, compare,
+                    and track device configuration changes
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>Network Automation:</strong> Execute commands, manage inventories, and use templates</span>
+                  <span>
+                    <strong>Network Automation:</strong> Execute commands, manage
+                    inventories, and use templates
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>Job Scheduling:</strong> Automate recurring tasks with flexible scheduling</span>
+                  <span>
+                    <strong>Job Scheduling:</strong> Automate recurring tasks with
+                    flexible scheduling
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>Compliance Checking:</strong> Monitor device compliance with defined rules</span>
+                  <span>
+                    <strong>Compliance Checking:</strong> Monitor device compliance with
+                    defined rules
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>RBAC:</strong> Role-based access control with granular permissions</span>
+                  <span>
+                    <strong>RBAC:</strong> Role-based access control with granular
+                    permissions
+                  </span>
                 </li>
               </ul>
             </div>
@@ -190,8 +216,9 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                The main dashboard showing a high-level summary of your network environment — connected
-                systems status, recent job activity, and quick-access links to frequently used features.
+                The main dashboard showing a high-level summary of your network
+                environment — connected systems status, recent job activity, and
+                quick-access links to frequently used features.
               </p>
             </CardContent>
           </Card>
@@ -205,7 +232,8 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700 mb-3">
-                Build and manage dynamic inventory for network automation and monitoring:
+                Build and manage dynamic inventory for network automation and
+                monitoring:
               </p>
               <ul className="space-y-1 text-sm text-slate-600">
                 <li>• Generate Ansible inventory files dynamically from Nautobot</li>
@@ -225,8 +253,9 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                View application and audit logs. Track user actions, job executions, API calls,
-                and system events across all modules for troubleshooting and accountability.
+                View application and audit logs. Track user actions, job executions, API
+                calls, and system events across all modules for troubleshooting and
+                accountability.
               </p>
             </CardContent>
           </Card>
@@ -249,8 +278,9 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Manually add individual physical network devices to Nautobot with complete device information including
-                location, device type, role, platform, and network interfaces with IP addresses.
+                Manually add individual physical network devices to Nautobot with
+                complete device information including location, device type, role,
+                platform, and network interfaces with IP addresses.
               </p>
             </CardContent>
           </Card>
@@ -264,8 +294,8 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Add virtual machines to Nautobot. Specify the VM name, cluster, role, platform,
-                and assign virtual interfaces with IP addresses.
+                Add virtual machines to Nautobot. Specify the VM name, cluster, role,
+                platform, and assign virtual interfaces with IP addresses.
               </p>
             </CardContent>
           </Card>
@@ -279,8 +309,9 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Streamlined device onboarding process that automatically discovers device information via SSH/SNMP and
-                creates entries in Nautobot with minimal manual input.
+                Streamlined device onboarding process that automatically discovers
+                device information via SSH/SNMP and creates entries in Nautobot with
+                minimal manual input.
               </p>
             </CardContent>
           </Card>
@@ -294,8 +325,9 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Synchronize device data between Nautobot and your network infrastructure. Keep device information
-                up-to-date across your entire inventory.
+                Synchronize device data between Nautobot and your network
+                infrastructure. Keep device information up-to-date across your entire
+                inventory.
               </p>
             </CardContent>
           </Card>
@@ -309,8 +341,9 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Safely remove devices from your infrastructure with guided offboarding workflows that ensure
-                proper cleanup in Nautobot, CheckMK, and other integrated systems.
+                Safely remove devices from your infrastructure with guided offboarding
+                workflows that ensure proper cleanup in Nautobot, CheckMK, and other
+                integrated systems.
               </p>
             </CardContent>
           </Card>
@@ -326,15 +359,24 @@ export default function HelpPage() {
               <ul className="space-y-2 text-slate-700">
                 <li className="flex items-center gap-2">
                   <Search className="h-4 w-4 text-blue-600" />
-                  <span><strong>Check IP & Names:</strong> Verify IP addresses and hostnames exist in Nautobot</span>
+                  <span>
+                    <strong>Check IP & Names:</strong> Verify IP addresses and hostnames
+                    exist in Nautobot
+                  </span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Edit className="h-4 w-4 text-blue-600" />
-                  <span><strong>Bulk Edit:</strong> Update multiple device fields simultaneously</span>
+                  <span>
+                    <strong>Bulk Edit:</strong> Update multiple device fields
+                    simultaneously
+                  </span>
                 </li>
                 <li className="flex items-center gap-2">
                   <FileSpreadsheet className="h-4 w-4 text-blue-600" />
-                  <span><strong>CSV Updates:</strong> Bulk update device data by importing CSV files</span>
+                  <span>
+                    <strong>CSV Updates:</strong> Bulk update device data by importing
+                    CSV files
+                  </span>
                 </li>
               </ul>
             </CardContent>
@@ -349,8 +391,8 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Export device data and inventory information from Nautobot in various formats for reporting,
-                analysis, or integration with other tools.
+                Export device data and inventory information from Nautobot in various
+                formats for reporting, analysis, or integration with other tools.
               </p>
             </CardContent>
           </Card>
@@ -373,8 +415,9 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Synchronize devices from Nautobot to CheckMK monitoring. Automatically creates hosts,
-                applies monitoring configurations, and activates changes in CheckMK.
+                Synchronize devices from Nautobot to CheckMK monitoring. Automatically
+                creates hosts, applies monitoring configurations, and activates changes
+                in CheckMK.
               </p>
             </CardContent>
           </Card>
@@ -388,8 +431,9 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Compare device data between Nautobot and CheckMK side-by-side. Identify discrepancies
-                in host configurations, tags, and monitoring attributes before or after a sync.
+                Compare device data between Nautobot and CheckMK side-by-side. Identify
+                discrepancies in host configurations, tags, and monitoring attributes
+                before or after a sync.
               </p>
             </CardContent>
           </Card>
@@ -403,8 +447,8 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Browse the CheckMK host inventory. View host details, monitoring status, applied tags,
-                and attributes for all devices registered in CheckMK.
+                Browse the CheckMK host inventory. View host details, monitoring status,
+                applied tags, and attributes for all devices registered in CheckMK.
               </p>
             </CardContent>
           </Card>
@@ -418,8 +462,8 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Additional CheckMK utilities including bulk host operations, tag management,
-                and tools for troubleshooting CheckMK integration issues.
+                Additional CheckMK utilities including bulk host operations, tag
+                management, and tools for troubleshooting CheckMK integration issues.
               </p>
             </CardContent>
           </Card>
@@ -433,9 +477,9 @@ export default function HelpPage() {
           Agents
         </h2>
         <p className="text-slate-600 mb-4">
-          Cockpit Agents are lightweight services deployed on remote network segments that execute
-          tasks on behalf of the central Cockpit-NG server. They enable automation in environments
-          where direct connectivity is limited.
+          Cockpit Agents are lightweight services deployed on remote network segments
+          that execute tasks on behalf of the central Cockpit-NG server. They enable
+          automation in environments where direct connectivity is limited.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
@@ -489,8 +533,9 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Manage Ansible playbook templates used for agent deployments. Create, edit, and
-                organize templates stored in Git repositories that define the tasks agents will execute.
+                Manage Ansible playbook templates used for agent deployments. Create,
+                edit, and organize templates stored in Git repositories that define the
+                tasks agents will execute.
               </p>
             </CardContent>
           </Card>
@@ -541,8 +586,9 @@ export default function HelpPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-700">
-                    Trigger on-demand or scheduled backups of device configurations to Git repositories.
-                    Maintains a full version history of every configuration change.
+                    Trigger on-demand or scheduled backups of device configurations to
+                    Git repositories. Maintains a full version history of every
+                    configuration change.
                   </p>
                 </CardContent>
               </Card>
@@ -565,9 +611,9 @@ export default function HelpPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-700">
-                    Execute CLI commands on network devices using Netmiko. Run ad-hoc commands or
-                    scripted operations across single or multiple devices simultaneously and view
-                    the output in real time.
+                    Execute CLI commands on network devices using Netmiko. Run ad-hoc
+                    commands or scripted operations across single or multiple devices
+                    simultaneously and view the output in real time.
                   </p>
                 </CardContent>
               </Card>
@@ -581,8 +627,9 @@ export default function HelpPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-700">
-                    Manage Jinja2 configuration templates and TextFSM parsing templates stored in
-                    Git repositories. Import, edit, and use templates in automation workflows.
+                    Manage Jinja2 configuration templates and TextFSM parsing templates
+                    stored in Git repositories. Import, edit, and use templates in
+                    automation workflows.
                   </p>
                 </CardContent>
               </Card>
@@ -596,8 +643,9 @@ export default function HelpPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-700">
-                    Capture point-in-time snapshots of device state by running a set of show commands.
-                    Compare snapshots taken at different times to identify configuration or state drift.
+                    Capture point-in-time snapshots of device state by running a set of
+                    show commands. Compare snapshots taken at different times to
+                    identify configuration or state drift.
                   </p>
                 </CardContent>
               </Card>
@@ -620,7 +668,10 @@ export default function HelpPage() {
                 <ul className="space-y-1 text-slate-700">
                   <li className="flex items-center gap-2">
                     <Wifi className="h-4 w-4 text-blue-600" />
-                    <span><strong>Ping:</strong> Test ICMP reachability to one or more network devices</span>
+                    <span>
+                      <strong>Ping:</strong> Test ICMP reachability to one or more
+                      network devices
+                    </span>
                   </li>
                 </ul>
               </CardContent>
@@ -635,9 +686,9 @@ export default function HelpPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-700">
-                  Run automated compliance checks against device configurations using regex-based rules
-                  defined in Compliance Settings. View per-device pass/fail results and generate
-                  compliance reports.
+                  Run automated compliance checks against device configurations using
+                  regex-based rules defined in Compliance Settings. View per-device
+                  pass/fail results and generate compliance reports.
                 </p>
               </CardContent>
             </Card>
@@ -682,8 +733,9 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Schedule jobs to run automatically at specified times or intervals using cron expressions
-                or interval-based triggers. Manage active schedules and pause or resume them as needed.
+                Schedule jobs to run automatically at specified times or intervals using
+                cron expressions or interval-based triggers. Manage active schedules and
+                pause or resume them as needed.
               </p>
             </CardContent>
           </Card>
@@ -697,8 +749,8 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-700">
-                Monitor job execution history, view per-task logs, check success/failure status,
-                and troubleshoot failed runs with full output and stack traces.
+                Monitor job execution history, view per-task logs, check success/failure
+                status, and troubleshoot failed runs with full output and stack traces.
               </p>
             </CardContent>
           </Card>
@@ -726,7 +778,11 @@ export default function HelpPage() {
                 Application-wide settings shared across multiple modules:
               </p>
               <ul className="space-y-1 text-sm text-slate-600">
-                <li>• <strong>SNMP Mapping:</strong> Define a YAML mapping of device types to SNMP versions and community strings / v3 credentials used during onboarding and compliance checks</li>
+                <li>
+                  • <strong>SNMP Mapping:</strong> Define a YAML mapping of device types
+                  to SNMP versions and community strings / v3 credentials used during
+                  onboarding and compliance checks
+                </li>
               </ul>
             </CardContent>
           </Card>
@@ -746,7 +802,9 @@ export default function HelpPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-slate-700 mb-2">Configure the Nautobot API connection:</p>
+                  <p className="text-slate-700 mb-2">
+                    Configure the Nautobot API connection:
+                  </p>
                   <ul className="space-y-1 text-sm text-slate-600">
                     <li>• API base URL and authentication token</li>
                     <li>• Default device status, role, platform, and location</li>
@@ -765,7 +823,9 @@ export default function HelpPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-slate-700 mb-2">Configure the CheckMK server connection:</p>
+                  <p className="text-slate-700 mb-2">
+                    Configure the CheckMK server connection:
+                  </p>
                   <ul className="space-y-1 text-sm text-slate-600">
                     <li>• CheckMK server URL and site name</li>
                     <li>• Automation user and password</li>
@@ -783,7 +843,9 @@ export default function HelpPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-slate-700 mb-2">Manage Cockpit Agent registrations:</p>
+                  <p className="text-slate-700 mb-2">
+                    Manage Cockpit Agent registrations:
+                  </p>
                   <ul className="space-y-1 text-sm text-slate-600">
                     <li>• Register new agents with name and connection details</li>
                     <li>• Configure the Git repository used by each agent</li>
@@ -805,11 +867,22 @@ export default function HelpPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-700 mb-2">Configure compliance check rules and credentials:</p>
+                <p className="text-slate-700 mb-2">
+                  Configure compliance check rules and credentials:
+                </p>
                 <ul className="space-y-1 text-sm text-slate-600">
-                  <li>• <strong>Configs:</strong> Define regex patterns that device configurations must match (or must not match) to pass compliance</li>
-                  <li>• <strong>Logins:</strong> Manage login credentials used to connect to devices during compliance checks</li>
-                  <li>• <strong>SNMP:</strong> Configure per-device SNMP community strings or v3 credentials used during checks</li>
+                  <li>
+                    • <strong>Configs:</strong> Define regex patterns that device
+                    configurations must match (or must not match) to pass compliance
+                  </li>
+                  <li>
+                    • <strong>Logins:</strong> Manage login credentials used to connect
+                    to devices during compliance checks
+                  </li>
+                  <li>
+                    • <strong>SNMP:</strong> Configure per-device SNMP community strings
+                    or v3 credentials used during checks
+                  </li>
                 </ul>
               </CardContent>
             </Card>
@@ -826,7 +899,10 @@ export default function HelpPage() {
                 <ul className="space-y-1 text-sm text-slate-600">
                   <li>• Import Jinja2 and TextFSM templates from Git repositories</li>
                   <li>• Browse and search the template library</li>
-                  <li>• Edit templates directly in the built-in editor with syntax highlighting</li>
+                  <li>
+                    • Edit templates directly in the built-in editor with syntax
+                    highlighting
+                  </li>
                   <li>• Push changes back to the Git repository</li>
                 </ul>
               </CardContent>
@@ -840,9 +916,14 @@ export default function HelpPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-700 mb-2">Configure Git repository integrations:</p>
+                <p className="text-slate-700 mb-2">
+                  Configure Git repository integrations:
+                </p>
                 <ul className="space-y-1 text-sm text-slate-600">
-                  <li>• Add repositories for config backups, templates, inventories, or agents</li>
+                  <li>
+                    • Add repositories for config backups, templates, inventories, or
+                    agents
+                  </li>
                   <li>• Configure SSH or HTTPS credentials per repository</li>
                   <li>• Test connectivity and sync status</li>
                   <li>• Run diagnostics and view repository details</li>
@@ -858,7 +939,9 @@ export default function HelpPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-700 mb-2">Manage the application Redis cache:</p>
+                <p className="text-slate-700 mb-2">
+                  Manage the application Redis cache:
+                </p>
                 <ul className="space-y-1 text-sm text-slate-600">
                   <li>• View cache entries and memory usage statistics</li>
                   <li>• Manually invalidate or refresh specific cache keys</li>
@@ -876,7 +959,9 @@ export default function HelpPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-700 mb-2">Monitor and configure the Celery task queue:</p>
+                <p className="text-slate-700 mb-2">
+                  Monitor and configure the Celery task queue:
+                </p>
                 <ul className="space-y-1 text-sm text-slate-600">
                   <li>• View active workers and their status</li>
                   <li>• Inspect queue depths and scheduled tasks</li>
@@ -894,10 +979,15 @@ export default function HelpPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-700 mb-2">Securely manage shared device credentials:</p>
+                <p className="text-slate-700 mb-2">
+                  Securely manage shared device credentials:
+                </p>
                 <ul className="space-y-1 text-sm text-slate-600">
                   <li>• Store SSH username/password or key-based credentials</li>
-                  <li>• Credentials are encrypted at rest and used by Netmiko and backup jobs</li>
+                  <li>
+                    • Credentials are encrypted at rest and used by Netmiko and backup
+                    jobs
+                  </li>
                   <li>• Set expiry dates and track credential status</li>
                   <li>• Filter and search credentials by type or name</li>
                 </ul>
@@ -912,12 +1002,16 @@ export default function HelpPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-700 mb-2">Manage users, roles, and access control:</p>
+                <p className="text-slate-700 mb-2">
+                  Manage users, roles, and access control:
+                </p>
                 <ul className="space-y-1 text-sm text-slate-600">
                   <li>• Create and manage local user accounts</li>
                   <li>• Define roles with specific permission sets</li>
                   <li>• Assign one or more roles to users</li>
-                  <li>• Granular permissions per resource and action (read/write/delete)</li>
+                  <li>
+                    • Granular permissions per resource and action (read/write/delete)
+                  </li>
                   <li>• View effective permissions for any user</li>
                 </ul>
               </CardContent>

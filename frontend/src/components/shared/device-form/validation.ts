@@ -9,14 +9,11 @@ export const ipAddressSchema = z.object({
   address: z
     .string()
     .min(1, 'IP address is required')
-    .refine(
-      (val) => {
-        if (!val.trim()) return false
-        const ipPattern = /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/
-        return ipPattern.test(val.trim())
-      },
-      'Invalid IP address format (use x.x.x.x or x.x.x.x/mask)'
-    ),
+    .refine(val => {
+      if (!val.trim()) return false
+      const ipPattern = /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/
+      return ipPattern.test(val.trim())
+    }, 'Invalid IP address format (use x.x.x.x or x.x.x.x/mask)'),
   namespace: z.string().min(1, 'Namespace is required'),
   ip_role: z.string(),
   is_primary: z.boolean().optional(),
@@ -67,50 +64,52 @@ export const interfaceSchema = z.object({
 // Device Form Schema
 // ============================================================================
 
-export const deviceFormSchema = z.object({
-  deviceName: z.string().min(1, 'Device name is required'),
-  serialNumber: z.string().optional(),
-  selectedRole: z.string().min(1, 'Device role is required'),
-  selectedStatus: z.string().min(1, 'Device status is required'),
-  selectedLocation: z.string().min(1, 'Location is required'),
-  selectedDeviceType: z.string().min(1, 'Device type is required'),
-  selectedPlatform: z.string().optional(),
-  selectedSoftwareVersion: z.string().optional(),
-  selectedTags: z.array(z.string()),
-  customFieldValues: z.record(z.string(), z.string()),
-  selectedRack: z.string().optional(),
-  selectedFace: z.string().optional(),
-  rackPosition: z.number().optional(),
-  selectedVirtualChassisId: z.string().optional(),
-  addPrefix: z.boolean(),
-  defaultPrefixLength: z.string(),
-  interfaces: z.array(interfaceSchema),
-}).superRefine((data, ctx) => {
-  const hasVC = !!data.selectedVirtualChassisId
+export const deviceFormSchema = z
+  .object({
+    deviceName: z.string().min(1, 'Device name is required'),
+    serialNumber: z.string().optional(),
+    selectedRole: z.string().min(1, 'Device role is required'),
+    selectedStatus: z.string().min(1, 'Device status is required'),
+    selectedLocation: z.string().min(1, 'Location is required'),
+    selectedDeviceType: z.string().min(1, 'Device type is required'),
+    selectedPlatform: z.string().optional(),
+    selectedSoftwareVersion: z.string().optional(),
+    selectedTags: z.array(z.string()),
+    customFieldValues: z.record(z.string(), z.string()),
+    selectedRack: z.string().optional(),
+    selectedFace: z.string().optional(),
+    rackPosition: z.number().optional(),
+    selectedVirtualChassisId: z.string().optional(),
+    addPrefix: z.boolean(),
+    defaultPrefixLength: z.string(),
+    interfaces: z.array(interfaceSchema),
+  })
+  .superRefine((data, ctx) => {
+    const hasVC = !!data.selectedVirtualChassisId
 
-  if (hasVC) {
-    return
-  }
+    if (hasVC) {
+      return
+    }
 
-  if (data.interfaces.length === 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'At least one interface is required',
-      path: ['interfaces'],
-    })
-    return
-  }
-
-  data.interfaces.forEach((iface, index) => {
-    if (iface.ip_addresses.length === 0) {
+    if (data.interfaces.length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'At least one IP address is required',
-        path: ['interfaces', index, 'ip_addresses'],
+        message: 'At least one interface is required',
+        path: ['interfaces'],
       })
+      return
     }
+
+    data.interfaces.forEach((iface, index) => {
+      if (iface.ip_addresses.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'At least one IP address is required',
+          path: ['interfaces', index, 'ip_addresses'],
+        })
+      }
+    })
   })
-})
 
 // ============================================================================
 // Infer TypeScript Types from Schemas

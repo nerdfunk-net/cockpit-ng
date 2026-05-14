@@ -140,7 +140,10 @@ export function CsvPropertiesStep({
   }, [tryModalOpen, nameTransform, csvNameValues])
 
   const handleAddProperty = useCallback(() => {
-    onDefaultPropertiesChange([...defaultProperties, { field: '', value: '' }])
+    onDefaultPropertiesChange([
+      ...defaultProperties,
+      { field: '', value: '', rowKey: crypto.randomUUID() },
+    ])
   }, [defaultProperties, onDefaultPropertiesChange])
 
   const handleRemoveProperty = useCallback(
@@ -390,7 +393,7 @@ export function CsvPropertiesStep({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {tryResults.map((row) => {
+                {tryResults.map(row => {
                   const changed = row.result !== row.original && !row.error
                   return (
                     <tr key={row.original} className={changed ? 'bg-blue-50/40' : ''}>
@@ -430,19 +433,25 @@ export function CsvPropertiesStep({
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <MapPin className="h-4 w-4 text-amber-600" />
-            <h3 className="text-sm font-semibold text-gray-800">Rack Location Disambiguation</h3>
+            <h3 className="text-sm font-semibold text-gray-800">
+              Rack Location Disambiguation
+            </h3>
           </div>
           <p className="text-xs text-gray-600">
-            Rack names must be unique within a location, but the same rack name can exist in
-            multiple locations (e.g., both <span className="font-medium">Building A</span> and{' '}
+            Rack names must be unique within a location, but the same rack name can
+            exist in multiple locations (e.g., both{' '}
+            <span className="font-medium">Building A</span> and{' '}
             <span className="font-medium">Building B</span> may each have a rack named{' '}
-            <span className="font-medium text-gray-800">A_1</span>). If your CSV covers devices
-            from several locations, select the CSV column that identifies the location so the
-            correct rack UUID can be resolved. If more than one rack with that name exists in the
-            given location, the device will not be updated and an error will be reported.
+            <span className="font-medium text-gray-800">A_1</span>). If your CSV covers
+            devices from several locations, select the CSV column that identifies the
+            location so the correct rack UUID can be resolved. If more than one rack
+            with that name exists in the given location, the device will not be updated
+            and an error will be reported.
           </p>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
-            <span className="text-xs text-gray-600 whitespace-nowrap">Location column</span>
+            <span className="text-xs text-gray-600 whitespace-nowrap">
+              Location column
+            </span>
             <Select
               value={rackLocationColumn ?? NOT_USED_SENTINEL}
               onValueChange={v =>
@@ -466,8 +475,8 @@ export function CsvPropertiesStep({
           </div>
           {rackLocationColumn && (
             <p className="text-xs text-amber-700">
-              Column <span className="font-medium">{rackLocationColumn}</span> will be used to
-              filter racks by location during UUID resolution.
+              Column <span className="font-medium">{rackLocationColumn}</span> will be
+              used to filter racks by location during UUID resolution.
             </p>
           )}
         </div>
@@ -509,8 +518,10 @@ export function CsvPropertiesStep({
             </div>
 
             {defaultProperties.map((prop, index) => (
-              // eslint-disable-next-line react/no-array-index-key
-              <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+              <div
+                key={prop.rowKey}
+                className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center"
+              >
                 <Select
                   value={prop.field}
                   onValueChange={value => handlePropertyFieldChange(index, value)}

@@ -47,12 +47,27 @@ function TemplateEditorContent() {
     name: 'template_type',
   })
   const watchedCategory = useWatch({ control: editor.form.control, name: 'category' })
-  const watchedInventoryId = useWatch({ control: editor.form.control, name: 'inventoryId' })
+  const watchedInventoryId = useWatch({
+    control: editor.form.control,
+    name: 'inventoryId',
+  })
   const watchedPath = useWatch({ control: editor.form.control, name: 'path' })
-  const watchedPassSnmpMapping = useWatch({ control: editor.form.control, name: 'passSnmpMapping' })
-  const watchedUseNautobotContext = useWatch({ control: editor.form.control, name: 'useNautobotContext' })
-  const watchedTestDeviceId = useWatch({ control: editor.form.control, name: 'testDeviceId' })
-  const watchedPreRunCommand = useWatch({ control: editor.form.control, name: 'preRunCommand' })
+  const watchedPassSnmpMapping = useWatch({
+    control: editor.form.control,
+    name: 'passSnmpMapping',
+  })
+  const watchedUseNautobotContext = useWatch({
+    control: editor.form.control,
+    name: 'useNautobotContext',
+  })
+  const watchedTestDeviceId = useWatch({
+    control: editor.form.control,
+    name: 'testDeviceId',
+  })
+  const watchedPreRunCommand = useWatch({
+    control: editor.form.control,
+    name: 'preRunCommand',
+  })
   // Note: credentialId is used directly in handleRender via form.getValues()
 
   // Fetch inventory devices when category is agent and inventory is selected
@@ -85,7 +100,11 @@ function TemplateEditorContent() {
     }
 
     // Update if we have data and haven't updated yet for this inventory
-    if (watchedCategory === 'agent' && inventoryDevices.deviceCount > 0 && !hasUpdatedDataRef.current) {
+    if (
+      watchedCategory === 'agent' &&
+      inventoryDevices.deviceCount > 0 &&
+      !hasUpdatedDataRef.current
+    ) {
       editor.variableManager.updateDeviceData({
         devices: inventoryDevices.devices,
         device_details: inventoryDevices.device_details,
@@ -97,7 +116,14 @@ function TemplateEditorContent() {
       hasUpdatedDataRef.current = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- updateDeviceData is stable from useCallback
-  }, [watchedCategory, watchedInventoryId, inventoryDevices.deviceCount, inventoryDevices.devices, inventoryDevices.device_details, editor.variableManager.updateDeviceData])
+  }, [
+    watchedCategory,
+    watchedInventoryId,
+    inventoryDevices.deviceCount,
+    inventoryDevices.devices,
+    inventoryDevices.device_details,
+    editor.variableManager.updateDeviceData,
+  ])
 
   // Update inventory-type variables when inventory selection changes
   useEffect(() => {
@@ -106,7 +132,11 @@ function TemplateEditorContent() {
       editor.variableManager.updateInventoryIdForInventoryVariables(watchedInventoryId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- updateInventoryIdForInventoryVariables is stable from useCallback
-  }, [watchedCategory, watchedInventoryId, editor.variableManager.updateInventoryIdForInventoryVariables])
+  }, [
+    watchedCategory,
+    watchedInventoryId,
+    editor.variableManager.updateInventoryIdForInventoryVariables,
+  ])
 
   // Update snmp_mapping variable when SNMP mappings are loaded
   useEffect(() => {
@@ -114,7 +144,12 @@ function TemplateEditorContent() {
       editor.variableManager.updateSnmpMapping(snmpMappings.snmpMappings)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- updateSnmpMapping is stable from useCallback
-  }, [watchedCategory, snmpMappings.isLoading, snmpMappings.snmpMappings, editor.variableManager.updateSnmpMapping])
+  }, [
+    watchedCategory,
+    snmpMappings.isLoading,
+    snmpMappings.snmpMappings,
+    editor.variableManager.updateSnmpMapping,
+  ])
 
   // Update path variable when path field changes
   useEffect(() => {
@@ -130,7 +165,11 @@ function TemplateEditorContent() {
       editor.variableManager.toggleSnmpMappingVariable(watchedPassSnmpMapping)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- toggleSnmpMappingVariable is stable from useCallback
-  }, [watchedCategory, watchedPassSnmpMapping, editor.variableManager.toggleSnmpMappingVariable])
+  }, [
+    watchedCategory,
+    watchedPassSnmpMapping,
+    editor.variableManager.toggleSnmpMappingVariable,
+  ])
 
   // Toggle device_details variable based on checkbox
   useEffect(() => {
@@ -138,7 +177,11 @@ function TemplateEditorContent() {
       editor.variableManager.toggleDeviceDetailsVariable(watchedUseNautobotContext)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- toggleDeviceDetailsVariable is stable from useCallback
-  }, [watchedCategory, watchedUseNautobotContext, editor.variableManager.toggleDeviceDetailsVariable])
+  }, [
+    watchedCategory,
+    watchedUseNautobotContext,
+    editor.variableManager.toggleDeviceDetailsVariable,
+  ])
 
   // Fetch device details for Netmiko test device
   useEffect(() => {
@@ -157,7 +200,9 @@ function TemplateEditorContent() {
 
     const fetchDeviceDetails = async () => {
       try {
-        const deviceDetails = await apiCall<NautobotDeviceDetails>(`nautobot/devices/${watchedTestDeviceId}/details`)
+        const deviceDetails = await apiCall<NautobotDeviceDetails>(
+          `nautobot/devices/${watchedTestDeviceId}/details`
+        )
 
         // Build the devices array with simplified data
         const devices = [
@@ -184,7 +229,12 @@ function TemplateEditorContent() {
 
     fetchDeviceDetails()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- updateDeviceData is stable from useCallback
-  }, [watchedCategory, watchedTestDeviceId, apiCall, editor.variableManager.updateDeviceData])
+  }, [
+    watchedCategory,
+    watchedTestDeviceId,
+    apiCall,
+    editor.variableManager.updateDeviceData,
+  ])
 
   // After loading a saved template, refresh inventory-type variable values from live inventory
   // (stored values may be stale if the inventory changed since the template was last saved)
@@ -193,7 +243,10 @@ function TemplateEditorContent() {
     if (hasRefreshedInventoryVarsRef.current) return
 
     const inventoryVars = editor.variableManager.variables.filter(
-      (v) => v.type === 'inventory' && v.metadata?.inventory_id && v.metadata?.inventory_data_type
+      v =>
+        v.type === 'inventory' &&
+        v.metadata?.inventory_id &&
+        v.metadata?.inventory_data_type
     )
     if (inventoryVars.length === 0) return // not loaded yet — wait for next render
 
@@ -209,17 +262,23 @@ function TemplateEditorContent() {
 
     // Fetch fresh data for each unique inventory and update variable values
     byInventoryId.forEach((vars, invId) => {
-      apiCall<{ locations: string[]; tags: string[]; custom_fields: Record<string, string[]>; statuses: string[]; roles: string[] }>(
-        `inventory/${invId}/analyze`
-      )
-        .then((data) => {
+      apiCall<{
+        locations: string[]
+        tags: string[]
+        custom_fields: Record<string, string[]>
+        statuses: string[]
+        roles: string[]
+      }>(`inventory/${invId}/analyze`)
+        .then(data => {
           const updates: Record<string, string> = {}
           for (const v of vars) {
             const dataType = v.metadata!.inventory_data_type!
             let freshValues: unknown
             if (dataType === 'custom_fields') {
               const cfKey = v.metadata!.inventory_custom_field
-              freshValues = cfKey ? (data.custom_fields[cfKey] ?? []) : data.custom_fields
+              freshValues = cfKey
+                ? (data.custom_fields[cfKey] ?? [])
+                : data.custom_fields
             } else {
               freshValues = (data as Record<string, unknown>)[dataType] ?? []
             }
@@ -227,8 +286,12 @@ function TemplateEditorContent() {
           }
           editor.variableManager.updateInventoryVariableValues(updates)
         })
-        .catch((err) => {
-          console.warn('[WARN] [template-editor-page] Failed to refresh inventory variables for inventory', invId, err)
+        .catch(err => {
+          console.warn(
+            '[WARN] [template-editor-page] Failed to refresh inventory variables for inventory',
+            invId,
+            err
+          )
         })
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only run once when inventory vars first appear after template load
@@ -237,11 +300,17 @@ function TemplateEditorContent() {
   // Toggle pre_run variables when command is entered/cleared
   useEffect(() => {
     if (watchedCategory === 'netmiko') {
-      const hasCommand = Boolean(watchedPreRunCommand && watchedPreRunCommand.trim().length > 0)
+      const hasCommand = Boolean(
+        watchedPreRunCommand && watchedPreRunCommand.trim().length > 0
+      )
       editor.variableManager.togglePreRunVariables(hasCommand)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- togglePreRunVariables is stable from useCallback
-  }, [watchedCategory, watchedPreRunCommand, editor.variableManager.togglePreRunVariables])
+  }, [
+    watchedCategory,
+    watchedPreRunCommand,
+    editor.variableManager.togglePreRunVariables,
+  ])
 
   const handleContentChange = useCallback(
     (value: string) => {
@@ -252,7 +321,7 @@ function TemplateEditorContent() {
   )
 
   const existingVariableNames = useMemo(
-    () => editor.variableManager.variables.map((v) => v.name).filter(Boolean),
+    () => editor.variableManager.variables.map(v => v.name).filter(Boolean),
     [editor.variableManager.variables]
   )
 
@@ -269,7 +338,10 @@ function TemplateEditorContent() {
         variable.metadata
       )
       setSelectedVariableId(newId)
-      toast({ title: 'Variable Added', description: `Variable "${variable.name}" has been added` })
+      toast({
+        title: 'Variable Added',
+        description: `Variable "${variable.name}" has been added`,
+      })
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- addVariableWithMetadata is stable from useCallback
     [editor.variableManager.addVariableWithMetadata, toast]
@@ -277,7 +349,7 @@ function TemplateEditorContent() {
 
   const handleExecutePreRun = useCallback(async () => {
     const formData = editor.form.getValues()
-    
+
     // Validate required fields
     if (!formData.preRunCommand || !formData.preRunCommand.trim()) {
       toast({
@@ -322,13 +394,16 @@ function TemplateEditorContent() {
       editor.variableManager.setPreRunExecuting('pre_run.parsed', true)
 
       // Get device details for platform information
-      const deviceDetailsVar = editor.variableManager.variables.find(v => v.name === 'device_details')
+      const deviceDetailsVar = editor.variableManager.variables.find(
+        v => v.name === 'device_details'
+      )
       let platform = 'cisco_ios' // Default platform
       if (deviceDetailsVar && deviceDetailsVar.value) {
         try {
           const deviceDetails = JSON.parse(deviceDetailsVar.value)
           // Try to extract platform from device details
-          platform = deviceDetails.platform?.slug || deviceDetails.platform?.name || 'cisco_ios'
+          platform =
+            deviceDetails.platform?.slug || deviceDetails.platform?.name || 'cisco_ios'
         } catch (e) {
           console.warn('Could not parse device details for platform:', e)
         }
@@ -337,13 +412,15 @@ function TemplateEditorContent() {
       // Build the request payload - backend expects 'ip' or 'primary_ip4' and 'platform'
       // Always use textfsm to get both raw and parsed output
       const payload = {
-        devices: [{ 
-          ip: deviceIp,
-          platform: platform,
-          name: device.name || deviceIp,
-        }],
+        devices: [
+          {
+            ip: deviceIp,
+            platform: platform,
+            name: device.name || deviceIp,
+          },
+        ],
         commands: [formData.preRunCommand],
-        use_textfsm: true,  // Always true to get both raw and parsed
+        use_textfsm: true, // Always true to get both raw and parsed
         enable_mode: false,
         write_config: false,
         session_id: crypto.randomUUID(),
@@ -367,11 +444,11 @@ function TemplateEditorContent() {
       // Process the response
       if (response.results && response.results.length > 0) {
         const result = response.results[0]
-        
+
         if (!result) {
           throw new Error('No result returned from command execution')
         }
-        
+
         if (!result.success) {
           throw new Error(result.error || 'Command execution failed')
         }
@@ -379,7 +456,7 @@ function TemplateEditorContent() {
         // Update BOTH variables from the single response
         // 1. Update pre_run.raw with the raw output
         editor.variableManager.updatePreRunVariable('pre_run.raw', result.output || '')
-        
+
         // 2. Update pre_run.parsed with parsed output (or fallback to raw)
         let parsedValue = ''
         if (result.command_outputs && Object.keys(result.command_outputs).length > 0) {
@@ -387,9 +464,10 @@ function TemplateEditorContent() {
           const commandKey = Object.keys(result.command_outputs)[0]
           if (commandKey) {
             const parsedData = result.command_outputs[commandKey]
-            parsedValue = typeof parsedData === 'string' 
-              ? parsedData 
-              : JSON.stringify(parsedData, null, 2)
+            parsedValue =
+              typeof parsedData === 'string'
+                ? parsedData
+                : JSON.stringify(parsedData, null, 2)
           } else {
             // Fallback to raw output if no key found
             parsedValue = result.output || ''
@@ -412,10 +490,11 @@ function TemplateEditorContent() {
       // Reset executing state for BOTH variables
       editor.variableManager.setPreRunExecuting('pre_run.raw', false)
       editor.variableManager.setPreRunExecuting('pre_run.parsed', false)
-      
+
       toast({
         title: 'Execution Failed',
-        description: error instanceof Error ? error.message : 'Failed to execute pre-run command',
+        description:
+          error instanceof Error ? error.message : 'Failed to execute pre-run command',
         variant: 'destructive',
       })
     }
@@ -423,11 +502,15 @@ function TemplateEditorContent() {
 
   const handleRender = useCallback(async () => {
     const formData = editor.form.getValues()
-    
+
     // Validate netmiko-specific requirements
     if (formData.category === 'netmiko') {
       // If there's a pre_run_command, a test device must be selected
-      if (formData.preRunCommand && formData.preRunCommand.trim() && !formData.testDeviceId) {
+      if (
+        formData.preRunCommand &&
+        formData.preRunCommand.trim() &&
+        !formData.testDeviceId
+      ) {
         toast({
           title: 'Missing Test Device',
           description: 'Please select a test device when using pre-run commands',
@@ -436,7 +519,7 @@ function TemplateEditorContent() {
         return
       }
     }
-    
+
     await renderer.render({
       content: formData.content,
       category: formData.category,
@@ -467,7 +550,10 @@ function TemplateEditorContent() {
     const formData = editor.form.getValues()
 
     // Build the variables record from user-defined variables with metadata
-    const variables: Record<string, { value: string; type: string; metadata?: unknown }> = {}
+    const variables: Record<
+      string,
+      { value: string; type: string; metadata?: unknown }
+    > = {}
     for (const v of editor.variableManager.variables) {
       if (v.name && !v.isAutoFilled) {
         variables[v.name] = {
@@ -479,7 +565,10 @@ function TemplateEditorContent() {
     }
 
     // Build template data with category-specific fields
-    const templateData: Record<string, string | number | boolean | null | Record<string, unknown>> = {
+    const templateData: Record<
+      string,
+      string | number | boolean | null | Record<string, unknown>
+    > = {
       name: formData.name,
       source: 'webeditor' as const,
       template_type: formData.template_type,
@@ -499,8 +588,12 @@ function TemplateEditorContent() {
     } else if (formData.category === 'netmiko') {
       templateData.execution_mode = formData.netmikoMode
       templateData.pre_run_command = formData.preRunCommand || null
-      templateData.credential_id = formData.credentialId !== 'none' && formData.credentialId ? parseInt(formData.credentialId) : null
-      templateData.file_path = formData.netmikoMode === 'write_to_file' ? formData.path || null : null
+      templateData.credential_id =
+        formData.credentialId !== 'none' && formData.credentialId
+          ? parseInt(formData.credentialId)
+          : null
+      templateData.file_path =
+        formData.netmikoMode === 'write_to_file' ? formData.path || null : null
     }
 
     try {
@@ -573,12 +666,13 @@ function TemplateEditorContent() {
       )}
 
       {/* Netmiko Options (conditional) */}
-      {watchedCategory === 'netmiko' && (
-        <NetmikoOptionsPanel form={editor.form} />
-      )}
+      {watchedCategory === 'netmiko' && <NetmikoOptionsPanel form={editor.form} />}
 
       {/* Main Split Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-4" style={{ minHeight: '500px' }}>
+      <div
+        className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-4"
+        style={{ minHeight: '500px' }}
+      >
         {/* Left: Variables */}
         <div className="flex flex-col overflow-hidden border rounded-lg shadow-sm bg-white">
           <div className="flex-[2] min-h-0 overflow-hidden">
@@ -595,7 +689,9 @@ function TemplateEditorContent() {
               variables={editor.variableManager.variables}
               selectedVariableId={selectedVariableId}
               onUpdateVariable={editor.variableManager.updateVariable}
-              onExecutePreRun={watchedCategory === 'netmiko' ? handleExecutePreRun : undefined}
+              onExecutePreRun={
+                watchedCategory === 'netmiko' ? handleExecutePreRun : undefined
+              }
             />
           </div>
         </div>
@@ -645,7 +741,10 @@ function TemplateEditorContent() {
       />
 
       {/* Help Dialog */}
-      <TemplateEditorHelpDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
+      <TemplateEditorHelpDialog
+        open={helpDialogOpen}
+        onOpenChange={setHelpDialogOpen}
+      />
 
       {/* Add Variable Dialog */}
       <AddVariableDialog

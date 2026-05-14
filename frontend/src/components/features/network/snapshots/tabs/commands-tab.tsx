@@ -27,7 +27,9 @@ interface CommandsTabProps {
   commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]
   onTemplateChange: (templateId: number | null) => void
   onTemplateNameChange: (templateName: string | null) => void
-  onCommandsChange: (commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]) => void
+  onCommandsChange: (
+    commands: Omit<SnapshotCommand, 'id' | 'template_id' | 'created_at'>[]
+  ) => void
 }
 
 export function CommandsTab({
@@ -37,11 +39,11 @@ export function CommandsTab({
   onTemplateNameChange,
   onCommandsChange,
 }: CommandsTabProps) {
-  const {
-    templates,
-  } = useSnapshotTemplates()
+  const { templates } = useSnapshotTemplates()
 
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(parentTemplateId?.toString() || 'none')
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
+    parentTemplateId?.toString() || 'none'
+  )
   const [commands, setCommands] = useState<SnapshotCommand[]>(
     parentCommands.map((cmd, idx) => ({ ...cmd, id: idx + 1, order: idx }))
   )
@@ -89,10 +91,12 @@ export function CommandsTab({
     setCommands(commands.filter(cmd => cmd.id !== id))
   }
 
-  const handleUpdateCommand = (id: number, field: keyof SnapshotCommand, value: string | boolean) => {
-    setCommands(commands.map(cmd => 
-      cmd.id === id ? { ...cmd, [field]: value } : cmd
-    ))
+  const handleUpdateCommand = (
+    id: number,
+    field: keyof SnapshotCommand,
+    value: string | boolean
+  ) => {
+    setCommands(commands.map(cmd => (cmd.id === id ? { ...cmd, [field]: value } : cmd)))
   }
 
   const handleSaveTemplate = () => {
@@ -137,7 +141,12 @@ export function CommandsTab({
             {selectedTemplateId !== 'none' && (
               <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
                 <p className="font-medium">Description:</p>
-                <p>{templates.find(t => t.id === parseInt(selectedTemplateId))?.description}</p>
+                <p>
+                  {
+                    templates.find(t => t.id === parseInt(selectedTemplateId))
+                      ?.description
+                  }
+                </p>
               </div>
             )}
           </div>
@@ -177,16 +186,23 @@ export function CommandsTab({
           {commands.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <p className="text-lg font-medium">No commands added yet</p>
-              <p className="text-sm mt-1">Click &quot;Add Command&quot; to get started</p>
+              <p className="text-sm mt-1">
+                Click &quot;Add Command&quot; to get started
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
-              {commands.map((cmd) => (
-                <div key={cmd.id} className="flex items-center gap-2 p-2 border rounded-md bg-white shadow-sm hover:shadow-md transition-shadow group">
+              {commands.map(cmd => (
+                <div
+                  key={cmd.id}
+                  className="flex items-center gap-2 p-2 border rounded-md bg-white shadow-sm hover:shadow-md transition-shadow group"
+                >
                   <Input
                     id={`command-${cmd.id}`}
                     value={cmd.command}
-                    onChange={(e) => handleUpdateCommand(cmd.id!, 'command', e.target.value)}
+                    onChange={e =>
+                      handleUpdateCommand(cmd.id!, 'command', e.target.value)
+                    }
                     placeholder="Enter command (e.g., show ip route)"
                     className="flex-1 font-mono text-sm h-8 focus:ring-2 focus:ring-blue-500"
                   />
@@ -194,13 +210,13 @@ export function CommandsTab({
                     <Checkbox
                       id={`textfsm-${cmd.id}`}
                       checked={cmd.use_textfsm}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={checked =>
                         handleUpdateCommand(cmd.id!, 'use_textfsm', checked as boolean)
                       }
                       className="h-4 w-4"
                     />
-                    <label 
-                      htmlFor={`textfsm-${cmd.id}`} 
+                    <label
+                      htmlFor={`textfsm-${cmd.id}`}
                       className="text-xs text-gray-600 cursor-pointer whitespace-nowrap hover:text-gray-900"
                       title="Parse output using TextFSM templates"
                     >

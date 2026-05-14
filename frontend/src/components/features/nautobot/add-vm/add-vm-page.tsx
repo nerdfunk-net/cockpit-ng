@@ -72,7 +72,7 @@ export function AddVMPage() {
   const selectedPlatformId = form.watch('platform')
   const selectedPlatformName = useMemo(() => {
     if (!selectedPlatformId) return undefined
-    return dropdownData.platforms.find((p) => p.id === selectedPlatformId)?.name
+    return dropdownData.platforms.find(p => p.id === selectedPlatformId)?.name
   }, [selectedPlatformId, dropdownData.platforms])
 
   // Fetch software versions filtered by selected platform
@@ -85,7 +85,7 @@ export function AddVMPage() {
   const selectedSoftwareVersionId = form.watch('softwareVersion')
   const selectedSoftwareVersionName = useMemo(() => {
     if (!selectedSoftwareVersionId) return undefined
-    const sv = softwareVersions.find((v) => v.id === selectedSoftwareVersionId)
+    const sv = softwareVersions.find(v => v.id === selectedSoftwareVersionId)
     if (!sv) return undefined
     return sv.version
   }, [selectedSoftwareVersionId, softwareVersions])
@@ -104,9 +104,13 @@ export function AddVMPage() {
         // Filter out incomplete interfaces (interfaces without name or status)
         // Note: Virtual interfaces don't have a 'type' field like physical interfaces
         // It's perfectly fine to have NO interfaces at all - VM creation only requires name, status, and cluster
-        const validInterfaces = (formData.interfaces || []).filter((iface) => {
-          return iface.name && iface.name.trim() !== '' &&
-                 iface.status && iface.status.trim() !== ''
+        const validInterfaces = (formData.interfaces || []).filter(iface => {
+          return (
+            iface.name &&
+            iface.name.trim() !== '' &&
+            iface.status &&
+            iface.status.trim() !== ''
+          )
         })
 
         // Clean up the form data: convert empty strings to undefined so they're omitted from the request
@@ -118,20 +122,29 @@ export function AddVMPage() {
         }
 
         // Add optional fields only if they have non-empty values
-        if (formData.role && formData.role.trim() !== '') cleanedData.role = formData.role
-        if (formData.clusterGroup && formData.clusterGroup.trim() !== '') cleanedData.clusterGroup = formData.clusterGroup
-        if (formData.platform && formData.platform.trim() !== '') cleanedData.platform = formData.platform
-        if (formData.softwareVersion && formData.softwareVersion.trim() !== '') cleanedData.softwareVersion = formData.softwareVersion
-        if (formData.softwareImageFile && formData.softwareImageFile.trim() !== '') cleanedData.softwareImageFile = formData.softwareImageFile
-        if (formData.vcpus != null && Number(formData.vcpus) > 0) cleanedData.vcpus = formData.vcpus
-        if (formData.memory != null && Number(formData.memory) > 0) cleanedData.memory = formData.memory
-        if (formData.disk != null && Number(formData.disk) > 0) cleanedData.disk = formData.disk
+        if (formData.role && formData.role.trim() !== '')
+          cleanedData.role = formData.role
+        if (formData.clusterGroup && formData.clusterGroup.trim() !== '')
+          cleanedData.clusterGroup = formData.clusterGroup
+        if (formData.platform && formData.platform.trim() !== '')
+          cleanedData.platform = formData.platform
+        if (formData.softwareVersion && formData.softwareVersion.trim() !== '')
+          cleanedData.softwareVersion = formData.softwareVersion
+        if (formData.softwareImageFile && formData.softwareImageFile.trim() !== '')
+          cleanedData.softwareImageFile = formData.softwareImageFile
+        if (formData.vcpus != null && Number(formData.vcpus) > 0)
+          cleanedData.vcpus = formData.vcpus
+        if (formData.memory != null && Number(formData.memory) > 0)
+          cleanedData.memory = formData.memory
+        if (formData.disk != null && Number(formData.disk) > 0)
+          cleanedData.disk = formData.disk
 
         // Add valid interfaces
         cleanedData.interfaces = validInterfaces
 
         // Add tags and custom fields
-        if (tagsManager.selectedTags.length > 0) cleanedData.tags = tagsManager.selectedTags
+        if (tagsManager.selectedTags.length > 0)
+          cleanedData.tags = tagsManager.selectedTags
         if (Object.keys(customFieldsManager.customFieldValues).length > 0) {
           cleanedData.customFieldValues = customFieldsManager.customFieldValues
         }
@@ -153,7 +166,8 @@ export function AddVMPage() {
         console.error('VM creation failed:', error)
         setStatusMessage({
           type: 'error',
-          message: error instanceof Error ? error.message : 'Failed to create virtual machine',
+          message:
+            error instanceof Error ? error.message : 'Failed to create virtual machine',
         })
       }
     },
@@ -165,7 +179,8 @@ export function AddVMPage() {
     console.error('Form validation failed:', errors)
     setStatusMessage({
       type: 'error',
-      message: 'Please fill in all required fields: VM name, status, and cluster. All other fields (including interfaces and IP addresses) are optional.',
+      message:
+        'Please fill in all required fields: VM name, status, and cluster. All other fields (including interfaces and IP addresses) are optional.',
     })
   }, [])
 
@@ -238,7 +253,11 @@ export function AddVMPage() {
           onOpenCustomFields={customFieldsManager.openModal}
           selectedTagsCount={tagsManager.selectedTags.length}
         />
-        <ClusterSection form={form} dropdownData={dropdownData} isLoading={isLoadingDropdowns} />
+        <ClusterSection
+          form={form}
+          dropdownData={dropdownData}
+          isLoading={isLoadingDropdowns}
+        />
         <ManagementSection
           form={form}
           dropdownData={dropdownData}
@@ -254,7 +273,7 @@ export function AddVMPage() {
         <InterfaceList
           form={form}
           dropdownData={dropdownData}
-          onOpenProperties={(id) => {
+          onOpenProperties={id => {
             propertiesModal.openModal(id)
           }}
           isLoading={createVM.isPending}
@@ -262,7 +281,12 @@ export function AddVMPage() {
 
         {/* Submit buttons */}
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={handleClear} disabled={createVM.isPending}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClear}
+            disabled={createVM.isPending}
+          >
             Clear Form
           </Button>
           <Button type="submit" disabled={createVM.isPending}>

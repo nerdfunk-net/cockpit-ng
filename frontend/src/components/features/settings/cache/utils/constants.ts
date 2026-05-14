@@ -20,7 +20,7 @@ export const DEFAULT_CACHE_SETTINGS: Partial<CacheSettings> = {
 } as const
 
 export const STALE_TIME = {
-  SETTINGS: 5 * 60 * 1000,  // 5 minutes - settings rarely change
-  STATS: 0,                  // Always fresh - real-time stats
-  ENTRIES: 10 * 1000,        // 10 seconds - moderate freshness
+  SETTINGS: 5 * 60 * 1000, // 5 minutes - settings rarely change
+  STATS: 0, // Always fresh - real-time stats
+  ENTRIES: 10 * 1000, // 10 seconds - moderate freshness
 } as const

@@ -22,12 +22,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { 
-  Loader2, 
-  Calendar, 
-  User, 
-  GitBranch, 
-  FileCode, 
+import {
+  Loader2,
+  Calendar,
+  User,
+  GitBranch,
+  FileCode,
   Server,
   CheckCircle2,
   XCircle,
@@ -105,7 +105,7 @@ export function ViewSnapshotDialog({
     if (Array.isArray(output)) {
       return (
         <div className="space-y-2">
-          {output.map((item) => {
+          {output.map(item => {
             const itemKey = JSON.stringify(item)
             return (
               <div key={itemKey} className="bg-gray-50 rounded p-3 border">
@@ -172,25 +172,33 @@ export function ViewSnapshotDialog({
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Name</label>
+                        <label className="text-sm font-medium text-gray-600">
+                          Name
+                        </label>
                         <p className="text-sm mt-1 font-mono bg-white/70 px-3 py-2 rounded">
                           {snapshot.name}
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Status</label>
+                        <label className="text-sm font-medium text-gray-600">
+                          Status
+                        </label>
                         <div className="mt-1">{getStatusBadge(snapshot.status)}</div>
                       </div>
                       {snapshot.template_name && (
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Template</label>
+                          <label className="text-sm font-medium text-gray-600">
+                            Template
+                          </label>
                           <p className="text-sm mt-1 font-mono bg-white/70 px-3 py-2 rounded">
                             {snapshot.template_name}
                           </p>
                         </div>
                       )}
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Snapshot Path</label>
+                        <label className="text-sm font-medium text-gray-600">
+                          Snapshot Path
+                        </label>
                         <p className="text-sm mt-1 font-mono bg-white/70 px-3 py-2 rounded break-all">
                           {snapshot.snapshot_path}
                         </p>
@@ -233,7 +241,9 @@ export function ViewSnapshotDialog({
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Duration</label>
+                        <label className="text-sm font-medium text-gray-600">
+                          Duration
+                        </label>
                         <p className="text-sm mt-1 bg-white/70 px-3 py-2 rounded">
                           {snapshot.started_at && snapshot.completed_at
                             ? `${Math.round(
@@ -285,7 +295,9 @@ export function ViewSnapshotDialog({
                         Git Repository
                       </h3>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Repository ID</label>
+                        <label className="text-sm font-medium text-gray-600">
+                          Repository ID
+                        </label>
                         <p className="text-sm mt-1 bg-white/70 px-3 py-2 rounded">
                           {snapshot.git_repository_id}
                         </p>
@@ -301,7 +313,7 @@ export function ViewSnapshotDialog({
               <div className="h-[500px] overflow-y-auto pr-4">
                 {snapshot.results && snapshot.results.length > 0 ? (
                   <Accordion type="single" collapsible className="space-y-2">
-                    {snapshot.results.map((result) => {
+                    {snapshot.results.map(result => {
                       const commandOutputs = parseCommandOutput(result)
                       return (
                         <AccordionItem
@@ -313,7 +325,9 @@ export function ViewSnapshotDialog({
                             <div className="flex items-center justify-between w-full pr-4">
                               <div className="flex items-center gap-3">
                                 <Server className="h-4 w-4 text-gray-500" />
-                                <span className="font-medium">{result.device_name}</span>
+                                <span className="font-medium">
+                                  {result.device_name}
+                                </span>
                                 {result.device_ip && (
                                   <span className="text-sm text-gray-500 font-mono">
                                     ({result.device_ip})
@@ -331,13 +345,19 @@ export function ViewSnapshotDialog({
                               <div className="bg-gray-50 rounded p-3 space-y-2 text-sm">
                                 {result.git_file_path && (
                                   <div>
-                                    <span className="font-medium text-gray-600">File Path: </span>
-                                    <span className="font-mono text-xs">{result.git_file_path}</span>
+                                    <span className="font-medium text-gray-600">
+                                      File Path:{' '}
+                                    </span>
+                                    <span className="font-mono text-xs">
+                                      {result.git_file_path}
+                                    </span>
                                   </div>
                                 )}
                                 {result.git_commit_hash && (
                                   <div>
-                                    <span className="font-medium text-gray-600">Commit: </span>
+                                    <span className="font-medium text-gray-600">
+                                      Commit:{' '}
+                                    </span>
                                     <span className="font-mono text-xs">
                                       {result.git_commit_hash.substring(0, 8)}
                                     </span>
@@ -352,33 +372,42 @@ export function ViewSnapshotDialog({
                               </div>
 
                               {/* Command Outputs */}
-                              {commandOutputs && Object.keys(commandOutputs).length > 0 ? (
+                              {commandOutputs &&
+                              Object.keys(commandOutputs).length > 0 ? (
                                 <div className="space-y-3">
                                   <h4 className="font-semibold text-sm flex items-center gap-2">
                                     <ChevronRight className="h-4 w-4" />
                                     Command Outputs
                                   </h4>
-                                  <Accordion type="single" collapsible className="space-y-2">
-                                    {Object.entries(commandOutputs).map(([command, output]) => (
-                                      <AccordionItem
-                                        key={command}
-                                        value={`cmd-${command}`}
-                                        className="border rounded"
-                                      >
-                                        <AccordionTrigger className="px-3 py-2 hover:bg-gray-50 text-sm hover:no-underline">
-                                          <code className="font-mono text-xs text-left">
-                                            {command}
-                                          </code>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="px-3 pb-3">
-                                          {renderCommandOutput(output)}
-                                        </AccordionContent>
-                                      </AccordionItem>
-                                    ))}
+                                  <Accordion
+                                    type="single"
+                                    collapsible
+                                    className="space-y-2"
+                                  >
+                                    {Object.entries(commandOutputs).map(
+                                      ([command, output]) => (
+                                        <AccordionItem
+                                          key={command}
+                                          value={`cmd-${command}`}
+                                          className="border rounded"
+                                        >
+                                          <AccordionTrigger className="px-3 py-2 hover:bg-gray-50 text-sm hover:no-underline">
+                                            <code className="font-mono text-xs text-left">
+                                              {command}
+                                            </code>
+                                          </AccordionTrigger>
+                                          <AccordionContent className="px-3 pb-3">
+                                            {renderCommandOutput(output)}
+                                          </AccordionContent>
+                                        </AccordionItem>
+                                      )
+                                    )}
                                   </Accordion>
                                 </div>
                               ) : (
-                                <p className="text-sm text-gray-500 italic">No command output available</p>
+                                <p className="text-sm text-gray-500 italic">
+                                  No command output available
+                                </p>
                               )}
                             </div>
                           </AccordionContent>

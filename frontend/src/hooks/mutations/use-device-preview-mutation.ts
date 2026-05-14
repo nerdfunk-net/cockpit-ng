@@ -40,7 +40,7 @@ export function useDevicePreviewMutation() {
     mutationFn: async (payload: DevicePreviewPayload) => {
       return apiCall<DevicePreviewResponse>('inventory/preview', {
         method: 'POST',
-        body: payload
+        body: payload,
       })
     },
 

@@ -1,7 +1,12 @@
 // Repository Edit Dialog Component
 
 import { useEffect, useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Settings } from 'lucide-react'
 import { useRepositoryForm } from '../hooks/use-repository-form'
@@ -44,7 +49,8 @@ export function RepositoryEditDialog({
         category: repository.category as RepositoryFormValues['category'],
         url: repository.url,
         branch: repository.branch,
-        auth_type: (repository.auth_type || 'none') as RepositoryFormValues['auth_type'],
+        auth_type: (repository.auth_type ||
+          'none') as RepositoryFormValues['auth_type'],
         credential_name: credentialValue,
         path: repository.path || '',
         verify_ssl: repository.verify_ssl,

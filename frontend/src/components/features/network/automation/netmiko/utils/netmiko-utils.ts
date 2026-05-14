@@ -62,7 +62,7 @@ export function parseTemplateError(error: unknown): ErrorDetails {
   return {
     title: 'Template Rendering Failed',
     message: 'The template could not be rendered. Please check the details below:',
-    details
+    details,
   }
 }
 
@@ -107,6 +107,6 @@ export function formatExecutionResults(
     output: dryRun
       ? `[DRY RUN - Rendered Commands]\n\n${r.rendered_content || ''}`
       : r.output || r.rendered_content || '',
-    error: r.error
+    error: r.error,
   }))
 }

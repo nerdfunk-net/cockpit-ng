@@ -11,7 +11,11 @@ interface ValidationMessageProps {
   onDismiss?: () => void
 }
 
-export function ValidationMessage({ message, className = '', onDismiss }: ValidationMessageProps) {
+export function ValidationMessage({
+  message,
+  className = '',
+  onDismiss,
+}: ValidationMessageProps) {
   const getIcon = () => {
     switch (message.type) {
       case 'success':

@@ -72,7 +72,7 @@ export function DiffTableHeader({
         <th className="pl-3 pr-1 py-3 w-10">
           <Checkbox
             checked={isIndeterminate ? 'indeterminate' : isAllSelected}
-            onCheckedChange={(checked) => onSelectAll(!!checked)}
+            onCheckedChange={checked => onSelectAll(!!checked)}
             aria-label="Select all devices"
           />
         </th>
@@ -82,7 +82,7 @@ export function DiffTableHeader({
             <Input
               placeholder="Search..."
               value={deviceNameFilter}
-              onChange={(e) => onDeviceNameFilterChange(e.target.value)}
+              onChange={e => onDeviceNameFilterChange(e.target.value)}
               className="h-8 text-xs"
             />
           </div>
@@ -90,7 +90,10 @@ export function DiffTableHeader({
         <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>IP Address</div>
-            <Select value={ipAddressFilter} onValueChange={(v) => onIpAddressFilterChange(v as IpAddressFilter)}>
+            <Select
+              value={ipAddressFilter}
+              onValueChange={v => onIpAddressFilterChange(v as IpAddressFilter)}
+            >
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue placeholder="Show All" />
               </SelectTrigger>
@@ -114,36 +117,46 @@ export function DiffTableHeader({
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 w-full text-xs justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-full text-xs justify-between"
+                >
                   Role
                   <ChevronDown className="h-4 w-4 ml-auto" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-40">
-                <DropdownMenuLabel className="text-xs">Filter by Role</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs">
+                  Filter by Role
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer text-red-600 hover:bg-red-50"
                   onSelect={() => {
                     const resetFilters: Record<string, boolean> = {}
-                    filterOptions.roles.forEach(role => { resetFilters[role] = false })
+                    filterOptions.roles.forEach(role => {
+                      resetFilters[role] = false
+                    })
                     onRoleFiltersChange(resetFilters)
                   }}
                 >
                   Deselect all
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {Array.from(filterOptions.roles).sort().map((role) => (
-                  <DropdownMenuCheckboxItem
-                    key={`diff-role-${role}`}
-                    checked={roleFilters[role] || false}
-                    onCheckedChange={(checked) =>
-                      onRoleFiltersChange({ ...roleFilters, [role]: !!checked })
-                    }
-                  >
-                    {role}
-                  </DropdownMenuCheckboxItem>
-                ))}
+                {Array.from(filterOptions.roles)
+                  .sort()
+                  .map(role => (
+                    <DropdownMenuCheckboxItem
+                      key={`diff-role-${role}`}
+                      checked={roleFilters[role] || false}
+                      onCheckedChange={checked =>
+                        onRoleFiltersChange({ ...roleFilters, [role]: !!checked })
+                      }
+                    >
+                      {role}
+                    </DropdownMenuCheckboxItem>
+                  ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -157,11 +170,13 @@ export function DiffTableHeader({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {Array.from(filterOptions.locations).sort().map((loc) => (
-                  <SelectItem key={`diff-loc-${loc}`} value={loc}>
-                    {loc}
-                  </SelectItem>
-                ))}
+                {Array.from(filterOptions.locations)
+                  .sort()
+                  .map(loc => (
+                    <SelectItem key={`diff-loc-${loc}`} value={loc}>
+                      {loc}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -175,11 +190,13 @@ export function DiffTableHeader({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                {Array.from(filterOptions.statuses).sort().map((status) => (
-                  <SelectItem key={`diff-status-${status}`} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
+                {Array.from(filterOptions.statuses)
+                  .sort()
+                  .map(status => (
+                    <SelectItem key={`diff-status-${status}`} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -187,7 +204,10 @@ export function DiffTableHeader({
         <th className="px-4 py-3 w-44 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
             <div>System</div>
-            <Select value={systemFilter} onValueChange={(v) => onSystemFilterChange(v as SystemFilter)}>
+            <Select
+              value={systemFilter}
+              onValueChange={v => onSystemFilterChange(v as SystemFilter)}
+            >
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
@@ -205,20 +225,27 @@ export function DiffTableHeader({
             <div className="flex items-center gap-1">
               CheckMK Diff
               {(() => {
-                const selectedCount = Object.values(diffStatusFilters).filter(Boolean).length
+                const selectedCount =
+                  Object.values(diffStatusFilters).filter(Boolean).length
                 const totalCount = 4 // match, differ, not_found, empty
                 const hasFilters = Object.keys(diffStatusFilters).length > 0
                 const isFiltered = hasFilters && selectedCount < totalCount
-                return isFiltered && (
-                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
-                    {selectedCount}
-                  </Badge>
+                return (
+                  isFiltered && (
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                      {selectedCount}
+                    </Badge>
+                  )
                 )
               })()}
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 w-full text-xs justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-full text-xs justify-between"
+                >
                   Status
                   <ChevronDown className="h-4 w-4 ml-auto" />
                 </Button>
@@ -230,7 +257,7 @@ export function DiffTableHeader({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer text-blue-600 hover:bg-blue-50"
-                  onSelect={(e) => {
+                  onSelect={e => {
                     e.preventDefault()
                     const allSelected: Record<string, boolean> = {
                       match: true,
@@ -245,7 +272,7 @@ export function DiffTableHeader({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer text-red-600 hover:bg-red-50"
-                  onSelect={(e) => {
+                  onSelect={e => {
                     e.preventDefault()
                     const allDeselected: Record<string, boolean> = {
                       match: false,
@@ -261,7 +288,7 @@ export function DiffTableHeader({
                 <DropdownMenuSeparator />
                 <DropdownMenuCheckboxItem
                   checked={diffStatusFilters['match'] !== false}
-                  onCheckedChange={(checked) => {
+                  onCheckedChange={checked => {
                     // Ensure all keys exist by merging with defaults
                     const updated = {
                       match: diffStatusFilters['match'] !== false,
@@ -270,16 +297,21 @@ export function DiffTableHeader({
                       empty: diffStatusFilters['empty'] !== false,
                     }
                     updated.match = !!checked
-                    console.log('[CHECKBOX UPDATE] Match checked:', checked, 'New state:', updated)
+                    console.log(
+                      '[CHECKBOX UPDATE] Match checked:',
+                      checked,
+                      'New state:',
+                      updated
+                    )
                     onDiffStatusFiltersChange(updated)
                   }}
-                  onSelect={(e) => e.preventDefault()}
+                  onSelect={e => e.preventDefault()}
                 >
                   Match
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   checked={diffStatusFilters['differ'] !== false}
-                  onCheckedChange={(checked) => {
+                  onCheckedChange={checked => {
                     // Ensure all keys exist by merging with defaults
                     const updated = {
                       match: diffStatusFilters['match'] !== false,
@@ -288,16 +320,21 @@ export function DiffTableHeader({
                       empty: diffStatusFilters['empty'] !== false,
                     }
                     updated.differ = !!checked
-                    console.log('[CHECKBOX UPDATE] Differ checked:', checked, 'New state:', updated)
+                    console.log(
+                      '[CHECKBOX UPDATE] Differ checked:',
+                      checked,
+                      'New state:',
+                      updated
+                    )
                     onDiffStatusFiltersChange(updated)
                   }}
-                  onSelect={(e) => e.preventDefault()}
+                  onSelect={e => e.preventDefault()}
                 >
                   Differ
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   checked={diffStatusFilters['not_found'] !== false}
-                  onCheckedChange={(checked) => {
+                  onCheckedChange={checked => {
                     // Ensure all keys exist by merging with defaults
                     const updated = {
                       match: diffStatusFilters['match'] !== false,
@@ -306,16 +343,21 @@ export function DiffTableHeader({
                       empty: diffStatusFilters['empty'] !== false,
                     }
                     updated.not_found = !!checked
-                    console.log('[CHECKBOX UPDATE] Not Found checked:', checked, 'New state:', updated)
+                    console.log(
+                      '[CHECKBOX UPDATE] Not Found checked:',
+                      checked,
+                      'New state:',
+                      updated
+                    )
                     onDiffStatusFiltersChange(updated)
                   }}
-                  onSelect={(e) => e.preventDefault()}
+                  onSelect={e => e.preventDefault()}
                 >
                   Not Found
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   checked={diffStatusFilters['empty'] !== false}
-                  onCheckedChange={(checked) => {
+                  onCheckedChange={checked => {
                     // Ensure all keys exist by merging with defaults
                     const updated = {
                       match: diffStatusFilters['match'] !== false,
@@ -324,10 +366,15 @@ export function DiffTableHeader({
                       empty: diffStatusFilters['empty'] !== false,
                     }
                     updated.empty = !!checked
-                    console.log('[CHECKBOX UPDATE] Empty checked:', checked, 'New state:', updated)
+                    console.log(
+                      '[CHECKBOX UPDATE] Empty checked:',
+                      checked,
+                      'New state:',
+                      updated
+                    )
                     onDiffStatusFiltersChange(updated)
                   }}
-                  onSelect={(e) => e.preventDefault()}
+                  onSelect={e => e.preventDefault()}
                 >
                   Empty
                 </DropdownMenuCheckboxItem>

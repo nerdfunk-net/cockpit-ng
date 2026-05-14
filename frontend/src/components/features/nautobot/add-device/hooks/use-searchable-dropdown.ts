@@ -38,7 +38,7 @@ export function useSearchableDropdown<T extends { id: string }>(
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return items
     const lowerQuery = searchQuery.toLowerCase()
-    return items.filter((item) => filterPredicate(item, lowerQuery))
+    return items.filter(item => filterPredicate(item, lowerQuery))
   }, [items, searchQuery, filterPredicate])
 
   // Click outside handler
@@ -62,7 +62,7 @@ export function useSearchableDropdown<T extends { id: string }>(
   )
 
   const selectedItem = useMemo(
-    () => items.find((item) => item.id === selectedId) || null,
+    () => items.find(item => item.id === selectedId) || null,
     [items, selectedId]
   )
 
@@ -95,7 +95,7 @@ export function useSearchableDropdown<T extends { id: string }>(
       }, 0)
       return () => clearTimeout(timer)
     }
-    
+
     // Return undefined for other cases to satisfy TypeScript
     return undefined
   }, [selectedItem, getDisplayText, showDropdown, searchQuery])
@@ -125,7 +125,7 @@ export function useSearchableDropdown<T extends { id: string }>(
       displayValue,
     }),
     // Intentionally excluding containerRef from deps - refs don't change
-     
+
     [searchQuery, filteredItems, showDropdown, selectItem, selectedItem, displayValue]
   )
 }

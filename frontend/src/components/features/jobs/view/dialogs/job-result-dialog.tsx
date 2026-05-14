@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -54,7 +54,7 @@ interface JobResultDialogProps {
 function renderJobResult(
   result: Record<string, unknown>,
   taskId?: string
-): React.ReactElement {
+): ReactElement {
   // Check type guards in order of specificity
   // Export devices must be checked first to avoid conflicts
   if (isExportDevicesJobResult(result)) {
@@ -155,7 +155,7 @@ export function JobResultDialog({ jobRun, open, onOpenChange }: JobResultDialogP
                     renderJobResult(
                       result,
                       jobRun.celery_task_id || undefined
-                    ) as React.ReactNode
+                    ) as ReactNode
                   }
 
                   {/* Error Message (for failed jobs) - common to all types */}
@@ -180,7 +180,7 @@ export function JobResultDialog({ jobRun, open, onOpenChange }: JobResultDialogP
                   </details>
                 </div>
               </TooltipProvider>
-            ) as React.ReactNode
+            ) as ReactNode
           }
         </div>
       </DialogContent>

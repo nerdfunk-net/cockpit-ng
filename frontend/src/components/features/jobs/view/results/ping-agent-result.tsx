@@ -1,10 +1,15 @@
-"use client"
+'use client'
 
-import React from "react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, XCircle, Activity, Wifi } from "lucide-react"
-import type { PingAgentJobResult, PingAgentDeviceResult } from "../types/job-results"
+import { Badge } from '@/components/ui/badge'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { CheckCircle2, XCircle, Activity, Wifi } from 'lucide-react'
+import type { PingAgentJobResult, PingAgentDeviceResult } from '../types/job-results'
 
 interface PingAgentResultViewProps {
   result: PingAgentJobResult
@@ -32,16 +37,26 @@ export function PingAgentResultView({ result }: PingAgentResultViewProps) {
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Devices</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                Total Devices
+              </p>
               <p className="text-2xl font-bold">{output?.total_devices ?? 0}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Reachable</p>
-              <p className="text-2xl font-bold text-green-600">{output?.reachable_count ?? 0}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                Reachable
+              </p>
+              <p className="text-2xl font-bold text-green-600">
+                {output?.reachable_count ?? 0}
+              </p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Unreachable</p>
-              <p className="text-2xl font-bold text-red-600">{output?.unreachable_count ?? 0}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                Unreachable
+              </p>
+              <p className="text-2xl font-bold text-red-600">
+                {output?.unreachable_count ?? 0}
+              </p>
             </div>
           </div>
           {result.execution_time_ms != null && (
@@ -63,8 +78,8 @@ export function PingAgentResultView({ result }: PingAgentResultViewProps) {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y">
-              {deviceResults.map((device) => {
-                const hasReachable = device.ip_results.some((ip) => ip.reachable)
+              {deviceResults.map(device => {
+                const hasReachable = device.ip_results.some(ip => ip.reachable)
                 return (
                   <div key={device.device_name} className="px-4 py-3">
                     <div className="flex items-center justify-between mb-2">
@@ -84,8 +99,11 @@ export function PingAgentResultView({ result }: PingAgentResultViewProps) {
 
                     {device.ip_results.length > 0 ? (
                       <div className="space-y-1 ml-2">
-                        {device.ip_results.map((ip) => (
-                          <div key={ip.ip_address} className="flex items-center gap-3 text-xs text-muted-foreground">
+                        {device.ip_results.map(ip => (
+                          <div
+                            key={ip.ip_address}
+                            className="flex items-center gap-3 text-xs text-muted-foreground"
+                          >
                             {ip.reachable ? (
                               <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
                             ) : (
@@ -94,19 +112,25 @@ export function PingAgentResultView({ result }: PingAgentResultViewProps) {
                             <span className="font-mono w-40">{ip.ip_address}</span>
                             {ip.reachable ? (
                               <span className="text-green-700">
-                                {ip.latency_ms != null ? `${ip.latency_ms} ms` : "reachable"}
+                                {ip.latency_ms != null
+                                  ? `${ip.latency_ms} ms`
+                                  : 'reachable'}
                               </span>
                             ) : (
                               <span className="text-red-500">not reachable</span>
                             )}
                             {ip.packet_loss_percent > 0 && ip.reachable && (
-                              <span className="text-amber-500">{ip.packet_loss_percent}% loss</span>
+                              <span className="text-amber-500">
+                                {ip.packet_loss_percent}% loss
+                              </span>
                             )}
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-muted-foreground ml-2">No IP addresses found</p>
+                      <p className="text-xs text-muted-foreground ml-2">
+                        No IP addresses found
+                      </p>
                     )}
                   </div>
                 )

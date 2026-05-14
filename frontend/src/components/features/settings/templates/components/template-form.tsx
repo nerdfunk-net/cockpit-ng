@@ -14,7 +14,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from '@/components/ui/select'
 import {
   Form,
@@ -23,7 +23,7 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-  FormDescription
+  FormDescription,
 } from '@/components/ui/form'
 import {
   Plus,
@@ -34,15 +34,12 @@ import {
   Code,
   RefreshCw,
   FolderOpen,
-  Play
+  Play,
 } from 'lucide-react'
 import { useTemplateMutations } from '../hooks/use-template-mutations'
 import { useTemplateContent } from '../hooks/use-template-queries'
 import { useToast } from '@/hooks/use-toast'
-import {
-  CANONICAL_CATEGORIES,
-  FILE_ACCEPT_TYPES
-} from '../utils/constants'
+import { CANONICAL_CATEGORIES, FILE_ACCEPT_TYPES } from '../utils/constants'
 import { getTemplateNameFromFile } from '../utils/template-utils'
 import type { Template, TemplateFormData } from '../types'
 
@@ -85,7 +82,7 @@ export function TemplateForm({
   onSuccess,
   onCancel,
   onSelectInventory,
-  selectedInventory
+  selectedInventory,
 }: TemplateFormProps) {
   const isEditMode = !!template
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -152,7 +149,7 @@ export function TemplateForm({
     setFormKey(prev => prev + 1)
   }, [template?.id, templateContent, isEditMode, getInitialValues, form])
 
-  const handleSubmit = form.handleSubmit(async (data) => {
+  const handleSubmit = form.handleSubmit(async data => {
     if (isEditMode && template) {
       await updateTemplate.mutateAsync({
         templateId: template.id,
@@ -168,16 +165,19 @@ export function TemplateForm({
     onSuccess()
   })
 
-  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
-      form.setValue('filename', file.name)
-      if (!form.getValues('name')) {
-        form.setValue('name', getTemplateNameFromFile(file.name))
+  const handleFileChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (file) {
+        setSelectedFile(file)
+        form.setValue('filename', file.name)
+        if (!form.getValues('name')) {
+          form.setValue('name', getTemplateNameFromFile(file.name))
+        }
       }
-    }
-  }, [form])
+    },
+    [form]
+  )
 
   const handleRenderTemplate = useCallback(async () => {
     const formData = form.getValues()
@@ -186,7 +186,7 @@ export function TemplateForm({
       toast({
         title: 'Validation Error',
         description: 'Please provide a template name',
-        variant: 'destructive'
+        variant: 'destructive',
       })
       return
     }
@@ -196,7 +196,7 @@ export function TemplateForm({
       toast({
         title: 'Validation Error',
         description: 'Please select an inventory for Agent templates',
-        variant: 'destructive'
+        variant: 'destructive',
       })
       return
     }
@@ -206,13 +206,13 @@ export function TemplateForm({
       // TODO: Call backend API to render template
       toast({
         title: 'Info',
-        description: 'Template rendering will be implemented in backend'
+        description: 'Template rendering will be implemented in backend',
       })
     } catch {
       toast({
         title: 'Error',
         description: 'Failed to render template',
-        variant: 'destructive'
+        variant: 'destructive',
       })
     } finally {
       setIsRendering(false)
@@ -254,7 +254,9 @@ export function TemplateForm({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Template Name <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel>
+                      Template Name <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., cisco-ios-base" {...field} />
                     </FormControl>
@@ -319,7 +321,9 @@ export function TemplateForm({
                 name="source"
                 render={({ field }) => (
                   <FormItem className="md:col-span-1">
-                    <FormLabel>Source <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel>
+                      Source <span className="text-red-500">*</span>
+                    </FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
@@ -361,7 +365,7 @@ export function TemplateForm({
                   <FormControl>
                     <Checkbox
                       checked={field.value === 'global'}
-                      onCheckedChange={(checked) =>
+                      onCheckedChange={checked =>
                         field.onChange(checked ? 'global' : 'private')
                       }
                     />
@@ -369,7 +373,8 @@ export function TemplateForm({
                   <div className="space-y-1 leading-none">
                     <FormLabel>This template is global</FormLabel>
                     <FormDescription>
-                      Global templates are visible to all users. Private templates are only visible to you.
+                      Global templates are visible to all users. Private templates are
+                      only visible to you.
                     </FormDescription>
                   </div>
                 </FormItem>
@@ -392,7 +397,8 @@ export function TemplateForm({
                     <div className="space-y-1 leading-none">
                       <FormLabel>Use Nautobot data & context</FormLabel>
                       <FormDescription>
-                        When enabled, this template will have access to Nautobot device data and context variables.
+                        When enabled, this template will have access to Nautobot device
+                        data and context variables.
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -416,9 +422,14 @@ export function TemplateForm({
                       name="git_repo_url"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Repository URL <span className="text-red-500">*</span></FormLabel>
+                          <FormLabel>
+                            Repository URL <span className="text-red-500">*</span>
+                          </FormLabel>
                           <FormControl>
-                            <Input placeholder="https://github.com/user/repo.git" {...field} />
+                            <Input
+                              placeholder="https://github.com/user/repo.git"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -501,7 +512,8 @@ export function TemplateForm({
                     />
                     {selectedFile && (
                       <p className="text-sm text-gray-600">
-                        Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                        Selected: {selectedFile.name} (
+                        {(selectedFile.size / 1024).toFixed(1)} KB)
                       </p>
                     )}
                   </div>
@@ -523,7 +535,9 @@ export function TemplateForm({
                     name="content"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Template Content <span className="text-red-500">*</span></FormLabel>
+                        <FormLabel>
+                          Template Content <span className="text-red-500">*</span>
+                        </FormLabel>
                         <FormControl>
                           <textarea
                             className="w-full h-64 p-3 border-2 bg-white border-gray-300 rounded-md font-mono text-sm"
@@ -556,7 +570,9 @@ export function TemplateForm({
                   >
                     <FolderOpen className="h-4 w-4" />
                     <span>
-                      {selectedInventory ? `Inventory: ${selectedInventory.name}` : 'Select Inventory'}
+                      {selectedInventory
+                        ? `Inventory: ${selectedInventory.name}`
+                        : 'Select Inventory'}
                     </span>
                   </Button>
                 )}
@@ -569,7 +585,11 @@ export function TemplateForm({
                     variant="outline"
                     onClick={handleRenderTemplate}
                     type="button"
-                    disabled={isRendering || !form.getValues('name') || (watchedCategory === 'agent' && !selectedInventory)}
+                    disabled={
+                      isRendering ||
+                      !form.getValues('name') ||
+                      (watchedCategory === 'agent' && !selectedInventory)
+                    }
                     className="border-blue-300 text-blue-700 hover:bg-blue-50"
                   >
                     {isRendering && <RefreshCw className="h-4 w-4 animate-spin" />}
@@ -587,9 +607,7 @@ export function TemplateForm({
                     <RefreshCw className="h-4 w-4 animate-spin" />
                   )}
                   <Save className="h-4 w-4" />
-                  <span>
-                    {isEditMode ? 'Update Template' : 'Create Template'}
-                  </span>
+                  <span>{isEditMode ? 'Update Template' : 'Create Template'}</span>
                 </Button>
               </div>
             </div>

@@ -131,8 +131,8 @@ export function VirtualChassisModal({
               <div className="space-y-2 text-sm text-muted-foreground">
                 <p>
                   Device <strong className="text-foreground">{deviceName}</strong>
-                  {status.is_master ? ' is the master of' : ' is a member of'} virtual chassis{' '}
-                  <strong className="text-foreground">{vc.name}</strong> with{' '}
+                  {status.is_master ? ' is the master of' : ' is a member of'} virtual
+                  chassis <strong className="text-foreground">{vc.name}</strong> with{' '}
                   <strong className="text-foreground">{memberCount}</strong>{' '}
                   {memberCount === 1 ? 'member' : 'members'}.
                 </p>
@@ -159,8 +159,8 @@ export function VirtualChassisModal({
             <DialogDescription asChild>
               <div className="text-sm text-muted-foreground">
                 <p>
-                  <strong className="text-foreground">{deviceName}</strong> is the current master.
-                  Select a new master for virtual chassis{' '}
+                  <strong className="text-foreground">{deviceName}</strong> is the
+                  current master. Select a new master for virtual chassis{' '}
                   <strong className="text-foreground">{vc.name}</strong>:
                 </p>
               </div>
@@ -183,7 +183,7 @@ export function VirtualChassisModal({
               <Checkbox
                 id="rename-new-master"
                 checked={renameNewMaster}
-                onCheckedChange={(checked) => handleRenameToggle(checked === true)}
+                onCheckedChange={checked => handleRenameToggle(checked === true)}
               />
               <Label htmlFor="rename-new-master">Rename new master</Label>
             </div>
@@ -194,7 +194,7 @@ export function VirtualChassisModal({
                 <Input
                   id="new-master-name"
                   value={newMasterName}
-                  onChange={(e) => setNewMasterName(e.target.value)}
+                  onChange={e => setNewMasterName(e.target.value)}
                   placeholder="Enter new device name"
                 />
               </div>
@@ -214,7 +214,9 @@ export function VirtualChassisModal({
               <Button
                 variant="destructive"
                 onClick={handleConfirmNewMaster}
-                disabled={!selectedMasterId || (renameNewMaster && !newMasterName.trim())}
+                disabled={
+                  !selectedMasterId || (renameNewMaster && !newMasterName.trim())
+                }
               >
                 Confirm New Master & Remove Device
               </Button>

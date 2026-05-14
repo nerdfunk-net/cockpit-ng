@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Search, RotateCcw } from 'lucide-react'
-import type { Device, TableFilters, DropdownOption, LocationItem, PaginationState } from '../types'
+import type {
+  Device,
+  TableFilters,
+  DropdownOption,
+  LocationItem,
+  PaginationState,
+} from '../types'
 import { getStatusBadgeClass } from '../utils'
 import { DevicesFilters } from './devices-filters'
 import { DevicesPagination } from './devices-pagination'
@@ -53,7 +59,7 @@ export function DevicesTable({
     (checked: boolean) => {
       if (checked) {
         const newSelected = new Set(selectedDevices)
-        devices.forEach((device) => newSelected.add(device.id))
+        devices.forEach(device => newSelected.add(device.id))
         onSelectionChange(newSelected)
       } else {
         onSelectionChange(new Set())
@@ -75,7 +81,8 @@ export function DevicesTable({
     [selectedDevices, onSelectionChange]
   )
 
-  const allSelected = devices.length > 0 && devices.every((device) => selectedDevices.has(device.id))
+  const allSelected =
+    devices.length > 0 && devices.every(device => selectedDevices.has(device.id))
 
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
@@ -86,7 +93,9 @@ export function DevicesTable({
             <Search className="h-4 w-4" />
             <div>
               <h3 className="text-sm font-semibold">Devices</h3>
-              <p className="text-blue-100 text-xs">Select devices to synchronize with Nautobot</p>
+              <p className="text-blue-100 text-xs">
+                Select devices to synchronize with Nautobot
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -151,11 +160,14 @@ export function DevicesTable({
             </thead>
             <tbody className="divide-y divide-gray-200">
               {devices.map((device, index) => (
-                <tr key={device.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <tr
+                  key={device.id}
+                  className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+                >
                   <td className="pl-4 pr-2 py-3 w-8 text-left">
                     <Checkbox
                       checked={selectedDevices.has(device.id)}
-                      onCheckedChange={(checked) =>
+                      onCheckedChange={checked =>
                         handleDeviceSelection(device.id, checked as boolean)
                       }
                     />

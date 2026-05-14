@@ -4,7 +4,11 @@
  */
 
 import type { DeviceFormValues, InterfaceFormValues } from '../validation'
-import type { CheckMKHost, PropertyMapping, NautobotMetadata } from '@/components/features/checkmk/hosts-inventory/types'
+import type {
+  CheckMKHost,
+  PropertyMapping,
+  NautobotMetadata,
+} from '@/components/features/checkmk/hosts-inventory/types'
 
 /**
  * Resolves a Nautobot ID from a name/value using metadata
@@ -15,38 +19,51 @@ function resolveNautobotId(
   metadata: NautobotMetadata | null
 ): string {
   if (!value || !metadata) return ''
-  
+
   const valueStr = String(value)
-  
+
   switch (field) {
     case 'location':
-      return metadata.locations?.find(l => 
-        l.name.toLowerCase() === valueStr.toLowerCase()
-      )?.id || ''
-    
+      return (
+        metadata.locations?.find(l => l.name.toLowerCase() === valueStr.toLowerCase())
+          ?.id || ''
+      )
+
     case 'role':
-      return metadata.roles?.find(r => 
-        r.name.toLowerCase() === valueStr.toLowerCase()
-      )?.id || ''
-    
+      return (
+        metadata.roles?.find(r => r.name.toLowerCase() === valueStr.toLowerCase())
+          ?.id || ''
+      )
+
     case 'status':
-      return metadata.statuses?.find(s => 
-        s.name.toLowerCase() === valueStr.toLowerCase()
-      )?.id || ''
-    
+      return (
+        metadata.statuses?.find(s => s.name.toLowerCase() === valueStr.toLowerCase())
+          ?.id || ''
+      )
+
     case 'device_type':
-      return metadata.deviceTypes?.find(dt => {
-        const dtAny = dt as { id: string; name?: string; display?: string; model?: string }
-        return dtAny.name?.toLowerCase() === valueStr.toLowerCase() ||
-               dtAny.display?.toLowerCase() === valueStr.toLowerCase() ||
-               dtAny.model?.toLowerCase() === valueStr.toLowerCase()
-      })?.id || ''
-    
+      return (
+        metadata.deviceTypes?.find(dt => {
+          const dtAny = dt as {
+            id: string
+            name?: string
+            display?: string
+            model?: string
+          }
+          return (
+            dtAny.name?.toLowerCase() === valueStr.toLowerCase() ||
+            dtAny.display?.toLowerCase() === valueStr.toLowerCase() ||
+            dtAny.model?.toLowerCase() === valueStr.toLowerCase()
+          )
+        })?.id || ''
+      )
+
     case 'platform':
-      return metadata.platforms?.find(p => 
-        p.name.toLowerCase() === valueStr.toLowerCase()
-      )?.id || ''
-    
+      return (
+        metadata.platforms?.find(p => p.name.toLowerCase() === valueStr.toLowerCase())
+          ?.id || ''
+      )
+
     default:
       return ''
   }
@@ -63,7 +80,7 @@ export interface InterfaceMappingData {
 
 /**
  * Transform CheckMK property mappings and interface mappings to DeviceFormValues
- * 
+ *
  * @param propertyMappings - Property mappings from CheckMK host attributes
  * @param nautobotMetadata - Nautobot metadata for ID resolution
  * @param interfaceMappings - Interface mappings from CheckMK inventory
@@ -73,10 +90,10 @@ export function transformCheckMKToFormData(
   propertyMappings: Record<string, PropertyMapping>,
   nautobotMetadata: NautobotMetadata | null,
   interfaceMappings?: Record<string, InterfaceMappingData>,
-  dropdownData?: { 
-    namespaces?: Array<{ id: string; name: string }>; 
-    nautobotDefaults?: { namespace?: string } | null;
-    ipRoles?: Array<{ id: string; name: string }>;
+  dropdownData?: {
+    namespaces?: Array<{ id: string; name: string }>
+    nautobotDefaults?: { namespace?: string } | null
+    ipRoles?: Array<{ id: string; name: string }>
   }
 ): Partial<DeviceFormValues> {
   const formData: Partial<DeviceFormValues> = {
@@ -104,7 +121,13 @@ export function transformCheckMKToFormData(
       customFields[fieldKey] = String(value)
     } else {
       // Standard field - resolve ID if needed
-      const resolvedValue = ['location', 'role', 'status', 'device_type', 'platform'].includes(nautobotField)
+      const resolvedValue = [
+        'location',
+        'role',
+        'status',
+        'device_type',
+        'platform',
+      ].includes(nautobotField)
         ? resolveNautobotId(nautobotField, value, nautobotMetadata)
         : String(value)
 
@@ -160,14 +183,15 @@ export function transformCheckMKToFormData(
         }
 
         // Auto-select namespace if only one is available
-        const defaultNamespace = dropdownData?.nautobotDefaults?.namespace || 
-          (dropdownData?.namespaces && dropdownData.namespaces.length === 1 
-            ? dropdownData.namespaces[0]!.id 
+        const defaultNamespace =
+          dropdownData?.nautobotDefaults?.namespace ||
+          (dropdownData?.namespaces && dropdownData.namespaces.length === 1
+            ? dropdownData.namespaces[0]!.id
             : 'Global')
 
         // Check if interface already exists
         const existingInterface = interfaces.find(i => i.name === mapping.interfaceName)
-        
+
         if (existingInterface) {
           // Add IP address to existing interface
           existingInterface.ip_addresses.push({
@@ -184,13 +208,15 @@ export function transformCheckMKToFormData(
             name: mapping.interfaceName,
             type: 'other', // Default type, can be enhanced later
             status: mapping.status || 'Active',
-            ip_addresses: [{
-              id: String(ipIdCounter++),
-              address: ipAddr || '',
-              namespace: defaultNamespace,
-              ip_role: ipRole,
-              is_primary: mapping.isPrimary,
-            }],
+            ip_addresses: [
+              {
+                id: String(ipIdCounter++),
+                address: ipAddr || '',
+                namespace: defaultNamespace,
+                ip_role: ipRole,
+                is_primary: mapping.isPrimary,
+              },
+            ],
             enabled: true,
             mgmt_only: false,
           })
@@ -205,33 +231,37 @@ export function transformCheckMKToFormData(
     // 1. If device has interface starting with "Management" or "Mgmt", use first IP of that interface
     // 2. Otherwise, use first IP of first interface
     // 3. All other IPs are not primary
-    
+
     let primarySet = false
-    
+
     // First, reset all IPs to not primary
     interfaces.forEach(iface => {
       iface.ip_addresses.forEach(ip => {
         ip.is_primary = false
       })
     })
-    
+
     // Look for Management/Mgmt interface
     const mgmtInterface = interfaces.find(iface => {
       const name = iface.name.toLowerCase()
       return name.startsWith('management') || name.startsWith('mgmt')
     })
-    
+
     if (mgmtInterface && mgmtInterface.ip_addresses.length > 0) {
       // Set first IP of management interface as primary
       mgmtInterface.ip_addresses[0]!.is_primary = true
       primarySet = true
     }
-    
+
     // If no management interface found, use first IP of first interface
-    if (!primarySet && interfaces.length > 0 && interfaces[0]!.ip_addresses.length > 0) {
+    if (
+      !primarySet &&
+      interfaces.length > 0 &&
+      interfaces[0]!.ip_addresses.length > 0
+    ) {
       interfaces[0]!.ip_addresses[0]!.is_primary = true
     }
-    
+
     formData.interfaces = interfaces
   }
 

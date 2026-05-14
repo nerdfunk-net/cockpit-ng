@@ -8,7 +8,13 @@ import { Loader2, CheckCircle, XCircle, BarChart3, Plus } from 'lucide-react'
 import { AgentCard } from './agent-card'
 import { AgentModal } from './agent-modal'
 import { HelpDialog, HelpButton } from './help-dialog'
-import type { Agent, AgentsSettings, AgentsResponse, GitRepositoriesResponse, GitRepository } from './types'
+import type {
+  Agent,
+  AgentsSettings,
+  AgentsResponse,
+  GitRepositoriesResponse,
+  GitRepository,
+} from './types'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
@@ -45,7 +51,7 @@ export default function AgentsSettingsForm() {
   const loadAgents = useCallback(async () => {
     try {
       setIsLoading(true)
-      const data = await apiCall('settings/agents') as AgentsResponse
+      const data = (await apiCall('settings/agents')) as AgentsResponse
       console.log('Loaded agents data:', data)
       if (data.success && data.data) {
         console.log('Setting agents:', data.data.agents)
@@ -63,12 +69,12 @@ export default function AgentsSettingsForm() {
   const loadGitRepositories = useCallback(async () => {
     try {
       setLoadingGitRepos(true)
-      const response = await apiCall('git-repositories') as GitRepositoriesResponse
+      const response = (await apiCall('git-repositories')) as GitRepositoriesResponse
 
       if (response.repositories) {
         // Filter for Agent category (case-insensitive)
-        const agentRepos = response.repositories.filter(repo =>
-          repo.category.toLowerCase() === 'agent'
+        const agentRepos = response.repositories.filter(
+          repo => repo.category.toLowerCase() === 'agent'
         )
         setGitRepositories(agentRepos)
       }
@@ -80,49 +86,52 @@ export default function AgentsSettingsForm() {
     }
   }, [apiCall, showMessage])
 
-  const saveAgents = useCallback(async (updatedAgents: Agent[]) => {
-    try {
-      setStatus('saving')
+  const saveAgents = useCallback(
+    async (updatedAgents: Agent[]) => {
+      try {
+        setStatus('saving')
 
-      // Merge with existing settings to preserve backend-required fields
-      const payload: AgentsSettings = {
-        deployment_method: settings?.deployment_method || 'git',
-        local_root_path: settings?.local_root_path || '',
-        sftp_hostname: settings?.sftp_hostname || '',
-        sftp_port: settings?.sftp_port || 22,
-        sftp_path: settings?.sftp_path || '',
-        sftp_username: settings?.sftp_username || '',
-        sftp_password: settings?.sftp_password || '',
-        use_global_credentials: settings?.use_global_credentials || false,
-        global_credential_id: settings?.global_credential_id || null,
-        git_repository_id: settings?.git_repository_id || null,
-        agents: updatedAgents,
-      }
-
-      console.log('Saving agents payload:', payload)
-
-      const response = await apiCall('settings/agents', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      }) as AgentsResponse
-
-      console.log('Save response:', response)
-
-      if (response.success) {
-        showMessage('Agents saved successfully', 'success')
-        if (response.data) {
-          console.log('Updating agents from response:', response.data.agents)
-          setSettings(response.data)
-          setAgents(response.data.agents || [])
+        // Merge with existing settings to preserve backend-required fields
+        const payload: AgentsSettings = {
+          deployment_method: settings?.deployment_method || 'git',
+          local_root_path: settings?.local_root_path || '',
+          sftp_hostname: settings?.sftp_hostname || '',
+          sftp_port: settings?.sftp_port || 22,
+          sftp_path: settings?.sftp_path || '',
+          sftp_username: settings?.sftp_username || '',
+          sftp_password: settings?.sftp_password || '',
+          use_global_credentials: settings?.use_global_credentials || false,
+          global_credential_id: settings?.global_credential_id || null,
+          git_repository_id: settings?.git_repository_id || null,
+          agents: updatedAgents,
         }
-      } else {
-        showMessage(response.message || 'Failed to save agents', 'error')
+
+        console.log('Saving agents payload:', payload)
+
+        const response = (await apiCall('settings/agents', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        })) as AgentsResponse
+
+        console.log('Save response:', response)
+
+        if (response.success) {
+          showMessage('Agents saved successfully', 'success')
+          if (response.data) {
+            console.log('Updating agents from response:', response.data.agents)
+            setSettings(response.data)
+            setAgents(response.data.agents || [])
+          }
+        } else {
+          showMessage(response.message || 'Failed to save agents', 'error')
+        }
+      } catch (error) {
+        console.error('Error saving agents:', error)
+        showMessage('Failed to save agents', 'error')
       }
-    } catch (error) {
-      console.error('Error saving agents:', error)
-      showMessage('Failed to save agents', 'error')
-    }
-  }, [apiCall, settings, showMessage])
+    },
+    [apiCall, settings, showMessage]
+  )
 
   const handleAddAgent = useCallback(() => {
     setSelectedAgent(null)
@@ -134,35 +143,42 @@ export default function AgentsSettingsForm() {
     setIsAgentModalOpen(true)
   }, [])
 
-  const handleRemoveAgent = useCallback((agentId: string) => {
-    openConfirm({
-      title: 'Remove Agent',
-      description: 'Are you sure you want to remove this agent? This action cannot be undone.',
-      variant: 'destructive',
-      onConfirm: () => {
-        const updatedAgents = agents.filter(a => a.id !== agentId)
-        setAgents(updatedAgents)
-        saveAgents(updatedAgents)
-      },
-    })
-  }, [agents, saveAgents, openConfirm])
+  const handleRemoveAgent = useCallback(
+    (agentId: string) => {
+      openConfirm({
+        title: 'Remove Agent',
+        description:
+          'Are you sure you want to remove this agent? This action cannot be undone.',
+        variant: 'destructive',
+        onConfirm: () => {
+          const updatedAgents = agents.filter(a => a.id !== agentId)
+          setAgents(updatedAgents)
+          saveAgents(updatedAgents)
+        },
+      })
+    },
+    [agents, saveAgents, openConfirm]
+  )
 
-  const handleSaveAgent = useCallback((agent: Agent) => {
-    let updatedAgents: Agent[]
-    
-    if (selectedAgent) {
-      // Edit existing agent
-      updatedAgents = agents.map(a => (a.id === agent.id ? agent : a))
-    } else {
-      // Add new agent
-      updatedAgents = [...agents, agent]
-    }
+  const handleSaveAgent = useCallback(
+    (agent: Agent) => {
+      let updatedAgents: Agent[]
 
-    setAgents(updatedAgents)
-    saveAgents(updatedAgents)
-    setIsAgentModalOpen(false)
-    setSelectedAgent(null)
-  }, [agents, selectedAgent, saveAgents])
+      if (selectedAgent) {
+        // Edit existing agent
+        updatedAgents = agents.map(a => (a.id === agent.id ? agent : a))
+      } else {
+        // Add new agent
+        updatedAgents = [...agents, agent]
+      }
+
+      setAgents(updatedAgents)
+      saveAgents(updatedAgents)
+      setIsAgentModalOpen(false)
+      setSelectedAgent(null)
+    },
+    [agents, selectedAgent, saveAgents]
+  )
 
   const handleCancelAgent = useCallback(() => {
     setIsAgentModalOpen(false)
@@ -249,17 +265,20 @@ export default function AgentsSettingsForm() {
               </div>
               <p className="text-lg font-medium">No Agents Configured</p>
               <p className="text-sm mt-1 max-w-md mx-auto">
-                Get started by adding your first agent. Configure monitoring tools like Grafana, Telegraf,
-                or Smokeping to keep your infrastructure observable.
+                Get started by adding your first agent. Configure monitoring tools like
+                Grafana, Telegraf, or Smokeping to keep your infrastructure observable.
               </p>
-              <Button onClick={handleAddAgent} className="flex items-center gap-2 mx-auto mt-6">
+              <Button
+                onClick={handleAddAgent}
+                className="flex items-center gap-2 mx-auto mt-6"
+              >
                 <Plus className="h-4 w-4" />
                 Add Your First Agent
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
-              {agents.map((agent) => (
+              {agents.map(agent => (
                 <AgentCard
                   key={agent.id}
                   agent={agent}
@@ -284,7 +303,10 @@ export default function AgentsSettingsForm() {
       />
 
       {/* Help Dialog */}
-      <HelpDialog isOpen={isHelpDialogOpen} onClose={() => setIsHelpDialogOpen(false)} />
+      <HelpDialog
+        isOpen={isHelpDialogOpen}
+        onClose={() => setIsHelpDialogOpen(false)}
+      />
 
       <ConfirmDialog {...confirmDialog} />
     </div>

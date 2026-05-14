@@ -45,7 +45,7 @@ export function CompareSnapshotsDialog({
 
   const loadComparison = useCallback(async () => {
     if (snapshotIds.length !== 2) return
-    
+
     setLoading(true)
     try {
       const result = await compareSnapshots({
@@ -56,7 +56,8 @@ export function CompareSnapshotsDialog({
     } catch (error) {
       toast({
         title: 'Comparison Failed',
-        description: error instanceof Error ? error.message : 'Failed to compare snapshots',
+        description:
+          error instanceof Error ? error.message : 'Failed to compare snapshots',
         variant: 'destructive',
       })
     } finally {
@@ -71,7 +72,10 @@ export function CompareSnapshotsDialog({
   }, [open, snapshotIds, loadComparison])
 
   const getDeviceStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    const variants: Record<
+      string,
+      'default' | 'secondary' | 'destructive' | 'outline'
+    > = {
       same: 'outline',
       different: 'default',
       missing_in_snapshot1: 'destructive',
@@ -84,14 +88,15 @@ export function CompareSnapshotsDialog({
       missing_in_snapshot2: 'Missing in Snapshot 2',
     }
     return (
-      <Badge variant={variants[status] || 'default'}>
-        {labels[status] || status}
-      </Badge>
+      <Badge variant={variants[status] || 'default'}>{labels[status] || status}</Badge>
     )
   }
 
   const getCommandStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    const variants: Record<
+      string,
+      'default' | 'secondary' | 'destructive' | 'outline'
+    > = {
       unchanged: 'outline',
       modified: 'default',
       added: 'secondary',
@@ -114,9 +119,7 @@ export function CompareSnapshotsDialog({
       <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Compare Snapshots</DialogTitle>
-          <DialogDescription>
-            Detailed comparison of two snapshots
-          </DialogDescription>
+          <DialogDescription>Detailed comparison of two snapshots</DialogDescription>
         </DialogHeader>
 
         {loading ? (
@@ -134,10 +137,19 @@ export function CompareSnapshotsDialog({
                   <CardTitle className="text-sm">Snapshot 1</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 text-sm">
-                  <div><strong>Name:</strong> {comparison.snapshot1.name}</div>
-                  <div><strong>Template:</strong> {comparison.snapshot1.template_name}</div>
-                  <div><strong>Devices:</strong> {comparison.snapshot1.device_count}</div>
-                  <div><strong>Date:</strong> {new Date(comparison.snapshot1.created_at).toLocaleString()}</div>
+                  <div>
+                    <strong>Name:</strong> {comparison.snapshot1.name}
+                  </div>
+                  <div>
+                    <strong>Template:</strong> {comparison.snapshot1.template_name}
+                  </div>
+                  <div>
+                    <strong>Devices:</strong> {comparison.snapshot1.device_count}
+                  </div>
+                  <div>
+                    <strong>Date:</strong>{' '}
+                    {new Date(comparison.snapshot1.created_at).toLocaleString()}
+                  </div>
                 </CardContent>
               </Card>
               <Card>
@@ -145,10 +157,19 @@ export function CompareSnapshotsDialog({
                   <CardTitle className="text-sm">Snapshot 2</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 text-sm">
-                  <div><strong>Name:</strong> {comparison.snapshot2.name}</div>
-                  <div><strong>Template:</strong> {comparison.snapshot2.template_name}</div>
-                  <div><strong>Devices:</strong> {comparison.snapshot2.device_count}</div>
-                  <div><strong>Date:</strong> {new Date(comparison.snapshot2.created_at).toLocaleString()}</div>
+                  <div>
+                    <strong>Name:</strong> {comparison.snapshot2.name}
+                  </div>
+                  <div>
+                    <strong>Template:</strong> {comparison.snapshot2.template_name}
+                  </div>
+                  <div>
+                    <strong>Devices:</strong> {comparison.snapshot2.device_count}
+                  </div>
+                  <div>
+                    <strong>Date:</strong>{' '}
+                    {new Date(comparison.snapshot2.created_at).toLocaleString()}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -162,23 +183,33 @@ export function CompareSnapshotsDialog({
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                   <div>
                     <div className="text-muted-foreground">Total</div>
-                    <div className="text-2xl font-bold">{comparison.summary.total_devices}</div>
+                    <div className="text-2xl font-bold">
+                      {comparison.summary.total_devices}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Identical</div>
-                    <div className="text-2xl font-bold text-green-600">{comparison.summary.same_count}</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {comparison.summary.same_count}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Different</div>
-                    <div className="text-2xl font-bold text-orange-600">{comparison.summary.different_count}</div>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {comparison.summary.different_count}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Missing #1</div>
-                    <div className="text-2xl font-bold text-red-600">{comparison.summary.missing_in_snapshot1}</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {comparison.summary.missing_in_snapshot1}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Missing #2</div>
-                    <div className="text-2xl font-bold text-red-600">{comparison.summary.missing_in_snapshot2}</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {comparison.summary.missing_in_snapshot2}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -191,8 +222,11 @@ export function CompareSnapshotsDialog({
               </CardHeader>
               <CardContent>
                 <Accordion type="multiple" className="w-full">
-                  {comparison.devices.map((device) => (
-                    <AccordionItem key={device.device_name} value={`device-${device.device_name}`}>
+                  {comparison.devices.map(device => (
+                    <AccordionItem
+                      key={device.device_name}
+                      value={`device-${device.device_name}`}
+                    >
                       <AccordionTrigger className="hover:no-underline">
                         <div className="flex items-center justify-between w-full pr-4">
                           <span className="font-medium">{device.device_name}</span>
@@ -206,10 +240,15 @@ export function CompareSnapshotsDialog({
                           </div>
                         ) : (
                           <div className="space-y-2 px-4">
-                            {device.commands.map((cmd) => (
-                              <div key={cmd.command} className="border-l-2 border-muted pl-4 py-2">
+                            {device.commands.map(cmd => (
+                              <div
+                                key={cmd.command}
+                                className="border-l-2 border-muted pl-4 py-2"
+                              >
                                 <div className="flex items-center justify-between mb-2">
-                                  <span className="text-sm font-mono">{cmd.command}</span>
+                                  <span className="text-sm font-mono">
+                                    {cmd.command}
+                                  </span>
                                   {getCommandStatusBadge(cmd.status)}
                                 </div>
                                 {cmd.status === 'modified' && cmd.diff && (

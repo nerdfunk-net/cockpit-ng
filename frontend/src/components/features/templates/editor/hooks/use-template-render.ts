@@ -24,12 +24,12 @@ export function useTemplateRender() {
 
   const render = useCallback(
     async (options: RenderOptions) => {
-      const { 
-        content, 
-        category, 
-        variables, 
-        inventoryId, 
-        passSnmpMapping, 
+      const {
+        content,
+        category,
+        variables,
+        inventoryId,
+        passSnmpMapping,
         path,
         deviceId,
         credentialId,
@@ -87,9 +87,8 @@ export function useTemplateRender() {
           requestBody.device_id = deviceId || null
           requestBody.use_nautobot_context = useNautobotContext
           requestBody.pre_run_command = preRunCommand || null
-          requestBody.credential_id = credentialId && credentialId !== 'none' 
-            ? parseInt(credentialId) 
-            : null
+          requestBody.credential_id =
+            credentialId && credentialId !== 'none' ? parseInt(credentialId) : null
         }
 
         // Add agent-specific fields

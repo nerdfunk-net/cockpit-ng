@@ -1,15 +1,38 @@
 'use client'
 
 import { useMemo, useEffect } from 'react'
-import { Search, X, ChevronLeft, ChevronRight, RotateCcw, Server, Eye, RefreshCw, ChevronDown, AlertCircle } from 'lucide-react'
+import {
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  Server,
+  Eye,
+  RefreshCw,
+  ChevronDown,
+  AlertCircle,
+} from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 
 import {
   DropdownMenu,
@@ -53,12 +76,17 @@ export default function HostsInventoryPage() {
     isInventoryModalOpen,
     selectedHostForInventory,
     openInventoryModal,
-    closeInventoryModal
+    closeInventoryModal,
   } = useModalState()
 
   // Fetch hosts using TanStack Query
-  const { data, isLoading, error: queryError, refetch } = useCheckmkHostsQuery({
-    enabled: authReady
+  const {
+    data,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useCheckmkHostsQuery({
+    enabled: authReady,
   })
 
   // Extract hosts from query data
@@ -88,7 +116,7 @@ export default function HostsInventoryPage() {
 
   const { selectedHosts, handleSelectHost, handleSelectAll } = useHostsSelection()
   const { checkmkConfig, loadCheckmkConfig } = useCheckmkConfig()
-  
+
   // Nautobot sync hook
   const {
     isSyncModalOpen,
@@ -108,7 +136,7 @@ export default function HostsInventoryPage() {
     errorModalMessage,
     closeErrorModal,
   } = useNautobotSync({ checkmkConfig, onMessage: showMessage })
-  
+
   const {
     filteredHosts,
     hostNameFilter,
@@ -160,7 +188,9 @@ export default function HostsInventoryPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Hosts & Inventory</h1>
-            <p className="text-muted-foreground mt-2">View and manage CheckMK hosts and inventory data</p>
+            <p className="text-muted-foreground mt-2">
+              View and manage CheckMK hosts and inventory data
+            </p>
           </div>
         </div>
       </div>
@@ -168,20 +198,26 @@ export default function HostsInventoryPage() {
       {/* Status Message */}
       {statusMessage && (
         <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
-          <Card className={`min-w-[400px] max-w-[600px] shadow-lg ${
-            statusMessage.type === 'error' ? 'border-red-500 bg-red-50' :
-            'border-blue-500 bg-blue-50'
-          }`}>
+          <Card
+            className={`min-w-[400px] max-w-[600px] shadow-lg ${
+              statusMessage.type === 'error'
+                ? 'border-red-500 bg-red-50'
+                : 'border-blue-500 bg-blue-50'
+            }`}
+          >
             <CardContent className="p-4">
-              <div className={`flex items-start gap-3 ${
-                statusMessage.type === 'error' ? 'text-red-800' :
-                'text-blue-800'
-              }`}>
+              <div
+                className={`flex items-start gap-3 ${
+                  statusMessage.type === 'error' ? 'text-red-800' : 'text-blue-800'
+                }`}
+              >
                 <div className="flex-shrink-0 mt-0.5">
                   {statusMessage.type === 'error' && <X className="h-5 w-5" />}
                   {statusMessage.type === 'info' && <span className="text-lg">ℹ</span>}
                 </div>
-                <span className="flex-1 text-sm font-medium break-words">{statusMessage.text}</span>
+                <span className="flex-1 text-sm font-medium break-words">
+                  {statusMessage.text}
+                </span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -218,8 +254,10 @@ export default function HostsInventoryPage() {
                 {activeFiltersCount > 0 || sortColumn ? (
                   <p className="text-blue-100 text-xs">
                     Showing {filteredHosts.length} of {hosts.length} hosts
-                    {activeFiltersCount > 0 && ` (${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} active)`}
-                    {sortColumn && ` - Sorted by ${sortColumn.replace('_', ' ')} (${sortOrder})`}
+                    {activeFiltersCount > 0 &&
+                      ` (${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} active)`}
+                    {sortColumn &&
+                      ` - Sorted by ${sortColumn.replace('_', ' ')} (${sortOrder})`}
                   </p>
                 ) : (
                   <p className="text-blue-100 text-xs">
@@ -231,7 +269,10 @@ export default function HostsInventoryPage() {
             <div className="flex items-center space-x-2">
               {activeFiltersCount > 0 && (
                 <>
-                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                  <Badge
+                    variant="secondary"
+                    className="bg-white/20 text-white border-white/30"
+                  >
                     {activeFiltersCount} active
                   </Badge>
                   <Button
@@ -270,8 +311,13 @@ export default function HostsInventoryPage() {
                 <tr className="border-b">
                   <th className="text-left p-2 font-medium w-12">
                     <Checkbox
-                      checked={paginatedHosts.length > 0 && paginatedHosts.every(host => selectedHosts.has(host.host_name))}
-                      onCheckedChange={(checked) => handleSelectAll(!!checked, paginatedHosts)}
+                      checked={
+                        paginatedHosts.length > 0 &&
+                        paginatedHosts.every(host => selectedHosts.has(host.host_name))
+                      }
+                      onCheckedChange={checked =>
+                        handleSelectAll(!!checked, paginatedHosts)
+                      }
                       aria-label="Select all hosts"
                     />
                   </th>
@@ -282,7 +328,7 @@ export default function HostsInventoryPage() {
                         <Input
                           placeholder="Filter by name..."
                           value={hostNameFilter}
-                          onChange={(e) => setHostNameFilter(e.target.value)}
+                          onChange={e => setHostNameFilter(e.target.value)}
                           className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                         />
                       </div>
@@ -300,22 +346,36 @@ export default function HostsInventoryPage() {
                       <div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-8 text-xs justify-between w-full">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs justify-between w-full"
+                            >
                               Folder Filter
-                              {Object.values(folderFilters).filter(Boolean).length < filterOptions.folders.size && Object.keys(folderFilters).length > 0 && (
-                                <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
-                                  {Object.values(folderFilters).filter(Boolean).length}
-                                </Badge>
-                              )}
+                              {Object.values(folderFilters).filter(Boolean).length <
+                                filterOptions.folders.size &&
+                                Object.keys(folderFilters).length > 0 && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="ml-1 h-4 px-1 text-xs"
+                                  >
+                                    {
+                                      Object.values(folderFilters).filter(Boolean)
+                                        .length
+                                    }
+                                  </Badge>
+                                )}
                               <ChevronDown className="h-4 w-4 ml-auto" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start" className="w-40">
-                            <DropdownMenuLabel className="text-xs">Filter by Folder</DropdownMenuLabel>
+                            <DropdownMenuLabel className="text-xs">
+                              Filter by Folder
+                            </DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuCheckboxItem
                               checked={Object.values(folderFilters).every(Boolean)}
-                              onCheckedChange={(checked) => {
+                              onCheckedChange={checked => {
                                 const newFilters: Record<string, boolean> = {}
                                 filterOptions.folders.forEach(folder => {
                                   newFilters[folder] = !!checked
@@ -327,17 +387,22 @@ export default function HostsInventoryPage() {
                               Select all
                             </DropdownMenuCheckboxItem>
                             <DropdownMenuSeparator />
-                            {Array.from(filterOptions.folders).sort().map((folder) => (
-                              <DropdownMenuCheckboxItem
-                                key={`hosts-inventory-folder-${folder}`}
-                                checked={folderFilters[folder] || false}
-                                onCheckedChange={(checked) =>
-                                  setFolderFilters(prev => ({ ...prev, [folder]: !!checked }))
-                                }
-                              >
-                                {folder}
-                              </DropdownMenuCheckboxItem>
-                            ))}
+                            {Array.from(filterOptions.folders)
+                              .sort()
+                              .map(folder => (
+                                <DropdownMenuCheckboxItem
+                                  key={`hosts-inventory-folder-${folder}`}
+                                  checked={folderFilters[folder] || false}
+                                  onCheckedChange={checked =>
+                                    setFolderFilters(prev => ({
+                                      ...prev,
+                                      [folder]: !!checked,
+                                    }))
+                                  }
+                                >
+                                  {folder}
+                                </DropdownMenuCheckboxItem>
+                              ))}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -365,7 +430,7 @@ export default function HostsInventoryPage() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedHosts.map((host) => {
+                  paginatedHosts.map(host => {
                     // Extract values from attributes
                     const ipAddress = (host.attributes?.ipaddress as string) || 'N/A'
                     const isCluster = host.attributes?.tag_agent === 'cmk-agent-cluster'
@@ -378,7 +443,9 @@ export default function HostsInventoryPage() {
                         <td className="p-2 w-12">
                           <Checkbox
                             checked={selectedHosts.has(host.host_name)}
-                            onCheckedChange={(checked) => handleSelectHost(host.host_name, !!checked)}
+                            onCheckedChange={checked =>
+                              handleSelectHost(host.host_name, !!checked)
+                            }
                             aria-label={`Select ${host.host_name}`}
                           />
                         </td>
@@ -397,9 +464,7 @@ export default function HostsInventoryPage() {
                           </code>
                         </td>
                         <td className="p-2">
-                          <Badge variant="default">
-                            Active
-                          </Badge>
+                          <Badge variant="default">Active</Badge>
                         </td>
                         <td className="p-2">
                           <div className="flex gap-1">
@@ -445,7 +510,9 @@ export default function HostsInventoryPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between pt-4">
             <div className="text-sm text-muted-foreground">
-              Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, filteredHosts.length)} of {filteredHosts.length} entries
+              Showing {currentPage * pageSize + 1} to{' '}
+              {Math.min((currentPage + 1) * pageSize, filteredHosts.length)} of{' '}
+              {filteredHosts.length} entries
             </div>
 
             <div className="flex items-center gap-1">
@@ -469,13 +536,14 @@ export default function HostsInventoryPage() {
                   </Button>
 
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const pageNum = Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i
+                    const pageNum =
+                      Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i
                     if (pageNum >= totalPages) return null
 
                     return (
                       <Button
                         key={`hosts-inventory-page-${pageNum}`}
-                        variant={pageNum === currentPage ? "default" : "outline"}
+                        variant={pageNum === currentPage ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => handlePageChange(pageNum)}
                       >
@@ -505,8 +573,13 @@ export default function HostsInventoryPage() {
               )}
 
               <div className="flex items-center gap-1 ml-2">
-                <Label htmlFor="page-size" className="text-xs text-muted-foreground">Show:</Label>
-                <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
+                <Label htmlFor="page-size" className="text-xs text-muted-foreground">
+                  Show:
+                </Label>
+                <Select
+                  value={pageSize.toString()}
+                  onValueChange={value => setPageSize(parseInt(value))}
+                >
                   <SelectTrigger className="w-20 h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                     <SelectValue />
                   </SelectTrigger>
@@ -568,13 +641,12 @@ export default function HostsInventoryPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-800 whitespace-pre-wrap">{errorModalMessage}</p>
+              <p className="text-sm text-red-800 whitespace-pre-wrap">
+                {errorModalMessage}
+              </p>
             </div>
             <div className="flex justify-end">
-              <Button
-                onClick={closeErrorModal}
-                variant="default"
-              >
+              <Button onClick={closeErrorModal} variant="default">
                 Close
               </Button>
             </div>

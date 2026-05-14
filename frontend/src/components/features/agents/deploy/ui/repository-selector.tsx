@@ -1,4 +1,10 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { GitRepository } from '../types'
@@ -14,7 +20,7 @@ export function RepositorySelector({
   repositories,
   selectedRepoId,
   onChange,
-  loading = false
+  loading = false,
 }: RepositorySelectorProps) {
   if (loading) {
     return <Skeleton className="h-10 w-full" />
@@ -25,13 +31,13 @@ export function RepositorySelector({
       <Label htmlFor="repository">Repository</Label>
       <Select
         value={selectedRepoId?.toString() || ''}
-        onValueChange={(value) => onChange(Number(value))}
+        onValueChange={value => onChange(Number(value))}
       >
         <SelectTrigger id="repository">
           <SelectValue placeholder="Select a repository" />
         </SelectTrigger>
         <SelectContent>
-          {repositories.map((repo) => (
+          {repositories.map(repo => (
             <SelectItem key={repo.id} value={repo.id.toString()}>
               {repo.name} ({repo.branch})
             </SelectItem>

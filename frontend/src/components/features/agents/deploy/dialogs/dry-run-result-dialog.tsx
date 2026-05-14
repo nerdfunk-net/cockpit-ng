@@ -1,4 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { CheckCircle, XCircle } from 'lucide-react'
@@ -13,7 +18,7 @@ interface DryRunResultDialogProps {
 export function DryRunResultDialog({
   show,
   onClose,
-  results
+  results,
 }: DryRunResultDialogProps) {
   if (!results || results.length === 0) {
     return null
@@ -29,7 +34,7 @@ export function DryRunResultDialog({
         <Tabs defaultValue={results[0]?.deviceId || ''} className="w-full">
           <ScrollArea className="w-full">
             <TabsList className="w-full">
-              {results.map((result) => (
+              {results.map(result => (
                 <TabsTrigger key={result.deviceId} value={result.deviceId}>
                   {result.success ? (
                     <CheckCircle className="mr-1 h-3 w-3 text-green-500" />
@@ -42,7 +47,7 @@ export function DryRunResultDialog({
             </TabsList>
           </ScrollArea>
 
-          {results.map((result) => (
+          {results.map(result => (
             <TabsContent key={result.deviceId} value={result.deviceId}>
               <ScrollArea className="h-[60vh] w-full rounded-md border p-4">
                 {result.success ? (

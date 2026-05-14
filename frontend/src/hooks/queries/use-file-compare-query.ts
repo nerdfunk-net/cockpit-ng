@@ -45,8 +45,8 @@ export function useFileCompareQuery(
         body: JSON.stringify({
           repo_id: repoId,
           left_file: filePath1,
-          right_file: filePath2
-        })
+          right_file: filePath2,
+        }),
       })
     },
     enabled: enabled && !!repoId && !!filePath1 && !!filePath2,

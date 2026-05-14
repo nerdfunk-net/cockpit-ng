@@ -1,8 +1,21 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { RefreshCw } from 'lucide-react'
 import { useCelerySchedules } from '../hooks/use-celery-queries'
 import { EMPTY_SCHEDULES } from '../utils/constants'
@@ -16,9 +29,16 @@ export function CelerySchedulesList() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Periodic Task Schedules</CardTitle>
-            <CardDescription>Tasks configured to run on a schedule via Celery Beat</CardDescription>
+            <CardDescription>
+              Tasks configured to run on a schedule via Celery Beat
+            </CardDescription>
           </div>
-          <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isLoading}>
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            size="sm"
+            disabled={isLoading}
+          >
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -35,7 +55,7 @@ export function CelerySchedulesList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {schedules.map((schedule) => (
+              {schedules.map(schedule => (
                 <TableRow key={schedule.name}>
                   <TableCell className="font-medium">{schedule.name}</TableCell>
                   <TableCell className="font-mono text-sm">{schedule.task}</TableCell>
@@ -45,7 +65,9 @@ export function CelerySchedulesList() {
             </TableBody>
           </Table>
         ) : (
-          <p className="text-center text-muted-foreground py-8">No schedules configured</p>
+          <p className="text-center text-muted-foreground py-8">
+            No schedules configured
+          </p>
         )}
       </CardContent>
     </Card>

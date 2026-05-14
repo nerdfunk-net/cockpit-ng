@@ -12,7 +12,7 @@ export const DEFAULT_IMPORT_VALUES: Partial<GitImportFormData> = {
 export const SNMP_FILE_NAME = 'snmp_mapping.yaml' as const
 
 export const CACHE_TIME = {
-  SNMP_MAPPING: 2 * 60 * 1000,  // 2 minutes
+  SNMP_MAPPING: 2 * 60 * 1000, // 2 minutes
 } as const
 
 export const MESSAGE_TIMEOUT = 5000 as const

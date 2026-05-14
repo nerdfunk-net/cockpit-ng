@@ -49,7 +49,10 @@ export function JobTemplateInventorySection({
     if (selectedGroup === 'all') return savedInventories
     return savedInventories.filter(inv => {
       if (!inv.group_path) return false
-      return inv.group_path === selectedGroup || inv.group_path.startsWith(selectedGroup + '/')
+      return (
+        inv.group_path === selectedGroup ||
+        inv.group_path.startsWith(selectedGroup + '/')
+      )
     })
   }, [savedInventories, selectedGroup])
 
@@ -235,12 +238,18 @@ export function JobTemplateInventorySection({
             filteredInventories.length === 0 &&
             !loadingInventories && (
               <p className="text-xs text-emerald-600">
-                {selectedGroup === 'all'
-                  ? <>No saved inventories found. Create one in{' '}
+                {selectedGroup === 'all' ? (
+                  <>
+                    No saved inventories found. Create one in{' '}
                     <strong>Network → Automation → Inventory</strong> or{' '}
-                    <strong>Netmiko</strong>.</>
-                  : <>No inventories found in group <strong>{selectedGroup}</strong>. Select a different group or <strong>All</strong>.</>
-                }
+                    <strong>Netmiko</strong>.
+                  </>
+                ) : (
+                  <>
+                    No inventories found in group <strong>{selectedGroup}</strong>.
+                    Select a different group or <strong>All</strong>.
+                  </>
+                )}
               </p>
             )}
         </>

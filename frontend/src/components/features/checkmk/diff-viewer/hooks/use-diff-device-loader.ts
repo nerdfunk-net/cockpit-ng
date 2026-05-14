@@ -30,30 +30,36 @@ export function useDiffDeviceLoader() {
     taskStatus: null,
   })
 
-  const pollTask = useCallback(async (taskId: string): Promise<DiffTaskResult | null> => {
-    const maxAttempts = 120 // 4 minutes at 2s intervals
-    for (let i = 0; i < maxAttempts; i++) {
-      await new Promise(resolve => setTimeout(resolve, 2000))
+  const pollTask = useCallback(
+    async (taskId: string): Promise<DiffTaskResult | null> => {
+      const maxAttempts = 120 // 4 minutes at 2s intervals
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(resolve => setTimeout(resolve, 2000))
 
-      const response = await apiCall<CeleryTaskStatus>(`celery/tasks/${taskId}`)
-      if (!response) continue
+        const response = await apiCall<CeleryTaskStatus>(`celery/tasks/${taskId}`)
+        if (!response) continue
 
-      setState(prev => ({ ...prev, taskStatus: response.status }))
+        setState(prev => ({ ...prev, taskStatus: response.status }))
 
-      if (response.status === 'SUCCESS') {
-        const result = response.result as unknown as DiffTaskResult & { success?: boolean; error?: string }
-        if (result && result.success !== false) {
-          return result
+        if (response.status === 'SUCCESS') {
+          const result = response.result as unknown as DiffTaskResult & {
+            success?: boolean
+            error?: string
+          }
+          if (result && result.success !== false) {
+            return result
+          }
+          throw new Error(result?.error || 'Task completed with errors')
         }
-        throw new Error(result?.error || 'Task completed with errors')
-      }
 
-      if (response.status === 'FAILURE') {
-        throw new Error(response.error || 'Task failed')
+        if (response.status === 'FAILURE') {
+          throw new Error(response.error || 'Task failed')
+        }
       }
-    }
-    throw new Error('Task timed out')
-  }, [apiCall])
+      throw new Error('Task timed out')
+    },
+    [apiCall]
+  )
 
   const runDiff = useCallback(async () => {
     if (!token) return
@@ -91,25 +97,34 @@ export function useDiffDeviceLoader() {
     }
   }, [token, pollTask])
 
-  const loadNautobotDevices = useCallback(async (reload = false) => {
-    if (!token) return
-    setState(prev => ({ ...prev, loading: true, error: null, taskStatus: null }))
-    try {
-      const { devices, total } = await fetchNautobotDevices(token, reload)
-      setState({
-        devices,
-        totalNautobot: total,
-        totalCheckmk: 0,
-        totalBoth: 0,
-        loading: false,
-        error: null,
-        taskStatus: null,
-      })
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load Nautobot devices'
-      setState(prev => ({ ...prev, loading: false, error: message, taskStatus: null }))
-    }
-  }, [token])
+  const loadNautobotDevices = useCallback(
+    async (reload = false) => {
+      if (!token) return
+      setState(prev => ({ ...prev, loading: true, error: null, taskStatus: null }))
+      try {
+        const { devices, total } = await fetchNautobotDevices(token, reload)
+        setState({
+          devices,
+          totalNautobot: total,
+          totalCheckmk: 0,
+          totalBoth: 0,
+          loading: false,
+          error: null,
+          taskStatus: null,
+        })
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to load Nautobot devices'
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: message,
+          taskStatus: null,
+        }))
+      }
+    },
+    [token]
+  )
 
   const restoreData = useCallback((snapshot: DiffDataSnapshot) => {
     setState({
@@ -123,16 +138,19 @@ export function useDiffDeviceLoader() {
     })
   }, [])
 
-  return useMemo(() => ({
-    devices: state.devices,
-    totalNautobot: state.totalNautobot,
-    totalCheckmk: state.totalCheckmk,
-    totalBoth: state.totalBoth,
-    loading: state.loading,
-    error: state.error,
-    taskStatus: state.taskStatus,
-    runDiff,
-    loadNautobotDevices,
-    restoreData,
-  }), [state, runDiff, loadNautobotDevices, restoreData])
+  return useMemo(
+    () => ({
+      devices: state.devices,
+      totalNautobot: state.totalNautobot,
+      totalCheckmk: state.totalCheckmk,
+      totalBoth: state.totalBoth,
+      loading: state.loading,
+      error: state.error,
+      taskStatus: state.taskStatus,
+      runDiff,
+      loadNautobotDevices,
+      restoreData,
+    }),
+    [state, runDiff, loadNautobotDevices, restoreData]
+  )
 }

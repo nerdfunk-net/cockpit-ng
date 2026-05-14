@@ -1,7 +1,13 @@
 'use client'
 
 import { FileText, Download, Copy, Check } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useFileContentQuery } from '@/hooks/queries/use-file-content-query'
@@ -42,9 +48,15 @@ export function FileViewDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         className="!max-w-none flex flex-col p-0 overflow-auto"
-        style={{ resize: 'both', width: '80vw', height: '85vh', minWidth: '600px', minHeight: '400px' }}
+        style={{
+          resize: 'both',
+          width: '80vw',
+          height: '85vh',
+          minWidth: '600px',
+          minHeight: '400px',
+        }}
       >
         <DialogHeader className="p-6 pb-4 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
@@ -52,9 +64,7 @@ export function FileViewDialog({
             File Content
           </DialogTitle>
           <DialogDescription>
-            {filePath && (
-              <span className="font-mono text-xs">{filePath}</span>
-            )}
+            {filePath && <span className="font-mono text-xs">{filePath}</span>}
           </DialogDescription>
         </DialogHeader>
 
@@ -85,11 +95,7 @@ export function FileViewDialog({
                 {data.split('\n').length} lines • {new Blob([data]).size} bytes
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopyToClipboard}
-                >
+                <Button variant="outline" size="sm" onClick={handleCopyToClipboard}>
                   {copied ? (
                     <>
                       <Check className="h-4 w-4 mr-2" />
@@ -103,11 +109,7 @@ export function FileViewDialog({
                   )}
                 </Button>
                 {onDownload && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onDownload}
-                  >
+                  <Button variant="outline" size="sm" onClick={onDownload}>
                     <Download className="h-4 w-4 mr-2" />
                     Download
                   </Button>

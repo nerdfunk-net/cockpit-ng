@@ -2,10 +2,23 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ArrowUp, ArrowDown } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { useNautobotDeviceTypesQuery } from '../hooks/use-nautobot-graphql-queries'
@@ -42,7 +55,10 @@ export function EditableDeviceTable({
   onDeviceModified,
 }: EditableDeviceTableProps) {
   const { apiCall } = useApi()
-  const [editingCell, setEditingCell] = useState<{ deviceId: string; field: string } | null>(null)
+  const [editingCell, setEditingCell] = useState<{
+    deviceId: string
+    field: string
+  } | null>(null)
   const [editValue, setEditValue] = useState<string>('')
 
   // Fetch data using TanStack Query
@@ -54,7 +70,7 @@ export function EditableDeviceTable({
     const deviceTypesArray = deviceTypesData?.data?.device_types || []
     const mapping = new Map<string, string>()
 
-    const options = deviceTypesArray.map((dt) => {
+    const options = deviceTypesArray.map(dt => {
       const modelName = dt.model
       const manufacturerName = dt.manufacturer?.name || ''
 
@@ -64,7 +80,7 @@ export function EditableDeviceTable({
 
       return {
         value: modelName,
-        label: modelName
+        label: modelName,
       }
     })
 
@@ -72,7 +88,7 @@ export function EditableDeviceTable({
 
     return {
       deviceTypeOptions: options,
-      deviceTypeToManufacturer: mapping
+      deviceTypeToManufacturer: mapping,
     }
   }, [deviceTypesData])
 
@@ -92,7 +108,7 @@ export function EditableDeviceTable({
 
       return {
         value: location.name,
-        label: path.join(' → ')
+        label: path.join(' → '),
       }
     })
 
@@ -110,8 +126,12 @@ export function EditableDeviceTable({
     const loadOtherOptions = async () => {
       try {
         const [roles, platforms] = await Promise.all([
-          apiCall<{ field: string; values: FieldOption[] }>('inventory/field-values/role'),
-          apiCall<{ field: string; values: FieldOption[] }>('inventory/field-values/platform'),
+          apiCall<{ field: string; values: FieldOption[] }>(
+            'inventory/field-values/role'
+          ),
+          apiCall<{ field: string; values: FieldOption[] }>(
+            'inventory/field-values/platform'
+          ),
         ])
         setRoleOptions(roles.values || [])
         setPlatformOptions(platforms.values || [])
@@ -120,18 +140,25 @@ export function EditableDeviceTable({
       }
     }
     void loadOtherOptions()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Location search state
   const [locationSearchValue, setLocationSearchValue] = useState<string>('')
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  })
   const locationInputRef = useRef<HTMLInputElement>(null)
 
-  const isDeviceModified = useCallback((deviceId: string) => {
-    return modifiedDevices.has(deviceId)
-  }, [modifiedDevices])
+  const isDeviceModified = useCallback(
+    (deviceId: string) => {
+      return modifiedDevices.has(deviceId)
+    },
+    [modifiedDevices]
+  )
 
   const getFieldValue = useCallback((device: DeviceInfo, field: string): string => {
     const value = device[field as keyof DeviceInfo]
@@ -150,33 +177,37 @@ export function EditableDeviceTable({
     return value?.toString() || ''
   }, [])
 
-  const handleCellClick = useCallback((device: DeviceInfo, column: ColumnDefinition) => {
-    if (!column.editable) return
+  const handleCellClick = useCallback(
+    (device: DeviceInfo, column: ColumnDefinition) => {
+      if (!column.editable) return
 
-    const currentValue = getFieldValue(device, column.field)
+      const currentValue = getFieldValue(device, column.field)
 
-    // For status field, normalize to lowercase to match SELECT_OPTIONS values
-    const normalizedValue = column.field === 'status' ? currentValue.toLowerCase() : currentValue
+      // For status field, normalize to lowercase to match SELECT_OPTIONS values
+      const normalizedValue =
+        column.field === 'status' ? currentValue.toLowerCase() : currentValue
 
-    // For location field, set the search value to the hierarchical label
-    if (column.field === 'location') {
-      console.log('[BulkEdit] Clicked location field, current value:', currentValue)
-      console.log('[BulkEdit] Available locationOptions:', locationOptions.length)
-      const locationOption = locationOptions.find(loc => loc.value === currentValue)
-      console.log('[BulkEdit] Found locationOption:', locationOption)
-      setLocationSearchValue(locationOption?.label || currentValue)
-    }
+      // For location field, set the search value to the hierarchical label
+      if (column.field === 'location') {
+        console.log('[BulkEdit] Clicked location field, current value:', currentValue)
+        console.log('[BulkEdit] Available locationOptions:', locationOptions.length)
+        const locationOption = locationOptions.find(loc => loc.value === currentValue)
+        console.log('[BulkEdit] Found locationOption:', locationOption)
+        setLocationSearchValue(locationOption?.label || currentValue)
+      }
 
-    // For device_type field, log the current device for debugging
-    if (column.field === 'device_type') {
-      console.log('[BulkEdit] Clicked device_type field, device:', device)
-      console.log('[BulkEdit] Current value:', currentValue)
-      console.log('[BulkEdit] Device type options:', deviceTypeOptions)
-    }
+      // For device_type field, log the current device for debugging
+      if (column.field === 'device_type') {
+        console.log('[BulkEdit] Clicked device_type field, device:', device)
+        console.log('[BulkEdit] Current value:', currentValue)
+        console.log('[BulkEdit] Device type options:', deviceTypeOptions)
+      }
 
-    setEditingCell({ deviceId: device.id, field: column.field })
-    setEditValue(normalizedValue)
-  }, [getFieldValue, locationOptions, deviceTypeOptions])
+      setEditingCell({ deviceId: device.id, field: column.field })
+      setEditValue(normalizedValue)
+    },
+    [getFieldValue, locationOptions, deviceTypeOptions]
+  )
 
   const handleCellBlur = useCallback(() => {
     if (!editingCell) return
@@ -197,296 +228,337 @@ export function EditableDeviceTable({
 
     setEditingCell(null)
     setEditValue('')
-  }, [editingCell, editValue, devices, modifiedDevices, onDeviceModified, getFieldValue])
+  }, [
+    editingCell,
+    editValue,
+    devices,
+    modifiedDevices,
+    onDeviceModified,
+    getFieldValue,
+  ])
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleCellBlur()
-    } else if (e.key === 'Escape') {
-      setEditingCell(null)
-      setEditValue('')
-    }
-  }, [handleCellBlur])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        handleCellBlur()
+      } else if (e.key === 'Escape') {
+        setEditingCell(null)
+        setEditValue('')
+      }
+    },
+    [handleCellBlur]
+  )
 
   // Get options for a specific field
-  const getOptionsForField = useCallback((field: string): FieldOption[] | null => {
-    switch (field) {
-      case 'status':
-        return STATUS_OPTIONS
-      case 'role':
-        return roleOptions
-      case 'location':
-        return null // Location uses custom searchable input
-      case 'device_type':
-        return deviceTypeOptions
-      case 'platform':
-        return platformOptions
-      default:
-        return null
-    }
-  }, [roleOptions, deviceTypeOptions, platformOptions])
+  const getOptionsForField = useCallback(
+    (field: string): FieldOption[] | null => {
+      switch (field) {
+        case 'status':
+          return STATUS_OPTIONS
+        case 'role':
+          return roleOptions
+        case 'location':
+          return null // Location uses custom searchable input
+        case 'device_type':
+          return deviceTypeOptions
+        case 'platform':
+          return platformOptions
+        default:
+          return null
+      }
+    },
+    [roleOptions, deviceTypeOptions, platformOptions]
+  )
 
   // Render a Select dropdown for fields with predefined options
-  const renderSelectField = useCallback((device: DeviceInfo, column: ColumnDefinition, options: FieldOption[]) => {
-    return (
-      <div className="flex items-center h-12">
-        <Select
-          value={editValue}
-          onValueChange={(newValue) => {
-            setEditValue(newValue)
-            // Auto-save on selection change
-            const changes = modifiedDevices.get(device.id) || {}
+  const renderSelectField = useCallback(
+    (device: DeviceInfo, column: ColumnDefinition, options: FieldOption[]) => {
+      return (
+        <div className="flex items-center h-12">
+          <Select
+            value={editValue}
+            onValueChange={newValue => {
+              setEditValue(newValue)
+              // Auto-save on selection change
+              const changes = modifiedDevices.get(device.id) || {}
 
-            // If changing device type, also update manufacturer
-            if (column.field === 'device_type') {
-              const manufacturer = deviceTypeToManufacturer.get(newValue)
-              console.log('[BulkEdit] Device type changed to:', newValue)
-              console.log('[BulkEdit] Manufacturer from mapping:', manufacturer)
-              console.log('[BulkEdit] deviceTypeToManufacturer size:', deviceTypeToManufacturer.size)
-              onDeviceModified(device.id, {
-                ...changes,
-                device_type: newValue,
-                manufacturer: manufacturer || changes.manufacturer || '',
-              })
-            } else {
-              onDeviceModified(device.id, {
-                ...changes,
-                [column.field]: newValue,
+              // If changing device type, also update manufacturer
+              if (column.field === 'device_type') {
+                const manufacturer = deviceTypeToManufacturer.get(newValue)
+                console.log('[BulkEdit] Device type changed to:', newValue)
+                console.log('[BulkEdit] Manufacturer from mapping:', manufacturer)
+                console.log(
+                  '[BulkEdit] deviceTypeToManufacturer size:',
+                  deviceTypeToManufacturer.size
+                )
+                onDeviceModified(device.id, {
+                  ...changes,
+                  device_type: newValue,
+                  manufacturer: manufacturer || changes.manufacturer || '',
+                })
+              } else {
+                onDeviceModified(device.id, {
+                  ...changes,
+                  [column.field]: newValue,
+                })
+              }
+
+              setEditingCell(null)
+              setEditValue('')
+            }}
+          >
+            <SelectTrigger className="h-8 text-sm w-full min-w-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )
+    },
+    [editValue, modifiedDevices, onDeviceModified, deviceTypeToManufacturer]
+  )
+
+  const renderCell = useCallback(
+    (device: DeviceInfo, column: ColumnDefinition) => {
+      const isEditing =
+        editingCell?.deviceId === device.id && editingCell?.field === column.field
+
+      // Check if this device has been modified and use the modified value if available
+      const modifications = modifiedDevices.get(device.id)
+      const fieldValue =
+        modifications && column.field in modifications
+          ? modifications[column.field as keyof DeviceInfo]
+          : device[column.field as keyof DeviceInfo]
+
+      const value = (() => {
+        // Handle nested objects
+        if (fieldValue && typeof fieldValue === 'object') {
+          if ('name' in fieldValue) return (fieldValue as { name: string }).name
+          if ('address' in fieldValue)
+            return (fieldValue as { address: string }).address
+        }
+        // Handle arrays (tags)
+        if (Array.isArray(fieldValue)) {
+          return fieldValue.join(', ')
+        }
+        return fieldValue?.toString() || ''
+      })()
+
+      if (isEditing) {
+        // Special handling for location field - searchable dropdown
+        if (column.field === 'location') {
+          console.log('[BulkEdit] Rendering location field')
+          console.log('[BulkEdit] locationSearchValue:', locationSearchValue)
+          console.log('[BulkEdit] showLocationDropdown:', showLocationDropdown)
+          console.log('[BulkEdit] locationOptions.length:', locationOptions.length)
+
+          const filteredLocations = locationOptions.filter(loc =>
+            loc.label.toLowerCase().includes(locationSearchValue.toLowerCase())
+          )
+          console.log('[BulkEdit] filteredLocations.length:', filteredLocations.length)
+
+          const updateDropdownPosition = () => {
+            if (locationInputRef.current) {
+              const rect = locationInputRef.current.getBoundingClientRect()
+              setDropdownPosition({
+                top: rect.bottom + window.scrollY,
+                left: rect.left + window.scrollX,
+                width: rect.width,
               })
             }
-
-            setEditingCell(null)
-            setEditValue('')
-          }}
-        >
-          <SelectTrigger className="h-8 text-sm w-full min-w-0">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    )
-  }, [editValue, modifiedDevices, onDeviceModified, deviceTypeToManufacturer])
-
-  const renderCell = useCallback((device: DeviceInfo, column: ColumnDefinition) => {
-    const isEditing = editingCell?.deviceId === device.id && editingCell?.field === column.field
-
-    // Check if this device has been modified and use the modified value if available
-    const modifications = modifiedDevices.get(device.id)
-    const fieldValue = modifications && column.field in modifications
-      ? modifications[column.field as keyof DeviceInfo]
-      : device[column.field as keyof DeviceInfo]
-
-    const value = (() => {
-      // Handle nested objects
-      if (fieldValue && typeof fieldValue === 'object') {
-        if ('name' in fieldValue) return (fieldValue as { name: string }).name
-        if ('address' in fieldValue) return (fieldValue as { address: string }).address
-      }
-      // Handle arrays (tags)
-      if (Array.isArray(fieldValue)) {
-        return fieldValue.join(', ')
-      }
-      return fieldValue?.toString() || ''
-    })()
-
-    if (isEditing) {
-      // Special handling for location field - searchable dropdown
-      if (column.field === 'location') {
-        console.log('[BulkEdit] Rendering location field')
-        console.log('[BulkEdit] locationSearchValue:', locationSearchValue)
-        console.log('[BulkEdit] showLocationDropdown:', showLocationDropdown)
-        console.log('[BulkEdit] locationOptions.length:', locationOptions.length)
-
-        const filteredLocations = locationOptions.filter(loc =>
-          loc.label.toLowerCase().includes(locationSearchValue.toLowerCase())
-        )
-        console.log('[BulkEdit] filteredLocations.length:', filteredLocations.length)
-
-        const updateDropdownPosition = () => {
-          if (locationInputRef.current) {
-            const rect = locationInputRef.current.getBoundingClientRect()
-            setDropdownPosition({
-              top: rect.bottom + window.scrollY,
-              left: rect.left + window.scrollX,
-              width: rect.width
-            })
           }
+
+          return (
+            <div className="flex items-center h-12">
+              <Input
+                ref={locationInputRef}
+                placeholder="Search locations..."
+                value={locationSearchValue}
+                onChange={e => {
+                  console.log('[BulkEdit] Input changed:', e.target.value)
+                  setLocationSearchValue(e.target.value)
+                  setShowLocationDropdown(true)
+                  updateDropdownPosition()
+                }}
+                onFocus={() => {
+                  console.log('[BulkEdit] Input focused')
+                  setShowLocationDropdown(true)
+                  updateDropdownPosition()
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Escape') {
+                    console.log('[BulkEdit] Escape pressed')
+                    setShowLocationDropdown(false)
+                    setLocationSearchValue('')
+                    setEditingCell(null)
+                  }
+                }}
+                className="h-8 text-sm w-full min-w-0"
+                autoFocus
+              />
+              {showLocationDropdown &&
+                typeof window !== 'undefined' &&
+                createPortal(
+                  <div
+                    className="fixed bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                    style={{
+                      top: `${dropdownPosition.top}px`,
+                      left: `${dropdownPosition.left}px`,
+                      width: `${dropdownPosition.width}px`,
+                      zIndex: 9999,
+                    }}
+                  >
+                    {filteredLocations.map(location => (
+                      <div
+                        key={location.value}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                        onClick={() => {
+                          console.log('[BulkEdit] Location clicked:', location.label)
+                          const changes = modifiedDevices.get(device.id) || {}
+                          onDeviceModified(device.id, {
+                            ...changes,
+                            [column.field]: location.value,
+                          })
+                          setLocationSearchValue('')
+                          setShowLocationDropdown(false)
+                          setEditingCell(null)
+                        }}
+                      >
+                        {location.label}
+                      </div>
+                    ))}
+                  </div>,
+                  document.body
+                )}
+            </div>
+          )
         }
 
+        // Check if this field has predefined options (dropdown)
+        const fieldOptions = getOptionsForField(column.field)
+
+        if (fieldOptions) {
+          return renderSelectField(device, column, fieldOptions)
+        }
+
+        // Default text input for other fields
         return (
           <div className="flex items-center h-12">
             <Input
-              ref={locationInputRef}
-              placeholder="Search locations..."
-              value={locationSearchValue}
-              onChange={(e) => {
-                console.log('[BulkEdit] Input changed:', e.target.value)
-                setLocationSearchValue(e.target.value)
-                setShowLocationDropdown(true)
-                updateDropdownPosition()
-              }}
-              onFocus={() => {
-                console.log('[BulkEdit] Input focused')
-                setShowLocationDropdown(true)
-                updateDropdownPosition()
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  console.log('[BulkEdit] Escape pressed')
-                  setShowLocationDropdown(false)
-                  setLocationSearchValue('')
-                  setEditingCell(null)
-                }
-              }}
-              className="h-8 text-sm w-full min-w-0"
+              value={editValue}
+              onChange={e => setEditValue(e.target.value)}
+              onBlur={handleCellBlur}
+              onKeyDown={handleKeyDown}
               autoFocus
+              className="h-8 text-sm w-full min-w-0"
             />
-            {showLocationDropdown && typeof window !== 'undefined' && createPortal(
-              <div
-                className="fixed bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
-                style={{
-                  top: `${dropdownPosition.top}px`,
-                  left: `${dropdownPosition.left}px`,
-                  width: `${dropdownPosition.width}px`,
-                  zIndex: 9999
-                }}
-              >
-                {filteredLocations.map(location => (
-                  <div
-                    key={location.value}
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                    onClick={() => {
-                      console.log('[BulkEdit] Location clicked:', location.label)
-                      const changes = modifiedDevices.get(device.id) || {}
-                      onDeviceModified(device.id, {
-                        ...changes,
-                        [column.field]: location.value,
-                      })
-                      setLocationSearchValue('')
-                      setShowLocationDropdown(false)
-                      setEditingCell(null)
-                    }}
-                  >
-                    {location.label}
-                  </div>
-                ))}
-              </div>,
-              document.body
-            )}
           </div>
         )
       }
 
-      // Check if this field has predefined options (dropdown)
-      const fieldOptions = getOptionsForField(column.field)
-
-      if (fieldOptions) {
-        return renderSelectField(device, column, fieldOptions)
+      // Render special cases
+      if (column.field === 'tags' && Array.isArray(device.tags)) {
+        return (
+          <div className="flex items-center gap-1 flex-wrap h-12">
+            {device.tags.map(tag => (
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )
       }
 
-      // Default text input for other fields
-      return (
-        <div className="flex items-center h-12">
-          <Input
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={handleCellBlur}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            className="h-8 text-sm w-full min-w-0"
-          />
-        </div>
-      )
-    }
+      if (column.field === 'status') {
+        const statusColors: Record<string, string> = {
+          active: 'bg-green-100 text-green-800',
+          planned: 'bg-blue-100 text-blue-800',
+          maintenance: 'bg-yellow-100 text-yellow-800',
+          failed: 'bg-red-100 text-red-800',
+          decommissioning: 'bg-gray-100 text-gray-800',
+        }
+        const colorClass =
+          statusColors[value.toLowerCase()] || 'bg-gray-100 text-gray-800'
 
-    // Render special cases
-    if (column.field === 'tags' && Array.isArray(device.tags)) {
-      return (
-        <div className="flex items-center gap-1 flex-wrap h-12">
-          {device.tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs">
-              {tag}
+        return (
+          <div className="flex items-center h-12">
+            <Badge variant="secondary" className={`text-xs ${colorClass}`}>
+              {value}
             </Badge>
-          ))}
-        </div>
-      )
-    }
-
-    if (column.field === 'status') {
-      const statusColors: Record<string, string> = {
-        active: 'bg-green-100 text-green-800',
-        planned: 'bg-blue-100 text-blue-800',
-        maintenance: 'bg-yellow-100 text-yellow-800',
-        failed: 'bg-red-100 text-red-800',
-        decommissioning: 'bg-gray-100 text-gray-800',
+          </div>
+        )
       }
-      const colorClass = statusColors[value.toLowerCase()] || 'bg-gray-100 text-gray-800'
+
+      // Special rendering for name field with uppercase/lowercase icons
+      if (column.field === 'name') {
+        return (
+          <div className="flex items-center gap-1 h-12">
+            <span className="text-sm flex-1">
+              {value || <span className="text-gray-400 italic">Empty</span>}
+            </span>
+            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={e => {
+                  e.stopPropagation()
+                  const changes = modifiedDevices.get(device.id) || {}
+                  onDeviceModified(device.id, {
+                    ...changes,
+                    name: value.toUpperCase(),
+                  })
+                }}
+                className="p-0.5 hover:bg-gray-200 rounded"
+                title="Convert to UPPERCASE"
+              >
+                <ArrowUp className="h-3 w-3 text-gray-600" />
+              </button>
+              <button
+                onClick={e => {
+                  e.stopPropagation()
+                  const changes = modifiedDevices.get(device.id) || {}
+                  onDeviceModified(device.id, {
+                    ...changes,
+                    name: value.toLowerCase(),
+                  })
+                }}
+                className="p-0.5 hover:bg-gray-200 rounded"
+                title="Convert to lowercase"
+              >
+                <ArrowDown className="h-3 w-3 text-gray-600" />
+              </button>
+            </div>
+          </div>
+        )
+      }
 
       return (
         <div className="flex items-center h-12">
-          <Badge variant="secondary" className={`text-xs ${colorClass}`}>
-            {value}
-          </Badge>
-        </div>
-      )
-    }
-
-    // Special rendering for name field with uppercase/lowercase icons
-    if (column.field === 'name') {
-      return (
-        <div className="flex items-center gap-1 h-12">
-          <span className="text-sm flex-1">
+          <span className="text-sm">
             {value || <span className="text-gray-400 italic">Empty</span>}
           </span>
-          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                const changes = modifiedDevices.get(device.id) || {}
-                onDeviceModified(device.id, {
-                  ...changes,
-                  name: value.toUpperCase(),
-                })
-              }}
-              className="p-0.5 hover:bg-gray-200 rounded"
-              title="Convert to UPPERCASE"
-            >
-              <ArrowUp className="h-3 w-3 text-gray-600" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                const changes = modifiedDevices.get(device.id) || {}
-                onDeviceModified(device.id, {
-                  ...changes,
-                  name: value.toLowerCase(),
-                })
-              }}
-              className="p-0.5 hover:bg-gray-200 rounded"
-              title="Convert to lowercase"
-            >
-              <ArrowDown className="h-3 w-3 text-gray-600" />
-            </button>
-          </div>
         </div>
       )
-    }
-
-    return (
-      <div className="flex items-center h-12">
-        <span className="text-sm">
-          {value || <span className="text-gray-400 italic">Empty</span>}
-        </span>
-      </div>
-    )
-  }, [editingCell, editValue, handleCellBlur, handleKeyDown, getOptionsForField, renderSelectField, locationSearchValue, showLocationDropdown, locationOptions, modifiedDevices, onDeviceModified, dropdownPosition])
+    },
+    [
+      editingCell,
+      editValue,
+      handleCellBlur,
+      handleKeyDown,
+      getOptionsForField,
+      renderSelectField,
+      locationSearchValue,
+      showLocationDropdown,
+      locationOptions,
+      modifiedDevices,
+      onDeviceModified,
+      dropdownPosition,
+    ]
+  )
 
   const getCellClassName = useCallback((column: ColumnDefinition) => {
     const baseClass = 'px-4 py-0'
@@ -495,12 +567,17 @@ export function EditableDeviceTable({
     return `${baseClass} ${hoverClass}`
   }, [])
 
-  const getRowClassName = useCallback((device: DeviceInfo) => {
-    const baseClass = 'border-b transition-colors h-12 group'
-    const modifiedClass = isDeviceModified(device.id) ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'
+  const getRowClassName = useCallback(
+    (device: DeviceInfo) => {
+      const baseClass = 'border-b transition-colors h-12 group'
+      const modifiedClass = isDeviceModified(device.id)
+        ? 'bg-red-50 hover:bg-red-100'
+        : 'hover:bg-gray-50'
 
-    return `${baseClass} ${modifiedClass}`
-  }, [isDeviceModified])
+      return `${baseClass} ${modifiedClass}`
+    },
+    [isDeviceModified]
+  )
 
   return (
     <div className="border rounded-lg overflow-visible">
@@ -508,11 +585,15 @@ export function EditableDeviceTable({
         <Table>
           <TableHeader>
             <TableRow>
-              {columns.map((column) => (
+              {columns.map(column => (
                 <TableHead
                   key={column.id}
                   className="font-semibold"
-                  style={{ width: column.width || 'auto', minWidth: column.width || 'auto', maxWidth: column.width || 'auto' }}
+                  style={{
+                    width: column.width || 'auto',
+                    minWidth: column.width || 'auto',
+                    maxWidth: column.width || 'auto',
+                  }}
                 >
                   {column.label}
                   {column.editable && (
@@ -525,18 +606,25 @@ export function EditableDeviceTable({
           <TableBody>
             {devices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-8 text-gray-500">
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center py-8 text-gray-500"
+                >
                   No devices selected
                 </TableCell>
               </TableRow>
             ) : (
-              devices.map((device) => (
+              devices.map(device => (
                 <TableRow key={device.id} className={getRowClassName(device)}>
-                  {columns.map((column) => (
+                  {columns.map(column => (
                     <TableCell
                       key={column.id}
                       className={getCellClassName(column)}
-                      style={{ width: column.width || 'auto', minWidth: column.width || 'auto', maxWidth: column.width || 'auto' }}
+                      style={{
+                        width: column.width || 'auto',
+                        minWidth: column.width || 'auto',
+                        maxWidth: column.width || 'auto',
+                      }}
                       onClick={() => handleCellClick(device, column)}
                     >
                       {renderCell(device, column)}

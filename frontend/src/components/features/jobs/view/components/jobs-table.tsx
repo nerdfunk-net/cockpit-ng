@@ -18,7 +18,13 @@ import {
 import { History, AlertTriangle } from 'lucide-react'
 import { JobStatusBadge } from './job-status-badge'
 import { JobActionsMenu } from './job-actions-menu'
-import { formatDuration, formatDateTime, getTriggerBadgeClasses, isJobSuspicious, getSuspiciousJobWarning } from '../utils/job-utils'
+import {
+  formatDuration,
+  formatDateTime,
+  getTriggerBadgeClasses,
+  isJobSuspicious,
+  getSuspiciousJobWarning,
+} from '../utils/job-utils'
 import type { JobRun, JobProgressResponse } from '../types'
 
 interface JobsTableProps {
@@ -60,7 +66,8 @@ export function JobsTable({
           </div>
           <p className="text-lg font-semibold text-gray-700 mb-1">No job runs found</p>
           <p className="text-sm text-gray-500">
-            Job execution history will appear here when jobs are scheduled or run manually
+            Job execution history will appear here when jobs are scheduled or run
+            manually
           </p>
         </div>
       </div>
@@ -85,14 +92,30 @@ export function JobsTable({
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50 hover:bg-gray-50">
-                <TableHead className="w-[180px] text-gray-600 font-semibold">Job Name</TableHead>
-                <TableHead className="w-[120px] text-gray-600 font-semibold">Type</TableHead>
-                <TableHead className="w-[90px] text-gray-600 font-semibold">Status</TableHead>
-                <TableHead className="w-[80px] text-gray-600 font-semibold">Trigger</TableHead>
-                <TableHead className="w-[110px] text-gray-600 font-semibold">Started</TableHead>
-                <TableHead className="w-[80px] text-gray-600 font-semibold">Duration</TableHead>
-                <TableHead className="w-[100px] text-gray-600 font-semibold">Template</TableHead>
-                <TableHead className="w-[60px] text-right text-gray-600 font-semibold">Actions</TableHead>
+                <TableHead className="w-[180px] text-gray-600 font-semibold">
+                  Job Name
+                </TableHead>
+                <TableHead className="w-[120px] text-gray-600 font-semibold">
+                  Type
+                </TableHead>
+                <TableHead className="w-[90px] text-gray-600 font-semibold">
+                  Status
+                </TableHead>
+                <TableHead className="w-[80px] text-gray-600 font-semibold">
+                  Trigger
+                </TableHead>
+                <TableHead className="w-[110px] text-gray-600 font-semibold">
+                  Started
+                </TableHead>
+                <TableHead className="w-[80px] text-gray-600 font-semibold">
+                  Duration
+                </TableHead>
+                <TableHead className="w-[100px] text-gray-600 font-semibold">
+                  Template
+                </TableHead>
+                <TableHead className="w-[60px] text-right text-gray-600 font-semibold">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -109,10 +132,17 @@ export function JobsTable({
                           <TooltipTrigger asChild>
                             <AlertTriangle className="h-4 w-4 text-amber-500 animate-pulse flex-shrink-0" />
                           </TooltipTrigger>
-                          <TooltipContent side="right" className="max-w-sm status-warning">
+                          <TooltipContent
+                            side="right"
+                            className="max-w-sm status-warning"
+                          >
                             <div className="space-y-1 text-xs">
-                              <p className="font-semibold text-amber-900">⚠️ Job May Be Stuck</p>
-                              <p className="text-amber-700">{getSuspiciousJobWarning(run)}</p>
+                              <p className="font-semibold text-amber-900">
+                                ⚠️ Job May Be Stuck
+                              </p>
+                              <p className="text-amber-700">
+                                {getSuspiciousJobWarning(run)}
+                              </p>
                             </div>
                           </TooltipContent>
                         </Tooltip>
@@ -125,13 +155,22 @@ export function JobsTable({
                         </TooltipTrigger>
                         <TooltipContent side="right" className="max-w-sm">
                           <div className="space-y-1 text-xs">
-                            <p><strong>ID:</strong> {run.id}</p>
-                            <p><strong>Schedule:</strong> {run.schedule_name || '-'}</p>
+                            <p>
+                              <strong>ID:</strong> {run.id}
+                            </p>
+                            <p>
+                              <strong>Schedule:</strong> {run.schedule_name || '-'}
+                            </p>
                             {run.celery_task_id && (
-                              <p><strong>Task ID:</strong> {run.celery_task_id.slice(0, 8)}...</p>
+                              <p>
+                                <strong>Task ID:</strong>{' '}
+                                {run.celery_task_id.slice(0, 8)}...
+                              </p>
                             )}
                             {run.executed_by && (
-                              <p><strong>Executed by:</strong> {run.executed_by}</p>
+                              <p>
+                                <strong>Executed by:</strong> {run.executed_by}
+                              </p>
                             )}
                             {run.error_message && (
                               <p className="text-red-400 mt-2">{run.error_message}</p>
@@ -159,7 +198,10 @@ export function JobsTable({
 
                   {/* Trigger */}
                   <TableCell>
-                    <Badge variant="outline" className={`text-xs ${getTriggerBadgeClasses(run.triggered_by)}`}>
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${getTriggerBadgeClasses(run.triggered_by)}`}
+                    >
                       {run.triggered_by}
                     </Badge>
                   </TableCell>
@@ -172,7 +214,11 @@ export function JobsTable({
                   {/* Duration */}
                   <TableCell className="text-sm text-gray-600">
                     <span className="font-mono text-xs">
-                      {formatDuration(run.duration_seconds, run.started_at, run.completed_at)}
+                      {formatDuration(
+                        run.duration_seconds,
+                        run.started_at,
+                        run.completed_at
+                      )}
                     </span>
                   </TableCell>
 

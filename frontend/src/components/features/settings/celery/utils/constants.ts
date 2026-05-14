@@ -4,20 +4,20 @@ import type { CelerySettings, Schedule, CeleryQueue } from '../types'
 export const DEFAULT_QUEUES: CeleryQueue[] = [
   {
     name: 'default',
-    description: 'Default queue for general tasks'
+    description: 'Default queue for general tasks',
   },
   {
     name: 'backup',
-    description: 'Queue for device backup operations'
+    description: 'Queue for device backup operations',
   },
   {
     name: 'network',
-    description: 'Queue for network scanning and discovery tasks'
+    description: 'Queue for network scanning and discovery tasks',
   },
   {
     name: 'heavy',
-    description: 'Queue for bulk operations and heavy processing tasks'
-  }
+    description: 'Queue for bulk operations and heavy processing tasks',
+  },
 ]
 
 // React best practice: Extract default objects to prevent re-render loops
@@ -30,17 +30,17 @@ export const DEFAULT_CELERY_SETTINGS: CelerySettings = {
   client_data_cleanup_interval_hours: 24,
   client_data_cleanup_age_hours: 168,
   result_expires_hours: 24,
-  queues: DEFAULT_QUEUES
+  queues: DEFAULT_QUEUES,
 }
 
 export const EMPTY_SCHEDULES: Schedule[] = []
 
 export const STALE_TIME = {
-  STATUS: 10 * 1000,      // 10 seconds - frequently changing
+  STATUS: 10 * 1000, // 10 seconds - frequently changing
   SETTINGS: 5 * 60 * 1000, // 5 minutes - rarely changes
-  WORKERS: 30 * 1000,      // 30 seconds - moderate frequency
+  WORKERS: 30 * 1000, // 30 seconds - moderate frequency
   SCHEDULES: 2 * 60 * 1000, // 2 minutes - rarely changes
-  TASK: 0,                 // Always fresh for active tasks
+  TASK: 0, // Always fresh for active tasks
 } as const
 
 export const TASK_POLL_INTERVAL = 2000 // 2 seconds for task polling

@@ -11,13 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-} from '@/components/ui/form'
+import { Form, FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form'
 import { Terminal, ChevronDown, ChevronUp, Search } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import type { EditorFormData } from '../types'
@@ -29,12 +23,16 @@ interface NetmikoOptionsPanelProps {
 interface Device {
   id: string
   name: string
-  primary_ip4?: {
-    address?: string
-  } | string
-  primary_ip6?: {
-    address?: string
-  } | string
+  primary_ip4?:
+    | {
+        address?: string
+      }
+    | string
+  primary_ip6?:
+    | {
+        address?: string
+      }
+    | string
 }
 
 interface StoredCredential {
@@ -60,7 +58,9 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
   useEffect(() => {
     const loadCredentials = async () => {
       try {
-        const response = await apiCall<StoredCredential[]>('credentials?include_expired=false')
+        const response = await apiCall<StoredCredential[]>(
+          'credentials?include_expired=false'
+        )
         // Filter for SSH credentials only
         const sshCredentials = response.filter(cred => cred.type === 'ssh')
         setCredentials(sshCredentials)
@@ -134,9 +134,7 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
   const filteredDevices = useMemo(() => {
     if (!searchTerm || searchTerm.length < 3) return []
     const lowerSearch = searchTerm.toLowerCase()
-    return devices.filter(device =>
-      device.name.toLowerCase().includes(lowerSearch)
-    )
+    return devices.filter(device => device.name.toLowerCase().includes(lowerSearch))
   }, [devices, searchTerm])
 
   const handleDeviceSelect = (device: Device) => {
@@ -215,7 +213,9 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
                       <SelectContent>
                         <SelectItem value="run_on_device">Run on Device</SelectItem>
                         <SelectItem value="write_to_file">Write to File</SelectItem>
-                        <SelectItem value="sync_to_nautobot">Sync to Nautobot</SelectItem>
+                        <SelectItem value="sync_to_nautobot">
+                          Sync to Nautobot
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </FormItem>
@@ -234,12 +234,16 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
                         <Input
                           placeholder="Type device name (min 3 chars)..."
                           value={searchTerm}
-                          onChange={(e) => {
+                          onChange={e => {
                             isSelectingDeviceRef.current = false
                             setSearchTerm(e.target.value)
                           }}
                           onFocus={() => {
-                            if (searchTerm.length >= 3 && filteredDevices.length > 0 && !isSelectingDeviceRef.current) {
+                            if (
+                              searchTerm.length >= 3 &&
+                              filteredDevices.length > 0 &&
+                              !isSelectingDeviceRef.current
+                            ) {
                               setShowResults(true)
                             }
                           }}
@@ -256,26 +260,33 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
                         {/* Search results dropdown */}
                         {showResults && filteredDevices.length > 0 && (
                           <div className="absolute z-50 w-full mt-1 bg-white border-2 border-blue-300 rounded-md shadow-lg max-h-64 overflow-auto">
-                            {filteredDevices.map((device) => (
+                            {filteredDevices.map(device => (
                               <button
                                 key={device.id}
                                 type="button"
                                 onClick={() => handleDeviceSelect(device)}
                                 className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-100 focus:outline-none border-b border-gray-100 last:border-b-0"
                               >
-                                <div className="font-medium text-gray-900">{device.name}</div>
-                                <div className="text-sm text-gray-500">{getDeviceIp(device)}</div>
+                                <div className="font-medium text-gray-900">
+                                  {device.name}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {getDeviceIp(device)}
+                                </div>
                               </button>
                             ))}
                           </div>
                         )}
 
                         {/* No results message */}
-                        {showResults && searchTerm.length >= 3 && filteredDevices.length === 0 && !isSearching && (
-                          <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-300 rounded-md shadow-lg px-4 py-3">
-                            <p className="text-sm text-gray-500">No devices found</p>
-                          </div>
-                        )}
+                        {showResults &&
+                          searchTerm.length >= 3 &&
+                          filteredDevices.length === 0 &&
+                          !isSearching && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-300 rounded-md shadow-lg px-4 py-3">
+                              <p className="text-sm text-gray-500">No devices found</p>
+                            </div>
+                          )}
                       </div>
                     </FormControl>
                   </FormItem>
@@ -290,10 +301,7 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
                   <FormItem className="md:col-span-4">
                     <FormLabel>Command (Optional)</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="e.g., show version"
-                        {...field}
-                      />
+                      <Input placeholder="e.g., show version" {...field} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -317,7 +325,7 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">None</SelectItem>
-                        {credentials.map((cred) => (
+                        {credentials.map(cred => (
                           <SelectItem key={cred.id} value={cred.id.toString()}>
                             {cred.name}
                           </SelectItem>

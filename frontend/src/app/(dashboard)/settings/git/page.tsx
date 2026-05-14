@@ -3,7 +3,8 @@ import GitManagement from '@/components/features/settings/git/components/git-man
 
 export const metadata: Metadata = {
   title: 'Git Management - Cockpit',
-  description: 'Manage Git repositories for configurations, templates, and other resources',
+  description:
+    'Manage Git repositories for configurations, templates, and other resources',
 }
 
 export default function GitManagementPage() {

@@ -45,14 +45,14 @@ export function VariableManagerPanel({
             </Button>
           </div>
 
-          {variables.map((variable) => (
+          {variables.map(variable => (
             <div key={variable.id} className="flex items-start gap-2">
               <div className="flex-1 grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Input
                     placeholder="Variable name (e.g., hostname)"
                     value={variable.name}
-                    onChange={(e) => updateVariable(variable.id, 'name', e.target.value)}
+                    onChange={e => updateVariable(variable.id, 'name', e.target.value)}
                     className={`border-2 ${
                       variable.name && !validateVariableName(variable.name)
                         ? 'border-red-500 focus:border-red-500'
@@ -61,14 +61,15 @@ export function VariableManagerPanel({
                   />
                   {variable.name && !validateVariableName(variable.name) && (
                     <p className="text-xs text-red-600">
-                      Invalid name. Use letters, numbers, underscore. Must start with letter or underscore.
+                      Invalid name. Use letters, numbers, underscore. Must start with
+                      letter or underscore.
                     </p>
                   )}
                 </div>
                 <Input
                   placeholder="Value"
                   value={variable.value}
-                  onChange={(e) => updateVariable(variable.id, 'value', e.target.value)}
+                  onChange={e => updateVariable(variable.id, 'value', e.target.value)}
                   className="border-2 border-slate-300 bg-white focus:border-blue-500"
                 />
               </div>

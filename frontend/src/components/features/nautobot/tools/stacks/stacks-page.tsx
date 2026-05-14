@@ -1,7 +1,15 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { Layers, RefreshCw, Play, CheckSquare, AlertCircle, CheckCircle2, XCircle } from 'lucide-react'
+import {
+  Layers,
+  RefreshCw,
+  Play,
+  CheckSquare,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -35,13 +43,13 @@ export default function StacksPage() {
     if (allSelected) {
       setSelectedIds(EMPTY_SELECTION)
     } else {
-      setSelectedIds(devices.map((d) => d.id))
+      setSelectedIds(devices.map(d => d.id))
     }
   }, [allSelected, devices])
 
   const toggleDevice = useCallback((id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     )
   }, [])
 
@@ -51,7 +59,7 @@ export default function StacksPage() {
     processStacks.mutate(
       { device_ids: selectedIds },
       {
-        onSuccess: (data) => {
+        onSuccess: data => {
           setProcessResults(data.results)
           setSelectedIds(EMPTY_SELECTION)
         },
@@ -75,15 +83,12 @@ export default function StacksPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Device Stacks</h1>
             <p className="text-gray-600 mt-1">
-              Detect devices with multiple serial numbers, split them, and build Virtual Chassis groups.
+              Detect devices with multiple serial numbers, split them, and build Virtual
+              Chassis groups.
             </p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={handleRefresh}
-          disabled={isFetching}
-        >
+        <Button variant="outline" onClick={handleRefresh} disabled={isFetching}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
@@ -93,10 +98,11 @@ export default function StacksPage() {
       <Alert className="bg-blue-50 border-blue-200">
         <AlertCircle className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-800">
-          The list below shows all Nautobot devices whose serial field contains a comma, indicating
-          multiple serial numbers (stacked units). Select the devices you want to process and select
-          <strong> Process selected</strong>. The action splits each device into separate entries and
-          groups them into a Nautobot Virtual Chassis.
+          The list below shows all Nautobot devices whose serial field contains a comma,
+          indicating multiple serial numbers (stacked units). Select the devices you
+          want to process and select
+          <strong> Process selected</strong>. The action splits each device into
+          separate entries and groups them into a Nautobot Virtual Chassis.
         </AlertDescription>
       </Alert>
 
@@ -108,7 +114,7 @@ export default function StacksPage() {
             <span className="text-sm font-medium">Processing results</span>
           </div>
           <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-3">
-            {processResults.map((result) => (
+            {processResults.map(result => (
               <div
                 key={result.device_id}
                 className={`flex items-start gap-3 p-3 rounded-lg border ${
@@ -158,7 +164,7 @@ export default function StacksPage() {
             size="sm"
             onClick={handleProcess}
             disabled={selectedIds.length === 0 || processStacks.isPending}
-              className="bg-white text-blue-700 hover:bg-blue-50 h-7 px-3 text-xs font-medium"
+            className="bg-white text-blue-700 hover:bg-blue-50 h-7 px-3 text-xs font-medium"
           >
             <Play className="h-3 w-3 mr-1" />
             {processStacks.isPending
@@ -200,21 +206,31 @@ export default function StacksPage() {
                         checked={allSelected}
                         onCheckedChange={toggleAll}
                         aria-label="Select all devices"
-                        className={someSelected ? 'data-[state=checked]:bg-blue-400' : ''}
+                        className={
+                          someSelected ? 'data-[state=checked]:bg-blue-400' : ''
+                        }
                       />
                     </th>
-                    <th className="text-left py-2 pr-4 font-medium text-gray-700">Device name</th>
-                    <th className="text-left py-2 pr-4 font-medium text-gray-700">Serial numbers</th>
-                    <th className="text-left py-2 pr-4 font-medium text-gray-700">Device type</th>
-                    <th className="text-left py-2 font-medium text-gray-700">Location</th>
+                    <th className="text-left py-2 pr-4 font-medium text-gray-700">
+                      Device name
+                    </th>
+                    <th className="text-left py-2 pr-4 font-medium text-gray-700">
+                      Serial numbers
+                    </th>
+                    <th className="text-left py-2 pr-4 font-medium text-gray-700">
+                      Device type
+                    </th>
+                    <th className="text-left py-2 font-medium text-gray-700">
+                      Location
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {devices.map((device) => {
+                  {devices.map(device => {
                     const isSelected = selectedIds.includes(device.id)
                     const serials = device.serial
                       .split(',')
-                      .map((s) => s.trim())
+                      .map(s => s.trim())
                       .filter(Boolean)
 
                     return (
@@ -225,7 +241,7 @@ export default function StacksPage() {
                         }`}
                         onClick={() => toggleDevice(device.id)}
                       >
-                        <td className="py-2.5 pr-4" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-2.5 pr-4" onClick={e => e.stopPropagation()}>
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={() => toggleDevice(device.id)}
@@ -237,7 +253,7 @@ export default function StacksPage() {
                         </td>
                         <td className="py-2.5 pr-4">
                           <div className="flex flex-wrap gap-1">
-                            {serials.map((s) => (
+                            {serials.map(s => (
                               <Badge
                                 key={s}
                                 variant="outline"

@@ -42,9 +42,13 @@ export function useVMDropdownsQuery(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         apiCall<any>('nautobot/statuses/vm', { method: 'GET' }).catch(() => []),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/virtualization/clusters', { method: 'GET' }).catch(() => []),
+        apiCall<any>('nautobot/virtualization/clusters', { method: 'GET' }).catch(
+          () => []
+        ),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        apiCall<any>('nautobot/virtualization/cluster-groups', { method: 'GET' }).catch(() => []),
+        apiCall<any>('nautobot/virtualization/cluster-groups', { method: 'GET' }).catch(
+          () => []
+        ),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         apiCall<any>('nautobot/platforms', { method: 'GET' }).catch(() => []),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

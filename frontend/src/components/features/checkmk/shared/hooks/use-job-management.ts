@@ -5,7 +5,7 @@ import {
   fetchJobs,
   loadJobResults as apiLoadJobResults,
   clearResults as apiClearResults,
-  startComparisonJob as apiStartComparisonJob
+  startComparisonJob as apiStartComparisonJob,
 } from '../utils/api'
 
 interface DeviceResult {
@@ -91,15 +91,15 @@ function transformDeviceResult(result: DeviceResult, index: number): Device {
   }
 
   const deviceId = result.device_id || result.device_name || `device_${index}`
-  const deviceName = internalData.hostname || result.device_name || result.device_id || `device_${index}`
+  const deviceName =
+    internalData.hostname || result.device_name || result.device_id || `device_${index}`
   const role = internalData.role || extractName(result.role)
-  const status = internalData.status || result.device_status?.name || result.status || 'Unknown'
+  const status =
+    internalData.status || result.device_status?.name || result.status || 'Unknown'
   const location = internalData.location || extractName(result.location)
 
   // Only set primary_ip4 if it exists in the result, otherwise leave undefined to allow merging
-  const primaryIp = result.primary_ip4?.address
-    ? result.primary_ip4
-    : undefined
+  const primaryIp = result.primary_ip4?.address ? result.primary_ip4 : undefined
 
   return {
     id: deviceId,
@@ -114,10 +114,15 @@ function transformDeviceResult(result: DeviceResult, index: number): Device {
       result.result_data?.comparison_result,
       result.result_data?.status
     ),
-    normalized_config: result.normalized_config || result.result_data?.data?.normalized_config || result.result_data?.normalized_config,
-    checkmk_config: (result.checkmk_config || result.result_data?.data?.checkmk_config || result.result_data?.checkmk_config) as Device['checkmk_config'],
+    normalized_config:
+      result.normalized_config ||
+      result.result_data?.data?.normalized_config ||
+      result.result_data?.normalized_config,
+    checkmk_config: (result.checkmk_config ||
+      result.result_data?.data?.checkmk_config ||
+      result.result_data?.checkmk_config) as Device['checkmk_config'],
     diff: result.diff || result.result_data?.data?.diff || result.result_data?.diff,
-    error_message: result.error_message
+    error_message: result.error_message,
   }
 }
 
@@ -143,16 +148,19 @@ export function useJobManagement(
       const data = await fetchJobs(token, 50)
 
       // Filter only completed COMPARE jobs (exclude sync jobs) with processed devices
-      const completedJobs = data.jobs.filter((job: Job) =>
-        job.status === 'completed' &&
-        (job.processed_devices || 0) > 0 &&
-        !job.id.startsWith('sync_devices_')  // Exclude sync jobs
-      ).map((job: Job) => ({
-        id: job.id,
-        status: job.status,
-        created_at: job.created_at,
-        processed_devices: job.processed_devices || 0
-      }))
+      const completedJobs = data.jobs
+        .filter(
+          (job: Job) =>
+            job.status === 'completed' &&
+            (job.processed_devices || 0) > 0 &&
+            !job.id.startsWith('sync_devices_') // Exclude sync jobs
+        )
+        .map((job: Job) => ({
+          id: job.id,
+          status: job.status,
+          created_at: job.created_at,
+          processed_devices: job.processed_devices || 0,
+        }))
 
       setAvailableJobs(completedJobs)
     } catch (error) {
@@ -164,39 +172,47 @@ export function useJobManagement(
   }, [token, onError])
 
   // Load job results
-  const loadJobResults = useCallback(async (jobId?: string) => {
-    const targetJobId = jobId || selectedJobId
+  const loadJobResults = useCallback(
+    async (jobId?: string) => {
+      const targetJobId = jobId || selectedJobId
 
-    if (!targetJobId || !token || targetJobId === 'no-jobs') {
-      return
-    }
-
-    setLoadingResults(true)
-    try {
-      const data = await apiLoadJobResults(token, targetJobId)
-
-      // Extract device results and transform to Device format
-      const deviceResults = data.job?.device_results || []
-      const devices = deviceResults.map((result: DeviceResult, index: number) => transformDeviceResult(result, index))
-
-      if (onJobsLoaded) {
-        onJobsLoaded(devices)
+      if (!targetJobId || !token || targetJobId === 'no-jobs') {
+        return
       }
 
-      if (onSuccess) {
-        onSuccess(`Loaded ${devices.length} device comparison results from job ${targetJobId.slice(0, 8)}...`)
-      }
+      setLoadingResults(true)
+      try {
+        const data = await apiLoadJobResults(token, targetJobId)
 
-      return devices
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load job results'
-      if (onError) {
-        onError(message)
+        // Extract device results and transform to Device format
+        const deviceResults = data.job?.device_results || []
+        const devices = deviceResults.map((result: DeviceResult, index: number) =>
+          transformDeviceResult(result, index)
+        )
+
+        if (onJobsLoaded) {
+          onJobsLoaded(devices)
+        }
+
+        if (onSuccess) {
+          onSuccess(
+            `Loaded ${devices.length} device comparison results from job ${targetJobId.slice(0, 8)}...`
+          )
+        }
+
+        return devices
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to load job results'
+        if (onError) {
+          onError(message)
+        }
+      } finally {
+        setLoadingResults(false)
       }
-    } finally {
-      setLoadingResults(false)
-    }
-  }, [selectedJobId, token, onJobsLoaded, onSuccess, onError])
+    },
+    [selectedJobId, token, onJobsLoaded, onSuccess, onError]
+  )
 
   // Clear all results
   const clearResults = useCallback(async () => {
@@ -244,7 +260,8 @@ export function useJobManagement(
 
       return result
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to start comparison job'
+      const message =
+        error instanceof Error ? error.message : 'Failed to start comparison job'
       if (onError) {
         onError(message)
       }
@@ -260,25 +277,28 @@ export function useJobManagement(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
-  return useMemo(() => ({
-    availableJobs,
-    selectedJobId,
-    setSelectedJobId,
-    currentJobId,
-    setCurrentJobId,
-    loadingResults,
-    fetchAvailableJobs,
-    loadJobResults,
-    clearResults,
-    startNewJob
-  }), [
-    availableJobs,
-    selectedJobId,
-    currentJobId,
-    loadingResults,
-    fetchAvailableJobs,
-    loadJobResults,
-    clearResults,
-    startNewJob
-  ])
+  return useMemo(
+    () => ({
+      availableJobs,
+      selectedJobId,
+      setSelectedJobId,
+      currentJobId,
+      setCurrentJobId,
+      loadingResults,
+      fetchAvailableJobs,
+      loadJobResults,
+      clearResults,
+      startNewJob,
+    }),
+    [
+      availableJobs,
+      selectedJobId,
+      currentJobId,
+      loadingResults,
+      fetchAvailableJobs,
+      loadJobResults,
+      clearResults,
+      startNewJob,
+    ]
+  )
 }

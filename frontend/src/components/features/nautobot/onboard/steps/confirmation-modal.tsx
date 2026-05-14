@@ -38,8 +38,9 @@ export function ConfirmationModal({
 
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Tags and custom fields help you organize and categorize your devices in Nautobot.
-            While they are optional, adding them now can make it easier to find and manage this device later.
+            Tags and custom fields help you organize and categorize your devices in
+            Nautobot. While they are optional, adding them now can make it easier to
+            find and manage this device later.
           </p>
 
           <p className="text-sm font-medium text-foreground">

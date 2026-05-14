@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -34,20 +40,27 @@ interface QueueConfigListProps {
 export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [formData, setFormData] = useState<CeleryQueue>({ name: '', description: '', built_in: false })
+  const [formData, setFormData] = useState<CeleryQueue>({
+    name: '',
+    description: '',
+    built_in: false,
+  })
   const [error, setError] = useState<string>('')
 
-  const handleOpenDialog = useCallback((index: number | null = null) => {
-    if (index !== null && queues[index]) {
-      setEditingIndex(index)
-      setFormData(queues[index])
-    } else {
-      setEditingIndex(null)
-      setFormData({ name: '', description: '', built_in: false })
-    }
-    setError('')
-    setIsDialogOpen(true)
-  }, [queues])
+  const handleOpenDialog = useCallback(
+    (index: number | null = null) => {
+      if (index !== null && queues[index]) {
+        setEditingIndex(index)
+        setFormData(queues[index])
+      } else {
+        setEditingIndex(null)
+        setFormData({ name: '', description: '', built_in: false })
+      }
+      setError('')
+      setIsDialogOpen(true)
+    },
+    [queues]
+  )
 
   const handleCloseDialog = useCallback(() => {
     setIsDialogOpen(false)
@@ -56,28 +69,30 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
     setError('')
   }, [])
 
-  const validateQueue = useCallback((queue: CeleryQueue): string | null => {
-    if (!queue.name.trim()) {
-      return 'Queue name is required'
-    }
+  const validateQueue = useCallback(
+    (queue: CeleryQueue): string | null => {
+      if (!queue.name.trim()) {
+        return 'Queue name is required'
+      }
 
-    // Check for valid queue name format (alphanumeric, dash, underscore)
-    if (!/^[a-z0-9_-]+$/i.test(queue.name)) {
-      return 'Queue name must contain only letters, numbers, dashes, and underscores'
-    }
+      // Check for valid queue name format (alphanumeric, dash, underscore)
+      if (!/^[a-z0-9_-]+$/i.test(queue.name)) {
+        return 'Queue name must contain only letters, numbers, dashes, and underscores'
+      }
 
-    // Check for duplicate names (exclude current item if editing)
-    const isDuplicate = queues.some(
-      (q, idx) =>
-        q.name.toLowerCase() === queue.name.toLowerCase() &&
-        idx !== editingIndex
-    )
-    if (isDuplicate) {
-      return 'Queue name already exists'
-    }
+      // Check for duplicate names (exclude current item if editing)
+      const isDuplicate = queues.some(
+        (q, idx) =>
+          q.name.toLowerCase() === queue.name.toLowerCase() && idx !== editingIndex
+      )
+      if (isDuplicate) {
+        return 'Queue name already exists'
+      }
 
-    return null
-  }, [queues, editingIndex])
+      return null
+    },
+    [queues, editingIndex]
+  )
 
   const handleSave = useCallback(() => {
     const validationError = validateQueue(formData)
@@ -97,15 +112,18 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
     handleCloseDialog()
   }, [formData, queues, editingIndex, validateQueue, onChange, handleCloseDialog])
 
-  const handleDelete = useCallback((index: number) => {
-    // Prevent deletion of built-in queues
-    if (queues[index]?.built_in) {
-      setError(`Built-in queue "${queues[index]?.name}" cannot be deleted`)
-      return
-    }
-    const updatedQueues = queues.filter((_, i) => i !== index)
-    onChange(updatedQueues)
-  }, [queues, onChange])
+  const handleDelete = useCallback(
+    (index: number) => {
+      // Prevent deletion of built-in queues
+      if (queues[index]?.built_in) {
+        setError(`Built-in queue "${queues[index]?.name}" cannot be deleted`)
+        return
+      }
+      const updatedQueues = queues.filter((_, i) => i !== index)
+      onChange(updatedQueues)
+    },
+    [queues, onChange]
+  )
 
   return (
     <Card>
@@ -127,8 +145,10 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
       <CardContent>
         <Alert className="mb-4 status-info">
           <AlertDescription className="text-sm">
-            <strong>Queue System:</strong> Built-in queues (default, backup, network, heavy) are hardcoded with automatic task routing and cannot be deleted.
-            Custom queues can be added here for documentation. To use custom queues, configure the CELERY_WORKER_QUEUE environment variable in docker-compose.yml
+            <strong>Queue System:</strong> Built-in queues (default, backup, network,
+            heavy) are hardcoded with automatic task routing and cannot be deleted.
+            Custom queues can be added here for documentation. To use custom queues,
+            configure the CELERY_WORKER_QUEUE environment variable in docker-compose.yml
             (e.g., CELERY_WORKER_QUEUE=monitoring) and manually route tasks to them.
           </AlertDescription>
         </Alert>
@@ -165,7 +185,9 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{queue.description || '-'}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {queue.description || '-'}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
@@ -200,7 +222,9 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
         <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingIndex !== null ? 'Edit Queue' : 'Add Queue'}</DialogTitle>
+              <DialogTitle>
+                {editingIndex !== null ? 'Edit Queue' : 'Add Queue'}
+              </DialogTitle>
               <DialogDescription>
                 {editingIndex !== null
                   ? 'Update the queue configuration'
@@ -215,9 +239,11 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
                   id="queue-name"
                   placeholder="e.g., monitoring, custom"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
                   className={error ? 'border-red-500' : ''}
-                  disabled={editingIndex !== null && queues[editingIndex]?.built_in === true}
+                  disabled={
+                    editingIndex !== null && queues[editingIndex]?.built_in === true
+                  }
                 />
                 {editingIndex !== null && queues[editingIndex]?.built_in === true ? (
                   <p className="text-xs text-muted-foreground text-amber-600">
@@ -236,7 +262,9 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
                   id="queue-description"
                   placeholder="e.g., Queue for device configuration backups"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                 />
               </div>
 

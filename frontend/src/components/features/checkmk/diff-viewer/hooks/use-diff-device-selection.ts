@@ -15,9 +15,9 @@ export function useDiffDeviceSelection() {
 
   const handleSelectAll = useCallback((devices: DiffDevice[], checked: boolean) => {
     if (checked) {
-      setSelectedDevices(new Set(
-        devices.filter(d => !!d.nautobot_id).map(d => d.nautobot_id!)
-      ))
+      setSelectedDevices(
+        new Set(devices.filter(d => !!d.nautobot_id).map(d => d.nautobot_id!))
+      )
     } else {
       setSelectedDevices(new Set())
     }

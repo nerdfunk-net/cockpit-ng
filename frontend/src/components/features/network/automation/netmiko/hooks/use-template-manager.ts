@@ -13,13 +13,20 @@ export function useTemplateManager() {
   const loadTemplates = async () => {
     try {
       // Try lowercase first (standard)
-      const response = await apiCall<{ templates: Template[]; total: number }>('templates?category=netmiko')
+      const response = await apiCall<{ templates: Template[]; total: number }>(
+        'templates?category=netmiko'
+      )
       console.log('Loaded templates with category=netmiko:', response.templates)
 
       // If no templates found, try with capital N (in case user created it manually)
       if (!response.templates || response.templates.length === 0) {
-        const responseCapital = await apiCall<{ templates: Template[]; total: number }>('templates?category=Netmiko')
-        console.log('Loaded templates with category=Netmiko:', responseCapital.templates)
+        const responseCapital = await apiCall<{ templates: Template[]; total: number }>(
+          'templates?category=Netmiko'
+        )
+        console.log(
+          'Loaded templates with category=Netmiko:',
+          responseCapital.templates
+        )
         setTemplates(responseCapital.templates || [])
       } else {
         setTemplates(response.templates || [])
@@ -60,14 +67,16 @@ export function useTemplateManager() {
       await apiCall(`templates/${selectedTemplate.id}`, {
         method: 'PUT',
         body: {
-          content: editedTemplateContent
-        }
+          content: editedTemplateContent,
+        },
       })
 
       // Update the local template list
-      setTemplates(templates.map(t =>
-        t.id === selectedTemplate.id ? { ...t, content: editedTemplateContent } : t
-      ))
+      setTemplates(
+        templates.map(t =>
+          t.id === selectedTemplate.id ? { ...t, content: editedTemplateContent } : t
+        )
+      )
       setSelectedTemplate({ ...selectedTemplate, content: editedTemplateContent })
 
       alert('Template saved successfully!')

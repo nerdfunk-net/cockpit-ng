@@ -13,7 +13,7 @@ export function useGitRepositories() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { apiCall } = useApi()
-  
+
   // Use ref to avoid recreating loadRepositories when apiCall changes
   const apiCallRef = useRef(apiCall)
   apiCallRef.current = apiCall
@@ -23,7 +23,8 @@ export function useGitRepositories() {
     setError(null)
     try {
       console.log('Loading repositories...')
-      const response = await apiCallRef.current<RepositoriesResponse>('git-repositories')
+      const response =
+        await apiCallRef.current<RepositoriesResponse>('git-repositories')
       console.log('Repositories loaded:', response)
       setRepositories(response.repositories || [])
     } catch (err) {
@@ -40,12 +41,15 @@ export function useGitRepositories() {
   }, [loadRepositories])
 
   // Memoize the return object to ensure stable reference
-  return useMemo(() => ({
-    repositories,
-    selectedRepo,
-    setSelectedRepo,
-    loading,
-    error,
-    reload: loadRepositories
-  }), [repositories, selectedRepo, loading, error, loadRepositories])
+  return useMemo(
+    () => ({
+      repositories,
+      selectedRepo,
+      setSelectedRepo,
+      loading,
+      error,
+      reload: loadRepositories,
+    }),
+    [repositories, selectedRepo, loading, error, loadRepositories]
+  )
 }

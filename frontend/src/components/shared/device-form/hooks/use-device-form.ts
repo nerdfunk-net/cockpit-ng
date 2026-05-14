@@ -43,16 +43,16 @@ const DEFAULT_INTERFACE = {
 
 /**
  * Enhanced device form hook that supports both create and update modes
- * 
+ *
  * @param options.defaults - Nautobot defaults from backend
  * @param options.initialData - Pre-populated form data (for updates/CheckMK sync)
  * @param options.mode - 'create' or 'update' mode
- * 
+ *
  * Usage:
  * ```tsx
  * // Create mode (add-device app)
  * const form = useDeviceForm({ defaults: nautobotDefaults })
- * 
+ *
  * // Update mode (CheckMK sync)
  * const form = useDeviceForm({
  *   defaults: nautobotDefaults,
@@ -66,61 +66,64 @@ export function useDeviceForm(
 ): UseFormReturn<DeviceFormValues> {
   const { defaults, initialData } = options
 
-  const defaultValues: DeviceFormValues = useMemo(
-    () => {
-      // Start with defaults
-      const baseValues: DeviceFormValues = {
-        deviceName: '',
-        serialNumber: '',
-        selectedRole: defaults?.device_role || '',
-        selectedStatus: defaults?.device_status || '',
-        selectedLocation: defaults?.location || '',
-        selectedDeviceType: '',
-        selectedPlatform: defaults?.platform || '',
-        selectedSoftwareVersion: '',
-        selectedTags: [],
-        customFieldValues: {},
-        addPrefix: true,
-        defaultPrefixLength: '/24',
-        interfaces: [
-          {
-            id: '1',
-            ...DEFAULT_INTERFACE,
-            status: defaults?.interface_status || '',
-            ip_addresses: [
-              {
-                id: '1',
-                address: '',
-                namespace: defaults?.namespace || 'Global',
-                ip_role: 'none',
-                is_primary: true,
-              },
-            ],
-          },
-        ],
-      }
+  const defaultValues: DeviceFormValues = useMemo(() => {
+    // Start with defaults
+    const baseValues: DeviceFormValues = {
+      deviceName: '',
+      serialNumber: '',
+      selectedRole: defaults?.device_role || '',
+      selectedStatus: defaults?.device_status || '',
+      selectedLocation: defaults?.location || '',
+      selectedDeviceType: '',
+      selectedPlatform: defaults?.platform || '',
+      selectedSoftwareVersion: '',
+      selectedTags: [],
+      customFieldValues: {},
+      addPrefix: true,
+      defaultPrefixLength: '/24',
+      interfaces: [
+        {
+          id: '1',
+          ...DEFAULT_INTERFACE,
+          status: defaults?.interface_status || '',
+          ip_addresses: [
+            {
+              id: '1',
+              address: '',
+              namespace: defaults?.namespace || 'Global',
+              ip_role: 'none',
+              is_primary: true,
+            },
+          ],
+        },
+      ],
+    }
 
-      // Merge with initial data if provided (for update/sync mode)
-      if (initialData) {
-        return {
-          ...baseValues,
-          ...initialData,
-          // Ensure arrays are properly merged
-          selectedTags: initialData.selectedTags || baseValues.selectedTags,
-          customFieldValues: initialData.customFieldValues || baseValues.customFieldValues,
-          interfaces: initialData.interfaces && initialData.interfaces.length > 0 
-            ? initialData.interfaces 
+    // Merge with initial data if provided (for update/sync mode)
+    if (initialData) {
+      return {
+        ...baseValues,
+        ...initialData,
+        // Ensure arrays are properly merged
+        selectedTags: initialData.selectedTags || baseValues.selectedTags,
+        customFieldValues:
+          initialData.customFieldValues || baseValues.customFieldValues,
+        interfaces:
+          initialData.interfaces && initialData.interfaces.length > 0
+            ? initialData.interfaces
             : baseValues.interfaces,
-          // Preserve defaults for prefix configuration if not provided
-          addPrefix: initialData.addPrefix !== undefined ? initialData.addPrefix : baseValues.addPrefix,
-          defaultPrefixLength: initialData.defaultPrefixLength || baseValues.defaultPrefixLength,
-        }
+        // Preserve defaults for prefix configuration if not provided
+        addPrefix:
+          initialData.addPrefix !== undefined
+            ? initialData.addPrefix
+            : baseValues.addPrefix,
+        defaultPrefixLength:
+          initialData.defaultPrefixLength || baseValues.defaultPrefixLength,
       }
+    }
 
-      return baseValues
-    },
-    [defaults, initialData]
-  )
+    return baseValues
+  }, [defaults, initialData])
 
   const form = useForm<DeviceFormValues>({
     resolver: zodResolver(deviceFormSchema),

@@ -26,13 +26,13 @@ export function isBackupJob(jobType: string): boolean {
  */
 export function getStatusBadgeClasses(status: string): string {
   const classes: Record<string, string> = {
-    completed: "bg-green-100 text-green-700 border-green-200",
-    running: "bg-blue-100 text-blue-700 border-blue-200 animate-pulse",
-    pending: "bg-amber-100 text-amber-700 border-amber-200",
-    failed: "bg-red-100 text-red-700 border-red-200",
-    cancelled: "bg-slate-100 text-slate-600 border-slate-200",
+    completed: 'bg-green-100 text-green-700 border-green-200',
+    running: 'bg-blue-100 text-blue-700 border-blue-200 animate-pulse',
+    pending: 'bg-amber-100 text-amber-700 border-amber-200',
+    failed: 'bg-red-100 text-red-700 border-red-200',
+    cancelled: 'bg-slate-100 text-slate-600 border-slate-200',
   }
-  return classes[status.toLowerCase()] || "bg-slate-100 text-slate-600 border-slate-200"
+  return classes[status.toLowerCase()] || 'bg-slate-100 text-slate-600 border-slate-200'
 }
 
 /**
@@ -40,11 +40,13 @@ export function getStatusBadgeClasses(status: string): string {
  */
 export function getTriggerBadgeClasses(triggeredBy: string): string {
   const classes: Record<string, string> = {
-    manual: "bg-purple-100 text-purple-700 border-purple-200",
-    system: "bg-cyan-100 text-cyan-700 border-cyan-200",
-    schedule: "bg-slate-100 text-slate-600 border-slate-200",
+    manual: 'bg-purple-100 text-purple-700 border-purple-200',
+    system: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+    schedule: 'bg-slate-100 text-slate-600 border-slate-200',
   }
-  return classes[triggeredBy.toLowerCase()] || "bg-slate-100 text-slate-600 border-slate-200"
+  return (
+    classes[triggeredBy.toLowerCase()] || 'bg-slate-100 text-slate-600 border-slate-200'
+  )
 }
 
 /**
@@ -71,20 +73,20 @@ export function formatDuration(
     return `${Math.floor(duration / 3600)}h ${Math.floor((duration % 3600) / 60)}m`
   }
 
-  return "-"
+  return '-'
 }
 
 /**
  * Format timestamp to localized string
  */
 export function formatDateTime(dateStr: string | null): string {
-  if (!dateStr) return "-"
+  if (!dateStr) return '-'
   const date = new Date(dateStr)
   return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 
@@ -98,7 +100,7 @@ export function calculateProgress(completed: number, total: number): number {
 
 /**
  * Check if a running job is suspicious (possibly crashed/stuck)
- * 
+ *
  * A job is suspicious if:
  * - Status is 'running' or 'pending'
  * - Running for more than 1.5 hours (90 minutes)
@@ -107,7 +109,7 @@ export function calculateProgress(completed: number, total: number): number {
 export function isJobSuspicious(job: JobRun): boolean {
   // Only check running or pending jobs
   if (!isJobActive(job.status)) return false
-  
+
   // Check started_at for running jobs
   if (job.status === 'running' && job.started_at) {
     const startedAt = new Date(job.started_at)
@@ -115,7 +117,7 @@ export function isJobSuspicious(job: JobRun): boolean {
     // Warn if running more than 1.5 hours (before 2-hour timeout)
     return hoursRunning > 1.5
   }
-  
+
   // Check queued_at for pending jobs
   if (job.status === 'pending' && job.queued_at) {
     const queuedAt = new Date(job.queued_at)
@@ -123,7 +125,7 @@ export function isJobSuspicious(job: JobRun): boolean {
     // Warn if pending more than 0.75 hours (45 minutes, before 1-hour timeout)
     return hoursPending > 0.75
   }
-  
+
   return false
 }
 
@@ -136,12 +138,12 @@ export function getSuspiciousJobWarning(job: JobRun): string {
     const minutesRunning = Math.floor((Date.now() - startedAt.getTime()) / (1000 * 60))
     return `Job has been running for ${minutesRunning} minutes. It will be automatically marked as failed after 2 hours if not completed.`
   }
-  
+
   if (job.status === 'pending' && job.queued_at) {
     const queuedAt = new Date(job.queued_at)
     const minutesPending = Math.floor((Date.now() - queuedAt.getTime()) / (1000 * 60))
     return `Job has been pending for ${minutesPending} minutes. It will be automatically marked as failed after 1 hour if not started.`
   }
-  
+
   return ''
 }

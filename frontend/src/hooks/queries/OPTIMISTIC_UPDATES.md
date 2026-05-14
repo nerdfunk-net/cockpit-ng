@@ -7,12 +7,14 @@ Optimistic updates provide **instant UI feedback** by updating the interface **b
 ## When to Use Optimistic Updates
 
 ### ✅ Good Candidates
+
 - **Quick actions**: Toggling switches, starring items, marking as read
 - **High success rate**: Operations that rarely fail
 - **User expectations**: Actions where users expect instant feedback
 - **Network-independent**: UI changes don't depend on server response
 
 ### ❌ Avoid For
+
 - **Complex validation**: Server needs to validate before committing
 - **Dependent operations**: Results affect subsequent operations
 - **High failure rate**: Often fails due to permissions or validation
@@ -22,13 +24,13 @@ Optimistic updates provide **instant UI feedback** by updating the interface **b
 
 ```typescript
 const mutation = useMutation({
-  mutationFn: async (data) => {
+  mutationFn: async data => {
     // API call
     return apiCall('/endpoint', { method: 'POST', body: JSON.stringify(data) })
   },
 
   // 1️⃣ BEFORE API call (runs immediately)
-  onMutate: async (variables) => {
+  onMutate: async variables => {
     // Cancel outgoing refetches
     await queryClient.cancelQueries({ queryKey: ['myData'] })
 
@@ -36,7 +38,7 @@ const mutation = useMutation({
     const previous = queryClient.getQueryData(['myData'])
 
     // Update cache optimistically
-    queryClient.setQueryData(['myData'], (old) => {
+    queryClient.setQueryData(['myData'], old => {
       // Return new data
       return { ...old, status: 'updating' }
     })
@@ -90,6 +92,7 @@ User clicks button
 ## Real-World Example: Git Repository Sync
 
 ### Regular Mutation (No Optimistic Update)
+
 ```typescript
 // User clicks "Sync"
 //   ↓
@@ -103,6 +106,7 @@ User clicks button
 ```
 
 ### Optimistic Mutation
+
 ```typescript
 // User clicks "Sync"
 //   ↓
@@ -147,13 +151,13 @@ function GitRepoCard({ repo }) {
 ### Pattern 1: Update Item in List
 
 ```typescript
-onMutate: async (updatedItem) => {
+onMutate: async updatedItem => {
   await queryClient.cancelQueries({ queryKey: ['items'] })
 
   const previous = queryClient.getQueryData(['items'])
 
-  queryClient.setQueryData(['items'], (old) => {
-    return old.map((item) =>
+  queryClient.setQueryData(['items'], old => {
+    return old.map(item =>
       item.id === updatedItem.id ? { ...item, ...updatedItem } : item
     )
   })
@@ -165,12 +169,12 @@ onMutate: async (updatedItem) => {
 ### Pattern 2: Add Item to List
 
 ```typescript
-onMutate: async (newItem) => {
+onMutate: async newItem => {
   await queryClient.cancelQueries({ queryKey: ['items'] })
 
   const previous = queryClient.getQueryData(['items'])
 
-  queryClient.setQueryData(['items'], (old) => {
+  queryClient.setQueryData(['items'], old => {
     return [...old, { ...newItem, id: 'temp-' + Date.now() }]
   })
 
@@ -181,13 +185,13 @@ onMutate: async (newItem) => {
 ### Pattern 3: Remove Item from List
 
 ```typescript
-onMutate: async (itemId) => {
+onMutate: async itemId => {
   await queryClient.cancelQueries({ queryKey: ['items'] })
 
   const previous = queryClient.getQueryData(['items'])
 
-  queryClient.setQueryData(['items'], (old) => {
-    return old.filter((item) => item.id !== itemId)
+  queryClient.setQueryData(['items'], old => {
+    return old.filter(item => item.id !== itemId)
   })
 
   return { previous }
@@ -202,10 +206,8 @@ onMutate: async ({ id, field, value }) => {
 
   const previous = queryClient.getQueryData(['items'])
 
-  queryClient.setQueryData(['items'], (old) => {
-    return old.map((item) =>
-      item.id === id ? { ...item, [field]: value } : item
-    )
+  queryClient.setQueryData(['items'], old => {
+    return old.map(item => (item.id === id ? { ...item, [field]: value } : item))
   })
 
   return { previous }
@@ -215,21 +217,25 @@ onMutate: async ({ id, field, value }) => {
 ## Benefits of Optimistic Updates
 
 ### 1. **Perceived Performance**
+
 - UI responds instantly
 - No waiting for server
 - Feels faster even if it's not
 
 ### 2. **Better UX**
+
 - Users see immediate feedback
 - Can continue working while API processes
 - Reduces uncertainty
 
 ### 3. **Automatic Rollback**
+
 - No manual cleanup code
 - Consistent error handling
 - Data integrity maintained
 
 ### 4. **Network Resilience**
+
 - Works even on slow connections
 - Degrades gracefully
 - User never blocked
@@ -240,13 +246,13 @@ onMutate: async ({ id, field, value }) => {
 
 ```typescript
 // BAD: Outgoing refetch might overwrite optimistic update
-onMutate: async (data) => {
+onMutate: async data => {
   queryClient.setQueryData(['items'], newData)
   return { previous: oldData }
 }
 
 // GOOD: Cancel first
-onMutate: async (data) => {
+onMutate: async data => {
   await queryClient.cancelQueries({ queryKey: ['items'] })
   queryClient.setQueryData(['items'], newData)
   return { previous: oldData }
@@ -257,13 +263,13 @@ onMutate: async (data) => {
 
 ```typescript
 // BAD: No way to rollback
-onMutate: async (data) => {
+onMutate: async data => {
   queryClient.setQueryData(['items'], newData)
   // Missing: return { previous }
 }
 
 // GOOD: Return snapshot
-onMutate: async (data) => {
+onMutate: async data => {
   const previous = queryClient.getQueryData(['items'])
   queryClient.setQueryData(['items'], newData)
   return { previous }
@@ -328,28 +334,31 @@ test('optimistic update rolls back on error', async () => {
 ## Performance Considerations
 
 ### Optimistic updates are FAST:
+
 - ✅ No network round-trip
 - ✅ Immediate UI update
 - ✅ No loading spinners needed
 
 ### But watch out for:
+
 - ⚠️ Complex data transformations in onMutate
 - ⚠️ Large objects (deep cloning)
 - ⚠️ Multiple simultaneous mutations
 
 ### Optimization tips:
+
 ```typescript
 // ✅ GOOD: Simple, fast updates
-onMutate: async (id) => {
+onMutate: async id => {
   const previous = queryClient.getQueryData(['items'])
   queryClient.setQueryData(['items'], old =>
-    old.map(item => item.id === id ? { ...item, active: true } : item)
+    old.map(item => (item.id === id ? { ...item, active: true } : item))
   )
   return { previous }
 }
 
 // ❌ AVOID: Heavy computation in onMutate
-onMutate: async (data) => {
+onMutate: async data => {
   const previous = queryClient.getQueryData(['items'])
   const processed = await heavyDataProcessing(data) // Don't do this!
   queryClient.setQueryData(['items'], processed)
@@ -365,11 +374,13 @@ onMutate: async (data) => {
 ## Summary
 
 Optimistic updates transform slow, blocking operations into instant, responsive interactions. Use them for:
+
 - ✅ Quick, high-success-rate operations
 - ✅ Actions where users expect instant feedback
 - ✅ Network-independent UI changes
 
 Avoid them for:
+
 - ❌ Complex server validation
 - ❌ Long-running background jobs
 - ❌ Operations with high failure rates

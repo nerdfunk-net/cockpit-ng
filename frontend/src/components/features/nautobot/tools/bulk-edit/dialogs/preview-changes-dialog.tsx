@@ -57,7 +57,8 @@ export function PreviewChangesDialog({
       const result = await onRunDryRun()
       setDryRunResult(result)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to preview changes'
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to preview changes'
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -96,7 +97,10 @@ export function PreviewChangesDialog({
             {/* Show modified fields per device */}
             <div className="mt-3 space-y-2 max-h-60 overflow-y-auto">
               {Array.from(modifiedDevices.entries()).map(([deviceId, changes]) => (
-                <div key={deviceId} className="text-sm border-l-2 border-blue-500 pl-3 py-1">
+                <div
+                  key={deviceId}
+                  className="text-sm border-l-2 border-blue-500 pl-3 py-1"
+                >
                   <div className="font-medium">Device ID: {deviceId}</div>
                   <div className="text-gray-600">
                     Fields: {Object.keys(changes).join(', ')}
@@ -171,7 +175,7 @@ export function PreviewChangesDialog({
               <div className="border rounded-lg p-4 max-h-80 overflow-y-auto">
                 <h4 className="font-semibold mb-3">Validation Results</h4>
                 <div className="space-y-2">
-                  {dryRunResult.results.map((result) => (
+                  {dryRunResult.results.map(result => (
                     <div
                       key={result.device_id}
                       className={`flex items-start gap-2 p-2 rounded ${
@@ -206,8 +210,8 @@ export function PreviewChangesDialog({
                 <Alert className="status-error">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    {dryRunResult.failed_updates} device(s) will fail to update. Review the errors
-                    above before proceeding.
+                    {dryRunResult.failed_updates} device(s) will fail to update. Review
+                    the errors above before proceeding.
                   </AlertDescription>
                 </Alert>
               )}

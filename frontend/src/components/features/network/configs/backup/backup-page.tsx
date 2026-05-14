@@ -52,9 +52,9 @@ export default function BackupPage() {
     filters: queryFilters,
     pagination: {
       limit: pageSize,
-      offset: currentPage * pageSize
+      offset: currentPage * pageSize,
     },
-    sorting
+    sorting,
   })
 
   const { triggerBulkBackup } = useBackupMutations()
@@ -96,7 +96,7 @@ export default function BackupPage() {
   }, [])
 
   const handleSortChange = useCallback((column: string) => {
-    setSorting((prev) => {
+    setSorting(prev => {
       if (prev.column !== column) {
         return { column, order: 'desc' }
       }
@@ -143,7 +143,9 @@ export default function BackupPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Configuration Backup</h1>
-            <p className="text-muted-foreground mt-2">Manage device configuration backups</p>
+            <p className="text-muted-foreground mt-2">
+              Manage device configuration backups
+            </p>
           </div>
         </div>
 

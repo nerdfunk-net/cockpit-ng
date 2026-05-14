@@ -48,6 +48,6 @@ export function useStatusMessages() {
   return {
     statusMessage,
     showMessage,
-    clearMessage
+    clearMessage,
   }
 }

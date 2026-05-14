@@ -9,7 +9,9 @@ export function useVirtualChassisDetailQuery(vcId: string) {
   return useQuery({
     queryKey: queryKeys.nautobot.virtualChassisDetail(vcId),
     queryFn: async (): Promise<VirtualChassisDetail> =>
-      apiCall<VirtualChassisDetail>(`nautobot/virtual-chassis/${vcId}`, { method: 'GET' }),
+      apiCall<VirtualChassisDetail>(`nautobot/virtual-chassis/${vcId}`, {
+        method: 'GET',
+      }),
     enabled: !!vcId,
     staleTime: 5 * 60 * 1000,
   })

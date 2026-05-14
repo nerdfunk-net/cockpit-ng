@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useConditionTree, createEmptyTree, generateId } from './use-condition-tree'
-import type { ConditionTree, ConditionItem, ConditionGroup, LogicalCondition } from '@/types/shared/device-selector'
+import type {
+  ConditionTree,
+  ConditionItem,
+  ConditionGroup,
+  LogicalCondition,
+} from '@/types/shared/device-selector'
 
 describe('useConditionTree', () => {
   describe('initialization', () => {
@@ -11,7 +16,7 @@ describe('useConditionTree', () => {
       expect(result.current.conditionTree).toEqual({
         type: 'root',
         internalLogic: 'AND',
-        items: []
+        items: [],
       })
       expect(result.current.currentGroupPath).toEqual([])
     })
@@ -88,7 +93,7 @@ describe('useConditionTree', () => {
     })
 
     it('should add nested group', () => {
-      const { result} = renderHook(() => useConditionTree())
+      const { result } = renderHook(() => useConditionTree())
 
       // Add parent group
       act(() => {
@@ -131,7 +136,9 @@ describe('useConditionTree', () => {
       })
 
       expect(result.current.conditionTree.items).toHaveLength(1)
-      expect((result.current.conditionTree.items[0] as ConditionItem).field).toBe('role')
+      expect((result.current.conditionTree.items[0] as ConditionItem).field).toBe(
+        'role'
+      )
     })
 
     it('should remove group and its contents', () => {
@@ -206,7 +213,7 @@ describe('useConditionTree', () => {
       const groupId = (result.current.conditionTree.items[0] as ConditionGroup).id
 
       act(() => {
-        result.current.updateGroupLogic(groupId, 'OR', 'internalLogic')
+        result.current.updateGroupLogic(groupId, 'OR')
       })
 
       const group = result.current.conditionTree.items[0] as ConditionGroup
@@ -270,10 +277,9 @@ describe('useConditionTree', () => {
       expect(parentGroup.items).toHaveLength(1)
       const nestedGroupId = (parentGroup.items[0] as ConditionGroup).id
 
-      // findGroupPath returns the path TO the group (not including the group itself)
-      // So for a nested group, it returns the parent path
+      // Path from root to the nested group (each segment is a group id)
       const path = result.current.findGroupPath(nestedGroupId)
-      expect(path).toEqual([parentGroupId])
+      expect(path).toEqual([parentGroupId, nestedGroupId])
     })
 
     it('should return null for non-existent item', () => {
@@ -290,7 +296,7 @@ describe('useConditionTree', () => {
 
       const flatConditions: LogicalCondition[] = [
         { field: 'device_type', operator: 'equals', value: 'Router', logic: 'AND' },
-        { field: 'role', operator: 'equals', value: 'Core', logic: 'AND' }
+        { field: 'role', operator: 'equals', value: 'Core', logic: 'AND' },
       ]
 
       let tree: ConditionTree
@@ -321,7 +327,7 @@ describe('useConditionTree', () => {
       const { result } = renderHook(() => useConditionTree())
 
       const flatConditions: LogicalCondition[] = [
-        { field: 'status', operator: 'equals', value: 'Active', logic: 'OR' }
+        { field: 'status', operator: 'equals', value: 'Active', logic: 'OR' },
       ]
 
       let tree: ConditionTree
@@ -403,8 +409,12 @@ describe('useConditionTree', () => {
 
       // Verify structure
       expect(result.current.conditionTree.items).toHaveLength(3)
-      expect((result.current.conditionTree.items[0] as ConditionItem).field).toBe('device_type')
-      expect((result.current.conditionTree.items[1] as ConditionItem).field).toBe('role')
+      expect((result.current.conditionTree.items[0] as ConditionItem).field).toBe(
+        'device_type'
+      )
+      expect((result.current.conditionTree.items[1] as ConditionItem).field).toBe(
+        'role'
+      )
 
       const group = result.current.conditionTree.items[2] as ConditionGroup
       expect(group.items).toHaveLength(2)
@@ -434,7 +444,7 @@ describe('helper functions', () => {
       expect(tree).toEqual({
         type: 'root',
         internalLogic: 'AND',
-        items: []
+        items: [],
       })
     })
   })

@@ -2,7 +2,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
-import type { GitRepository, GitRepositoriesResponse } from '@/hooks/queries/use-git-repositories-query'
+import type {
+  GitRepository,
+  GitRepositoriesResponse,
+} from '@/hooks/queries/use-git-repositories-query'
 
 /**
  * Hook for Git repository mutations with optimistic updates
@@ -49,7 +52,7 @@ export function useGitMutationsOptimistic() {
     },
 
     // OPTIMISTIC UPDATE: Run before API call
-    onMutate: async (repo) => {
+    onMutate: async repo => {
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: queryKeys.git.repositories() })
 
@@ -61,12 +64,12 @@ export function useGitMutationsOptimistic() {
       // Optimistically update to the new value
       queryClient.setQueryData<GitRepositoriesResponse>(
         queryKeys.git.repositories(),
-        (old) => {
+        old => {
           if (!old) return old
 
           return {
             ...old,
-            repositories: old.repositories.map((r) =>
+            repositories: old.repositories.map(r =>
               r.id === repo.id
                 ? { ...r, sync_status: 'syncing', last_sync: new Date().toISOString() }
                 : r
@@ -97,10 +100,7 @@ export function useGitMutationsOptimistic() {
     // ERROR: Roll back to the previous state
     onError: (error: Error, repo, context) => {
       if (context?.previousRepos) {
-        queryClient.setQueryData(
-          queryKeys.git.repositories(),
-          context.previousRepos
-        )
+        queryClient.setQueryData(queryKeys.git.repositories(), context.previousRepos)
       }
 
       toast({
@@ -126,7 +126,7 @@ export function useGitMutationsOptimistic() {
       return apiCall(`git-repositories/${id}`, { method: 'DELETE' })
     },
 
-    onMutate: async (id) => {
+    onMutate: async id => {
       await queryClient.cancelQueries({ queryKey: queryKeys.git.repositories() })
 
       const previousRepos = queryClient.getQueryData<GitRepositoriesResponse>(
@@ -136,16 +136,16 @@ export function useGitMutationsOptimistic() {
       // Optimistically remove from list
       queryClient.setQueryData<GitRepositoriesResponse>(
         queryKeys.git.repositories(),
-        (old) => {
+        old => {
           if (!old) return old
           return {
             ...old,
-            repositories: old.repositories.filter((r) => r.id !== id),
+            repositories: old.repositories.filter(r => r.id !== id),
           }
         }
       )
 
-      const deletedRepo = previousRepos?.repositories.find((r) => r.id === id)
+      const deletedRepo = previousRepos?.repositories.find(r => r.id === id)
       toast({
         title: 'Deleting repository',
         description: `Removing ${deletedRepo?.name || 'repository'}...`,
@@ -155,7 +155,7 @@ export function useGitMutationsOptimistic() {
     },
 
     onSuccess: (_data, _id, context) => {
-      const deletedRepo = context?.previousRepos?.repositories.find((r) => r.id === _id)
+      const deletedRepo = context?.previousRepos?.repositories.find(r => r.id === _id)
       toast({
         title: 'Success',
         description: `${deletedRepo?.name || 'Repository'} deleted successfully!`,
@@ -164,10 +164,7 @@ export function useGitMutationsOptimistic() {
 
     onError: (error: Error, _id, context) => {
       if (context?.previousRepos) {
-        queryClient.setQueryData(
-          queryKeys.git.repositories(),
-          context.previousRepos
-        )
+        queryClient.setQueryData(queryKeys.git.repositories(), context.previousRepos)
       }
 
       toast({
@@ -205,11 +202,11 @@ export function useGitMutationsOptimistic() {
       // Optimistically toggle active status
       queryClient.setQueryData<GitRepositoriesResponse>(
         queryKeys.git.repositories(),
-        (old) => {
+        old => {
           if (!old) return old
           return {
             ...old,
-            repositories: old.repositories.map((r) =>
+            repositories: old.repositories.map(r =>
               r.id === id ? { ...r, is_active } : r
             ),
           }
@@ -221,10 +218,7 @@ export function useGitMutationsOptimistic() {
 
     onError: (error: Error, _variables, context) => {
       if (context?.previousRepos) {
-        queryClient.setQueryData(
-          queryKeys.git.repositories(),
-          context.previousRepos
-        )
+        queryClient.setQueryData(queryKeys.git.repositories(), context.previousRepos)
       }
 
       toast({

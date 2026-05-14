@@ -59,8 +59,8 @@ export function useRackSaveMutation() {
       const reservationSlots: Array<{ position: number; deviceName: string }> = []
 
       // Device IDs that were moved to "unpositioned" (clear position/face, keep rack)
-      const movedToUnpositionedIds = new Set(localUnpositioned.map((d) => d.id))
-      const originalUnpositionedIds = new Set(originalUnpositioned.map((d) => d.id))
+      const movedToUnpositionedIds = new Set(localUnpositioned.map(d => d.id))
+      const originalUnpositionedIds = new Set(originalUnpositioned.map(d => d.id))
 
       // Pre-compute which device IDs will be assigned to a new position in any face.
       // These must NOT also get a clear_position_only or removal — the assignment PATCH
@@ -70,7 +70,12 @@ export function useRackSaveMutation() {
         const local = faceName === 'front' ? localFront : localRear
         const original = faceName === 'front' ? originalFront : originalRear
         for (const [posStr, localSlot] of Object.entries(local)) {
-          if (!localSlot || localSlot.isReservation || isReservationId(localSlot.deviceId)) continue
+          if (
+            !localSlot ||
+            localSlot.isReservation ||
+            isReservationId(localSlot.deviceId)
+          )
+            continue
           const pos = Number(posStr)
           const origSlot = original[pos]
           if (!origSlot || origSlot.deviceId !== localSlot.deviceId) {
@@ -110,11 +115,12 @@ export function useRackSaveMutation() {
             const origSlot = original[pos]
             // Skip if this reservation was already loaded from Nautobot (same id + position).
             // Only queue new reservations (created from CSV import) for POST.
-            if (origSlot?.isReservation && origSlot.deviceId === localSlot.deviceId) continue
+            if (origSlot?.isReservation && origSlot.deviceId === localSlot.deviceId)
+              continue
 
             // Track reservation slots (deduplicate by deviceName across both faces)
             const alreadyQueued = reservationSlots.some(
-              (r) => r.deviceName === localSlot.deviceName && r.position === pos
+              r => r.deviceName === localSlot.deviceName && r.position === pos
             )
             if (!alreadyQueued) {
               reservationSlots.push({ position: pos, deviceName: localSlot.deviceName })
@@ -139,13 +145,16 @@ export function useRackSaveMutation() {
       // Position-clears for devices newly added to unpositioned (not in original unpositioned)
       // that weren't already captured from the face diffs above
       const alreadyHandledIds = new Set([
-        ...positionClears.map((r) => r.deviceId),
-        ...removals.map((r) => r.deviceId),
-        ...assignments.map((a) => a.deviceId),
+        ...positionClears.map(r => r.deviceId),
+        ...removals.map(r => r.deviceId),
+        ...assignments.map(a => a.deviceId),
       ])
       for (const device of localUnpositioned) {
         if (device.isReservation) continue // reservations don't have real device IDs
-        if (!originalUnpositionedIds.has(device.id) && !alreadyHandledIds.has(device.id)) {
+        if (
+          !originalUnpositionedIds.has(device.id) &&
+          !alreadyHandledIds.has(device.id)
+        ) {
           // Device is newly in unpositioned (e.g. from CSV import) — assign it to the rack
           // without a position or face so it appears as a non-racked device in Nautobot.
           rackOnlyAssignments.push({ deviceId: device.id })
@@ -237,12 +246,14 @@ export function useRackSaveMutation() {
             }),
           })
         ),
-        ...(reservationDeletions.length > 0 ? [
-          apiCall(
-            `nautobot/rack-reservation?${reservationDeletions.map((id) => `ids=${encodeURIComponent(id)}`).join('&')}`,
-            { method: 'DELETE' }
-          ),
-        ] : []),
+        ...(reservationDeletions.length > 0
+          ? [
+              apiCall(
+                `nautobot/rack-reservation?${reservationDeletions.map(id => `ids=${encodeURIComponent(id)}`).join('&')}`,
+                { method: 'DELETE' }
+              ),
+            ]
+          : []),
       ])
     },
 
@@ -252,10 +263,16 @@ export function useRackSaveMutation() {
       })
       if (rackName && locationId) {
         queryClient.invalidateQueries({
-          queryKey: queryKeys.nautobot.rackMappings({ rack_name: rackName, location_id: locationId }),
+          queryKey: queryKeys.nautobot.rackMappings({
+            rack_name: rackName,
+            location_id: locationId,
+          }),
         })
       }
-      toast({ title: 'Rack saved', description: 'Device assignments updated successfully.' })
+      toast({
+        title: 'Rack saved',
+        description: 'Device assignments updated successfully.',
+      })
     },
 
     onError: (error: Error) => {

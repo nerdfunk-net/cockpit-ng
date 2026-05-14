@@ -7,13 +7,13 @@ import type {
   TemplateContentResponse,
   CategoriesResponse,
   ImportableTemplatesResponse,
-  TemplateFilters
+  TemplateFilters,
 } from '../types'
 import {
   STALE_TIME,
   EMPTY_TEMPLATES,
   EMPTY_CATEGORIES,
-  EMPTY_IMPORTABLE
+  EMPTY_IMPORTABLE,
 } from '../utils/constants'
 import { filterTemplates } from '../utils/template-utils'
 
@@ -51,7 +51,7 @@ export function useTemplates(options: UseTemplatesOptions = DEFAULT_OPTIONS) {
   return {
     ...query,
     templates: filteredTemplates,
-    allTemplates: query.data || EMPTY_TEMPLATES
+    allTemplates: query.data || EMPTY_TEMPLATES,
   }
 }
 
@@ -60,14 +60,18 @@ const DEFAULT_CATEGORY_OPTIONS: { enabled?: boolean } = {}
 /**
  * Fetch template categories with automatic caching
  */
-export function useTemplateCategories(options: { enabled?: boolean } = DEFAULT_CATEGORY_OPTIONS) {
+export function useTemplateCategories(
+  options: { enabled?: boolean } = DEFAULT_CATEGORY_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 
   return useQuery({
     queryKey: queryKeys.templates.categories(),
     queryFn: async () => {
-      const response = await apiCall<CategoriesResponse>('templates/categories', { method: 'GET' })
+      const response = await apiCall<CategoriesResponse>('templates/categories', {
+        method: 'GET',
+      })
       return response || EMPTY_CATEGORIES
     },
     enabled,
@@ -80,7 +84,10 @@ const DEFAULT_CONTENT_OPTIONS: { enabled?: boolean } = {}
 /**
  * Fetch template content for editing
  */
-export function useTemplateContent(templateId: number | null, options: { enabled?: boolean } = DEFAULT_CONTENT_OPTIONS) {
+export function useTemplateContent(
+  templateId: number | null,
+  options: { enabled?: boolean } = DEFAULT_CONTENT_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 
@@ -103,7 +110,9 @@ const DEFAULT_IMPORTABLE_OPTIONS: { enabled?: boolean } = {}
 /**
  * Fetch importable templates from directory scan
  */
-export function useImportableTemplates(options: { enabled?: boolean } = DEFAULT_IMPORTABLE_OPTIONS) {
+export function useImportableTemplates(
+  options: { enabled?: boolean } = DEFAULT_IMPORTABLE_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 
@@ -116,7 +125,7 @@ export function useImportableTemplates(options: { enabled?: boolean } = DEFAULT_
       )
       return (response.templates || EMPTY_IMPORTABLE).map(template => ({
         ...template,
-        selected: true // Default to selected
+        selected: true, // Default to selected
       }))
     },
     enabled,

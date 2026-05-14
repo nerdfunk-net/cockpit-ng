@@ -7,11 +7,11 @@ export const EMPTY_PROGRESS: Record<number, JobProgressResponse> = {}
 
 // Filter options
 export const STATUS_OPTIONS: readonly FilterOption[] = [
-  { value: "pending", label: "Pending" },
-  { value: "running", label: "Running" },
-  { value: "completed", label: "Completed" },
-  { value: "failed", label: "Failed" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: 'pending', label: 'Pending' },
+  { value: 'running', label: 'Running' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'failed', label: 'Failed' },
+  { value: 'cancelled', label: 'Cancelled' },
 ] as const
 
 // Job types hidden from the jobs view (too noisy)
@@ -21,30 +21,30 @@ export const HIDDEN_JOB_TYPES: readonly string[] = [
 ] as const
 
 export const JOB_TYPE_OPTIONS: readonly FilterOption[] = [
-  { value: "backup", label: "Backup" },
-  { value: "cache_git_commits", label: "Cache Git Commits" },
-  { value: "compare_devices", label: "Compare Devices" },
-  { value: "csv_export", label: "CSV Export" },
-  { value: "csv_import", label: "CSV Import" },
-  { value: "deploy_agent", label: "Deploy Agent" },
-  { value: "ip_addresses", label: "IP Addresses" },
-  { value: "run_commands", label: "Run Commands" },
-  { value: "scan_prefixes", label: "Scan Prefixes" },
-  { value: "sync_devices", label: "Sync Devices" },
+  { value: 'backup', label: 'Backup' },
+  { value: 'cache_git_commits', label: 'Cache Git Commits' },
+  { value: 'compare_devices', label: 'Compare Devices' },
+  { value: 'csv_export', label: 'CSV Export' },
+  { value: 'csv_import', label: 'CSV Import' },
+  { value: 'deploy_agent', label: 'Deploy Agent' },
+  { value: 'ip_addresses', label: 'IP Addresses' },
+  { value: 'run_commands', label: 'Run Commands' },
+  { value: 'scan_prefixes', label: 'Scan Prefixes' },
+  { value: 'sync_devices', label: 'Sync Devices' },
 ] as const
 
 export const TRIGGER_OPTIONS: readonly FilterOption[] = [
-  { value: "manual", label: "Manual" },
-  { value: "schedule", label: "Schedule" },
-  { value: "system", label: "System" },
+  { value: 'manual', label: 'Manual' },
+  { value: 'schedule', label: 'Schedule' },
+  { value: 'system', label: 'System' },
 ] as const
 
 // Cache durations for TanStack Query
 export const STALE_TIME = {
-  JOBS_LIST: 10 * 1000,      // 10s - frequently changing when jobs running
-  TEMPLATES: 5 * 60 * 1000,  // 5 min - rarely changes
-  PROGRESS: 0,               // Always fresh for active jobs
-  DETAIL: 30 * 1000,         // 30s - for job detail view
+  JOBS_LIST: 10 * 1000, // 10s - frequently changing when jobs running
+  TEMPLATES: 5 * 60 * 1000, // 5 min - rarely changes
+  PROGRESS: 0, // Always fresh for active jobs
+  DETAIL: 30 * 1000, // 30s - for job detail view
 } as const
 
 // Polling intervals

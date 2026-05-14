@@ -1,8 +1,18 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CSVParseResult, NAUTOBOT_DEVICE_FIELDS, NAUTOBOT_INTERFACE_FIELDS } from '../types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  CSVParseResult,
+  NAUTOBOT_DEVICE_FIELDS,
+  NAUTOBOT_INTERFACE_FIELDS,
+} from '../types'
 
 interface CSVColumnMappingProps {
   parseResult: CSVParseResult
@@ -12,14 +22,18 @@ interface CSVColumnMappingProps {
 }
 
 const ALL_NAUTOBOT_FIELDS = [
-  ...NAUTOBOT_DEVICE_FIELDS.map((f) => ({ ...f, key: f.key, isInterface: false })),
-  ...NAUTOBOT_INTERFACE_FIELDS.map((f) => ({ ...f, key: `interface_${f.key}`, isInterface: true })),
+  ...NAUTOBOT_DEVICE_FIELDS.map(f => ({ ...f, key: f.key, isInterface: false })),
+  ...NAUTOBOT_INTERFACE_FIELDS.map(f => ({
+    ...f,
+    key: `interface_${f.key}`,
+    isInterface: true,
+  })),
 ]
 
 function getMappingLabel(value: string): string {
   if (value === 'unmapped') return '-- Unmapped --'
   if (value.startsWith('cf_')) return `[Custom] ${value.substring(3)}`
-  const field = ALL_NAUTOBOT_FIELDS.find((f) => f.key === value)
+  const field = ALL_NAUTOBOT_FIELDS.find(f => f.key === value)
   if (field) {
     return field.isInterface ? `[Interface] ${field.label}` : field.label
   }
@@ -49,7 +63,7 @@ export function CSVColumnMapping({
             </tr>
           </thead>
           <tbody>
-            {parseResult.headers.map((header) => (
+            {parseResult.headers.map(header => (
               <tr key={header} className="border-b last:border-b-0">
                 <td className="py-2 px-2">
                   <span className="font-mono bg-muted px-2 py-1 rounded">{header}</span>
@@ -57,7 +71,7 @@ export function CSVColumnMapping({
                 <td className="py-2 px-2">
                   <Select
                     value={columnMappings[header] || 'unmapped'}
-                    onValueChange={(value) => onUpdateMapping(header, value)}
+                    onValueChange={value => onUpdateMapping(header, value)}
                   >
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue>
@@ -71,9 +85,11 @@ export function CSVColumnMapping({
                           {`[Custom] ${header.substring(3)}`}
                         </SelectItem>
                       )}
-                      {ALL_NAUTOBOT_FIELDS.map((field) => (
+                      {ALL_NAUTOBOT_FIELDS.map(field => (
                         <SelectItem key={field.key} value={field.key}>
-                          {field.isInterface ? `[Interface] ${field.label}` : field.label}
+                          {field.isInterface
+                            ? `[Interface] ${field.label}`
+                            : field.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
