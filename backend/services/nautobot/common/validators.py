@@ -6,7 +6,7 @@ This module contains stateless validation logic with zero service dependencies.
 
 import logging
 import re
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 

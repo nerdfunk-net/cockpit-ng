@@ -8,8 +8,9 @@ This package contains routers for:
 """
 
 from fastapi import APIRouter
-from .compare import router as compare_router
+
 from .backup import router as backup_router
+from .compare import router as compare_router
 
 # Combine routers
 router = APIRouter()

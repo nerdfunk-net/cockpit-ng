@@ -2,7 +2,7 @@
 
 import ipaddress
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 from models.nb2cmk import DeviceExtensions
 

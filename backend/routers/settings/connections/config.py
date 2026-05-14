@@ -3,12 +3,15 @@ Configuration file management router for editing YAML config files.
 """
 
 from __future__ import annotations
+
 import logging
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, status
+
 import yaml
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_checkmk_config_service
 from models.settings import ConfigFileContent
 
@@ -69,11 +72,7 @@ async def validate_yaml_content(
         }
 
     except Exception as e:
-        logger.error("Unexpected error during YAML validation: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error validating YAML content: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Error validating YAML content: ", e)
 
 
 @router.get("/{filename}")
@@ -101,7 +100,7 @@ async def read_config_file(
 
         # Read file content
         try:
-            with open(config_file, "r", encoding="utf-8") as f:
+            with open(config_file, encoding="utf-8") as f:
                 content = f.read()
 
             logger.info(
@@ -114,20 +113,16 @@ async def read_config_file(
             }
 
         except Exception as e:
-            logger.error("Error reading config file %s: %s", filename, e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error reading configuration file: {str(e)}",
+            raise_internal_server_error(
+                logger,
+                f"Error reading configuration file {filename}",
+                e,
             )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Unexpected error reading config file %s: %s", filename, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Unexpected error: ", e)
 
 
 @router.post("/{filename}")
@@ -164,20 +159,16 @@ async def write_config_file(
             return {"success": True, "message": f"Successfully saved {filename}"}
 
         except Exception as e:
-            logger.error("Error writing config file %s: %s", filename, e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error writing configuration file: {str(e)}",
+            raise_internal_server_error(
+                logger,
+                f"Error writing configuration file {filename}",
+                e,
             )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Unexpected error writing config file %s: %s", filename, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Unexpected error: ", e)
 
 
 @router.get("/")
@@ -218,8 +209,4 @@ async def list_config_files(
         }
 
     except Exception as e:
-        logger.error("Error listing config files: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error listing configuration files: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Error listing configuration files: ", e)

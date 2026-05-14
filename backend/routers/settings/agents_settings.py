@@ -3,11 +3,14 @@ Agents settings router.
 """
 
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from models.settings import AgentsSettingsRequest, AgentsTestRequest
 
 logger = logging.getLogger(__name__)
@@ -29,11 +32,7 @@ async def get_agents_settings(
         return {"success": True, "data": settings}
 
     except Exception as e:
-        logger.error("Error getting Agents settings: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get Agents settings: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get Agents settings: ", e)
 
 
 @router.post("/agents")
@@ -78,8 +77,9 @@ async def test_agents_connection(
     """Test Agents connection with provided settings."""
     try:
         import os
-        import paramiko
         from pathlib import Path
+
+        import paramiko
 
         deployment_method = test_request.deployment_method
 
@@ -213,7 +213,7 @@ async def get_telegraf_config(
                 "data": "",
             }
 
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             content = f.read()
 
         logger.info(

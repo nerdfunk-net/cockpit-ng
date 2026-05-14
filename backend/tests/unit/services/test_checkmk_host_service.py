@@ -7,13 +7,13 @@ CheckMKClientFactory.build_client_from_settings.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import patch
 
-from services.checkmk.host_service import CheckMKHostService
-from services.checkmk.exceptions import CheckMKAPIError, HostNotFoundError
-from tests.mocks import FakeCheckMKClient
+import pytest
 
+from services.checkmk.exceptions import CheckMKAPIError, HostNotFoundError
+from services.checkmk.host_service import CheckMKHostService
+from tests.mocks import FakeCheckMKClient
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 

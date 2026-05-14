@@ -3,8 +3,10 @@ JobTemplate Repository
 Handles database operations for job templates.
 """
 
-from typing import Optional, List
+from typing import List, Optional
+
 from sqlalchemy import or_
+
 from core.models import JobTemplate
 from repositories.base import BaseRepository
 

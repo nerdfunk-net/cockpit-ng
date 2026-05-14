@@ -3,23 +3,25 @@ Netmiko router for executing commands on network devices.
 """
 
 from __future__ import annotations
+
 import logging
 import uuid
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from dependencies import get_nautobot_service, get_device_query_service
-from services.nautobot.client import NautobotService
-from services.nautobot.devices.query import DeviceQueryService
-from dependencies import get_netmiko_service
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_device_query_service, get_nautobot_service, get_netmiko_service
 from models.netmiko import (
-    DeviceCommand,
-    CommandResult,
     CommandExecutionResponse,
+    CommandResult,
+    DeviceCommand,
     TemplateExecutionRequest,
     TemplateExecutionResponse,
 )
+from services.nautobot.client import NautobotService
+from services.nautobot.devices.query import DeviceQueryService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/netmiko", tags=["netmiko"])
@@ -169,11 +171,7 @@ async def cancel_execution(
             "session_id": session_id,
         }
     except Exception as e:
-        logger.error("Error cancelling session %s: %s", session_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to cancel session: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to cancel session: ", e)
 
 
 @router.post("/execute-template", response_model=TemplateExecutionResponse)

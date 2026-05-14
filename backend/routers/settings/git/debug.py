@@ -5,6 +5,7 @@ read/write/delete tests, push tests, and comprehensive diagnostics.
 """
 
 from __future__ import annotations
+
 import logging
 import os
 import ssl
@@ -15,8 +16,8 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import require_permission
 from dependencies import get_git_auth_service
-from services.settings.git.env import set_ssl_env
 from services.settings.git.config import set_git_author
+from services.settings.git.env import set_ssl_env
 from services.settings.git.shared_utils import get_git_repo_by_id, git_repo_manager
 
 logger = logging.getLogger(__name__)

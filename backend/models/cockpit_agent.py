@@ -3,8 +3,9 @@ Pydantic models for Grafana Agent
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AgentStatusResponse(BaseModel):
@@ -66,6 +67,8 @@ class DockerRestartRequest(BaseModel):
 class CommandHistoryItem(BaseModel):
     """Command history record"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     agent_id: str
     command_id: str
@@ -78,9 +81,6 @@ class CommandHistoryItem(BaseModel):
     sent_at: datetime
     completed_at: Optional[datetime] = None
     sent_by: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class CommandHistoryResponse(BaseModel):

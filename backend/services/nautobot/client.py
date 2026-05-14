@@ -3,14 +3,16 @@ Nautobot service for handling GraphQL queries and REST API calls.
 """
 
 from __future__ import annotations
-import httpx
+
 import logging
 from typing import Any
 
+import httpx
+
 from .common.exceptions import (
-    NautobotValidationError,
     NautobotAPIError,
     NautobotNotFoundError,
+    NautobotValidationError,
 )
 
 logger = logging.getLogger(__name__)
@@ -19,8 +21,19 @@ logger = logging.getLogger(__name__)
 class NautobotService:
     """Pure-async Nautobot API client. App-scoped, lifespan-managed.
 
-    Use this in FastAPI async routes and async services.
-    In Celery tasks, use asyncio.run() to call async methods directly.
+    Usage rules (see ``doc/refactoring/CURSOR_ASYNC_PLAN.md``):
+
+    * **FastAPI**: inject via ``Depends(get_nautobot_service)`` and ``await``
+      its methods from ``async def`` routes. Never wrap in ``asyncio.run`` —
+      that would create a nested loop and crash.
+    * **Celery tasks / sync services**: wrap **one** top-level
+      ``asyncio.run(main_async())`` per task invocation that contains all
+      Nautobot calls for that unit of work. Avoid scattering ``asyncio.run``
+      across many tiny GraphQL calls inside loops; consolidate into a single
+      async helper instead (see ``_sync_one_device`` in
+      ``tasks/execution/sync_executor.py`` for the pattern).
+    * **CLI scripts**: ``asyncio.run(async_main())`` at the entry point is
+      fine — there is no enclosing loop.
     """
 
     def __init__(self):

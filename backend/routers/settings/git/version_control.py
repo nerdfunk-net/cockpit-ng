@@ -4,13 +4,15 @@ Handles Git-specific version control functionality.
 """
 
 from __future__ import annotations
+
 import difflib
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from git import InvalidGitRepositoryError, GitCommandError
+from git import GitCommandError, InvalidGitRepositoryError
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_cache_service
 from services.settings.git.shared_utils import get_git_repo_by_id
 
@@ -42,10 +44,7 @@ async def get_branches(
             detail=f"Git repository not found or invalid: {str(e)}",
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Git branches error: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Git branches error: ", e)
 
 
 @router.get("/commits/{branch_name}")
@@ -108,10 +107,7 @@ async def get_commits(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get commits: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get commits: ", e)
 
 
 @router.post("/diff")
@@ -258,7 +254,4 @@ async def compare_commits(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to compare commits: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to compare commits: ", e)

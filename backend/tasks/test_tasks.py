@@ -2,9 +2,10 @@
 Test tasks for Celery functionality verification.
 """
 
-from celery import shared_task
 import logging
 import time
+
+from celery import shared_task
 
 logger = logging.getLogger(__name__)
 

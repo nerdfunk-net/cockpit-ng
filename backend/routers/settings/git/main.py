@@ -19,12 +19,13 @@ it was only used by the deprecated /compare feature.
 
 from fastapi import APIRouter
 
+from routers.settings.git.debug import router as debug_router
+from routers.settings.git.files import router as files_router
+from routers.settings.git.operations import router as operations_router
+
 # Import all Git sub-routers from new feature-based structure
 from routers.settings.git.repositories import router as repositories_router
-from routers.settings.git.operations import router as operations_router
 from routers.settings.git.version_control import router as version_control_router
-from routers.settings.git.files import router as files_router
-from routers.settings.git.debug import router as debug_router
 
 # Create main router that will include all sub-routers
 router = APIRouter()

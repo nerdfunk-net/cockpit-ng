@@ -5,7 +5,8 @@ Compares device inventories between Nautobot and CheckMK.
 
 import asyncio
 import logging
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from celery import shared_task
 
 logger = logging.getLogger(__name__)

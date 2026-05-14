@@ -13,8 +13,10 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from celery_app import celery_app
+from config import settings
 from core.auth import require_permission, verify_token
 from core.celery_error_handler import handle_celery_errors
+from core.safe_http_errors import raise_internal_server_error
 from models.celery import (
     CelerySettingsRequest,
     ProgressTaskRequest,
@@ -30,7 +32,6 @@ from services.celery import (
     purge_all_queues,
     purge_queue,
 )
-from config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/celery", tags=["celery"])
@@ -181,9 +182,7 @@ async def purge_all_queues_endpoint(
     try:
         return purge_all_queues(username=current_user.get("username", "unknown"))
     except RuntimeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
-        )
+        raise_internal_server_error(logger, "Celery admin operation failed", exc)
 
 
 @router.delete("/queues/{queue_name}/purge")
@@ -206,9 +205,7 @@ async def purge_queue_endpoint(
     except KeyError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     except RuntimeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
-        )
+        raise_internal_server_error(logger, "Celery admin operation failed", exc)
 
 
 # ============================================================================

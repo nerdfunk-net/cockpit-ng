@@ -12,8 +12,9 @@ from ..common.exceptions import NautobotAPIError
 
 if TYPE_CHECKING:
     from services.nautobot import NautobotService
-    from ..resolvers.network_resolver import NetworkResolver
+
     from ..resolvers.metadata_resolver import MetadataResolver
+    from ..resolvers.network_resolver import NetworkResolver
 
 logger = logging.getLogger(__name__)
 

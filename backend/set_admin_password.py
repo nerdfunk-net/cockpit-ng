@@ -5,19 +5,21 @@ This script allows you to reset the admin user's password in the users database.
 """
 
 from __future__ import annotations
+
+import getpass
 import os
 import sys
-import getpass
 from pathlib import Path
 
 # Add backend directory to path for imports
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
+import sqlite3  # noqa: E402
+
 from config import settings as config_settings  # noqa: E402
 from core.auth import get_password_hash  # noqa: E402
 from services.auth.user_service import PERMISSIONS_ADMIN  # noqa: E402
-import sqlite3  # noqa: E402
 
 
 def main():

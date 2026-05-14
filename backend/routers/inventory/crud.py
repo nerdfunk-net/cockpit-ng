@@ -16,12 +16,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_inventory_persistence_service
 from models.inventory import (
     CreateInventoryRequest,
+    ImportInventoryRequest,
     InventoryDeleteResponse,
     InventoryResponse,
-    ImportInventoryRequest,
     ListInventoriesResponse,
     UpdateInventoryRequest,
 )
@@ -91,11 +92,7 @@ async def create_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error creating inventory: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create inventory: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create inventory: ", e)
 
 
 @router.get("", response_model=ListInventoriesResponse)
@@ -140,11 +137,7 @@ async def list_inventories(
         )
 
     except Exception as e:
-        logger.error("Error listing inventories: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list inventories: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to list inventories: ", e)
 
 
 @router.get("/{inventory_id}", response_model=InventoryResponse)
@@ -179,11 +172,7 @@ async def get_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting inventory %s: %s", inventory_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get inventory: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get inventory: ", e)
 
 
 @router.get("/by-name/{inventory_name}", response_model=InventoryResponse)
@@ -221,11 +210,7 @@ async def get_inventory_by_name(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting inventory by name '%s': %s", inventory_name, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get inventory: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get inventory: ", e)
 
 
 @router.put("/{inventory_id}", response_model=InventoryResponse)
@@ -287,11 +272,7 @@ async def update_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating inventory %s: %s", inventory_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update inventory: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update inventory: ", e)
 
 
 @router.delete("/{inventory_id}", response_model=InventoryDeleteResponse)
@@ -332,11 +313,7 @@ async def delete_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting inventory %s: %s", inventory_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete inventory: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete inventory: ", e)
 
 
 @router.get("/search/{query}", response_model=ListInventoriesResponse)
@@ -368,11 +345,7 @@ async def search_inventories(
         )
 
     except Exception as e:
-        logger.error("Error searching inventories: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to search inventories: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to search inventories: ", e)
 
 
 @router.get("/export/{inventory_id}")
@@ -454,11 +427,7 @@ async def export_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error exporting inventory %s: %s", inventory_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to export inventory: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to export inventory: ", e)
 
 
 @router.post(
@@ -542,8 +511,4 @@ async def import_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error importing inventory: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to import inventory: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to import inventory: ", e)

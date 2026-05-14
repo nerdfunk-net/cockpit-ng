@@ -1,11 +1,12 @@
 """RBAC service — roles, permissions, user-role and user-permission management."""
 
 from __future__ import annotations
-import logging
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
+import logging
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+from core.models import Permission, Role
 from repositories.auth.rbac_repository import RBACRepository
-from core.models import Role, Permission
 
 if TYPE_CHECKING:
     from services.auth.user_service import UserService
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class RBACService:
-    def __init__(self, user_service: "UserService") -> None:
+    def __init__(self, user_service: UserService) -> None:
         self._rbac_repo = RBACRepository()
         self._user_service = user_service
 

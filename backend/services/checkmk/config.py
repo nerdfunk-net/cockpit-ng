@@ -4,9 +4,11 @@ Handles loading and caching of YAML configuration files.
 """
 
 from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -40,7 +42,7 @@ class ConfigService:
             config_path = self._config_dir / "checkmk.yaml"
 
             try:
-                with open(config_path, "r") as f:
+                with open(config_path) as f:
                     self._checkmk_config = yaml.safe_load(f) or {}
                 logger.info("Loaded CheckMK configuration from %s", config_path)
             except FileNotFoundError:
@@ -69,7 +71,7 @@ class ConfigService:
             config_path = self._config_dir / "snmp_mapping.yaml"
 
             try:
-                with open(config_path, "r") as f:
+                with open(config_path) as f:
                     self._snmp_mapping = yaml.safe_load(f) or {}
                 logger.info("Loaded SNMP mapping configuration from %s", config_path)
             except FileNotFoundError:
@@ -100,7 +102,7 @@ class ConfigService:
             config_path = self._config_dir / "checkmk_queries.yaml"
 
             try:
-                with open(config_path, "r") as f:
+                with open(config_path) as f:
                     self._queries = yaml.safe_load(f) or {}
                 logger.info("Loaded queries configuration from %s", config_path)
             except FileNotFoundError:

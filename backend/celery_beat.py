@@ -10,9 +10,8 @@ This file is kept for compatibility with environments that call
 `celery -A celery_beat beat` directly (e.g., some Docker setups).
 """
 
-from celery_app import celery_app  # noqa: F401
-
 import core.celery_signals  # noqa: F401 - Import for side effects (signal registration)
+from celery_app import celery_app  # noqa: F401
 
 try:
     from tasks import *  # noqa: F403 - intentional star import for task registration

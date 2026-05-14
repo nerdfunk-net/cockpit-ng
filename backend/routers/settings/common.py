@@ -3,11 +3,14 @@ Settings router for general application configuration management.
 """
 
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from models.settings import AllSettingsRequest
 
 logger = logging.getLogger(__name__)
@@ -39,11 +42,7 @@ async def get_all_settings(
         return {"settings": settings_data}
 
     except Exception as e:
-        logger.error("Error getting settings: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve settings: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve settings: ", e)
 
 
 @router.put("")
@@ -78,11 +77,7 @@ async def update_all_settings(
             )
 
     except Exception as e:
-        logger.error("Error updating settings: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update settings: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update settings: ", e)
 
 
 @router.post("/reset")
@@ -109,11 +104,7 @@ async def reset_settings_to_defaults(
             )
 
     except Exception as e:
-        logger.error("Error resetting settings: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to reset settings: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to reset settings: ", e)
 
 
 @router.get("/health")

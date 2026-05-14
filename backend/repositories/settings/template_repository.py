@@ -2,12 +2,14 @@
 Template Repository - handles database operations for templates.
 """
 
-from typing import List, Optional
-from sqlalchemy import func, or_, and_
-from core.models import Template, TemplateVersion
-from core.database import get_db_session
-from repositories.base import BaseRepository
 import logging
+from typing import List, Optional
+
+from sqlalchemy import and_, func, or_
+
+from core.database import get_db_session
+from core.models import Template, TemplateVersion
+from repositories.base import BaseRepository
 
 logger = logging.getLogger(__name__)
 

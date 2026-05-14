@@ -1,0 +1,68 @@
+name: Backend tests
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-tests.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-tests.yml"
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cockpit_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cockpit_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      COCKPIT_DATABASE_HOST: localhost
+      COCKPIT_DATABASE_PORT: "5432"
+      COCKPIT_DATABASE_NAME: cockpit_test
+      COCKPIT_DATABASE_USERNAME: postgres
+      COCKPIT_DATABASE_PASSWORD: postgres
+      TEST_DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/cockpit_test
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Regression scripts
+        run: |
+          python scripts/check_asyncio_run.py
+          python scripts/check_http_500_leaks.py
+          python scripts/check_router_repositories.py
+          python scripts/check_text_sql.py
+
+      - name: Apply database schema
+        run: python -c "from core.database import init_db; init_db()"
+
+      - name: Pytest (unit + repository PostgreSQL integration)
+        run: |
+          python -m pytest tests/unit tests/integration/repositories \
+            -o addopts='-v --tb=short --strict-markers'

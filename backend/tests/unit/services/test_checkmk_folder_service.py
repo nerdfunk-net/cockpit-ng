@@ -5,12 +5,12 @@ All tests run offline — no real CheckMK instance required.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from services.checkmk.folder import CheckMKFolderService
 from tests.mocks import FakeCheckMKClient
-
 
 _PATCH_TARGET = (
     "services.checkmk.folder.CheckMKClientFactory.build_client_from_settings"

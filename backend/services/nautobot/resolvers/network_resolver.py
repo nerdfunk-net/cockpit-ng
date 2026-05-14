@@ -4,8 +4,9 @@ Network resolver for IP addresses, Interfaces, Namespaces, Prefixes resolution.
 
 import logging
 from typing import Optional
-from .base_resolver import BaseResolver
+
 from ..common.validators import is_valid_uuid
+from .base_resolver import BaseResolver
 
 logger = logging.getLogger(__name__)
 

@@ -388,7 +388,7 @@ def main() -> None:
         print("ERROR: Config file not found: %s" % args.config, file=sys.stderr)
         sys.exit(1)
 
-    with open(config_path, "r", encoding="utf-8") as f:
+    with open(config_path, encoding="utf-8") as f:
         config_data = yaml.safe_load(f)
 
     if not config_data:

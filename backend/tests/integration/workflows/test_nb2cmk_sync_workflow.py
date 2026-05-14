@@ -8,17 +8,18 @@ Tests the complete sync workflow including:
 - Error handling and partial failures
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
+
 from services.checkmk.sync.base import NautobotToCheckMKService
 from tests.fixtures import (
-    NAUTOBOT_DEVICES_LIST,
     CHECKMK_ADD_HOST_SUCCESS,
     CHECKMK_EDIT_HOST_SUCCESS,
+    NAUTOBOT_DEVICES_LIST,
     create_devices_list,
     create_hosts_list,
 )
-
 
 # ==============================================================================
 # Test Class: Device Fetching

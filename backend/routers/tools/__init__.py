@@ -8,8 +8,8 @@ This package contains routers for developer/administrative tools:
 - CA certificate management
 """
 
-from .schema import router as tools_router
 from .certificates import router as certificates_router
+from .schema import router as tools_router
 
 __all__ = [
     "tools_router",

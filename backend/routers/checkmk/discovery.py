@@ -9,12 +9,13 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_checkmk_discovery_service
 from models.checkmk import (
-    CheckMKServiceDiscoveryRequest,
-    CheckMKDiscoveryPhaseUpdateRequest,
     CheckMKBulkDiscoveryRequest,
+    CheckMKDiscoveryPhaseUpdateRequest,
     CheckMKOperationResponse,
+    CheckMKServiceDiscoveryRequest,
 )
 from services.checkmk.exceptions import CheckMKClientError
 
@@ -43,12 +44,11 @@ async def get_service_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error getting service discovery for host %s: %s", hostname, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get service discovery for host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to get service discovery for host {hostname}",
+            e,
+            extra={"hostname": hostname},
         )
 
 
@@ -74,12 +74,11 @@ async def start_service_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error starting service discovery for host %s: %s", hostname, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start service discovery for host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to start service discovery for host {hostname}",
+            e,
+            extra={"hostname": hostname},
         )
 
 
@@ -104,12 +103,11 @@ async def wait_for_service_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error waiting for service discovery for host %s: %s", hostname, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to wait for service discovery for host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to wait for service discovery for host {hostname}",
+            e,
+            extra={"hostname": hostname},
         )
 
 
@@ -138,10 +136,8 @@ async def update_discovery_phase(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating discovery phase for host %s: %s", hostname, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update discovery phase for host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to update discovery phase for host {hostname}", e
         )
 
 
@@ -164,8 +160,4 @@ async def start_bulk_discovery(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error starting bulk discovery: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start bulk discovery: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to start bulk discovery: ", e)

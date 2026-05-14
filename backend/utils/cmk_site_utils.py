@@ -3,9 +3,10 @@ Utility functions for determining CheckMK sites and device placement.
 """
 
 from __future__ import annotations
+
 import ipaddress
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 import service_factory
 from utils.cmk_folder_utils import parse_folder_value

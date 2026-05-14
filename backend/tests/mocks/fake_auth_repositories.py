@@ -20,8 +20,6 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-
-
 # ---------------------------------------------------------------------------
 # Lightweight stand-in objects that mirror SQLAlchemy model attribute access
 # ---------------------------------------------------------------------------
@@ -182,7 +180,7 @@ class FakeUserRepository:
             return True
         return False
 
-    def update_last_login(self, user_id: int) -> bool:
+    def update_last_login(self, user_id: int, db=None, auto_commit: bool = True) -> bool:
         user = self._users.get(user_id)
         if user:
             user.last_login = datetime.now(timezone.utc)

@@ -5,12 +5,14 @@ API endpoints for viewing and managing job run history.
 
 import logging
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_job_run_service
+from models.jobs import JobRunListResponse, JobRunResponse
 from services.jobs.job_run_service import JobRunService
-from models.jobs import JobRunResponse, JobRunListResponse
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +80,7 @@ async def list_job_runs(
         )
         return result
     except Exception as e:
-        logger.error("Error listing job runs: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/templates")
@@ -94,8 +95,7 @@ async def get_distinct_templates(
         templates = job_run_service.get_distinct_templates()
         return {"templates": templates}
     except Exception as e:
-        logger.error("Error getting templates: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/recent")
@@ -115,8 +115,7 @@ async def get_recent_runs(
         )
         return runs
     except Exception as e:
-        logger.error("Error getting recent runs: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/stats")
@@ -133,8 +132,7 @@ async def get_job_stats(
         stats = job_run_service.get_queue_stats()
         return stats
     except Exception as e:
-        logger.error("Error getting job stats: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/dashboard/stats")
@@ -153,8 +151,7 @@ async def get_dashboard_stats(
         stats = job_run_service.get_dashboard_stats()
         return stats
     except Exception as e:
-        logger.error("Error getting dashboard stats: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/dashboard/compare-devices")
@@ -204,8 +201,7 @@ async def get_latest_compare_devices_result(
             "message": result.get("message", ""),
         }
     except Exception as e:
-        logger.error("Error getting compare devices stats: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/dashboard/ip-addresses")
@@ -256,8 +252,7 @@ async def get_latest_ip_addresses_result(
             "success": result.get("success", False),
         }
     except Exception as e:
-        logger.error("Error getting ip-addresses dashboard stats: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/dashboard/scan-prefix")
@@ -392,8 +387,7 @@ async def get_latest_scan_prefix_result(
             "was_split": "sub_task_ids" in result,
         }
     except Exception as e:
-        logger.error("Error getting scan prefix stats: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/{run_id}", response_model=JobRunResponse)
@@ -413,8 +407,7 @@ async def get_job_run(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting job run %s: %s", run_id, e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/{run_id}/progress")
@@ -482,7 +475,7 @@ async def get_job_progress(
         logger.error(
             "Error getting progress for job run %s: %s", run_id, e, exc_info=True
         )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/schedule/{schedule_id}")
@@ -502,7 +495,7 @@ async def get_schedule_runs(
         logger.error(
             "Error getting runs for schedule %s: %s", schedule_id, e, exc_info=True
         )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.post("/{run_id}/cancel")
@@ -545,8 +538,7 @@ async def cancel_job_run(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error cancelling job run %s: %s", run_id, e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.delete("/cleanup")
@@ -564,8 +556,7 @@ async def cleanup_old_runs(
         count = job_run_service.cleanup_old_runs(days=days)
         return {"message": f"Cleaned up {count} old job runs", "deleted_count": count}
     except Exception as e:
-        logger.error("Error cleaning up job runs: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.delete("/clear-all")
@@ -580,8 +571,7 @@ async def clear_all_runs(
         count = job_run_service.clear_all_runs()
         return {"message": f"Cleared {count} job runs", "deleted_count": count}
     except Exception as e:
-        logger.error("Error clearing job runs: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.delete("/clear-filtered")
@@ -644,8 +634,7 @@ async def clear_filtered_runs(
             },
         }
     except Exception as e:
-        logger.error("Error clearing filtered job runs: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.delete("/{run_id}")
@@ -678,8 +667,7 @@ async def delete_job_run(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting job run %s: %s", run_id, e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.post("/execute/{schedule_id}")
@@ -752,5 +740,4 @@ async def execute_job_manually(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error executing job manually: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)

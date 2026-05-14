@@ -4,6 +4,7 @@ Backup service for managing device configuration backups.
 
 import logging
 from typing import List
+
 from sqlalchemy.orm import Session
 
 from repositories.backup_repository import BackupRepository
@@ -177,10 +178,11 @@ class BackupService:
             Backup file content as bytes
         """
         try:
+            import git
+
             from services.settings.git.shared_utils import (
                 get_git_repositories_by_category,
             )
-            import git
 
             repos = get_git_repositories_by_category("device_configs")
             if not repos:

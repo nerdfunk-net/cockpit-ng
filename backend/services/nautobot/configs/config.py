@@ -5,11 +5,11 @@ Handles fetching device information from Nautobot and retrieving
 configurations from network devices via SSH (Netmiko).
 """
 
-import logging
-from typing import Optional
-from pathlib import Path
-
 import asyncio
+import logging
+from pathlib import Path
+from typing import Optional
+
 import service_factory
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.network.automation.netmiko import NetmikoService

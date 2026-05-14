@@ -4,15 +4,16 @@ Service for comparing snapshots.
 
 import json
 import logging
-from typing import Dict, Any, Optional
-from repositories.snapshots import SnapshotRepository
+from typing import Any, Dict, Optional
+
 from models.snapshots import (
+    CommandDiff,
+    DeviceComparisonResult,
     SnapshotCompareRequest,
     SnapshotCompareResponse,
-    DeviceComparisonResult,
-    CommandDiff,
     SnapshotListResponse,
 )
+from repositories.snapshots import SnapshotRepository
 
 logger = logging.getLogger(__name__)
 

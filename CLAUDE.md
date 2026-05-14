@@ -14,7 +14,7 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 ### Core Principles
 - **Complete separation**: Frontend (port 3000) ↔ Backend (port 8000)
 - **API proxy pattern**: Frontend → Next.js `/api/proxy/*` → Backend (NEVER direct backend calls)
-- **PostgreSQL single database** with 40+ tables (defined in `/backend/core/models.py`)
+- **PostgreSQL single database** with 40+ tables (defined in `/backend/core/models/`)
 - **Layered backend**: Model → Repository → Service → Router
 - **Feature-based organization**: Group by domain, not by technical role
 - **Server Components default**: Use `'use client'` only when necessary
@@ -25,7 +25,7 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 
 ### Backend Layer Pattern
 ```
-1. SQLAlchemy Model    → /backend/core/models.py (tables, indexes, relationships)
+1. SQLAlchemy Model    → /backend/core/models/{domain}.py (tables, indexes, relationships)
 2. Pydantic Models     → /backend/models/{domain}.py (request/response schemas)
 3. Repository          → /backend/repositories/{domain}_repository.py (data access)
 4. Service             → /backend/services/{domain}_service.py (business logic)
@@ -44,8 +44,29 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
   ├── types/          # TypeScript types
   └── utils/          # Utility functions
 
-/app/(dashboard)/{feature}/page.tsx  # Route pages
+/app/(dashboard)/{feature}/page.tsx  # Route pages — stubs only (see rule below)
 ```
+
+### Route File Rule — Stubs Only
+
+`/app/(dashboard)/*/page.tsx` files MUST be pure route stubs.
+
+**CORRECT:**
+```tsx
+import { MyFeaturePage } from '@/components/features/domain/my-feature-page'
+
+export default function MyFeatureRoute() {
+  return <MyFeaturePage />
+}
+```
+
+**Rules:**
+- ❌ No logic, state, or hooks in route files
+- ❌ No `'use client'` directive on route files (add it to the feature component instead)
+- ❌ No `components/` or `dialogs/` subdirectories inside route directories
+- ✅ Optional: `export const metadata: Metadata = { title: '...' }` is allowed
+- ✅ Optional: `export const dynamic = 'force-dynamic'` and similar Next.js segment config is allowed
+- ✅ All feature logic lives in `components/features/{domain}/`
 
 ### Naming Conventions
 - **Database**: `snake_case` (tables: `job_templates`, columns: `created_at`)
@@ -58,7 +79,10 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 - ✅ Export all models from `/backend/core/models/__init__.py`
 - ✅ Add indexes, foreign keys, timestamps (`created_at`, `updated_at`)
 - ✅ Use repository pattern (BaseRepository in `/backend/repositories/base.py`)
-- ❌ NEVER use SQLite or raw SQL queries
+- ✅ Production database is PostgreSQL with SQLAlchemy ORM/Core (`./doc/MIGRATION_SYSTEM.md`). In-memory SQLite in **unit** tests is acceptable when queries do not rely on PostgreSQL-only features.
+- ✅ Prefer SQLAlchemy ORM/Core for all runtime application data access. Repository-layer `sqlalchemy.text()` is allowed only under the rules in `doc/refactoring/REFACTORING_RAW_SQL.md` §3 (bound parameters, named constants for non-trivial SQL, no string composition of values, PostgreSQL integration coverage for dialect-specific behaviour). Health checks (`SELECT 1` in `core/database.py`) and migration/schema tooling are exempt.
+- ❌ Never call `text()` from routers, services, or Celery tasks.
+- ❌ Never compose runtime values into raw SQL via f-strings or string concatenation.
 - ❌ NEVER bypass repository layer
 
 ## Key File Locations
@@ -515,6 +539,7 @@ PORT=3000
 - ✅ Check permissions with `require_permission()`
 - ✅ Use HTTPS in production
 - ✅ Never commit `.env` files
+- ✅ **5xx errors:** Never put raw exception text (`str(e)`, `{exc}`, etc.) in `HTTPException(detail=…)` for server errors. Use `core.safe_http_errors.raise_internal_server_error` (and optional `status_code` for sanitized non-500 5xx such as 502) so clients only see `{message, error_id}`; correlate via logs.
 
 ## Development Workflow
 ```bash
@@ -527,6 +552,16 @@ cd frontend && npm run dev
 # Default credentials: admin/admin
 # Frontend: http://localhost:3000
 # Backend: http://localhost:8000
+
+# Router regression guards (from backend/)
+python scripts/check_asyncio_run.py
+python scripts/check_http_500_leaks.py
+python scripts/check_router_repositories.py
+python scripts/check_text_sql.py
+
+# Ruff (Python lint/format rules in backend/pyproject.toml) — run from time to time
+# or before larger backend changes; from backend/: `ruff check .` (optionally `--fix`)
+ruff check .
 ```
 
 When implementing configuration changes, include verification steps that confirm the change works (e.g., run a quick test, check logs, or validate config loads)
@@ -669,7 +704,7 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 - Service layer for business logic
 - Thin routers that delegate to services
 - Dependency injection for auth/permissions
-- SQLAlchemy ORM (no raw SQL)
+- SQLAlchemy ORM/Core for runtime data access; repository `text()` only as documented in `doc/refactoring/REFACTORING_RAW_SQL.md` §3
 
 **Frontend:**
 - Feature-based organization
@@ -695,13 +730,14 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 ## INCORRECT Practices (NEVER DO)
 
 **Backend:**
-- ❌ Creating SQLite databases
-- ❌ Writing raw SQL instead of SQLAlchemy ORM
-- ❌ Bypassing repository pattern for local database
+- ❌ Creating SQLite databases for **production** (in-memory SQLite in unit tests is allowed; see Database Requirements above)
+- ❌ Calling `sqlalchemy.text()` from routers, services, or tasks, or composing runtime values into SQL via string concatenation / f-strings (repository policy: `doc/refactoring/REFACTORING_RAW_SQL.md` §3)
+- ❌ Bypassing repository pattern for local database access
 - ❌ Business logic in routers
 - ❌ Creating monolithic God Object services (note: DeviceCommonService is a facade, not a God Object)
 - ❌ Mixing validation/transformation logic with API calls
 - ❌ using f-string in Logging
+- ❌ Embedding raw exception text (`str(e)`, `{exc}`, f-strings interpolating exceptions, etc.) in `HTTPException(detail=…)` for any **5xx** response. Use `core.safe_http_errors.raise_internal_server_error` and let the client see only `{message, error_id}` (optionally pass `status_code` for sanitized 502/503 responses).
 
 **Frontend:**
 - ❌ Placing components at `/components/` root without feature grouping

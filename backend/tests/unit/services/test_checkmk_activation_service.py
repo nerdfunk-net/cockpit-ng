@@ -11,14 +11,14 @@ activate_changes() accepts a request object; we use SimpleNamespace.
 
 from __future__ import annotations
 
-import pytest
 from types import SimpleNamespace
 from unittest.mock import patch
+
+import pytest
 
 from services.checkmk.activation_service import CheckMKActivationService
 from services.checkmk.exceptions import CheckMKAPIError
 from tests.mocks import FakeCheckMKClient
-
 
 _PATCH_TARGET = "services.checkmk.activation_service.CheckMKClientFactory.build_client_from_settings"
 

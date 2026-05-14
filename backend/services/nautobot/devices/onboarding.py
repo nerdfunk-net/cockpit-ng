@@ -5,10 +5,11 @@ Handles onboarding devices via Nautobot's 'Sync Devices From Network' job.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
+
 from services.nautobot.client import NautobotService
-from services.nautobot.resolvers import MetadataResolver, NetworkResolver
 from services.nautobot.common.exceptions import NautobotAPIError
+from services.nautobot.resolvers import MetadataResolver, NetworkResolver
 
 logger = logging.getLogger(__name__)
 

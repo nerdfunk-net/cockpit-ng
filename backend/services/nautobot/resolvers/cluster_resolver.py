@@ -5,7 +5,8 @@ This resolver handles read-only operations for virtualization clusters.
 """
 
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
+
 from ..common.exceptions import NautobotAPIError
 from .base_resolver import BaseResolver
 

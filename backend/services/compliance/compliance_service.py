@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import logging
 import os
-import yaml
 from typing import Any, Dict, List, Optional
 
-from core.crypto import EncryptionService
+import yaml
+
 from config import settings as config_settings
+from core.crypto import EncryptionService
 from repositories.compliance.compliance_repository import (
-    RegexPatternRepository,
     LoginCredentialRepository,
+    RegexPatternRepository,
     SNMPMappingRepository,
 )
 

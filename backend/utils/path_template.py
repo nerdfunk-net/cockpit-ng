@@ -7,7 +7,7 @@ Supports nested attributes like {location.parent.name} and {custom_field_data.cf
 
 import logging
 import re
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

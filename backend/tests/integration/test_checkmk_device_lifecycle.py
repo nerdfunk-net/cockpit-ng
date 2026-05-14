@@ -13,13 +13,14 @@ Run with:
     pytest tests/integration/test_checkmk_device_lifecycle.py -v
 """
 
-import pytest
 from urllib.parse import urlparse
 
-from services.checkmk.sync.base import NautobotToCheckMKService
-from services.checkmk.config import ConfigService
+import pytest
+
 import service_factory as _sf
-from services.checkmk.client import CheckMKClient, CheckMKAPIError
+from services.checkmk.client import CheckMKAPIError, CheckMKClient
+from services.checkmk.config import ConfigService
+from services.checkmk.sync.base import NautobotToCheckMKService
 from services.settings.manager import SettingsManager as _SM
 
 settings_manager = _SM()

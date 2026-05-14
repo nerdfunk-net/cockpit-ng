@@ -34,6 +34,7 @@ References:
 """
 
 import logging
+
 from celery import signals
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -55,8 +56,9 @@ def init_worker_process(**kwargs):
         **kwargs: Signal metadata including 'sender' (worker instance)
     """
     import os
-    from core import database
+
     from config import settings
+    from core import database
 
     pid = os.getpid()
     logger.info("[Worker Init] Initializing database engine for worker PID=%s", pid)
@@ -167,6 +169,7 @@ def init_worker(**kwargs):
         **kwargs: Signal metadata
     """
     import os
+
     from core import database
 
     pid = os.getpid()

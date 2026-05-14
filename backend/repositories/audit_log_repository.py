@@ -1,9 +1,11 @@
 """Repository for audit log operations."""
 
-import logging
 import json
-from typing import Optional, List
+import logging
+from typing import List, Optional
+
 from sqlalchemy.orm import Session
+
 from core.database import get_db_session
 from core.models import AuditLog
 
@@ -26,8 +28,13 @@ class AuditLogRepository:
         severity: str = "info",
         extra_data: Optional[dict] = None,
         db: Session = None,
+        auto_commit: bool = True,
     ) -> AuditLog:
-        """Create a new audit log entry."""
+        """Create a new audit log entry.
+
+        When *db* is supplied by a caller (e.g. ``db_transaction``), set
+        *auto_commit* to False so the outer transaction owns commit/rollback.
+        """
         should_close = False
         if db is None:
             db = get_db_session()
@@ -47,8 +54,12 @@ class AuditLogRepository:
                 extra_data=json.dumps(extra_data) if extra_data else None,
             )
             db.add(log_entry)
-            db.commit()
-            db.refresh(log_entry)
+            if auto_commit:
+                db.commit()
+                db.refresh(log_entry)
+            else:
+                db.flush()
+                db.refresh(log_entry)
             return log_entry
         except Exception as e:
             logger.error("Failed to create audit log: %s", e)

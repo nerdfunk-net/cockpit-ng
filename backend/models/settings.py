@@ -3,8 +3,10 @@ Settings-related Pydantic models.
 """
 
 from __future__ import annotations
+
+from typing import Dict, Literal, Optional
+
 from pydantic import BaseModel
-from typing import Optional, Dict, Literal
 
 
 class NautobotSettingsRequest(BaseModel):
@@ -44,7 +46,7 @@ class AllSettingsRequest(BaseModel):
     nautobot: NautobotSettingsRequest
     git: GitSettingsRequest
     checkmk: Optional[CheckMKSettingsRequest] = None
-    cache: Optional["CacheSettingsRequest"] = None
+    cache: Optional[CacheSettingsRequest] = None
 
 
 class CacheSettingsRequest(BaseModel):

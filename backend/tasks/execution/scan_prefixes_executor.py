@@ -6,7 +6,7 @@ Executor for scheduled and manual scan_prefixes jobs.
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

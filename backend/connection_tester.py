@@ -5,13 +5,14 @@ Tests Nautobot and Git connections with user-provided settings
 
 import asyncio
 import logging
-import requests
-import tempfile
-import shutil
 import os
-from typing import Dict, Any, Tuple
-from urllib.parse import urlparse
+import shutil
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Dict, Tuple
+from urllib.parse import urlparse
+
+import requests
 
 logger = logging.getLogger(__name__)
 

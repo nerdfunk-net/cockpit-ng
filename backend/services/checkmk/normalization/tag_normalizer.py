@@ -1,10 +1,9 @@
 """Tag and attribute mapping normalization for device data."""
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
 import logging
-from typing import Dict, Any
+from typing import TYPE_CHECKING, Any, Dict
 
 from models.nb2cmk import DeviceExtensions
 from utils.cmk_folder_utils import _resolve_location_type_filter, _resolve_plain_field
@@ -91,7 +90,7 @@ class TagNormalizer:
                     if custom_field_name in custom_field_data:
                         custom_field_value = custom_field_data[custom_field_name]
                         if custom_field_value:  # Only add if value is not empty/None
-                            tag_key = "tag_{}".format(host_tag_group_name)
+                            tag_key = f"tag_{host_tag_group_name}"
                             extensions.attributes[tag_key] = str(custom_field_value)
                             logger.info(
                                 "Added host tag group for device '%s': %s = %s",
@@ -128,7 +127,7 @@ class TagNormalizer:
                 }
 
                 for tag_name, host_tag_group_name in tags2htg_config.items():
-                    tag_key = "tag_{}".format(host_tag_group_name)
+                    tag_key = f"tag_{host_tag_group_name}"
                     if tag_name in device_tag_names:
                         extensions.attributes[tag_key] = "true"
                         logger.info(
@@ -226,7 +225,7 @@ class TagNormalizer:
                                 attr_value = attr_value["name"]
 
                             # Convert value to string and set as host tag
-                            tag_key = "tag_{}".format(host_tag_group_name)
+                            tag_key = f"tag_{host_tag_group_name}"
                             extensions.attributes[tag_key] = str(attr_value)
                             logger.info(
                                 "Added host tag group for device '%s': %s → %s = %s",

@@ -267,7 +267,7 @@ class PrefixScanService:
                     },
                 )
 
-            for idx, cidr in enumerate(cidrs):
+            for _idx, cidr in enumerate(cidrs):
                 try:
                     logger.info("Scanning network: %s", cidr)
                     cidr_ips = _expand_cidr_to_ips(cidr)
@@ -289,9 +289,9 @@ class PrefixScanService:
                 )
 
             from tasks.ping_network_task import (
+                _condense_ip_ranges,
                 _fping_networks,
                 _resolve_dns,
-                _condense_ip_ranges,
             )
 
             alive_ips = _fping_networks(
@@ -417,16 +417,14 @@ class PrefixScanService:
 
         nautobot_service = service_factory.build_nautobot_service()
 
-        query = """
+        query = f"""
     query {{
       prefixes(cf_{custom_field_name}: {custom_field_value}) {{
         prefix
         cf_{custom_field_name}
       }}
     }}
-    """.format(
-            custom_field_name=custom_field_name, custom_field_value=custom_field_value
-        )
+    """
 
         try:
             logger.info(

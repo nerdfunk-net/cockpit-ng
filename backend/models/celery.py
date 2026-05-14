@@ -2,9 +2,9 @@
 Pydantic models for Celery task management API.
 """
 
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
+from pydantic import BaseModel
 
 # ============================================================================
 # Shared Task Response Models

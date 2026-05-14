@@ -3,15 +3,18 @@ Nautobot IPAM IP Address endpoints.
 """
 
 from __future__ import annotations
+
 import logging
 from urllib.parse import urlencode
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from services.nautobot.common.exceptions import NautobotNotFoundError
-from dependencies import get_nautobot_service
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_audit_log_service, get_nautobot_service
+from services.audit.audit_log_service import AuditLogService
 from services.nautobot.client import NautobotService
-from repositories.audit_log_repository import audit_log_repo
+from services.nautobot.common.exceptions import NautobotNotFoundError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ipam/ip-addresses", tags=["nautobot-ipam-addresses"])
@@ -86,11 +89,7 @@ async def get_ipam_ip_addresses(
         return result
 
     except Exception as e:
-        logger.error("Failed to get IPAM IP addresses: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve IPAM IP addresses: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve IPAM IP addresses: ", e)
 
 
 @router.get("/detailed", summary="🔷 GraphQL: Get Detailed IP Address Information")
@@ -472,10 +471,8 @@ async def get_ipam_ip_addresses_detailed(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to get detailed IP address information: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve detailed IP address information: {str(e)}",
+        raise_internal_server_error(
+            logger, "Failed to retrieve detailed IP address information: ", e
         )
 
 
@@ -504,11 +501,7 @@ async def get_ipam_ip_address(
             detail=f"IPAM IP address not found: {ip_address_id}",
         )
     except Exception as e:
-        logger.error("Failed to get IPAM IP address %s: %s", ip_address_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve IPAM IP address: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve IPAM IP address: ", e)
 
 
 @router.post("", summary="🔶 REST: Create IP Address")
@@ -516,6 +509,7 @@ async def create_ipam_ip_address(
     ip_address_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Create a new IP address in Nautobot IPAM.
@@ -557,7 +551,7 @@ async def create_ipam_ip_address(
             "Created IP address %s in Nautobot IPAM", ip_address_data.get("address")
         )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-ip-created",
@@ -577,11 +571,7 @@ async def create_ipam_ip_address(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to create IPAM IP address: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create IPAM IP address: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create IPAM IP address: ", e)
 
 
 @router.put("/{ip_address_id}", summary="🔶 REST: Update IP Address (Full)")
@@ -591,6 +581,7 @@ async def update_ipam_ip_address(
     ip_address_data: dict,
     current_user: dict = Depends(require_permission("nautobot.locations", "write")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Update an existing IP address in Nautobot IPAM.
@@ -618,7 +609,7 @@ async def update_ipam_ip_address(
 
         logger.info("Updated IP address %s in Nautobot IPAM", ip_address_id)
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-ip-updated",
@@ -637,11 +628,7 @@ async def update_ipam_ip_address(
             detail=f"IPAM IP address not found: {ip_address_id}",
         )
     except Exception as e:
-        logger.error("Failed to update IPAM IP address %s: %s", ip_address_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update IPAM IP address: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update IPAM IP address: ", e)
 
 
 @router.delete("/{ip_address_id}", summary="🔶 REST: Delete IP Address")
@@ -649,6 +636,7 @@ async def delete_ipam_ip_address(
     ip_address_id: str,
     current_user: dict = Depends(require_permission("nautobot.locations", "delete")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Delete an IP address from Nautobot IPAM.
@@ -662,7 +650,7 @@ async def delete_ipam_ip_address(
 
         logger.info("Deleted IP address %s from Nautobot IPAM", ip_address_id)
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-ip-deleted",
@@ -681,8 +669,4 @@ async def delete_ipam_ip_address(
             detail=f"IPAM IP address not found: {ip_address_id}",
         )
     except Exception as e:
-        logger.error("Failed to delete IPAM IP address %s: %s", ip_address_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete IPAM IP address: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete IPAM IP address: ", e)

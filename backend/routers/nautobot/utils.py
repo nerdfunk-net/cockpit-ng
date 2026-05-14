@@ -3,12 +3,15 @@ Nautobot utility endpoints: stats, health-check, job results.
 """
 
 from __future__ import annotations
+
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_cache_service, get_nautobot_service
 from services.nautobot.client import NautobotService
-from dependencies import get_nautobot_service, get_cache_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-utils"])
@@ -79,11 +82,7 @@ async def get_nautobot_stats(
 
         return stats
     except Exception as e:
-        logger.error("Error fetching Nautobot stats: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch statistics: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch statistics: ", e)
 
 
 @router.get("/jobs/{job_id}/results", summary="🔶 REST: Get Job Results")
@@ -113,10 +112,11 @@ async def get_job_results(
                 detail=f"Job result not found: {job_id}",
             )
 
-        logger.error("Error fetching job result %s: %s", job_id, error_msg)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch job result: {error_msg}",
+        raise_internal_server_error(
+            logger,
+            "Failed to fetch job result",
+            e,
+            extra={"job_id": job_id},
         )
 
 

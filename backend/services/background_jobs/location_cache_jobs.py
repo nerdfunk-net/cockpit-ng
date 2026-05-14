@@ -5,7 +5,8 @@ Background jobs for caching location data from Nautobot into Redis.
 
 import asyncio
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
+
 from celery import shared_task
 
 logger = logging.getLogger(__name__)

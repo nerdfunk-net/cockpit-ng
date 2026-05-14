@@ -2,10 +2,10 @@
 Pydantic models for job templates management
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional, Literal, Dict, Any, List
 from datetime import datetime
+from typing import Any, Dict, List, Literal, Optional
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # Valid job template types (cache_devices removed - now handled by system tasks)
 JobTemplateType = Literal[
@@ -434,14 +434,13 @@ class JobTemplateUpdate(BaseModel):
 class JobTemplateResponse(JobTemplateBase):
     """Model for job template response"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: Optional[int] = None
     created_by: Optional[str] = Field(None, description="Username of the creator")
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class JobTemplateListResponse(BaseModel):

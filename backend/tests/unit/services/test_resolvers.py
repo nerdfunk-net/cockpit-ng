@@ -9,13 +9,13 @@ from services.nautobot.resolvers.device_resolver import DeviceResolver
 from services.nautobot.resolvers.metadata_resolver import MetadataResolver
 from services.nautobot.resolvers.network_resolver import NetworkResolver
 from tests.mocks import (
-    FakeNautobotService,
-    STATUS_ACTIVE_ID,
-    PLATFORM_IOS_ID,
-    ROLE_NETWORK_ID,
+    DT_NETWORKA_ID,
     LOC_CITYA_ID,
     NS_GLOBAL_ID,
-    DT_NETWORKA_ID,
+    PLATFORM_IOS_ID,
+    ROLE_NETWORK_ID,
+    STATUS_ACTIVE_ID,
+    FakeNautobotService,
 )
 
 # Pre-seeded device and IP for lookup tests

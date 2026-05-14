@@ -1,6 +1,7 @@
 """User management service — thin layer over UserRepository with password hashing."""
 
 from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
@@ -8,8 +9,8 @@ if TYPE_CHECKING:
     from services.auth.rbac_service import RBACService
 
 from core.auth import get_password_hash, verify_password
-from repositories.auth.user_repository import UserRepository
 from core.models import User
+from repositories.auth.user_repository import UserRepository
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +171,7 @@ class UserService:
         if admin and admin.permissions != PERMISSIONS_ADMIN:
             self._repo.update(admin.id, permissions=PERMISSIONS_ADMIN)
 
-    def ensure_admin_has_rbac_role(self, rbac_service: "RBACService") -> None:
+    def ensure_admin_has_rbac_role(self, rbac_service: RBACService) -> None:
         """Ensure admin user exists and has the admin role. Called at startup."""
         self._create_default_admin_if_needed()
         admin = self.get_user_by_username("admin")
@@ -199,7 +200,7 @@ class UserService:
             return None
 
     def _ensure_admin_role_assigned(
-        self, user_id: int, rbac_service: "RBACService"
+        self, user_id: int, rbac_service: RBACService
     ) -> None:
         try:
             admin_role = rbac_service.get_role_by_name("admin")

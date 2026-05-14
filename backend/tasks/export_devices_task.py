@@ -10,7 +10,6 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from celery_app import celery_app
-
 from tasks.export_devices.filters import filter_device_properties
 from tasks.export_devices.formatters.csv import export_to_csv
 from tasks.export_devices.formatters.yaml import export_to_yaml

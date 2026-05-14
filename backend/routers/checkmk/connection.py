@@ -9,16 +9,17 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from dependencies import get_checkmk_service, get_cache_service
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_cache_service, get_checkmk_service
 from models.checkmk import (
+    CheckMKOperationResponse,
     CheckMKTestConnectionRequest,
     CheckMKTestConnectionResponse,
     CheckMKVersionResponse,
-    CheckMKOperationResponse,
 )
 from services.checkmk.exceptions import (
-    CheckMKClientError,
     CheckMKAPIError,
+    CheckMKClientError,
     HostNotFoundError,
 )
 
@@ -48,11 +49,7 @@ async def test_checkmk_connection(
             connection_source="manual_test",
         )
     except Exception as e:
-        logger.error("Error testing CheckMK connection: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to test CheckMK connection: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to test CheckMK connection: ", e)
 
 
 @router.get("/test")
@@ -68,11 +65,7 @@ async def test_current_checkmk_connection(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error testing CheckMK connection: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to test CheckMK connection: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to test CheckMK connection: ", e)
 
 
 @router.get("/stats")
@@ -87,19 +80,16 @@ async def get_checkmk_stats(
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except CheckMKAPIError as e:
-        logger.error("CheckMK API error: %s", str(e))
-        raise HTTPException(
+        raise_internal_server_error(
+            logger,
+            "CheckMK API error while fetching statistics",
+            e,
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"CheckMK API error: {str(e)}",
         )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error fetching CheckMK stats: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch CheckMK statistics: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch CheckMK statistics: ", e)
 
 
 @router.get("/version", response_model=CheckMKVersionResponse)
@@ -120,11 +110,7 @@ async def get_version(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting CheckMK version: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get CheckMK version: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get CheckMK version: ", e)
 
 
 @router.get("/inventory/{hostname}", response_model=CheckMKOperationResponse)
@@ -144,17 +130,24 @@ async def get_host_inventory(
     except HostNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except CheckMKAPIError as e:
-        raise HTTPException(
+        raise_internal_server_error(
+            logger,
+            f"CheckMK inventory API error for {hostname}",
+            e,
+            extra={"hostname": hostname},
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"CheckMK inventory API error: {str(e)}",
         )
     except CheckMKClientError as e:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
+        raise_internal_server_error(
+            logger,
+            f"CheckMK client error retrieving inventory for {hostname}",
+            e,
+            extra={"hostname": hostname},
+            status_code=status.HTTP_502_BAD_GATEWAY,
+        )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting inventory for %s: %s", hostname, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get inventory for {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to get inventory for {hostname}", e
         )

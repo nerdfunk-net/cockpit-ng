@@ -4,6 +4,7 @@ Handles syncing, status checking, and operational tasks for Git repositories.
 """
 
 from __future__ import annotations
+
 import logging
 import os
 import shutil
@@ -13,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from git import GitCommandError, Repo
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import (
     get_git_auth_service,
     get_git_cache_service,
@@ -220,7 +222,7 @@ async def sync_repository(
     except Exception as e:
         logger.error("Error syncing repository %s: %s", repo_id, e)
         git_repo_manager.update_sync_status(repo_id, f"error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.post("/remove-and-sync")
@@ -346,7 +348,7 @@ async def remove_and_sync_repository(
     except Exception as e:
         logger.error("Error removing and syncing repository %s: %s", repo_id, e)
         git_repo_manager.update_sync_status(repo_id, f"error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/info")
@@ -407,10 +409,7 @@ async def get_repository_info(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get repository info: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get repository info: ", e)
 
 
 @router.get("/debug")

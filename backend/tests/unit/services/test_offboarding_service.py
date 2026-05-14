@@ -3,13 +3,13 @@
 All tests run offline - no real Nautobot instance required.
 """
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 from models.nautobot import OffboardDeviceRequest
 from services.nautobot.offboarding.service import OffboardingService
-from tests.mocks import FakeNautobotService, STATUS_ACTIVE_ID, NS_GLOBAL_ID
-
+from tests.mocks import NS_GLOBAL_ID, STATUS_ACTIVE_ID, FakeNautobotService
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 

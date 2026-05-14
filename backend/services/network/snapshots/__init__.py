@@ -2,9 +2,9 @@
 Snapshot service modules.
 """
 
-from .template_service import SnapshotTemplateService
-from .execution_service import SnapshotExecutionService
 from .comparison_service import SnapshotComparisonService
+from .execution_service import SnapshotExecutionService
+from .template_service import SnapshotTemplateService
 
 __all__ = [
     "SnapshotTemplateService",

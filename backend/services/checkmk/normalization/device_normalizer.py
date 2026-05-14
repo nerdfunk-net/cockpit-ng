@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
-from utils.cmk_site_utils import get_monitored_site, get_device_folder
 from models.nb2cmk import DeviceExtensions
+from utils.cmk_site_utils import get_device_folder, get_monitored_site
 
 from .field_normalizer import FieldNormalizer
 from .ip_normalizer import IPNormalizer
@@ -74,7 +74,7 @@ class DeviceNormalizationService:
                     exc_info=True,
                 )
                 raise ValueError(
-                    "Failed to load CheckMK configuration: {}".format(str(config_error))
+                    f"Failed to load CheckMK configuration: {str(config_error)}"
                 )
 
             # Create the root extension dictionary
@@ -172,9 +172,7 @@ class DeviceNormalizationService:
                     exc_info=True,
                 )
                 raise ValueError(
-                    "Failed to determine CheckMK site for device {}: {}".format(
-                        device_name, str(e)
-                    )
+                    f"Failed to determine CheckMK site for device {device_name}: {str(e)}"
                 )
 
             # Set folder using utility function
@@ -196,9 +194,7 @@ class DeviceNormalizationService:
                     exc_info=True,
                 )
                 raise ValueError(
-                    "Failed to determine CheckMK folder for device {}: {}".format(
-                        device_name, str(e)
-                    )
+                    f"Failed to determine CheckMK folder for device {device_name}: {str(e)}"
                 )
 
             # Set IP address from primary_ip4 (remove CIDR netmask for CheckMK compatibility)
@@ -220,9 +216,7 @@ class DeviceNormalizationService:
                     exc_info=True,
                 )
                 raise ValueError(
-                    "Failed to process IP address for device {}: {}".format(
-                        device_name, str(e)
-                    )
+                    f"Failed to process IP address for device {device_name}: {str(e)}"
                 )
 
             # Process various configuration mappings
@@ -271,9 +265,7 @@ class DeviceNormalizationService:
                     exc_info=True,
                 )
                 raise ValueError(
-                    "Failed to process configuration mappings for device {}: {}".format(
-                        device_name, str(e)
-                    )
+                    f"Failed to process configuration mappings for device {device_name}: {str(e)}"
                 )
 
             return extensions
@@ -282,8 +274,6 @@ class DeviceNormalizationService:
             # Re-raise ValueError with context already logged
             raise
         except Exception as e:
-            error_msg = "Unexpected error normalizing device {}: {}".format(
-                device_name, str(e)
-            )
+            error_msg = f"Unexpected error normalizing device {device_name}: {str(e)}"
             logger.error("[NORMALIZATION ERROR] %s", error_msg, exc_info=True)
             raise ValueError(error_msg)

@@ -3,9 +3,11 @@ User management Pydantic models.
 """
 
 from __future__ import annotations
-from pydantic import BaseModel
-from typing import List, Optional
+
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class UserRole(str, Enum):

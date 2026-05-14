@@ -41,7 +41,7 @@ _VIRTUAL_CHASSIS_QUERY = """
 class VirtualChassisCleanupManager:
     """Handles virtual chassis read/write operations during offboarding."""
 
-    def __init__(self, nautobot_service: "NautobotService") -> None:
+    def __init__(self, nautobot_service: NautobotService) -> None:
         self._nb = nautobot_service
 
     async def get_status(self, device_id: str) -> DeviceVirtualChassisStatus:

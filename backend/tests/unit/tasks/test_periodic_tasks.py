@@ -1,7 +1,8 @@
 """Unit tests for tasks/periodic_tasks.py.
 
-Covers worker_health_check, load_cache_schedules_task, and check_stale_jobs_task.
-All tests run offline — no Redis, Celery broker, or database required.
+Covers worker_health_check, load_cache_schedules_task, check_stale_jobs_task,
+and cleanup_client_data_task. All tests run offline — no Redis, Celery broker,
+or database required.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ import pytest
 
 from tasks.periodic_tasks import (
     check_stale_jobs_task,
+    cleanup_client_data_task,
     load_cache_schedules_task,
     worker_health_check,
 )
@@ -279,3 +281,52 @@ def test_check_stale_jobs_no_stale_jobs():
     assert result["success"] is True
     assert result["stale_jobs_found"] == 0
     mock_jrs.mark_failed.assert_not_called()
+
+
+# ── cleanup_client_data_task ────────────────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_cleanup_client_data_disabled_does_not_open_db():
+    with patch(_PATCH_SETTINGS_MGR) as MockSM:
+        MockSM.return_value.get_celery_settings.return_value = {
+            "client_data_cleanup_enabled": False,
+        }
+        with patch(
+            "repositories.client_data_repository.ClientDataRepository"
+        ) as MockRepoCls:
+            result = cleanup_client_data_task()
+
+    assert result["success"] is True
+    assert result["message"] == "Client data cleanup is disabled"
+    MockRepoCls.assert_not_called()
+
+
+@pytest.mark.unit
+def test_cleanup_client_data_delegates_to_repository():
+    from repositories.client_data_repository import ClientDataCleanupResult
+
+    settings = {
+        "client_data_cleanup_enabled": True,
+        "client_data_cleanup_age_hours": 24,
+    }
+    mock_inst = MagicMock()
+    mock_inst.delete_records_older_than.return_value = ClientDataCleanupResult(
+        4, 5, 6
+    )
+
+    with patch(_PATCH_SETTINGS_MGR) as MockSM:
+        MockSM.return_value.get_celery_settings.return_value = settings
+        with patch(
+            "repositories.client_data_repository.ClientDataRepository",
+            return_value=mock_inst,
+        ):
+            result = cleanup_client_data_task()
+
+    assert result["success"] is True
+    assert result["removed_ip_addresses"] == 4
+    assert result["removed_mac_addresses"] == 5
+    assert result["removed_hostnames"] == 6
+    mock_inst.delete_records_older_than.assert_called_once()
+    cutoff = mock_inst.delete_records_older_than.call_args[0][0]
+    assert cutoff.tzinfo is not None

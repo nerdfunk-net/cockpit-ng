@@ -3,12 +3,15 @@ User profile management router.
 """
 
 from __future__ import annotations
+
 import logging
-from fastapi import APIRouter, HTTPException, status, Depends
-from core.auth import get_current_username
-from models.auth import PersonalCredentialData, ProfileResponse, ProfileUpdateRequest
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
 import service_factory
 import services.auth.profile_service as profile_manager
+from core.auth import get_current_username
+from models.auth import PersonalCredentialData, ProfileResponse, ProfileUpdateRequest
 
 credentials_manager = service_factory.build_credentials_service()
 

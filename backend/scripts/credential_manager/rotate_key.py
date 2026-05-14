@@ -17,9 +17,9 @@ need to be re-encrypted when SECRET_KEY changes.
 
 from __future__ import annotations
 
-import sys
 import argparse
 import logging
+import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -27,10 +27,10 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from config import settings  # noqa: E402
 from core.crypto import EncryptionService  # noqa: E402
 from core.database import get_db_session  # noqa: E402
 from core.models import Credential, LoginCredential  # noqa: E402
-from config import settings  # noqa: E402
 
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 

@@ -13,7 +13,8 @@ Based on the workflow from device_creation_service.py but redesigned to:
 """
 
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
+
 from services.nautobot import NautobotService
 from services.nautobot.common.exceptions import (
     NautobotAPIError,

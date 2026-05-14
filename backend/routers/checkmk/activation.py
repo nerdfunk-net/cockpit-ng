@@ -13,6 +13,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_checkmk_activation_service
 from models.checkmk import CheckMKActivateChangesRequest, CheckMKOperationResponse
 from services.checkmk.exceptions import CheckMKClientError
@@ -37,11 +38,7 @@ async def get_pending_changes(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting pending changes: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get pending changes: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get pending changes: ", e)
 
 
 @router.post("/changes/activate", response_model=CheckMKOperationResponse)
@@ -63,11 +60,7 @@ async def activate_changes(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error activating changes: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to activate changes: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to activate changes: ", e)
 
 
 @router.post("/changes/activate/{etag}", response_model=CheckMKOperationResponse)
@@ -90,10 +83,8 @@ async def activate_changes_with_etag(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error activating changes with ETag %s: %s", etag, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to activate changes with ETag {etag}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to activate changes with ETag {etag}", e
         )
 
 
@@ -118,11 +109,7 @@ async def get_running_activations(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting running activations: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get running activations: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get running activations: ", e)
 
 
 @router.get("/activation/{activation_id}", response_model=CheckMKOperationResponse)
@@ -144,12 +131,11 @@ async def get_activation_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error getting activation status for %s: %s", activation_id, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get activation status for {activation_id}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to get activation status for {activation_id}",
+            e,
+            extra={"activation_id": activation_id},
         )
 
 
@@ -174,8 +160,6 @@ async def wait_for_activation_completion(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error waiting for activation %s: %s", activation_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to wait for activation {activation_id}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to wait for activation {activation_id}", e
         )

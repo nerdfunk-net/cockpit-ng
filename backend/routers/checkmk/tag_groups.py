@@ -9,11 +9,12 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_checkmk_tag_group_service
 from models.checkmk import (
     CheckMKHostTagGroupCreateRequest,
-    CheckMKHostTagGroupUpdateRequest,
     CheckMKHostTagGroupListResponse,
+    CheckMKHostTagGroupUpdateRequest,
     CheckMKOperationResponse,
 )
 from services.checkmk.exceptions import CheckMKClientError
@@ -38,11 +39,7 @@ async def get_all_host_tag_groups(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting host tag groups: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get host tag groups: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get host tag groups: ", e)
 
 
 @router.get("/host-tag-groups/{name}", response_model=CheckMKOperationResponse)
@@ -64,11 +61,7 @@ async def get_host_tag_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting host tag group %s: %s", name, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get host tag group {name}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to get host tag group {name}", e)
 
 
 @router.post("/host-tag-groups", response_model=CheckMKOperationResponse)
@@ -90,10 +83,8 @@ async def create_host_tag_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error creating host tag group %s: %s", request.id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create host tag group {request.id}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to create host tag group {request.id}", e
         )
 
 
@@ -117,10 +108,8 @@ async def update_host_tag_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating host tag group %s: %s", name, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update host tag group {name}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to update host tag group {name}", e
         )
 
 
@@ -143,8 +132,6 @@ async def delete_host_tag_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting host tag group %s: %s", name, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete host tag group {name}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to delete host tag group {name}", e
         )

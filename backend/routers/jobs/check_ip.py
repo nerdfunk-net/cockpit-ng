@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 import service_factory
 from celery_app import celery_app
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from models.celery import TaskResponse
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,4 @@ async def check_ip_task_endpoint(
         raise
     except Exception as exc:
         logger.error("Error starting check IP task: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start check IP task: {str(exc)}",
-        )
+        raise_internal_server_error(logger, "Failed to start check IP task", exc)

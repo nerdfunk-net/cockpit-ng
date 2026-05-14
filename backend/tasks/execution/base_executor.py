@@ -6,7 +6,7 @@ Moved from job_tasks.py to improve code organization.
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -39,19 +39,19 @@ def execute_job_type(
     Returns:
         dict: Execution results
     """
-    from .cache_executor import execute_cache_devices
-    from .sync_executor import execute_sync_devices
     from .backup_executor import execute_backup
+    from .cache_executor import execute_cache_devices
+    from .client_data_executor import execute_get_client_data
     from .command_executor import execute_run_commands
     from .compare_executor import execute_compare_devices
-    from .scan_prefixes_executor import execute_scan_prefixes
+    from .csv_export_executor import execute_csv_export
+    from .csv_import_executor import execute_csv_import
     from .deploy_agent_executor import execute_deploy_agent
     from .ip_addresses_executor import execute_ip_addresses
-    from .csv_import_executor import execute_csv_import
-    from .csv_export_executor import execute_csv_export
     from .ping_agent_executor import execute_ping_agent
+    from .scan_prefixes_executor import execute_scan_prefixes
     from .set_primary_ip_executor import execute_set_primary_ip
-    from .client_data_executor import execute_get_client_data
+    from .sync_executor import execute_sync_devices
 
     # Map job_type to execution function
     job_executors = {

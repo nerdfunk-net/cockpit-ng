@@ -15,9 +15,9 @@ Run with:
 
 import pytest
 
-from services.checkmk.sync.base import NautobotToCheckMKService
-from services.checkmk.config import ConfigService
 import service_factory as _sf
+from services.checkmk.config import ConfigService
+from services.checkmk.sync.base import NautobotToCheckMKService
 
 nautobot_service = _sf.build_nautobot_service()
 

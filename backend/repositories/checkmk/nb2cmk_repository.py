@@ -2,11 +2,13 @@
 Repository for NB2CMK job tracking operations.
 """
 
-from typing import List, Optional
 from datetime import datetime, timedelta
+from typing import List, Optional
+
 from sqlalchemy import desc
-from core.models import NB2CMKJob, NB2CMKJobResult
+
 from core.database import get_db_session
+from core.models import NB2CMKJob, NB2CMKJobResult
 from repositories.base import BaseRepository
 
 

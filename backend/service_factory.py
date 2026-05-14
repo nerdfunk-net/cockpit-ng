@@ -11,30 +11,30 @@ See: doc/refactoring/REFACTORING_SERVICES.md — Phase 2
 """
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from services.nautobot.client import NautobotService
-    from services.nautobot.metadata_service import NautobotMetadataService
-    from services.nautobot.offboarding.service import OffboardingService
-    from services.inventory.inventory import InventoryService
-    from services.inventory.persistence_service import InventoryPersistenceService
-    from services.nautobot.devices.query import DeviceQueryService
-    from services.checkmk.client import CheckMKConnectionService
-    from services.checkmk.host_service import CheckMKHostService
-    from services.checkmk.monitoring_service import CheckMKMonitoringService
-    from services.checkmk.discovery_service import CheckMKDiscoveryService
-    from services.checkmk.problems_service import CheckMKProblemsService
-    from services.checkmk.activation_service import CheckMKActivationService
-    from services.checkmk.host_group_service import CheckMKHostGroupService
-    from services.checkmk.tag_group_service import CheckMKTagGroupService
-    from services.checkmk.client import CheckMKClient
     from services.agents.deployment_service import AgentDeploymentService
     from services.agents.template_render_service import AgentTemplateRenderService
+    from services.checkmk.activation_service import CheckMKActivationService
+    from services.checkmk.client import CheckMKClient, CheckMKConnectionService
+    from services.checkmk.discovery_service import CheckMKDiscoveryService
+    from services.checkmk.host_group_service import CheckMKHostGroupService
+    from services.checkmk.host_service import CheckMKHostService
+    from services.checkmk.monitoring_service import CheckMKMonitoringService
+    from services.checkmk.problems_service import CheckMKProblemsService
+    from services.checkmk.tag_group_service import CheckMKTagGroupService
+    from services.inventory.inventory import InventoryService
+    from services.inventory.persistence_service import InventoryPersistenceService
+    from services.nautobot.client import NautobotService
+    from services.nautobot.devices.query import DeviceQueryService
+    from services.nautobot.metadata_service import NautobotMetadataService
+    from services.nautobot.offboarding.service import OffboardingService
     from services.templates.template_service import TemplateService
 
 
-def build_nautobot_service() -> "NautobotService":
+def build_nautobot_service() -> NautobotService:
     """Construct a fresh NautobotService instance.
 
     In the FastAPI app the lifespan creates an app-scoped instance with a
@@ -47,14 +47,14 @@ def build_nautobot_service() -> "NautobotService":
     return NautobotService()
 
 
-def build_checkmk_client(site_name: Optional[str] = None) -> "CheckMKClient":
+def build_checkmk_client(site_name: Optional[str] = None) -> CheckMKClient:
     """Create a CheckMK client from database settings."""
     from services.checkmk.base import CheckMKClientFactory
 
     return CheckMKClientFactory.build_client_from_settings(site_name=site_name)
 
 
-def build_inventory_persistence_service() -> "InventoryPersistenceService":
+def build_inventory_persistence_service() -> InventoryPersistenceService:
     """Create a new InventoryPersistenceService instance (PostgreSQL CRUD)."""
     from repositories.inventory.inventory_repository import InventoryRepository
     from services.inventory.persistence_service import InventoryPersistenceService
@@ -62,7 +62,7 @@ def build_inventory_persistence_service() -> "InventoryPersistenceService":
     return InventoryPersistenceService(repository=InventoryRepository())
 
 
-def build_inventory_service() -> "InventoryService":
+def build_inventory_service() -> InventoryService:
     """Create a new InventoryService instance (Nautobot query facade)."""
     from services.inventory.inventory import InventoryService
 
@@ -72,99 +72,99 @@ def build_inventory_service() -> "InventoryService":
     )
 
 
-def build_device_query_service() -> "DeviceQueryService":
+def build_device_query_service() -> DeviceQueryService:
     """Create a new DeviceQueryService instance."""
     from services.nautobot.devices.query import DeviceQueryService
 
     return DeviceQueryService()
 
 
-def build_checkmk_service() -> "CheckMKConnectionService":
+def build_checkmk_service() -> CheckMKConnectionService:
     """Create a new CheckMKConnectionService instance."""
     from services.checkmk.client import CheckMKConnectionService
 
     return CheckMKConnectionService()
 
 
-def build_checkmk_host_service() -> "CheckMKHostService":
+def build_checkmk_host_service() -> CheckMKHostService:
     """Create a new CheckMKHostService instance."""
     from services.checkmk.host_service import CheckMKHostService
 
     return CheckMKHostService()
 
 
-def build_checkmk_monitoring_service() -> "CheckMKMonitoringService":
+def build_checkmk_monitoring_service() -> CheckMKMonitoringService:
     """Create a new CheckMKMonitoringService instance."""
     from services.checkmk.monitoring_service import CheckMKMonitoringService
 
     return CheckMKMonitoringService()
 
 
-def build_checkmk_discovery_service() -> "CheckMKDiscoveryService":
+def build_checkmk_discovery_service() -> CheckMKDiscoveryService:
     """Create a new CheckMKDiscoveryService instance."""
     from services.checkmk.discovery_service import CheckMKDiscoveryService
 
     return CheckMKDiscoveryService()
 
 
-def build_checkmk_problems_service() -> "CheckMKProblemsService":
+def build_checkmk_problems_service() -> CheckMKProblemsService:
     """Create a new CheckMKProblemsService instance."""
     from services.checkmk.problems_service import CheckMKProblemsService
 
     return CheckMKProblemsService()
 
 
-def build_checkmk_activation_service() -> "CheckMKActivationService":
+def build_checkmk_activation_service() -> CheckMKActivationService:
     """Create a new CheckMKActivationService instance."""
     from services.checkmk.activation_service import CheckMKActivationService
 
     return CheckMKActivationService()
 
 
-def build_checkmk_host_group_service() -> "CheckMKHostGroupService":
+def build_checkmk_host_group_service() -> CheckMKHostGroupService:
     """Create a new CheckMKHostGroupService instance."""
     from services.checkmk.host_group_service import CheckMKHostGroupService
 
     return CheckMKHostGroupService()
 
 
-def build_checkmk_tag_group_service() -> "CheckMKTagGroupService":
+def build_checkmk_tag_group_service() -> CheckMKTagGroupService:
     """Create a new CheckMKTagGroupService instance."""
     from services.checkmk.tag_group_service import CheckMKTagGroupService
 
     return CheckMKTagGroupService()
 
 
-def build_nautobot_metadata_service() -> "NautobotMetadataService":
+def build_nautobot_metadata_service() -> NautobotMetadataService:
     """Create a NautobotMetadataService with a fresh NautobotService."""
-    from services.nautobot.metadata_service import NautobotMetadataService
     from services.nautobot.client import NautobotService
+    from services.nautobot.metadata_service import NautobotMetadataService
 
     return NautobotMetadataService(NautobotService())
 
 
-def build_offboarding_service() -> "OffboardingService":
+def build_offboarding_service() -> OffboardingService:
     """Create a new OffboardingService instance."""
     from services.nautobot.offboarding.service import OffboardingService
 
     return OffboardingService()
 
 
-def build_agent_template_render_service() -> "AgentTemplateRenderService":
+def build_agent_template_render_service() -> AgentTemplateRenderService:
     """Create a new AgentTemplateRenderService instance."""
     from services.agents.template_render_service import AgentTemplateRenderService
 
     return AgentTemplateRenderService()
 
 
-def build_agent_deployment_service() -> "AgentDeploymentService":
+def build_agent_deployment_service() -> AgentDeploymentService:
     """Create a new AgentDeploymentService instance."""
     from services.agents.deployment_service import AgentDeploymentService
 
     return AgentDeploymentService()
 
 
-def build_template_service() -> "TemplateService":
+def build_template_service() -> TemplateService:
     """Create a new TemplateService instance."""
     from services.templates.template_service import TemplateService
 
@@ -268,6 +268,27 @@ def build_user_service():
     from services.auth.user_service import UserService
 
     return UserService()
+
+
+def build_client_data_service():
+    """Create a ClientDataService for collected ARP/MAC/hostname data."""
+    from services.clients.client_data_service import ClientDataService
+
+    return ClientDataService()
+
+
+def build_audit_log_service():
+    """Create an AuditLogService (routers use this instead of the repository)."""
+    from services.audit.audit_log_service import AuditLogService
+
+    return AuditLogService()
+
+
+def build_login_recording_service():
+    """Create LoginRecordingService (last_login + audit in one transaction)."""
+    from services.auth.login_recording_service import LoginRecordingService
+
+    return LoginRecordingService()
 
 
 def build_rbac_service():

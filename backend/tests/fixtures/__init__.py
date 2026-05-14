@@ -4,53 +4,28 @@ Test fixtures for Cockpit-NG testing.
 This package contains centralized test data for external system integrations.
 """
 
-from tests.fixtures.nautobot_fixtures import (
-    # Device fixtures
-    NAUTOBOT_DEVICE_MINIMAL,
-    NAUTOBOT_DEVICE_STANDARD,
-    NAUTOBOT_DEVICE_FULL,
-    NAUTOBOT_DEVICES_LIST,
-    # REST API responses
-    NAUTOBOT_DEVICE_TYPE_RESPONSE,
-    NAUTOBOT_LOCATION_RESPONSE,
-    NAUTOBOT_IP_ADDRESS_RESPONSE,
-    NAUTOBOT_INTERFACE_RESPONSE,
-    NAUTOBOT_DEVICE_CREATE_SUCCESS,
-    # Error responses
-    NAUTOBOT_ERROR_DUPLICATE_DEVICE,
-    NAUTOBOT_ERROR_NOT_FOUND,
-    NAUTOBOT_ERROR_INVALID_IP,
-    # Metadata
-    NAUTOBOT_LOCATIONS_LIST,
-    NAUTOBOT_ROLES_LIST,
-    NAUTOBOT_PLATFORMS_LIST,
-    NAUTOBOT_DEVICE_TYPES_LIST,
-    # Helper functions
-    create_device_response,
-    create_devices_list,
-    create_graphql_error,
-)
-
 from tests.fixtures.checkmk_fixtures import (
+    CHECKMK_ACTIVATE_CHANGES_SUCCESS,
+    # Success responses
+    CHECKMK_ADD_HOST_SUCCESS,
+    CHECKMK_DELETE_HOST_SUCCESS,
+    CHECKMK_DISCOVER_SERVICES_SUCCESS,
+    CHECKMK_EDIT_HOST_SUCCESS,
+    CHECKMK_ERROR_AUTHENTICATION,
+    CHECKMK_ERROR_FOLDER_NOT_FOUND,
+    # Error responses
+    CHECKMK_ERROR_HOST_EXISTS,
+    CHECKMK_ERROR_HOST_NOT_FOUND,
+    CHECKMK_ERROR_INVALID_IP,
+    # Folder fixtures
+    CHECKMK_FOLDER_STANDARD,
+    CHECKMK_FOLDERS_LIST,
     # Host fixtures
     CHECKMK_HOST_STANDARD,
     CHECKMK_HOST_WITH_LABELS,
     CHECKMK_HOSTS_LIST,
-    # Folder fixtures
-    CHECKMK_FOLDER_STANDARD,
-    CHECKMK_FOLDERS_LIST,
-    # Success responses
-    CHECKMK_ADD_HOST_SUCCESS,
-    CHECKMK_EDIT_HOST_SUCCESS,
-    CHECKMK_DELETE_HOST_SUCCESS,
-    CHECKMK_ACTIVATE_CHANGES_SUCCESS,
-    CHECKMK_DISCOVER_SERVICES_SUCCESS,
-    # Error responses
-    CHECKMK_ERROR_HOST_EXISTS,
-    CHECKMK_ERROR_HOST_NOT_FOUND,
-    CHECKMK_ERROR_FOLDER_NOT_FOUND,
-    CHECKMK_ERROR_INVALID_IP,
-    CHECKMK_ERROR_AUTHENTICATION,
+    CHECKMK_LIVE_UPDATE_COMPLETED,
+    CHECKMK_LIVE_UPDATE_STATUS,
     # Service discovery
     CHECKMK_SERVICES_DISCOVERED,
     # Site info
@@ -59,13 +34,37 @@ from tests.fixtures.checkmk_fixtures import (
     # Sync status
     CHECKMK_SYNC_STATUS_CLEAN,
     CHECKMK_SYNC_STATUS_PENDING,
-    CHECKMK_LIVE_UPDATE_STATUS,
-    CHECKMK_LIVE_UPDATE_COMPLETED,
+    create_api_error,
     # Helper functions
     create_host_response,
     create_hosts_list,
-    create_api_error,
     create_sync_comparison,
+)
+from tests.fixtures.nautobot_fixtures import (
+    NAUTOBOT_DEVICE_CREATE_SUCCESS,
+    NAUTOBOT_DEVICE_FULL,
+    # Device fixtures
+    NAUTOBOT_DEVICE_MINIMAL,
+    NAUTOBOT_DEVICE_STANDARD,
+    # REST API responses
+    NAUTOBOT_DEVICE_TYPE_RESPONSE,
+    NAUTOBOT_DEVICE_TYPES_LIST,
+    NAUTOBOT_DEVICES_LIST,
+    # Error responses
+    NAUTOBOT_ERROR_DUPLICATE_DEVICE,
+    NAUTOBOT_ERROR_INVALID_IP,
+    NAUTOBOT_ERROR_NOT_FOUND,
+    NAUTOBOT_INTERFACE_RESPONSE,
+    NAUTOBOT_IP_ADDRESS_RESPONSE,
+    NAUTOBOT_LOCATION_RESPONSE,
+    # Metadata
+    NAUTOBOT_LOCATIONS_LIST,
+    NAUTOBOT_PLATFORMS_LIST,
+    NAUTOBOT_ROLES_LIST,
+    # Helper functions
+    create_device_response,
+    create_devices_list,
+    create_graphql_error,
 )
 
 __all__ = [

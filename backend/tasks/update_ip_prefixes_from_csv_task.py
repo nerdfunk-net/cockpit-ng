@@ -1,8 +1,8 @@
 """Celery task for CSV prefix update — thin entry point."""
 
-from celery_app import celery_app
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
+from celery_app import celery_app
 from services.nautobot.imports.prefix_update_service import PrefixUpdateService
 
 _prefix_update_service = PrefixUpdateService()

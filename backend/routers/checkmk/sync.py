@@ -3,11 +3,14 @@ Nautobot to CheckMK comparison router for device synchronization and comparison.
 """
 
 from __future__ import annotations
+
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from core.auth import require_permission
-from dependencies import get_nb2cmk_service, get_nb2cmk_db_service
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_nb2cmk_db_service, get_nb2cmk_service
 from utils.audit_logger import log_checkmk_sync_event
 
 logger = logging.getLogger(__name__)
@@ -66,11 +69,11 @@ async def compare_device_config(
             detail=error_msg,
         )
     except Exception as e:
-        error_msg = f"Unexpected error comparing device {device_id}: {str(e)}"
-        logger.error("[ROUTER] %s", error_msg, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_msg,
+        raise_internal_server_error(
+            logger,
+            f"Unexpected error comparing device {device_id}",
+            e,
+            extra={"device_id": device_id},
         )
 
 
@@ -131,8 +134,11 @@ async def add_device_to_checkmk(
             detail=error_msg,
         )
     except Exception as e:
-        error_msg = f"Unexpected error adding device {device_id} to CheckMK: {str(e)}"
-        logger.error("[ROUTER] %s", error_msg, exc_info=True)
+        logger.error(
+            "[ROUTER] Unexpected error adding device %s to CheckMK",
+            device_id,
+            exc_info=True,
+        )
         log_checkmk_sync_event(
             username=username,
             action="add",
@@ -142,9 +148,11 @@ async def add_device_to_checkmk(
             success=False,
             error_message=str(e),
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_msg,
+        raise_internal_server_error(
+            logger,
+            f"Unexpected error adding device {device_id} to CheckMK",
+            e,
+            extra={"device_id": device_id},
         )
 
 
@@ -205,8 +213,11 @@ async def update_device_in_checkmk(
             detail=error_msg,
         )
     except Exception as e:
-        error_msg = f"Unexpected error updating device {device_id} in CheckMK: {str(e)}"
-        logger.error("[ROUTER] %s", error_msg, exc_info=True)
+        logger.error(
+            "[ROUTER] Unexpected error updating device %s in CheckMK",
+            device_id,
+            exc_info=True,
+        )
         log_checkmk_sync_event(
             username=username,
             action="update",
@@ -216,9 +227,11 @@ async def update_device_in_checkmk(
             success=False,
             error_message=str(e),
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_msg,
+        raise_internal_server_error(
+            logger,
+            f"Unexpected error updating device {device_id} in CheckMK",
+            e,
+            extra={"device_id": device_id},
         )
 
 
@@ -271,11 +284,7 @@ async def list_comparison_jobs(
         return {"jobs": job_list, "total": len(job_list)}
 
     except Exception as e:
-        logger.error("Error listing comparison jobs: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list comparison jobs: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to list comparison jobs: ", e)
 
 
 @router.get("/jobs/{job_id}")
@@ -344,11 +353,7 @@ async def get_comparison_job_details(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting comparison job %s: %s", job_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get comparison job: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get comparison job: ", e)
 
 
 @router.delete("/jobs/{job_id}")
@@ -394,11 +399,7 @@ async def delete_comparison_job(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting comparison job %s: %s", job_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete comparison job: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete comparison job: ", e)
 
 
 @router.post("/jobs/clear")
@@ -440,8 +441,4 @@ async def clear_all_comparison_jobs(
         return {"message": message, "deleted": deleted_count, "skipped": skipped_count}
 
     except Exception as e:
-        logger.error("Error clearing comparison jobs: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear comparison jobs: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to clear comparison jobs: ", e)

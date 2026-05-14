@@ -5,6 +5,7 @@ Randomly distributed across City A, B, C with varied tags and custom fields
 """
 
 import random
+
 import yaml
 
 # Set seed for reproducibility

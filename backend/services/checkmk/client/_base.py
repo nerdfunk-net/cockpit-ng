@@ -1,9 +1,9 @@
 import json
 import logging
 from typing import Dict, List
+from urllib.parse import urljoin
 
 import requests
-from urllib.parse import urljoin
 
 from services.checkmk.exceptions import CheckMKAPIError
 

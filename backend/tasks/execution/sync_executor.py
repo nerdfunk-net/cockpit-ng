@@ -5,12 +5,67 @@ Syncs devices from Nautobot to CheckMK monitoring system.
 Moved from job_tasks.py to improve code organization.
 """
 
-import logging
 import asyncio
-from typing import Dict, Any, Optional
+import logging
+from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
+
+
+async def _sync_one_device(nb2cmk_service, device_id: str) -> Dict[str, Any]:
+    """
+    Run the full per-device sync workflow inside one event loop.
+
+    This consolidates what previously required 2–3 ``asyncio.run`` calls per
+    device (normalize → update → fallback-add) into a single async unit so the
+    enclosing Celery task spins up only one event loop per iteration.
+
+    Returns a result dict with keys: ``device_id``, ``hostname``, ``operation``
+    (``"skip"`` | ``"update"`` | ``"add"``), ``success``, ``message``.
+    Raises on unrecoverable errors so the caller can mark the device as failed.
+    """
+    normalized_data = await nb2cmk_service.get_device_normalized(device_id)
+    ip_address = normalized_data.get("attributes", {}).get("ipaddress", "")
+    hostname_fallback = normalized_data.get("internal", {}).get("hostname", device_id)
+
+    if not ip_address:
+        logger.info(
+            "Skipping device %s (%s): no primary IPv4 address configured",
+            device_id,
+            hostname_fallback,
+        )
+        return {
+            "device_id": device_id,
+            "hostname": hostname_fallback,
+            "operation": "skip",
+            "success": False,
+            "message": "Skipped: no primary IPv4 address",
+        }
+
+    try:
+        result = await nb2cmk_service.update_device_in_checkmk(device_id)
+        return {
+            "device_id": device_id,
+            "hostname": getattr(result, "hostname", device_id),
+            "operation": "update",
+            "success": True,
+            "message": getattr(result, "message", "Updated"),
+        }
+    except Exception as update_error:
+        # If the device does not yet exist in CheckMK, fall back to add.
+        msg = str(update_error)
+        if "404" in msg or "not found" in msg.lower():
+            logger.info("Device %s not in CheckMK, attempting to add...", device_id)
+            result = await nb2cmk_service.add_device_to_checkmk(device_id)
+            return {
+                "device_id": device_id,
+                "hostname": getattr(result, "hostname", device_id),
+                "operation": "add",
+                "success": True,
+                "message": getattr(result, "message", "Added"),
+            }
+        raise
 
 
 def execute_sync_devices(
@@ -128,10 +183,13 @@ def execute_sync_devices(
 
         logger.info("Starting sync of %s devices to CheckMK", total_devices)
 
-        # Process each device
+        # Process each device. We collapse the per-device async calls
+        # (`get_device_normalized`, `update_device_in_checkmk`,
+        # `add_device_to_checkmk`) into a single async helper so each
+        # iteration spins up at most one event loop instead of two or three.
+        # See doc/refactoring/CURSOR_ASYNC_PLAN.md §5.4 / Phase 3.
         for i, device_id in enumerate(device_ids):
             try:
-                # Update progress
                 progress = int(10 + (i / total_devices) * 85)
                 task_context.update_state(
                     state="PROGRESS",
@@ -144,81 +202,14 @@ def execute_sync_devices(
                     },
                 )
 
-                # Check if device has a primary IPv4 address before syncing.
-                # Devices without an IP address cannot be monitored by CheckMK.
-                normalized_data = asyncio.run(
-                    nb2cmk_service.get_device_normalized(device_id)
-                )
-                ip_address = normalized_data.get("attributes", {}).get("ipaddress", "")
-                if not ip_address:
-                    hostname = normalized_data.get("internal", {}).get(
-                        "hostname", device_id
-                    )
-                    logger.info(
-                        "Skipping device %s (%s): no primary IPv4 address configured",
-                        device_id,
-                        hostname,
-                    )
-                    skipped_no_ip_count += 1
-                    results.append(
-                        {
-                            "device_id": device_id,
-                            "hostname": hostname,
-                            "operation": "skip",
-                            "success": False,
-                            "message": "Skipped: no primary IPv4 address",
-                        }
-                    )
-                    continue
+                outcome = asyncio.run(_sync_one_device(nb2cmk_service, device_id))
 
-                # Sync device - try update first, then add if not found
-                try:
-                    result = asyncio.run(
-                        nb2cmk_service.update_device_in_checkmk(device_id)
-                    )
+                op = outcome["operation"]
+                if op == "skip":
+                    skipped_no_ip_count += 1
+                else:
                     success_count += 1
-                    results.append(
-                        {
-                            "device_id": device_id,
-                            "hostname": result.hostname
-                            if hasattr(result, "hostname")
-                            else device_id,
-                            "operation": "update",
-                            "success": True,
-                            "message": result.message
-                            if hasattr(result, "message")
-                            else "Updated",
-                        }
-                    )
-                except Exception as update_error:
-                    # If device not found in CheckMK, try to add it
-                    if (
-                        "404" in str(update_error)
-                        or "not found" in str(update_error).lower()
-                    ):
-                        logger.info(
-                            "Device %s not in CheckMK, attempting to add...",
-                            device_id,
-                        )
-                        result = asyncio.run(
-                            nb2cmk_service.add_device_to_checkmk(device_id)
-                        )
-                        success_count += 1
-                        results.append(
-                            {
-                                "device_id": device_id,
-                                "hostname": result.hostname
-                                if hasattr(result, "hostname")
-                                else device_id,
-                                "operation": "add",
-                                "success": True,
-                                "message": result.message
-                                if hasattr(result, "message")
-                                else "Added",
-                            }
-                        )
-                    else:
-                        raise
+                results.append(outcome)
 
             except Exception as e:
                 failed_count += 1

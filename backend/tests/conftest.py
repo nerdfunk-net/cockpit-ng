@@ -8,26 +8,26 @@ This module provides centralized test fixtures for:
 - Authentication fixtures
 """
 
+from typing import Any, Dict
+from unittest.mock import AsyncMock, MagicMock, Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock, AsyncMock
-from typing import Dict, Any
 from git import Repo
 
 # Import centralized fixtures
 from tests.fixtures import (
-    NAUTOBOT_DEVICE_STANDARD,
-    NAUTOBOT_DEVICES_LIST,
     CHECKMK_HOST_STANDARD,
     CHECKMK_HOSTS_LIST,
+    NAUTOBOT_DEVICE_STANDARD,
+    NAUTOBOT_DEVICES_LIST,
     create_device_response,
     create_host_response,
 )
 from tests.mocks import (
-    FakeNautobotService,
-    STATUS_ACTIVE_ID,
     NS_GLOBAL_ID,
+    STATUS_ACTIVE_ID,
+    FakeNautobotService,
 )
-
 
 # =============================================================================
 # Pytest Markers
@@ -283,6 +283,7 @@ def db_session():
     """
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
+
     from core.models import Base
 
     # Create in-memory SQLite database
@@ -472,6 +473,7 @@ def test_nautobot_configured():
     Use with pytest.mark.skipif to skip tests when Nautobot is not configured.
     """
     import os
+
     from dotenv import load_dotenv
 
     # Load test environment
@@ -512,6 +514,7 @@ def real_nautobot_service(test_nautobot_configured):
         is not configured with valid Nautobot credentials.
     """
     import os
+
     from dotenv import load_dotenv
 
     # Skip if not configured
@@ -559,8 +562,9 @@ def real_ansible_inventory_service(real_nautobot_service):
         async def test_inventory_generation(real_ansible_inventory_service):
             devices, count = await real_ansible_inventory_service.preview_inventory(ops)
     """
-    from services.inventory.inventory import InventoryService
     from unittest.mock import patch
+
+    from services.inventory.inventory import InventoryService
 
     # Patch service_factory so inventory service gets the real nautobot service
     with patch(

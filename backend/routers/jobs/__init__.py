@@ -17,19 +17,19 @@ This package contains routers for:
 - Network scanning tasks (network_tasks)
 """
 
-from .templates import router as templates_router
-from .schedules import router as schedules_router
-from .runs import router as runs_router
-from .celery_admin import router as celery_admin_router
-from .onboarding import router as onboarding_router
-from .device_backup import router as device_backup_router
 from .agent_deploy import router as agent_deploy_router
-from .export import router as export_router
-from .import_update import router as import_update_router
+from .celery_admin import router as celery_admin_router
 from .check_ip import router as check_ip_router
 from .client_data import router as client_data_router
-from .sync_tasks import router as sync_tasks_router
+from .device_backup import router as device_backup_router
+from .export import router as export_router
+from .import_update import router as import_update_router
 from .network_tasks import router as network_tasks_router
+from .onboarding import router as onboarding_router
+from .runs import router as runs_router
+from .schedules import router as schedules_router
+from .sync_tasks import router as sync_tasks_router
+from .templates import router as templates_router
 
 __all__ = [
     "templates_router",

@@ -9,14 +9,13 @@ This package contains routers for:
 """
 
 # Import config routers
-from .configs.compare import router as file_compare_router
-from .configs.backup import router as backup_router
-
 # Import automation routers
 from .automation.netmiko import router as netmiko_router
 
 # Import compliance router
 from .compliance import router as compliance_check_router
+from .configs.backup import router as backup_router
+from .configs.compare import router as file_compare_router
 
 # Import tools router (temporarily disabled - depends on nautobot_service)
 # from .tools.ping import router as tools_router

@@ -8,7 +8,8 @@ Used by both direct API calls (deploy_agent_task) and scheduled jobs (deploy_age
 import logging
 import os
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
+
 from git.exc import GitCommandError
 
 logger = logging.getLogger(__name__)

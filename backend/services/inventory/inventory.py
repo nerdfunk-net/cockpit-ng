@@ -17,7 +17,6 @@ import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from models.inventory import DeviceInfo, LogicalOperation
-
 from services.inventory.evaluator import InventoryEvaluator
 from services.inventory.export_service import InventoryExportService
 from services.inventory.git_storage_service import InventoryGitStorage
@@ -35,7 +34,7 @@ class InventoryService:
 
     def __init__(
         self,
-        persistence_service: "InventoryPersistenceService" = None,
+        persistence_service: InventoryPersistenceService = None,
         cache_service=None,
     ):
         self.query_service = InventoryQueryService(cache_service=cache_service)

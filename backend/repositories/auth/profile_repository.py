@@ -1,8 +1,9 @@
 """Repository for user profile operations."""
 
 from typing import Optional
-from core.models import UserProfile
+
 from core.database import get_db_session
+from core.models import UserProfile
 from repositories.base import BaseRepository
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from croniter import croniter
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class JobScheduleService:
-    def __init__(self, template_service: "JobTemplateService") -> None:
+    def __init__(self, template_service: JobTemplateService) -> None:
         self._repo = JobScheduleRepository()
         self._template_service = template_service
 

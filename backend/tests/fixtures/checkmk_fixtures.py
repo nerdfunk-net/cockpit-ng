@@ -5,7 +5,7 @@ This module provides reusable test data for CheckMK REST API responses.
 All fixtures follow the actual CheckMK API response structure.
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 # =============================================================================
 # Host Response Fixtures (REAL CheckMK API Format)

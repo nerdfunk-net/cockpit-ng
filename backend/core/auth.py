@@ -3,13 +3,14 @@ Core authentication functions and dependencies.
 """
 
 from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from fastapi import Depends, HTTPException, status, Header
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import jwt
-from passlib.hash import pbkdf2_sha256
 
+import jwt
+from fastapi import Depends, Header, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from passlib.hash import pbkdf2_sha256
 
 # Security setup
 security = HTTPBearer()

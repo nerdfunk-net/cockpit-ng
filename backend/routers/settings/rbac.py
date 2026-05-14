@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import logging
 
-from core.auth import require_role, verify_token
-from dependencies import get_rbac_service
-from services.auth.rbac_service import RBACService
 from fastapi import APIRouter, Depends, HTTPException, status
-from repositories.audit_log_repository import audit_log_repo
+
+from core.auth import require_role, verify_token
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_audit_log_service, get_rbac_service
 from models.rbac import (
     BulkPermissionAssignment,
     BulkRoleAssignment,
@@ -39,6 +39,8 @@ from models.rbac import (
     UserRoleAssignment,
     UserUpdate,
 )
+from services.audit.audit_log_service import AuditLogService
+from services.auth.rbac_service import RBACService
 
 logger = logging.getLogger(__name__)
 
@@ -128,13 +130,14 @@ async def create_role(
     role: RoleCreate,
     current_user: dict = Depends(require_role("admin")),
     rbac: RBACService = Depends(get_rbac_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Create a new role (admin only)."""
     try:
         created = rbac.create_role(
             name=role.name, description=role.description or "", is_system=role.is_system
         )
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="rbac-role-created",
@@ -178,13 +181,14 @@ async def update_role(
     role_update: RoleUpdate,
     current_user: dict = Depends(require_role("admin")),
     rbac: RBACService = Depends(get_rbac_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Update a role (admin only)."""
     try:
         updated = rbac.update_role(
             role_id=role_id, name=role_update.name, description=role_update.description
         )
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="rbac-role-updated",
@@ -204,11 +208,12 @@ async def delete_role(
     role_id: int,
     current_user: dict = Depends(require_role("admin")),
     rbac: RBACService = Depends(get_rbac_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Delete a role (admin only, cannot delete system roles)."""
     try:
         rbac.delete_role(role_id)
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="rbac-role-deleted",
@@ -250,6 +255,7 @@ async def assign_permission_to_role(
     assignment: RolePermissionAssignment,
     current_user: dict = Depends(require_role("admin")),
     rbac: RBACService = Depends(get_rbac_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Assign a permission to a role (admin only)."""
     # Verify role exists
@@ -269,7 +275,7 @@ async def assign_permission_to_role(
     rbac.assign_permission_to_role(
         role_id, assignment.permission_id, assignment.granted
     )
-    audit_log_repo.create_log(
+    audit_log.log_event(
         username=current_user.get("username"),
         user_id=current_user.get("user_id"),
         event_type="rbac-permission-assigned",
@@ -289,6 +295,7 @@ async def assign_multiple_permissions_to_role(
     assignment: BulkPermissionAssignment,
     current_user: dict = Depends(require_role("admin")),
     rbac: RBACService = Depends(get_rbac_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Assign multiple permissions to a role (admin only)."""
     # Verify role exists
@@ -300,7 +307,7 @@ async def assign_multiple_permissions_to_role(
 
     for permission_id in assignment.permission_ids:
         rbac.assign_permission_to_role(role_id, permission_id, assignment.granted)
-    audit_log_repo.create_log(
+    audit_log.log_event(
         username=current_user.get("username"),
         user_id=current_user.get("user_id"),
         event_type="rbac-permission-assigned",
@@ -321,10 +328,11 @@ async def remove_permission_from_role(
     permission_id: int,
     current_user: dict = Depends(require_role("admin")),
     rbac: RBACService = Depends(get_rbac_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Remove a permission from a role (admin only)."""
     rbac.remove_permission_from_role(role_id, permission_id)
-    audit_log_repo.create_log(
+    audit_log.log_event(
         username=current_user.get("username"),
         user_id=current_user.get("user_id"),
         event_type="rbac-permission-revoked",
@@ -482,11 +490,7 @@ async def assign_permission_to_user(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error assigning permission to user: %s", str(e), exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to assign permission: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to assign permission: ", e)
 
 
 @router.delete(
@@ -612,6 +616,7 @@ async def create_user(
     user_data: UserCreate,
     current_user: dict = Depends(require_role("admin")),
     rbac: RBACService = Depends(get_rbac_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Create a new user with initial role assignments (admin only)."""
     try:
@@ -627,7 +632,7 @@ async def create_user(
         # Get full user with roles and permissions
         user_with_rbac = rbac.get_user_with_rbac(user["id"])
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="rbac-user-created",
@@ -642,11 +647,7 @@ async def create_user(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        logger.error("Error creating user: %s", str(e), exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create user: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create user: ", e)
 
 
 @router.get("/users", response_model=UserListResponse)
@@ -697,6 +698,7 @@ async def update_user(
     user_data: UserUpdate,
     current_user: dict = Depends(require_role("admin")),
     rbac: RBACService = Depends(get_rbac_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Update user profile (admin only)."""
     try:
@@ -722,7 +724,7 @@ async def update_user(
                 detail=f"User {user_id} not found after update",
             )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="rbac-user-updated",
@@ -749,6 +751,7 @@ async def delete_user(
     user_id: int,
     current_user: dict = Depends(require_role("admin")),
     rbac: RBACService = Depends(get_rbac_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Delete a user and all RBAC associations (admin only)."""
     try:
@@ -757,7 +760,7 @@ async def delete_user(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="rbac-user-deleted",

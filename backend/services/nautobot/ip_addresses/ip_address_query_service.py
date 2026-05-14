@@ -5,12 +5,12 @@ Provides listing and deletion of IP addresses filtered by arbitrary Nautobot fie
 including custom fields like cf_last_scan.
 """
 
+import asyncio
 import logging
 import re
 from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
-import asyncio
 import service_factory
 
 logger = logging.getLogger(__name__)

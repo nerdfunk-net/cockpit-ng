@@ -3,11 +3,13 @@ Service for creating test baselines in Nautobot from YAML configuration files.
 """
 
 import logging
-import yaml
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-from services.nautobot.devices.import_service import DeviceImportService
+from typing import Any, Dict, List, Optional
+
+import yaml
+
 from services.nautobot.devices.common import DeviceCommonService
+from services.nautobot.devices.import_service import DeviceImportService
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +67,7 @@ class TestBaselineService:
         baseline_data = []
         for yaml_file in yaml_files:
             logger.info("Loading baseline file: %s", yaml_file)
-            with open(yaml_file, "r") as f:
+            with open(yaml_file) as f:
                 data = yaml.safe_load(f)
                 if data:
                     baseline_data.append(data)

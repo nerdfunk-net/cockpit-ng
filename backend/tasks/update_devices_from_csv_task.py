@@ -16,16 +16,16 @@ Note: For JSON-based updates with full interface array support,
 use update_devices_task.py instead.
 """
 
-from celery_app import celery_app
-import logging
+import asyncio
 import csv
 import io
+import logging
 import re
-import asyncio
-from typing import Optional, Dict, Any
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 import service_factory
+from celery_app import celery_app
 from services.nautobot.devices.update import DeviceUpdateService
 
 logger = logging.getLogger(__name__)

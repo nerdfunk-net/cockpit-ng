@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from repositories.jobs.job_run_repository import job_run_repository as repo
 
@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 class JobRunService:
     def __init__(
         self,
-        schedule_service: "JobScheduleService",
-        template_service: "JobTemplateService",
+        schedule_service: JobScheduleService,
+        template_service: JobTemplateService,
     ) -> None:
         self._repo = repo
         self._schedule_service = schedule_service
@@ -175,62 +175,43 @@ class JobRunService:
         }
 
     def get_dashboard_stats(self) -> Dict[str, Any]:
-        from core.database import get_db_session
-        from sqlalchemy import text
+        counts = self._repo.aggregate_status_counts()
+        backup_payloads = self._repo.recent_backup_results(days=30)
 
-        session = get_db_session()
+        total_backed_up = 0
+        total_failed = 0
 
-        try:
-            job_stats = session.execute(
-                text("""
-                SELECT
-                    COUNT(*) as total,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
-                    SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as running
-                FROM job_runs
-            """)
-            ).fetchone()
+        for payload in backup_payloads:
+            if not payload:
+                continue
+            if isinstance(payload, dict):
+                parsed = payload
+            else:
+                try:
+                    parsed = json.loads(payload)
+                except (json.JSONDecodeError, TypeError):
+                    continue
+            if not parsed:
+                continue
+            try:
+                total_backed_up += int(parsed.get("devices_backed_up", 0) or 0)
+                total_failed += int(parsed.get("devices_failed", 0) or 0)
+            except (TypeError, ValueError):
+                continue
 
-            backup_stats = session.execute(
-                text("""
-                SELECT
-                    result
-                FROM job_runs
-                WHERE job_type = 'backup'
-                    AND status = 'completed'
-                    AND queued_at >= NOW() - INTERVAL '30 days'
-            """)
-            ).fetchall()
-
-            total_backed_up = 0
-            total_failed = 0
-
-            for row in backup_stats:
-                if row[0]:
-                    try:
-                        result = json.loads(row[0])
-                        total_backed_up += result.get("devices_backed_up", 0)
-                        total_failed += result.get("devices_failed", 0)
-                    except (json.JSONDecodeError, AttributeError):
-                        pass
-
-            return {
-                "job_runs": {
-                    "total": job_stats[0] or 0,
-                    "completed": job_stats[1] or 0,
-                    "failed": job_stats[2] or 0,
-                    "running": job_stats[3] or 0,
-                },
-                "backup_devices": {
-                    "total_devices": total_backed_up + total_failed,
-                    "successful_devices": total_backed_up,
-                    "failed_devices": total_failed,
-                },
-            }
-
-        finally:
-            session.close()
+        return {
+            "job_runs": {
+                "total": counts["total"],
+                "completed": counts["completed"],
+                "failed": counts["failed"],
+                "running": counts["running"],
+            },
+            "backup_devices": {
+                "total_devices": total_backed_up + total_failed,
+                "successful_devices": total_backed_up,
+                "failed_devices": total_failed,
+            },
+        }
 
     def cleanup_old_runs(self, days: int = 30) -> int:
         count = self._repo.cleanup_old_runs(days)

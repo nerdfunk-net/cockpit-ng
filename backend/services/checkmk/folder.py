@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from functools import partial
 from typing import Any, Dict, Optional
 
 from services.checkmk.base import CheckMKClientFactory, slash_to_tilde
@@ -51,7 +52,8 @@ class CheckMKFolderService:
                         parent_folder,
                     )
                     await asyncio.to_thread(
-                        lambda: client.create_folder(
+                        partial(
+                            client.create_folder,
                             name=folder_name,
                             title=folder_name,
                             parent=checkmk_parent,

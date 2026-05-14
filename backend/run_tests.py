@@ -8,8 +8,8 @@ Usage:
     python run_tests.py --coverage   # Run with coverage report
 """
 
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 

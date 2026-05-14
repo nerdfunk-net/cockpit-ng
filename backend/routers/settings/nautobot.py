@@ -3,17 +3,21 @@ Nautobot settings router.
 """
 
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from repositories.audit_log_repository import audit_log_repo
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_audit_log_service
 from models.settings import (
-    NautobotSettingsRequest,
     ConnectionTestRequest,
     NautobotDefaultsRequest,
+    NautobotSettingsRequest,
 )
+from services.audit.audit_log_service import AuditLogService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -44,6 +48,7 @@ async def get_nautobot_settings(
 async def update_nautobot_settings(
     nautobot_request: NautobotSettingsRequest,
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Update Nautobot settings."""
     try:
@@ -54,7 +59,7 @@ async def update_nautobot_settings(
         success = settings_manager.update_nautobot_settings(nautobot_request.dict())
 
         if success:
-            audit_log_repo.create_log(
+            audit_log.log_event(
                 username=current_user.get("sub"),
                 user_id=current_user.get("user_id"),
                 event_type="settings-nautobot-updated",
@@ -74,17 +79,14 @@ async def update_nautobot_settings(
             )
 
     except Exception as e:
-        logger.error("Error updating Nautobot settings: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update Nautobot settings: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update Nautobot settings: ", e)
 
 
 @router.post("/nautobot")
 async def create_nautobot_settings(
     nautobot_request: NautobotSettingsRequest,
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Create/Update Nautobot settings via POST."""
     try:
@@ -95,7 +97,7 @@ async def create_nautobot_settings(
         success = settings_manager.update_nautobot_settings(nautobot_request.dict())
 
         if success:
-            audit_log_repo.create_log(
+            audit_log.log_event(
                 username=current_user.get("sub"),
                 user_id=current_user.get("user_id"),
                 event_type="settings-nautobot-updated",

@@ -12,17 +12,17 @@ This package contains services for:
 """
 
 from services.nautobot.devices.common import DeviceCommonService
-from services.nautobot.devices.update import DeviceUpdateService
 from services.nautobot.devices.interface_workflow import InterfaceManagerService
 from services.nautobot.devices.onboarding import DeviceOnboardingService
 from services.nautobot.devices.query import DEVICE_DETAILS_QUERY
 from services.nautobot.devices.types import (
     DeviceIdentifier,
+    DeviceUpdateResult,
     InterfaceConfig,
     InterfaceSpec,
-    DeviceUpdateResult,
     InterfaceUpdateResult,
 )
+from services.nautobot.devices.update import DeviceUpdateService
 
 __all__ = [
     "DeviceCommonService",

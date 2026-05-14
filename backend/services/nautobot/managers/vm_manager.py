@@ -7,7 +7,7 @@ This manager handles lifecycle operations (create/update) for virtual machines.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Dict, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from ..common.exceptions import NautobotAPIError
 

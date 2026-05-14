@@ -13,9 +13,9 @@ They are NOT tied to SECRET_KEY and are safe across key rotations.
 
 from __future__ import annotations
 
-import sys
 import argparse
 import getpass
+import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------

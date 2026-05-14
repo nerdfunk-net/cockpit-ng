@@ -1,9 +1,9 @@
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,

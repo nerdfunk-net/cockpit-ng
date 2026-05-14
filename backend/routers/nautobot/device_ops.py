@@ -3,25 +3,29 @@ Nautobot device operation endpoints: device details, delete device, offboard dev
 """
 
 from __future__ import annotations
+
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from services.nautobot.common.exceptions import NautobotNotFoundError
-from models.nautobot import DeviceVirtualChassisStatus, OffboardDeviceRequest
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import (
+    get_audit_log_service,
+    get_cache_service,
+    get_device_query_service,
     get_nautobot_service,
     get_offboarding_service,
-    get_device_query_service,
-    get_cache_service,
 )
+from models.nautobot import DeviceVirtualChassisStatus, OffboardDeviceRequest
+from services.audit.audit_log_service import AuditLogService
 from services.nautobot.client import NautobotService
+from services.nautobot.common.exceptions import NautobotNotFoundError
 from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.offboarding.service import OffboardingService
 from services.nautobot.offboarding.virtual_chassis_cleanup import (
     VirtualChassisCleanupManager,
 )
-from repositories.audit_log_repository import audit_log_repo
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-device-ops"])
@@ -74,16 +78,14 @@ async def get_device_details(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=str(e),
             )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+        raise_internal_server_error(
+            logger,
+            "Failed to fetch device details (unexpected ValueError)",
+            e,
+            extra={"device_id": device_id},
         )
     except Exception as e:
-        logger.error("Error fetching device details for %s: %s", device_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch device details: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch device details: ", e)
 
 
 @router.delete("/devices/{device_id}", summary="🔶 REST: Delete Device")
@@ -92,6 +94,7 @@ async def delete_device(
     current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
     cache_service=Depends(get_cache_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Delete a device from Nautobot."""
     try:
@@ -115,7 +118,7 @@ async def delete_device(
         for key in cache_keys_to_clear:
             cache_service.delete(key)
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-device-deleted",
@@ -138,11 +141,7 @@ async def delete_device(
             detail=f"Device {device_id} not found",
         )
     except Exception as e:
-        logger.error("Error deleting device %s: %s", device_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete device: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete device: ", e)
 
 
 @router.post("/offboard/{device_id}", summary="🟠 Mixed API: Offboard Device")
@@ -165,12 +164,9 @@ async def offboard_device(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Unexpected error during offboard process for device %s: %s",
-            device_id,
-            str(e),
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Offboarding failed: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            "Unexpected error during offboard process",
+            e,
+            extra={"device_id": device_id},
         )

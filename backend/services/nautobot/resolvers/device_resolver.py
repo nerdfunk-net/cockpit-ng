@@ -4,8 +4,9 @@ Device resolver for device and device-related entity resolution.
 
 import logging
 from typing import Optional, Tuple
-from .base_resolver import BaseResolver
+
 from ..common.validators import is_valid_uuid
+from .base_resolver import BaseResolver
 
 logger = logging.getLogger(__name__)
 

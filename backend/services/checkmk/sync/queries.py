@@ -6,8 +6,10 @@ used in CheckMK synchronization.
 """
 
 from __future__ import annotations
+
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
+
 from fastapi import HTTPException, status
 
 from models.nb2cmk import DeviceList

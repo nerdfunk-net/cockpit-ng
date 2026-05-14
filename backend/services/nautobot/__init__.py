@@ -10,8 +10,8 @@ This package contains services for:
 """
 
 from .client import NautobotService
-from .offboarding import OffboardingService
 from .metadata_service import NautobotMetadataService
+from .offboarding import OffboardingService
 
 __all__ = [
     "NautobotService",

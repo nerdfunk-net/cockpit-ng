@@ -3,12 +3,15 @@ Nautobot location hierarchy endpoints.
 """
 
 from __future__ import annotations
+
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_cache_service, get_nautobot_service
 from services.nautobot.client import NautobotService
-from dependencies import get_nautobot_service, get_cache_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-locations"])
@@ -56,9 +59,11 @@ async def get_locations(
         result = await nautobot_service.graphql_query(query)
 
         if "errors" in result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL errors: {result['errors']}",
+            raise_internal_server_error(
+                logger,
+                "Nautobot GraphQL returned errors",
+                None,
+                extra={"graphql_errors": result.get("errors")},
             )
 
         locations = result["data"]["locations"]
@@ -66,10 +71,7 @@ async def get_locations(
         cache_service.set(cache_key, locations, ttl)
         return locations
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch locations: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch locations: ", e)
 
 
 @router.get("/location-types", summary="🔷 GraphQL: List Location Types")
@@ -104,9 +106,11 @@ async def get_location_types(
         result = await nautobot_service.graphql_query(query)
 
         if "errors" in result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL errors: {result['errors']}",
+            raise_internal_server_error(
+                logger,
+                "Nautobot GraphQL returned errors",
+                None,
+                extra={"graphql_errors": result.get("errors")},
             )
 
         location_types = result["data"]["location_types"]
@@ -114,10 +118,7 @@ async def get_location_types(
         cache_service.set(cache_key, location_types, 300)
         return location_types
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch location types: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch location types: ", e)
 
 
 @router.get("/parent-locations", summary="🔷 GraphQL: Resolve Parent Location by Type")
@@ -167,9 +168,11 @@ async def get_parent_location(
         result = await nautobot_service.graphql_query(query)
 
         if "errors" in result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL errors: {result['errors']}",
+            raise_internal_server_error(
+                logger,
+                "Nautobot GraphQL returned errors",
+                None,
+                extra={"graphql_errors": result.get("errors")},
             )
 
         locations = result["data"].get("locations", [])

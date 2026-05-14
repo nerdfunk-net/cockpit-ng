@@ -1,4 +1,11 @@
-"""Business logic for onboarding devices into Nautobot."""
+"""Business logic for onboarding devices into Nautobot.
+
+Worker-only module. The ``asyncio.run`` call below is reachable only from
+``tasks/onboard_device_task.py`` (Celery). It MUST NOT be invoked from any
+``async def`` FastAPI route — that would raise ``RuntimeError: asyncio.run()
+cannot be called from a running event loop``. See
+``doc/refactoring/CURSOR_ASYNC_PLAN.md`` §5.5.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 class DeviceOnboardingService:
-    """Orchestrates Nautobot onboarding API calls and post-onboarding configuration."""
+    """Orchestrates Nautobot onboarding API calls and post-onboarding configuration.
+
+    Celery-only: invoked exclusively from ``tasks.onboard_device_task``.
+    """
 
     def onboard(
         self,
@@ -350,7 +360,12 @@ class DeviceOnboardingService:
         )
 
     def _get_device_id_from_ip(self, ip_address: str) -> tuple:
-        """GraphQL lookup: return (device_id, device_name) for an IP address."""
+        """GraphQL lookup: return (device_id, device_name) for an IP address.
+
+        Celery-only sync bridge to the async NautobotService. Must NOT be called
+        from any running event loop (FastAPI routes); enforced by the parent
+        class being marked Celery-only.
+        """
         return asyncio.run(self._async_get_device_id(ip_address))
 
     async def _async_get_device_id(self, ip_address: str) -> tuple:

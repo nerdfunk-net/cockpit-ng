@@ -18,7 +18,8 @@ import logging
 import os
 from contextlib import contextmanager
 from typing import Dict, Optional, Tuple
-from urllib.parse import urlparse, urlunparse, quote as urlquote
+from urllib.parse import quote as urlquote
+from urllib.parse import urlparse, urlunparse
 
 logger = logging.getLogger(__name__)
 

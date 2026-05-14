@@ -3,9 +3,10 @@ Utility functions for working with CheckMK folders and paths.
 """
 
 from __future__ import annotations
+
 import logging
 import re
-from typing import Dict, Any
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 

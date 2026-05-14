@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from models.templates import TemplateResponse
 
 logger = logging.getLogger(__name__)
@@ -37,10 +38,11 @@ async def get_template_content(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Error getting template content for %s: %s", template_id, exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get template content: {exc}",
+        raise_internal_server_error(
+            logger,
+            "Failed to get template content",
+            exc,
+            extra={"template_id": template_id},
         )
 
 
@@ -58,10 +60,11 @@ async def get_template_versions(
         return template_manager.get_template_versions(template_id)
 
     except Exception as exc:
-        logger.error("Error getting template versions for %s: %s", template_id, exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get template versions: {exc}",
+        raise_internal_server_error(
+            logger,
+            "Failed to get template versions",
+            exc,
+            extra={"template_id": template_id},
         )
 
 
@@ -118,8 +121,4 @@ async def upload_template_file(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Error uploading template file: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload template file: {exc}",
-        )
+        raise_internal_server_error(logger, "Failed to upload template file", exc)

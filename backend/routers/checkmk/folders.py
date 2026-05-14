@@ -12,13 +12,14 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_checkmk_folder_service
 from models.checkmk import (
-    CheckMKFolderCreateRequest,
-    CheckMKFolderUpdateRequest,
-    CheckMKFolderMoveRequest,
     CheckMKFolderBulkUpdateRequest,
+    CheckMKFolderCreateRequest,
     CheckMKFolderListResponse,
+    CheckMKFolderMoveRequest,
+    CheckMKFolderUpdateRequest,
     CheckMKOperationResponse,
 )
 from services.checkmk.exceptions import CheckMKAPIError, CheckMKClientError
@@ -71,18 +72,17 @@ async def get_all_folders(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Parent folder '{parent}' not found in CheckMK",
             )
-        raise HTTPException(
+        raise_internal_server_error(
+            logger,
+            "CheckMK API error while listing folders",
+            e,
+            extra={"parent": parent, "checkmk_status": e.status_code},
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"CheckMK API error: {str(e)}",
         )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting folders: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get folders: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get folders: ", e)
 
 
 # Static PUT path before parameterised PUT /{folder_path}
@@ -107,11 +107,7 @@ async def bulk_update_folders(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error bulk updating folders: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to bulk update folders: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to bulk update folders: ", e)
 
 
 @router.post("/folders", response_model=CheckMKOperationResponse)
@@ -160,10 +156,8 @@ async def create_folder(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error creating folder %s: %s", request.name, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create folder {request.name}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to create folder {request.name}", e
         )
 
 
@@ -188,24 +182,17 @@ async def get_folder(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Folder '{folder_path}' not found in CheckMK",
             )
-        logger.error(
-            "CheckMK API error getting folder %s: %s (status: %s)",
-            folder_path,
-            str(e),
-            e.status_code,
-        )
-        raise HTTPException(
+        raise_internal_server_error(
+            logger,
+            f"CheckMK API error getting folder {folder_path}",
+            e,
+            extra={"folder_path": folder_path, "checkmk_status": e.status_code},
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"CheckMK API error: {str(e)}",
         )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting folder %s: %s", folder_path, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get folder {folder_path}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to get folder {folder_path}", e)
 
 
 @router.put("/folders/{folder_path}", response_model=CheckMKOperationResponse)
@@ -228,11 +215,7 @@ async def update_folder(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating folder %s: %s", folder_path, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update folder {folder_path}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to update folder {folder_path}", e)
 
 
 @router.delete("/folders/{folder_path}", response_model=CheckMKOperationResponse)
@@ -253,11 +236,7 @@ async def delete_folder(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting folder %s: %s", folder_path, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete folder {folder_path}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to delete folder {folder_path}", e)
 
 
 @router.post("/folders/{folder_path}/move", response_model=CheckMKOperationResponse)
@@ -280,11 +259,7 @@ async def move_folder(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error moving folder %s: %s", folder_path, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to move folder {folder_path}: {str(e)}",
-        )
+        raise_internal_server_error(logger, f"Failed to move folder {folder_path}", e)
 
 
 @router.get("/folders/{folder_path}/hosts", response_model=CheckMKOperationResponse)
@@ -309,8 +284,6 @@ async def get_hosts_in_folder(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting hosts in folder %s: %s", folder_path, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get hosts in folder {folder_path}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to get hosts in folder {folder_path}", e
         )

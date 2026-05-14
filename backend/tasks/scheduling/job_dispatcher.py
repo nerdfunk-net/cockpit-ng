@@ -5,9 +5,10 @@ Orchestrates job execution based on job type.
 Moved from job_tasks.py to improve code organization.
 """
 
-from celery import shared_task
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
+from celery import shared_task
 
 logger = logging.getLogger(__name__)
 

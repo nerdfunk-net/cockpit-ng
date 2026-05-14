@@ -8,14 +8,14 @@ lightweight request stand-ins.
 
 from __future__ import annotations
 
-import pytest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from services.checkmk.problems_service import CheckMKProblemsService
-from services.checkmk.exceptions import CheckMKAPIError
-from tests.mocks import FakeCheckMKClient
+import pytest
 
+from services.checkmk.exceptions import CheckMKAPIError
+from services.checkmk.problems_service import CheckMKProblemsService
+from tests.mocks import FakeCheckMKClient
 
 _PATCH_TARGET = (
     "services.checkmk.problems_service.CheckMKClientFactory.build_client_from_settings"

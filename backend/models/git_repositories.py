@@ -3,9 +3,11 @@ Git repository management models.
 """
 
 from __future__ import annotations
-from pydantic import BaseModel, Field
-from typing import Optional, List
+
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class GitCategory(str, Enum):

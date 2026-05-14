@@ -19,8 +19,10 @@ single database transaction, pass a ``db`` session obtained from
 """
 
 from contextlib import contextmanager
-from typing import Generic, Generator, TypeVar, Type, List, Optional
+from typing import Generator, Generic, List, Optional, Type, TypeVar
+
 from sqlalchemy.orm import Session
+
 from core.database import get_db_session
 
 T = TypeVar("T")

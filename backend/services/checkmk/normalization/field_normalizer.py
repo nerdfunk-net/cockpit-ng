@@ -1,7 +1,7 @@
 """Field normalization for device data."""
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 from models.nb2cmk import DeviceExtensions
 from utils.cmk_folder_utils import _resolve_location_type_filter, _resolve_plain_field

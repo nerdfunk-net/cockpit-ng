@@ -5,17 +5,19 @@ This module handles device creation and updates in CheckMK from Nautobot data.
 """
 
 from __future__ import annotations
+
 import json
 import logging
+
 from fastapi import HTTPException, status
 
-from utils.cmk_site_utils import get_device_site_from_normalized_data
-from utils.cmk_folder_utils import normalize_folder_path
 from models.nb2cmk import (
+    DefaultSiteResponse,
     DeviceOperationResult,
     DeviceUpdateResult,
-    DefaultSiteResponse,
 )
+from utils.cmk_folder_utils import normalize_folder_path
+from utils.cmk_site_utils import get_device_site_from_normalized_data
 
 logger = logging.getLogger(__name__)
 

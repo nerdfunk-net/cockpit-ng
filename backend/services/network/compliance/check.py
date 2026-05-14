@@ -4,29 +4,30 @@ Performs SSH login checks, SNMP credential validation, and configuration pattern
 """
 
 from __future__ import annotations
+
 import logging
-from typing import Dict, List, Any, Optional
+import re
+from typing import Any, Dict, List, Optional
+
 from netmiko import ConnectHandler
 from pysnmp.hlapi.v3arch import (
-    SnmpEngine,
     CommunityData,
-    UsmUserData,
-    UdpTransportTarget,
     ContextData,
-    ObjectType,
     ObjectIdentity,
+    ObjectType,
+    SnmpEngine,
+    UdpTransportTarget,
+    UsmUserData,
     get_cmd,
-    usmHMACMD5AuthProtocol,
-    usmHMACSHAAuthProtocol,
-    usmDESPrivProtocol,
     usmAesCfb128Protocol,
     usmAesCfb192Protocol,
     usmAesCfb256Protocol,
+    usmDESPrivProtocol,
+    usmHMACMD5AuthProtocol,
+    usmHMACSHAAuthProtocol,
     usmNoAuthProtocol,
     usmNoPrivProtocol,
 )
-import asyncio
-import re
 
 logger = logging.getLogger(__name__)
 
@@ -211,19 +212,6 @@ class ComplianceCheckService:
             }
 
     @staticmethod
-    def check_snmp_v1_v2c(
-        device_ip: str, community: str, version: int = 2, timeout: int = 5
-    ) -> Dict[str, Any]:
-        """
-        Check SNMP v1 or v2c access to a device (synchronous wrapper).
-        """
-        return asyncio.run(
-            ComplianceCheckService.check_snmp_v1_v2c_async(
-                device_ip, community, version, timeout
-            )
-        )
-
-    @staticmethod
     async def check_snmp_v3_async(
         device_ip: str,
         username: str,
@@ -385,31 +373,6 @@ class ComplianceCheckService:
                     "error": error_msg,
                 },
             }
-
-    @staticmethod
-    def check_snmp_v3(
-        device_ip: str,
-        username: str,
-        auth_protocol: Optional[str] = None,
-        auth_password: Optional[str] = None,
-        priv_protocol: Optional[str] = None,
-        priv_password: Optional[str] = None,
-        timeout: int = 5,
-    ) -> Dict[str, Any]:
-        """
-        Check SNMP v3 access to a device (synchronous wrapper).
-        """
-        return asyncio.run(
-            ComplianceCheckService.check_snmp_v3_async(
-                device_ip,
-                username,
-                auth_protocol,
-                auth_password,
-                priv_protocol,
-                priv_password,
-                timeout,
-            )
-        )
 
     @staticmethod
     def check_configuration_pattern(

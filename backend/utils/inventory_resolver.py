@@ -12,9 +12,9 @@ to actual lists of device IDs. This functionality is used across multiple featur
 The resolver ensures consistent behavior across all parts of the application.
 """
 
-import logging
 import asyncio
-from typing import Optional, List
+import logging
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -100,8 +100,9 @@ def resolve_inventory_to_device_ids_sync(
     """
     Synchronous wrapper for resolve_inventory_to_device_ids().
 
-    This function is specifically for use in Celery tasks and other synchronous contexts
-    where you can't directly await async functions.
+    Celery/worker-only. Do NOT call from any FastAPI handler or other code that
+    might run inside a live event loop — Python 3.10+ will raise
+    ``RuntimeError: asyncio.run() cannot be called from a running event loop``.
 
     Args:
         inventory_name: Name of the saved inventory to resolve
@@ -117,7 +118,8 @@ def resolve_inventory_to_device_ids_sync(
         >>>     backup_devices(device_ids)
 
     Note:
-        This creates a new event loop for the async operation. This is safe in
-        Celery tasks which run in separate processes.
+        Creates a new event loop. Safe in Celery tasks (each task body is sync).
+        In ``async def`` HTTP handlers, ``await resolve_inventory_to_device_ids(...)``
+        directly instead.
     """
     return asyncio.run(resolve_inventory_to_device_ids(inventory_name, username))

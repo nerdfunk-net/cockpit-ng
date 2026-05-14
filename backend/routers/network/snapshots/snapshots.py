@@ -2,20 +2,26 @@
 Router for snapshot execution and comparison.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import logging
 from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from core.auth import require_permission
-from services.network.snapshots import (
-    SnapshotExecutionService,
-    SnapshotComparisonService,
-)
+from core.safe_http_errors import raise_internal_server_error
 from models.snapshots import (
-    SnapshotExecuteRequest,
-    SnapshotResponse,
-    SnapshotListResponse,
     SnapshotCompareRequest,
     SnapshotCompareResponse,
+    SnapshotExecuteRequest,
+    SnapshotListResponse,
+    SnapshotResponse,
 )
+from services.network.snapshots import (
+    SnapshotComparisonService,
+    SnapshotExecutionService,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/network/snapshots", tags=["snapshots"])
 
@@ -43,7 +49,7 @@ async def execute_snapshot(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Execution failed: {str(e)}")
+        raise_internal_server_error(logger, "Snapshot execution failed", e)
 
 
 @router.get("", response_model=List[SnapshotListResponse])
@@ -95,7 +101,7 @@ async def compare_snapshots(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Comparison failed: {str(e)}")
+        raise_internal_server_error(logger, "Snapshot comparison failed", e)
 
 
 @router.delete("/{snapshot_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -132,6 +138,4 @@ async def delete_snapshot_with_files(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to delete snapshot: {str(e)}"
-        )
+        raise_internal_server_error(logger, "Failed to delete snapshot", e)

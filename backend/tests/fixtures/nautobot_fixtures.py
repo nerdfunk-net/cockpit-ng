@@ -5,7 +5,7 @@ This module provides reusable test data for Nautobot GraphQL and REST API respon
 All fixtures follow the actual Nautobot API response structure.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 # =============================================================================
 # GraphQL Response Fixtures

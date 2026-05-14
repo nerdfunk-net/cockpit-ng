@@ -8,15 +8,15 @@ This task is a thin wrapper that:
 4. Aggregates results
 """
 
-from celery_app import celery_app
-import logging
+import asyncio
 import csv
 import io
-import asyncio
-from typing import Optional, Dict, Any, List
+import logging
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 import service_factory
+from celery_app import celery_app
 from services.nautobot.devices.import_service import DeviceImportService
 
 logger = logging.getLogger(__name__)

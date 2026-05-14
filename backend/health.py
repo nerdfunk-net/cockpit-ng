@@ -2,9 +2,10 @@
 Health check endpoint for monitoring container health.
 """
 
-from fastapi import APIRouter
-from datetime import datetime
 import os
+from datetime import datetime
+
+from fastapi import APIRouter
 
 router = APIRouter()
 

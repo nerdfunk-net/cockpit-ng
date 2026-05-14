@@ -6,12 +6,13 @@ extracted from the /api/templates/advanced-render endpoint.
 """
 
 from __future__ import annotations
+
 import json
 import logging
 import os
 import re
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 import yaml
 from jinja2 import Environment, TemplateError, UndefinedError
@@ -99,10 +100,10 @@ class AgentTemplateRenderService:
         # Fetch inventory devices if inventory_id provided
         if inventory_id:
             try:
+                import service_factory as _sf
                 from utils.inventory_converter import (
                     convert_saved_inventory_to_operations,
                 )
-                import service_factory as _sf
 
                 persistence_service = _sf.build_inventory_persistence_service()
                 inventory_service = _sf.build_inventory_service()
@@ -353,10 +354,10 @@ class AgentTemplateRenderService:
         Reads the file from the local clone using the same pattern as
         the /api/git/{repo_id}/file-content endpoint.
         """
+        from services.settings.git.paths import repo_path as git_repo_path
         from services.settings.git.repository_service import (
             GitRepositoryService as GitRepositoryManager,
         )
-        from services.settings.git.paths import repo_path as git_repo_path
 
         metadata = var_def.get("metadata", {})
         repo_id = metadata.get("yaml_file_id")
@@ -387,7 +388,7 @@ class AgentTemplateRenderService:
         if not os.path.isfile(full_path):
             raise ValueError("YAML file not found: %s" % file_path)
 
-        with open(full_path, "r", encoding="utf-8") as f:
+        with open(full_path, encoding="utf-8") as f:
             content = f.read()
 
         return yaml.safe_load(content)

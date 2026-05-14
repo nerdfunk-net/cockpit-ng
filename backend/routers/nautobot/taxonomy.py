@@ -3,12 +3,15 @@ Nautobot device taxonomy endpoints: platforms, device types, manufacturers, role
 """
 
 from __future__ import annotations
+
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends
 
 from core.auth import require_permission
-from services.nautobot.client import NautobotService
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_nautobot_service
+from services.nautobot.client import NautobotService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-taxonomy"])
@@ -27,10 +30,7 @@ async def get_nautobot_roles(
         result = await nautobot_service.rest_request("extras/roles/")
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch roles: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch roles: ", e)
 
 
 @router.get("/roles/devices", summary="🔶 REST: List Device Roles")
@@ -45,10 +45,7 @@ async def get_nautobot_device_roles(
         )
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch device roles: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch device roles: ", e)
 
 
 @router.get("/roles/vm", summary="🔶 REST: List Virtual Machine Roles")
@@ -63,10 +60,7 @@ async def get_nautobot_vm_roles(
         )
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch VM roles: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch VM roles: ", e)
 
 
 @router.get("/roles/prefix", summary="🔶 REST: List Prefix Roles")
@@ -81,10 +75,7 @@ async def get_nautobot_prefix_roles(
         )
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch prefix roles: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch prefix roles: ", e)
 
 
 @router.get("/roles/ipaddress", summary="🔶 REST: List IP Address Roles")
@@ -99,10 +90,7 @@ async def get_nautobot_ipaddress_roles(
         )
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch IP address roles: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch IP address roles: ", e)
 
 
 @router.get("/platforms", summary="🔶 REST: List Platforms")
@@ -115,10 +103,7 @@ async def get_nautobot_platforms(
         result = await nautobot_service.rest_request("dcim/platforms/?limit=0")
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch platforms: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch platforms: ", e)
 
 
 @router.get("/device-types", summary="🔶 REST: List Device Types")
@@ -131,10 +116,7 @@ async def get_nautobot_device_types(
         result = await nautobot_service.rest_request("dcim/device-types/?limit=0")
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch device types: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch device types: ", e)
 
 
 @router.get("/manufacturers", summary="🔶 REST: List Manufacturers")
@@ -147,7 +129,4 @@ async def get_nautobot_manufacturers(
         result = await nautobot_service.rest_request("dcim/manufacturers/?limit=0")
         return result.get("results", [])
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch manufacturers: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch manufacturers: ", e)

@@ -9,12 +9,13 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_checkmk_problems_service
 from models.checkmk import (
     CheckMKAcknowledgeHostRequest,
     CheckMKAcknowledgeServiceRequest,
-    CheckMKDowntimeRequest,
     CheckMKCommentRequest,
+    CheckMKDowntimeRequest,
     CheckMKOperationResponse,
 )
 from services.checkmk.exceptions import CheckMKClientError
@@ -42,12 +43,11 @@ async def acknowledge_host_problem(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error acknowledging problem for host %s: %s", request.host_name, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to acknowledge problem for host {request.host_name}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to acknowledge problem for host {request.host_name}",
+            e,
+            extra={"host_name": request.host_name},
         )
 
 
@@ -70,10 +70,8 @@ async def acknowledge_service_problem(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error acknowledging service problem: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to acknowledge service problem: {str(e)}",
+        raise_internal_server_error(
+            logger, "Failed to acknowledge service problem: ", e
         )
 
 
@@ -94,10 +92,8 @@ async def delete_acknowledgment(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting acknowledgment %s: %s", ack_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete acknowledgment {ack_id}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to delete acknowledgment {ack_id}", e
         )
 
 
@@ -120,12 +116,11 @@ async def create_host_downtime(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error creating downtime for host %s: %s", request.host_name, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create downtime for host {request.host_name}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to create downtime for host {request.host_name}",
+            e,
+            extra={"host_name": request.host_name},
         )
 
 
@@ -148,10 +143,8 @@ async def add_host_comment(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error adding comment to host %s: %s", request.host_name, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to add comment to host {request.host_name}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to add comment to host {request.host_name}", e
         )
 
 
@@ -174,8 +167,4 @@ async def add_service_comment(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error adding comment to service: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to add comment to service: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to add comment to service: ", e)

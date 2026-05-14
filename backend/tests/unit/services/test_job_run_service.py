@@ -5,13 +5,13 @@ All tests run offline — no database required.
 
 from __future__ import annotations
 
+import json
 from unittest.mock import MagicMock
 
 import pytest
 
 from services.jobs.job_run_service import JobRunService
 from tests.mocks.fake_job_repositories import FakeJobRunRepository
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -318,3 +318,117 @@ class TestCleanup:
         assert 1 in ids
         assert 2 in ids
         assert len(result) == 2
+
+
+# ===========================================================================
+# get_dashboard_stats (repository-backed aggregates)
+# ===========================================================================
+
+
+@pytest.mark.unit
+class TestGetDashboardStats:
+    def test_aggregates_job_counts_and_backup_payloads(
+        self,
+        svc: JobRunService,
+        run_repo: FakeJobRunRepository,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            run_repo,
+            "aggregate_status_counts",
+            lambda: {
+                "total": 12,
+                "completed": 7,
+                "failed": 2,
+                "running": 1,
+            },
+        )
+        monkeypatch.setattr(
+            run_repo,
+            "recent_backup_results",
+            lambda days=30: [
+                json.dumps({"devices_backed_up": 10, "devices_failed": 2}),
+                '{"devices_backed_up": 3, "devices_failed": 1}',
+            ],
+        )
+
+        out = svc.get_dashboard_stats()
+
+        assert out["job_runs"] == {
+            "total": 12,
+            "completed": 7,
+            "failed": 2,
+            "running": 1,
+        }
+        assert out["backup_devices"] == {
+            "total_devices": 16,
+            "successful_devices": 13,
+            "failed_devices": 3,
+        }
+
+    def test_null_sums_treated_as_zero(
+        self,
+        svc: JobRunService,
+        run_repo: FakeJobRunRepository,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            run_repo,
+            "aggregate_status_counts",
+            lambda: {"total": 0, "completed": 0, "failed": 0, "running": 0},
+        )
+        monkeypatch.setattr(run_repo, "recent_backup_results", lambda days=30: [])
+
+        out = svc.get_dashboard_stats()
+
+        assert out["job_runs"]["total"] == 0
+        assert out["job_runs"]["completed"] == 0
+        assert out["backup_devices"]["total_devices"] == 0
+
+    def test_skips_invalid_json_and_none_results(
+        self,
+        svc: JobRunService,
+        run_repo: FakeJobRunRepository,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            run_repo,
+            "aggregate_status_counts",
+            lambda: {"total": 1, "completed": 1, "failed": 0, "running": 0},
+        )
+        monkeypatch.setattr(
+            run_repo,
+            "recent_backup_results",
+            lambda days=30: [
+                None,
+                "not-json",
+                json.dumps({"devices_backed_up": 4, "devices_failed": 0}),
+            ],
+        )
+
+        out = svc.get_dashboard_stats()
+
+        assert out["backup_devices"]["successful_devices"] == 4
+        assert out["backup_devices"]["failed_devices"] == 0
+
+    def test_accepts_dict_backup_payload(
+        self,
+        svc: JobRunService,
+        run_repo: FakeJobRunRepository,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            run_repo,
+            "aggregate_status_counts",
+            lambda: {"total": 1, "completed": 1, "failed": 0, "running": 0},
+        )
+        monkeypatch.setattr(
+            run_repo,
+            "recent_backup_results",
+            lambda days=30: [{"devices_backed_up": 2, "devices_failed": 1}],
+        )
+
+        out = svc.get_dashboard_stats()
+
+        assert out["backup_devices"]["successful_devices"] == 2
+        assert out["backup_devices"]["failed_devices"] == 1

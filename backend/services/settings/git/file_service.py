@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 
 import yaml
 from fastapi import HTTPException, status
-from git import InvalidGitRepositoryError, GitCommandError
+from git import GitCommandError, InvalidGitRepositoryError
 
 from services.settings.git.paths import repo_path as git_repo_path
 from services.settings.git.shared_utils import get_git_repo_by_id, git_repo_manager
@@ -50,7 +50,7 @@ class GitFileService:
 
             structured_files = []
 
-            for root, dirs, files in os.walk(repo_path):
+            for root, _dirs, files in os.walk(repo_path):
                 if ".git" in root:
                     continue
 
@@ -396,7 +396,7 @@ class GitFileService:
                 )
 
             try:
-                with open(file_path_resolved, "r", encoding="utf-8") as f:
+                with open(file_path_resolved, encoding="utf-8") as f:
                     content = f.read()
             except UnicodeDecodeError:
                 raise HTTPException(
@@ -462,7 +462,7 @@ class GitFileService:
                 )
 
             try:
-                with open(file_path_resolved, "r", encoding="utf-8") as f:
+                with open(file_path_resolved, encoding="utf-8") as f:
                     content = f.read()
             except UnicodeDecodeError:
                 raise HTTPException(
@@ -569,7 +569,7 @@ class GitFileService:
 
                 dirs.sort(key=lambda x: x[0].lower())
 
-                for dir_name, dir_full_path, dir_rel_path in dirs:
+                for _dir_name, dir_full_path, dir_rel_path in dirs:
                     subtree = build_tree(dir_full_path, dir_rel_path)
                     if subtree:
                         children.append(subtree)
@@ -755,7 +755,7 @@ class GitFileService:
                 return {"success": True, "data": {"files": [], "total_count": 0}}
 
             csv_files = []
-            for root, dirs, files in os.walk(repo_path):
+            for root, _dirs, files in os.walk(repo_path):
                 if ".git" in root:
                     continue
                 rel_root = os.path.relpath(root, repo_path)
@@ -841,7 +841,7 @@ class GitFileService:
                 )
 
             try:
-                with open(file_path_resolved, "r", encoding="utf-8") as f:
+                with open(file_path_resolved, encoding="utf-8") as f:
                     content = f.read()
             except UnicodeDecodeError:
                 raise HTTPException(

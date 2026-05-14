@@ -5,10 +5,11 @@ Runs every minute via Celery Beat.
 Moved from job_tasks.py to improve code organization.
 """
 
-from celery import shared_task
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Any, Dict
+
+from celery import shared_task
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ def check_job_schedules_task() -> Dict[str, Any]:
         logger.debug("Checking for due job schedules...")
 
         import service_factory
+
         from .job_dispatcher import dispatch_job
 
         _schedule_svc = service_factory.build_job_schedule_service()

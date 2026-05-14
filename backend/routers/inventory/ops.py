@@ -11,10 +11,11 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import (
+    get_device_query_service,
     get_inventory_persistence_service,
     get_inventory_service,
-    get_device_query_service,
 )
 from models.inventory import (
     GroupsResponse,
@@ -52,11 +53,7 @@ async def get_all_groups(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error fetching inventory groups: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch inventory groups: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to fetch inventory groups: ", e)
 
 
 @router.post("/rename-group", response_model=RenameGroupResponse)
@@ -92,11 +89,7 @@ async def rename_group(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error renaming group: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to rename group: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to rename group: ", e)
 
 
 @router.post("/preview", response_model=InventoryPreviewResponse)
@@ -150,11 +143,7 @@ async def preview_inventory(
         )
 
     except Exception as e:
-        logger.error("Error previewing inventory: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to preview inventory: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to preview inventory: ", e)
 
 
 @router.get("/field-options")
@@ -191,11 +180,7 @@ async def get_field_options(
         }
 
     except Exception as e:
-        logger.error("Error getting field options: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get field options: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get field options: ", e)
 
 
 @router.get("/custom-fields")
@@ -209,11 +194,7 @@ async def get_custom_fields(
         return {"custom_fields": custom_fields}
 
     except Exception as e:
-        logger.error("Error getting custom fields: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get custom fields: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get custom fields: ", e)
 
 
 @router.get("/field-values/{field_name}")
@@ -232,11 +213,7 @@ async def get_field_values(
         }
 
     except Exception as e:
-        logger.error("Error getting field values for '%s': %s", field_name, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get field values: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get field values: ", e)
 
 
 @router.get("/resolve-devices/{inventory_id}")
@@ -305,9 +282,11 @@ async def resolve_inventory_to_devices(
         logger.error(
             "Error resolving inventory '%s': %s", inventory_id, e, exc_info=True
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to resolve inventory: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            "Failed to resolve inventory",
+            e,
+            extra={"inventory_id": inventory_id},
         )
 
 
@@ -414,9 +393,11 @@ async def resolve_inventory_to_devices_detailed(
         logger.error(
             "Error resolving detailed inventory %s: %s", inventory_id, e, exc_info=True
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to resolve detailed inventory: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            "Failed to resolve detailed inventory",
+            e,
+            extra={"inventory_id": inventory_id},
         )
 
 
@@ -461,8 +442,4 @@ async def analyze_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error analyzing inventory %s: %s", inventory_id, e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to analyze inventory: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to analyze inventory: ", e)

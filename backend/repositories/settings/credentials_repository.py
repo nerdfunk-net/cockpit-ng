@@ -2,10 +2,11 @@
 Credentials repository for encrypted credential storage.
 """
 
-from typing import Optional, List
-from repositories.base import BaseRepository
-from core.models import Credential
+from typing import List, Optional
+
 from core.database import get_db_session
+from core.models import Credential
+from repositories.base import BaseRepository
 
 
 class CredentialsRepository(BaseRepository[Credential]):

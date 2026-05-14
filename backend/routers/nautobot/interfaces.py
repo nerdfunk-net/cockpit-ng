@@ -3,15 +3,18 @@ Nautobot DCIM Interface endpoints - CRUD operations for device interfaces.
 """
 
 from __future__ import annotations
+
 import logging
 from urllib.parse import urlencode
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
-from services.nautobot.common.exceptions import NautobotNotFoundError
-from dependencies import get_nautobot_service
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_audit_log_service, get_nautobot_service
+from services.audit.audit_log_service import AuditLogService
 from services.nautobot.client import NautobotService
-from repositories.audit_log_repository import audit_log_repo
+from services.nautobot.common.exceptions import NautobotNotFoundError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/dcim/interfaces", tags=["nautobot-dcim-interfaces"])
@@ -90,11 +93,7 @@ async def get_dcim_interfaces(
         return result
 
     except Exception as e:
-        logger.error("Failed to get DCIM interfaces: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve DCIM interfaces: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve DCIM interfaces: ", e)
 
 
 @router.get("/{interface_id}", summary="🔶 REST: Get Device Interface")
@@ -122,11 +121,7 @@ async def get_dcim_interface(
             detail=f"DCIM interface not found: {interface_id}",
         )
     except Exception as e:
-        logger.error("Failed to get DCIM interface %s: %s", interface_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve DCIM interface: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to retrieve DCIM interface: ", e)
 
 
 @router.post("", summary="🔶 REST: Create Device Interface")
@@ -134,6 +129,7 @@ async def create_dcim_interface(
     interface_data: dict,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Create a new interface in Nautobot DCIM.
@@ -190,7 +186,7 @@ async def create_dcim_interface(
             interface_data.get("device"),
         )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-interface-created",
@@ -210,11 +206,7 @@ async def create_dcim_interface(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to create DCIM interface: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create DCIM interface: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create DCIM interface: ", e)
 
 
 @router.put("/{interface_id}", summary="🔶 REST: Update Device Interface (Full)")
@@ -224,6 +216,7 @@ async def update_dcim_interface(
     interface_data: dict,
     current_user: dict = Depends(require_permission("nautobot.devices", "write")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Update an existing interface in Nautobot DCIM.
@@ -259,7 +252,7 @@ async def update_dcim_interface(
 
         logger.info("Updated interface %s in Nautobot DCIM", interface_id)
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-interface-updated",
@@ -278,11 +271,7 @@ async def update_dcim_interface(
             detail=f"DCIM interface not found: {interface_id}",
         )
     except Exception as e:
-        logger.error("Failed to update DCIM interface %s: %s", interface_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update DCIM interface: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update DCIM interface: ", e)
 
 
 @router.delete("/{interface_id}", summary="🔶 REST: Delete Device Interface")
@@ -290,6 +279,7 @@ async def delete_dcim_interface(
     interface_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "delete")),
     nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Delete an interface from Nautobot DCIM.
@@ -303,7 +293,7 @@ async def delete_dcim_interface(
 
         logger.info("Deleted interface %s from Nautobot DCIM", interface_id)
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("sub"),
             user_id=current_user.get("user_id"),
             event_type="nautobot-interface-deleted",
@@ -322,8 +312,4 @@ async def delete_dcim_interface(
             detail=f"DCIM interface not found: {interface_id}",
         )
     except Exception as e:
-        logger.error("Failed to delete DCIM interface %s: %s", interface_id, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete DCIM interface: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete DCIM interface: ", e)

@@ -3,20 +3,23 @@ Job Schedule Management Router
 API endpoints for managing scheduled jobs via Celery Beat
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Optional
-from datetime import datetime, timezone
-from core.auth import verify_token, require_permission
-from dependencies import get_job_schedule_service
-from services.jobs.job_schedule_service import JobScheduleService
-from models.jobs import (
-    JobScheduleCreate,
-    JobScheduleUpdate,
-    JobScheduleResponse,
-    JobExecutionRequest,
-)
 import logging
-from repositories.audit_log_repository import audit_log_repo
+from datetime import datetime, timezone
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from core.auth import require_permission, verify_token
+from core.safe_http_errors import raise_internal_server_error
+from dependencies import get_audit_log_service, get_job_schedule_service
+from models.jobs import (
+    JobExecutionRequest,
+    JobScheduleCreate,
+    JobScheduleResponse,
+    JobScheduleUpdate,
+)
+from services.audit.audit_log_service import AuditLogService
+from services.jobs.job_schedule_service import JobScheduleService
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +31,7 @@ async def create_job_schedule(
     job_data: JobScheduleCreate,
     current_user: dict = Depends(verify_token),
     job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """
     Create a new job schedule
@@ -71,7 +75,7 @@ async def create_job_schedule(
             job_parameters=job_data.job_parameters,
         )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="job-schedule-created",
@@ -90,11 +94,7 @@ async def create_job_schedule(
         return JobScheduleResponse(**job_schedule)
 
     except Exception as e:
-        logger.error("Error creating job schedule: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create job schedule: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to create job schedule: ", e)
 
 
 @router.get("", response_model=List[JobScheduleResponse])
@@ -125,11 +125,7 @@ async def list_job_schedules(
         return [JobScheduleResponse(**job) for job in jobs]
 
     except Exception as e:
-        logger.error("Error listing job schedules: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list job schedules: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to list job schedules: ", e)
 
 
 @router.get("/{job_id}", response_model=JobScheduleResponse)
@@ -159,11 +155,7 @@ async def get_job_schedule(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting job schedule: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get job schedule: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get job schedule: ", e)
 
 
 @router.put("/{job_id}", response_model=JobScheduleResponse)
@@ -225,11 +217,7 @@ async def update_job_schedule(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error updating job schedule: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update job schedule: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to update job schedule: ", e)
 
 
 @router.delete("/{job_id}")
@@ -237,6 +225,7 @@ async def delete_job_schedule(
     job_id: int,
     current_user: dict = Depends(verify_token),
     job_schedule_service: JobScheduleService = Depends(get_job_schedule_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
     """Delete a job schedule"""
     try:
@@ -280,7 +269,7 @@ async def delete_job_schedule(
                 detail="Failed to delete job schedule",
             )
 
-        audit_log_repo.create_log(
+        audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="job-schedule-deleted",
@@ -301,11 +290,7 @@ async def delete_job_schedule(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error deleting job schedule: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete job schedule: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to delete job schedule: ", e)
 
 
 @router.post("/execute")
@@ -390,11 +375,7 @@ async def execute_job(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error executing job: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to execute job: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to execute job: ", e)
 
 
 @router.get("/debug/scheduler-status")
@@ -502,11 +483,7 @@ async def get_scheduler_debug_status(
         }
 
     except Exception as e:
-        logger.error("Error getting scheduler debug status: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get scheduler status: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get scheduler status: ", e)
 
 
 @router.post("/debug/recalculate-next-runs")
@@ -528,8 +505,4 @@ async def recalculate_all_next_runs(
         }
 
     except Exception as e:
-        logger.error("Error recalculating next runs: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to recalculate next runs: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to recalculate next runs: ", e)

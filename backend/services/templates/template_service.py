@@ -5,16 +5,17 @@ All method signatures and return types are preserved.
 """
 
 from __future__ import annotations
+
 import hashlib
 import json
 import logging
 from typing import Any, Dict, List, Optional
 
+from core.models import Template, TemplateVersion
 from repositories.settings.template_repository import (
     TemplateRepository,
     TemplateVersionRepository,
 )
-from core.models import Template, TemplateVersion
 
 logger = logging.getLogger(__name__)
 
@@ -299,7 +300,7 @@ class TemplateService:
     ) -> str:
         """Render a template using Jinja2 with provided data."""
         try:
-            from jinja2 import Environment, BaseLoader
+            from jinja2 import BaseLoader, Environment
 
             template = self.get_template_by_name(template_name)
             if not template:
@@ -398,6 +399,32 @@ class TemplateService:
         except Exception as e:
             logger.error("Template database health check failed: %s", e)
             return {"status": "unhealthy", "error": str(e)}
+
+    def mark_git_templates_sync_metadata(
+        self,
+        template_ids: List[int],
+        *,
+        sync_status: str,
+        username: Optional[str] = None,
+    ) -> None:
+        """Update last_sync and sync_status for git-sourced templates after a mirror sync."""
+        from datetime import datetime, timezone
+
+        repo = TemplateRepository()
+        now = datetime.now(timezone.utc)
+        for tid in template_ids:
+            try:
+                obj = repo.get_by_id(tid)
+                if not obj or obj.source != "git":
+                    continue
+                if username and getattr(obj, "scope", None) == "private":
+                    if obj.created_by != username:
+                        continue
+                repo.update(tid, last_sync=now, sync_status=sync_status)
+            except Exception as exc:
+                logger.warning(
+                    "Could not update sync metadata for template %s: %s", tid, exc
+                )
 
     # ------------------------------------------------------------------
     # Private helpers

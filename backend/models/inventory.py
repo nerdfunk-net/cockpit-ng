@@ -3,9 +3,10 @@ Inventory models for request/response data.
 """
 
 from __future__ import annotations
-from typing import List, Optional
-from pydantic import BaseModel, Field
 
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 # ============================================================================
 # Database CRUD models (PostgreSQL-backed inventories)
@@ -102,7 +103,7 @@ class LogicalOperation(BaseModel):
 
     operation_type: str = Field(..., description="Type of operation: AND, OR, NOT")
     conditions: List[LogicalCondition] = Field(default_factory=list)
-    nested_operations: List["LogicalOperation"] = Field(default_factory=list)
+    nested_operations: List[LogicalOperation] = Field(default_factory=list)
 
 
 # Update forward references

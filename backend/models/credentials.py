@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Optional
+
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 ALLOWED_TYPES = {"ssh", "tacacs", "generic", "token", "ssh_key"}

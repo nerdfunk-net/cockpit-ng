@@ -5,17 +5,17 @@ Tests IPManager, InterfaceManager, and DeviceManager in isolation.
 
 import pytest
 
-from services.nautobot.managers.ip_manager import IPManager
-from services.nautobot.managers.interface_manager import InterfaceManager
-from services.nautobot.managers.device_manager import DeviceManager
-from services.nautobot.resolvers.device_resolver import DeviceResolver
-from services.nautobot.resolvers.network_resolver import NetworkResolver
-from services.nautobot.resolvers.metadata_resolver import MetadataResolver
 from services.nautobot.common.exceptions import NautobotAPIError
+from services.nautobot.managers.device_manager import DeviceManager
+from services.nautobot.managers.interface_manager import InterfaceManager
+from services.nautobot.managers.ip_manager import IPManager
+from services.nautobot.resolvers.device_resolver import DeviceResolver
+from services.nautobot.resolvers.metadata_resolver import MetadataResolver
+from services.nautobot.resolvers.network_resolver import NetworkResolver
 from tests.mocks import (
-    FakeNautobotService,
-    STATUS_ACTIVE_ID,
     NS_GLOBAL_ID,
+    STATUS_ACTIVE_ID,
+    FakeNautobotService,
 )
 
 DEVICE_ID = "ee000000-0000-0000-0003-000000000001"

@@ -46,7 +46,7 @@ class TemplateScanService:
 
     def _parse_yaml_file(self, yaml_file: Path) -> ImportableTemplateInfo | None:
         try:
-            with open(yaml_file, "r", encoding="utf-8") as fh:
+            with open(yaml_file, encoding="utf-8") as fh:
                 data = yaml.safe_load(fh)
 
             if not isinstance(data, dict):

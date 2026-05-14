@@ -9,8 +9,9 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_checkmk_monitoring_service
-from models.checkmk import CheckMKServiceQueryRequest, CheckMKOperationResponse
+from models.checkmk import CheckMKOperationResponse, CheckMKServiceQueryRequest
 from services.checkmk.exceptions import CheckMKClientError
 
 logger = logging.getLogger(__name__)
@@ -36,11 +37,7 @@ async def get_all_monitored_hosts(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting monitored hosts: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get monitored hosts: {str(e)}",
-        )
+        raise_internal_server_error(logger, "Failed to get monitored hosts: ", e)
 
 
 @router.get("/monitoring/hosts/{hostname}", response_model=CheckMKOperationResponse)
@@ -64,10 +61,8 @@ async def get_monitored_host(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting monitored host %s: %s", hostname, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get monitored host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to get monitored host {hostname}", e
         )
 
 
@@ -93,10 +88,8 @@ async def get_host_services(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting services for host %s: %s", hostname, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get services for host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger, f"Failed to get services for host {hostname}", e
         )
 
 
@@ -127,10 +120,9 @@ async def show_service(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error showing service %s for host %s: %s", service, hostname, str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to show service {service} for host {hostname}: {str(e)}",
+        raise_internal_server_error(
+            logger,
+            f"Failed to show service {service} for host {hostname}",
+            e,
+            extra={"hostname": hostname, "service": service},
         )

@@ -10,19 +10,20 @@ The main facade class NautobotToCheckMKService provides a unified interface
 to all sync operations while delegating to specialized service modules.
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
-from .queries import DeviceQueryService
-from .comparison import DeviceComparisonService
-from .operations import DeviceSyncOperations
 from models.nb2cmk import (
+    DefaultSiteResponse,
+    DeviceComparison,
     DeviceList,
     DeviceListWithStatus,
-    DeviceComparison,
     DeviceOperationResult,
     DeviceUpdateResult,
-    DefaultSiteResponse,
 )
+
+from .comparison import DeviceComparisonService
+from .operations import DeviceSyncOperations
+from .queries import DeviceQueryService
 
 
 class NautobotToCheckMKService:

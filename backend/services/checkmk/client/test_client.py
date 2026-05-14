@@ -5,9 +5,10 @@ Test script for CheckMK API Client
 Tests the client against the actual CheckMK API.
 """
 
-import sys
 import logging
-from services.checkmk.client import CheckMKClient, CheckMKAPIError
+import sys
+
+from services.checkmk.client import CheckMKAPIError, CheckMKClient
 
 # Setup logging
 logging.basicConfig(

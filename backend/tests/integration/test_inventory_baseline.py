@@ -28,8 +28,8 @@ Architecture:
 """
 
 import pytest
-from utils.inventory_converter import tree_to_operations
 
+from utils.inventory_converter import tree_to_operations
 
 # =============================================================================
 # Integration Tests - Basic Filtering with Baseline Data

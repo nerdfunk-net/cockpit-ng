@@ -9,8 +9,9 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from services.nautobot import NautobotService
-    from ..resolvers.network_resolver import NetworkResolver
+
     from ..resolvers.metadata_resolver import MetadataResolver
+    from ..resolvers.network_resolver import NetworkResolver
     from .ip_manager import IPManager
 
 logger = logging.getLogger(__name__)

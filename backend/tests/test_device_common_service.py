@@ -4,10 +4,12 @@ Unit tests for DeviceCommonService.
 Tests all shared utility methods used by import and update services.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from services.nautobot.devices.common import DeviceCommonService
+
+import pytest
+
 from services.nautobot import NautobotService
+from services.nautobot.devices.common import DeviceCommonService
 
 
 @pytest.fixture

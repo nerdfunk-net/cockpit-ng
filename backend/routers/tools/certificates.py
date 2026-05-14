@@ -5,19 +5,21 @@ This router handles scanning for certificates and adding them to the system CA s
 """
 
 from __future__ import annotations
+
 import logging
-import subprocess
 import shutil
+import subprocess
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from core.auth import require_permission
+from core.safe_http_errors import raise_internal_server_error
 from models.tools import (
-    CertificateInfo,
-    ScanResponse,
     AddCertificateRequest,
     AddCertificateResponse,
+    CertificateInfo,
+    ScanResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,13 +31,15 @@ SYSTEM_CA_DIR = Path("/usr/local/share/ca-certificates")
 
 
 @router.get("/scan", response_model=ScanResponse)
-async def scan_certificates(
+def scan_certificates(
     current_user: dict = Depends(require_permission("settings.nautobot", "read")),
 ) -> ScanResponse:
     """
     Scan the config/certs directory for .crt files.
 
     Returns a list of certificate files found in the directory.
+
+    Sync route — blocking filesystem reads run in Starlette's thread pool.
     """
     try:
         certs_dir = CONFIG_CERTS_DIR.resolve()
@@ -79,10 +83,7 @@ async def scan_certificates(
         )
     except Exception as e:
         logger.error("Error scanning certificates: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to scan certificates: {e}",
-        )
+        raise_internal_server_error(logger, "Failed to scan certificates", e)
 
 
 @router.post("/upload")
@@ -149,14 +150,11 @@ async def upload_certificate(
         raise
     except Exception as e:
         logger.error("Error uploading certificate: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload certificate: {e}",
-        )
+        raise_internal_server_error(logger, "Failed to upload certificate", e)
 
 
 @router.post("/add-to-system", response_model=AddCertificateResponse)
-async def add_certificate_to_system(
+def add_certificate_to_system(
     request: AddCertificateRequest,
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ) -> AddCertificateResponse:
@@ -168,6 +166,9 @@ async def add_certificate_to_system(
     2. Runs update-ca-certificates to update the system trust store
 
     Requires appropriate system permissions (typically root/sudo).
+
+    Sync route — blocking ``subprocess.run`` (up to 60s) runs in Starlette's
+    thread pool instead of starving the asyncio event loop.
     """
     try:
         # Validate filename (prevent path traversal)
@@ -266,7 +267,7 @@ async def add_certificate_to_system(
 
 
 @router.delete("/{filename}")
-async def delete_certificate(
+def delete_certificate(
     filename: str,
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
 ) -> dict:
@@ -274,6 +275,8 @@ async def delete_certificate(
     Delete a certificate from the config/certs directory.
 
     Note: This does NOT remove the certificate from the system CA store.
+
+    Sync route — blocking filesystem unlink runs in Starlette's thread pool.
     """
     try:
         # Validate filename (prevent path traversal)
@@ -306,7 +309,4 @@ async def delete_certificate(
         raise
     except Exception as e:
         logger.error("Error deleting certificate: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete certificate: {e}",
-        )
+        raise_internal_server_error(logger, "Failed to delete certificate", e)

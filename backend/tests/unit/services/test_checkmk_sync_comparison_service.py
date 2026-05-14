@@ -13,13 +13,13 @@ a MagicMock / AsyncMock for that dependency.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from models.nb2cmk import DeviceComparison
 from services.checkmk.sync.comparison import DeviceComparisonService
 from tests.mocks import FakeCheckMKClient
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 

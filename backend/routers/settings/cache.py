@@ -6,6 +6,7 @@ and management operations. All endpoints are protected by token authentication.
 """
 
 from __future__ import annotations
+
 from fastapi import APIRouter, Depends, Query
 
 from core.auth import require_permission
