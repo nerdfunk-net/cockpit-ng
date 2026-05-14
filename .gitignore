@@ -184,6 +184,7 @@ cython_debug/
 /.vscode
 frontend/.env.local
 /frontend/.next
+/frontend/next-env.d.ts
 /frontend/node_modules
 data/settings/cockpit_settings.db
 backend/data/cache/nautobot_stats.json
