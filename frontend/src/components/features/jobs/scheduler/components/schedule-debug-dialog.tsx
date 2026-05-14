@@ -1,11 +1,36 @@
 'use client'
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { AlertTriangle, Calendar, CheckCircle2, Clock, RefreshCw, Server } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
+  AlertTriangle,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  RefreshCw,
+  Server,
+} from 'lucide-react'
 import { useSchedulerDebug } from '../hooks/use-schedule-queries'
 import { useScheduleMutations } from '../hooks/use-schedule-mutations'
 
@@ -47,7 +72,9 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-blue-600">UTC:</span>
-                  <span className="ml-2 font-mono">{new Date(debugInfo.server_time.utc).toLocaleString()}</span>
+                  <span className="ml-2 font-mono">
+                    {new Date(debugInfo.server_time.utc).toLocaleString()}
+                  </span>
                 </div>
                 <div>
                   <span className="text-blue-600">Offset:</span>
@@ -74,18 +101,28 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
                   {debugInfo.schedule_summary.active_schedules}
                 </p>
               </div>
-              <div className={`${debugInfo.schedule_summary.due_now > 0 ? 'bg-amber-50' : 'bg-gray-50'} rounded-lg p-3 text-center`}>
-                <p className={`text-xs uppercase ${debugInfo.schedule_summary.due_now > 0 ? 'text-amber-600' : 'text-gray-500'}`}>
+              <div
+                className={`${debugInfo.schedule_summary.due_now > 0 ? 'bg-amber-50' : 'bg-gray-50'} rounded-lg p-3 text-center`}
+              >
+                <p
+                  className={`text-xs uppercase ${debugInfo.schedule_summary.due_now > 0 ? 'text-amber-600' : 'text-gray-500'}`}
+                >
                   Due Now
                 </p>
-                <p className={`text-2xl font-bold ${debugInfo.schedule_summary.due_now > 0 ? 'text-amber-700' : 'text-gray-400'}`}>
+                <p
+                  className={`text-2xl font-bold ${debugInfo.schedule_summary.due_now > 0 ? 'text-amber-700' : 'text-gray-400'}`}
+                >
                   {debugInfo.schedule_summary.due_now}
                 </p>
               </div>
               <div className="bg-purple-50 rounded-lg p-3 text-center">
                 <p className="text-xs text-purple-600 uppercase">Celery</p>
-                <p className={`text-sm font-medium ${debugInfo.celery_status.includes('active') ? 'text-green-600' : 'text-red-600'}`}>
-                  {debugInfo.celery_status.includes('active') ? '✓ Active' : '✗ ' + debugInfo.celery_status}
+                <p
+                  className={`text-sm font-medium ${debugInfo.celery_status.includes('active') ? 'text-green-600' : 'text-red-600'}`}
+                >
+                  {debugInfo.celery_status.includes('active')
+                    ? '✓ Active'
+                    : '✗ ' + debugInfo.celery_status}
                 </p>
               </div>
             </div>
@@ -95,7 +132,9 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
               <div className="border border-amber-200 rounded-lg overflow-hidden">
                 <div className="bg-amber-100 px-4 py-2 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <h4 className="font-semibold text-amber-800">Due Schedules (Should Be Running)</h4>
+                  <h4 className="font-semibold text-amber-800">
+                    Due Schedules (Should Be Running)
+                  </h4>
                 </div>
                 <Table>
                   <TableHeader>
@@ -108,18 +147,27 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {debugInfo.due_schedules.map((schedule) => (
+                    {debugInfo.due_schedules.map(schedule => (
                       <TableRow key={schedule.id} className="bg-amber-50/50">
-                        <TableCell className="font-mono text-xs">{schedule.id}</TableCell>
-                        <TableCell className="font-medium">{schedule.job_identifier}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {schedule.id}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {schedule.job_identifier}
+                        </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="text-xs">{schedule.schedule_type}</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {schedule.schedule_type}
+                          </Badge>
                         </TableCell>
                         <TableCell className="font-mono text-xs">
-                          {schedule.next_run ? new Date(schedule.next_run).toLocaleString() : '-'}
+                          {schedule.next_run
+                            ? new Date(schedule.next_run).toLocaleString()
+                            : '-'}
                         </TableCell>
                         <TableCell className="text-amber-700 font-medium">
-                          {Math.abs(Math.round(schedule.seconds_until_next_run / 60))} min
+                          {Math.abs(Math.round(schedule.seconds_until_next_run / 60))}{' '}
+                          min
                         </TableCell>
                       </TableRow>
                     ))}
@@ -145,9 +193,11 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {debugInfo.upcoming_schedules.map((schedule) => (
+                    {debugInfo.upcoming_schedules.map(schedule => (
                       <TableRow key={schedule.id}>
-                        <TableCell className="font-medium">{schedule.job_identifier}</TableCell>
+                        <TableCell className="font-medium">
+                          {schedule.job_identifier}
+                        </TableCell>
                         <TableCell className="text-xs text-gray-600">
                           {schedule.template_name || '-'}
                         </TableCell>
@@ -155,11 +205,15 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger>
-                                {schedule.next_run ? new Date(schedule.next_run).toLocaleTimeString() : '-'}
+                                {schedule.next_run
+                                  ? new Date(schedule.next_run).toLocaleTimeString()
+                                  : '-'}
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p className="text-xs">UTC: {schedule.next_run}</p>
-                                <p className="text-xs">Local: {schedule.next_run_local}</p>
+                                <p className="text-xs">
+                                  Local: {schedule.next_run_local}
+                                </p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -168,9 +222,8 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
                           {schedule.seconds_until_next_run < 60
                             ? `${schedule.seconds_until_next_run}s`
                             : schedule.seconds_until_next_run < 3600
-                            ? `${Math.round(schedule.seconds_until_next_run / 60)}m`
-                            : `${Math.round(schedule.seconds_until_next_run / 3600)}h`
-                          }
+                              ? `${Math.round(schedule.seconds_until_next_run / 60)}m`
+                              : `${Math.round(schedule.seconds_until_next_run / 3600)}h`}
                         </TableCell>
                       </TableRow>
                     ))}

@@ -19,7 +19,7 @@ export function SchedulesGrid({
   isLoading,
   hasTemplates,
   onCreateClick,
-  onEditSchedule
+  onEditSchedule,
 }: SchedulesGridProps) {
   if (isLoading) {
     return (
@@ -58,12 +58,8 @@ export function SchedulesGrid({
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {schedules.map((schedule) => (
-        <ScheduleCard
-          key={schedule.id}
-          schedule={schedule}
-          onEdit={onEditSchedule}
-        />
+      {schedules.map(schedule => (
+        <ScheduleCard key={schedule.id} schedule={schedule} onEdit={onEditSchedule} />
       ))}
     </div>
   )

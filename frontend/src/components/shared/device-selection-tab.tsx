@@ -20,7 +20,11 @@
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle2 } from 'lucide-react'
-import { DeviceSelector, type DeviceInfo, type LogicalCondition } from './device-selector'
+import {
+  DeviceSelector,
+  type DeviceInfo,
+  type LogicalCondition,
+} from './device-selector'
 
 interface DeviceSelectionTabProps {
   // Required device selector props
@@ -54,17 +58,19 @@ export function DeviceSelectionTab({
   onInventoryLoaded,
 }: DeviceSelectionTabProps) {
   // Determine alert CSS classes based on style
-  const alertClasses = alertStyle === 'success'
-    ? 'status-success'
-    : alertStyle === 'info'
-    ? 'status-info'
-    : ''
+  const alertClasses =
+    alertStyle === 'success'
+      ? 'status-success'
+      : alertStyle === 'info'
+        ? 'status-info'
+        : ''
 
-  const iconClasses = alertStyle === 'success'
-    ? 'text-green-600'
-    : alertStyle === 'info'
-    ? 'text-blue-600'
-    : ''
+  const iconClasses =
+    alertStyle === 'success'
+      ? 'text-green-600'
+      : alertStyle === 'info'
+        ? 'text-blue-600'
+        : ''
 
   return (
     <div className="space-y-6">
@@ -91,8 +97,8 @@ export function DeviceSelectionTab({
         <Alert className={alertClasses}>
           <CheckCircle2 className={`h-4 w-4 ${iconClasses}`} />
           <AlertDescription>
-            <strong>{selectedDevices.length}</strong> device{selectedDevices.length !== 1 ? 's' : ''} selected.
-            {' '}{nextStepMessage}
+            <strong>{selectedDevices.length}</strong> device
+            {selectedDevices.length !== 1 ? 's' : ''} selected. {nextStepMessage}
           </AlertDescription>
         </Alert>
       )}

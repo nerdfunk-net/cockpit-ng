@@ -12,7 +12,9 @@ interface UseRacksByLocationQueryOptions {
 
 const DEFAULT_OPTIONS: UseRacksByLocationQueryOptions = {}
 
-export function useRacksByLocationQuery({ locationId }: UseRacksByLocationQueryOptions = DEFAULT_OPTIONS) {
+export function useRacksByLocationQuery({
+  locationId,
+}: UseRacksByLocationQueryOptions = DEFAULT_OPTIONS) {
   const { apiCall } = useApi()
 
   const query = useQuery({

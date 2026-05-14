@@ -5,16 +5,24 @@ import { RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { useCheckmkPendingChangesQuery, useCheckmkChangesMutations, useCheckmkActivationStatusQuery } from '../hooks/use-checkmk-changes-query'
+import {
+  useCheckmkPendingChangesQuery,
+  useCheckmkChangesMutations,
+  useCheckmkActivationStatusQuery,
+} from '../hooks/use-checkmk-changes-query'
 import { ActivationStatusCard } from '../components/activation-status-card'
 
 export function ChangesTab() {
   const [activationId, setActivationId] = useState<string | null>(null)
-  const { data, isLoading, refetch, error, isFetching } = useCheckmkPendingChangesQuery()
-  const { activateAllChanges, activateChangesWithEtag } = useCheckmkChangesMutations((id) => setActivationId(id))
-  const { data: activationStatus, isLoading: isLoadingStatus } = useCheckmkActivationStatusQuery(activationId, {
-    enabled: !!activationId
-  })
+  const { data, isLoading, refetch, error, isFetching } =
+    useCheckmkPendingChangesQuery()
+  const { activateAllChanges, activateChangesWithEtag } = useCheckmkChangesMutations(
+    id => setActivationId(id)
+  )
+  const { data: activationStatus, isLoading: isLoadingStatus } =
+    useCheckmkActivationStatusQuery(activationId, {
+      enabled: !!activationId,
+    })
 
   const changes = data?.data?.value || []
   const etag = data?.data?.etag || ''
@@ -94,7 +102,9 @@ export function ChangesTab() {
               <Alert className="status-error">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  {error instanceof Error ? error.message : 'Failed to fetch pending changes'}
+                  {error instanceof Error
+                    ? error.message
+                    : 'Failed to fetch pending changes'}
                 </AlertDescription>
               </Alert>
             )}
@@ -116,7 +126,8 @@ export function ChangesTab() {
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-md flex items-center justify-between">
                   <div>
                     <p className="text-sm text-blue-800">
-                      <strong>{changes.length}</strong> pending change{changes.length !== 1 ? 's' : ''} found
+                      <strong>{changes.length}</strong> pending change
+                      {changes.length !== 1 ? 's' : ''} found
                     </p>
                   </div>
                   {etag && (
@@ -135,7 +146,7 @@ export function ChangesTab() {
 
                 {/* Changes List */}
                 <div className="space-y-3">
-                  {changes.map((change) => (
+                  {changes.map(change => (
                     <div
                       key={change.id}
                       className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"

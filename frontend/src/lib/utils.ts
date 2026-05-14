@@ -1,5 +1,5 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -10,10 +10,10 @@ const EMPTY_INIT: RequestInit = {}
 // API Request Helper - Always use Next.js API routes
 export async function apiRequest(endpoint: string, options: RequestInit = EMPTY_INIT) {
   if (typeof window === 'undefined') return null
-  
+
   const token = localStorage.getItem('cockpit-auth')
   const authData = token ? JSON.parse(token) : null
-  
+
   const config: RequestInit = {
     ...options,
     headers: {

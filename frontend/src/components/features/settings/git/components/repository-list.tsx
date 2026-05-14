@@ -3,7 +3,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, GitBranch, Github } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { RepositoryCard } from './repository-card'
 import type { GitRepository } from '../types'
 
@@ -72,7 +77,7 @@ export function RepositoryList({
           </div>
         ) : (
           <div className="space-y-4">
-            {repositories.map((repo) => (
+            {repositories.map(repo => (
               <RepositoryCard
                 key={repo.id}
                 repository={repo}

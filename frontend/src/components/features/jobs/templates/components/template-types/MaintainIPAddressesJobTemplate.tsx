@@ -1,15 +1,23 @@
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Network, AlertTriangle, List, Trash2, Tag, Loader2, ShieldCheck } from "lucide-react"
-import type { IpAddressStatus, IpAddressTag } from "../../types"
+} from '@/components/ui/select'
+import {
+  Network,
+  AlertTriangle,
+  List,
+  Trash2,
+  Tag,
+  Loader2,
+  ShieldCheck,
+} from 'lucide-react'
+import type { IpAddressStatus, IpAddressTag } from '../../types'
 
 interface MaintainIPAddressesJobTemplateProps {
   formIpAction: string
@@ -39,39 +47,39 @@ interface MaintainIPAddressesJobTemplateProps {
 
 const ACTION_OPTIONS = [
   {
-    value: "list",
-    label: "List",
+    value: 'list',
+    label: 'List',
     icon: List,
-    description: "Fetch and display matching IP addresses",
-    color: "text-blue-600",
+    description: 'Fetch and display matching IP addresses',
+    color: 'text-blue-600',
   },
   {
-    value: "mark",
-    label: "Mark",
+    value: 'mark',
+    label: 'Mark',
     icon: Tag,
-    description: "Mark matching IP addresses by updating status, tag or description",
-    color: "text-amber-600",
+    description: 'Mark matching IP addresses by updating status, tag or description',
+    color: 'text-amber-600',
   },
   {
-    value: "remove",
-    label: "Remove",
+    value: 'remove',
+    label: 'Remove',
     icon: Trash2,
-    description: "Permanently delete matching IP addresses from Nautobot",
-    color: "text-red-600",
+    description: 'Permanently delete matching IP addresses from Nautobot',
+    color: 'text-red-600',
   },
 ]
 
 const FILTER_TYPE_OPTIONS = [
-  { value: "__eq__", label: "= (equals)" },
-  { value: "lte",   label: "≤ (less than or equal)" },
-  { value: "lt",    label: "< (less than)" },
-  { value: "gte",   label: "≥ (greater than or equal)" },
-  { value: "gt",    label: "> (greater than)" },
-  { value: "contains", label: "contains" },
+  { value: '__eq__', label: '= (equals)' },
+  { value: 'lte', label: '≤ (less than or equal)' },
+  { value: 'lt', label: '< (less than)' },
+  { value: 'gte', label: '≥ (greater than or equal)' },
+  { value: 'gt', label: '> (greater than)' },
+  { value: 'contains', label: 'contains' },
 ]
 
 // Sentinel value meaning "no operator suffix" (equality)
-const EQUALITY_SENTINEL = "__eq__"
+const EQUALITY_SENTINEL = '__eq__'
 
 export function MaintainIPAddressesJobTemplate({
   formIpAction,
@@ -96,12 +104,11 @@ export function MaintainIPAddressesJobTemplate({
   ipTags,
   loadingMarkOptions,
 }: MaintainIPAddressesJobTemplateProps) {
-  const filterLabel =
-    formIpFilterField
-      ? formIpFilterType && formIpFilterType !== EQUALITY_SENTINEL
-        ? `${formIpFilterField}__${formIpFilterType} = "${formIpFilterValue || "…"}"`
-        : `${formIpFilterField} = "${formIpFilterValue || "…"}"`
-      : null
+  const filterLabel = formIpFilterField
+    ? formIpFilterType && formIpFilterType !== EQUALITY_SENTINEL
+      ? `${formIpFilterField}__${formIpFilterType} = "${formIpFilterValue || '…'}"`
+      : `${formIpFilterField} = "${formIpFilterValue || '…'}"`
+    : null
 
   return (
     <>
@@ -119,11 +126,11 @@ export function MaintainIPAddressesJobTemplate({
               type="button"
               onClick={() => setFormIpAction(value)}
               className={[
-                "flex flex-col items-center gap-2 rounded-lg border-2 p-3 text-sm transition-all",
+                'flex flex-col items-center gap-2 rounded-lg border-2 p-3 text-sm transition-all',
                 formIpAction === value
-                  ? "border-emerald-500 bg-emerald-50 shadow-sm"
-                  : "border-gray-200 bg-white hover:border-emerald-300 cursor-pointer",
-              ].join(" ")}
+                  ? 'border-emerald-500 bg-emerald-50 shadow-sm'
+                  : 'border-gray-200 bg-white hover:border-emerald-300 cursor-pointer',
+              ].join(' ')}
             >
               <Icon className={`h-5 w-5 ${color}`} />
               <span className="font-medium text-center leading-tight">{label}</span>
@@ -134,7 +141,7 @@ export function MaintainIPAddressesJobTemplate({
           ))}
         </div>
 
-        {formIpAction === "remove" && (
+        {formIpAction === 'remove' && (
           <div className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 p-3">
             <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
             <p className="text-sm text-red-800">
@@ -146,11 +153,13 @@ export function MaintainIPAddressesJobTemplate({
       </div>
 
       {/* Removal Options – shown only when action is "remove" */}
-      {formIpAction === "remove" && (
+      {formIpAction === 'remove' && (
         <div className="rounded-lg border border-red-200 bg-red-50/30 p-4 space-y-4">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-red-600" />
-            <Label className="text-sm font-semibold text-red-900">Removal Options</Label>
+            <Label className="text-sm font-semibold text-red-900">
+              Removal Options
+            </Label>
           </div>
 
           <div className="flex items-center space-x-3">
@@ -160,11 +169,15 @@ export function MaintainIPAddressesJobTemplate({
               onCheckedChange={setFormIpRemoveSkipAssigned}
             />
             <div>
-              <Label htmlFor="ip-remove-skip-assigned" className="text-sm text-red-900 cursor-pointer">
+              <Label
+                htmlFor="ip-remove-skip-assigned"
+                className="text-sm text-red-900 cursor-pointer"
+              >
                 Skip Assigned IP-Addresses
               </Label>
               <p className="text-xs text-red-700 mt-0.5">
-                When enabled, IP addresses that are currently assigned to an interface will be skipped and not deleted.
+                When enabled, IP addresses that are currently assigned to an interface
+                will be skipped and not deleted.
               </p>
             </div>
           </div>
@@ -172,7 +185,7 @@ export function MaintainIPAddressesJobTemplate({
       )}
 
       {/* Mark Options – shown only when action is "mark" */}
-      {formIpAction === "mark" && (
+      {formIpAction === 'mark' && (
         <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-4 space-y-4">
           <div className="flex items-center gap-2">
             <Tag className="h-4 w-4 text-amber-600" />
@@ -189,12 +202,12 @@ export function MaintainIPAddressesJobTemplate({
             {/* Status */}
             <div className="space-y-2">
               <Label htmlFor="ip-mark-status" className="text-sm text-amber-900">
-                New Status{" "}
+                New Status{' '}
                 <span className="text-muted-foreground text-xs">(optional)</span>
               </Label>
               <Select
-                value={formIpMarkStatus || "__none__"}
-                onValueChange={(v) => setFormIpMarkStatus(v === "__none__" ? "" : v)}
+                value={formIpMarkStatus || '__none__'}
+                onValueChange={v => setFormIpMarkStatus(v === '__none__' ? '' : v)}
                 disabled={loadingMarkOptions}
               >
                 <SelectTrigger
@@ -205,7 +218,7 @@ export function MaintainIPAddressesJobTemplate({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— Keep existing status —</SelectItem>
-                  {ipStatuses.map((s) => (
+                  {ipStatuses.map(s => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.name}
                     </SelectItem>
@@ -220,12 +233,12 @@ export function MaintainIPAddressesJobTemplate({
             {/* Tag */}
             <div className="space-y-2">
               <Label htmlFor="ip-mark-tag" className="text-sm text-amber-900">
-                Add Tag{" "}
+                Add Tag{' '}
                 <span className="text-muted-foreground text-xs">(optional)</span>
               </Label>
               <Select
-                value={formIpMarkTag || "__none__"}
-                onValueChange={(v) => setFormIpMarkTag(v === "__none__" ? "" : v)}
+                value={formIpMarkTag || '__none__'}
+                onValueChange={v => setFormIpMarkTag(v === '__none__' ? '' : v)}
                 disabled={loadingMarkOptions}
               >
                 <SelectTrigger
@@ -236,7 +249,7 @@ export function MaintainIPAddressesJobTemplate({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— No tag —</SelectItem>
-                  {ipTags.map((t) => (
+                  {ipTags.map(t => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name}
                     </SelectItem>
@@ -252,13 +265,13 @@ export function MaintainIPAddressesJobTemplate({
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="ip-mark-description" className="text-sm text-amber-900">
-              Update Description{" "}
+              Update Description{' '}
               <span className="text-muted-foreground text-xs">(optional)</span>
             </Label>
             <Input
               id="ip-mark-description"
               value={formIpMarkDescription}
-              onChange={(e) => setFormIpMarkDescription(e.target.value)}
+              onChange={e => setFormIpMarkDescription(e.target.value)}
               placeholder="Leave empty to keep existing description…"
               className="bg-white border-amber-200 focus:border-amber-400 focus:ring-amber-400"
             />
@@ -289,7 +302,7 @@ export function MaintainIPAddressesJobTemplate({
             <Input
               id="ip-filter-field"
               value={formIpFilterField}
-              onChange={(e) => setFormIpFilterField(e.target.value)}
+              onChange={e => setFormIpFilterField(e.target.value)}
               placeholder="e.g. cf_last_scan"
               className="bg-white border-emerald-200 focus:border-emerald-400 focus:ring-emerald-400 font-mono text-sm"
             />
@@ -329,26 +342,29 @@ export function MaintainIPAddressesJobTemplate({
             <Input
               id="ip-filter-value"
               value={formIpFilterValue}
-              onChange={(e) => setFormIpFilterValue(e.target.value)}
+              onChange={e => setFormIpFilterValue(e.target.value)}
               placeholder="e.g. 2026-02-19 or {today-14}"
               className="bg-white border-emerald-200 focus:border-emerald-400 focus:ring-emerald-400 font-mono text-sm"
             />
             <div className="flex flex-wrap gap-1">
-              {["{today}", "{today-7}", "{today-14}", "{today-30}", "{today+7}"].map((tpl) => (
-                <button
-                  key={tpl}
-                  type="button"
-                  onClick={() => setFormIpFilterValue(tpl)}
-                  className="text-xs font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition-colors"
-                >
-                  {tpl}
-                </button>
-              ))}
+              {['{today}', '{today-7}', '{today-14}', '{today-30}', '{today+7}'].map(
+                tpl => (
+                  <button
+                    key={tpl}
+                    type="button"
+                    onClick={() => setFormIpFilterValue(tpl)}
+                    className="text-xs font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition-colors"
+                  >
+                    {tpl}
+                  </button>
+                )
+              )}
             </div>
             <p className="text-xs text-emerald-700">
-              Fixed value (e.g. <code>2026-02-19</code>) or a date template. Templates are resolved at run time:
-              {" "}<code>{"{today}"}</code> = today,{" "}
-              <code>{"{today-N}"}</code> / <code>{"{today+N}"}</code> = N days before/after today.
+              Fixed value (e.g. <code>2026-02-19</code>) or a date template. Templates
+              are resolved at run time: <code>{'{today}'}</code> = today,{' '}
+              <code>{'{today-N}'}</code> / <code>{'{today+N}'}</code> = N days
+              before/after today.
             </p>
           </div>
         </div>
@@ -361,11 +377,15 @@ export function MaintainIPAddressesJobTemplate({
               onCheckedChange={setFormIpIncludeNull}
             />
             <div>
-              <Label htmlFor="ip-include-null" className="text-sm text-emerald-900 cursor-pointer">
+              <Label
+                htmlFor="ip-include-null"
+                className="text-sm text-emerald-900 cursor-pointer"
+              >
                 Include IPs where field is null
               </Label>
               <p className="text-xs text-emerald-700 mt-0.5">
-                When enabled, also includes IP addresses where the field has never been set.
+                When enabled, also includes IP addresses where the field has never been
+                set.
               </p>
             </div>
           </div>

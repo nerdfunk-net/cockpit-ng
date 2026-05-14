@@ -12,9 +12,12 @@ export function DeviceSelectionTab({
   selectedDeviceIds,
   selectedDevices,
   onDevicesSelected,
-  onInventoryLoaded
+  onInventoryLoaded,
 }: DeviceSelectionTabProps) {
-  const handleDevicesSelected = (devices: DeviceInfo[], _conditions: LogicalCondition[]) => {
+  const handleDevicesSelected = (
+    devices: DeviceInfo[],
+    _conditions: LogicalCondition[]
+  ) => {
     onDevicesSelected(devices)
   }
 

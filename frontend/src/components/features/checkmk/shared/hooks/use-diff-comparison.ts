@@ -11,42 +11,49 @@ export function useDiffComparison({ showMessage }: UseDiffComparisonProps) {
   const { apiCall } = useApi()
   const [diffResult, setDiffResult] = useState<DiffResult | null>(null)
   const [loadingDiff, setLoadingDiff] = useState(false)
-  const [deviceDiffResults, setDeviceDiffResults] = useState<Record<string, 'equal' | 'diff' | 'host_not_found'>>({})
+  const [deviceDiffResults, setDeviceDiffResults] = useState<
+    Record<string, 'equal' | 'diff' | 'host_not_found'>
+  >({})
 
-  const getDiff = useCallback(async (device: Device) => {
-    try {
-      setLoadingDiff(true)
+  const getDiff = useCallback(
+    async (device: Device) => {
+      try {
+        setLoadingDiff(true)
 
-      const response = await apiCall<DiffResult['differences']>(`nb2cmk/device/${device.id}/compare`)
+        const response = await apiCall<DiffResult['differences']>(
+          `nb2cmk/device/${device.id}/compare`
+        )
 
-      if (response) {
-        const diffData = {
-          device_id: device.id,
-          device_name: device.name,
-          differences: response,
-          timestamp: new Date().toISOString()
+        if (response) {
+          const diffData = {
+            device_id: device.id,
+            device_name: device.name,
+            differences: response,
+            timestamp: new Date().toISOString(),
+          }
+          setDiffResult(diffData)
+
+          // Store the result for table row coloring
+          setDeviceDiffResults(prev => ({
+            ...prev,
+            [device.id]: response.result,
+          }))
+
+          return diffData
+        } else {
+          showMessage(`No diff data available for ${device.name}`, 'info')
+          return null
         }
-        setDiffResult(diffData)
-
-        // Store the result for table row coloring
-        setDeviceDiffResults(prev => ({
-          ...prev,
-          [device.id]: response.result
-        }))
-
-        return diffData
-      } else {
-        showMessage(`No diff data available for ${device.name}`, 'info')
-        return null
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to get diff'
+        showMessage(`Failed to get diff for ${device.name}: ${message}`, 'error')
+        throw err
+      } finally {
+        setLoadingDiff(false)
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to get diff'
-      showMessage(`Failed to get diff for ${device.name}: ${message}`, 'error')
-      throw err
-    } finally {
-      setLoadingDiff(false)
-    }
-  }, [apiCall, showMessage])
+    },
+    [apiCall, showMessage]
+  )
 
   const parseConfigComparison = useCallback((diffResult: DiffResult) => {
     return renderConfigComparison(
@@ -62,6 +69,6 @@ export function useDiffComparison({ showMessage }: UseDiffComparisonProps) {
     deviceDiffResults,
     getDiff,
     parseConfigComparison,
-    setDiffResult
+    setDiffResult,
   }
 }

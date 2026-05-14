@@ -1,7 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle, AlertTriangle, RotateCcw, ExternalLink, ChevronDown, ChevronRight } from 'lucide-react'
+import {
+  CheckCircle,
+  AlertTriangle,
+  RotateCcw,
+  ExternalLink,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -68,20 +75,17 @@ export function CsvSummaryStep({
       : null
 
   // Support both nested `summary` shape and legacy flat shape
-  const total: number =
-    payload?.summary?.total ?? payload?.total_processed ?? 0
-  const successful: number =
-    payload?.summary?.successful ?? payload?.successful ?? 0
-  const failed: number =
-    payload?.summary?.failed ?? payload?.failed ?? 0
+  const total: number = payload?.summary?.total ?? payload?.total_processed ?? 0
+  const successful: number = payload?.summary?.successful ?? payload?.successful ?? 0
+  const failed: number = payload?.summary?.failed ?? payload?.failed ?? 0
   const skipped: number = payload?.summary?.skipped ?? 0
 
   const successes: DeviceEntry[] = payload?.successes ?? []
   const failures: DeviceEntry[] = payload?.failures ?? []
 
   const allRows: Array<DeviceEntry & { ok: boolean }> = [
-    ...successes.map((d) => ({ ...d, ok: true })),
-    ...failures.map((d) => ({ ...d, ok: false })),
+    ...successes.map(d => ({ ...d, ok: true })),
+    ...failures.map(d => ({ ...d, ok: false })),
   ]
 
   return (
@@ -186,7 +190,9 @@ export function CsvSummaryStep({
                       {row.error ? (
                         <span className="text-red-600">{row.error}</span>
                       ) : row.warnings && row.warnings.length > 0 ? (
-                        <span className="text-yellow-600">{row.warnings.join('; ')}</span>
+                        <span className="text-yellow-600">
+                          {row.warnings.join('; ')}
+                        </span>
                       ) : (
                         <span className="text-gray-400">—</span>
                       )}
@@ -221,7 +227,7 @@ export function CsvSummaryStep({
         <div className="border rounded-md overflow-hidden">
           <button
             type="button"
-            onClick={() => setShowRawJson((v) => !v)}
+            onClick={() => setShowRawJson(v => !v)}
             className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
           >
             {showRawJson ? (

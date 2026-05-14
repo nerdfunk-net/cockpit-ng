@@ -29,7 +29,7 @@ const getCookieUser = (): User | null => {
   if (typeof window === 'undefined') return null
   const userCookie = Cookies.get('cockpit_user_info')
   if (!userCookie) return null
-  
+
   try {
     return JSON.parse(userCookie)
   } catch (error) {
@@ -67,7 +67,7 @@ const removeCookies = () => {
   }
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>(set => ({
   token: null,
   user: null,
   isAuthenticated: false,
@@ -75,12 +75,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: (token: string, user: User) => {
     // Set cookies with minimal user data (excluding permissions to avoid size limit)
     setCookieToken(token)
-    setCookieUser(user)  // This now stores only essential fields
+    setCookieUser(user) // This now stores only essential fields
 
     // Update state with full user object including permissions
     set({
       token,
-      user,  // Store full user object in memory
+      user, // Store full user object in memory
       isAuthenticated: true,
     })
   },
@@ -92,10 +92,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       fetch('/api/proxy/auth/logout', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-      }).catch((error) => {
+      }).catch(error => {
         // Silently ignore errors - logout should always work client-side
         console.warn('Failed to log logout event:', error)
       })
@@ -145,7 +145,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         const response = await fetch('/api/proxy/auth/refresh', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         })

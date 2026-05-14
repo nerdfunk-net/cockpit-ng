@@ -103,12 +103,12 @@ describe('useApi', () => {
       body: formData,
     })
 
-    const fetchCall = mockFetch.mock.calls[0]
-    const callHeaders = fetchCall[1].headers
+    const fetchCall = mockFetch.mock.calls[0]!
+    const callHeaders = fetchCall[1]!.headers
 
     // FormData should not have Content-Type header (browser sets it with boundary)
     expect(callHeaders['Content-Type']).toBeUndefined()
-    expect(fetchCall[1].body).toBe(formData)
+    expect(fetchCall[1]!.body).toBe(formData)
   })
 
   it('should handle 401 unauthorized and redirect to login', async () => {
@@ -213,8 +213,8 @@ describe('useApi', () => {
     const { result } = renderHook(() => useApi())
     await result.current.apiCall('public')
 
-    const fetchCall = mockFetch.mock.calls[0]
-    const callHeaders = fetchCall[1].headers
+    const fetchCall = mockFetch.mock.calls[0]!
+    const callHeaders = fetchCall[1]!.headers
 
     expect(callHeaders.Authorization).toBeUndefined()
   })

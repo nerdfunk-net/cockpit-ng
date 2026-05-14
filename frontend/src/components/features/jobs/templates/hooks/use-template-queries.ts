@@ -149,9 +149,12 @@ export function useInventoryGroups(options: UseQueryOptions = DEFAULT_OPTIONS) {
   return useQuery({
     queryKey: queryKeys.inventory.groups(),
     queryFn: async () => {
-      const response = await apiCall<{ groups: string[] }>('/inventory/get-all-groups', {
-        method: 'GET',
-      })
+      const response = await apiCall<{ groups: string[] }>(
+        '/inventory/get-all-groups',
+        {
+          method: 'GET',
+        }
+      )
       return response?.groups ?? EMPTY_GROUPS
     },
     enabled,

@@ -16,18 +16,17 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
   const { isAuthenticated, token } = useAuthStore()
   const { isCollapsed } = useSidebar()
   const [isLoading, setIsLoading] = useState(true)
-  
+
   // Initialize session management for automatic token renewal
   useSessionManager({
     refreshBeforeExpiry: 2 * 60 * 1000, // Refresh 2 minutes before expiry
-    activityTimeout: 15 * 60 * 1000,    // Consider user inactive after 15 minutes
-    checkInterval: 30 * 1000,           // Check every 30 seconds
+    activityTimeout: 15 * 60 * 1000, // Consider user inactive after 15 minutes
+    checkInterval: 30 * 1000, // Check every 30 seconds
   })
-  
+
   // Check authentication status
   useEffect(() => {
     const initAuth = async () => {
-
       // For development, auto-login if no auth (disabled for testing)
       // await checkDevAuth()
 
@@ -37,7 +36,11 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
 
         const currentState = useAuthStore.getState()
 
-        if (typeof window !== 'undefined' && !currentState.isAuthenticated && !currentState.token) {
+        if (
+          typeof window !== 'undefined' &&
+          !currentState.isAuthenticated &&
+          !currentState.token
+        ) {
           window.location.href = '/login'
         }
       }, 500) // Increased timeout for async login
@@ -80,18 +83,18 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       <AppSidebar />
-      
+
       {/* Main Content */}
-      <div className={cn(
-        'transition-all duration-300', 
-        isCollapsed ? 'pl-16' : 'pl-64',
-        className
-      )}>
+      <div
+        className={cn(
+          'transition-all duration-300',
+          isCollapsed ? 'pl-16' : 'pl-64',
+          className
+        )}
+      >
         {/* Page Content - Cockpit Dashboard Style */}
         <main className="px-6 py-6">
-          <div className="fade-in">
-            {children}
-          </div>
+          <div className="fade-in">{children}</div>
         </main>
       </div>
     </div>
@@ -101,9 +104,7 @@ function DashboardLayoutInner({ children, className }: DashboardLayoutProps) {
 export function DashboardLayout({ children, className }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
-      <DashboardLayoutInner className={className}>
-        {children}
-      </DashboardLayoutInner>
+      <DashboardLayoutInner className={className}>{children}</DashboardLayoutInner>
     </SidebarProvider>
   )
 }

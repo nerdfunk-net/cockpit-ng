@@ -1,6 +1,12 @@
 import { Search, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { Device, TableFilters, DropdownOption, LocationItem, PaginationState } from '@/types/features/nautobot/offboard'
+import type {
+  Device,
+  TableFilters,
+  DropdownOption,
+  LocationItem,
+  PaginationState,
+} from '@/types/features/nautobot/offboard'
 import type { RefObject } from 'react'
 import { DeviceFilters } from './device-filters'
 import { DeviceTableHeader } from './device-table-header'
@@ -58,9 +64,10 @@ export function DeviceTable({
   onPageChange,
   onPageSizeChange,
   onClearFilters,
-  onReloadDevices
+  onReloadDevices,
 }: DeviceTableProps) {
-  const allSelected = devices.length > 0 && devices.every(device => selectedDevices.has(device.id))
+  const allSelected =
+    devices.length > 0 && devices.every(device => selectedDevices.has(device.id))
 
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
@@ -70,7 +77,9 @@ export function DeviceTable({
             <Search className="h-4 w-4" />
             <div>
               <h3 className="text-sm font-semibold">Devices</h3>
-              <p className="text-blue-100 text-xs">Select devices to offboard from Nautobot</p>
+              <p className="text-blue-100 text-xs">
+                Select devices to offboard from Nautobot
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-2">

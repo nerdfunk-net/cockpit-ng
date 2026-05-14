@@ -55,17 +55,15 @@ export default function AnsibleInventoryPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Inventory Builder</h1>
-            <p className="text-muted-foreground mt-2">Build dynamic device inventories using logical operations</p>
+            <p className="text-muted-foreground mt-2">
+              Build dynamic device inventories using logical operations
+            </p>
           </div>
         </div>
       </div>
 
       {/* Device Selector */}
-      <DeviceSelector
-        showActions={true}
-        showSaveLoad={true}
-        enableSelection={false}
-      />
+      <DeviceSelector showActions={true} showSaveLoad={true} enableSelection={false} />
     </div>
   )
 }

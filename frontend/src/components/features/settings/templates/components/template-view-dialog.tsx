@@ -10,10 +10,9 @@ interface TemplateViewDialogProps {
 }
 
 export function TemplateViewDialog({ templateId, onClose }: TemplateViewDialogProps) {
-  const { data: content, isLoading } = useTemplateContent(
-    templateId,
-    { enabled: templateId !== null }
-  )
+  const { data: content, isLoading } = useTemplateContent(templateId, {
+    enabled: templateId !== null,
+  })
 
   useEffect(() => {
     if (templateId !== null && !isLoading && content !== undefined) {

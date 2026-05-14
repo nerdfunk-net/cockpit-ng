@@ -47,7 +47,7 @@ export function SearchableDropdownInput<T>({
           placeholder={placeholder}
           value={dropdownState.displayValue}
           className={inputClassName}
-          onChange={(e) => {
+          onChange={e => {
             dropdownState.setSearchQuery(e.target.value)
             dropdownState.setShowDropdown(true)
           }}
@@ -57,11 +57,11 @@ export function SearchableDropdownInput<T>({
         />
         {dropdownState.showDropdown && dropdownState.filteredItems.length > 0 && (
           <div className="absolute z-[100] mt-1 w-full bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
-            {dropdownState.filteredItems.map((item) => (
+            {dropdownState.filteredItems.map(item => (
               <div
                 key={getItemKey(item)}
                 className="px-3 py-2 hover:bg-accent cursor-pointer text-sm border-b last:border-b-0"
-                onMouseDown={(e) => {
+                onMouseDown={e => {
                   e.preventDefault() // Prevent input blur
                   dropdownState.selectItem(item)
                 }}

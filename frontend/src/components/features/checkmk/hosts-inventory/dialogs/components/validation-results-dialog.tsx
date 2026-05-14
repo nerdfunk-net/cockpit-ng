@@ -1,7 +1,13 @@
 'use client'
 
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
@@ -30,7 +36,12 @@ interface ValidationRowProps {
   useAlertIcon?: boolean
 }
 
-function ValidationRow({ label, valid, issueCount, useAlertIcon = false }: ValidationRowProps) {
+function ValidationRow({
+  label,
+  valid,
+  issueCount,
+  useAlertIcon = false,
+}: ValidationRowProps) {
   const Icon = valid ? CheckCircle : useAlertIcon ? AlertCircle : XCircle
   const iconClass = valid ? 'h-4 w-4 text-green-600' : 'h-4 w-4 text-red-600'
 
@@ -49,14 +60,16 @@ function ValidationRow({ label, valid, issueCount, useAlertIcon = false }: Valid
         <Icon className={iconClass} />
         <span className="text-sm font-medium">{label}</span>
       </div>
-      <Badge variant={valid ? 'default' : 'destructive'}>
-        {badgeLabel}
-      </Badge>
+      <Badge variant={valid ? 'default' : 'destructive'}>{badgeLabel}</Badge>
     </div>
   )
 }
 
-export function ValidationResultsDialog({ open, onClose, results }: ValidationResultsDialogProps) {
+export function ValidationResultsDialog({
+  open,
+  onClose,
+  results,
+}: ValidationResultsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">

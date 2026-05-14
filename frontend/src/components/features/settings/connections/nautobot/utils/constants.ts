@@ -22,14 +22,13 @@ export const DEFAULT_NAUTOBOT_DEFAULTS: NautobotDefaults = {
   csv_quote_char: '"',
 } as const
 
-
 export const EMPTY_ARRAY: never[] = []
 
 export const CACHE_TIME = {
-  SETTINGS: 5 * 60 * 1000,  // 5 minutes
-  DEFAULTS: 5 * 60 * 1000,  // 5 minutes
-  OPTIONS: 10 * 60 * 1000,  // 10 minutes (dropdown options rarely change)
-  CUSTOM_FIELDS: 10 * 60 * 1000,  // 10 minutes
+  SETTINGS: 5 * 60 * 1000, // 5 minutes
+  DEFAULTS: 5 * 60 * 1000, // 5 minutes
+  OPTIONS: 10 * 60 * 1000, // 10 minutes (dropdown options rarely change)
+  CUSTOM_FIELDS: 10 * 60 * 1000, // 10 minutes
 } as const
 
 export const MESSAGE_TIMEOUT = 5000 as const

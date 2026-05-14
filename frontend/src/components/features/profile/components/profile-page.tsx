@@ -95,7 +95,7 @@ export function ProfilePage() {
                   showSshPassphrase: false,
                   sshKeyChanged: false,
                 }
-              },
+              }
             ),
           })
         } else {
@@ -155,7 +155,7 @@ export function ProfilePage() {
     for (let i = 0; i < 42; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length))
     }
-    setFormData((prev) => ({ ...prev, api_key: result }))
+    setFormData(prev => ({ ...prev, api_key: result }))
   }
 
   const generateCredentialId = () => {
@@ -174,27 +174,27 @@ export function ProfilePage() {
       hasStoredPassword: false,
       passwordChanged: false,
     }
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       personal_credentials: [...prev.personal_credentials, newCredential],
     }))
   }
 
   const removePersonalCredential = (id: string) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      personal_credentials: prev.personal_credentials.filter((cred) => cred.id !== id),
+      personal_credentials: prev.personal_credentials.filter(cred => cred.id !== id),
     }))
   }
 
   const updatePersonalCredential = (
     id: string,
     field: keyof PersonalCredential,
-    value: string | boolean,
+    value: string | boolean
   ) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      personal_credentials: prev.personal_credentials.map((cred) => {
+      personal_credentials: prev.personal_credentials.map(cred => {
         if (cred.id === id) {
           const updated = { ...cred, [field]: value }
           if (field === 'password') {
@@ -220,7 +220,7 @@ export function ProfilePage() {
     updatePersonalCredential(
       id,
       'isOpen',
-      !formData.personal_credentials.find((c) => c.id === id)?.isOpen,
+      !formData.personal_credentials.find(c => c.id === id)?.isOpen
     )
   }
 
@@ -228,21 +228,24 @@ export function ProfilePage() {
     updatePersonalCredential(
       id,
       'showPassword',
-      !formData.personal_credentials.find((c) => c.id === id)?.showPassword,
+      !formData.personal_credentials.find(c => c.id === id)?.showPassword
     )
   }
 
   const toggleCredentialSshPassphraseVisibility = (id: string) => {
-    const cred = formData.personal_credentials.find((c) => c.id === id)
+    const cred = formData.personal_credentials.find(c => c.id === id)
     updatePersonalCredential(id, 'showSshPassphrase', !cred?.showSshPassphrase)
   }
 
-  const handleSshKeyFileChange = (id: string, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSshKeyFileChange = (
+    id: string,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0]
     if (!file) return
 
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = e => {
       const content = e.target?.result as string
       updatePersonalCredential(id, 'ssh_private_key', content)
     }
@@ -284,7 +287,7 @@ export function ProfilePage() {
         realname: formData.realname,
         email: formData.email,
         api_key: formData.api_key,
-        personal_credentials: formData.personal_credentials.map((cred) => {
+        personal_credentials: formData.personal_credentials.map(cred => {
           const baseCredential = {
             id: cred.id,
             name: cred.name,
@@ -329,7 +332,7 @@ export function ProfilePage() {
         const responseData = await response.json()
 
         if (responseData.personal_credentials) {
-          setFormData((prev) => ({
+          setFormData(prev => ({
             ...prev,
             personal_credentials: responseData.personal_credentials.map(
               (cred: {
@@ -359,7 +362,7 @@ export function ProfilePage() {
                   showSshPassphrase: false,
                   sshKeyChanged: false,
                 }
-              },
+              }
             ),
           }))
         }
@@ -381,7 +384,8 @@ export function ProfilePage() {
       console.error('Error saving profile:', error)
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update profile',
+        description:
+          error instanceof Error ? error.message : 'Failed to update profile',
         variant: 'destructive',
       })
     } finally {
@@ -409,7 +413,7 @@ export function ProfilePage() {
           <Avatar className="h-16 w-16 ring-2 ring-blue-100">
             <AvatarImage
               src={generateAvatarDataUrl(formData.username, 64)}
-              onError={(e) => {
+              onError={e => {
                 e.currentTarget.style.display = 'none'
               }}
             />
@@ -419,7 +423,9 @@ export function ProfilePage() {
           </Avatar>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Profile Settings</h1>
-            <p className="text-slate-600">Manage your account settings and preferences</p>
+            <p className="text-slate-600">
+              Manage your account settings and preferences
+            </p>
           </div>
         </div>
 
@@ -436,8 +442,10 @@ export function ProfilePage() {
               username={formData.username}
               realname={formData.realname}
               email={formData.email}
-              onRealnameChange={(value) => setFormData((prev) => ({ ...prev, realname: value }))}
-              onEmailChange={(value) => setFormData((prev) => ({ ...prev, email: value }))}
+              onRealnameChange={value =>
+                setFormData(prev => ({ ...prev, realname: value }))
+              }
+              onEmailChange={value => setFormData(prev => ({ ...prev, email: value }))}
             />
           </TabsContent>
 
@@ -445,14 +453,18 @@ export function ProfilePage() {
             <TokensCredentialsTab
               apiKey={formData.api_key}
               personalCredentials={formData.personal_credentials}
-              onApiKeyChange={(value) => setFormData((prev) => ({ ...prev, api_key: value }))}
+              onApiKeyChange={value =>
+                setFormData(prev => ({ ...prev, api_key: value }))
+              }
               onGenerateApiKey={generateApiKey}
               onAddCredential={addPersonalCredential}
               onRemoveCredential={removePersonalCredential}
               onUpdateCredential={updatePersonalCredential}
               onToggleCredentialExpanded={toggleCredentialExpanded}
               onToggleCredentialPasswordVisibility={toggleCredentialPasswordVisibility}
-              onToggleCredentialSshPassphraseVisibility={toggleCredentialSshPassphraseVisibility}
+              onToggleCredentialSshPassphraseVisibility={
+                toggleCredentialSshPassphraseVisibility
+              }
               onSshKeyFileChange={handleSshKeyFileChange}
             />
           </TabsContent>
@@ -465,8 +477,8 @@ export function ProfilePage() {
               showConfirmPassword={showConfirmPassword}
               onPasswordsChange={setPasswords}
               onPasswordErrorChange={setPasswordError}
-              onShowPasswordToggle={() => setShowPassword((prev) => !prev)}
-              onShowConfirmPasswordToggle={() => setShowConfirmPassword((prev) => !prev)}
+              onShowPasswordToggle={() => setShowPassword(prev => !prev)}
+              onShowConfirmPasswordToggle={() => setShowConfirmPassword(prev => !prev)}
             />
           </TabsContent>
         </Tabs>

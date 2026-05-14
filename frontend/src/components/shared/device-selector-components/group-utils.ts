@@ -1,8 +1,12 @@
-import { ConditionTree, ConditionItem, ConditionGroup } from '@/types/shared/device-selector'
+import {
+  ConditionTree,
+  ConditionItem,
+  ConditionGroup,
+} from '@/types/shared/device-selector'
 
 export interface GroupTreeNode {
   name: string
-  path: string | null  // null = root
+  path: string | null // null = root
   children: GroupTreeNode[]
 }
 
@@ -97,12 +101,19 @@ export function generateConditionTreeAscii(conditionTree: ConditionTree): string
         lines.push(`${prefix}${extension}   (empty group)`)
       } else {
         group.items.forEach((subItem, idx) => {
-          renderItem(subItem, `${prefix}${extension}`, idx === group.items.length - 1, idx === 0)
+          renderItem(
+            subItem,
+            `${prefix}${extension}`,
+            idx === group.items.length - 1,
+            idx === 0
+          )
         })
       }
     } else {
       const condition = item as ConditionItem
-      lines.push(`${prefix}${connector}${condition.field} ${condition.operator} "${condition.value}"`)
+      lines.push(
+        `${prefix}${connector}${condition.field} ${condition.operator} "${condition.value}"`
+      )
     }
   }
 

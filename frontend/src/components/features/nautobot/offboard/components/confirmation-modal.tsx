@@ -1,4 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 
 interface ConfirmationModalProps {
@@ -8,7 +13,12 @@ interface ConfirmationModalProps {
   onCancel: () => void
 }
 
-export function ConfirmationModal({ isOpen, selectedCount, onConfirm, onCancel }: ConfirmationModalProps) {
+export function ConfirmationModal({
+  isOpen,
+  selectedCount,
+  onConfirm,
+  onCancel,
+}: ConfirmationModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onCancel}>
       <DialogContent>
@@ -17,10 +27,12 @@ export function ConfirmationModal({ isOpen, selectedCount, onConfirm, onCancel }
         </DialogHeader>
         <div className="py-4">
           <p>
-            Are you sure you want to offboard <strong>{selectedCount}</strong> device{selectedCount !== 1 ? 's' : ''}?
+            Are you sure you want to offboard <strong>{selectedCount}</strong> device
+            {selectedCount !== 1 ? 's' : ''}?
           </p>
           <p className="text-sm text-gray-500 mt-2">
-            This action will remove the selected devices and their associated data according to your settings.
+            This action will remove the selected devices and their associated data
+            according to your settings.
           </p>
         </div>
         <div className="flex justify-end space-x-2">

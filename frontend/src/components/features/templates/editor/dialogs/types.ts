@@ -1,5 +1,16 @@
-export type NautobotDataType = 'locations' | 'tags' | 'custom-fields' | 'statuses' | 'roles' | 'namespaces'
-export type InventoryMetadataType = 'locations' | 'tags' | 'custom_fields' | 'statuses' | 'roles'
+export type NautobotDataType =
+  | 'locations'
+  | 'tags'
+  | 'custom-fields'
+  | 'statuses'
+  | 'roles'
+  | 'namespaces'
+export type InventoryMetadataType =
+  | 'locations'
+  | 'tags'
+  | 'custom_fields'
+  | 'statuses'
+  | 'roles'
 
 export interface VariableDefinition {
   name: string

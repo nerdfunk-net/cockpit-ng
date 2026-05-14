@@ -2,14 +2,20 @@
 
 import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Clock, Mail, Shield, CheckCircle2, ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 function ApprovalPendingContent() {
   const searchParams = useSearchParams()
-  
+
   // Read directly from URL params instead of using state
   // This avoids setState in useEffect and is more performant
   const username = searchParams.get('username') || ''
@@ -54,7 +60,8 @@ function ApprovalPendingContent() {
                 )}
                 {provider && (
                   <p className="text-green-800 dark:text-green-200">
-                    <span className="font-medium">Authentication Provider:</span> {provider}
+                    <span className="font-medium">Authentication Provider:</span>{' '}
+                    {provider}
                   </p>
                 )}
               </div>
@@ -72,8 +79,9 @@ function ApprovalPendingContent() {
                   Administrator Approval Required
                 </h3>
                 <p className="text-amber-800 dark:text-amber-200 mb-4">
-                  Your account must be approved by an administrator before you can access the system. 
-                  This is a security measure to ensure only authorized users have access.
+                  Your account must be approved by an administrator before you can
+                  access the system. This is a security measure to ensure only
+                  authorized users have access.
                 </p>
               </div>
             </div>
@@ -96,11 +104,17 @@ function ApprovalPendingContent() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-500 dark:text-blue-400 mt-1">•</span>
-                    <span>You will receive an email notification once your account is approved</span>
+                    <span>
+                      You will receive an email notification once your account is
+                      approved
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-500 dark:text-blue-400 mt-1">•</span>
-                    <span>After approval, you can log in using the same authentication method</span>
+                    <span>
+                      After approval, you can log in using the same authentication
+                      method
+                    </span>
                   </li>
                 </ul>
               </div>
@@ -110,7 +124,8 @@ function ApprovalPendingContent() {
           {/* Contact Information */}
           <div className="text-center text-sm text-gray-600 dark:text-gray-400 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
             <p className="mb-2">
-              If you have questions about your account status, please contact your system administrator.
+              If you have questions about your account status, please contact your
+              system administrator.
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-500">
               Approval times may vary depending on administrator availability.
@@ -134,15 +149,17 @@ function ApprovalPendingContent() {
 
 export default function ApprovalPendingPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <Card className="w-full max-w-2xl">
-          <CardContent className="pt-6 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
-          </CardContent>
-        </Card>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+          <Card className="w-full max-w-2xl">
+            <CardContent className="pt-6 text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
       <ApprovalPendingContent />
     </Suspense>
   )

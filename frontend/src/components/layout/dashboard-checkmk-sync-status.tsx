@@ -4,13 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
-import { 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  Loader2,
-  RefreshCw
-} from 'lucide-react'
+import { CheckCircle2, XCircle, AlertTriangle, Loader2, RefreshCw } from 'lucide-react'
 
 interface CompareDevicesResult {
   has_data: boolean
@@ -30,7 +24,9 @@ interface DashboardCheckmkSyncStatusProps {
   refreshTrigger?: number
 }
 
-export default function DashboardCheckmkSyncStatus({ refreshTrigger = 0 }: DashboardCheckmkSyncStatusProps) {
+export default function DashboardCheckmkSyncStatus({
+  refreshTrigger = 0,
+}: DashboardCheckmkSyncStatusProps) {
   const { apiCall } = useApi()
   const [data, setData] = useState<CompareDevicesResult | null>(null)
   const [loading, setLoading] = useState(true)
@@ -38,14 +34,16 @@ export default function DashboardCheckmkSyncStatus({ refreshTrigger = 0 }: Dashb
 
   useEffect(() => {
     loadData()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger])
 
   const loadData = async () => {
     try {
       setLoading(true)
       setError(null)
-      const result = await apiCall<CompareDevicesResult>('job-runs/dashboard/compare-devices')
+      const result = await apiCall<CompareDevicesResult>(
+        'job-runs/dashboard/compare-devices'
+      )
       setData(result)
     } catch (err) {
       console.error('Error fetching CheckMK sync status:', err)
@@ -78,7 +76,9 @@ export default function DashboardCheckmkSyncStatus({ refreshTrigger = 0 }: Dashb
               <CardTitle className="text-sm font-semibold text-slate-700">
                 CheckMK Sync Status
               </CardTitle>
-              <p className="text-xs text-slate-500">Nautobot ↔ CheckMK device comparison</p>
+              <p className="text-xs text-slate-500">
+                Nautobot ↔ CheckMK device comparison
+              </p>
             </div>
           </div>
         </div>
@@ -97,7 +97,9 @@ export default function DashboardCheckmkSyncStatus({ refreshTrigger = 0 }: Dashb
         ) : !data?.has_data ? (
           <div className="flex items-center gap-2 text-slate-500 py-4">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
-            <span className="text-sm">{data?.message || 'No comparison data available'}</span>
+            <span className="text-sm">
+              {data?.message || 'No comparison data available'}
+            </span>
           </div>
         ) : (
           <div className="space-y-4">
@@ -111,7 +113,7 @@ export default function DashboardCheckmkSyncStatus({ refreshTrigger = 0 }: Dashb
                 </div>
                 <div className="text-2xl font-bold text-green-700">{inSyncCount}</div>
               </div>
-              
+
               {/* Out of Sync */}
               <div className="text-center p-3 rounded-lg bg-red-50">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -120,11 +122,13 @@ export default function DashboardCheckmkSyncStatus({ refreshTrigger = 0 }: Dashb
                 </div>
                 <div className="text-2xl font-bold text-red-700">{outOfSyncCount}</div>
               </div>
-              
+
               {/* Total */}
               <div className="text-center p-3 rounded-lg bg-slate-100">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <span className="text-xs font-medium text-slate-600">Total Devices</span>
+                  <span className="text-xs font-medium text-slate-600">
+                    Total Devices
+                  </span>
                 </div>
                 <div className="text-2xl font-bold text-slate-700">{totalDevices}</div>
               </div>
@@ -138,12 +142,16 @@ export default function DashboardCheckmkSyncStatus({ refreshTrigger = 0 }: Dashb
                   <span>{inSyncPercent.toFixed(0)}% in sync</span>
                 </div>
                 <div className="h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className={cn(
-                      "h-full rounded-full transition-all duration-500",
-                      inSyncPercent === 100 ? "bg-green-500" : 
-                      inSyncPercent >= 80 ? "bg-green-400" :
-                      inSyncPercent >= 50 ? "bg-amber-400" : "bg-red-400"
+                      'h-full rounded-full transition-all duration-500',
+                      inSyncPercent === 100
+                        ? 'bg-green-500'
+                        : inSyncPercent >= 80
+                          ? 'bg-green-400'
+                          : inSyncPercent >= 50
+                            ? 'bg-amber-400'
+                            : 'bg-red-400'
                     )}
                     style={{ width: `${inSyncPercent}%` }}
                   />

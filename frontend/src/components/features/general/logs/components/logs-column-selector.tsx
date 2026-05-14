@@ -31,7 +31,11 @@ export function LogsColumnSelector({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 text-xs h-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-white hover:bg-white/20 text-xs h-6"
+        >
           <Settings className="h-3 w-3 mr-1" />
           Columns
         </Button>
@@ -39,11 +43,11 @@ export function LogsColumnSelector({
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {columns.map((col) => (
+        {columns.map(col => (
           <DropdownMenuCheckboxItem
             key={col.id}
             checked={visibleColumnIds.includes(col.id)}
-            onCheckedChange={(checked) => onToggle(col.id, checked)}
+            onCheckedChange={checked => onToggle(col.id, checked)}
           >
             {col.label}
           </DropdownMenuCheckboxItem>

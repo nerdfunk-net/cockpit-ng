@@ -23,7 +23,9 @@ interface DashboardIPAddressesStatsProps {
   refreshTrigger?: number
 }
 
-export default function DashboardIPAddressesStats({ refreshTrigger = 0 }: DashboardIPAddressesStatsProps) {
+export default function DashboardIPAddressesStats({
+  refreshTrigger = 0,
+}: DashboardIPAddressesStatsProps) {
   const { apiCall } = useApi()
   const [data, setData] = useState<IPAddressesResult | null>(null)
   const [loading, setLoading] = useState(true)
@@ -31,7 +33,7 @@ export default function DashboardIPAddressesStats({ refreshTrigger = 0 }: Dashbo
 
   useEffect(() => {
     loadData()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger])
 
   const loadData = async () => {
@@ -52,7 +54,8 @@ export default function DashboardIPAddressesStats({ refreshTrigger = 0 }: Dashbo
 
   const filterLabel = (() => {
     if (!data?.filter_field) return null
-    const op = data.filter_type && data.filter_type !== '__eq__' ? `__${data.filter_type}` : ''
+    const op =
+      data.filter_type && data.filter_type !== '__eq__' ? `__${data.filter_type}` : ''
     return `${data.filter_field}${op} = "${data.filter_value ?? ''}"`
   })()
 
@@ -82,7 +85,9 @@ export default function DashboardIPAddressesStats({ refreshTrigger = 0 }: Dashbo
                 <Network className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <CardTitle className="text-sm font-semibold text-slate-700">Stale IP Addresses</CardTitle>
+                <CardTitle className="text-sm font-semibold text-slate-700">
+                  Stale IP Addresses
+                </CardTitle>
                 <p className="text-xs text-slate-500">Latest list result</p>
               </div>
             </div>
@@ -93,8 +98,12 @@ export default function DashboardIPAddressesStats({ refreshTrigger = 0 }: Dashbo
             {/* Number + filter + timestamp */}
             <div className="flex-1 min-w-0 space-y-1">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-emerald-700">{data.total ?? 0}</span>
-                <span className="text-xs font-medium text-emerald-600">Total Found</span>
+                <span className="text-3xl font-bold text-emerald-700">
+                  {data.total ?? 0}
+                </span>
+                <span className="text-xs font-medium text-emerald-600">
+                  Total Found
+                </span>
               </div>
               {filterLabel && (
                 <code className="block text-xs text-emerald-800 font-mono bg-emerald-50 border border-emerald-200 rounded px-2 py-1 break-all">
@@ -102,7 +111,9 @@ export default function DashboardIPAddressesStats({ refreshTrigger = 0 }: Dashbo
                 </code>
               )}
               {data.completed_at && (
-                <p className="text-xs text-slate-400">Last run: {formatDate(data.completed_at)}</p>
+                <p className="text-xs text-slate-400">
+                  Last run: {formatDate(data.completed_at)}
+                </p>
               )}
             </div>
           </div>

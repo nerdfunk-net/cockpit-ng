@@ -26,20 +26,23 @@ export function exportToCSV(
     return
   }
 
-  const headers = ['IP Address', 'Device Name', 'Status', 'Nautobot Device Name', 'Error']
+  const headers = [
+    'IP Address',
+    'Device Name',
+    'Status',
+    'Nautobot Device Name',
+    'Error',
+  ]
 
   const rows = data.map(result => [
     escapeCsvField(result.ip_address),
     escapeCsvField(result.device_name),
     escapeCsvField(result.status),
     escapeCsvField(result.nautobot_device_name || ''),
-    escapeCsvField(result.error || '')
+    escapeCsvField(result.error || ''),
   ])
 
-  const csv = [
-    headers.join(','),
-    ...rows.map(row => row.join(','))
-  ].join('\n')
+  const csv = [headers.join(','), ...rows.map(row => row.join(','))].join('\n')
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)

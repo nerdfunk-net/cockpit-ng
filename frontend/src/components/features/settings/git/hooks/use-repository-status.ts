@@ -18,38 +18,44 @@ export function useRepositoryStatus(): RepositoryStatusHook {
   const [showDialog, setShowDialog] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  const openDialog = useCallback(async (repo: GitRepository) => {
-    setStatusData(null)
-    setShowDialog(true)
-    setIsLoading(true)
+  const openDialog = useCallback(
+    async (repo: GitRepository) => {
+      setStatusData(null)
+      setShowDialog(true)
+      setIsLoading(true)
 
-    try {
-      const response = await apiCall<{ success: boolean; data: GitStatus }>(
-        `git/${repo.id}/status`
-      )
-      if (response.success) {
-        setStatusData(response.data)
-      } else {
-        throw new Error('Failed to load repository status')
+      try {
+        const response = await apiCall<{ success: boolean; data: GitStatus }>(
+          `git/${repo.id}/status`
+        )
+        if (response.success) {
+          setStatusData(response.data)
+        } else {
+          throw new Error('Failed to load repository status')
+        }
+      } catch (error) {
+        console.error('Failed to load repository status:', error)
+        setShowDialog(false)
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error) {
-      console.error('Failed to load repository status:', error)
-      setShowDialog(false)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [apiCall])
+    },
+    [apiCall]
+  )
 
   const closeDialog = useCallback(() => {
     setShowDialog(false)
     setStatusData(null)
   }, [])
 
-  return useMemo(() => ({
-    statusData,
-    isLoading,
-    showDialog,
-    openDialog,
-    closeDialog,
-  }), [statusData, isLoading, showDialog, openDialog, closeDialog])
+  return useMemo(
+    () => ({
+      statusData,
+      isLoading,
+      showDialog,
+      openDialog,
+      closeDialog,
+    }),
+    [statusData, isLoading, showDialog, openDialog, closeDialog]
+  )
 }

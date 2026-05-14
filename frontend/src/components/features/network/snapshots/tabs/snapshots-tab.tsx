@@ -97,9 +97,10 @@ export function SnapshotsTab({
     setExecuting(true)
     try {
       // Prepare credential payload
-      const credentialPayload = selectedCredentialId === 'manual'
-        ? { username, password }
-        : { credential_id: parseInt(selectedCredentialId) }
+      const credentialPayload =
+        selectedCredentialId === 'manual'
+          ? { username, password }
+          : { credential_id: parseInt(selectedCredentialId) }
 
       // Generate a snapshot name from timestamp
       const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0]
@@ -124,7 +125,8 @@ export function SnapshotsTab({
     } catch (error) {
       toast({
         title: 'Execution Failed',
-        description: error instanceof Error ? error.message : 'Failed to execute snapshot',
+        description:
+          error instanceof Error ? error.message : 'Failed to execute snapshot',
         variant: 'destructive',
       })
     } finally {
@@ -148,7 +150,9 @@ export function SnapshotsTab({
           {/* Path Configuration */}
           <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-4 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-amber-900">Snapshot Path</span>
+              <span className="text-sm font-semibold text-amber-900">
+                Snapshot Path
+              </span>
             </div>
 
             <div className="bg-amber-100/50 border border-amber-200 rounded-md px-3 py-2 space-y-1">
@@ -162,13 +166,16 @@ export function SnapshotsTab({
                 Device: {'{device_name}'}, {'{hostname}'}, {'{serial}'}, {'{asset_tag}'}
               </p>
               <p className="text-xs text-amber-700 leading-relaxed">
-                Location: {'{location.name}'}, {'{location.parent.name}'}, {'{location.parent.parent.name}'}
+                Location: {'{location.name}'}, {'{location.parent.name}'},{' '}
+                {'{location.parent.parent.name}'}
               </p>
               <p className="text-xs text-amber-700 leading-relaxed">
-                Platform: {'{platform.name}'}, {'{platform.manufacturer.name}'}, {'{device_type.model}'}
+                Platform: {'{platform.name}'}, {'{platform.manufacturer.name}'},{' '}
+                {'{device_type.model}'}
               </p>
               <p className="text-xs text-amber-700 leading-relaxed">
-                Other: {'{role.name}'}, {'{status.name}'}, {'{tenant.name}'}, {'{rack.name}'}, {'{custom_field_data.FIELD_NAME}'}
+                Other: {'{role.name}'}, {'{status.name}'}, {'{tenant.name}'},{' '}
+                {'{rack.name}'}, {'{custom_field_data.FIELD_NAME}'}
               </p>
             </div>
 
@@ -176,7 +183,7 @@ export function SnapshotsTab({
               <Input
                 id="snapshot-path"
                 value={snapshotPath}
-                onChange={(e) => onSnapshotPathChange(e.target.value)}
+                onChange={e => onSnapshotPathChange(e.target.value)}
                 placeholder="snapshots/{device_name}-{template_name}"
                 className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
               />
@@ -186,7 +193,9 @@ export function SnapshotsTab({
           {/* Credentials Selection */}
           <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-purple-900">SSH Credentials</span>
+              <span className="text-sm font-semibold text-purple-900">
+                SSH Credentials
+              </span>
             </div>
 
             <CredentialSelector
@@ -203,13 +212,17 @@ export function SnapshotsTab({
           {/* Git Repository Selection */}
           <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-4 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-teal-900">Git Repository</span>
+              <span className="text-sm font-semibold text-teal-900">
+                Git Repository
+              </span>
             </div>
 
             <div className="space-y-2">
               <Select
                 value={snapshotGitRepoId?.toString() || 'none'}
-                onValueChange={(value) => onSnapshotGitRepoIdChange(value === 'none' ? null : parseInt(value))}
+                onValueChange={value =>
+                  onSnapshotGitRepoIdChange(value === 'none' ? null : parseInt(value))
+                }
                 disabled={reposLoading}
               >
                 <SelectTrigger id="git-repo" className="h-9 bg-white border-teal-200">
@@ -217,7 +230,7 @@ export function SnapshotsTab({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No git repository</SelectItem>
-                  {repositories.map((repo) => (
+                  {repositories.map(repo => (
                     <SelectItem key={repo.id} value={repo.id.toString()}>
                       {repo.name}
                     </SelectItem>

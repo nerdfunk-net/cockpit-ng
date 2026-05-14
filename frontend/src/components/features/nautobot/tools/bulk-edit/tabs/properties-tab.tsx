@@ -3,7 +3,13 @@
 import { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useApi } from '@/hooks/use-api'
 import type { BulkEditProperties } from '../bulk-edit-page'
@@ -65,7 +71,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
     const fetchNamespaces = async () => {
       setIsLoadingNamespaces(true)
       try {
-        const response = await apiCall('nautobot/namespaces') as Namespace[]
+        const response = (await apiCall('nautobot/namespaces')) as Namespace[]
         setNamespaces(response || [])
       } catch (error) {
         console.error('Failed to fetch namespaces:', error)
@@ -173,7 +179,9 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
           {/* Interface Configuration Section */}
           <div className="space-y-4 p-6 bg-white rounded-lg border border-gray-200 shadow-sm">
             <div className="border-b border-gray-200 pb-3">
-              <h3 className="text-lg font-semibold text-gray-900">Interface Configuration</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Interface Configuration
+              </h3>
               <p className="text-sm text-gray-600 mt-1">
                 Default settings for new interfaces
               </p>
@@ -182,28 +190,41 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Interface Name */}
               <div className="space-y-2">
-                <Label htmlFor="interface-name" className="text-sm font-medium text-gray-700">Interface Name</Label>
+                <Label
+                  htmlFor="interface-name"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Interface Name
+                </Label>
                 <Input
                   id="interface-name"
                   placeholder="e.g., GigabitEthernet0/0"
                   value={properties.interfaceConfig.name}
-                  onChange={(e) => handleInterfaceNameChange(e.target.value)}
+                  onChange={e => handleInterfaceNameChange(e.target.value)}
                   className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
 
               {/* Interface Type */}
               <div className="space-y-2">
-                <Label htmlFor="interface-type" className="text-sm font-medium text-gray-700">Interface Type</Label>
+                <Label
+                  htmlFor="interface-type"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Interface Type
+                </Label>
                 <Select
                   value={properties.interfaceConfig.type}
                   onValueChange={handleInterfaceTypeChange}
                 >
-                  <SelectTrigger id="interface-type" className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectTrigger
+                    id="interface-type"
+                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  >
                     <SelectValue placeholder="Select type..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {INTERFACE_TYPES.map((type) => (
+                    {INTERFACE_TYPES.map(type => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
                       </SelectItem>
@@ -214,16 +235,24 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
 
               {/* Interface Status */}
               <div className="space-y-2">
-                <Label htmlFor="interface-status" className="text-sm font-medium text-gray-700">Status</Label>
+                <Label
+                  htmlFor="interface-status"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Status
+                </Label>
                 <Select
                   value={properties.interfaceConfig.status}
                   onValueChange={handleInterfaceStatusChange}
                 >
-                  <SelectTrigger id="interface-status" className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectTrigger
+                    id="interface-status"
+                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {INTERFACE_STATUSES.map((status) => (
+                    {INTERFACE_STATUSES.map(status => (
                       <SelectItem key={status.value} value={status.value}>
                         {status.label}
                       </SelectItem>
@@ -237,9 +266,15 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
             <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center justify-between">
                 <div className="space-y-1 flex-1">
-                  <Label htmlFor="create-on-ip-change" className="text-sm font-medium text-gray-900">Add new Interface when IP changes</Label>
+                  <Label
+                    htmlFor="create-on-ip-change"
+                    className="text-sm font-medium text-gray-900"
+                  >
+                    Add new Interface when IP changes
+                  </Label>
                   <p className="text-sm text-gray-700">
-                    Automatically create a new interface when the primary IP address is updated
+                    Automatically create a new interface when the primary IP address is
+                    updated
                   </p>
                 </div>
                 <Switch
@@ -266,7 +301,12 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
               <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1 flex-1">
-                    <Label htmlFor="add-prefixes" className="text-sm font-medium text-gray-900">Add IP Prefixes Automatically</Label>
+                    <Label
+                      htmlFor="add-prefixes"
+                      className="text-sm font-medium text-gray-900"
+                    >
+                      Add IP Prefixes Automatically
+                    </Label>
                     <p className="text-sm text-gray-700">
                       Automatically add IP prefixes when creating interfaces
                     </p>
@@ -284,7 +324,10 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
               <div className="rounded-lg border border-gray-200 p-4 bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label htmlFor="use-assigned-ip" className="text-sm font-medium text-gray-900">
+                    <Label
+                      htmlFor="use-assigned-ip"
+                      className="text-sm font-medium text-gray-900"
+                    >
                       Use Assigned IP Address if IP exists and it not assigned
                     </Label>
                     <p className="text-sm text-gray-700">
@@ -302,16 +345,24 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
 
               {/* Default Network Mask */}
               <div className="space-y-2">
-                <Label htmlFor="network-mask" className="text-sm font-medium text-gray-700">Default Network Mask</Label>
+                <Label
+                  htmlFor="network-mask"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Default Network Mask
+                </Label>
                 <Select
                   value={properties.ipConfig.defaultNetworkMask}
                   onValueChange={handleNetworkMaskChange}
                 >
-                  <SelectTrigger id="network-mask" className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectTrigger
+                    id="network-mask"
+                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {NETWORK_MASK_OPTIONS.map((mask) => (
+                    {NETWORK_MASK_OPTIONS.map(mask => (
                       <SelectItem key={mask.value} value={mask.value}>
                         {mask.label}
                       </SelectItem>
@@ -322,17 +373,29 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
 
               {/* Namespace */}
               <div className="space-y-2">
-                <Label htmlFor="namespace" className="text-sm font-medium text-gray-700">Namespace</Label>
+                <Label
+                  htmlFor="namespace"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Namespace
+                </Label>
                 <Select
                   value={properties.ipConfig.namespace}
                   onValueChange={handleNamespaceChange}
                   disabled={isLoadingNamespaces}
                 >
-                  <SelectTrigger id="namespace" className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                    <SelectValue placeholder={isLoadingNamespaces ? "Loading..." : "Select namespace..."} />
+                  <SelectTrigger
+                    id="namespace"
+                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <SelectValue
+                      placeholder={
+                        isLoadingNamespaces ? 'Loading...' : 'Select namespace...'
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {namespaces.map((namespace) => (
+                    {namespaces.map(namespace => (
                       <SelectItem key={namespace.id} value={namespace.name}>
                         {namespace.name}
                       </SelectItem>

@@ -1,8 +1,20 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import { STALE_TIME, EMPTY_DEVICES, EMPTY_HISTORY, EMPTY_FILTER_OPTIONS } from '../utils/constants'
-import type { Device, DeviceFilters, BackupPagination, BackupSorting, BackupHistoryEntry, FilterOptions } from '../types'
+import {
+  STALE_TIME,
+  EMPTY_DEVICES,
+  EMPTY_HISTORY,
+  EMPTY_FILTER_OPTIONS,
+} from '../utils/constants'
+import type {
+  Device,
+  DeviceFilters,
+  BackupPagination,
+  BackupSorting,
+  BackupHistoryEntry,
+  FilterOptions,
+} from '../types'
 
 interface UseBackupDevicesOptions {
   filters?: DeviceFilters
@@ -12,15 +24,21 @@ interface UseBackupDevicesOptions {
 }
 
 const DEFAULT_DEVICES_OPTIONS: UseBackupDevicesOptions = {
-  enabled: true
+  enabled: true,
 }
 
-export function useBackupDevices(options: UseBackupDevicesOptions = DEFAULT_DEVICES_OPTIONS) {
+export function useBackupDevices(
+  options: UseBackupDevicesOptions = DEFAULT_DEVICES_OPTIONS
+) {
   const { apiCall } = useApi()
   const { filters, pagination, sorting, enabled = true } = options
 
   return useQuery({
-    queryKey: queryKeys.network.backupDevices({ ...filters, ...pagination, ...sorting }),
+    queryKey: queryKeys.network.backupDevices({
+      ...filters,
+      ...pagination,
+      ...sorting,
+    }),
     queryFn: async () => {
       const params = new URLSearchParams()
 
@@ -30,8 +48,10 @@ export function useBackupDevices(options: UseBackupDevicesOptions = DEFAULT_DEVI
       if (filters?.location) params.append('location', filters.location)
       if (filters?.deviceType) params.append('device_type', filters.deviceType)
       if (filters?.status) params.append('status', filters.status)
-      if (filters?.lastBackupDate) params.append('last_backup_date', filters.lastBackupDate)
-      if (filters?.dateComparison) params.append('date_comparison', filters.dateComparison)
+      if (filters?.lastBackupDate)
+        params.append('last_backup_date', filters.lastBackupDate)
+      if (filters?.dateComparison)
+        params.append('date_comparison', filters.dateComparison)
 
       // Pagination
       if (pagination?.limit) params.append('limit', pagination.limit.toString())
@@ -39,7 +59,8 @@ export function useBackupDevices(options: UseBackupDevicesOptions = DEFAULT_DEVI
 
       // Sorting
       if (sorting?.column) params.append('sort_by', sorting.column)
-      if (sorting?.order && sorting.order !== 'none') params.append('sort_order', sorting.order)
+      if (sorting?.order && sorting.order !== 'none')
+        params.append('sort_order', sorting.order)
 
       const response = await apiCall<{
         devices: Device[]
@@ -52,7 +73,7 @@ export function useBackupDevices(options: UseBackupDevicesOptions = DEFAULT_DEVI
         devices: response?.devices || EMPTY_DEVICES,
         total: response?.total || 0,
         limit: response?.limit || 50,
-        offset: response?.offset || 0
+        offset: response?.offset || 0,
       }
     },
     enabled,
@@ -91,7 +112,10 @@ export function useBackupFilterOptions() {
 
 const DEFAULT_HISTORY_OPTIONS: { enabled?: boolean } = {}
 
-export function useBackupHistory(deviceId: string, options: { enabled?: boolean } = DEFAULT_HISTORY_OPTIONS) {
+export function useBackupHistory(
+  deviceId: string,
+  options: { enabled?: boolean } = DEFAULT_HISTORY_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 

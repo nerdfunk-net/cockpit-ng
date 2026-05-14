@@ -88,7 +88,9 @@ export function useCsvImportNautobotQuery(
         apiCall<NautobotItem[]>('nautobot/namespaces', { method: 'GET' }),
         apiCall<NautobotItem[]>('nautobot/manufacturers', { method: 'GET' }),
         apiCall<NautobotItem[]>('nautobot/statuses/interface', { method: 'GET' }),
-        apiCall<{ value: string; display_name: string }[]>('nautobot/interface-types', { method: 'GET' }),
+        apiCall<{ value: string; display_name: string }[]>('nautobot/interface-types', {
+          method: 'GET',
+        }),
       ])
 
       // interface-types uses a different response shape: { value, display_name }[]
@@ -96,7 +98,7 @@ export function useCsvImportNautobotQuery(
       // item.id is set to the choice value (e.g. "virtual", "1000base-t") which is
       // exactly what the backend expects — it is NOT a UUID.
       const interfaceTypes: NautobotItem[] = Array.isArray(interfaceTypesRaw)
-        ? interfaceTypesRaw.map((t) => ({ id: t.value, name: t.display_name }))
+        ? interfaceTypesRaw.map(t => ({ id: t.value, name: t.display_name }))
         : []
 
       return {

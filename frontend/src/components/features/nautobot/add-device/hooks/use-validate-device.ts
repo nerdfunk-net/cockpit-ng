@@ -107,7 +107,12 @@ export function useValidateDevice(form: UseFormReturn<DeviceFormValues>) {
   }, [form])
 
   return useMemo(
-    () => ({ showValidationSummary, setShowValidationSummary, validationResults, handleValidate }),
+    () => ({
+      showValidationSummary,
+      setShowValidationSummary,
+      validationResults,
+      handleValidate,
+    }),
     [showValidationSummary, validationResults, handleValidate]
   )
 }

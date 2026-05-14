@@ -67,7 +67,8 @@ export function SaveInventoryModal({
   const [localGroupPaths, setLocalGroupPaths] = useState<string[]>([])
   const [showTree, setShowTree] = useState(false)
   const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false)
-  const [inventoryToOverwrite, setInventoryToOverwrite] = useState<SavedInventorySummary | null>(null)
+  const [inventoryToOverwrite, setInventoryToOverwrite] =
+    useState<SavedInventorySummary | null>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -83,7 +84,8 @@ export function SaveInventoryModal({
   }, [isOpen, initialName, initialDescription, initialGroupPath])
 
   const inventoriesInGroup = useMemo(
-    () => savedInventories.filter(inv => (inv.group_path ?? '') === (selectedGroup ?? '')),
+    () =>
+      savedInventories.filter(inv => (inv.group_path ?? '') === (selectedGroup ?? '')),
     [savedInventories, selectedGroup]
   )
 
@@ -137,7 +139,8 @@ export function SaveInventoryModal({
               <div className="flex gap-3">
                 <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-yellow-800">
-                  An inventory named <strong>&quot;{inventoryToOverwrite?.name}&quot;</strong> already
+                  An inventory named{' '}
+                  <strong>&quot;{inventoryToOverwrite?.name}&quot;</strong> already
                   exists. Do you want to overwrite it?
                 </p>
               </div>
@@ -160,7 +163,10 @@ export function SaveInventoryModal({
         ) : (
           <>
             {/* Main area: group tree (left) + files (right) */}
-            <div className="flex gap-0 flex-1 min-h-0" style={{ minHeight: '280px', maxHeight: '340px' }}>
+            <div
+              className="flex gap-0 flex-1 min-h-0"
+              style={{ minHeight: '280px', maxHeight: '340px' }}
+            >
               {/* Left: Group tree */}
               <div className="w-56 flex-shrink-0 border-r p-3 overflow-y-auto">
                 <GroupTreePanel
@@ -180,7 +186,9 @@ export function SaveInventoryModal({
                   <span className="text-blue-600">{selectedGroup ?? 'Root'}</span>
                 </div>
                 {inventoriesInGroup.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">No inventories in this group</p>
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No inventories in this group
+                  </p>
                 ) : (
                   <div className="space-y-1">
                     {inventoriesInGroup.map(inv => (
@@ -189,7 +197,9 @@ export function SaveInventoryModal({
                         className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
                       >
                         <FileText className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <span className="flex-1 truncate text-gray-800">{inv.name}</span>
+                        <span className="flex-1 truncate text-gray-800">
+                          {inv.name}
+                        </span>
                         <Badge variant="secondary" className="text-xs flex-shrink-0">
                           {inv.scope}
                         </Badge>
@@ -251,9 +261,11 @@ export function SaveInventoryModal({
                 className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
                 onClick={() => setShowTree(v => !v)}
               >
-                {showTree
-                  ? <ChevronDown className="h-3.5 w-3.5" />
-                  : <ChevronRight className="h-3.5 w-3.5" />}
+                {showTree ? (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5" />
+                )}
                 {showTree ? 'Hide' : 'Show'} condition tree
               </button>
               {showTree && (

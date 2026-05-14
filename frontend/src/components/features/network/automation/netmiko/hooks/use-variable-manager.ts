@@ -4,7 +4,7 @@ import { validateVariableName } from '../utils/netmiko-utils'
 
 export function useVariableManager() {
   const [variables, setVariables] = useState<TemplateVariable[]>([
-    { id: crypto.randomUUID(), name: '', value: '' }
+    { id: crypto.randomUUID(), name: '', value: '' },
   ])
 
   const addVariable = () => {
@@ -18,9 +18,7 @@ export function useVariableManager() {
   }
 
   const updateVariable = (id: string, field: 'name' | 'value', value: string) => {
-    setVariables(variables.map(v =>
-      v.id === id ? { ...v, [field]: value } : v
-    ))
+    setVariables(variables.map(v => (v.id === id ? { ...v, [field]: value } : v)))
   }
 
   return {

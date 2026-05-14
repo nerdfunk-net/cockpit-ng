@@ -52,115 +52,118 @@ export function GeneralPanel({ form }: GeneralPanelProps) {
         </Button>
       </div>
       {!isCollapsed && (
-      <div className="p-4 bg-gradient-to-b from-white to-gray-50">
-        <Form {...form}>
-          <div className="space-y-3">
-            {/* Template Details in 12-column grid */}
-            <div className="grid grid-cols-12 gap-3">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem className="col-span-3">
-                    <FormLabel>
-                      Template Name <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., telegraf-agent-config" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem className="col-span-3">
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Brief description of the template" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>Category</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+        <div className="p-4 bg-gradient-to-b from-white to-gray-50">
+          <Form {...form}>
+            <div className="space-y-3">
+              {/* Template Details in 12-column grid */}
+              <div className="grid grid-cols-12 gap-3">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem className="col-span-3">
+                      <FormLabel>
+                        Template Name <span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
+                        <Input placeholder="e.g., telegraf-agent-config" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="__none__">No Category</SelectItem>
-                        {CANONICAL_CATEGORIES.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="template_type"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>Type</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem className="col-span-3">
+                      <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="jinja2">Jinja2</SelectItem>
-                        <SelectItem value="text">Plain Text</SelectItem>
-                        <SelectItem value="textfsm">TextFSM</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="scope"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>Scope</FormLabel>
-                    <div className="flex items-center space-x-2 h-9">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value === 'global'}
-                          onCheckedChange={(checked) =>
-                            field.onChange(checked ? 'global' : 'private')
-                          }
+                        <Input
+                          placeholder="Brief description of the template"
+                          {...field}
                         />
                       </FormControl>
-                      <span className="text-sm">Global Template</span>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Category</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="__none__">No Category</SelectItem>
+                          {CANONICAL_CATEGORIES.map(cat => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="template_type"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Type</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="jinja2">Jinja2</SelectItem>
+                          <SelectItem value="text">Plain Text</SelectItem>
+                          <SelectItem value="textfsm">TextFSM</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="scope"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Scope</FormLabel>
+                      <div className="flex items-center space-x-2 h-9">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value === 'global'}
+                            onCheckedChange={checked =>
+                              field.onChange(checked ? 'global' : 'private')
+                            }
+                          />
+                        </FormControl>
+                        <span className="text-sm">Global Template</span>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
-          </div>
-        </Form>
-      </div>
+          </Form>
+        </div>
       )}
     </div>
   )

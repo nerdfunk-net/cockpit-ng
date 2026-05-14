@@ -42,7 +42,9 @@ export default function CompliancePage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Compliance Check</h1>
-            <p className="text-muted-foreground">Verify network device compliance with your security policies</p>
+            <p className="text-muted-foreground">
+              Verify network device compliance with your security policies
+            </p>
           </div>
         </div>
       </div>

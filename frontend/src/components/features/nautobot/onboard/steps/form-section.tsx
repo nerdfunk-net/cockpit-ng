@@ -3,7 +3,12 @@
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Plus } from 'lucide-react'
 import { OnboardingFormFields } from '../components/onboarding-form-fields'
-import type { DropdownOption, IPValidation, LocationItem, OnboardFormData } from '../types'
+import type {
+  DropdownOption,
+  IPValidation,
+  LocationItem,
+  OnboardFormData,
+} from '../types'
 
 interface FormSectionProps {
   formData: OnboardFormData

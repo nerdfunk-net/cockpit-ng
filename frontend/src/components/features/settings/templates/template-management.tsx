@@ -38,14 +38,15 @@ export default function TemplateManagement() {
               <FileCode className="h-6 w-6 text-purple-600" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Templates - List & Import</h1>
-              <p className="text-muted-foreground mt-2">Manage and import configuration templates for network devices</p>
+              <h1 className="text-3xl font-bold text-slate-900">
+                Templates - List & Import
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Manage and import configuration templates for network devices
+              </p>
             </div>
           </div>
-          <Button
-            onClick={handleCreateNew}
-            className="bg-green-600 hover:bg-green-700"
-          >
+          <Button onClick={handleCreateNew} className="bg-green-600 hover:bg-green-700">
             <Plus className="h-4 w-4 mr-2" />
             Create New Template
           </Button>

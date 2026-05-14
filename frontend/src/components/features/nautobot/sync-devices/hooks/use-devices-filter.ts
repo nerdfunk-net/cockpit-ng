@@ -15,7 +15,10 @@ const DEFAULT_PAGE_SIZE = 50
 export function useDevicesFilter(devices: Device[]) {
   const [filters, setFilters] = useState<TableFilters>(DEFAULT_FILTERS)
   // Store user modifications to role filters (null means use defaults)
-  const [userRoleFilters, setUserRoleFilters] = useState<Record<string, boolean> | null>(null)
+  const [userRoleFilters, setUserRoleFilters] = useState<Record<
+    string,
+    boolean
+  > | null>(null)
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
@@ -29,7 +32,7 @@ export function useDevicesFilter(devices: Device[]) {
     }
     // Default: all roles selected
     const defaults: Record<string, boolean> = {}
-    filterOptions.roles.forEach((role) => {
+    filterOptions.roles.forEach(role => {
       defaults[role.name] = true
     })
     return defaults
@@ -60,18 +63,18 @@ export function useDevicesFilter(devices: Device[]) {
   )
 
   // Reset to first page when filters change
-  const handleFilterChange = useCallback(
-    (field: keyof TableFilters, value: string) => {
-      setFilters((prev) => ({ ...prev, [field]: value }))
+  const handleFilterChange = useCallback((field: keyof TableFilters, value: string) => {
+    setFilters(prev => ({ ...prev, [field]: value }))
+    setCurrentPage(0)
+  }, [])
+
+  const handleRoleFiltersChange = useCallback(
+    (newRoleFilters: Record<string, boolean>) => {
+      setUserRoleFilters(newRoleFilters)
       setCurrentPage(0)
     },
     []
   )
-
-  const handleRoleFiltersChange = useCallback((newRoleFilters: Record<string, boolean>) => {
-    setUserRoleFilters(newRoleFilters)
-    setCurrentPage(0)
-  }, [])
 
   const clearAllFilters = useCallback(() => {
     setFilters(DEFAULT_FILTERS)

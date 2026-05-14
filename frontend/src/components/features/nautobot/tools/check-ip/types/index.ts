@@ -2,18 +2,18 @@ export const RESULT_STATUS = {
   MATCH: 'match',
   NAME_MISMATCH: 'name_mismatch',
   IP_NOT_FOUND: 'ip_not_found',
-  ERROR: 'error'
+  ERROR: 'error',
 } as const
 
 export const MESSAGE_TYPE = {
   SUCCESS: 'success',
   ERROR: 'error',
   WARNING: 'warning',
-  INFO: 'info'
+  INFO: 'info',
 } as const
 
-export type ResultStatus = typeof RESULT_STATUS[keyof typeof RESULT_STATUS]
-export type MessageType = typeof MESSAGE_TYPE[keyof typeof MESSAGE_TYPE]
+export type ResultStatus = (typeof RESULT_STATUS)[keyof typeof RESULT_STATUS]
+export type MessageType = (typeof MESSAGE_TYPE)[keyof typeof MESSAGE_TYPE]
 
 export interface StatusMessage {
   type: MessageType

@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -28,8 +34,10 @@ interface RegexPatternsTabProps {
 }
 
 export function RegexPatternsTab({ openConfirm, isActiveTab }: RegexPatternsTabProps) {
-  const { data: regexPatterns = EMPTY_REGEX_PATTERNS, isLoading: regexPatternsLoading } =
-    useRegexPatternsQuery({ enabled: isActiveTab })
+  const {
+    data: regexPatterns = EMPTY_REGEX_PATTERNS,
+    isLoading: regexPatternsLoading,
+  } = useRegexPatternsQuery({ enabled: isActiveTab })
 
   const { createPattern, updatePattern, deletePattern } = useRegexPatternsMutations()
 
@@ -38,12 +46,12 @@ export function RegexPatternsTab({ openConfirm, isActiveTab }: RegexPatternsTabP
   const [form, setForm] = useState<RegexPatternFormData>(DEFAULT_REGEX_FORM)
 
   const mustMatchPatterns = useMemo(
-    () => regexPatterns.filter((p) => p.pattern_type === 'must_match'),
+    () => regexPatterns.filter(p => p.pattern_type === 'must_match'),
     [regexPatterns]
   )
 
   const mustNotMatchPatterns = useMemo(
-    () => regexPatterns.filter((p) => p.pattern_type === 'must_not_match'),
+    () => regexPatterns.filter(p => p.pattern_type === 'must_not_match'),
     [regexPatterns]
   )
 
@@ -111,7 +119,9 @@ export function RegexPatternsTab({ openConfirm, isActiveTab }: RegexPatternsTabP
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : mustMatchPatterns.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No patterns configured</p>
+            <p className="text-center text-muted-foreground py-8">
+              No patterns configured
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -123,9 +133,11 @@ export function RegexPatternsTab({ openConfirm, isActiveTab }: RegexPatternsTabP
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mustMatchPatterns.map((pattern) => (
+                {mustMatchPatterns.map(pattern => (
                   <TableRow key={pattern.id}>
-                    <TableCell className="font-mono text-sm">{pattern.pattern}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {pattern.pattern}
+                    </TableCell>
                     <TableCell>{pattern.description || '-'}</TableCell>
                     <TableCell>
                       <Badge variant={pattern.is_active ? 'default' : 'secondary'}>
@@ -134,7 +146,11 @@ export function RegexPatternsTab({ openConfirm, isActiveTab }: RegexPatternsTabP
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(pattern)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(pattern)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
@@ -179,7 +195,9 @@ export function RegexPatternsTab({ openConfirm, isActiveTab }: RegexPatternsTabP
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : mustNotMatchPatterns.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No patterns configured</p>
+            <p className="text-center text-muted-foreground py-8">
+              No patterns configured
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -191,9 +209,11 @@ export function RegexPatternsTab({ openConfirm, isActiveTab }: RegexPatternsTabP
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mustNotMatchPatterns.map((pattern) => (
+                {mustNotMatchPatterns.map(pattern => (
                   <TableRow key={pattern.id}>
-                    <TableCell className="font-mono text-sm">{pattern.pattern}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {pattern.pattern}
+                    </TableCell>
                     <TableCell>{pattern.description || '-'}</TableCell>
                     <TableCell>
                       <Badge variant={pattern.is_active ? 'default' : 'secondary'}>
@@ -202,7 +222,11 @@ export function RegexPatternsTab({ openConfirm, isActiveTab }: RegexPatternsTabP
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(pattern)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(pattern)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button

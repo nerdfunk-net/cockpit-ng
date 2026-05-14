@@ -37,20 +37,28 @@ export function ImportPositionsStepResolve({
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
         <div className="flex items-center gap-2 mb-1">
           <MapPin className="h-4 w-4 text-amber-600" />
-          <h3 className="text-sm font-semibold text-gray-800">Rack Location Disambiguation</h3>
+          <h3 className="text-sm font-semibold text-gray-800">
+            Rack Location Disambiguation
+          </h3>
         </div>
         <p className="text-xs text-gray-600">
-          Rack names must be unique within a location, but the same rack name can exist in
-          multiple locations (e.g., both <span className="font-medium">Building A</span> and{' '}
+          Rack names must be unique within a location, but the same rack name can exist
+          in multiple locations (e.g., both{' '}
+          <span className="font-medium">Building A</span> and{' '}
           <span className="font-medium">Building B</span> may each have a rack named{' '}
-          <span className="font-medium text-gray-800">{rackName || 'A_1'}</span>). Select the
-          CSV column that identifies the location so the correct rows can be filtered.
+          <span className="font-medium text-gray-800">{rackName || 'A_1'}</span>).
+          Select the CSV column that identifies the location so the correct rows can be
+          filtered.
         </p>
         <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
-          <span className="text-xs text-gray-600 whitespace-nowrap">Location column</span>
+          <span className="text-xs text-gray-600 whitespace-nowrap">
+            Location column
+          </span>
           <Select
             value={locationColumn ?? NOT_USED_SENTINEL}
-            onValueChange={v => onLocationColumnChange(v === NOT_USED_SENTINEL ? null : v)}
+            onValueChange={v =>
+              onLocationColumnChange(v === NOT_USED_SENTINEL ? null : v)
+            }
           >
             <SelectTrigger className="h-8 text-xs">
               <SelectValue />
@@ -69,8 +77,8 @@ export function ImportPositionsStepResolve({
         </div>
         {locationColumn && (
           <p className="text-xs text-amber-700">
-            Column <span className="font-medium">{locationColumn}</span> will be matched against
-            location name <span className="font-medium">{locationName}</span>.
+            Column <span className="font-medium">{locationColumn}</span> will be matched
+            against location name <span className="font-medium">{locationName}</span>.
           </p>
         )}
       </div>
@@ -87,7 +95,10 @@ export function ImportPositionsStepResolve({
               <span className="text-xs text-gray-500">
                 for rack <span className="font-medium text-gray-700">{rackName}</span>
                 {locationColumn && locationName && (
-                  <> at <span className="font-medium text-gray-700">{locationName}</span></>
+                  <>
+                    {' '}
+                    at <span className="font-medium text-gray-700">{locationName}</span>
+                  </>
                 )}
               </span>
             </div>
@@ -97,7 +108,8 @@ export function ImportPositionsStepResolve({
               <span className="text-xs text-gray-500">
                 No rows found for rack <span className="font-medium">{rackName}</span>.
                 {!locationColumn && ' Try selecting a location column above.'}
-                {locationColumn && ' Check that the rack name and location values match your CSV.'}
+                {locationColumn &&
+                  ' Check that the rack name and location values match your CSV.'}
               </span>
             </div>
           )}

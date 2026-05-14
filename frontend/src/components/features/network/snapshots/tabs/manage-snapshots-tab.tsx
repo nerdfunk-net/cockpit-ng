@@ -25,11 +25,20 @@ import { useSnapshots } from '../hooks/use-snapshots'
 import { useToast } from '@/hooks/use-toast'
 
 export function ManageSnapshotsTab() {
-  const { snapshots, loading, loadSnapshots, deleteSnapshotDbOnly, deleteSnapshotWithFiles } = useSnapshots()
+  const {
+    snapshots,
+    loading,
+    loadSnapshots,
+    deleteSnapshotDbOnly,
+    deleteSnapshotWithFiles,
+  } = useSnapshots()
   const { toast } = useToast()
   const [selectedSnapshotIds, setSelectedSnapshotIds] = useState<number[]>([])
   const [showCompareDialog, setShowCompareDialog] = useState(false)
-  const [deleteSnapshot, setDeleteSnapshot] = useState<{ id: number; name: string } | null>(null)
+  const [deleteSnapshot, setDeleteSnapshot] = useState<{
+    id: number
+    name: string
+  } | null>(null)
   const [viewSnapshotId, setViewSnapshotId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -70,7 +79,8 @@ export function ManageSnapshotsTab() {
     } catch (error) {
       toast({
         title: 'Delete Failed',
-        description: error instanceof Error ? error.message : 'Failed to delete snapshot',
+        description:
+          error instanceof Error ? error.message : 'Failed to delete snapshot',
         variant: 'destructive',
       })
       throw error
@@ -87,7 +97,10 @@ export function ManageSnapshotsTab() {
     } catch (error) {
       toast({
         title: 'Delete Failed',
-        description: error instanceof Error ? error.message : 'Failed to delete snapshot and files',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to delete snapshot and files',
         variant: 'destructive',
       })
       throw error
@@ -123,7 +136,10 @@ export function ManageSnapshotsTab() {
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Snapshots</span>
             {snapshots.length > 0 && (
-              <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+              <Badge
+                variant="secondary"
+                className="bg-white/20 text-white border-white/30"
+              >
                 {snapshots.length}
               </Badge>
             )}
@@ -168,13 +184,20 @@ export function ManageSnapshotsTab() {
                     {snapshots.map(snapshot => (
                       <TableRow
                         key={snapshot.id}
-                        className={selectedSnapshotIds.includes(snapshot.id) ? 'bg-blue-50' : ''}
+                        className={
+                          selectedSnapshotIds.includes(snapshot.id) ? 'bg-blue-50' : ''
+                        }
                       >
                         <TableCell>
                           <Checkbox
                             checked={selectedSnapshotIds.includes(snapshot.id)}
-                            onCheckedChange={(checked) => handleSelectSnapshot(snapshot.id, checked as boolean)}
-                            disabled={!selectedSnapshotIds.includes(snapshot.id) && selectedSnapshotIds.length >= 2}
+                            onCheckedChange={checked =>
+                              handleSelectSnapshot(snapshot.id, checked as boolean)
+                            }
+                            disabled={
+                              !selectedSnapshotIds.includes(snapshot.id) &&
+                              selectedSnapshotIds.length >= 2
+                            }
                           />
                         </TableCell>
                         <TableCell className="font-medium">{snapshot.name}</TableCell>
@@ -184,9 +207,13 @@ export function ManageSnapshotsTab() {
                         </TableCell>
                         <TableCell>{getStatusBadge(snapshot.status)}</TableCell>
                         <TableCell>
-                          <span className="text-green-600 font-medium">{snapshot.success_count}</span>
+                          <span className="text-green-600 font-medium">
+                            {snapshot.success_count}
+                          </span>
                           {' / '}
-                          <span className="text-red-600 font-medium">{snapshot.failed_count}</span>
+                          <span className="text-red-600 font-medium">
+                            {snapshot.failed_count}
+                          </span>
                         </TableCell>
                         <TableCell>{snapshot.executed_by}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
@@ -216,7 +243,9 @@ export function ManageSnapshotsTab() {
                               variant="ghost"
                               className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                               title="Delete snapshot"
-                              onClick={() => handleDeleteClick(snapshot.id, snapshot.name)}
+                              onClick={() =>
+                                handleDeleteClick(snapshot.id, snapshot.name)
+                              }
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -255,7 +284,7 @@ export function ManageSnapshotsTab() {
       {deleteSnapshot && (
         <DeleteSnapshotDialog
           open={!!deleteSnapshot}
-          onOpenChange={(open) => !open && setDeleteSnapshot(null)}
+          onOpenChange={open => !open && setDeleteSnapshot(null)}
           snapshotId={deleteSnapshot.id}
           snapshotName={deleteSnapshot.name}
           onDeleteDbOnly={handleDeleteDbOnly}
@@ -266,7 +295,7 @@ export function ManageSnapshotsTab() {
       {viewSnapshotId && (
         <ViewSnapshotDialog
           open={!!viewSnapshotId}
-          onOpenChange={(open) => !open && setViewSnapshotId(null)}
+          onOpenChange={open => !open && setViewSnapshotId(null)}
           snapshotId={viewSnapshotId}
         />
       )}

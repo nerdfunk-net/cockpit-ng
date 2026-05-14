@@ -34,13 +34,16 @@ export function useCheckIpMutations() {
       toast({
         title: 'Upload failed',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
-  return useMemo(() => ({
-    uploadCsv,
-    isUploading: uploadCsv.isPending
-  }), [uploadCsv])
+  return useMemo(
+    () => ({
+      uploadCsv,
+      isUploading: uploadCsv.isPending,
+    }),
+    [uploadCsv]
+  )
 }

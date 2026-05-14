@@ -32,10 +32,18 @@ export function CelerySettingsPage() {
 
       {/* Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className={celeryStatus?.redis_connected ? 'status-success' : 'status-error'}>
+        <Card
+          className={celeryStatus?.redis_connected ? 'status-success' : 'status-error'}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Redis</CardTitle>
-            <Database className={celeryStatus?.redis_connected ? 'h-4 w-4 text-green-600' : 'h-4 w-4 text-red-600'} />
+            <Database
+              className={
+                celeryStatus?.redis_connected
+                  ? 'h-4 w-4 text-green-600'
+                  : 'h-4 w-4 text-red-600'
+              }
+            />
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-2">
@@ -54,36 +62,80 @@ export function CelerySettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className={(celeryStatus?.worker_count ?? 0) > 0 ? 'status-info' : 'bg-gray-50 border-gray-200'}>
+        <Card
+          className={
+            (celeryStatus?.worker_count ?? 0) > 0
+              ? 'status-info'
+              : 'bg-gray-50 border-gray-200'
+          }
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Workers</CardTitle>
-            <Server className={(celeryStatus?.worker_count ?? 0) > 0 ? 'h-4 w-4 text-blue-600' : 'h-4 w-4 text-gray-400'} />
+            <Server
+              className={
+                (celeryStatus?.worker_count ?? 0) > 0
+                  ? 'h-4 w-4 text-blue-600'
+                  : 'h-4 w-4 text-gray-400'
+              }
+            />
           </CardHeader>
           <CardContent>
-            <div className={(celeryStatus?.worker_count ?? 0) > 0 ? 'text-2xl font-bold' : 'text-2xl font-bold text-gray-500'}>
+            <div
+              className={
+                (celeryStatus?.worker_count ?? 0) > 0
+                  ? 'text-2xl font-bold'
+                  : 'text-2xl font-bold text-gray-500'
+              }
+            >
               {celeryStatus?.worker_count || 0}
             </div>
             <p className="text-xs text-muted-foreground">Active workers</p>
           </CardContent>
         </Card>
 
-        <Card className={(celeryStatus?.active_tasks ?? 0) > 0 ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}>
+        <Card
+          className={
+            (celeryStatus?.active_tasks ?? 0) > 0
+              ? 'bg-purple-50 border-purple-200'
+              : 'bg-gray-50 border-gray-200'
+          }
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Tasks</CardTitle>
-            <Activity className={(celeryStatus?.active_tasks ?? 0) > 0 ? 'h-4 w-4 text-purple-600' : 'h-4 w-4 text-gray-400'} />
+            <Activity
+              className={
+                (celeryStatus?.active_tasks ?? 0) > 0
+                  ? 'h-4 w-4 text-purple-600'
+                  : 'h-4 w-4 text-gray-400'
+              }
+            />
           </CardHeader>
           <CardContent>
-            <div className={(celeryStatus?.active_tasks ?? 0) > 0 ? 'text-2xl font-bold text-purple-700' : 'text-2xl font-bold text-gray-500'}>
+            <div
+              className={
+                (celeryStatus?.active_tasks ?? 0) > 0
+                  ? 'text-2xl font-bold text-purple-700'
+                  : 'text-2xl font-bold text-gray-500'
+              }
+            >
               {celeryStatus?.active_tasks || 0}
             </div>
             <p className="text-xs text-muted-foreground">Currently running</p>
           </CardContent>
         </Card>
 
-        <Card className={celeryStatus?.beat_running ? 'status-success' : 'status-error'}>
+        <Card
+          className={celeryStatus?.beat_running ? 'status-success' : 'status-error'}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Beat Scheduler</CardTitle>
-            <Clock className={celeryStatus?.beat_running ? 'h-4 w-4 text-green-600' : 'h-4 w-4 text-red-600'} />
+            <Clock
+              className={
+                celeryStatus?.beat_running
+                  ? 'h-4 w-4 text-green-600'
+                  : 'h-4 w-4 text-red-600'
+              }
+            />
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-2">

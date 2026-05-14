@@ -13,7 +13,12 @@ import { useJobsQuery } from './hooks/use-jobs-query'
 import { useJobDetailQuery } from './hooks/use-job-detail-query'
 import { useAllJobsProgress } from './hooks/use-job-progress-query'
 import { useJobMutations } from './hooks/use-job-mutations'
-import { DEFAULT_PAGE_SIZE, DEFAULT_PAGE, EMPTY_ARRAY, EMPTY_PROGRESS } from './utils/constants'
+import {
+  DEFAULT_PAGE_SIZE,
+  DEFAULT_PAGE,
+  EMPTY_ARRAY,
+  EMPTY_PROGRESS,
+} from './utils/constants'
 import type { JobSearchParams } from './types'
 
 export function JobsViewPage() {
@@ -44,22 +49,33 @@ export function JobsViewPage() {
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
   // Build query params from filter state
-  const queryParams: JobSearchParams = useMemo(() => ({
-    page,
-    page_size: DEFAULT_PAGE_SIZE,
-    ...(statusFilter.length > 0 && { status: statusFilter }),
-    ...(jobTypeFilter.length > 0 && { job_type: jobTypeFilter }),
-    ...(triggerFilter.length > 0 && { triggered_by: triggerFilter }),
-    ...(templateFilter.length > 0 && { template_id: templateFilter }),
-  }), [page, statusFilter, jobTypeFilter, triggerFilter, templateFilter])
+  const queryParams: JobSearchParams = useMemo(
+    () => ({
+      page,
+      page_size: DEFAULT_PAGE_SIZE,
+      ...(statusFilter.length > 0 && { status: statusFilter }),
+      ...(jobTypeFilter.length > 0 && { job_type: jobTypeFilter }),
+      ...(triggerFilter.length > 0 && { triggered_by: triggerFilter }),
+      ...(templateFilter.length > 0 && { template_id: templateFilter }),
+    }),
+    [page, statusFilter, jobTypeFilter, triggerFilter, templateFilter]
+  )
 
   // TanStack Query hooks
-  const { data: jobsData, isLoading, refetch, isFetching } = useJobsQuery({ params: queryParams })
+  const {
+    data: jobsData,
+    isLoading,
+    refetch,
+    isFetching,
+  } = useJobsQuery({ params: queryParams })
   const { data: viewingJob } = useJobDetailQuery(viewingJobId)
-  const { data: jobProgress = EMPTY_PROGRESS } = useAllJobsProgress(jobsData?.items || EMPTY_ARRAY)
+  const { data: jobProgress = EMPTY_PROGRESS } = useAllJobsProgress(
+    jobsData?.items || EMPTY_ARRAY
+  )
 
   // Mutations
-  const { cancelJob, deleteJob, clearFilteredHistory, clearAllHistory } = useJobMutations()
+  const { cancelJob, deleteJob, clearFilteredHistory, clearAllHistory } =
+    useJobMutations()
 
   // Derived data
   const jobs = jobsData?.items || EMPTY_ARRAY
@@ -82,22 +98,25 @@ export function JobsViewPage() {
   }, [jobs])
 
   // Filter helpers
-  const hasActiveFilters = statusFilter.length > 0 || jobTypeFilter.length > 0 ||
-                          triggerFilter.length > 0 || templateFilter.length > 0
+  const hasActiveFilters =
+    statusFilter.length > 0 ||
+    jobTypeFilter.length > 0 ||
+    triggerFilter.length > 0 ||
+    templateFilter.length > 0
 
   const getFilterDescription = useCallback(() => {
     const parts: string[] = []
-    if (statusFilter.length > 0) parts.push(`status: ${statusFilter.join(", ")}`)
-    if (jobTypeFilter.length > 0) parts.push(`type: ${jobTypeFilter.join(", ")}`)
-    if (triggerFilter.length > 0) parts.push(`trigger: ${triggerFilter.join(", ")}`)
+    if (statusFilter.length > 0) parts.push(`status: ${statusFilter.join(', ')}`)
+    if (jobTypeFilter.length > 0) parts.push(`type: ${jobTypeFilter.join(', ')}`)
+    if (triggerFilter.length > 0) parts.push(`trigger: ${triggerFilter.join(', ')}`)
     if (templateFilter.length > 0) {
       const templateNames = templateFilter.map(id => {
         const template = templates.find(t => t.id.toString() === id)
         return template?.name || id
       })
-      parts.push(`template: ${templateNames.join(", ")}`)
+      parts.push(`template: ${templateNames.join(', ')}`)
     }
-    return parts.length > 0 ? parts.join(", ") : "all"
+    return parts.length > 0 ? parts.join(', ') : 'all'
   }, [statusFilter, jobTypeFilter, triggerFilter, templateFilter, templates])
 
   // Event handlers
@@ -108,23 +127,29 @@ export function JobsViewPage() {
     }
   }, [])
 
-  const handleCancelJob = useCallback(async (jobId: number) => {
-    setCancellingId(jobId)
-    try {
-      await cancelJob.mutateAsync(jobId)
-    } finally {
-      setCancellingId(null)
-    }
-  }, [cancelJob])
+  const handleCancelJob = useCallback(
+    async (jobId: number) => {
+      setCancellingId(jobId)
+      try {
+        await cancelJob.mutateAsync(jobId)
+      } finally {
+        setCancellingId(null)
+      }
+    },
+    [cancelJob]
+  )
 
-  const handleDeleteJob = useCallback(async (jobId: number) => {
-    setDeletingId(jobId)
-    try {
-      await deleteJob.mutateAsync(jobId)
-    } finally {
-      setDeletingId(null)
-    }
-  }, [deleteJob])
+  const handleDeleteJob = useCallback(
+    async (jobId: number) => {
+      setDeletingId(jobId)
+      try {
+        await deleteJob.mutateAsync(jobId)
+      } finally {
+        setDeletingId(null)
+      }
+    },
+    [deleteJob]
+  )
 
   const handleClearHistory = useCallback(() => {
     setClearHistoryDialogOpen(true)
@@ -165,7 +190,9 @@ export function JobsViewPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-slate-900">Job History</h1>
-              <p className="text-muted-foreground mt-2">View running and completed background jobs</p>
+              <p className="text-muted-foreground mt-2">
+                View running and completed background jobs
+              </p>
             </div>
           </div>
 
@@ -216,7 +243,7 @@ export function JobsViewPage() {
       <JobResultDialog
         jobRun={viewingJob || null}
         open={viewingJobId !== null}
-        onOpenChange={(open) => !open && setViewingJobId(null)}
+        onOpenChange={open => !open && setViewingJobId(null)}
       />
 
       {/* Clear History Confirmation Dialog */}

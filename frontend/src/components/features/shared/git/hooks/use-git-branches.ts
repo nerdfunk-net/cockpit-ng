@@ -23,7 +23,7 @@ export function useGitBranches(
   const [error, setError] = useState<string | null>(null)
   const { apiCall } = useApi()
   const { onBranchChange } = options
-  
+
   // Use ref to avoid recreating loadBranches when apiCall changes
   const apiCallRef = useRef(apiCall)
   apiCallRef.current = apiCall
@@ -55,20 +55,26 @@ export function useGitBranches(
     loadBranches()
   }, [repoId, loadBranches])
 
-  const handleBranchChange = useCallback((branch: string) => {
-    setSelectedBranch(branch)
-    if (onBranchChange) {
-      onBranchChange(branch)
-    }
-  }, [onBranchChange])
+  const handleBranchChange = useCallback(
+    (branch: string) => {
+      setSelectedBranch(branch)
+      if (onBranchChange) {
+        onBranchChange(branch)
+      }
+    },
+    [onBranchChange]
+  )
 
   // Memoize the return object to ensure stable reference
-  return useMemo(() => ({
-    branches,
-    selectedBranch,
-    setSelectedBranch: handleBranchChange,
-    loading,
-    error,
-    reload: loadBranches
-  }), [branches, selectedBranch, handleBranchChange, loading, error, loadBranches])
+  return useMemo(
+    () => ({
+      branches,
+      selectedBranch,
+      setSelectedBranch: handleBranchChange,
+      loading,
+      error,
+      reload: loadBranches,
+    }),
+    [branches, selectedBranch, handleBranchChange, loading, error, loadBranches]
+  )
 }

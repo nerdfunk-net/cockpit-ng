@@ -23,9 +23,13 @@ export function useSoftwareImageFilesQuery(
   return useQuery({
     queryKey: queryKeys.nautobot.softwareImageFiles(softwareVersion),
     queryFn: async (): Promise<SoftwareImageOption[]> => {
-      const params = softwareVersion ? `?software_version=${encodeURIComponent(softwareVersion)}` : ''
+      const params = softwareVersion
+        ? `?software_version=${encodeURIComponent(softwareVersion)}`
+        : ''
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = await apiCall<any>(`nautobot/software-image-files${params}`, { method: 'GET' }).catch(() => [])
+      const data = await apiCall<any>(`nautobot/software-image-files${params}`, {
+        method: 'GET',
+      }).catch(() => [])
       return Array.isArray(data) ? data : []
     },
     staleTime: QUERY_STALE_TIMES.STATIC,

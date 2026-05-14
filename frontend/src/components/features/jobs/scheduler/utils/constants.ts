@@ -45,8 +45,8 @@ export const JOB_TYPE_LABELS: Record<string, string> = {
 } as const
 
 export const STALE_TIME = {
-  SCHEDULES: 30 * 1000,      // 30 seconds - moderately dynamic
-  TEMPLATES: 5 * 60 * 1000,  // 5 minutes - rarely changes
+  SCHEDULES: 30 * 1000, // 30 seconds - moderately dynamic
+  TEMPLATES: 5 * 60 * 1000, // 5 minutes - rarely changes
   CREDENTIALS: 5 * 60 * 1000, // 5 minutes - rarely changes
-  DEBUG: 10 * 1000,          // 10 seconds - frequently changing
+  DEBUG: 10 * 1000, // 10 seconds - frequently changing
 } as const

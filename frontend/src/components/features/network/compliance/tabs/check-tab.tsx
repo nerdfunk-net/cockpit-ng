@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -172,19 +178,22 @@ export function CheckTab({
       const devices = selectedDevices.map(d => ({
         id: d.id,
         name: d.name,
-        primary_ip4: typeof d.primary_ip4 === 'object' && d.primary_ip4?.address
-          ? d.primary_ip4.address.split('/')[0]
-          : (d.primary_ip4 as string) || '',
-        device_type: typeof d.device_type === 'object' && d.device_type?.name
-          ? d.device_type.name
-          : (d.device_type as string) || '',
-        platform: typeof d.platform === 'object' && d.platform?.name
-          ? d.platform.name
-          : (d.platform as string) || '',
+        primary_ip4:
+          typeof d.primary_ip4 === 'object' && d.primary_ip4?.address
+            ? d.primary_ip4.address.split('/')[0]
+            : (d.primary_ip4 as string) || '',
+        device_type:
+          typeof d.device_type === 'object' && d.device_type?.name
+            ? d.device_type.name
+            : (d.device_type as string) || '',
+        platform:
+          typeof d.platform === 'object' && d.platform?.name
+            ? d.platform.name
+            : (d.platform as string) || '',
       }))
 
       // Call backend API
-      const response = await apiCall('compliance/check', {
+      const response = (await apiCall('compliance/check', {
         method: 'POST',
         body: JSON.stringify({
           devices,
@@ -195,7 +204,7 @@ export function CheckTab({
           selected_snmp_ids: selectedSnmpIds,
           selected_regex_ids: selectedRegexIds,
         }),
-      }) as ComplianceCheckResponse
+      })) as ComplianceCheckResponse
 
       if (response.success) {
         setCheckResults(response)
@@ -214,7 +223,8 @@ export function CheckTab({
       console.error('Compliance check error:', error)
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to check compliance',
+        description:
+          error instanceof Error ? error.message : 'Failed to check compliance',
         variant: 'destructive',
       })
     } finally {
@@ -238,7 +248,8 @@ export function CheckTab({
         <Alert className="status-error">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            No devices selected. Please go to the <strong>Devices</strong> tab to select devices.
+            No devices selected. Please go to the <strong>Devices</strong> tab to select
+            devices.
           </AlertDescription>
         </Alert>
       )}
@@ -247,7 +258,8 @@ export function CheckTab({
         <Alert className="status-error">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            No check types enabled. Please go to the <strong>Settings</strong> tab to enable at least one check type.
+            No check types enabled. Please go to the <strong>Settings</strong> tab to
+            enable at least one check type.
           </AlertDescription>
         </Alert>
       )}
@@ -256,7 +268,8 @@ export function CheckTab({
         <Alert className="status-error">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            No credentials selected for enabled checks. Please go to the <strong>Settings</strong> tab to select credentials.
+            No credentials selected for enabled checks. Please go to the{' '}
+            <strong>Settings</strong> tab to select credentials.
           </AlertDescription>
         </Alert>
       )}
@@ -302,7 +315,8 @@ export function CheckTab({
                       <td className="py-3 px-4">
                         <div className="font-medium">{device.name}</div>
                         <div className="text-sm text-gray-500">
-                          {typeof device.primary_ip4 === 'object' && device.primary_ip4?.address
+                          {typeof device.primary_ip4 === 'object' &&
+                          device.primary_ip4?.address
                             ? device.primary_ip4.address.split('/')[0]
                             : (device.primary_ip4 as string) || 'No IP'}
                         </div>
@@ -311,7 +325,9 @@ export function CheckTab({
                         {checkSshLogins && selectedLogins.length > 0 ? (
                           <div className="flex items-center justify-center gap-1">
                             <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            <span className="text-sm text-gray-600">({selectedLogins.length})</span>
+                            <span className="text-sm text-gray-600">
+                              ({selectedLogins.length})
+                            </span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center">
@@ -323,7 +339,9 @@ export function CheckTab({
                         {checkSnmpCredentials && selectedSnmp.length > 0 ? (
                           <div className="flex items-center justify-center gap-1">
                             <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            <span className="text-sm text-gray-600">({selectedSnmp.length})</span>
+                            <span className="text-sm text-gray-600">
+                              ({selectedSnmp.length})
+                            </span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center">
@@ -335,7 +353,9 @@ export function CheckTab({
                         {checkConfiguration && selectedRegex.length > 0 ? (
                           <div className="flex items-center justify-center gap-1">
                             <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            <span className="text-sm text-gray-600">({selectedRegex.length})</span>
+                            <span className="text-sm text-gray-600">
+                              ({selectedRegex.length})
+                            </span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center">
@@ -349,10 +369,17 @@ export function CheckTab({
               </table>
             </div>
             <div className="mt-4 text-sm text-gray-600">
-              Total: {selectedDevices.length} device{selectedDevices.length !== 1 ? 's' : ''} will be checked
-              {checkSshLogins && selectedLogins.length > 0 && ` • ${selectedLogins.length} SSH credential${selectedLogins.length !== 1 ? 's' : ''}`}
-              {checkSnmpCredentials && selectedSnmp.length > 0 && ` • ${selectedSnmp.length} SNMP mapping${selectedSnmp.length !== 1 ? 's' : ''}`}
-              {checkConfiguration && selectedRegex.length > 0 && ` • ${selectedRegex.length} regex pattern${selectedRegex.length !== 1 ? 's' : ''}`}
+              Total: {selectedDevices.length} device
+              {selectedDevices.length !== 1 ? 's' : ''} will be checked
+              {checkSshLogins &&
+                selectedLogins.length > 0 &&
+                ` • ${selectedLogins.length} SSH credential${selectedLogins.length !== 1 ? 's' : ''}`}
+              {checkSnmpCredentials &&
+                selectedSnmp.length > 0 &&
+                ` • ${selectedSnmp.length} SNMP mapping${selectedSnmp.length !== 1 ? 's' : ''}`}
+              {checkConfiguration &&
+                selectedRegex.length > 0 &&
+                ` • ${selectedRegex.length} regex pattern${selectedRegex.length !== 1 ? 's' : ''}`}
             </div>
           </CardContent>
         </Card>
@@ -366,11 +393,13 @@ export function CheckTab({
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Ready to check compliance for <strong>{selectedDevices.length}</strong> device
-                  {selectedDevices.length !== 1 ? 's' : ''}.
-                  This will verify SSH logins{checkSshLogins ? ` (${selectedLogins.length})` : ''},
-                  SNMP credentials{checkSnmpCredentials ? ` (${selectedSnmp.length})` : ''},
-                  and configuration patterns{checkConfiguration ? ` (${selectedRegex.length})` : ''}.
+                  Ready to check compliance for{' '}
+                  <strong>{selectedDevices.length}</strong> device
+                  {selectedDevices.length !== 1 ? 's' : ''}. This will verify SSH logins
+                  {checkSshLogins ? ` (${selectedLogins.length})` : ''}, SNMP
+                  credentials{checkSnmpCredentials ? ` (${selectedSnmp.length})` : ''},
+                  and configuration patterns
+                  {checkConfiguration ? ` (${selectedRegex.length})` : ''}.
                 </AlertDescription>
               </Alert>
               <Button
@@ -417,7 +446,9 @@ export function CheckTab({
               Compliance Check Results
             </CardTitle>
             <CardDescription>
-              {checkResults.summary.devices_passed} passed, {checkResults.summary.devices_failed} failed, {checkResults.summary.devices_skipped} skipped
+              {checkResults.summary.devices_passed} passed,{' '}
+              {checkResults.summary.devices_failed} failed,{' '}
+              {checkResults.summary.devices_skipped} skipped
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -435,11 +466,23 @@ export function CheckTab({
                           <Info className="h-5 w-5 text-gray-400" />
                         )}
                         <div>
-                          <CardTitle className="text-lg">{result.device_name}</CardTitle>
-                          <CardDescription>{result.device_ip || 'No IP'}</CardDescription>
+                          <CardTitle className="text-lg">
+                            {result.device_name}
+                          </CardTitle>
+                          <CardDescription>
+                            {result.device_ip || 'No IP'}
+                          </CardDescription>
                         </div>
                       </div>
-                      <Badge variant={result.status === 'pass' ? 'default' : result.status === 'fail' ? 'destructive' : 'secondary'}>
+                      <Badge
+                        variant={
+                          result.status === 'pass'
+                            ? 'default'
+                            : result.status === 'fail'
+                              ? 'destructive'
+                              : 'secondary'
+                        }
+                      >
                         {result.status}
                       </Badge>
                     </div>
@@ -453,27 +496,38 @@ export function CheckTab({
                       <div className="mb-4">
                         <h4 className="font-semibold mb-2 flex items-center gap-2">
                           <Key className="h-4 w-4" />
-                          SSH Login Checks ({result.checks.ssh_logins.passed}/{result.checks.ssh_logins.total})
+                          SSH Login Checks ({result.checks.ssh_logins.passed}/
+                          {result.checks.ssh_logins.total})
                         </h4>
                         <div className="space-y-2 pl-6">
-                          {result.checks.ssh_logins.results.map((ssh: SSHCheckResult) => (
-                            <div key={`ssh-${result.device_id}-${ssh.username}`} className="flex items-start gap-2 text-sm">
-                              {ssh.success ? (
-                                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
-                              ) : (
-                                <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                              )}
-                              <div>
-                                <div className="font-medium">
-                                  {ssh.details.credential_name || ssh.details.username}
-                                  {ssh.details.credential_name && ssh.details.credential_name !== ssh.details.username && (
-                                    <span className="text-gray-500 font-normal ml-2">({ssh.details.username})</span>
-                                  )}
+                          {result.checks.ssh_logins.results.map(
+                            (ssh: SSHCheckResult) => (
+                              <div
+                                key={`ssh-${result.device_id}-${ssh.username}`}
+                                className="flex items-start gap-2 text-sm"
+                              >
+                                {ssh.success ? (
+                                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                                ) : (
+                                  <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                                )}
+                                <div>
+                                  <div className="font-medium">
+                                    {ssh.details.credential_name ||
+                                      ssh.details.username}
+                                    {ssh.details.credential_name &&
+                                      ssh.details.credential_name !==
+                                        ssh.details.username && (
+                                        <span className="text-gray-500 font-normal ml-2">
+                                          ({ssh.details.username})
+                                        </span>
+                                      )}
+                                  </div>
+                                  <div className="text-gray-600">{ssh.message}</div>
                                 </div>
-                                <div className="text-gray-600">{ssh.message}</div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     )}
@@ -482,25 +536,34 @@ export function CheckTab({
                       <div className="mb-4">
                         <h4 className="font-semibold mb-2 flex items-center gap-2">
                           <Network className="h-4 w-4" />
-                          SNMP Credential Checks ({result.checks.snmp_credentials.passed}/{result.checks.snmp_credentials.total})
+                          SNMP Credential Checks (
+                          {result.checks.snmp_credentials.passed}/
+                          {result.checks.snmp_credentials.total})
                         </h4>
                         <div className="space-y-2 pl-6">
-                          {result.checks.snmp_credentials.results.map((snmp: SNMPCheckResult) => (
-                            <div key={`snmp-${result.device_id}-${snmp.version}`} className="flex items-start gap-2 text-sm">
-                              {snmp.success ? (
-                                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
-                              ) : (
-                                <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                              )}
-                              <div>
-                                <div className="font-medium">
-                                  {snmp.details.mapping_name || snmp.details.version}
-                                  <span className="text-gray-500 font-normal ml-2">({snmp.details.version})</span>
+                          {result.checks.snmp_credentials.results.map(
+                            (snmp: SNMPCheckResult) => (
+                              <div
+                                key={`snmp-${result.device_id}-${snmp.version}`}
+                                className="flex items-start gap-2 text-sm"
+                              >
+                                {snmp.success ? (
+                                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                                ) : (
+                                  <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                                )}
+                                <div>
+                                  <div className="font-medium">
+                                    {snmp.details.mapping_name || snmp.details.version}
+                                    <span className="text-gray-500 font-normal ml-2">
+                                      ({snmp.details.version})
+                                    </span>
+                                  </div>
+                                  <div className="text-gray-600">{snmp.message}</div>
                                 </div>
-                                <div className="text-gray-600">{snmp.message}</div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     )}
@@ -509,7 +572,9 @@ export function CheckTab({
                       <div>
                         <h4 className="font-semibold mb-2 flex items-center gap-2">
                           <FileText className="h-4 w-4" />
-                          Configuration Checks ({result.checks.configuration.result.passed}/{result.checks.configuration.result.total_patterns})
+                          Configuration Checks (
+                          {result.checks.configuration.result.passed}/
+                          {result.checks.configuration.result.total_patterns})
                         </h4>
                         {result.checks.configuration.result.note && (
                           <div className="mb-2 text-sm text-amber-600 pl-6">
@@ -517,19 +582,26 @@ export function CheckTab({
                           </div>
                         )}
                         <div className="space-y-2 pl-6">
-                          {result.checks.configuration.result.pattern_results.map((pattern: PatternCheckResult) => (
-                            <div key={`pattern-${result.device_id}-${pattern.pattern}`} className="flex items-start gap-2 text-sm">
-                              {pattern.success ? (
-                                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
-                              ) : (
-                                <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
-                              )}
-                              <div>
-                                <div className="font-mono text-xs">{pattern.details.pattern}</div>
-                                <div className="text-gray-600">{pattern.message}</div>
+                          {result.checks.configuration.result.pattern_results.map(
+                            (pattern: PatternCheckResult) => (
+                              <div
+                                key={`pattern-${result.device_id}-${pattern.pattern}`}
+                                className="flex items-start gap-2 text-sm"
+                              >
+                                {pattern.success ? (
+                                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                                ) : (
+                                  <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                                )}
+                                <div>
+                                  <div className="font-mono text-xs">
+                                    {pattern.details.pattern}
+                                  </div>
+                                  <div className="text-gray-600">{pattern.message}</div>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     )}

@@ -1,5 +1,11 @@
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import type { PaginationState } from '@/types/features/nautobot/offboard'
 import { PAGE_SIZE_OPTIONS } from '@/utils/features/nautobot/offboard/ui-helpers'
@@ -10,25 +16,34 @@ interface PaginationControlsProps {
   onPageSizeChange: (size: number) => void
 }
 
-export function PaginationControls({ pagination, onPageChange, onPageSizeChange }: PaginationControlsProps) {
+export function PaginationControls({
+  pagination,
+  onPageChange,
+  onPageSizeChange,
+}: PaginationControlsProps) {
   return (
     <div className="bg-gray-50 px-4 py-3 border-t flex items-center justify-between">
       <div className="flex items-center space-x-2">
         <span className="text-sm text-gray-600">
           Showing {pagination.currentPage * pagination.pageSize + 1} to{' '}
-          {Math.min((pagination.currentPage + 1) * pagination.pageSize, pagination.totalItems)} of{' '}
-          {pagination.totalItems} devices
+          {Math.min(
+            (pagination.currentPage + 1) * pagination.pageSize,
+            pagination.totalItems
+          )}{' '}
+          of {pagination.totalItems} devices
         </span>
         <Select
           value={pagination.pageSize.toString()}
-          onValueChange={(value) => onPageSizeChange(parseInt(value))}
+          onValueChange={value => onPageSizeChange(parseInt(value))}
         >
           <SelectTrigger className="w-20 h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {PAGE_SIZE_OPTIONS.map(size => (
-              <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
+              <SelectItem key={size} value={size.toString()}>
+                {size}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -62,7 +77,7 @@ export function PaginationControls({ pagination, onPageChange, onPageSizeChange 
           return (
             <Button
               key={pageNum}
-              variant={pagination.currentPage === pageNum ? "default" : "outline"}
+              variant={pagination.currentPage === pageNum ? 'default' : 'outline'}
               size="sm"
               onClick={() => onPageChange(pageNum)}
               className="w-8"

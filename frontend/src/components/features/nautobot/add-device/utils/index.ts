@@ -4,12 +4,15 @@ import type { DeviceFormValues } from './validation'
 /**
  * Builds hierarchical path for a location
  */
-export function buildLocationPath(location: LocationItem, allLocations: LocationItem[]): string {
+export function buildLocationPath(
+  location: LocationItem,
+  allLocations: LocationItem[]
+): string {
   const path: string[] = [location.name]
   let current = location
 
   while (current.parent) {
-    const parent = allLocations.find((loc) => loc.id === current.parent?.id)
+    const parent = allLocations.find(loc => loc.id === current.parent?.id)
     if (!parent) break
     path.unshift(parent.name)
     current = parent
@@ -22,7 +25,7 @@ export function buildLocationPath(location: LocationItem, allLocations: Location
  * Adds hierarchicalPath to all locations
  */
 export function buildLocationHierarchy(locations: LocationItem[]): LocationItem[] {
-  return locations.map((loc) => ({
+  return locations.map(loc => ({
     ...loc,
     hierarchicalPath: buildLocationPath(loc, locations),
   }))

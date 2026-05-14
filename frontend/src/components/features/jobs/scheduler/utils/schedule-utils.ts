@@ -1,5 +1,9 @@
 import type { JobSchedule } from '../types'
-import { SCHEDULE_TYPE_LABELS, SCHEDULE_TYPE_COLORS, JOB_TYPE_LABELS } from './constants'
+import {
+  SCHEDULE_TYPE_LABELS,
+  SCHEDULE_TYPE_COLORS,
+  JOB_TYPE_LABELS,
+} from './constants'
 
 /**
  * Get human-readable label for schedule type

@@ -21,7 +21,12 @@ interface GitPullDialogProps {
   mutation: UseMutationResult<CommandResult, Error, GitPullInput>
 }
 
-export function GitPullDialog({ open, onOpenChange, agentId, mutation }: GitPullDialogProps) {
+export function GitPullDialog({
+  open,
+  onOpenChange,
+  agentId,
+  mutation,
+}: GitPullDialogProps) {
   const handleSubmit = useCallback(() => {
     mutation.mutate(
       {
@@ -44,8 +49,9 @@ export function GitPullDialog({ open, onOpenChange, agentId, mutation }: GitPull
             Git Pull
           </DialogTitle>
           <DialogDescription>
-            Pull the latest changes from the configured git repository on agent <strong>{agentId}</strong>.
-            The repository path is configured locally on the agent.
+            Pull the latest changes from the configured git repository on agent{' '}
+            <strong>{agentId}</strong>. The repository path is configured locally on the
+            agent.
           </DialogDescription>
         </DialogHeader>
 

@@ -54,10 +54,10 @@ import {
 
 interface NavItem {
   label: string
-  href?: string  // Optional when item has children
+  href?: string // Optional when item has children
   icon: React.ComponentType<{ className?: string }>
   badge?: string
-  children?: NavItem[]  // Support for nested menu items
+  children?: NavItem[] // Support for nested menu items
 }
 
 interface NavSection {
@@ -89,7 +89,11 @@ const navigationSections: NavSection[] = [
         children: [
           { label: 'Check IP & Names', href: '/nautobot/tools/check-ip', icon: Search },
           { label: 'Bulk Edit', href: '/nautobot/tools/bulk-edit', icon: Edit },
-          { label: 'CSV Updates', href: '/nautobot/tools/csv-updates', icon: FileSpreadsheet },
+          {
+            label: 'CSV Updates',
+            href: '/nautobot/tools/csv-updates',
+            icon: FileSpreadsheet,
+          },
           { label: 'Stacks', href: '/nautobot/tools/stacks', icon: Layers },
         ],
       },
@@ -135,9 +139,7 @@ const navigationSections: NavSection[] = [
       {
         label: 'Tools',
         icon: Wrench,
-        children: [
-          { label: 'Ping', href: '/tools/ping', icon: Wifi },
-        ],
+        children: [{ label: 'Ping', href: '/tools/ping', icon: Wifi }],
       },
       { label: 'Compliance Check', href: '/compliance', icon: CheckCircle },
       { label: 'Clients', href: '/clients', icon: Users },
@@ -193,7 +195,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
     collapsedSections,
     setCollapsedSections,
     collapsedItems,
-    setCollapsedItems
+    setCollapsedItems,
   } = useSidebar()
   const { user, logout } = useAuthStore()
   const pathname = usePathname()
@@ -279,7 +281,9 @@ export function AppSidebar({ className }: AppSidebarProps) {
           </Button>
           {!isCollapsed && !isItemCollapsed && item.children && (
             <div className="mt-1 space-y-1">
-              {item.children.map(child => renderMenuItem(child, sectionTitle, depth + 1))}
+              {item.children.map(child =>
+                renderMenuItem(child, sectionTitle, depth + 1)
+              )}
             </div>
           )}
         </div>
@@ -303,7 +307,10 @@ export function AppSidebar({ className }: AppSidebarProps) {
               <>
                 <span className="flex-1 text-left font-medium">{item.label}</span>
                 {item.badge && (
-                  <Badge variant="secondary" className="text-xs bg-slate-100 text-slate-600">
+                  <Badge
+                    variant="secondary"
+                    className="text-xs bg-slate-100 text-slate-600"
+                  >
                     {item.badge}
                   </Badge>
                 )}
@@ -368,11 +375,10 @@ export function AppSidebar({ className }: AppSidebarProps) {
           </div>
         </div>
 
-
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-6">
           <nav className="space-y-4">
-            {visibleSections.map((section) => {
+            {visibleSections.map(section => {
               const isSectionCollapsed = collapsedSections.has(section.title)
 
               return (
@@ -392,11 +398,13 @@ export function AppSidebar({ className }: AppSidebarProps) {
                   )}
                   <div
                     className={cn(
-                      "space-y-1 transition-all duration-300 overflow-hidden",
-                      !isCollapsed && isSectionCollapsed ? "max-h-0 opacity-0" : "max-h-none opacity-100"
+                      'space-y-1 transition-all duration-300 overflow-hidden',
+                      !isCollapsed && isSectionCollapsed
+                        ? 'max-h-0 opacity-0'
+                        : 'max-h-none opacity-100'
                     )}
                   >
-                    {section.items.map((item) => renderMenuItem(item, section.title))}
+                    {section.items.map(item => renderMenuItem(item, section.title))}
                   </div>
                 </div>
               )

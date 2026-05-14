@@ -31,13 +31,13 @@ import { queryKeys } from '@/lib/query-keys'
 // ✅ GOOD
 useQuery({
   queryKey: queryKeys.git.repositories(),
-  queryFn: () => fetchRepos()
+  queryFn: () => fetchRepos(),
 })
 
 // ❌ BAD
 useQuery({
-  queryKey: ['git-repositories'],  // Don't use inline keys
-  queryFn: () => fetchRepos()
+  queryKey: ['git-repositories'], // Don't use inline keys
+  queryFn: () => fetchRepos(),
 })
 ```
 
@@ -62,9 +62,9 @@ Structure keys from **general to specific**:
 
 ```typescript
 // Hierarchy: feature → action → filters
-queryKeys.checkmk.hosts()           // All hosts
-queryKeys.checkmk.hosts({ folder: 'network' })  // Filtered hosts
-queryKeys.checkmk.host('123')       // Specific host
+queryKeys.checkmk.hosts() // All hosts
+queryKeys.checkmk.hosts({ folder: 'network' }) // Filtered hosts
+queryKeys.checkmk.host('123') // Specific host
 ```
 
 This enables **targeted cache invalidation**:
@@ -113,7 +113,7 @@ Group CRUD operations in one file:
 // use-git-mutations.ts
 export function useGitMutations() {
   return {
-    createRepository,    // ✅ Related mutations together
+    createRepository, // ✅ Related mutations together
     updateRepository,
     deleteRepository,
     syncRepository,
@@ -204,7 +204,7 @@ Configure in `query-client.ts`:
 
 ```typescript
 queryCache: new QueryCache({
-  onError: (error) => {
+  onError: error => {
     // Skip auth errors (useApi handles logout)
     if (error.message.includes('401') || error.message.includes('Session expired')) {
       return
@@ -214,9 +214,9 @@ queryCache: new QueryCache({
     toastFunction({
       title: 'Error loading data',
       description: error.message,
-      variant: 'destructive'
+      variant: 'destructive',
     })
-  }
+  },
 })
 ```
 
@@ -226,9 +226,11 @@ queryCache: new QueryCache({
 retry: (failureCount, error) => {
   // ✅ NEVER retry auth errors
   if (error instanceof Error) {
-    if (error.message.includes('401') ||
-        error.message.includes('403') ||
-        error.message.includes('Session expired')) {
+    if (
+      error.message.includes('401') ||
+      error.message.includes('403') ||
+      error.message.includes('Session expired')
+    ) {
       return false
     }
   }
@@ -299,7 +301,7 @@ useMutation({
   onSuccess: () => {
     // ✅ Invalidate to trigger refetch
     queryClient.invalidateQueries({ queryKey: queryKeys.git.repositories() })
-  }
+  },
 })
 ```
 
@@ -390,12 +392,13 @@ test('renders data', async () => {
 Test utilities automatically configure:
 
 ```typescript
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: { retry: false, gcTime: 0 },
-    mutations: { retry: false },
-  },
-})
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+      mutations: { retry: false },
+    },
+  })
 ```
 
 ---
@@ -433,7 +436,7 @@ const { data: userId } = useUserQuery()
 // Query 2 depends on Query 1
 const { data: profile } = useProfileQuery({
   userId,
-  enabled: !!userId  // Only run when userId exists
+  enabled: !!userId, // Only run when userId exists
 })
 ```
 
@@ -444,18 +447,18 @@ export function useJobQuery(taskId: string) {
   return useQuery({
     queryKey: queryKeys.jobs.detail(taskId),
     queryFn: () => fetchJob(taskId),
-    refetchInterval: (query) => {
+    refetchInterval: query => {
       const data = query.state.data
-      if (!data) return 2000  // Keep polling
+      if (!data) return 2000 // Keep polling
 
       // Stop when job completes
       if (TERMINAL_STATES.includes(data.status)) {
         return false
       }
 
-      return 2000  // Continue polling
+      return 2000 // Continue polling
     },
-    staleTime: 0,  // Always fetch fresh
+    staleTime: 0, // Always fetch fresh
   })
 }
 ```
@@ -467,13 +470,10 @@ const { data } = useMyQuery()
 
 // ✅ Derive from query data
 const items = useMemo(() => data?.items || [], [data])
-const activeItems = useMemo(() =>
-  items.filter(item => item.active),
-  [items]
-)
+const activeItems = useMemo(() => items.filter(item => item.active), [items])
 
 // ❌ DON'T duplicate in useState
-const [items, setItems] = useState([])  // Bad!
+const [items, setItems] = useState([]) // Bad!
 ```
 
 ---
@@ -484,11 +484,11 @@ const [items, setItems] = useState([])  // Bad!
 
 ```typescript
 // ❌ BAD: Creates new object every render
-export function useMyQuery(options = {}) { }
+export function useMyQuery(options = {}) {}
 
 // ✅ GOOD: Use constant
 const DEFAULT_OPTIONS = {}
-export function useMyQuery(options = DEFAULT_OPTIONS) { }
+export function useMyQuery(options = DEFAULT_OPTIONS) {}
 ```
 
 ### ❌ DON'T: Call setState in useEffect
@@ -530,12 +530,12 @@ useQuery({ queryKey: queryKeys.git.repositories(), ... })
 
 ```typescript
 // ❌ BAD: Outgoing refetch might overwrite optimistic update
-onMutate: async (data) => {
+onMutate: async data => {
   queryClient.setQueryData(['items'], newData)
 }
 
 // ✅ GOOD: Cancel first
-onMutate: async (data) => {
+onMutate: async data => {
   await queryClient.cancelQueries({ queryKey: ['items'] })
   queryClient.setQueryData(['items'], newData)
 }
@@ -545,16 +545,16 @@ onMutate: async (data) => {
 
 ## Quick Reference
 
-| Scenario | Pattern | Example |
-|----------|---------|---------|
-| Fetch data | `useQuery` | `useCheckmkHostsQuery()` |
-| Create/Update/Delete | `useMutation` | `useGitMutations().createRepository` |
-| Poll for updates | `useQuery` + `refetchInterval` | `useJobQuery()` |
-| Instant UI feedback | Optimistic updates | `useGitMutationsOptimistic()` |
-| Dependent queries | `enabled` option | `enabled: !!userId` |
-| Derived state | `useMemo` | `useMemo(() => data?.items, [data])` |
-| Background refetch | Auto-refetch on focus | `refetchOnWindowFocus: true` |
-| Cache invalidation | After mutation | `invalidateQueries()` |
+| Scenario             | Pattern                        | Example                              |
+| -------------------- | ------------------------------ | ------------------------------------ |
+| Fetch data           | `useQuery`                     | `useCheckmkHostsQuery()`             |
+| Create/Update/Delete | `useMutation`                  | `useGitMutations().createRepository` |
+| Poll for updates     | `useQuery` + `refetchInterval` | `useJobQuery()`                      |
+| Instant UI feedback  | Optimistic updates             | `useGitMutationsOptimistic()`        |
+| Dependent queries    | `enabled` option               | `enabled: !!userId`                  |
+| Derived state        | `useMemo`                      | `useMemo(() => data?.items, [data])` |
+| Background refetch   | Auto-refetch on focus          | `refetchOnWindowFocus: true`         |
+| Cache invalidation   | After mutation                 | `invalidateQueries()`                |
 
 ---
 

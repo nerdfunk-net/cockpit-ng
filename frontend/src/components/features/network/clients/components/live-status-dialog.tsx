@@ -1,7 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Activity, Loader2, AlertCircle, Key, ChevronRight, RefreshCw } from 'lucide-react'
+import {
+  Activity,
+  Loader2,
+  AlertCircle,
+  Key,
+  ChevronRight,
+  RefreshCw,
+} from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -91,9 +98,11 @@ export function LiveStatusDialog({ device, onClose }: LiveStatusDialogProps) {
     async function loadCreds() {
       setLoadingCreds(true)
       try {
-        const response = await apiCall<SshCredential[]>('credentials?include_expired=false')
+        const response = await apiCall<SshCredential[]>(
+          'credentials?include_expired=false'
+        )
         if (!cancelled) {
-          setCredentials(response.filter((c) => c.type === 'ssh'))
+          setCredentials(response.filter(c => c.type === 'ssh'))
         }
       } catch {
         if (!cancelled) setCredentials([])
@@ -248,7 +257,7 @@ function CredentialStep({
         </div>
       ) : (
         <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-          {credentials.map((cred) => (
+          {credentials.map(cred => (
             <button
               key={cred.id}
               onClick={() => onSelect(cred.id)}
@@ -436,17 +445,28 @@ function ArpTable({ rows }: { rows: ArpEntry[] }) {
       <table className="w-full text-xs">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-200">
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">IP Address</th>
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">MAC Address</th>
+            <th className="text-left px-3 py-2 font-semibold text-gray-700">
+              IP Address
+            </th>
+            <th className="text-left px-3 py-2 font-semibold text-gray-700">
+              MAC Address
+            </th>
             <th className="text-left px-3 py-2 font-semibold text-gray-700">Age</th>
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">Interface</th>
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">Protocol</th>
+            <th className="text-left px-3 py-2 font-semibold text-gray-700">
+              Interface
+            </th>
+            <th className="text-left px-3 py-2 font-semibold text-gray-700">
+              Protocol
+            </th>
             <th className="text-left px-3 py-2 font-semibold text-gray-700">Type</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {rows.map((row) => (
-            <tr key={`${row.ip_address}-${row.interface}`} className="hover:bg-gray-50 transition-colors">
+          {rows.map(row => (
+            <tr
+              key={`${row.ip_address}-${row.interface}`}
+              className="hover:bg-gray-50 transition-colors"
+            >
               <td className="px-3 py-2 font-mono text-gray-800">{row.ip_address}</td>
               <td className="px-3 py-2 font-mono text-gray-600">{row.mac_address}</td>
               <td className="px-3 py-2 text-gray-600">
@@ -477,16 +497,23 @@ function MacTable({ rows }: { rows: MacEntry[] }) {
       <table className="w-full text-xs">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-200">
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">MAC Address</th>
+            <th className="text-left px-3 py-2 font-semibold text-gray-700">
+              MAC Address
+            </th>
             <th className="text-left px-3 py-2 font-semibold text-gray-700">VLAN</th>
             <th className="text-left px-3 py-2 font-semibold text-gray-700">Type</th>
             <th className="text-left px-3 py-2 font-semibold text-gray-700">Port(s)</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {rows.map((row) => (
-            <tr key={`${row.destination_address}-${row.vlan_id}`} className="hover:bg-gray-50 transition-colors">
-              <td className="px-3 py-2 font-mono text-gray-800">{row.destination_address}</td>
+          {rows.map(row => (
+            <tr
+              key={`${row.destination_address}-${row.vlan_id}`}
+              className="hover:bg-gray-50 transition-colors"
+            >
+              <td className="px-3 py-2 font-mono text-gray-800">
+                {row.destination_address}
+              </td>
               <td className="px-3 py-2 text-gray-600">{row.vlan_id}</td>
               <td className="px-3 py-2">
                 <MacTypeBadge type={row.type} />

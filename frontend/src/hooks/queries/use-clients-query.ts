@@ -211,7 +211,11 @@ export interface FilteredDeviceItem {
   role?: { id: string; name: string }
   status?: { id: string; name: string }
   location?: { id: string; name: string }
-  device_type?: { id: string; model: string; manufacturer?: { id: string; name: string } }
+  device_type?: {
+    id: string
+    model: string
+    manufacturer?: { id: string; name: string }
+  }
 }
 
 export interface FilteredDevicesResponse {

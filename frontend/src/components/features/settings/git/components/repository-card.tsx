@@ -2,7 +2,12 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   Edit,
   Download,
@@ -14,7 +19,12 @@ import {
   GitBranch,
   Clock,
 } from 'lucide-react'
-import { getCategoryBadgeColor, getStatusBadgeColor, formatDate, truncateUrl } from '../utils'
+import {
+  getCategoryBadgeColor,
+  getStatusBadgeColor,
+  formatDate,
+  truncateUrl,
+} from '../utils'
 import type { GitRepository } from '../types'
 
 interface RepositoryCardProps {
@@ -113,7 +123,11 @@ export function RepositoryCard({
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button onClick={() => onViewStatus(repository)} variant="outline" size="sm">
+                <Button
+                  onClick={() => onViewStatus(repository)}
+                  variant="outline"
+                  size="sm"
+                >
                   <Eye className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>

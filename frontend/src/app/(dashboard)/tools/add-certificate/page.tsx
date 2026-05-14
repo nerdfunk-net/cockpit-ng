@@ -4,7 +4,13 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
@@ -72,34 +78,34 @@ export default function AddCertificatePage() {
   const [certsDirectory, setCertsDirectory] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  
+
   // Modal state for command output
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
   const [modalOutput, setModalOutput] = useState('')
   const [modalSuccess, setModalSuccess] = useState(true)
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const token = useAuthStore((state) => state.token)
+  const token = useAuthStore(state => state.token)
   const { confirmDialog, openConfirm } = useConfirmDialog()
 
   const scanCertificates = useCallback(async () => {
     setScanning(true)
     setError(null)
-    
+
     try {
       const response = await fetch('/api/proxy/certificates/scan', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       })
-      
+
       if (!response.ok) {
         throw new Error(`Failed to scan certificates: ${response.statusText}`)
       }
-      
+
       const data: ScanResponse = await response.json()
-      
+
       if (data.success) {
         setCertificates(data.certificates)
         setCertsDirectory(data.certs_directory)
@@ -145,7 +151,7 @@ export default function AddCertificatePage() {
       const response = await fetch('/api/proxy/certificates/upload', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: formData,
       })
@@ -210,18 +216,21 @@ export default function AddCertificatePage() {
         const response = await fetch('/api/proxy/certificates/add-to-system', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ filename }),
         })
 
         const data: AddCertificateResponse = await response.json()
-        
+
         results.push({
           filename,
           success: data.success,
-          output: data.command_output || data.message || (data.error ? `Error: ${data.error}` : ''),
+          output:
+            data.command_output ||
+            data.message ||
+            (data.error ? `Error: ${data.error}` : ''),
         })
       } catch (err) {
         results.push({
@@ -234,11 +243,16 @@ export default function AddCertificatePage() {
 
     // Show results in modal
     const allSuccess = results.every(r => r.success)
-    const output = results.map(r => 
-      `=== ${r.filename} ===\n${r.success ? '✓ Success' : '✗ Failed'}\n${r.output}`
-    ).join('\n\n')
+    const output = results
+      .map(
+        r =>
+          `=== ${r.filename} ===\n${r.success ? '✓ Success' : '✗ Failed'}\n${r.output}`
+      )
+      .join('\n\n')
 
-    setModalTitle(allSuccess ? 'Certificates Added Successfully' : 'Certificate Operation Results')
+    setModalTitle(
+      allSuccess ? 'Certificates Added Successfully' : 'Certificate Operation Results'
+    )
     setModalOutput(output)
     setModalSuccess(allSuccess)
     setModalOpen(true)
@@ -255,12 +269,15 @@ export default function AddCertificatePage() {
       description: `Delete certificate '${filename}'?`,
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/proxy/certificates/${encodeURIComponent(filename)}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          })
+          const response = await fetch(
+            `/api/proxy/certificates/${encodeURIComponent(filename)}`,
+            {
+              method: 'DELETE',
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          )
 
           const data = await response.json()
 
@@ -290,7 +307,8 @@ export default function AddCertificatePage() {
   }
 
   const certsNotInSystem = certificates.filter(c => !c.exists_in_system)
-  const allSelectableSelected = certsNotInSystem.length > 0 && 
+  const allSelectableSelected =
+    certsNotInSystem.length > 0 &&
     certsNotInSystem.every(c => selectedCerts.has(c.filename))
 
   if (loading) {
@@ -320,9 +338,7 @@ export default function AddCertificatePage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Certificate Manager</h1>
-              <p className="text-gray-600 mt-1">
-                Upload and manage CA certificates
-              </p>
+              <p className="text-gray-600 mt-1">Upload and manage CA certificates</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -342,11 +358,7 @@ export default function AddCertificatePage() {
               onChange={handleFileUpload}
               className="hidden"
             />
-            <Button
-              onClick={handleUploadClick}
-              disabled={uploading}
-              className="gap-2"
-            >
+            <Button onClick={handleUploadClick} disabled={uploading} className="gap-2">
               <Upload className="w-4 h-4" />
               {uploading ? 'Uploading...' : 'Upload Certificate'}
             </Button>
@@ -377,7 +389,10 @@ export default function AddCertificatePage() {
               <div className="flex items-center gap-3">
                 <FolderSearch className="w-5 h-5 text-blue-500" />
                 <span className="text-sm">
-                  Scanning directory: <code className="bg-blue-100 px-2 py-0.5 rounded font-mono text-xs">{certsDirectory}</code>
+                  Scanning directory:{' '}
+                  <code className="bg-blue-100 px-2 py-0.5 rounded font-mono text-xs">
+                    {certsDirectory}
+                  </code>
                 </span>
               </div>
             </CardContent>
@@ -425,7 +440,7 @@ export default function AddCertificatePage() {
                     <TableHead className="w-12">
                       <Checkbox
                         checked={allSelectableSelected}
-                        onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                        onCheckedChange={checked => handleSelectAll(checked as boolean)}
                         disabled={certsNotInSystem.length === 0}
                       />
                     </TableHead>
@@ -436,12 +451,12 @@ export default function AddCertificatePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {certificates.map((cert) => (
+                  {certificates.map(cert => (
                     <TableRow key={cert.filename}>
                       <TableCell>
                         <Checkbox
                           checked={selectedCerts.has(cert.filename)}
-                          onCheckedChange={(checked) => 
+                          onCheckedChange={checked =>
                             handleSelectCert(cert.filename, checked as boolean)
                           }
                           disabled={cert.exists_in_system}
@@ -460,7 +475,10 @@ export default function AddCertificatePage() {
                             In System CA
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                          <Badge
+                            variant="secondary"
+                            className="bg-amber-100 text-amber-700"
+                          >
                             <Info className="w-3 h-3 mr-1" />
                             Not in System
                           </Badge>
@@ -493,9 +511,22 @@ export default function AddCertificatePage() {
                 <p className="font-medium mb-2">Important Notes:</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>Certificates must be in PEM format with .crt extension</li>
-                  <li>Adding to system CA requires root/sudo privileges on the server</li>
-                  <li>The operation copies certificates to <code className="bg-amber-100 px-1 rounded">/usr/local/share/ca-certificates/</code></li>
-                  <li>The <code className="bg-amber-100 px-1 rounded">update-ca-certificates</code> command is executed to update the trust store</li>
+                  <li>
+                    Adding to system CA requires root/sudo privileges on the server
+                  </li>
+                  <li>
+                    The operation copies certificates to{' '}
+                    <code className="bg-amber-100 px-1 rounded">
+                      /usr/local/share/ca-certificates/
+                    </code>
+                  </li>
+                  <li>
+                    The{' '}
+                    <code className="bg-amber-100 px-1 rounded">
+                      update-ca-certificates
+                    </code>{' '}
+                    command is executed to update the trust store
+                  </li>
                 </ul>
               </div>
             </div>
@@ -515,9 +546,7 @@ export default function AddCertificatePage() {
               )}
               {modalTitle}
             </DialogTitle>
-            <DialogDescription>
-              Command execution output
-            </DialogDescription>
+            <DialogDescription>Command execution output</DialogDescription>
           </DialogHeader>
           <div className="mt-4">
             <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm font-mono overflow-auto max-h-96 whitespace-pre-wrap">

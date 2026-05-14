@@ -33,6 +33,9 @@ export function mbToBytes(mb: number): number {
 /**
  * Check if cache entry is about to expire (within 10% of TTL)
  */
-export function isExpiringSoon(entry: { ttl_seconds: number; age_seconds: number }): boolean {
+export function isExpiringSoon(entry: {
+  ttl_seconds: number
+  age_seconds: number
+}): boolean {
   return entry.age_seconds > entry.ttl_seconds * 0.9
 }

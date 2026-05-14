@@ -12,7 +12,11 @@ function escapeCsvField(value: string | null | undefined): string {
   const stringValue = String(value)
 
   // If the value contains commas, quotes, or newlines, wrap it in quotes
-  if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+  if (
+    stringValue.includes(',') ||
+    stringValue.includes('"') ||
+    stringValue.includes('\n')
+  ) {
     // Escape existing quotes by doubling them
     return `"${stringValue.replace(/"/g, '""')}"`
   }
@@ -136,9 +140,7 @@ export function convertModifiedDevicesToCSV(
 
       // Handle IP namespace column
       if (columnName === 'ip_namespace') {
-        return deviceHasPrimaryIp4 && namespace
-          ? escapeCsvField(namespace)
-          : ''
+        return deviceHasPrimaryIp4 && namespace ? escapeCsvField(namespace) : ''
       }
 
       // Get the value for this column from the changes

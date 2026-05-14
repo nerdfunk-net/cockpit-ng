@@ -77,15 +77,12 @@ export function RegexPatternDialog({
             <Input
               id="pattern"
               value={formData.pattern}
-              onChange={(e) =>
-                onFormChange({ ...formData, pattern: e.target.value })
-              }
+              onChange={e => onFormChange({ ...formData, pattern: e.target.value })}
               placeholder="^logging.*"
               className="font-mono bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
             />
             <p className="text-xs text-gray-500">
-              Enter a regular expression pattern to match against device
-              configurations
+              Enter a regular expression pattern to match against device configurations
             </p>
           </div>
 
@@ -140,9 +137,7 @@ export function RegexPatternDialog({
             <Textarea
               id="pattern-description"
               value={formData.description}
-              onChange={(e) =>
-                onFormChange({ ...formData, description: e.target.value })
-              }
+              onChange={e => onFormChange({ ...formData, description: e.target.value })}
               placeholder="Describe what this pattern checks for (e.g., 'Ensure logging is enabled')"
               rows={3}
               className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"

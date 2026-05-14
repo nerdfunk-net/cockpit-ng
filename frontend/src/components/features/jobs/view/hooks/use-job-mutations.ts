@@ -14,12 +14,12 @@ export function useJobMutations() {
   const cancelJob = useMutation({
     mutationFn: async (jobId: number) => {
       const response = await apiCall<JobActionResponse>(`job-runs/${jobId}/cancel`, {
-        method: 'POST'
+        method: 'POST',
       })
       // If apiCall succeeds (no exception), the HTTP status was successful
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Invalidate job list to refresh
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.list() })
       toast({
@@ -31,21 +31,21 @@ export function useJobMutations() {
       toast({
         title: 'Failed to cancel job',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Delete job
   const deleteJob = useMutation({
     mutationFn: async (jobId: number) => {
       const response = await apiCall<JobActionResponse>(`job-runs/${jobId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
       // If apiCall succeeds (no exception), the HTTP status was successful
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.list() })
       toast({
         title: 'Entry deleted',
@@ -56,9 +56,9 @@ export function useJobMutations() {
       toast({
         title: 'Failed to delete entry',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Clear filtered history
@@ -68,19 +68,27 @@ export function useJobMutations() {
       const params = new URLSearchParams()
 
       if (filters.status) {
-        const statusArr = Array.isArray(filters.status) ? filters.status : [filters.status]
+        const statusArr = Array.isArray(filters.status)
+          ? filters.status
+          : [filters.status]
         if (statusArr.length > 0) params.append('status', statusArr.join(','))
       }
       if (filters.job_type) {
-        const typeArr = Array.isArray(filters.job_type) ? filters.job_type : [filters.job_type]
+        const typeArr = Array.isArray(filters.job_type)
+          ? filters.job_type
+          : [filters.job_type]
         if (typeArr.length > 0) params.append('job_type', typeArr.join(','))
       }
       if (filters.triggered_by) {
-        const triggerArr = Array.isArray(filters.triggered_by) ? filters.triggered_by : [filters.triggered_by]
+        const triggerArr = Array.isArray(filters.triggered_by)
+          ? filters.triggered_by
+          : [filters.triggered_by]
         if (triggerArr.length > 0) params.append('triggered_by', triggerArr.join(','))
       }
       if (filters.template_id) {
-        const templateArr = Array.isArray(filters.template_id) ? filters.template_id : [filters.template_id]
+        const templateArr = Array.isArray(filters.template_id)
+          ? filters.template_id
+          : [filters.template_id]
         if (templateArr.length > 0) params.append('template_id', templateArr.join(','))
       }
 
@@ -88,12 +96,12 @@ export function useJobMutations() {
       const endpoint = `job-runs/clear-filtered${queryString ? `?${queryString}` : ''}`
 
       const response = await apiCall<ClearHistoryResponse>(endpoint, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
       // If apiCall succeeds (no exception), the HTTP status was successful
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.list() })
       toast({
         title: 'History cleared',
@@ -104,41 +112,46 @@ export function useJobMutations() {
       toast({
         title: 'Failed to clear history',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Clear all history
   const clearAllHistory = useMutation({
     mutationFn: async () => {
       const response = await apiCall<ClearHistoryResponse>('job-runs/clear-all', {
-        method: 'DELETE'
+        method: 'DELETE',
       })
       // If apiCall succeeds (no exception), the HTTP status was successful
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all })
       toast({
         title: 'History cleared',
-        description: data?.message || `All job history (${data?.deleted_count || 0} jobs) cleared.`,
+        description:
+          data?.message ||
+          `All job history (${data?.deleted_count || 0} jobs) cleared.`,
       })
     },
     onError: (error: Error) => {
       toast({
         title: 'Failed to clear history',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Memoize return object to prevent re-renders
-  return useMemo(() => ({
-    cancelJob,
-    deleteJob,
-    clearFilteredHistory,
-    clearAllHistory,
-  }), [cancelJob, deleteJob, clearFilteredHistory, clearAllHistory])
+  return useMemo(
+    () => ({
+      cancelJob,
+      deleteJob,
+      clearFilteredHistory,
+      clearAllHistory,
+    }),
+    [cancelJob, deleteJob, clearFilteredHistory, clearAllHistory]
+  )
 }

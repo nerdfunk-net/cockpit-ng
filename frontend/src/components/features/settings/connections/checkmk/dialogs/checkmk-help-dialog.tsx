@@ -23,7 +23,8 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
             <span>CheckMK Configuration Help</span>
           </DialogTitle>
           <DialogDescription>
-            Understanding the Nautobot to CheckMK synchronization and configuration options
+            Understanding the Nautobot to CheckMK synchronization and configuration
+            options
           </DialogDescription>
         </DialogHeader>
 
@@ -32,44 +33,51 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
           <div className="space-y-2">
             <h3 className="text-sm font-semibold text-gray-900">Overview</h3>
             <p className="text-sm text-gray-600">
-              The CheckMK configuration file controls how devices from Nautobot are synchronized to
-              CheckMK. It defines site mappings, folder structures, host tag groups, and attribute
-              mappings to ensure devices are correctly organized and monitored in CheckMK.
+              The CheckMK configuration file controls how devices from Nautobot are
+              synchronized to CheckMK. It defines site mappings, folder structures, host
+              tag groups, and attribute mappings to ensure devices are correctly
+              organized and monitored in CheckMK.
             </p>
           </div>
 
           {/* Synchronization Process */}
           <div className="space-y-3 border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-900">Synchronization Process</h3>
+            <h3 className="text-sm font-semibold text-gray-900">
+              Synchronization Process
+            </h3>
             <p className="text-sm text-gray-600">
               The backend synchronization service performs the following operations:
             </p>
             <ul className="text-sm text-gray-600 list-disc list-inside space-y-1 ml-2">
               <li>
-                <strong>Device Discovery:</strong> Retrieves all devices from Nautobot via GraphQL
+                <strong>Device Discovery:</strong> Retrieves all devices from Nautobot
+                via GraphQL
               </li>
               <li>
-                <strong>Normalization:</strong> Converts Nautobot device data to CheckMK format
-                using the configuration rules
+                <strong>Normalization:</strong> Converts Nautobot device data to CheckMK
+                format using the configuration rules
               </li>
               <li>
-                <strong>Comparison:</strong> Compares normalized device data with existing CheckMK
-                hosts
+                <strong>Comparison:</strong> Compares normalized device data with
+                existing CheckMK hosts
               </li>
               <li>
-                <strong>Synchronization:</strong> Creates new hosts, updates existing ones, or
-                identifies differences
+                <strong>Synchronization:</strong> Creates new hosts, updates existing
+                ones, or identifies differences
               </li>
               <li>
-                <strong>Validation:</strong> Ensures only specified attributes are compared (via
-                the <code className="bg-gray-100 px-1 rounded">compare</code> section)
+                <strong>Validation:</strong> Ensures only specified attributes are
+                compared (via the{' '}
+                <code className="bg-gray-100 px-1 rounded">compare</code> section)
               </li>
             </ul>
           </div>
 
           {/* Configuration Sections */}
           <div className="space-y-4 border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-900">Configuration Sections</h3>
+            <h3 className="text-sm font-semibold text-gray-900">
+              Configuration Sections
+            </h3>
 
             {/* monitored_site */}
             <div className="space-y-2">
@@ -77,8 +85,9 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
                 1. monitored_site - CheckMK Site Assignment
               </h4>
               <p className="text-xs text-gray-600">
-                Determines which CheckMK site a device should be monitored from. Priority order:
-                by_name &gt; by_nautobot &gt; by_ip &gt; by_location &gt; default
+                Determines which CheckMK site a device should be monitored from.
+                Priority order: by_name &gt; by_nautobot &gt; by_ip &gt; by_location
+                &gt; default
               </p>
               <pre className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs font-mono overflow-x-auto">
                 {`monitored_site:
@@ -99,8 +108,9 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
                 2. folders - CheckMK Folder Structure
               </h4>
               <p className="text-xs text-gray-600">
-                Defines folder placement for devices in CheckMK. Supports role-based configurations
-                and template variables. Priority: by_name &gt; by_ip &gt; by_location &gt; default
+                Defines folder placement for devices in CheckMK. Supports role-based
+                configurations and template variables. Priority: by_name &gt; by_ip &gt;
+                by_location &gt; default
               </p>
               <pre className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs font-mono overflow-x-auto">
                 {`folders:
@@ -117,9 +127,12 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
       lab-2: /testfolder`}
               </pre>
               <p className="text-xs text-gray-500 mt-1">
-                <strong>Template Variables:</strong> Use dot notation to access Nautobot fields:{' '}
+                <strong>Template Variables:</strong> Use dot notation to access Nautobot
+                fields:{' '}
                 <code className="bg-gray-100 px-1 rounded">{'{location.name}'}</code>,{' '}
-                <code className="bg-gray-100 px-1 rounded">{'{_custom_field_data.net}'}</code>
+                <code className="bg-gray-100 px-1 rounded">
+                  {'{_custom_field_data.net}'}
+                </code>
               </p>
             </div>
 
@@ -129,15 +142,17 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
                 3. attr2htg - Attribute to Host Tag Group Mapping
               </h4>
               <p className="text-xs text-gray-600">
-                Maps Nautobot core attributes (status, role, location) to CheckMK host tag groups
+                Maps Nautobot core attributes (status, role, location) to CheckMK host
+                tag groups
               </p>
               <pre className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs font-mono overflow-x-auto">
                 {`attr2htg:
   status.name: status             # Maps device status to tag_status in CheckMK`}
               </pre>
               <p className="text-xs text-gray-500 mt-1">
-                Result: Creates <code className="bg-gray-100 px-1 rounded">tag_status</code>{' '}
-                attribute with the device&apos;s status value
+                Result: Creates{' '}
+                <code className="bg-gray-100 px-1 rounded">tag_status</code> attribute
+                with the device&apos;s status value
               </p>
             </div>
 
@@ -162,8 +177,8 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
                 5. tags2htg - Tags to Host Tag Group Mapping
               </h4>
               <p className="text-xs text-gray-600">
-                Maps Nautobot tags to CheckMK host tag groups. Value is &quot;true&quot; if tag
-                exists, otherwise not set.
+                Maps Nautobot tags to CheckMK host tag groups. Value is &quot;true&quot;
+                if tag exists, otherwise not set.
               </p>
               <pre className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs font-mono overflow-x-auto">
                 {`tags2htg:
@@ -192,7 +207,9 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
 
             {/* mapping */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-blue-700">7. mapping - Field Value Mapping</h4>
+              <h4 className="text-sm font-medium text-blue-700">
+                7. mapping - Field Value Mapping
+              </h4>
               <p className="text-xs text-gray-600">
                 Maps Nautobot field values to CheckMK attribute names
               </p>
@@ -206,7 +223,9 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
 
             {/* compare */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-blue-700">8. compare - Comparison Scope</h4>
+              <h4 className="text-sm font-medium text-blue-700">
+                8. compare - Comparison Scope
+              </h4>
               <p className="text-xs text-gray-600">
                 Defines which aspects should be compared during synchronization
               </p>
@@ -223,7 +242,8 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
                 9. ignore_attributes - Excluded from Comparison
               </h4>
               <p className="text-xs text-gray-600">
-                Attributes that should be ignored during comparison (typically managed by CheckMK)
+                Attributes that should be ignored during comparison (typically managed
+                by CheckMK)
               </p>
               <pre className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs font-mono overflow-x-auto">
                 {`ignore_attributes:
@@ -237,33 +257,34 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
             <h3 className="text-sm font-semibold text-gray-900">Backend Features</h3>
             <ul className="text-sm text-gray-600 list-disc list-inside space-y-1 ml-2">
               <li>
-                <strong>Priority-based Resolution:</strong> Multiple matching rules are evaluated
-                in priority order
+                <strong>Priority-based Resolution:</strong> Multiple matching rules are
+                evaluated in priority order
               </li>
               <li>
-                <strong>Template Processing:</strong> Folder paths support Nautobot field
-                interpolation using{' '}
-                <code className="bg-gray-100 px-1 rounded">{'{field.name}'}</code> syntax
+                <strong>Template Processing:</strong> Folder paths support Nautobot
+                field interpolation using{' '}
+                <code className="bg-gray-100 px-1 rounded">{'{field.name}'}</code>{' '}
+                syntax
               </li>
               <li>
-                <strong>SNMP Integration:</strong> Automatically maps SNMP credentials from custom
-                fields using the SNMP mapping configuration
+                <strong>SNMP Integration:</strong> Automatically maps SNMP credentials
+                from custom fields using the SNMP mapping configuration
               </li>
               <li>
-                <strong>IP Network Matching:</strong> Supports CIDR notation for IP-based rules
-                (e.g., 192.168.1.0/24)
+                <strong>IP Network Matching:</strong> Supports CIDR notation for
+                IP-based rules (e.g., 192.168.1.0/24)
               </li>
               <li>
-                <strong>Role-based Organization:</strong> Different folder structures for different
-                device roles
+                <strong>Role-based Organization:</strong> Different folder structures
+                for different device roles
               </li>
               <li>
-                <strong>Selective Comparison:</strong> Only specified attributes are compared,
-                preventing false positives
+                <strong>Selective Comparison:</strong> Only specified attributes are
+                compared, preventing false positives
               </li>
               <li>
-                <strong>Nested Field Access:</strong> Support for dot notation to access nested
-                Nautobot fields
+                <strong>Nested Field Access:</strong> Support for dot notation to access
+                nested Nautobot fields
               </li>
             </ul>
           </div>
@@ -273,23 +294,26 @@ export function CheckMKHelpDialog({ open, onOpenChange }: CheckMKHelpDialogProps
             <h3 className="text-sm font-semibold text-gray-900">Best Practices</h3>
             <ul className="text-sm text-gray-600 list-disc list-inside space-y-1 ml-2">
               <li>
-                Always define a <code className="bg-gray-100 px-1 rounded">default</code> value for
-                site and folder configurations
+                Always define a{' '}
+                <code className="bg-gray-100 px-1 rounded">default</code> value for site
+                and folder configurations
               </li>
               <li>Use role-based folder structures to organize devices logically</li>
               <li>
-                Keep the <code className="bg-gray-100 px-1 rounded">compare</code> list minimal to
-                avoid unnecessary sync operations
+                Keep the <code className="bg-gray-100 px-1 rounded">compare</code> list
+                minimal to avoid unnecessary sync operations
               </li>
               <li>
                 Add CheckMK-managed attributes to{' '}
                 <code className="bg-gray-100 px-1 rounded">ignore_attributes</code>
               </li>
               <li>
-                Use IP ranges (CIDR notation) for network-based rules rather than individual IPs
+                Use IP ranges (CIDR notation) for network-based rules rather than
+                individual IPs
               </li>
               <li>
-                Test configuration changes using the &quot;Check YAML&quot; button before saving
+                Test configuration changes using the &quot;Check YAML&quot; button
+                before saving
               </li>
               <li>Document custom field requirements in your Nautobot configuration</li>
             </ul>

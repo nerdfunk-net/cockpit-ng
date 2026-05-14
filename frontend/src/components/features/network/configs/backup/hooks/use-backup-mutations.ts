@@ -12,12 +12,15 @@ export function useBackupMutations() {
   // Trigger backup for single device
   const triggerBackup = useMutation({
     mutationFn: async (deviceId: string) => {
-      return apiCall<{ task_id: string; status: string }>('network/configs/backup/trigger', {
-        method: 'POST',
-        body: JSON.stringify({ device_id: deviceId })
-      })
+      return apiCall<{ task_id: string; status: string }>(
+        'network/configs/backup/trigger',
+        {
+          method: 'POST',
+          body: JSON.stringify({ device_id: deviceId }),
+        }
+      )
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Invalidate devices query to refresh backup status
       queryClient.invalidateQueries({ queryKey: queryKeys.network.backupDevices() })
 
@@ -30,20 +33,23 @@ export function useBackupMutations() {
       toast({
         title: 'Backup Failed',
         description: error.message || 'Failed to start backup.',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Trigger bulk backup
   const triggerBulkBackup = useMutation({
     mutationFn: async (deviceIds: string[]) => {
-      return apiCall<{ task_id: string; device_count: number }>('network/configs/backup/trigger-bulk', {
-        method: 'POST',
-        body: JSON.stringify({ device_ids: deviceIds })
-      })
+      return apiCall<{ task_id: string; device_count: number }>(
+        'network/configs/backup/trigger-bulk',
+        {
+          method: 'POST',
+          body: JSON.stringify({ device_ids: deviceIds }),
+        }
+      )
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.network.backupDevices() })
 
       toast({
@@ -55,19 +61,28 @@ export function useBackupMutations() {
       toast({
         title: 'Bulk Backup Failed',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Download backup
   const downloadBackup = useMutation({
-    mutationFn: async ({ deviceId, backupId }: { deviceId: string; backupId: string }) => {
-      const response = await fetch(`/api/proxy/network/configs/backup/download/${deviceId}/${backupId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    mutationFn: async ({
+      deviceId,
+      backupId,
+    }: {
+      deviceId: string
+      backupId: string
+    }) => {
+      const response = await fetch(
+        `/api/proxy/network/configs/backup/download/${deviceId}/${backupId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
         }
-      })
+      )
 
       if (!response.ok) {
         throw new Error('Failed to download backup')
@@ -95,19 +110,28 @@ export function useBackupMutations() {
       toast({
         title: 'Download Failed',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Restore backup
   const restoreBackup = useMutation({
-    mutationFn: async ({ deviceId, backupId }: { deviceId: string; backupId: string }) => {
-      return apiCall<{ task_id: string; message?: string }>(`network/configs/backup/restore/${deviceId}/${backupId}`, {
-        method: 'POST'
-      })
+    mutationFn: async ({
+      deviceId,
+      backupId,
+    }: {
+      deviceId: string
+      backupId: string
+    }) => {
+      return apiCall<{ task_id: string; message?: string }>(
+        `network/configs/backup/restore/${deviceId}/${backupId}`,
+        {
+          method: 'POST',
+        }
+      )
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast({
         title: 'Restore Started',
         description: data?.message || 'Configuration restore job has been initiated.',
@@ -117,15 +141,18 @@ export function useBackupMutations() {
       toast({
         title: 'Restore Failed',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
-  return useMemo(() => ({
-    triggerBackup,
-    triggerBulkBackup,
-    downloadBackup,
-    restoreBackup,
-  }), [triggerBackup, triggerBulkBackup, downloadBackup, restoreBackup])
+  return useMemo(
+    () => ({
+      triggerBackup,
+      triggerBulkBackup,
+      downloadBackup,
+      restoreBackup,
+    }),
+    [triggerBackup, triggerBulkBackup, downloadBackup, restoreBackup]
+  )
 }

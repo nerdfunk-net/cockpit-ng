@@ -1,36 +1,48 @@
-"use client"
+'use client'
 
-import { Download, FileText, CheckCircle2, Database } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ExportDevicesJobResult, formatBytes } from "../types/job-results"
-import { useAuthStore } from "@/lib/auth-store"
+import { Download, FileText, CheckCircle2, Database } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { ExportDevicesJobResult, formatBytes } from '../types/job-results'
+import { useAuthStore } from '@/lib/auth-store'
 
 interface ExportDevicesResultViewProps {
   result: ExportDevicesJobResult
   taskId?: string
 }
 
-export function ExportDevicesResultView({ result, taskId }: ExportDevicesResultViewProps) {
+export function ExportDevicesResultView({
+  result,
+  taskId,
+}: ExportDevicesResultViewProps) {
   const token = useAuthStore(state => state.token)
 
   const handleDownload = async () => {
     if (!taskId) {
-      alert("Task ID not available")
+      alert('Task ID not available')
       return
     }
 
     if (!token) {
-      alert("Not authenticated")
+      alert('Not authenticated')
       return
     }
 
     try {
-      const response = await fetch(`/api/proxy/api/celery/tasks/export-devices/${taskId}/download`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
+      const response = await fetch(
+        `/api/proxy/api/celery/tasks/export-devices/${taskId}/download`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
 
       if (!response.ok) {
         throw new Error('Failed to download file')
@@ -58,7 +70,9 @@ export function ExportDevicesResultView({ result, taskId }: ExportDevicesResultV
       document.body.removeChild(a)
     } catch (error) {
       console.error('Download error:', error)
-      alert(`Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      alert(
+        `Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -77,19 +91,27 @@ export function ExportDevicesResultView({ result, taskId }: ExportDevicesResultV
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-sm font-medium text-gray-600">Exported Devices</p>
-              <p className="text-2xl font-bold text-gray-900">{result.exported_devices}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {result.exported_devices}
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Requested Devices</p>
-              <p className="text-2xl font-bold text-gray-900">{result.requested_devices}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {result.requested_devices}
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Properties</p>
-              <p className="text-2xl font-bold text-gray-900">{result.properties_count}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {result.properties_count}
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">File Size</p>
-              <p className="text-2xl font-bold text-gray-900">{formatBytes(result.file_size_bytes)}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatBytes(result.file_size_bytes)}
+              </p>
             </div>
           </div>
 
@@ -117,7 +139,9 @@ export function ExportDevicesResultView({ result, taskId }: ExportDevicesResultV
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Format</p>
-              <p className="text-sm text-gray-900 uppercase font-semibold">{result.export_format}</p>
+              <p className="text-sm text-gray-900 uppercase font-semibold">
+                {result.export_format}
+              </p>
             </div>
           </div>
 
@@ -142,7 +166,9 @@ export function ExportDevicesResultView({ result, taskId }: ExportDevicesResultV
           <div className="space-y-2 text-sm">
             <div className="flex justify-between py-2 border-b">
               <span className="font-medium text-gray-600">Total Devices Exported:</span>
-              <span className="text-gray-900">{result.exported_devices} / {result.requested_devices}</span>
+              <span className="text-gray-900">
+                {result.exported_devices} / {result.requested_devices}
+              </span>
             </div>
             <div className="flex justify-between py-2 border-b">
               <span className="font-medium text-gray-600">Export Format:</span>
@@ -154,7 +180,9 @@ export function ExportDevicesResultView({ result, taskId }: ExportDevicesResultV
             </div>
             <div className="flex justify-between py-2">
               <span className="font-medium text-gray-600">File Size:</span>
-              <span className="text-gray-900">{formatBytes(result.file_size_bytes)}</span>
+              <span className="text-gray-900">
+                {formatBytes(result.file_size_bytes)}
+              </span>
             </div>
           </div>
         </CardContent>

@@ -5,7 +5,13 @@
 
 import { DeviceSelectionTab as UnifiedDeviceSelectionTab } from '@/components/shared/device-selection-tab'
 import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Upload, Info } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -18,7 +24,10 @@ interface DeviceSelectionTabProps {
   onOpenCSVUpload?: () => void
 }
 
-export function DeviceSelectionTab({ onOpenCSVUpload, ...props }: DeviceSelectionTabProps) {
+export function DeviceSelectionTab({
+  onOpenCSVUpload,
+  ...props
+}: DeviceSelectionTabProps) {
   return (
     <div className="space-y-6">
       <UnifiedDeviceSelectionTab
@@ -43,14 +52,11 @@ export function DeviceSelectionTab({ onOpenCSVUpload, ...props }: DeviceSelectio
             <Info className="h-4 w-4" />
             <AlertDescription>
               You can also upload a CSV file with device data to perform bulk updates.
-              The CSV must include an identifier column (id, name, or ip_address) and the fields you want to update.
+              The CSV must include an identifier column (id, name, or ip_address) and
+              the fields you want to update.
             </AlertDescription>
           </Alert>
-          <Button
-            onClick={onOpenCSVUpload}
-            variant="outline"
-            className="w-full"
-          >
+          <Button onClick={onOpenCSVUpload} variant="outline" className="w-full">
             <Upload className="h-4 w-4 mr-2" />
             Upload and Update
           </Button>

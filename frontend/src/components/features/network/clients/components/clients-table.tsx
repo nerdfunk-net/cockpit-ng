@@ -178,7 +178,7 @@ export function ClientsTable({
                       </td>
                     </tr>
                   ) : (
-                    items.map((item) => (
+                    items.map(item => (
                       <tr
                         key={`${item.session_id}-${item.device_name}-${item.mac_address}-${item.ip_address}-${item.port}`}
                         className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -227,13 +227,13 @@ export function ClientsTable({
                 <div className="flex items-center gap-2">
                   <Select
                     value={String(pageSize)}
-                    onValueChange={(v) => onPageSizeChange(Number(v))}
+                    onValueChange={v => onPageSizeChange(Number(v))}
                   >
                     <SelectTrigger className="h-7 w-28 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {PAGE_SIZE_OPTIONS.map((size) => (
+                      {PAGE_SIZE_OPTIONS.map(size => (
                         <SelectItem key={size} value={String(size)} className="text-xs">
                           {size} / page
                         </SelectItem>

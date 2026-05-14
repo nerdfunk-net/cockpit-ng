@@ -3,10 +3,7 @@ import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
 import { useMemo } from 'react'
-import type {
-  TemplateFormData,
-  TemplateImportResponse
-} from '../types'
+import type { TemplateFormData, TemplateImportResponse } from '../types'
 import { readFileContent } from '../utils/template-utils'
 
 interface CreateTemplateInput {
@@ -41,7 +38,7 @@ export function useTemplateMutations() {
         }
         return apiCall('templates', {
           method: 'POST',
-          body: templateData
+          body: templateData,
         })
       }
 
@@ -54,7 +51,7 @@ export function useTemplateMutations() {
         description: formData.description,
         scope: formData.scope,
         variables: formData.variables || {},
-        use_nautobot_context: formData.use_nautobot_context || false
+        use_nautobot_context: formData.use_nautobot_context || false,
       }
 
       // Add source-specific data
@@ -73,7 +70,7 @@ export function useTemplateMutations() {
 
       return apiCall('templates', {
         method: 'POST',
-        body: templateData
+        body: templateData,
       })
     },
     onSuccess: () => {
@@ -87,9 +84,9 @@ export function useTemplateMutations() {
       toast({
         title: 'Error',
         description: `Failed to create template: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Update template
@@ -103,7 +100,7 @@ export function useTemplateMutations() {
         }
         return apiCall(`templates/${templateId}`, {
           method: 'PUT',
-          body: templateData
+          body: templateData,
         })
       }
 
@@ -116,7 +113,7 @@ export function useTemplateMutations() {
         description: formData.description,
         scope: formData.scope,
         variables: formData.variables || {},
-        use_nautobot_context: formData.use_nautobot_context || false
+        use_nautobot_context: formData.use_nautobot_context || false,
       }
 
       // Add source-specific data
@@ -140,7 +137,7 @@ export function useTemplateMutations() {
 
       return apiCall(`templates/${templateId}`, {
         method: 'PUT',
-        body: templateData
+        body: templateData,
       })
     },
     onSuccess: () => {
@@ -155,9 +152,9 @@ export function useTemplateMutations() {
       toast({
         title: 'Error',
         description: `Failed to update template: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Delete template
@@ -176,18 +173,16 @@ export function useTemplateMutations() {
       toast({
         title: 'Error',
         description: `Failed to delete template: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Bulk delete templates
   const bulkDeleteTemplates = useMutation({
     mutationFn: async (templateIds: number[]) => {
       const results = await Promise.allSettled(
-        templateIds.map(id =>
-          apiCall(`templates/${id}`, { method: 'DELETE' })
-        )
+        templateIds.map(id => apiCall(`templates/${id}`, { method: 'DELETE' }))
       )
 
       const successCount = results.filter(r => r.status === 'fulfilled').length
@@ -207,7 +202,7 @@ export function useTemplateMutations() {
         toast({
           title: 'Warning',
           description: `Failed to delete ${errorCount} template(s)`,
-          variant: 'destructive'
+          variant: 'destructive',
         })
       }
     },
@@ -215,9 +210,9 @@ export function useTemplateMutations() {
       toast({
         title: 'Error',
         description: `Failed to delete templates: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Sync git template
@@ -225,7 +220,7 @@ export function useTemplateMutations() {
     mutationFn: async (templateId: number) => {
       return apiCall('templates/sync', {
         method: 'POST',
-        body: { template_id: templateId }
+        body: { template_id: templateId },
       })
     },
     onSuccess: () => {
@@ -239,25 +234,28 @@ export function useTemplateMutations() {
       toast({
         title: 'Error',
         description: `Failed to sync template: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Import templates from YAML
   const importTemplates = useMutation({
-    mutationFn: async ({ filePaths, overwriteExisting = false }: ImportTemplatesInput) => {
+    mutationFn: async ({
+      filePaths,
+      overwriteExisting = false,
+    }: ImportTemplatesInput) => {
       const response = await apiCall<TemplateImportResponse>('templates/import', {
         method: 'POST',
         body: {
           source_type: 'yaml_bulk',
           yaml_file_paths: filePaths,
-          overwrite_existing: overwriteExisting
-        }
+          overwrite_existing: overwriteExisting,
+        },
       })
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.templates.list() })
 
       const successCount = data.imported_templates?.length || 0
@@ -273,7 +271,7 @@ export function useTemplateMutations() {
         toast({
           title: 'Warning',
           description: `Failed to import ${failedCount} template(s)`,
-          variant: 'destructive'
+          variant: 'destructive',
         })
       }
     },
@@ -281,25 +279,28 @@ export function useTemplateMutations() {
       toast({
         title: 'Error',
         description: `Failed to import templates: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Memoize return object to prevent re-renders
-  return useMemo(() => ({
-    createTemplate,
-    updateTemplate,
-    deleteTemplate,
-    bulkDeleteTemplates,
-    syncTemplate,
-    importTemplates,
-  }), [
-    createTemplate,
-    updateTemplate,
-    deleteTemplate,
-    bulkDeleteTemplates,
-    syncTemplate,
-    importTemplates,
-  ])
+  return useMemo(
+    () => ({
+      createTemplate,
+      updateTemplate,
+      deleteTemplate,
+      bulkDeleteTemplates,
+      syncTemplate,
+      importTemplates,
+    }),
+    [
+      createTemplate,
+      updateTemplate,
+      deleteTemplate,
+      bulkDeleteTemplates,
+      syncTemplate,
+      importTemplates,
+    ]
+  )
 }

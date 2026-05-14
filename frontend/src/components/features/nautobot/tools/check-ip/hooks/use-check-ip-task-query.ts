@@ -24,14 +24,14 @@ export function useCheckIpTaskQuery(
     queryKey: queryKeys.checkIp.task(taskId!),
     queryFn: async () => {
       const response = await apiCall(`celery/tasks/${taskId}`, {
-        method: 'GET'
+        method: 'GET',
       })
       return response as TaskStatus
     },
     enabled: enabled && !!taskId,
 
     // Auto-polling with smart start/stop
-    refetchInterval: (query) => {
+    refetchInterval: query => {
       const data = query.state.data
 
       if (!data) return POLLING_INTERVAL
@@ -45,6 +45,6 @@ export function useCheckIpTaskQuery(
       return POLLING_INTERVAL
     },
 
-    staleTime: 0,  // Always fetch fresh data for polling
+    staleTime: 0, // Always fetch fresh data for polling
   })
 }

@@ -72,7 +72,7 @@ export function useGitMutations() {
     mutationFn: async (data: CreateRepositoryInput) => {
       return apiCall('git-repositories', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
     },
     onSuccess: () => {
@@ -87,9 +87,9 @@ export function useGitMutations() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to add repository',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Update repository mutation
@@ -97,7 +97,7 @@ export function useGitMutations() {
     mutationFn: async ({ id, data }: { id: number; data: UpdateRepositoryInput }) => {
       return apiCall(`git-repositories/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
     },
     onSuccess: () => {
@@ -112,9 +112,9 @@ export function useGitMutations() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to update repository',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Delete repository mutation
@@ -134,9 +134,9 @@ export function useGitMutations() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete repository',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Sync repository mutation
@@ -156,9 +156,9 @@ export function useGitMutations() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to sync repository',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Remove and sync repository mutation
@@ -178,9 +178,9 @@ export function useGitMutations() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to remove and sync repository',
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Test connection mutation (doesn't modify cache)
@@ -188,7 +188,7 @@ export function useGitMutations() {
     mutationFn: async (data: TestConnectionInput) => {
       return apiCall<TestConnectionResponse>('git-repositories/test-connection', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
     },
     // No cache invalidation needed for test connection
@@ -201,7 +201,7 @@ export function useGitMutations() {
     deleteRepository,
     syncRepository,
     removeAndSyncRepository,
-    testConnection
+    testConnection,
   }
 }
 
@@ -210,5 +210,5 @@ export type {
   CreateRepositoryInput,
   UpdateRepositoryInput,
   TestConnectionInput,
-  TestConnectionResponse
+  TestConnectionResponse,
 }

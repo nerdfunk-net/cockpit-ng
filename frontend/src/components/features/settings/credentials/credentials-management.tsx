@@ -19,8 +19,8 @@ export default function CredentialsManagement() {
   const { data, isLoading, refetch } = useCredentialsQuery({
     filters: {
       source: 'general',
-      includeExpired
-    }
+      includeExpired,
+    },
   })
 
   const credentials = data || []
@@ -43,7 +43,9 @@ export default function CredentialsManagement() {
             </div>
             <div>
               <h1 className="text-2xl font-semibold">System Credentials</h1>
-              <p className="text-muted-foreground">Loading shared system credentials...</p>
+              <p className="text-muted-foreground">
+                Loading shared system credentials...
+              </p>
             </div>
           </div>
         </div>
@@ -97,7 +99,7 @@ export default function CredentialsManagement() {
       {/* Form Dialog */}
       <CredentialFormDialog
         open={formDialog.open}
-        onOpenChange={(open) => setFormDialog({ open })}
+        onOpenChange={open => setFormDialog({ open })}
         credential={formDialog.credential}
       />
     </div>

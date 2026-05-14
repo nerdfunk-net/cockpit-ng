@@ -45,7 +45,12 @@ export function RackActions({
         )}
       </div>
       <div className="flex items-center gap-3">
-        <Button variant="outline" onClick={onCancel} disabled={isSaving} className="gap-2">
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          disabled={isSaving}
+          className="gap-2"
+        >
           <X className="h-4 w-4" />
           Cancel
         </Button>

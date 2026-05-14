@@ -2,7 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import type { JobSchedule, JobTemplate, Credential, SchedulerDebugInfo } from '../types'
-import { STALE_TIME, EMPTY_SCHEDULES, EMPTY_TEMPLATES, EMPTY_CREDENTIALS } from '../utils/constants'
+import {
+  STALE_TIME,
+  EMPTY_SCHEDULES,
+  EMPTY_TEMPLATES,
+  EMPTY_CREDENTIALS,
+} from '../utils/constants'
 
 interface UseScheduleQueryOptions {
   enabled?: boolean
@@ -21,7 +26,9 @@ export function useJobSchedules(options: UseScheduleQueryOptions = DEFAULT_OPTIO
   return useQuery({
     queryKey: queryKeys.jobs.schedules(),
     queryFn: async () => {
-      const response = await apiCall<JobSchedule[]>('api/job-schedules', { method: 'GET' })
+      const response = await apiCall<JobSchedule[]>('api/job-schedules', {
+        method: 'GET',
+      })
       return response || EMPTY_SCHEDULES
     },
     enabled,
@@ -40,7 +47,10 @@ export function useJobTemplates(options: UseScheduleQueryOptions = DEFAULT_OPTIO
   return useQuery({
     queryKey: queryKeys.jobs.templates(),
     queryFn: async () => {
-      const response = await apiCall<{ templates: JobTemplate[] }>('api/job-templates', { method: 'GET' })
+      const response = await apiCall<{ templates: JobTemplate[] }>(
+        'api/job-templates',
+        { method: 'GET' }
+      )
       return response?.templates || EMPTY_TEMPLATES
     },
     enabled,

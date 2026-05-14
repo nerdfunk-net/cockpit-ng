@@ -2,7 +2,12 @@
 
 import { Button } from '@/components/ui/button'
 import { RefreshCw, TestTube, CheckCircle, AlertCircle } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface ConnectionTestPanelProps {
   onTest?: () => void
@@ -49,9 +54,11 @@ export function ConnectionTestPanel({
         </TooltipProvider>
 
         {status && (
-          <div className={`flex items-center gap-2 text-sm ${
-            status.type === 'success' ? 'text-green-600' : 'text-red-600'
-          }`}>
+          <div
+            className={`flex items-center gap-2 text-sm ${
+              status.type === 'success' ? 'text-green-600' : 'text-red-600'
+            }`}
+          >
             {status.type === 'success' ? (
               <CheckCircle className="h-4 w-4" />
             ) : (

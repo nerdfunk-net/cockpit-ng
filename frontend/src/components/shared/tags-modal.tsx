@@ -1,7 +1,14 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tags, Loader2 } from 'lucide-react'
@@ -32,7 +39,7 @@ export function TagsModal({
   availableTags,
   setAvailableTags,
   isLoadingTags,
-  setIsLoadingTags
+  setIsLoadingTags,
 }: TagsModalProps) {
   const { apiCall } = useApi()
 
@@ -47,7 +54,9 @@ export function TagsModal({
   const loadTags = useCallback(async () => {
     setIsLoadingTags(true)
     try {
-      const tagsData = await apiCall<TagItem[]>('nautobot/tags/devices', { method: 'GET' })
+      const tagsData = await apiCall<TagItem[]>('nautobot/tags/devices', {
+        method: 'GET',
+      })
       if (tagsData && Array.isArray(tagsData)) {
         setAvailableTags(tagsData)
       }
@@ -67,9 +76,7 @@ export function TagsModal({
             <Tags className="h-5 w-5" />
             Device Tags
           </DialogTitle>
-          <DialogDescription>
-            Select tags to apply to this device.
-          </DialogDescription>
+          <DialogDescription>Select tags to apply to this device.</DialogDescription>
         </DialogHeader>
 
         <div className="py-4">

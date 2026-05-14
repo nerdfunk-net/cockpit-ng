@@ -6,13 +6,16 @@ import type { Permission } from '../types'
 export function groupPermissionsByResource(
   permissions: Permission[]
 ): Record<string, Permission[]> {
-  return permissions.reduce((acc, perm) => {
-    if (!acc[perm.resource]) {
-      acc[perm.resource] = []
-    }
-    acc[perm.resource]!.push(perm)
-    return acc
-  }, {} as Record<string, Permission[]>)
+  return permissions.reduce(
+    (acc, perm) => {
+      if (!acc[perm.resource]) {
+        acc[perm.resource] = []
+      }
+      acc[perm.resource]!.push(perm)
+      return acc
+    },
+    {} as Record<string, Permission[]>
+  )
 }
 
 /**

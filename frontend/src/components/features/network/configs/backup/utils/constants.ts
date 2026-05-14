@@ -16,9 +16,9 @@ export const DEFAULT_PAGINATION = {
 }
 
 export const STALE_TIME = {
-  DEVICES: 30 * 1000,        // 30 seconds
-  HISTORY: 60 * 1000,        // 1 minute
-  FILTER_OPTIONS: 5 * 60 * 1000,  // 5 minutes
+  DEVICES: 30 * 1000, // 30 seconds
+  HISTORY: 60 * 1000, // 1 minute
+  FILTER_OPTIONS: 5 * 60 * 1000, // 5 minutes
 } as const
 
 export const STATUS_BADGE_VARIANTS = {

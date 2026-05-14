@@ -50,7 +50,7 @@ export function CSVImportSummary({ importSummary }: CSVImportSummaryProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {importSummary.results.map((result) => (
+            {importSummary.results.map(result => (
               <TableRow key={result.deviceName}>
                 <TableCell className="font-medium">{result.deviceName}</TableCell>
                 <TableCell>

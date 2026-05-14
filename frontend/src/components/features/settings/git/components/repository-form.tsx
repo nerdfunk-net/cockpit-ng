@@ -3,7 +3,13 @@
 import { UseFormReturn } from 'react-hook-form'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
@@ -32,7 +38,12 @@ export function RepositoryForm({
   connectionTestStatus,
   isTestingConnection = false,
 }: RepositoryFormProps) {
-  const { register, watch, setValue, formState: { errors } } = form
+  const {
+    register,
+    watch,
+    setValue,
+    formState: { errors },
+  } = form
   const authType = watch('auth_type')
 
   return (
@@ -53,7 +64,9 @@ export function RepositoryForm({
           {errors.name && (
             <p className="text-xs text-destructive">{errors.name.message}</p>
           )}
-          <p className="text-xs text-gray-600">Unique name to identify this repository</p>
+          <p className="text-xs text-gray-600">
+            Unique name to identify this repository
+          </p>
         </div>
 
         {/* Category */}
@@ -63,14 +76,19 @@ export function RepositoryForm({
           </Label>
           <Select
             value={watch('category') ?? ''}
-            onValueChange={(value) => setValue('category', value as RepositoryFormValues['category'])}
+            onValueChange={value =>
+              setValue('category', value as RepositoryFormValues['category'])
+            }
             disabled={isSubmitting}
           >
-            <SelectTrigger id="category" className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
+            <SelectTrigger
+              id="category"
+              className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+            >
               <SelectValue placeholder="Select Category" />
             </SelectTrigger>
             <SelectContent>
-              {REPOSITORY_CATEGORIES.map((cat) => (
+              {REPOSITORY_CATEGORIES.map(cat => (
                 <SelectItem key={cat.value} value={cat.value}>
                   {cat.label}
                 </SelectItem>
@@ -127,24 +145,29 @@ export function RepositoryForm({
         </Label>
         <Select
           value={authType}
-          onValueChange={(value) => {
+          onValueChange={value => {
             setValue('auth_type', value as RepositoryFormValues['auth_type'])
             setValue('credential_name', '__none__')
           }}
           disabled={isSubmitting}
         >
-          <SelectTrigger id="auth_type" className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
+          <SelectTrigger
+            id="auth_type"
+            className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+          >
             <SelectValue placeholder="Select authentication type" />
           </SelectTrigger>
           <SelectContent>
-            {AUTH_TYPES.map((type) => (
+            {AUTH_TYPES.map(type => (
               <SelectItem key={type.value} value={type.value}>
                 {type.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-gray-600">How to authenticate with this repository</p>
+        <p className="text-xs text-gray-600">
+          How to authenticate with this repository
+        </p>
       </div>
 
       {/* Credential Select (conditional) */}
@@ -153,7 +176,7 @@ export function RepositoryForm({
           authType={authType}
           credentials={credentials}
           value={watch('credential_name') ?? ''}
-          onChange={(value) => setValue('credential_name', value)}
+          onChange={value => setValue('credential_name', value)}
           disabled={isSubmitting}
         />
       )}
@@ -171,7 +194,9 @@ export function RepositoryForm({
             className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
             disabled={isSubmitting}
           />
-          <p className="text-xs text-gray-600">Path within repository (leave empty for root)</p>
+          <p className="text-xs text-gray-600">
+            Path within repository (leave empty for root)
+          </p>
         </div>
 
         {/* Verify SSL */}
@@ -180,7 +205,7 @@ export function RepositoryForm({
             <Checkbox
               id="verify-ssl"
               checked={watch('verify_ssl') ?? false}
-              onCheckedChange={(checked) => setValue('verify_ssl', !!checked)}
+              onCheckedChange={checked => setValue('verify_ssl', !!checked)}
               className="border-2 border-gray-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
               disabled={isSubmitting}
             />
@@ -195,7 +220,10 @@ export function RepositoryForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Git Author Name */}
         <div className="space-y-2">
-          <Label htmlFor="git_author_name" className="text-sm font-semibold text-gray-800">
+          <Label
+            htmlFor="git_author_name"
+            className="text-sm font-semibold text-gray-800"
+          >
             Git Author Name
           </Label>
           <Input
@@ -206,12 +234,17 @@ export function RepositoryForm({
             className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
             disabled={isSubmitting}
           />
-          <p className="text-xs text-gray-600">Name used for git commits (defaults to &quot;Cockpit-NG Automation&quot;)</p>
+          <p className="text-xs text-gray-600">
+            Name used for git commits (defaults to &quot;Cockpit-NG Automation&quot;)
+          </p>
         </div>
 
         {/* Git Author Email */}
         <div className="space-y-2">
-          <Label htmlFor="git_author_email" className="text-sm font-semibold text-gray-800">
+          <Label
+            htmlFor="git_author_email"
+            className="text-sm font-semibold text-gray-800"
+          >
             Git Author Email
           </Label>
           <Input
@@ -223,9 +256,14 @@ export function RepositoryForm({
             disabled={isSubmitting}
           />
           {errors.git_author_email && (
-            <p className="text-xs text-destructive">{errors.git_author_email.message}</p>
+            <p className="text-xs text-destructive">
+              {errors.git_author_email.message}
+            </p>
           )}
-          <p className="text-xs text-gray-600">Email used for git commits (defaults to &quot;noreply@cockpit-ng.local&quot;)</p>
+          <p className="text-xs text-gray-600">
+            Email used for git commits (defaults to
+            &quot;noreply@cockpit-ng.local&quot;)
+          </p>
         </div>
       </div>
 

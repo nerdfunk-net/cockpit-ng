@@ -6,7 +6,7 @@ export const CREDENTIAL_TYPES = [
   { value: 'ssh_key', label: 'SSH Key' },
   { value: 'tacacs', label: 'TACACS' },
   { value: 'generic', label: 'Generic' },
-  { value: 'token', label: 'Token' }
+  { value: 'token', label: 'Token' },
 ] as const
 
 export const EMPTY_CREDENTIALS: Credential[] = []

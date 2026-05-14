@@ -43,11 +43,14 @@ export function useGitRepositorySelector() {
     [repositories, selectedRepoId]
   )
 
-  return useMemo(() => ({
-    repositories,
-    selectedRepoId,
-    selectedRepository,
-    setSelectedRepoId,
-    loading
-  }), [repositories, selectedRepoId, selectedRepository, loading])
+  return useMemo(
+    () => ({
+      repositories,
+      selectedRepoId,
+      selectedRepository,
+      setSelectedRepoId,
+      loading,
+    }),
+    [repositories, selectedRepoId, selectedRepository, loading]
+  )
 }

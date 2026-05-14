@@ -23,7 +23,8 @@ export function JobsPagination({
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t">
       <div className="text-sm text-gray-600">
-        Showing {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, total)} of {total} runs
+        Showing {(currentPage - 1) * pageSize + 1} -{' '}
+        {Math.min(currentPage * pageSize, total)} of {total} runs
       </div>
       <div className="flex items-center gap-2">
         <Button

@@ -83,9 +83,7 @@ export function ResizableLayout({
       />
 
       {/* Right Panel */}
-      <div className="flex-1 overflow-hidden min-w-0">
-        {rightPanel}
-      </div>
+      <div className="flex-1 overflow-hidden min-w-0">{rightPanel}</div>
     </div>
   )
 }

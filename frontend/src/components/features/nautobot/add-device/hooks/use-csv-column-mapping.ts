@@ -1,7 +1,11 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { MANDATORY_DEVICE_FIELDS, MANDATORY_INTERFACE_FIELDS, buildInitialColumnMapping } from '../utils/csv-import-utils'
+import {
+  MANDATORY_DEVICE_FIELDS,
+  MANDATORY_INTERFACE_FIELDS,
+  buildInitialColumnMapping,
+} from '../utils/csv-import-utils'
 
 export { MANDATORY_DEVICE_FIELDS, MANDATORY_INTERFACE_FIELDS }
 
@@ -31,7 +35,8 @@ export function useCsvColumnMapping(): UseCsvColumnMappingResult {
     const mappedTargets = new Set(
       Object.values(columnMapping).filter((v): v is string => v !== null)
     )
-    if (!mappedTargets.has('interface_ip_address')) return [] as const satisfies readonly string[]
+    if (!mappedTargets.has('interface_ip_address'))
+      return [] as const satisfies readonly string[]
     return MANDATORY_INTERFACE_FIELDS.filter(field => !mappedTargets.has(field))
   }, [columnMapping])
 
@@ -52,6 +57,12 @@ export function useCsvColumnMapping(): UseCsvColumnMappingResult {
       initMapping,
       clear,
     }),
-    [columnMapping, unmappedMandatoryFields, unmappedMandatoryInterfaceFields, initMapping, clear]
+    [
+      columnMapping,
+      unmappedMandatoryFields,
+      unmappedMandatoryInterfaceFields,
+      initMapping,
+      clear,
+    ]
   )
 }

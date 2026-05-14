@@ -12,9 +12,14 @@ import type {
   CelerySettingsResponse,
   CeleryWorkersResponse,
   CelerySchedulesResponse,
-  CeleryQueuesResponse
+  CeleryQueuesResponse,
 } from '../types'
-import { STALE_TIME, DEFAULT_CELERY_SETTINGS, EMPTY_SCHEDULES, TASK_POLL_INTERVAL } from '../utils/constants'
+import {
+  STALE_TIME,
+  DEFAULT_CELERY_SETTINGS,
+  EMPTY_SCHEDULES,
+  TASK_POLL_INTERVAL,
+} from '../utils/constants'
 import { isTaskActive } from '../utils/celery-utils'
 
 interface UseCeleryStatusOptions {
@@ -31,14 +36,18 @@ const DEFAULT_QUERY_OPTIONS: UseQueryOptions = {}
 /**
  * Fetch Celery status with automatic caching
  */
-export function useCeleryStatus(options: UseCeleryStatusOptions = DEFAULT_STATUS_OPTIONS) {
+export function useCeleryStatus(
+  options: UseCeleryStatusOptions = DEFAULT_STATUS_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 
   return useQuery<CeleryStatus>({
     queryKey: queryKeys.celery.status(),
     queryFn: async () => {
-      const response = await apiCall<CeleryStatusResponse>('/api/celery/status', { method: 'GET' })
+      const response = await apiCall<CeleryStatusResponse>('/api/celery/status', {
+        method: 'GET',
+      })
       if (!response?.success) {
         throw new Error('Failed to load Celery status')
       }
@@ -59,13 +68,15 @@ export function useCelerySettings(options: UseQueryOptions = DEFAULT_QUERY_OPTIO
   return useQuery<CelerySettings>({
     queryKey: queryKeys.celery.settings(),
     queryFn: async () => {
-      const response = await apiCall<CelerySettingsResponse>('/api/celery/settings', { method: 'GET' })
+      const response = await apiCall<CelerySettingsResponse>('/api/celery/settings', {
+        method: 'GET',
+      })
       if (!response?.success || !response.settings) {
         throw new Error('Failed to load Celery settings')
       }
       return {
         ...DEFAULT_CELERY_SETTINGS,
-        ...response.settings
+        ...response.settings,
       } as CelerySettings
     },
     enabled,
@@ -83,7 +94,9 @@ export function useCeleryWorkers(options: UseQueryOptions = DEFAULT_QUERY_OPTION
   return useQuery<WorkersData>({
     queryKey: queryKeys.celery.workers(),
     queryFn: async () => {
-      const response = await apiCall<CeleryWorkersResponse>('/api/celery/workers', { method: 'GET' })
+      const response = await apiCall<CeleryWorkersResponse>('/api/celery/workers', {
+        method: 'GET',
+      })
       if (!response?.success || !response.workers) {
         throw new Error('Failed to load Celery workers')
       }
@@ -104,7 +117,9 @@ export function useCelerySchedules(options: UseQueryOptions = DEFAULT_QUERY_OPTI
   return useQuery<Schedule[]>({
     queryKey: queryKeys.celery.schedules(),
     queryFn: async () => {
-      const response = await apiCall<CelerySchedulesResponse>('/api/celery/schedules', { method: 'GET' })
+      const response = await apiCall<CelerySchedulesResponse>('/api/celery/schedules', {
+        method: 'GET',
+      })
       if (!response?.success) {
         throw new Error('Failed to load Celery schedules')
       }
@@ -125,7 +140,9 @@ export function useCeleryQueues(options: UseQueryOptions = DEFAULT_QUERY_OPTIONS
   return useQuery<QueueMetrics[]>({
     queryKey: queryKeys.celery.queues(),
     queryFn: async () => {
-      const response = await apiCall<CeleryQueuesResponse>('/api/celery/queues', { method: 'GET' })
+      const response = await apiCall<CeleryQueuesResponse>('/api/celery/queues', {
+        method: 'GET',
+      })
       if (!response?.success) {
         throw new Error('Failed to load Celery queues')
       }
@@ -140,20 +157,25 @@ export function useCeleryQueues(options: UseQueryOptions = DEFAULT_QUERY_OPTIONS
  * Fetch task status with automatic polling
  * CRITICAL: Fixes manual polling bug - uses TanStack Query refetchInterval
  */
-export function useTaskStatus(taskId: string | null, options: UseQueryOptions = DEFAULT_QUERY_OPTIONS) {
+export function useTaskStatus(
+  taskId: string | null,
+  options: UseQueryOptions = DEFAULT_QUERY_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 
   return useQuery<TaskStatus>({
     queryKey: queryKeys.celery.task(taskId!),
     queryFn: async () => {
-      const response = await apiCall<TaskStatus>(`/api/celery/tasks/${taskId}`, { method: 'GET' })
+      const response = await apiCall<TaskStatus>(`/api/celery/tasks/${taskId}`, {
+        method: 'GET',
+      })
       return response
     },
     enabled: enabled && !!taskId,
     staleTime: STALE_TIME.TASK,
     // Auto-polling: stops when task completes (SUCCESS, FAILURE, REVOKED)
-    refetchInterval: (query) => {
+    refetchInterval: query => {
       const status = query.state.data?.status
       // Stop polling if task is done, otherwise poll every 2s
       return isTaskActive(status) ? TASK_POLL_INTERVAL : false

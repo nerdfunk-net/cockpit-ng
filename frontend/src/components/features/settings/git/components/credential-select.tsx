@@ -1,8 +1,18 @@
 // Credential Select Component with Filtering
 
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { filterCredentialsByAuthType, getCredentialLabel, getCredentialPlaceholder } from '../utils'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  filterCredentialsByAuthType,
+  getCredentialLabel,
+  getCredentialPlaceholder,
+} from '../utils'
 import type { GitCredential } from '../types'
 
 interface CredentialSelectProps {
@@ -38,11 +48,14 @@ export function CredentialSelect({
           <SelectItem value="__none__">No credential selected</SelectItem>
           {filteredCredentials.map((cred, index) => {
             // Use ID in value to ensure uniqueness for RadixUI Select internal keys
-            const credValue = cred.id ? `${cred.id}:${cred.name}` : `${cred.name}-${cred.source || 'general'}-${index}`
+            const credValue = cred.id
+              ? `${cred.id}:${cred.name}`
+              : `${cred.name}-${cred.source || 'general'}-${index}`
             const key = `cred-${cred.id || `${cred.name}-${cred.username}`}-${cred.type}-${cred.source || 'general'}-${index}`
             return (
               <SelectItem key={key} value={credValue}>
-                {cred.name} ({cred.username}){cred.source === 'private' ? ' [private]' : ''}
+                {cred.name} ({cred.username})
+                {cred.source === 'private' ? ' [private]' : ''}
               </SelectItem>
             )
           })}
@@ -52,8 +65,8 @@ export function CredentialSelect({
         {authType === 'ssh_key'
           ? 'Select an SSH key credential for authentication'
           : authType === 'generic'
-          ? 'Select a generic credential (username/password) for authentication'
-          : 'Select a token credential for authentication'}
+            ? 'Select a generic credential (username/password) for authentication'
+            : 'Select a token credential for authentication'}
       </p>
     </div>
   )

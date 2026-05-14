@@ -1,19 +1,27 @@
-import React from 'react'
+import type { ReactNode } from 'react'
 
 /**
  * Helper component to render structured JSON data with color grouping
- * 
+ *
  * Displays JSON data with visual grouping at the top level using different color shades.
  * Handles all JSON data types with appropriate formatting:
  * - Primitives: color-coded (purple for booleans, blue for numbers, green for strings)
  * - Arrays: indexed list display
  * - Objects: key-value pairs with visual grouping
- * 
+ *
  * @param data - The JSON data to render
  * @param depth - Current recursion depth (0 = top level with color groups)
  * @param groupIndex - Color group index for nested items (internal use)
  */
-export const JsonRenderer = ({ data, depth = 0, groupIndex = 0 }: { data: unknown; depth?: number; groupIndex?: number }): React.ReactNode => {
+export const JsonRenderer = ({
+  data,
+  depth = 0,
+  groupIndex = 0,
+}: {
+  data: unknown
+  depth?: number
+  groupIndex?: number
+}): ReactNode => {
   if (data === null) return <span className="text-gray-400 italic">null</span>
   if (data === undefined) return <span className="text-gray-400 italic">undefined</span>
 
@@ -38,7 +46,9 @@ export const JsonRenderer = ({ data, depth = 0, groupIndex = 0 }: { data: unknow
         {data.map((item, index) => (
           // eslint-disable-next-line react/no-array-index-key
           <div key={index} className="flex items-start gap-3 w-full">
-            <span className="text-gray-500 font-medium select-none min-w-[40px]">[{index}]</span>
+            <span className="text-gray-500 font-medium select-none min-w-[40px]">
+              [{index}]
+            </span>
             <div className="flex-1 min-w-0">
               <JsonRenderer data={item} depth={depth + 1} groupIndex={groupIndex} />
             </div>
@@ -81,9 +91,17 @@ export const JsonRenderer = ({ data, depth = 0, groupIndex = 0 }: { data: unknow
               key={key}
               className={`flex items-start gap-4 w-full ${depth === 0 ? `p-3 rounded-lg border ${bgColor} ${borderColor}` : ''}`}
             >
-              <span className={`font-semibold text-gray-700 flex-shrink-0 break-words ${depth === 0 ? 'w-[240px]' : 'min-w-[160px]'}`}>{key}:</span>
+              <span
+                className={`font-semibold text-gray-700 flex-shrink-0 break-words ${depth === 0 ? 'w-[240px]' : 'min-w-[160px]'}`}
+              >
+                {key}:
+              </span>
               <div className="flex-1 min-w-0 break-words">
-                <JsonRenderer data={value} depth={depth + 1} groupIndex={currentGroupIndex} />
+                <JsonRenderer
+                  data={value}
+                  depth={depth + 1}
+                  groupIndex={currentGroupIndex}
+                />
               </div>
             </div>
           )

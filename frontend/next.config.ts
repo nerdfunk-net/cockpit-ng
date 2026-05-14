@@ -21,18 +21,13 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: process.env.DOCKER_BUILD === "true",
   },
 
-  eslint: {
-    // Allow builds to complete even with ESLint warnings
-    // Warnings are still shown but won't block the build
-    ignoreDuringBuilds: true,
-  },
-
   // Air-gapped environment optimizations
   images: {
     // Disable external image optimization for air-gapped environments
     unoptimized: process.env.NEXT_PUBLIC_AIR_GAPPED === "true",
-    // Allow local and data URLs for avatars
-    domains: [],
+    // Local and data URLs for avatars need no remotePatterns.
+    // When you load remote `next/image` URLs, add hostnames here (replaces deprecated `domains`).
+    remotePatterns: [],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
@@ -47,7 +42,7 @@ const nextConfig: NextConfig = {
   // Security and caching headers
   async headers() {
     const securityHeaders = [
-      // Strict CSP for all routes (API docs excluded via middleware)
+      // Strict CSP for all routes (API docs excluded via proxy)
       {
         source: '/:path((?!api/docs|api/redoc|api/openapi.json).*)*',
         headers: [

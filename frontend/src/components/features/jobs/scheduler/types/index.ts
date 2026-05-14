@@ -4,7 +4,14 @@ export interface JobSchedule {
   job_template_id: number
   template_name?: string
   template_job_type?: string
-  schedule_type: "now" | "interval" | "hourly" | "daily" | "weekly" | "monthly" | "custom"
+  schedule_type:
+    | 'now'
+    | 'interval'
+    | 'hourly'
+    | 'daily'
+    | 'weekly'
+    | 'monthly'
+    | 'custom'
   cron_expression?: string
   interval_minutes?: number
   start_time?: string

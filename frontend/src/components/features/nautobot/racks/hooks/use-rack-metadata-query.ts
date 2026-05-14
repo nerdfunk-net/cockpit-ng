@@ -11,7 +11,9 @@ interface UseRackMetadataQueryOptions {
 
 const DEFAULT_OPTIONS: UseRackMetadataQueryOptions = {}
 
-export function useRackMetadataQuery({ rackId }: UseRackMetadataQueryOptions = DEFAULT_OPTIONS) {
+export function useRackMetadataQuery({
+  rackId,
+}: UseRackMetadataQueryOptions = DEFAULT_OPTIONS) {
   const { apiCall } = useApi()
 
   const query = useQuery({

@@ -47,7 +47,9 @@ const DEFAULT_OPTIONS: UseGitRepositoriesQueryOptions = {}
  * const repositories = data?.repositories || []
  * ```
  */
-export function useGitRepositoriesQuery(options: UseGitRepositoriesQueryOptions = DEFAULT_OPTIONS) {
+export function useGitRepositoriesQuery(
+  options: UseGitRepositoriesQueryOptions = DEFAULT_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 

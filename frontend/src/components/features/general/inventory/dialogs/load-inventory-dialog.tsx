@@ -3,7 +3,14 @@
  */
 
 import { useState, useMemo } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -38,7 +45,7 @@ export function LoadInventoryDialog({
     }
     const term = searchTerm.toLowerCase()
     return inventories.filter(
-      (inv) =>
+      inv =>
         inv.name.toLowerCase().includes(term) ||
         (inv.description?.toLowerCase().includes(term) ?? false)
     )
@@ -50,7 +57,11 @@ export function LoadInventoryDialog({
     onClose()
   }
 
-  const handleDelete = (e: React.MouseEvent, inventoryId: number, inventoryName: string) => {
+  const handleDelete = (
+    e: React.MouseEvent,
+    inventoryId: number,
+    inventoryName: string
+  ) => {
     e.stopPropagation()
 
     openConfirm({
@@ -97,7 +108,7 @@ export function LoadInventoryDialog({
             <Input
               placeholder="Search inventories..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -120,13 +131,15 @@ export function LoadInventoryDialog({
                   <>
                     <FolderOpen className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                     <p>No saved inventories yet</p>
-                    <p className="text-sm mt-1">Create device filters and save them to get started</p>
+                    <p className="text-sm mt-1">
+                      Create device filters and save them to get started
+                    </p>
                   </>
                 )}
               </div>
             ) : (
               <div className="divide-y">
-                {filteredInventories.map((inventory) => (
+                {filteredInventories.map(inventory => (
                   <div
                     key={inventory.id}
                     className="p-4 hover:bg-gray-50 cursor-pointer transition-colors group"
@@ -140,7 +153,9 @@ export function LoadInventoryDialog({
                             {inventory.name}
                           </h4>
                           <Badge
-                            variant={inventory.scope === 'global' ? 'default' : 'secondary'}
+                            variant={
+                              inventory.scope === 'global' ? 'default' : 'secondary'
+                            }
                             className="shrink-0"
                           >
                             {inventory.scope === 'global' ? (
@@ -166,14 +181,19 @@ export function LoadInventoryDialog({
                           <span>•</span>
                           <span>Created by {inventory.created_by}</span>
                           <span>•</span>
-                          <span>Updated {inventory.updated_at ? formatDate(inventory.updated_at) : 'N/A'}</span>
+                          <span>
+                            Updated{' '}
+                            {inventory.updated_at
+                              ? formatDate(inventory.updated_at)
+                              : 'N/A'}
+                          </span>
                         </div>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={(e) => handleDelete(e, inventory.id, inventory.name)}
+                        onClick={e => handleDelete(e, inventory.id, inventory.name)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

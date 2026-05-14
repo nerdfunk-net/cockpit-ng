@@ -5,13 +5,32 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form'
 import { Plus, Edit, Globe, User } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import type { JobSchedule, JobTemplate, Credential, ScheduleFormData } from '../types'
@@ -21,11 +40,22 @@ import { DEFAULT_SCHEDULE } from '../utils/constants'
 
 // Zod validation schema
 const scheduleFormSchema = z.object({
-  job_identifier: z.string().min(1, "Identifier is required").max(100),
-  job_template_id: z.number().min(1, "Template is required"),
-  schedule_type: z.enum(["now", "interval", "hourly", "daily", "weekly", "monthly", "custom"]),
+  job_identifier: z.string().min(1, 'Identifier is required').max(100),
+  job_template_id: z.number().min(1, 'Template is required'),
+  schedule_type: z.enum([
+    'now',
+    'interval',
+    'hourly',
+    'daily',
+    'weekly',
+    'monthly',
+    'custom',
+  ]),
   interval_minutes: z.number().min(1).max(1440).optional(),
-  start_time: z.string().regex(/^\d{2}:\d{2}$/, "Invalid time format").optional(),
+  start_time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, 'Invalid time format')
+    .optional(),
   is_active: z.boolean(),
   is_global: z.boolean(),
   credential_id: z.number().nullable().optional(),
@@ -48,23 +78,25 @@ export function ScheduleFormDialog({
   editingJob,
   templates,
   credentials,
-  onSuccess
+  onSuccess,
 }: ScheduleFormDialogProps) {
   const user = useAuthStore(state => state.user)
   const { createSchedule, updateSchedule } = useScheduleMutations()
 
   const form = useForm<FormData>({
     resolver: zodResolver(scheduleFormSchema),
-    defaultValues: editingJob ? {
-      job_identifier: editingJob.job_identifier,
-      job_template_id: editingJob.job_template_id,
-      schedule_type: editingJob.schedule_type,
-      interval_minutes: editingJob.interval_minutes || 60,
-      start_time: editingJob.start_time || '00:00',
-      is_active: editingJob.is_active,
-      is_global: editingJob.is_global,
-      credential_id: editingJob.credential_id ?? null,
-    } : DEFAULT_SCHEDULE,
+    defaultValues: editingJob
+      ? {
+          job_identifier: editingJob.job_identifier,
+          job_template_id: editingJob.job_template_id,
+          schedule_type: editingJob.schedule_type,
+          interval_minutes: editingJob.interval_minutes || 60,
+          start_time: editingJob.start_time || '00:00',
+          is_active: editingJob.is_active,
+          is_global: editingJob.is_global,
+          credential_id: editingJob.credential_id ?? null,
+        }
+      : DEFAULT_SCHEDULE,
   })
 
   // Reset form when dialog opens with editing job
@@ -85,7 +117,7 @@ export function ScheduleFormDialog({
     }
   }, [open, editingJob, form])
 
-  const onSubmit = form.handleSubmit(async (data) => {
+  const onSubmit = form.handleSubmit(async data => {
     if (editingJob) {
       await updateSchedule.mutateAsync({ id: editingJob.id, data })
     } else {
@@ -97,16 +129,17 @@ export function ScheduleFormDialog({
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const scheduleType = form.watch('schedule_type')
-   
+
   const startTime = form.watch('start_time')
-   
+
   const selectedTemplateId = form.watch('job_template_id')
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
 
-  const requiresCredential = selectedTemplate &&
+  const requiresCredential =
+    selectedTemplate &&
     (selectedTemplate.job_type === 'backup' ||
-     selectedTemplate.job_type === 'run_commands' ||
-     selectedTemplate.job_type === 'get_client_data')
+      selectedTemplate.job_type === 'run_commands' ||
+      selectedTemplate.job_type === 'get_client_data')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -115,10 +148,12 @@ export function ScheduleFormDialog({
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
           <DialogHeader className="text-white">
             <DialogTitle className="text-lg font-semibold text-white">
-              {editingJob ? "Edit Schedule" : "Create Schedule"}
+              {editingJob ? 'Edit Schedule' : 'Create Schedule'}
             </DialogTitle>
             <DialogDescription className="text-blue-50">
-              {editingJob ? "Update schedule settings" : "Schedule a job template to run automatically"}
+              {editingJob
+                ? 'Update schedule settings'
+                : 'Schedule a job template to run automatically'}
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -136,7 +171,7 @@ export function ScheduleFormDialog({
                     <FormLabel>Job Template</FormLabel>
                     <Select
                       value={field.value > 0 ? field.value.toString() : ''}
-                      onValueChange={(v) => field.onChange(parseInt(v))}
+                      onValueChange={v => field.onChange(parseInt(v))}
                       disabled={!!editingJob}
                     >
                       <FormControl>
@@ -145,7 +180,7 @@ export function ScheduleFormDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {templates.map((template) => (
+                        {templates.map(template => (
                           <SelectItem key={template.id} value={template.id.toString()}>
                             <div className="flex items-center gap-2">
                               {template.is_global ? (
@@ -192,10 +227,12 @@ export function ScheduleFormDialog({
                   {selectedTemplate.is_global ? (
                     <Badge className="text-xs bg-blue-100 text-blue-700">Global</Badge>
                   ) : (
-                    <Badge variant="secondary" className="text-xs">Private</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      Private
+                    </Badge>
                   )}
                 </div>
-                {selectedTemplate.description || "No description provided"}
+                {selectedTemplate.description || 'No description provided'}
               </div>
             )}
 
@@ -240,7 +277,7 @@ export function ScheduleFormDialog({
                           min={1}
                           max={1440}
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 60)}
+                          onChange={e => field.onChange(parseInt(e.target.value) || 60)}
                         />
                       </FormControl>
                       <FormMessage />
@@ -267,17 +304,20 @@ export function ScheduleFormDialog({
             </div>
 
             {/* Timezone notice */}
-            {['hourly', 'daily', 'weekly', 'monthly'].includes(scheduleType) && startTime && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 border border-blue-200 text-sm">
-                <Globe className="h-4 w-4 text-blue-500 shrink-0" />
-                <p className="text-blue-700">
-                  <span className="font-medium">All times are in UTC.</span>
-                  {' '}For {startTime} UTC, that&apos;s{' '}
-                  <span className="font-mono font-medium">{formatTimeWithTimezone(startTime)}</span>
-                  {' '}local time.
-                </p>
-              </div>
-            )}
+            {['hourly', 'daily', 'weekly', 'monthly'].includes(scheduleType) &&
+              startTime && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 border border-blue-200 text-sm">
+                  <Globe className="h-4 w-4 text-blue-500 shrink-0" />
+                  <p className="text-blue-700">
+                    <span className="font-medium">All times are in UTC.</span> For{' '}
+                    {startTime} UTC, that&apos;s{' '}
+                    <span className="font-mono font-medium">
+                      {formatTimeWithTimezone(startTime)}
+                    </span>{' '}
+                    local time.
+                  </p>
+                </div>
+              )}
 
             {/* Credential selector */}
             {requiresCredential && (
@@ -291,7 +331,9 @@ export function ScheduleFormDialog({
                     </FormLabel>
                     <Select
                       value={field.value?.toString() || 'none'}
-                      onValueChange={(v) => field.onChange(v === 'none' ? null : parseInt(v))}
+                      onValueChange={v =>
+                        field.onChange(v === 'none' ? null : parseInt(v))
+                      }
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -302,7 +344,7 @@ export function ScheduleFormDialog({
                         <SelectItem value="none">
                           <span className="text-gray-400">No credential selected</span>
                         </SelectItem>
-                        {credentials.map((cred) => (
+                        {credentials.map(cred => (
                           <SelectItem key={cred.id} value={cred.id.toString()}>
                             <div className="flex items-center gap-2">
                               {cred.source === 'general' ? (
@@ -311,7 +353,9 @@ export function ScheduleFormDialog({
                                 <User className="h-3.5 w-3.5 text-gray-400" />
                               )}
                               <span className="font-medium">{cred.name}</span>
-                              <span className="text-xs text-muted-foreground">({cred.username})</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({cred.username})
+                              </span>
                             </div>
                           </SelectItem>
                         ))}
@@ -345,11 +389,17 @@ export function ScheduleFormDialog({
                   render={({ field }) => (
                     <FormItem className="flex items-center gap-3 pl-6 border-l">
                       <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
                       </FormControl>
                       <FormLabel className="!mt-0 cursor-pointer flex items-center gap-2">
                         Global Schedule
-                        <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-blue-100 text-blue-700"
+                        >
                           Admin
                         </Badge>
                       </FormLabel>

@@ -14,28 +14,34 @@ export function NetmikoTab() {
         </div>
         <div className="p-6 space-y-4">
           <p className="text-gray-700">
-            Netmiko templates allow you to create reusable configuration commands using <strong>Jinja2</strong> syntax.
-            Templates can dynamically pull data from <strong>Nautobot</strong> (your source of truth for network devices)
-            and can execute <strong>pre-run commands</strong> on devices to gather real-time information before rendering.
+            Netmiko templates allow you to create reusable configuration commands using{' '}
+            <strong>Jinja2</strong> syntax. Templates can dynamically pull data from{' '}
+            <strong>Nautobot</strong> (your source of truth for network devices) and can
+            execute <strong>pre-run commands</strong> on devices to gather real-time
+            information before rendering.
           </p>
           <div className="grid md:grid-cols-3 gap-4 mt-4">
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
               <h4 className="font-semibold text-blue-800 mb-2">Nautobot Integration</h4>
               <p className="text-sm text-blue-700">
-                Access device information like hostname, IP addresses, interfaces, and custom fields directly from Nautobot.
+                Access device information like hostname, IP addresses, interfaces, and
+                custom fields directly from Nautobot.
               </p>
             </div>
             <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
               <h4 className="font-semibold text-amber-800 mb-2">Pre-run Commands</h4>
               <p className="text-sm text-amber-700">
-                Execute commands on devices before rendering. Output is parsed with TextFSM and available as variables.
+                Execute commands on devices before rendering. Output is parsed with
+                TextFSM and available as variables.
               </p>
             </div>
             <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-2">Custom Variables & YAML Files</h4>
+              <h4 className="font-semibold text-green-800 mb-2">
+                Custom Variables & YAML Files
+              </h4>
               <p className="text-sm text-green-700">
-                Define custom variables manually or load structured data from YAML files. Combine sources to create
-                flexible, data-driven templates.
+                Define custom variables manually or load structured data from YAML
+                files. Combine sources to create flexible, data-driven templates.
               </p>
             </div>
           </div>
@@ -52,7 +58,8 @@ export function NetmikoTab() {
         </div>
         <div className="p-6 space-y-6">
           <p className="text-gray-600 text-sm">
-            Your templates can access variables from multiple sources. Each source provides different capabilities:
+            Your templates can access variables from multiple sources. Each source
+            provides different capabilities:
           </p>
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -62,7 +69,8 @@ export function NetmikoTab() {
                 Custom Variables
               </h4>
               <p className="text-sm text-green-700 mb-3">
-                Create your own variables that can be filled in during template rendering.
+                Create your own variables that can be filled in during template
+                rendering.
               </p>
               <div className="bg-white rounded border border-green-100 p-2 text-xs text-gray-700">
                 <code className="text-green-600">{'{{ my_variable }}'}</code>
@@ -76,7 +84,8 @@ export function NetmikoTab() {
                 YAML Files
               </h4>
               <p className="text-sm text-amber-700 mb-3">
-                Load structured configuration data from YAML files for complex variable hierarchies.
+                Load structured configuration data from YAML files for complex variable
+                hierarchies.
               </p>
               <div className="bg-white rounded border border-amber-100 p-2 text-xs text-gray-700">
                 <code className="text-amber-600">{'{{ yaml_data.key }}'}</code>
@@ -107,7 +116,9 @@ export function NetmikoTab() {
                 In Agent mode, access device lists and SNMP mappings from inventories.
               </p>
               <div className="bg-white rounded border border-purple-100 p-2 text-xs text-gray-700">
-                <code className="text-purple-600">{'{{ devices }}, {{ snmp_mapping }}'}</code>
+                <code className="text-purple-600">
+                  {'{{ devices }}, {{ snmp_mapping }}'}
+                </code>
                 <p className="text-gray-500 mt-1">Inventory data (Agent mode)</p>
               </div>
             </div>
@@ -115,8 +126,9 @@ export function NetmikoTab() {
 
           <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800">
-              <strong>💡 Tip:</strong> You can combine multiple variable sources in the same template. For example,
-              use Nautobot device data alongside custom variables for maximum flexibility.
+              <strong>💡 Tip:</strong> You can combine multiple variable sources in the
+              same template. For example, use Nautobot device data alongside custom
+              variables for maximum flexibility.
             </p>
           </div>
         </div>
@@ -132,8 +144,9 @@ export function NetmikoTab() {
         </div>
         <div className="p-6 space-y-6">
           <p className="text-gray-600 text-sm">
-            Device information is available under the <code className="bg-gray-100 px-1 rounded">nautobot</code> namespace
-            when you select a test device for rendering.
+            Device information is available under the{' '}
+            <code className="bg-gray-100 px-1 rounded">nautobot</code> namespace when
+            you select a test device for rendering.
           </p>
 
           <div className="space-y-4">
@@ -196,18 +209,31 @@ interface Vlan1
         </div>
         <div className="p-6 space-y-6">
           <p className="text-gray-600 text-sm">
-            Pre-run commands execute on the device <strong>before</strong> rendering the template.
-            The command output is automatically parsed using <strong>TextFSM</strong> and available as template variables.
+            Pre-run commands execute on the device <strong>before</strong> rendering the
+            template. The command output is automatically parsed using{' '}
+            <strong>TextFSM</strong> and available as template variables.
           </p>
 
           <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
             <h4 className="font-semibold text-amber-800 mb-2">How it works:</h4>
             <ol className="list-decimal list-inside text-sm text-amber-700 space-y-1">
-              <li>Enter a command (e.g., <code className="bg-amber-100 px-1 rounded">show ip interface brief</code>)</li>
+              <li>
+                Enter a command (e.g.,{' '}
+                <code className="bg-amber-100 px-1 rounded">
+                  show ip interface brief
+                </code>
+                )
+              </li>
               <li>Select credentials for device authentication</li>
               <li>When you render the template, the command runs first</li>
-              <li>Output is parsed with TextFSM and available as <code className="bg-amber-100 px-1 rounded">pre_run.parsed</code></li>
-              <li>Raw output is available as <code className="bg-amber-100 px-1 rounded">pre_run.raw</code></li>
+              <li>
+                Output is parsed with TextFSM and available as{' '}
+                <code className="bg-amber-100 px-1 rounded">pre_run.parsed</code>
+              </li>
+              <li>
+                Raw output is available as{' '}
+                <code className="bg-amber-100 px-1 rounded">pre_run.raw</code>
+              </li>
             </ol>
           </div>
 
@@ -216,11 +242,15 @@ interface Vlan1
             <div className="grid md:grid-cols-2 gap-3 text-sm">
               <div className="p-3 bg-gray-50 rounded-lg border">
                 <code className="text-blue-600">{'{{ pre_run.parsed }}'}</code>
-                <p className="text-xs text-gray-500 mt-1">List of parsed results (TextFSM output)</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  List of parsed results (TextFSM output)
+                </p>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg border">
                 <code className="text-blue-600">{'{{ pre_run.raw }}'}</code>
-                <p className="text-xs text-gray-500 mt-1">Raw command output as string</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Raw command output as string
+                </p>
               </div>
             </div>
           </div>

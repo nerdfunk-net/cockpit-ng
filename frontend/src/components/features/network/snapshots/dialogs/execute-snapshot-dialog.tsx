@@ -93,9 +93,10 @@ export function ExecuteSnapshotDialog({
     setExecuting(true)
     try {
       // Prepare credential payload
-      const credentialPayload = selectedCredentialId === 'manual'
-        ? { username, password }
-        : { credential_id: parseInt(selectedCredentialId) }
+      const credentialPayload =
+        selectedCredentialId === 'manual'
+          ? { username, password }
+          : { credential_id: parseInt(selectedCredentialId) }
 
       await executeSnapshot({
         name: name.trim(),
@@ -113,7 +114,8 @@ export function ExecuteSnapshotDialog({
     } catch (error) {
       toast({
         title: 'Execution Failed',
-        description: error instanceof Error ? error.message : 'Failed to execute snapshot',
+        description:
+          error instanceof Error ? error.message : 'Failed to execute snapshot',
         variant: 'destructive',
       })
     } finally {
@@ -127,7 +129,9 @@ export function ExecuteSnapshotDialog({
         <DialogHeader>
           <DialogTitle>Execute Snapshot</DialogTitle>
           <DialogDescription>
-            Execute snapshot on {selectedDevices.length} selected device{selectedDevices.length !== 1 ? 's' : ''} with {commands.length} command{commands.length !== 1 ? 's' : ''}
+            Execute snapshot on {selectedDevices.length} selected device
+            {selectedDevices.length !== 1 ? 's' : ''} with {commands.length} command
+            {commands.length !== 1 ? 's' : ''}
           </DialogDescription>
         </DialogHeader>
 
@@ -138,7 +142,7 @@ export function ExecuteSnapshotDialog({
               id="snapshot-name"
               placeholder="e.g., snapshot-2024-01-01"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
             />
             <p className="text-sm text-muted-foreground">
               This will be the snapshot identifier in the database
@@ -151,22 +155,33 @@ export function ExecuteSnapshotDialog({
               id="snapshot-description"
               placeholder="Optional description of this snapshot"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               rows={3}
             />
           </div>
 
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-md space-y-1">
             <p className="text-sm font-medium text-blue-900">Configuration Summary</p>
-            <p className="text-xs text-blue-700">Git Repository: {snapshotGitRepoId ? `ID ${snapshotGitRepoId}` : 'None'}</p>
+            <p className="text-xs text-blue-700">
+              Git Repository: {snapshotGitRepoId ? `ID ${snapshotGitRepoId}` : 'None'}
+            </p>
             <p className="text-xs text-blue-700">Path: {snapshotPath}</p>
             <p className="text-xs text-blue-700">Commands: {commands.length}</p>
-            <p className="text-xs text-blue-700">Credentials: {selectedCredentialId === 'manual' ? 'Manual' : `Stored (ID ${selectedCredentialId})`}</p>
+            <p className="text-xs text-blue-700">
+              Credentials:{' '}
+              {selectedCredentialId === 'manual'
+                ? 'Manual'
+                : `Stored (ID ${selectedCredentialId})`}
+            </p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={executing}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={executing}
+          >
             Cancel
           </Button>
           <Button onClick={handleExecute} disabled={executing}>

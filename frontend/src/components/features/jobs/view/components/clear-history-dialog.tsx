@@ -34,14 +34,17 @@ export function ClearHistoryDialog({
           <AlertDialogDescription>
             {hasActiveFilters ? (
               <>
-                Are you sure you want to clear job history matching: <strong>{filterDescription}</strong>?
-                <br /><br />
+                Are you sure you want to clear job history matching:{' '}
+                <strong>{filterDescription}</strong>?
+                <br />
+                <br />
                 This action cannot be undone.
               </>
             ) : (
               <>
                 Are you sure you want to clear <strong>all</strong> job history?
-                <br /><br />
+                <br />
+                <br />
                 This action cannot be undone.
               </>
             )}
@@ -49,7 +52,10 @@ export function ClearHistoryDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} className="bg-red-600 hover:bg-red-700">
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="bg-red-600 hover:bg-red-700"
+          >
             Clear History
           </AlertDialogAction>
         </AlertDialogFooter>

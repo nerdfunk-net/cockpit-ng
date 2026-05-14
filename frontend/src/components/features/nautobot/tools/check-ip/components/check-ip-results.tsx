@@ -1,5 +1,11 @@
 import { useMemo, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { CheckCircle2, Download } from 'lucide-react'
@@ -13,9 +19,13 @@ interface CheckIPResultsProps {
   onToggleShowAll: () => void
 }
 
-export function CheckIPResults({ results, showAll, onToggleShowAll }: CheckIPResultsProps) {
-  const filteredResults = useMemo(() =>
-    showAll ? results : results.filter(r => r.status !== 'match'),
+export function CheckIPResults({
+  results,
+  showAll,
+  onToggleShowAll,
+}: CheckIPResultsProps) {
+  const filteredResults = useMemo(
+    () => (showAll ? results : results.filter(r => r.status !== 'match')),
     [results, showAll]
   )
 
@@ -35,14 +45,13 @@ export function CheckIPResults({ results, showAll, onToggleShowAll }: CheckIPRes
             <CardDescription className="text-white/90 text-xs mt-1">
               {showAll
                 ? `Showing all ${results.length} devices`
-                : `Showing ${filteredResults.length} differences (${results.length} total)`
-              }
+                : `Showing ${filteredResults.length} differences (${results.length} total)`}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Button
               onClick={onToggleShowAll}
-              variant={showAll ? "secondary" : "outline"}
+              variant={showAll ? 'secondary' : 'outline'}
               size="sm"
               className="bg-white text-gray-900 hover:bg-gray-100 border-white"
             >
@@ -62,7 +71,7 @@ export function CheckIPResults({ results, showAll, onToggleShowAll }: CheckIPRes
       </CardHeader>
       <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
         <div className="space-y-2">
-          {filteredResults.map((result) => (
+          {filteredResults.map(result => (
             <div
               key={`${result.ip_address}-${result.device_name}`}
               className="flex items-center justify-between p-3 border rounded-lg"
@@ -78,15 +87,14 @@ export function CheckIPResults({ results, showAll, onToggleShowAll }: CheckIPRes
                 <Badge className={getStatusColor(result.status)} variant="outline">
                   {result.status.replace('_', ' ').toUpperCase()}
                 </Badge>
-                {result.nautobot_device_name && result.nautobot_device_name !== result.device_name && (
-                  <span className="text-sm text-muted-foreground">
-                    → {result.nautobot_device_name}
-                  </span>
-                )}
+                {result.nautobot_device_name &&
+                  result.nautobot_device_name !== result.device_name && (
+                    <span className="text-sm text-muted-foreground">
+                      → {result.nautobot_device_name}
+                    </span>
+                  )}
                 {result.error && (
-                  <span className="text-sm text-red-600">
-                    {result.error}
-                  </span>
+                  <span className="text-sm text-red-600">{result.error}</span>
                 )}
               </div>
             </div>

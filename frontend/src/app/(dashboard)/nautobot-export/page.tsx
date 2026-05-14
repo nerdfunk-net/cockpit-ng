@@ -51,7 +51,7 @@ export default function NautobotExportPage() {
             csv_quote_char?: string
           }
         }>('settings/nautobot/defaults', {
-          method: 'GET'
+          method: 'GET',
         })
 
         if (response.success && response.data) {
@@ -105,30 +105,39 @@ export default function NautobotExportPage() {
         device_ids: selectedDevices.map(d => d.id),
         properties: selectedProperties,
         export_format: exportFormat,
-        csv_options: exportFormat === 'csv' ? {
-          delimiter: csvDelimiter,
-          quoteChar: csvQuoteChar,
-          includeHeaders: csvIncludeHeaders.toString(),
-        } : undefined,
+        csv_options:
+          exportFormat === 'csv'
+            ? {
+                delimiter: csvDelimiter,
+                quoteChar: csvQuoteChar,
+                includeHeaders: csvIncludeHeaders.toString(),
+              }
+            : undefined,
       }
 
       // Call backend API to trigger export task using apiCall hook
-      const data = await apiCall<{ task_id: string; job_id: string; status: string; message: string }>(
-        'api/celery/tasks/export-devices',
-        {
-          method: 'POST',
-          body: requestBody,
-        }
-      )
+      const data = await apiCall<{
+        task_id: string
+        job_id: string
+        status: string
+        message: string
+      }>('api/celery/tasks/export-devices', {
+        method: 'POST',
+        body: requestBody,
+      })
 
       // Show success message with task ID
-      alert(`Export task started successfully!\n\nTask ID: ${data.task_id}\n\nYou can track the progress in Jobs / View. Once complete, you can download the file from there.`)
+      alert(
+        `Export task started successfully!\n\nTask ID: ${data.task_id}\n\nYou can track the progress in Jobs / View. Once complete, you can download the file from there.`
+      )
 
       // Optionally redirect to Jobs/View page
       // window.location.href = '/jobs/view'
     } catch (error) {
       console.error('Export error:', error)
-      alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      alert(
+        `Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -142,7 +151,9 @@ export default function NautobotExportPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Nautobot Export</h1>
-            <p className="text-gray-600 mt-1">Export selected Nautobot devices to CSV or YAML</p>
+            <p className="text-gray-600 mt-1">
+              Export selected Nautobot devices to CSV or YAML
+            </p>
           </div>
         </div>
       </div>

@@ -8,7 +8,11 @@ import {
 } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
 import type { VMFormReturn } from '../hooks/use-vm-form'
-import type { VMDropdownsResponse, SoftwareVersion, SoftwareImageOption } from '../types'
+import type {
+  VMDropdownsResponse,
+  SoftwareVersion,
+  SoftwareImageOption,
+} from '../types'
 
 interface ManagementSectionProps {
   form: VMFormReturn
@@ -46,7 +50,7 @@ export function ManagementSection({
             </Label>
             <Select
               value={watch('platform') ?? ''}
-              onValueChange={(value) => {
+              onValueChange={value => {
                 setValue('platform', value)
                 // Reset dependent fields when platform changes
                 setValue('softwareVersion', '')
@@ -54,11 +58,14 @@ export function ManagementSection({
               }}
               disabled={isLoading}
             >
-              <SelectTrigger id="platform" className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+              <SelectTrigger
+                id="platform"
+                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+              >
                 <SelectValue placeholder="Select platform..." />
               </SelectTrigger>
               <SelectContent>
-                {dropdownData.platforms.map((platform) => (
+                {dropdownData.platforms.map(platform => (
                   <SelectItem key={platform.id} value={platform.id}>
                     {platform.name}
                   </SelectItem>
@@ -77,20 +84,25 @@ export function ManagementSection({
             </Label>
             <Select
               value={watch('softwareVersion') ?? ''}
-              onValueChange={(value) => {
+              onValueChange={value => {
                 setValue('softwareVersion', value)
                 // Reset image file when version changes
                 setValue('softwareImageFile', '')
               }}
               disabled={isLoading || isLoadingSoftwareVersions}
             >
-              <SelectTrigger id="softwareVersion" className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+              <SelectTrigger
+                id="softwareVersion"
+                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+              >
                 <SelectValue placeholder="Select version..." />
               </SelectTrigger>
               <SelectContent>
-                {softwareVersions.map((sv) => (
+                {softwareVersions.map(sv => (
                   <SelectItem key={sv.id} value={sv.id}>
-                    {sv.platform?.name ? `${sv.platform.name} ${sv.version}` : sv.version}
+                    {sv.platform?.name
+                      ? `${sv.platform.name} ${sv.version}`
+                      : sv.version}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -107,14 +119,17 @@ export function ManagementSection({
             </Label>
             <Select
               value={watch('softwareImageFile') ?? ''}
-              onValueChange={(value) => setValue('softwareImageFile', value)}
+              onValueChange={value => setValue('softwareImageFile', value)}
               disabled={isLoading || isLoadingSoftwareImageFiles}
             >
-              <SelectTrigger id="softwareImageFile" className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+              <SelectTrigger
+                id="softwareImageFile"
+                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+              >
                 <SelectValue placeholder="Select image file..." />
               </SelectTrigger>
               <SelectContent>
-                {softwareImageFiles.map((img) => (
+                {softwareImageFiles.map(img => (
                   <SelectItem key={img.id} value={img.id}>
                     {img.image_file_name}
                   </SelectItem>

@@ -3,7 +3,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import React from 'react'
+import { createElement, type ReactNode } from 'react'
 import { useSavedInventories } from './use-saved-inventories'
 import { useApi } from '@/hooks/use-api'
 import type { ConditionTree } from '@/types/shared/device-selector'
@@ -23,7 +23,7 @@ const mockInventories = [
     scope: 'global',
     created_by: 'admin',
     created_at: '2024-01-01',
-    updated_at: '2024-01-01'
+    updated_at: '2024-01-01',
   },
   {
     id: 2,
@@ -33,27 +33,25 @@ const mockInventories = [
     scope: 'private',
     created_by: 'user1',
     created_at: '2024-01-02',
-    updated_at: '2024-01-02'
-  }
+    updated_at: '2024-01-02',
+  },
 ]
 
 const mockConditionTree: ConditionTree = {
   type: 'root',
   internalLogic: 'AND',
-  items: [
-    { id: '1', field: 'device_type', operator: 'equals', value: 'Router' }
-  ]
+  items: [{ id: '1', field: 'device_type', operator: 'equals', value: 'Router' }],
 }
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
-      mutations: { retry: false }
-    }
+      mutations: { retry: false },
+    },
   })
-  return ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: queryClient }, children)
+  return ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client: queryClient }, children)
 }
 
 describe('useSavedInventories', () => {
@@ -64,38 +62,40 @@ describe('useSavedInventories', () => {
     vi.mocked(savedInventoriesQueries.useSavedInventoriesQuery).mockReturnValue({
       data: { inventories: mockInventories, total: 2 },
       isLoading: false,
-      refetch: vi.fn()
+      refetch: vi.fn(),
     } as any)
 
     vi.mocked(savedInventoriesQueries.useSaveInventoryMutation).mockReturnValue({
-      mutateAsync: vi.fn().mockResolvedValue({ success: true })
+      mutateAsync: vi.fn().mockResolvedValue({ success: true }),
     } as any)
 
     vi.mocked(savedInventoriesQueries.useUpdateInventoryMutation).mockReturnValue({
-      mutateAsync: vi.fn().mockResolvedValue({ success: true })
+      mutateAsync: vi.fn().mockResolvedValue({ success: true }),
     } as any)
 
     vi.mocked(savedInventoriesQueries.useDeleteInventoryMutation).mockReturnValue({
-      mutateAsync: vi.fn().mockResolvedValue({ success: true })
+      mutateAsync: vi.fn().mockResolvedValue({ success: true }),
     } as any)
 
     // Mock useApi
     vi.mocked(useApi).mockReturnValue({
       apiCall: vi.fn().mockResolvedValue({
-        conditions: [{
-          version: 2,
-          tree: mockConditionTree
-        }]
+        conditions: [
+          {
+            version: 2,
+            tree: mockConditionTree,
+          },
+        ],
       }),
       isLoading: false,
-      error: null
+      error: null,
     } as ReturnType<typeof useApi>)
   })
 
   describe('initialization', () => {
     it('should load saved inventories', () => {
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       expect(result.current.savedInventories).toEqual(mockInventories)
@@ -109,11 +109,11 @@ describe('useSavedInventories', () => {
       vi.mocked(savedInventoriesQueries.useSavedInventoriesQuery).mockReturnValue({
         data: { inventories: mockInventories, total: 2 },
         isLoading: false,
-        refetch: refetchMock
+        refetch: refetchMock,
       } as any)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       await act(async () => {
@@ -128,17 +128,18 @@ describe('useSavedInventories', () => {
     it('should save new inventory with tree structure', async () => {
       const mutateSpy = vi.fn().mockResolvedValue({ success: true })
       vi.mocked(savedInventoriesQueries.useSaveInventoryMutation).mockReturnValue({
-        mutateAsync: mutateSpy
+        mutateAsync: mutateSpy,
       } as any)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       await act(async () => {
         await result.current.saveInventory(
           'My Inventory',
           'Test description',
+          'global',
           mockConditionTree
         )
       })
@@ -146,28 +147,32 @@ describe('useSavedInventories', () => {
       expect(mutateSpy).toHaveBeenCalledWith({
         name: 'My Inventory',
         description: 'Test description',
-        conditions: [{
-          version: 2,
-          tree: mockConditionTree
-        }],
-        scope: 'global'
+        conditions: [
+          {
+            version: 2,
+            tree: mockConditionTree,
+          },
+        ],
+        scope: 'global',
+        group_path: null,
       })
     })
 
     it('should update existing inventory', async () => {
       const mutateSpy = vi.fn().mockResolvedValue({ success: true })
       vi.mocked(savedInventoriesQueries.useUpdateInventoryMutation).mockReturnValue({
-        mutateAsync: mutateSpy
+        mutateAsync: mutateSpy,
       } as any)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       await act(async () => {
         await result.current.saveInventory(
           'Updated Inventory',
           'Updated description',
+          'global',
           mockConditionTree,
           true,
           1
@@ -178,53 +183,59 @@ describe('useSavedInventories', () => {
         id: 1,
         data: {
           description: 'Updated description',
-          conditions: [{
-            version: 2,
-            tree: mockConditionTree
-          }]
-        }
+          conditions: [
+            {
+              version: 2,
+              tree: mockConditionTree,
+            },
+          ],
+          group_path: null,
+        },
       })
     })
 
     it('should handle empty description', async () => {
       const mutateSpy = vi.fn().mockResolvedValue({ success: true })
       vi.mocked(savedInventoriesQueries.useSaveInventoryMutation).mockReturnValue({
-        mutateAsync: mutateSpy
+        mutateAsync: mutateSpy,
       } as any)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       await act(async () => {
         await result.current.saveInventory(
           'My Inventory',
           '',
+          'global',
           mockConditionTree
         )
       })
 
       expect(mutateSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          description: undefined
+          description: undefined,
         })
       )
     })
 
     it('should track saving state', async () => {
-      const mutateSpy = vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
+      const mutateSpy = vi
+        .fn()
+        .mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
       vi.mocked(savedInventoriesQueries.useSaveInventoryMutation).mockReturnValue({
-        mutateAsync: mutateSpy
+        mutateAsync: mutateSpy,
       } as any)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       expect(result.current.isSavingInventory).toBe(false)
 
       act(() => {
-        result.current.saveInventory('Test', 'Desc', mockConditionTree)
+        void result.current.saveInventory('Test', 'Desc', 'global', mockConditionTree)
       })
 
       expect(result.current.isSavingInventory).toBe(true)
@@ -242,20 +253,22 @@ describe('useSavedInventories', () => {
         name: 'Production Routers',
         description: 'All production routers',
         scope: 'global',
-        conditions: [{
-          version: 2,
-          tree: mockConditionTree
-        }]
+        conditions: [
+          {
+            version: 2,
+            tree: mockConditionTree,
+          },
+        ],
       })
 
       vi.mocked(useApi).mockReturnValue({
         apiCall: apiCallMock,
         isLoading: false,
-        error: null
+        error: null,
       } as ReturnType<typeof useApi>)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       let loaded: LoadedInventoryData | null = null
@@ -275,24 +288,24 @@ describe('useSavedInventories', () => {
     it('should load legacy flat conditions and convert to tree', async () => {
       const legacyConditions = [
         { field: 'device_type', operator: 'equals', value: 'Router', logic: 'AND' },
-        { field: 'role', operator: 'equals', value: 'Core', logic: 'AND' }
+        { field: 'role', operator: 'equals', value: 'Core', logic: 'AND' },
       ]
 
       const apiCallMock = vi.fn().mockResolvedValue({
         id: 2,
         name: 'Old Inventory',
         scope: 'global',
-        conditions: legacyConditions
+        conditions: legacyConditions,
       })
 
       vi.mocked(useApi).mockReturnValue({
         apiCall: apiCallMock,
         isLoading: false,
-        error: null
+        error: null,
       } as ReturnType<typeof useApi>)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       let loaded: LoadedInventoryData | null = null
@@ -307,7 +320,7 @@ describe('useSavedInventories', () => {
       expect(loaded!.tree.items[0]).toMatchObject({
         field: 'device_type',
         operator: 'equals',
-        value: 'Router'
+        value: 'Router',
       })
     })
 
@@ -316,17 +329,17 @@ describe('useSavedInventories', () => {
         id: 3,
         name: 'Empty Inventory',
         scope: 'global',
-        conditions: []
+        conditions: [],
       })
 
       vi.mocked(useApi).mockReturnValue({
         apiCall: apiCallMock,
         isLoading: false,
-        error: null
+        error: null,
       } as ReturnType<typeof useApi>)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       let loaded: LoadedInventoryData | null = null
@@ -345,11 +358,11 @@ describe('useSavedInventories', () => {
       vi.mocked(useApi).mockReturnValue({
         apiCall: apiCallMock,
         isLoading: false,
-        error: null
+        error: null,
       } as ReturnType<typeof useApi>)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       await expect(async () => {
@@ -358,7 +371,10 @@ describe('useSavedInventories', () => {
         })
       }).rejects.toThrow('Network error')
 
-      expect(consoleSpy).toHaveBeenCalledWith('Error loading inventory:', expect.any(Error))
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Error loading inventory:',
+        expect.any(Error)
+      )
       consoleSpy.mockRestore()
     })
   })
@@ -367,46 +383,55 @@ describe('useSavedInventories', () => {
     it('should update inventory name and description only', async () => {
       const mutateSpy = vi.fn().mockResolvedValue({ success: true })
       vi.mocked(savedInventoriesQueries.useUpdateInventoryMutation).mockReturnValue({
-        mutateAsync: mutateSpy
+        mutateAsync: mutateSpy,
       } as any)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       await act(async () => {
-        await result.current.updateInventoryDetails(1, 'New Name', 'New Description')
+        await result.current.updateInventoryDetails(
+          1,
+          'New Name',
+          'New Description',
+          'global'
+        )
       })
 
       expect(mutateSpy).toHaveBeenCalledWith({
         id: 1,
         data: {
           name: 'New Name',
-          description: 'New Description'
-        }
+          description: 'New Description',
+          scope: 'global',
+          group_path: null,
+        },
       })
     })
 
     it('should handle empty description when updating', async () => {
       const mutateSpy = vi.fn().mockResolvedValue({ success: true })
       vi.mocked(savedInventoriesQueries.useUpdateInventoryMutation).mockReturnValue({
-        mutateAsync: mutateSpy
+        mutateAsync: mutateSpy,
       } as any)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       await act(async () => {
-        await result.current.updateInventoryDetails(1, 'New Name', '')
+        await result.current.updateInventoryDetails(1, 'New Name', '', 'global')
       })
 
       expect(mutateSpy).toHaveBeenCalledWith({
         id: 1,
         data: {
           name: 'New Name',
-          description: undefined
-        }
+          description: undefined,
+          scope: 'global',
+          group_path: null,
+        },
       })
     })
   })
@@ -415,11 +440,11 @@ describe('useSavedInventories', () => {
     it('should delete inventory by id', async () => {
       const mutateSpy = vi.fn().mockResolvedValue({ success: true })
       vi.mocked(savedInventoriesQueries.useDeleteInventoryMutation).mockReturnValue({
-        mutateAsync: mutateSpy
+        mutateAsync: mutateSpy,
       } as any)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       await act(async () => {
@@ -434,11 +459,11 @@ describe('useSavedInventories', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       vi.mocked(savedInventoriesQueries.useDeleteInventoryMutation).mockReturnValue({
-        mutateAsync: mutateSpy
+        mutateAsync: mutateSpy,
       } as any)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       await expect(async () => {
@@ -447,7 +472,10 @@ describe('useSavedInventories', () => {
         })
       }).rejects.toThrow('Delete failed')
 
-      expect(consoleSpy).toHaveBeenCalledWith('Error deleting inventory:', expect.any(Error))
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Error deleting inventory:',
+        expect.any(Error)
+      )
       consoleSpy.mockRestore()
     })
   })
@@ -456,24 +484,24 @@ describe('useSavedInventories', () => {
     it('should convert flat conditions to tree structure', async () => {
       const flatConditions = [
         { field: 'device_type', operator: 'equals', value: 'Router', logic: 'AND' },
-        { field: 'role', operator: 'equals', value: 'Core', logic: 'AND' }
+        { field: 'role', operator: 'equals', value: 'Core', logic: 'AND' },
       ]
 
       const apiCallMock = vi.fn().mockResolvedValue({
         id: 10,
         name: 'Test',
         scope: 'global',
-        conditions: flatConditions
+        conditions: flatConditions,
       })
 
       vi.mocked(useApi).mockReturnValue({
         apiCall: apiCallMock,
         isLoading: false,
-        error: null
+        error: null,
       } as ReturnType<typeof useApi>)
 
       const { result } = renderHook(() => useSavedInventories(), {
-        wrapper: createWrapper()
+        wrapper: createWrapper(),
       })
 
       let loaded: LoadedInventoryData | null = null

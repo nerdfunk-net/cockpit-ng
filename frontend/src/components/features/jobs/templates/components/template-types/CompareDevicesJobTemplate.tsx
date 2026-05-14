@@ -1,5 +1,5 @@
-import { Label } from "@/components/ui/label"
-import { GitCompare, Info } from "lucide-react"
+import { Label } from '@/components/ui/label'
+import { GitCompare, Info } from 'lucide-react'
 
 export function CompareDevicesJobTemplate() {
   return (
@@ -13,7 +13,8 @@ export function CompareDevicesJobTemplate() {
         <Info className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
         <div className="space-y-2 text-sm text-purple-900">
           <p className="leading-relaxed">
-            This job compares device configurations between Nautobot and CheckMK to identify discrepancies.
+            This job compares device configurations between Nautobot and CheckMK to
+            identify discrepancies.
           </p>
           <ul className="list-disc list-inside space-y-1 text-purple-800">
             <li>Fetches device data from Nautobot</li>
@@ -25,7 +26,8 @@ export function CompareDevicesJobTemplate() {
       </div>
 
       <p className="text-xs text-purple-600">
-        No additional configuration required - the job will compare all selected devices automatically
+        No additional configuration required - the job will compare all selected devices
+        automatically
       </p>
     </div>
   )

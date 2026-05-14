@@ -7,7 +7,10 @@ import type { NameTransform } from '../types'
  * - replace mode: replaces all matches globally. Empty replacement deletes the matched portion.
  * Returns the original name unchanged on regex errors.
  */
-export function applyNameTransform(name: string, transform: NameTransform | null): string {
+export function applyNameTransform(
+  name: string,
+  transform: NameTransform | null
+): string {
   if (!transform || !transform.pattern.trim()) return name
   try {
     if (transform.mode === 'regex') {
@@ -16,7 +19,10 @@ export function applyNameTransform(name: string, transform: NameTransform | null
       if (m) return m[1] !== undefined ? m[1] : m[0]
       return name
     }
-    return name.replace(new RegExp(transform.pattern.trim(), 'g'), transform.replacement)
+    return name.replace(
+      new RegExp(transform.pattern.trim(), 'g'),
+      transform.replacement
+    )
   } catch {
     return name
   }

@@ -30,8 +30,6 @@ export default function NetmikoPage() {
   const [writeConfig, setWriteConfig] = useState(false)
   const [dryRun, setDryRun] = useState(false)
 
-
-
   // Custom hooks
   const credentialManager = useCredentialManager()
   const templateManager = useTemplateManager()
@@ -67,7 +65,7 @@ export default function NetmikoPage() {
         alert('Please enter username and password.')
         return
       }
-      
+
       await executionManager.executeCommands({
         selectedDevices,
         commands,
@@ -78,7 +76,10 @@ export default function NetmikoPage() {
         password: credentialManager.password,
       })
     } else {
-      if (!dryRun && (!credentialManager.username.trim() || !credentialManager.password.trim())) {
+      if (
+        !dryRun &&
+        (!credentialManager.username.trim() || !credentialManager.password.trim())
+      ) {
         alert('Please enter username and password.')
         return
       }
@@ -108,8 +109,12 @@ export default function NetmikoPage() {
             <Terminal className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Netmiko Command Execution</h1>
-            <p className="text-muted-foreground mt-2">Execute commands on network devices using Netmiko</p>
+            <h1 className="text-3xl font-bold text-slate-900">
+              Netmiko Command Execution
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Execute commands on network devices using Netmiko
+            </p>
           </div>
         </div>
       </div>

@@ -18,12 +18,15 @@ const EMPTY_DIFF_STATUS_FILTERS: Record<string, boolean> = {}
 
 export function useDiffFilters(devices: DiffDevice[]) {
   const [deviceNameFilter, setDeviceNameFilter] = useState('')
-  const [roleFilters, setRoleFilters] = useState<Record<string, boolean>>(EMPTY_ROLE_FILTERS)
+  const [roleFilters, setRoleFilters] =
+    useState<Record<string, boolean>>(EMPTY_ROLE_FILTERS)
   const [selectedLocation, setSelectedLocation] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [systemFilter, setSystemFilter] = useState<SystemFilter>('all')
   const [ipAddressFilter, setIpAddressFilter] = useState<IpAddressFilter>('all')
-  const [diffStatusFilters, setDiffStatusFilters] = useState<Record<string, boolean>>(EMPTY_DIFF_STATUS_FILTERS)
+  const [diffStatusFilters, setDiffStatusFilters] = useState<Record<string, boolean>>(
+    EMPTY_DIFF_STATUS_FILTERS
+  )
 
   // Build filter options from device data
   const filterOptions = useMemo((): FilterOptions => {
@@ -109,7 +112,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
     if (Object.keys(effectiveDiffStatusFilters).length > 0) {
       result = result.filter(d => {
         const status = d.checkmk_diff_status
-        
+
         // Map backend status to filter key
         let filterKey: string
         if (!status) {
@@ -122,15 +125,27 @@ export function useDiffFilters(devices: DiffDevice[]) {
           // 'diff', 'error', 'unknown', or any other value
           filterKey = 'differ'
         }
-        
+
         // Show device only if its filter key is selected (true)
-        const isSelected = effectiveDiffStatusFilters[filterKey as keyof typeof effectiveDiffStatusFilters] === true
+        const isSelected =
+          effectiveDiffStatusFilters[
+            filterKey as keyof typeof effectiveDiffStatusFilters
+          ] === true
         return isSelected
       })
     }
-    
+
     return result
-  }, [devices, systemFilter, deviceNameFilter, roleFilters, selectedLocation, statusFilter, ipAddressFilter, effectiveDiffStatusFilters])
+  }, [
+    devices,
+    systemFilter,
+    deviceNameFilter,
+    roleFilters,
+    selectedLocation,
+    statusFilter,
+    ipAddressFilter,
+    effectiveDiffStatusFilters,
+  ])
 
   // Count active filters
   const activeFiltersCount = useMemo(() => {
@@ -142,11 +157,20 @@ export function useDiffFilters(devices: DiffDevice[]) {
     if (systemFilter !== 'all') count++
     if (ipAddressFilter !== 'all') count++
     // Add count for diff status filters (if any are deselected from the default "all selected")
-    const allDiffStatusSelected = Object.keys(effectiveDiffStatusFilters).length === 4 &&
+    const allDiffStatusSelected =
+      Object.keys(effectiveDiffStatusFilters).length === 4 &&
       Object.values(effectiveDiffStatusFilters).every(v => v === true)
     if (!allDiffStatusSelected) count++
     return count
-  }, [deviceNameFilter, roleFilters, selectedLocation, statusFilter, systemFilter, ipAddressFilter, effectiveDiffStatusFilters])
+  }, [
+    deviceNameFilter,
+    roleFilters,
+    selectedLocation,
+    statusFilter,
+    systemFilter,
+    ipAddressFilter,
+    effectiveDiffStatusFilters,
+  ])
 
   const resetFilters = useCallback(() => {
     setDeviceNameFilter('')
@@ -164,36 +188,39 @@ export function useDiffFilters(devices: DiffDevice[]) {
     })
   }, [])
 
-  return useMemo(() => ({
-    deviceNameFilter,
-    setDeviceNameFilter,
-    roleFilters,
-    setRoleFilters,
-    selectedLocation,
-    setSelectedLocation,
-    statusFilter,
-    setStatusFilter,
-    systemFilter,
-    setSystemFilter,
-    ipAddressFilter,
-    setIpAddressFilter,
-    diffStatusFilters,
-    setDiffStatusFilters,
-    filterOptions,
-    filteredDevices,
-    activeFiltersCount,
-    resetFilters,
-  }), [
-    deviceNameFilter,
-    roleFilters,
-    selectedLocation,
-    statusFilter,
-    systemFilter,
-    ipAddressFilter,
-    diffStatusFilters,
-    filterOptions,
-    filteredDevices,
-    activeFiltersCount,
-    resetFilters,
-  ])
+  return useMemo(
+    () => ({
+      deviceNameFilter,
+      setDeviceNameFilter,
+      roleFilters,
+      setRoleFilters,
+      selectedLocation,
+      setSelectedLocation,
+      statusFilter,
+      setStatusFilter,
+      systemFilter,
+      setSystemFilter,
+      ipAddressFilter,
+      setIpAddressFilter,
+      diffStatusFilters,
+      setDiffStatusFilters,
+      filterOptions,
+      filteredDevices,
+      activeFiltersCount,
+      resetFilters,
+    }),
+    [
+      deviceNameFilter,
+      roleFilters,
+      selectedLocation,
+      statusFilter,
+      systemFilter,
+      ipAddressFilter,
+      diffStatusFilters,
+      filterOptions,
+      filteredDevices,
+      activeFiltersCount,
+      resetFilters,
+    ]
+  )
 }

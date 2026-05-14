@@ -6,7 +6,9 @@ function SyncDevicesContent() {
 }
 
 export default function SyncDevicesRoute() {
-  return <Suspense fallback={<div className="p-4">Loading sync devices...</div>}>
-        <SyncDevicesContent />
-      </Suspense>
+  return (
+    <Suspense fallback={<div className="p-4">Loading sync devices...</div>}>
+      <SyncDevicesContent />
+    </Suspense>
+  )
 }

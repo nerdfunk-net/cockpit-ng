@@ -84,7 +84,13 @@ export function useCheckMKMutations() {
    * Validate YAML content
    */
   const validateYaml = useMutation({
-    mutationFn: async ({ content, filename }: { content: string; filename: string }) => {
+    mutationFn: async ({
+      content,
+      filename,
+    }: {
+      content: string
+      filename: string
+    }) => {
       const response = await apiCall<ValidationResponse>('config/validate', {
         method: 'POST',
         body: JSON.stringify({ content }),
@@ -118,7 +124,13 @@ export function useCheckMKMutations() {
    * Save YAML file
    */
   const saveYaml = useMutation({
-    mutationFn: async ({ filename, content }: { filename: string; content: string }) => {
+    mutationFn: async ({
+      filename,
+      content,
+    }: {
+      filename: string
+      content: string
+    }) => {
       const response = await apiCall<SaveYamlResponse>(`config/${filename}`, {
         method: 'POST',
         body: JSON.stringify({ content }),
@@ -133,9 +145,13 @@ export function useCheckMKMutations() {
     onSuccess: ({ filename }) => {
       // Invalidate appropriate query based on filename
       if (filename === 'checkmk.yaml') {
-        queryClient.invalidateQueries({ queryKey: queryKeys.checkmkSettings.checkmkYaml() })
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.checkmkSettings.checkmkYaml(),
+        })
       } else if (filename === 'checkmk_queries.yaml') {
-        queryClient.invalidateQueries({ queryKey: queryKeys.checkmkSettings.queriesYaml() })
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.checkmkSettings.queriesYaml(),
+        })
       }
 
       toast({

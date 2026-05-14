@@ -1,6 +1,12 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { HardDrive, RefreshCw, Database, Trash2 } from 'lucide-react'
 import { useCacheStats } from '../hooks/use-cache-queries'
@@ -14,7 +20,9 @@ interface CacheStatsPanelProps {
 
 const DEFAULT_PROPS: CacheStatsPanelProps = {}
 
-export function CacheStatsPanel({ onLoadNamespace }: CacheStatsPanelProps = DEFAULT_PROPS) {
+export function CacheStatsPanel({
+  onLoadNamespace,
+}: CacheStatsPanelProps = DEFAULT_PROPS) {
   const { data: stats, isLoading, refetch } = useCacheStats()
   const { clearCache } = useCacheMutations()
   const { confirmDialog, openConfirm } = useConfirmDialog()
@@ -48,8 +56,8 @@ export function CacheStatsPanel({ onLoadNamespace }: CacheStatsPanelProps = DEFA
           Detailed Cache Statistics
         </CardTitle>
         <CardDescription>
-          Comprehensive cache performance metrics and namespace breakdown.
-          Statistics are stored in Redis and persist across application restarts.
+          Comprehensive cache performance metrics and namespace breakdown. Statistics
+          are stored in Redis and persist across application restarts.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -57,15 +65,21 @@ export function CacheStatsPanel({ onLoadNamespace }: CacheStatsPanelProps = DEFA
           {/* Performance Metrics Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{stats.overview.total_items}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {stats.overview.total_items}
+              </div>
               <div className="text-sm text-blue-700">Total Entries</div>
             </div>
             <div className="bg-green-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{stats.overview.valid_items}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {stats.overview.valid_items}
+              </div>
               <div className="text-sm text-green-700">Valid Entries</div>
             </div>
             <div className="bg-orange-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">{stats.overview.expired_items}</div>
+              <div className="text-2xl font-bold text-orange-600">
+                {stats.overview.expired_items}
+              </div>
               <div className="text-sm text-orange-700">Expired Entries</div>
             </div>
             <div className="bg-purple-50 p-4 rounded-lg">
@@ -79,15 +93,21 @@ export function CacheStatsPanel({ onLoadNamespace }: CacheStatsPanelProps = DEFA
           {/* Additional Performance Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-lg font-bold text-gray-600">{stats.performance.cache_hits}</div>
+              <div className="text-lg font-bold text-gray-600">
+                {stats.performance.cache_hits}
+              </div>
               <div className="text-xs text-gray-600">Cache Hits</div>
             </div>
             <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-lg font-bold text-gray-600">{stats.performance.cache_misses}</div>
+              <div className="text-lg font-bold text-gray-600">
+                {stats.performance.cache_misses}
+              </div>
               <div className="text-xs text-gray-600">Cache Misses</div>
             </div>
             <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-lg font-bold text-gray-600">{stats.overview.total_size_mb.toFixed(2)} MB</div>
+              <div className="text-lg font-bold text-gray-600">
+                {stats.overview.total_size_mb.toFixed(2)} MB
+              </div>
               <div className="text-xs text-gray-600">Memory Usage</div>
             </div>
           </div>
@@ -98,11 +118,15 @@ export function CacheStatsPanel({ onLoadNamespace }: CacheStatsPanelProps = DEFA
               <h4 className="text-lg font-medium mb-3">Cache Namespaces</h4>
               <div className="space-y-2">
                 {Object.entries(stats.namespaces).map(([namespace, info]) => (
-                  <div key={namespace} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div
+                    key={namespace}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
                     <div>
                       <div className="font-medium">{namespace}</div>
                       <div className="text-sm text-gray-500">
-                        {info.count} entries • {(info.size_bytes / 1024 / 1024).toFixed(2)} MB
+                        {info.count} entries •{' '}
+                        {(info.size_bytes / 1024 / 1024).toFixed(2)} MB
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -122,7 +146,8 @@ export function CacheStatsPanel({ onLoadNamespace }: CacheStatsPanelProps = DEFA
                         onClick={() => {
                           openConfirm({
                             title: `Clear the "${namespace}" namespace?`,
-                            description: 'This will remove all cache entries in this namespace.',
+                            description:
+                              'This will remove all cache entries in this namespace.',
                             onConfirm: () => clearCache.mutate(namespace),
                             variant: 'destructive',
                           })

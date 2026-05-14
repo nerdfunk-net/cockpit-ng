@@ -2,22 +2,28 @@
 
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/hooks/use-api'
-import { 
-  Activity, 
-  Server, 
-  Network, 
-  Shield, 
-  Clock, 
+import {
+  Activity,
+  Server,
+  Network,
+  Shield,
+  Clock,
   TrendingUp,
   AlertTriangle,
   CheckCircle,
   Zap,
   GitBranch,
-  Loader2
+  Loader2,
 } from 'lucide-react'
 
 interface CheckMKStats {
@@ -72,14 +78,16 @@ export default function Home() {
         setCheckmkStats(data)
       } catch (error) {
         console.error('Error fetching CheckMK stats:', error)
-        setCheckmkError(error instanceof Error ? error.message : 'Failed to load CheckMK stats')
+        setCheckmkError(
+          error instanceof Error ? error.message : 'Failed to load CheckMK stats'
+        )
       } finally {
         setCheckmkLoading(false)
       }
     }
 
     fetchCheckmkStats()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const recentActivity = [
@@ -138,10 +146,13 @@ export default function Home() {
 
         {/* Statistics Cards - Smaller for 6-8 total canvases */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {stats.map((stat) => {
+          {stats.map(stat => {
             const Icon = stat.icon
             return (
-              <Card key={stat.title} className="glass shadow-apple hover:shadow-apple-lg transition-all duration-300">
+              <Card
+                key={stat.title}
+                className="glass shadow-apple hover:shadow-apple-lg transition-all duration-300"
+              >
                 <CardContent className="p-4">
                   <div className="flex flex-col space-y-2">
                     <div className="flex items-center justify-between">
@@ -149,7 +160,9 @@ export default function Home() {
                         <Icon className="w-4 h-4 text-blue-600" />
                       </div>
                       <Badge
-                        variant={stat.changeType === 'positive' ? 'default' : 'secondary'}
+                        variant={
+                          stat.changeType === 'positive' ? 'default' : 'secondary'
+                        }
                         className={`text-xs ${
                           stat.changeType === 'positive'
                             ? 'bg-green-100 text-green-700 border-green-200'
@@ -161,7 +174,9 @@ export default function Home() {
                     </div>
                     <div>
                       <p className="text-xs font-medium text-gray-600">{stat.title}</p>
-                      <p className="text-lg font-bold text-gray-900 mt-1">{stat.value}</p>
+                      <p className="text-lg font-bold text-gray-900 mt-1">
+                        {stat.value}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -185,14 +200,21 @@ export default function Home() {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-3">
-                {recentActivity.slice(0, 3).map((activity) => (
-                  <div key={activity.id} className="flex items-center justify-between p-2 bg-gray-50/50 rounded-lg">
+                {recentActivity.slice(0, 3).map(activity => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between p-2 bg-gray-50/50 rounded-lg"
+                  >
                     <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        activity.status === 'success' ? 'bg-green-500' : 'bg-red-500'
-                      }`} />
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          activity.status === 'success' ? 'bg-green-500' : 'bg-red-500'
+                        }`}
+                      />
                       <div>
-                        <p className="text-xs font-medium text-gray-900">{activity.action}</p>
+                        <p className="text-xs font-medium text-gray-900">
+                          {activity.action}
+                        </p>
                         <p className="text-xs text-gray-500">{activity.device}</p>
                       </div>
                     </div>
@@ -217,20 +239,27 @@ export default function Home() {
                 <Zap className="w-4 h-4 mr-2" />
                 Quick Actions
               </CardTitle>
-              <CardDescription className="text-sm">
-                Common tasks
-              </CardDescription>
+              <CardDescription className="text-sm">Common tasks</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 pt-0">
-              <Button variant="outline" className="w-full justify-start button-apple text-xs h-8">
+              <Button
+                variant="outline"
+                className="w-full justify-start button-apple text-xs h-8"
+              >
                 <Server className="w-3 h-3 mr-2" />
                 Onboard Device
               </Button>
-              <Button variant="outline" className="w-full justify-start button-apple text-xs h-8">
+              <Button
+                variant="outline"
+                className="w-full justify-start button-apple text-xs h-8"
+              >
                 <GitBranch className="w-3 h-3 mr-2" />
                 Sync Git
               </Button>
-              <Button variant="outline" className="w-full justify-start button-apple text-xs h-8">
+              <Button
+                variant="outline"
+                className="w-full justify-start button-apple text-xs h-8"
+              >
                 <Shield className="w-3 h-3 mr-2" />
                 Security Scan
               </Button>
@@ -249,7 +278,9 @@ export default function Home() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-600">Switches</span>
-                  <span className="text-sm font-semibold text-green-600">24 Online</span>
+                  <span className="text-sm font-semibold text-green-600">
+                    24 Online
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-600">Routers</span>
@@ -257,7 +288,9 @@ export default function Home() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-600">Firewalls</span>
-                  <span className="text-sm font-semibold text-yellow-600">2 Pending</span>
+                  <span className="text-sm font-semibold text-yellow-600">
+                    2 Pending
+                  </span>
                 </div>
               </div>
             </CardContent>

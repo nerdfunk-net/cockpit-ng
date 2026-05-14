@@ -20,7 +20,7 @@ import {
   Database,
   Shield,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
 } from 'lucide-react'
 
 interface DashboardStats {
@@ -51,7 +51,7 @@ export default function DashboardOverview() {
     devices: 0,
     locations: 0,
     ip_addresses: 0,
-    prefixes: 0
+    prefixes: 0,
   })
   const [checkmkStats, setCheckmkStats] = useState<CheckMKStats | null>(null)
   const [checkmkLoading, setCheckmkLoading] = useState(true)
@@ -64,7 +64,7 @@ export default function DashboardOverview() {
   useEffect(() => {
     loadDashboardData()
     loadCheckmkData()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadCheckmkData = async () => {
@@ -75,7 +75,9 @@ export default function DashboardOverview() {
       setCheckmkStats(data)
     } catch (error) {
       console.error('Error fetching CheckMK stats:', error)
-      setCheckmkError(error instanceof Error ? error.message : 'Failed to load CheckMK stats')
+      setCheckmkError(
+        error instanceof Error ? error.message : 'Failed to load CheckMK stats'
+      )
     } finally {
       setCheckmkLoading(false)
     }
@@ -110,7 +112,7 @@ export default function DashboardOverview() {
     try {
       const cacheData: CachedStats = {
         stats: statsData,
-        cacheTimestamp: new Date().toISOString()
+        cacheTimestamp: new Date().toISOString(),
       }
       localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
       setCacheInfo('📁 Cached data (expires in 10m)')
@@ -172,7 +174,7 @@ export default function DashboardOverview() {
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       iconBg: 'bg-blue-100',
-      description: 'Network devices in Nautobot'
+      description: 'Network devices in Nautobot',
     },
     {
       title: 'Total Locations',
@@ -181,7 +183,7 @@ export default function DashboardOverview() {
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
       iconBg: 'bg-emerald-100',
-      description: 'Physical locations'
+      description: 'Physical locations',
     },
     {
       title: 'IP Addresses',
@@ -190,7 +192,7 @@ export default function DashboardOverview() {
       color: 'text-cyan-600',
       bgColor: 'bg-cyan-50',
       iconBg: 'bg-cyan-100',
-      description: 'Assigned IP addresses'
+      description: 'Assigned IP addresses',
     },
     {
       title: 'Total Prefixes',
@@ -199,8 +201,8 @@ export default function DashboardOverview() {
       color: 'text-indigo-600',
       bgColor: 'bg-indigo-50',
       iconBg: 'bg-indigo-100',
-      description: 'Network prefixes'
-    }
+      description: 'Network prefixes',
+    },
   ]
 
   return (
@@ -209,7 +211,9 @@ export default function DashboardOverview() {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold text-slate-900">Cockpit Dashboard</h1>
-          <p className="text-slate-600">Network infrastructure overview and real-time statistics</p>
+          <p className="text-slate-600">
+            Network infrastructure overview and real-time statistics
+          </p>
         </div>
         <div className="flex items-center space-x-4">
           {cacheInfo && (
@@ -224,10 +228,9 @@ export default function DashboardOverview() {
             size="sm"
             className="flex items-center space-x-2 button-analytics bg-blue-600 hover:bg-blue-700 text-white"
           >
-            <RefreshCw className={cn(
-              "h-4 w-4",
-              loadingState === 'loading' && "animate-spin"
-            )} />
+            <RefreshCw
+              className={cn('h-4 w-4', loadingState === 'loading' && 'animate-spin')}
+            />
             <span>Refresh Data</span>
           </Button>
         </div>
@@ -238,7 +241,9 @@ export default function DashboardOverview() {
         <div className="status-info border rounded-xl p-4 analytics-card">
           <div className="flex items-center space-x-3">
             <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />
-            <span className="text-blue-800 font-medium">Loading dashboard statistics...</span>
+            <span className="text-blue-800 font-medium">
+              Loading dashboard statistics...
+            </span>
           </div>
         </div>
       )}
@@ -252,7 +257,12 @@ export default function DashboardOverview() {
                 Failed to load dashboard data. Please check your Nautobot connection.
               </span>
             </div>
-            <Button onClick={refreshData} size="sm" variant="outline" className="button-analytics">
+            <Button
+              onClick={refreshData}
+              size="sm"
+              variant="outline"
+              className="button-analytics"
+            >
               Try Again
             </Button>
           </div>
@@ -261,23 +271,28 @@ export default function DashboardOverview() {
 
       {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        {statCards.map((card) => {
+        {statCards.map(card => {
           const IconComponent = card.icon
           return (
-            <Card key={card.title} className={cn(
-              "analytics-card border-0 transition-all duration-300 hover:shadow-analytics-lg",
-              loadingState === 'loading' && "animate-pulse"
-            )}>
+            <Card
+              key={card.title}
+              className={cn(
+                'analytics-card border-0 transition-all duration-300 hover:shadow-analytics-lg',
+                loadingState === 'loading' && 'animate-pulse'
+              )}
+            >
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div className={`p-3 rounded-xl ${card.iconBg} ring-1 ring-white/20`}>
                     <IconComponent className={`h-6 w-6 ${card.color}`} />
                   </div>
                   <div className="text-right">
-                    <div className={cn(
-                      "text-3xl font-bold text-slate-900",
-                      loadingState === 'loading' && "text-slate-400"
-                    )}>
+                    <div
+                      className={cn(
+                        'text-3xl font-bold text-slate-900',
+                        loadingState === 'loading' && 'text-slate-400'
+                      )}
+                    >
                       {loadingState === 'loading' ? '-' : formatNumber(card.value)}
                     </div>
                   </div>
@@ -287,12 +302,14 @@ export default function DashboardOverview() {
                 <CardTitle className="text-sm font-semibold text-slate-700 mb-2">
                   {card.title}
                 </CardTitle>
-                <p className="text-xs text-slate-500 leading-relaxed">{card.description}</p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {card.description}
+                </p>
               </CardContent>
             </Card>
           )
         })}
-        
+
         {/* CheckMK Hosts Card */}
         <Card className="analytics-card border-0 transition-all duration-300 hover:shadow-analytics-lg">
           <CardHeader className="pb-4">
@@ -301,10 +318,12 @@ export default function DashboardOverview() {
                 <Shield className="h-6 w-6 text-orange-600" />
               </div>
               <div className="text-right">
-                <div className={cn(
-                  "text-3xl font-bold text-slate-900",
-                  checkmkLoading && "text-slate-400"
-                )}>
+                <div
+                  className={cn(
+                    'text-3xl font-bold text-slate-900',
+                    checkmkLoading && 'text-slate-400'
+                  )}
+                >
                   {checkmkLoading ? (
                     <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
                   ) : checkmkError ? (
@@ -321,7 +340,9 @@ export default function DashboardOverview() {
               CheckMK Hosts
             </CardTitle>
             {checkmkLoading ? (
-              <p className="text-xs text-slate-500 leading-relaxed">Loading CheckMK data...</p>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Loading CheckMK data...
+              </p>
             ) : checkmkError ? (
               <p className="text-xs text-red-500 leading-relaxed">{checkmkError}</p>
             ) : (

@@ -4,11 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
-import {
-  XCircle,
-  Loader2,
-  AlertTriangle
-} from 'lucide-react'
+import { XCircle, Loader2, AlertTriangle } from 'lucide-react'
 
 interface JobRunStats {
   total: number
@@ -32,7 +28,9 @@ interface DashboardJobStatsProps {
   refreshTrigger?: number
 }
 
-export default function DashboardJobStats({ refreshTrigger = 0 }: DashboardJobStatsProps) {
+export default function DashboardJobStats({
+  refreshTrigger = 0,
+}: DashboardJobStatsProps) {
   const { apiCall } = useApi()
   const [jobStats, setJobStats] = useState<JobDashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -71,8 +69,8 @@ export default function DashboardJobStats({ refreshTrigger = 0 }: DashboardJobSt
       color: 'text-red-600',
       bgColor: 'bg-red-50',
       iconBg: 'bg-red-100',
-      description: 'Jobs with errors'
-    }
+      description: 'Jobs with errors',
+    },
   ]
 
   if (error) {
@@ -94,28 +92,37 @@ export default function DashboardJobStats({ refreshTrigger = 0 }: DashboardJobSt
     <>
       {/* Job Run Statistics Header */}
       <div className="col-span-full">
-        <h2 className="text-xl font-semibold text-slate-900">Job Execution Statistics</h2>
-        <p className="text-sm text-slate-600">Overview of job runs and backup operations</p>
+        <h2 className="text-xl font-semibold text-slate-900">
+          Job Execution Statistics
+        </h2>
+        <p className="text-sm text-slate-600">
+          Overview of job runs and backup operations
+        </p>
       </div>
 
       {/* Job Run Cards */}
-      {jobRunCards.map((card) => {
+      {jobRunCards.map(card => {
         const IconComponent = card.icon
         return (
-          <Card key={card.title} className={cn(
-            "analytics-card border-0 transition-all duration-300 hover:shadow-analytics-lg",
-            loading && "animate-pulse"
-          )}>
+          <Card
+            key={card.title}
+            className={cn(
+              'analytics-card border-0 transition-all duration-300 hover:shadow-analytics-lg',
+              loading && 'animate-pulse'
+            )}
+          >
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className={`p-3 rounded-xl ${card.iconBg} ring-1 ring-white/20`}>
                   <IconComponent className={`h-6 w-6 ${card.color}`} />
                 </div>
                 <div className="text-right">
-                  <div className={cn(
-                    "text-3xl font-bold text-slate-900",
-                    loading && "text-slate-400"
-                  )}>
+                  <div
+                    className={cn(
+                      'text-3xl font-bold text-slate-900',
+                      loading && 'text-slate-400'
+                    )}
+                  >
                     {loading ? (
                       <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
                     ) : (
@@ -129,7 +136,9 @@ export default function DashboardJobStats({ refreshTrigger = 0 }: DashboardJobSt
               <CardTitle className="text-sm font-semibold text-slate-700 mb-2">
                 {card.title}
               </CardTitle>
-              <p className="text-xs text-slate-500 leading-relaxed">{card.description}</p>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                {card.description}
+              </p>
             </CardContent>
           </Card>
         )

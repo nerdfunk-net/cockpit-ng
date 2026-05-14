@@ -2,7 +2,13 @@
 
 import { useMemo, useState } from 'react'
 import { GitCompare, Eye, EyeOff, Columns2, List } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -62,24 +68,21 @@ export function FileDiffDialog({
   }, [isFileComparison, filePath])
 
   // Use file compare query for different files
-  const fileCompareResult = useFileCompareQuery(
-    repoId,
-    file1,
-    file2,
-    { enabled: isOpen && isFileComparison }
-  )
+  const fileCompareResult = useFileCompareQuery(repoId, file1, file2, {
+    enabled: isOpen && isFileComparison,
+  })
 
   // Use file diff query for same file at different commits
-  const fileDiffResult = useFileDiffQuery(
-    repoId,
-    commit1,
-    commit2,
-    filePath,
-    { enabled: isOpen && !isFileComparison }
-  )
+  const fileDiffResult = useFileDiffQuery(repoId, commit1, commit2, filePath, {
+    enabled: isOpen && !isFileComparison,
+  })
 
   // Use the appropriate result based on comparison type
-  const { data: rawData, isLoading, error } = isFileComparison ? fileCompareResult : fileDiffResult
+  const {
+    data: rawData,
+    isLoading,
+    error,
+  } = isFileComparison ? fileCompareResult : fileDiffResult
 
   // Normalize data structure to match expected format
   const data: {
@@ -115,10 +118,10 @@ export function FileDiffDialog({
         left_lines: rawData.left_lines || [],
         right_lines: rawData.right_lines || [],
         stats: {
-          additions: rawData.left_lines?.filter((l) => l.type === 'insert').length || 0,
-          deletions: rawData.left_lines?.filter((l) => l.type === 'delete').length || 0,
-          changes: rawData.left_lines?.filter((l) => l.type === 'replace').length || 0,
-        }
+          additions: rawData.left_lines?.filter(l => l.type === 'insert').length || 0,
+          deletions: rawData.left_lines?.filter(l => l.type === 'delete').length || 0,
+          changes: rawData.left_lines?.filter(l => l.type === 'replace').length || 0,
+        },
       }
     }
 
@@ -288,11 +291,15 @@ export function FileDiffDialog({
     console.log('[FileDiffDialog] displayLines calculation:', {
       showChangesOnly,
       totalUnifiedLines: unifiedLines.length,
-      changesCount: unifiedLines.filter(l => l.isChange).length
+      changesCount: unifiedLines.filter(l => l.isChange).length,
     })
-    
+
     if (!showChangesOnly) {
-      console.log('[FileDiffDialog] showChangesOnly=false, returning all', unifiedLines.length, 'lines')
+      console.log(
+        '[FileDiffDialog] showChangesOnly=false, returning all',
+        unifiedLines.length,
+        'lines'
+      )
       return unifiedLines
     }
 
@@ -318,7 +325,11 @@ export function FileDiffDialog({
           addedIds.add(line.id)
         }
         // Add context after
-        for (let j = i + 1; j <= Math.min(unifiedLines.length - 1, i + contextLines); j++) {
+        for (
+          let j = i + 1;
+          j <= Math.min(unifiedLines.length - 1, i + contextLines);
+          j++
+        ) {
           const contextLine = unifiedLines[j]
           if (contextLine && !addedIds.has(contextLine.id)) {
             filtered.push(contextLine)
@@ -331,7 +342,7 @@ export function FileDiffDialog({
     console.log('[FileDiffDialog] Filtered result:', {
       originalLines: unifiedLines.length,
       filteredLines: filtered.length,
-      uniqueIds: addedIds.size
+      uniqueIds: addedIds.size,
     })
     return filtered
   }, [unifiedLines, showChangesOnly])
@@ -364,9 +375,15 @@ export function FileDiffDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         className="!max-w-none flex flex-col p-0 overflow-auto"
-        style={{ resize: 'both', width: '80vw', height: '85vh', minWidth: '600px', minHeight: '400px' }}
+        style={{
+          resize: 'both',
+          width: '80vw',
+          height: '85vh',
+          minWidth: '600px',
+          minHeight: '400px',
+        }}
       >
         <DialogHeader className="p-6 pb-4 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
@@ -374,9 +391,7 @@ export function FileDiffDialog({
             File Comparison
           </DialogTitle>
           <DialogDescription>
-            {filePath && (
-              <span className="font-mono text-xs">{filePath}</span>
-            )}
+            {filePath && <span className="font-mono text-xs">{filePath}</span>}
           </DialogDescription>
         </DialogHeader>
 
@@ -442,7 +457,9 @@ export function FileDiffDialog({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setViewMode(viewMode === 'unified' ? 'side-by-side' : 'unified')}
+                    onClick={() =>
+                      setViewMode(viewMode === 'unified' ? 'side-by-side' : 'unified')
+                    }
                   >
                     {viewMode === 'unified' ? (
                       <>
@@ -481,7 +498,7 @@ export function FileDiffDialog({
             {viewMode === 'unified' && (
               <ScrollArea className="flex-1 h-[60vh]">
                 <div className="font-mono text-xs">
-                  {displayLines.map((line) => (
+                  {displayLines.map(line => (
                     <div
                       key={line.id}
                       className={`flex ${getLineClassName(line.type)}`}
@@ -520,25 +537,33 @@ export function FileDiffDialog({
 
                   {/* Side-by-side rows */}
                   {(() => {
-                    const maxLines = Math.max(data.left_lines.length, data.right_lines.length)
+                    const maxLines = Math.max(
+                      data.left_lines.length,
+                      data.right_lines.length
+                    )
                     console.log('[FileDiffDialog] Side-by-side rendering:', {
                       showChangesOnly,
                       maxLines,
                       leftLinesCount: data.left_lines.length,
-                      rightLinesCount: data.right_lines.length
+                      rightLinesCount: data.right_lines.length,
                     })
-                    
+
                     if (!showChangesOnly) {
                       // Show all lines
                       const rows = []
                       for (let i = 0; i < maxLines; i++) {
                         const leftLine = data.left_lines[i]
                         const rightLine = data.right_lines[i]
-                        
+
                         rows.push(
-                          <div key={`side-by-side-row-${i}`} className="grid grid-cols-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                          <div
+                            key={`side-by-side-row-${i}`}
+                            className="grid grid-cols-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                          >
                             {/* Left side (old commit) */}
-                            <div className={`flex items-start border-r ${getLeftLineClass(leftLine?.type || 'equal')}`}>
+                            <div
+                              className={`flex items-start border-r ${getLeftLineClass(leftLine?.type || 'equal')}`}
+                            >
                               <div className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 dark:bg-gray-800 border-r">
                                 {leftLine?.line_number || ''}
                               </div>
@@ -548,7 +573,9 @@ export function FileDiffDialog({
                             </div>
 
                             {/* Right side (new commit) */}
-                            <div className={`flex items-start ${getRightLineClass(rightLine?.type || 'equal')}`}>
+                            <div
+                              className={`flex items-start ${getRightLineClass(rightLine?.type || 'equal')}`}
+                            >
                               <div className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 dark:bg-gray-800 border-r">
                                 {rightLine?.line_number || ''}
                               </div>
@@ -561,46 +588,57 @@ export function FileDiffDialog({
                       }
                       return rows
                     }
-                    
+
                     // Show changes only with context
                     // Use smaller context for small files to make filtering more visible
                     const contextLines = maxLines < 20 ? 1 : 3
                     const linesToShow = new Set<number>()
-                    
+
                     // First pass: identify all lines that are changes and their context
                     let changeLineCount = 0
                     for (let i = 0; i < maxLines; i++) {
                       const leftLine = data.left_lines[i]
                       const rightLine = data.right_lines[i]
-                      const isChange = !(leftLine?.type === 'equal' && rightLine?.type === 'equal')
+                      const isChange = !(
+                        leftLine?.type === 'equal' && rightLine?.type === 'equal'
+                      )
                       if (isChange) changeLineCount++
-                      
+
                       if (isChange) {
                         // Add the change line and context around it
-                        for (let j = Math.max(0, i - contextLines); j <= Math.min(maxLines - 1, i + contextLines); j++) {
+                        for (
+                          let j = Math.max(0, i - contextLines);
+                          j <= Math.min(maxLines - 1, i + contextLines);
+                          j++
+                        ) {
                           linesToShow.add(j)
                         }
                       }
                     }
-                    
+
                     console.log('[FileDiffDialog] Side-by-side changes filter:', {
                       totalLines: maxLines,
                       changeLines: changeLineCount,
-                      linesToShow: linesToShow.size
+                      linesToShow: linesToShow.size,
                     })
-                    
+
                     // Second pass: render only the lines to show
                     const rows = []
                     for (let i = 0; i < maxLines; i++) {
                       if (!linesToShow.has(i)) continue
-                      
+
                       const leftLine = data.left_lines[i]
                       const rightLine = data.right_lines[i]
-                      
+
                       rows.push(
-                        <div key={`side-by-side-row-${i}`} className="grid grid-cols-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <div
+                          key={`side-by-side-row-${i}`}
+                          className="grid grid-cols-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
                           {/* Left side (old commit) */}
-                          <div className={`flex items-start border-r ${getLeftLineClass(leftLine?.type || 'equal')}`}>
+                          <div
+                            className={`flex items-start border-r ${getLeftLineClass(leftLine?.type || 'equal')}`}
+                          >
                             <div className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 dark:bg-gray-800 border-r">
                               {leftLine?.line_number || ''}
                             </div>
@@ -610,7 +648,9 @@ export function FileDiffDialog({
                           </div>
 
                           {/* Right side (new commit) */}
-                          <div className={`flex items-start ${getRightLineClass(rightLine?.type || 'equal')}`}>
+                          <div
+                            className={`flex items-start ${getRightLineClass(rightLine?.type || 'equal')}`}
+                          >
                             <div className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 dark:bg-gray-800 border-r">
                               {rightLine?.line_number || ''}
                             </div>
@@ -621,7 +661,7 @@ export function FileDiffDialog({
                         </div>
                       )
                     }
-                    
+
                     return rows
                   })()}
                 </div>
@@ -631,22 +671,27 @@ export function FileDiffDialog({
             {/* Footer */}
             <div className="px-6 py-4 border-t flex items-center justify-between flex-shrink-0">
               <div className="text-sm text-muted-foreground">
-                {viewMode === 'unified' 
+                {viewMode === 'unified'
                   ? `Showing ${displayLines.length} of ${unifiedLines.length} lines`
                   : `Showing ${(() => {
-                      if (!showChangesOnly) return Math.max(data.left_lines.length, data.right_lines.length)
+                      if (!showChangesOnly)
+                        return Math.max(data.left_lines.length, data.right_lines.length)
                       let count = 0
-                      const maxLines = Math.max(data.left_lines.length, data.right_lines.length)
+                      const maxLines = Math.max(
+                        data.left_lines.length,
+                        data.right_lines.length
+                      )
                       for (let i = 0; i < maxLines; i++) {
                         const leftLine = data.left_lines[i]
                         const rightLine = data.right_lines[i]
-                        if (!(leftLine?.type === 'equal' && rightLine?.type === 'equal')) {
+                        if (
+                          !(leftLine?.type === 'equal' && rightLine?.type === 'equal')
+                        ) {
                           count++
                         }
                       }
                       return count
-                    })()} of ${Math.max(data.left_lines.length, data.right_lines.length)} lines`
-                }
+                    })()} of ${Math.max(data.left_lines.length, data.right_lines.length)} lines`}
               </div>
               <Button variant="outline" onClick={onClose}>
                 Close

@@ -1,6 +1,13 @@
 'use client'
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Edit, Copy, Trash2, Globe, Lock, FileText } from 'lucide-react'
@@ -42,8 +49,12 @@ export function TemplatesTable({ templates, onEdit }: TemplatesTableProps) {
         <div className="flex items-center space-x-2">
           <FileText className="h-4 w-4" />
           <div>
-            <h3 className="text-sm font-semibold">Job Templates ({templates.length})</h3>
-            <p className="text-blue-100 text-xs">Reusable job configurations for the scheduler</p>
+            <h3 className="text-sm font-semibold">
+              Job Templates ({templates.length})
+            </h3>
+            <p className="text-blue-100 text-xs">
+              Reusable job configurations for the scheduler
+            </p>
           </div>
         </div>
       </div>
@@ -56,11 +67,13 @@ export function TemplatesTable({ templates, onEdit }: TemplatesTableProps) {
               <TableHead className="font-semibold text-gray-700">Inventory</TableHead>
               <TableHead className="font-semibold text-gray-700">Scope</TableHead>
               <TableHead className="font-semibold text-gray-700">Created By</TableHead>
-              <TableHead className="font-semibold text-gray-700 w-24">Actions</TableHead>
+              <TableHead className="font-semibold text-gray-700 w-24">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {templates.map((template) => (
+            {templates.map(template => (
               <TableRow key={template.id} className="hover:bg-gray-50">
                 <TableCell>
                   <div className="flex flex-col">
@@ -74,20 +87,27 @@ export function TemplatesTable({ templates, onEdit }: TemplatesTableProps) {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <div className={`h-2 w-2 rounded-full ${getJobTypeColor(template.job_type)}`} />
-                    <span className="text-gray-700">{getJobTypeLabel(template.job_type)}</span>
+                    <div
+                      className={`h-2 w-2 rounded-full ${getJobTypeColor(template.job_type)}`}
+                    />
+                    <span className="text-gray-700">
+                      {getJobTypeLabel(template.job_type)}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell>
-                  {template.inventory_source === "all" ? (
+                  {template.inventory_source === 'all' ? (
                     <Badge variant="outline" className="text-blue-600 border-blue-200">
                       <Globe className="h-3 w-3 mr-1" />
                       All Devices
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-green-600 border-green-200">
+                    <Badge
+                      variant="outline"
+                      className="text-green-600 border-green-200"
+                    >
                       <FileText className="h-3 w-3 mr-1" />
-                      {template.inventory_name || "Inventory"}
+                      {template.inventory_name || 'Inventory'}
                     </Badge>
                   )}
                 </TableCell>
@@ -105,7 +125,7 @@ export function TemplatesTable({ templates, onEdit }: TemplatesTableProps) {
                   )}
                 </TableCell>
                 <TableCell className="text-gray-600 text-sm">
-                  {template.created_by || "-"}
+                  {template.created_by || '-'}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">

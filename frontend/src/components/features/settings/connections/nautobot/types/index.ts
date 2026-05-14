@@ -61,7 +61,6 @@ export interface CustomFieldChoice {
   }
 }
 
-
 export interface NautobotOptionsData {
   deviceStatuses: NautobotOption[]
   interfaceStatuses: NautobotOption[]

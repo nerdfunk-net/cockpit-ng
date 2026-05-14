@@ -2,10 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
-import type {
-  CredentialCreatePayload,
-  CredentialUpdatePayload,
-} from '../../types'
+import type { CredentialCreatePayload, CredentialUpdatePayload } from '../../types'
 import { useMemo } from 'react'
 
 export function useCredentialMutations() {
@@ -18,7 +15,7 @@ export function useCredentialMutations() {
     mutationFn: async (data: CredentialCreatePayload) => {
       const response = await apiCall('credentials', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       })
       return response
     },
@@ -35,9 +32,9 @@ export function useCredentialMutations() {
         description: error.message.includes('400')
           ? 'Invalid credential data. Please check your inputs.'
           : `Failed to create credential: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Update credential
@@ -46,7 +43,7 @@ export function useCredentialMutations() {
       const { id, ...payload } = data
       const response = await apiCall(`credentials/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       })
       return response
     },
@@ -63,16 +60,16 @@ export function useCredentialMutations() {
         description: error.message.includes('400')
           ? 'Invalid credential data. Please check your inputs.'
           : `Failed to update credential: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Delete credential
   const deleteCredential = useMutation({
     mutationFn: async (id: number) => {
       await apiCall(`credentials/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
       return id
     },
@@ -87,15 +84,18 @@ export function useCredentialMutations() {
       toast({
         title: 'Error',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Memoize return object to prevent re-renders
-  return useMemo(() => ({
-    createCredential,
-    updateCredential,
-    deleteCredential,
-  }), [createCredential, updateCredential, deleteCredential])
+  return useMemo(
+    () => ({
+      createCredential,
+      updateCredential,
+      deleteCredential,
+    }),
+    [createCredential, updateCredential, deleteCredential]
+  )
 }

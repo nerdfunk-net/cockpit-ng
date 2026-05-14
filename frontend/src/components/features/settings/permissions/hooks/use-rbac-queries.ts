@@ -2,7 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import type { Role, Permission, UsersResponse, RoleWithPermissions } from '../types'
-import { CACHE_TIME, EMPTY_USERS, EMPTY_ROLES, EMPTY_PERMISSIONS } from '../utils/constants'
+import {
+  CACHE_TIME,
+  EMPTY_USERS,
+  EMPTY_ROLES,
+  EMPTY_PERMISSIONS,
+} from '../utils/constants'
 
 interface UseRbacUsersOptions {
   enabled?: boolean
@@ -61,14 +66,18 @@ const DEFAULT_PERMISSIONS_OPTIONS: UseRbacPermissionsOptions = { enabled: true }
 /**
  * Fetch all permissions with automatic caching
  */
-export function useRbacPermissions(options: UseRbacPermissionsOptions = DEFAULT_PERMISSIONS_OPTIONS) {
+export function useRbacPermissions(
+  options: UseRbacPermissionsOptions = DEFAULT_PERMISSIONS_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 
   return useQuery({
     queryKey: queryKeys.rbac.permissions(),
     queryFn: async () => {
-      const response = await apiCall<Permission[]>('rbac/permissions', { method: 'GET' })
+      const response = await apiCall<Permission[]>('rbac/permissions', {
+        method: 'GET',
+      })
       return response || EMPTY_PERMISSIONS
     },
     enabled,
@@ -95,7 +104,9 @@ export function useRolePermissions(
   return useQuery({
     queryKey: queryKeys.rbac.rolePermissions(roleId!),
     queryFn: async () => {
-      const response = await apiCall<RoleWithPermissions>(`rbac/roles/${roleId}`, { method: 'GET' })
+      const response = await apiCall<RoleWithPermissions>(`rbac/roles/${roleId}`, {
+        method: 'GET',
+      })
       return response
     },
     enabled: enabled && !!roleId,
@@ -122,7 +133,9 @@ export function useUserPermissions(
   return useQuery({
     queryKey: queryKeys.rbac.userPermissions(userId!),
     queryFn: async () => {
-      const response = await apiCall<Permission[]>(`rbac/users/${userId}/permissions`, { method: 'GET' })
+      const response = await apiCall<Permission[]>(`rbac/users/${userId}/permissions`, {
+        method: 'GET',
+      })
       return response || EMPTY_PERMISSIONS
     },
     enabled: enabled && !!userId,
@@ -134,7 +147,9 @@ interface UseUserPermissionOverridesOptions {
   enabled?: boolean
 }
 
-const DEFAULT_USER_OVERRIDES_OPTIONS: UseUserPermissionOverridesOptions = { enabled: true }
+const DEFAULT_USER_OVERRIDES_OPTIONS: UseUserPermissionOverridesOptions = {
+  enabled: true,
+}
 
 /**
  * Fetch user's explicit permission overrides
@@ -149,7 +164,10 @@ export function useUserPermissionOverrides(
   return useQuery({
     queryKey: queryKeys.rbac.userPermissions(userId!),
     queryFn: async () => {
-      const response = await apiCall<Permission[]>(`rbac/users/${userId}/permissions/overrides`, { method: 'GET' })
+      const response = await apiCall<Permission[]>(
+        `rbac/users/${userId}/permissions/overrides`,
+        { method: 'GET' }
+      )
       return response || EMPTY_PERMISSIONS
     },
     enabled: enabled && !!userId,

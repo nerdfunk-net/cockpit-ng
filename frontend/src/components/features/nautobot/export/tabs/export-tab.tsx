@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -76,19 +82,25 @@ export function ExportTab({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-gray-700">Devices</p>
-              <p className="text-2xl font-bold text-gray-900">{selectedDevices.length}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {selectedDevices.length}
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-700">Properties</p>
-              <p className="text-2xl font-bold text-gray-900">{selectedProperties.length}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {selectedProperties.length}
+              </p>
             </div>
           </div>
 
           {selectedProperties.length > 0 && (
             <div className="pt-4 border-t">
-              <p className="text-sm font-medium text-gray-700 mb-2">Selected Properties:</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                Selected Properties:
+              </p>
               <div className="flex flex-wrap gap-2">
-                {selectedProperties.map((prop) => (
+                {selectedProperties.map(prop => (
                   <span
                     key={prop}
                     className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
@@ -119,7 +131,11 @@ export function ExportTab({
               }`}
             >
               <div className="flex items-center space-x-3">
-                <FileText className={exportFormat === 'yaml' ? 'text-blue-600' : 'text-gray-400'} />
+                <FileText
+                  className={
+                    exportFormat === 'yaml' ? 'text-blue-600' : 'text-gray-400'
+                  }
+                />
                 <div className="text-left">
                   <p className="font-semibold text-gray-900">YAML</p>
                   <p className="text-xs text-gray-500">Structured data format</p>
@@ -136,7 +152,9 @@ export function ExportTab({
               }`}
             >
               <div className="flex items-center space-x-3">
-                <FileText className={exportFormat === 'csv' ? 'text-blue-600' : 'text-gray-400'} />
+                <FileText
+                  className={exportFormat === 'csv' ? 'text-blue-600' : 'text-gray-400'}
+                />
                 <div className="text-left">
                   <p className="font-semibold text-gray-900">CSV</p>
                   <p className="text-xs text-gray-500">Spreadsheet format</p>
@@ -161,12 +179,14 @@ export function ExportTab({
                 <Input
                   id="delimiter"
                   value={csvDelimiter}
-                  onChange={(e) => onCsvDelimiterChange(e.target.value)}
+                  onChange={e => onCsvDelimiterChange(e.target.value)}
                   placeholder=","
                   maxLength={1}
                   className="font-mono"
                 />
-                <p className="text-xs text-gray-500">Character to separate values (e.g., comma, semicolon)</p>
+                <p className="text-xs text-gray-500">
+                  Character to separate values (e.g., comma, semicolon)
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -174,7 +194,7 @@ export function ExportTab({
                 <Input
                   id="quotechar"
                   value={csvQuoteChar}
-                  onChange={(e) => onCsvQuoteCharChange(e.target.value)}
+                  onChange={e => onCsvQuoteCharChange(e.target.value)}
                   placeholder='"'
                   maxLength={1}
                   className="font-mono"
@@ -187,7 +207,7 @@ export function ExportTab({
               <Checkbox
                 id="include-headers"
                 checked={csvIncludeHeaders}
-                onCheckedChange={(checked) => onCsvIncludeHeadersChange(checked === true)}
+                onCheckedChange={checked => onCsvIncludeHeadersChange(checked === true)}
               />
               <Label htmlFor="include-headers" className="cursor-pointer">
                 Include column headers in first row
@@ -195,11 +215,22 @@ export function ExportTab({
             </div>
 
             <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">Preview Settings:</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                Preview Settings:
+              </p>
               <div className="font-mono text-xs text-gray-600 space-y-1">
-                <p>Delimiter: <span className="font-bold">{csvDelimiter || '(empty)'}</span></p>
-                <p>Quote Char: <span className="font-bold">{csvQuoteChar || '(empty)'}</span></p>
-                <p>Headers: <span className="font-bold">{csvIncludeHeaders ? 'Yes' : 'No'}</span></p>
+                <p>
+                  Delimiter:{' '}
+                  <span className="font-bold">{csvDelimiter || '(empty)'}</span>
+                </p>
+                <p>
+                  Quote Char:{' '}
+                  <span className="font-bold">{csvQuoteChar || '(empty)'}</span>
+                </p>
+                <p>
+                  Headers:{' '}
+                  <span className="font-bold">{csvIncludeHeaders ? 'Yes' : 'No'}</span>
+                </p>
               </div>
             </div>
           </CardContent>
@@ -218,12 +249,7 @@ export function ExportTab({
           <Eye className="h-5 w-5" />
           Preview
         </Button>
-        <Button
-          onClick={onExport}
-          disabled={!canExport}
-          size="lg"
-          className="gap-2"
-        >
+        <Button onClick={onExport} disabled={!canExport} size="lg" className="gap-2">
           <Download className="h-5 w-5" />
           Export to {exportFormat.toUpperCase()}
         </Button>
@@ -236,11 +262,15 @@ export function ExportTab({
         devices={selectedDevices}
         properties={selectedProperties}
         format={exportFormat}
-        csvOptions={exportFormat === 'csv' ? {
-          delimiter: csvDelimiter,
-          quoteChar: csvQuoteChar,
-          includeHeaders: csvIncludeHeaders,
-        } : undefined}
+        csvOptions={
+          exportFormat === 'csv'
+            ? {
+                delimiter: csvDelimiter,
+                quoteChar: csvQuoteChar,
+                includeHeaders: csvIncludeHeaders,
+              }
+            : undefined
+        }
       />
     </div>
   )

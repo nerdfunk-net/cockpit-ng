@@ -14,7 +14,9 @@ export default function CsvUpdatesPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">CSV Updates</h1>
-            <p className="text-gray-600 mt-1">Update Nautobot objects in bulk by uploading a CSV file</p>
+            <p className="text-gray-600 mt-1">
+              Update Nautobot objects in bulk by uploading a CSV file
+            </p>
           </div>
         </div>
       </div>

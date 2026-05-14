@@ -7,7 +7,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,11 +19,19 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Upload, FileSpreadsheet, Loader2, CheckCircle2, XCircle, HelpCircle, AlertCircle } from 'lucide-react'
+import {
+  Upload,
+  FileSpreadsheet,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+  AlertCircle,
+} from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import type { ParsedCSVRow } from '../types'
 
@@ -107,7 +115,7 @@ export function CSVUploadModal({
   onDelimiterChange,
   onQuoteCharChange,
   onParallelJobsChange,
-  onReparse
+  onReparse,
 }: CSVUploadModalProps) {
   const { apiCall } = useApi()
   const [showHelp, setShowHelp] = useState(false)
@@ -126,11 +134,11 @@ export function CSVUploadModal({
     try {
       // Handle multiple task IDs (comma-separated)
       const taskIds = taskId.split(',').map(id => id.trim())
-      
+
       if (taskIds.length === 1) {
         // Single task - use original logic
         const status = await apiCall<TaskStatus>(`celery/tasks/${taskId}`, {
-          method: 'GET'
+          method: 'GET',
         })
 
         setTaskStatus(status)
@@ -139,12 +147,11 @@ export function CSVUploadModal({
       } else {
         // Multiple tasks - fetch all and aggregate
         const statuses = await Promise.all(
-          taskIds.map(id => 
-            apiCall<TaskStatus>(`celery/tasks/${id}`, { method: 'GET' })
-              .catch(err => {
-                console.error(`Error fetching task ${id}:`, err)
-                return null
-              })
+          taskIds.map(id =>
+            apiCall<TaskStatus>(`celery/tasks/${id}`, { method: 'GET' }).catch(err => {
+              console.error(`Error fetching task ${id}:`, err)
+              return null
+            })
           )
         )
 
@@ -156,7 +163,7 @@ export function CSVUploadModal({
         }
 
         // Aggregate results
-        const allComplete = validStatuses.every(s => 
+        const allComplete = validStatuses.every(s =>
           ['SUCCESS', 'FAILURE', 'REVOKED'].includes(s.status)
         )
         const anyFailed = validStatuses.some(s => s.status === 'FAILURE')
@@ -170,7 +177,8 @@ export function CSVUploadModal({
         validStatuses.forEach(status => {
           const devices = status.result?.devices || status.progress?.devices || []
           allDevices.push(...devices)
-          totalSuccessful += status.result?.successful_devices ?? status.progress?.successful ?? 0
+          totalSuccessful +=
+            status.result?.successful_devices ?? status.progress?.successful ?? 0
           totalFailed += status.result?.failed_devices ?? status.progress?.failed ?? 0
         })
 
@@ -178,21 +186,25 @@ export function CSVUploadModal({
         const aggregatedStatus: TaskStatus = {
           task_id: taskId,
           status: allComplete ? (anyFailed ? 'FAILURE' : 'SUCCESS') : 'PROGRESS',
-          result: allComplete ? {
-            success: allSuccess,
-            message: `Completed ${validStatuses.length} parallel jobs`,
-            device_count: allDevices.length,
-            successful_devices: totalSuccessful,
-            failed_devices: totalFailed,
-            devices: allDevices,
-          } : undefined,
-          progress: !allComplete ? {
-            status: `Processing ${validStatuses.length} parallel jobs...`,
-            device_count: allDevices.length,
-            successful: totalSuccessful,
-            failed: totalFailed,
-            devices: allDevices,
-          } : undefined,
+          result: allComplete
+            ? {
+                success: allSuccess,
+                message: `Completed ${validStatuses.length} parallel jobs`,
+                device_count: allDevices.length,
+                successful_devices: totalSuccessful,
+                failed_devices: totalFailed,
+                devices: allDevices,
+              }
+            : undefined,
+          progress: !allComplete
+            ? {
+                status: `Processing ${validStatuses.length} parallel jobs...`,
+                device_count: allDevices.length,
+                successful: totalSuccessful,
+                failed: totalFailed,
+                devices: allDevices,
+              }
+            : undefined,
         }
 
         setTaskStatus(aggregatedStatus)
@@ -280,12 +292,21 @@ export function CSVUploadModal({
   }
 
   // Get device results from either progress or final result
-  const deviceResults = taskStatus?.result?.devices || taskStatus?.progress?.devices || []
-  const successCount = taskStatus?.result?.successful_devices ?? taskStatus?.progress?.successful ?? deviceResults.filter(r => r.status === 'success').length
-  const errorCount = taskStatus?.result?.failed_devices ?? taskStatus?.progress?.failed ?? deviceResults.filter(r => r.status === 'error').length
+  const deviceResults =
+    taskStatus?.result?.devices || taskStatus?.progress?.devices || []
+  const successCount =
+    taskStatus?.result?.successful_devices ??
+    taskStatus?.progress?.successful ??
+    deviceResults.filter(r => r.status === 'success').length
+  const errorCount =
+    taskStatus?.result?.failed_devices ??
+    taskStatus?.progress?.failed ??
+    deviceResults.filter(r => r.status === 'error').length
 
-  const isTaskRunning = taskId && ['PENDING', 'PROGRESS'].includes(taskStatus?.status || '')
-  const isTaskComplete = taskId && ['SUCCESS', 'FAILURE', 'REVOKED'].includes(taskStatus?.status || '')
+  const isTaskRunning =
+    taskId && ['PENDING', 'PROGRESS'].includes(taskStatus?.status || '')
+  const isTaskComplete =
+    taskId && ['SUCCESS', 'FAILURE', 'REVOKED'].includes(taskStatus?.status || '')
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -306,8 +327,9 @@ export function CSVUploadModal({
             </Button>
           </div>
           <DialogDescription>
-            Upload a CSV file with device information to onboard multiple devices at once.
-            Only required column: ip_address (other fields use app defaults if not provided)
+            Upload a CSV file with device information to onboard multiple devices at
+            once. Only required column: ip_address (other fields use app defaults if not
+            provided)
           </DialogDescription>
         </DialogHeader>
 
@@ -335,7 +357,7 @@ export function CSVUploadModal({
           {/* Optional CSV Settings - only show if no task is running */}
           {!taskId && (
             <div className="border rounded-lg overflow-hidden">
-              <div 
+              <div
                 className="bg-blue-50 border-b border-blue-200 px-4 py-3 cursor-pointer hover:bg-blue-100 transition-colors"
                 onClick={() => setShowOptionalSettings(!showOptionalSettings)}
               >
@@ -351,7 +373,7 @@ export function CSVUploadModal({
                   </span>
                 </div>
               </div>
-              
+
               {showOptionalSettings && (
                 <div className="p-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -362,7 +384,7 @@ export function CSVUploadModal({
                       <Input
                         id="csv-delimiter"
                         value={csvDelimiter}
-                        onChange={(e) => onDelimiterChange(e.target.value)}
+                        onChange={e => onDelimiterChange(e.target.value)}
                         disabled={isSubmitting || isParsing}
                         placeholder=","
                         maxLength={1}
@@ -372,7 +394,7 @@ export function CSVUploadModal({
                         Character separating values (default: comma)
                       </p>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="csv-quote" className="text-sm">
                         Quote Character
@@ -380,7 +402,7 @@ export function CSVUploadModal({
                       <Input
                         id="csv-quote"
                         value={csvQuoteChar}
-                        onChange={(e) => onQuoteCharChange(e.target.value)}
+                        onChange={e => onQuoteCharChange(e.target.value)}
                         disabled={isSubmitting || isParsing}
                         placeholder='"'
                         maxLength={1}
@@ -390,7 +412,7 @@ export function CSVUploadModal({
                         Character for quoting values (default: double quote)
                       </p>
                     </div>
-                    
+
                     {csvFile && (
                       <div className="col-span-2">
                         <Button
@@ -418,15 +440,26 @@ export function CSVUploadModal({
                         min={1}
                         max={parsedData.length || 100}
                         value={parallelJobs}
-                        onChange={(e) => onParallelJobsChange(Math.max(1, parseInt(e.target.value) || 1))}
+                        onChange={e =>
+                          onParallelJobsChange(
+                            Math.max(1, parseInt(e.target.value) || 1)
+                          )
+                        }
                         disabled={isSubmitting || isParsing}
                         className="w-32"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Number of parallel jobs to create. Higher values speed up onboarding but require more Celery workers.
+                        Number of parallel jobs to create. Higher values speed up
+                        onboarding but require more Celery workers.
                         {parsedData.length > 0 && (
-                          <> With {parsedData.length} devices and {parallelJobs} job{parallelJobs > 1 ? 's' : ''}, 
-                          each job will process ~{Math.ceil(parsedData.length / parallelJobs)} device{Math.ceil(parsedData.length / parallelJobs) > 1 ? 's' : ''}.</>
+                          <>
+                            {' '}
+                            With {parsedData.length} devices and {parallelJobs} job
+                            {parallelJobs > 1 ? 's' : ''}, each job will process ~
+                            {Math.ceil(parsedData.length / parallelJobs)} device
+                            {Math.ceil(parsedData.length / parallelJobs) > 1 ? 's' : ''}
+                            .
+                          </>
                         )}
                       </p>
                     </div>
@@ -476,13 +509,39 @@ export function CSVUploadModal({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {parsedData.map((row) => (
+                    {parsedData.map(row => (
                       <TableRow key={row.ip_address}>
-                        <TableCell className="font-mono text-sm">{row.ip_address}</TableCell>
-                        <TableCell>{row.location || <span className="text-muted-foreground italic">default</span>}</TableCell>
-                        <TableCell>{row.namespace || <span className="text-muted-foreground italic">default</span>}</TableCell>
-                        <TableCell>{row.role || <span className="text-muted-foreground italic">default</span>}</TableCell>
-                        <TableCell>{row.status || <span className="text-muted-foreground italic">default</span>}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {row.ip_address}
+                        </TableCell>
+                        <TableCell>
+                          {row.location || (
+                            <span className="text-muted-foreground italic">
+                              default
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {row.namespace || (
+                            <span className="text-muted-foreground italic">
+                              default
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {row.role || (
+                            <span className="text-muted-foreground italic">
+                              default
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {row.status || (
+                            <span className="text-muted-foreground italic">
+                              default
+                            </span>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -497,9 +556,15 @@ export function CSVUploadModal({
               {/* Progress Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {isTaskRunning && <Loader2 className="h-5 w-5 animate-spin text-blue-500" />}
-                  {taskStatus?.status === 'SUCCESS' && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-                  {taskStatus?.status === 'FAILURE' && <XCircle className="h-5 w-5 text-red-500" />}
+                  {isTaskRunning && (
+                    <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                  )}
+                  {taskStatus?.status === 'SUCCESS' && (
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  )}
+                  {taskStatus?.status === 'FAILURE' && (
+                    <XCircle className="h-5 w-5 text-red-500" />
+                  )}
                   <span className="font-medium">{getStatusMessage()}</span>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -520,7 +585,8 @@ export function CSVUploadModal({
               {/* Task ID for reference */}
               <p className="text-xs text-muted-foreground">
                 Task ID: <code className="bg-muted px-1 rounded">{taskId}</code>
-                {' — '}Track this job in <span className="font-medium">Jobs / View</span>
+                {' — '}Track this job in{' '}
+                <span className="font-medium">Jobs / View</span>
               </p>
 
               {/* Device Results Table */}
@@ -538,9 +604,11 @@ export function CSVUploadModal({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {deviceResults.map((result) => (
+                        {deviceResults.map(result => (
                           <TableRow key={result.ip_address}>
-                            <TableCell className="font-mono text-sm">{result.ip_address}</TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {result.ip_address}
+                            </TableCell>
                             <TableCell>
                               {result.status === 'success' ? (
                                 <Badge variant="default" className="bg-green-600">
@@ -554,8 +622,13 @@ export function CSVUploadModal({
                                 </Badge>
                               )}
                             </TableCell>
-                            <TableCell className="text-sm">{result.device_name || '-'}</TableCell>
-                            <TableCell className="text-sm max-w-xs truncate" title={result.message}>
+                            <TableCell className="text-sm">
+                              {result.device_name || '-'}
+                            </TableCell>
+                            <TableCell
+                              className="text-sm max-w-xs truncate"
+                              title={result.message}
+                            >
                               {result.message}
                             </TableCell>
                           </TableRow>
@@ -630,8 +703,14 @@ export function CSVUploadModal({
               <h4 className="font-semibold mb-2">File Format</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li>First row must contain column headers</li>
-                <li>Delimiter: configurable (default comma, can be changed in Optional Settings)</li>
-                <li>Quote character: configurable (default double quote, can be changed in Optional Settings)</li>
+                <li>
+                  Delimiter: configurable (default comma, can be changed in Optional
+                  Settings)
+                </li>
+                <li>
+                  Quote character: configurable (default double quote, can be changed in
+                  Optional Settings)
+                </li>
                 <li>Each row represents one device to onboard</li>
                 <li>Empty or malformed rows will be skipped</li>
               </ul>
@@ -640,29 +719,78 @@ export function CSVUploadModal({
             <div>
               <h4 className="font-semibold mb-2">Required Column</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li><code className="bg-muted px-1 py-0.5 rounded">ip_address</code> - Device IP address (IPv4 format)</li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">ip_address</code> -
+                  Device IP address (IPv4 format)
+                </li>
               </ul>
               <p className="text-xs text-muted-foreground mt-1">
-                All other fields will use your app&apos;s default Nautobot settings if not provided in the CSV.
+                All other fields will use your app&apos;s default Nautobot settings if
+                not provided in the CSV.
               </p>
             </div>
 
             <div>
               <h4 className="font-semibold mb-2">Optional Columns</h4>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground text-xs">
-                <li><code className="bg-muted px-1 py-0.5 rounded">location</code> - Location name or ID</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">namespace</code> - Namespace name or ID</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">role</code> - Device role name or ID</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">status</code> - Device status name or ID</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">platform</code> - Platform name or ID (e.g., cisco_ios, juniper_junos)</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">port</code> - SSH port number (default: 22)</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">timeout</code> - Connection timeout in seconds (default: 30)</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">interface_status</code> - Default interface status</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">ip_address_status</code> - Default IP address status</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">prefix_status</code> - Default prefix status</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">secret_groups</code> - Secret group name or ID</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">tags</code> - Tag names separated by semicolon or pipe (e.g., <code className="bg-muted px-1 py-0.5 rounded">tag1;tag2;tag3</code>)</li>
-                <li><code className="bg-muted px-1 py-0.5 rounded">cf_*</code> - Custom fields with prefix <code className="bg-muted px-1 py-0.5 rounded">cf_</code> (e.g., <code className="bg-muted px-1 py-0.5 rounded">cf_net</code> for custom field &quot;net&quot;)</li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">location</code> -
+                  Location name or ID
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">namespace</code> -
+                  Namespace name or ID
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">role</code> - Device
+                  role name or ID
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">status</code> - Device
+                  status name or ID
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">platform</code> -
+                  Platform name or ID (e.g., cisco_ios, juniper_junos)
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">port</code> - SSH port
+                  number (default: 22)
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">timeout</code> -
+                  Connection timeout in seconds (default: 30)
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">interface_status</code>{' '}
+                  - Default interface status
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">
+                    ip_address_status
+                  </code>{' '}
+                  - Default IP address status
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">prefix_status</code> -
+                  Default prefix status
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">secret_groups</code> -
+                  Secret group name or ID
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">tags</code> - Tag names
+                  separated by semicolon or pipe (e.g.,{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">tag1;tag2;tag3</code>)
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">cf_*</code> - Custom
+                  fields with prefix{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">cf_</code> (e.g.,{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">cf_net</code> for
+                  custom field &quot;net&quot;)
+                </li>
               </ul>
             </div>
 
@@ -670,7 +798,7 @@ export function CSVUploadModal({
               <h4 className="font-semibold mb-2">Example CSV</h4>
               <div className="bg-muted p-3 rounded-md overflow-x-auto">
                 <pre className="text-xs font-mono whitespace-pre">
-{`ip_address,location,namespace,role,status,platform,tags,cf_environment
+                  {`ip_address,location,namespace,role,status,platform,tags,cf_environment
 192.168.1.1,datacenter-1,global,access-switch,active,cisco_ios,production;core,prod
 192.168.1.2,datacenter-1,global,core-router,active,cisco_ios,production,prod
 10.0.0.1,branch-office,global,firewall,active,paloalto_panos,branch|security,dev`}
@@ -684,12 +812,30 @@ export function CSVUploadModal({
                 <div className="text-xs text-blue-800">
                   <p className="font-semibold mb-1">Important Notes:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>All devices are processed in a single background job (Celery task)</li>
-                    <li>You can track progress in real-time and view the job in <strong>Jobs / View</strong></li>
-                    <li>Ensure the IP addresses are reachable and credentials are configured in Nautobot</li>
-                    <li>Location, namespace, role, and status must exist in Nautobot (or use defaults)</li>
-                    <li>Tags: Use semicolon (;) or pipe (|) to separate multiple tags within the tags column</li>
-                    <li>Custom fields: Column names starting with <code className="bg-muted px-1 py-0.5 rounded">cf_</code> are treated as custom fields</li>
+                    <li>
+                      All devices are processed in a single background job (Celery task)
+                    </li>
+                    <li>
+                      You can track progress in real-time and view the job in{' '}
+                      <strong>Jobs / View</strong>
+                    </li>
+                    <li>
+                      Ensure the IP addresses are reachable and credentials are
+                      configured in Nautobot
+                    </li>
+                    <li>
+                      Location, namespace, role, and status must exist in Nautobot (or
+                      use defaults)
+                    </li>
+                    <li>
+                      Tags: Use semicolon (;) or pipe (|) to separate multiple tags
+                      within the tags column
+                    </li>
+                    <li>
+                      Custom fields: Column names starting with{' '}
+                      <code className="bg-muted px-1 py-0.5 rounded">cf_</code> are
+                      treated as custom fields
+                    </li>
                   </ul>
                 </div>
               </div>

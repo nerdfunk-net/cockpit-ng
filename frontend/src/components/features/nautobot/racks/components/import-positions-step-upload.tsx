@@ -41,8 +41,12 @@ export function ImportPositionsStepUpload({
           <div className="flex items-center gap-3 p-3 border rounded-md bg-blue-50 border-blue-200">
             <FileSpreadsheet className="h-5 w-5 text-blue-600 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-blue-900 truncate">{csvFile.name}</p>
-              <p className="text-xs text-blue-700">{(csvFile.size / 1024).toFixed(1)} KB</p>
+              <p className="text-sm font-medium text-blue-900 truncate">
+                {csvFile.name}
+              </p>
+              <p className="text-xs text-blue-700">
+                {(csvFile.size / 1024).toFixed(1)} KB
+              </p>
             </div>
             <Button
               variant="ghost"

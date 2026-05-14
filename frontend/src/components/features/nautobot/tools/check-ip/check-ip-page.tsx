@@ -17,18 +17,23 @@ export function CheckIPPage() {
   // Client-side UI state only
   const [showAll, setShowAll] = useState(false)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
-  const [uploadStatusMessage, setUploadStatusMessage] = useState<StatusMessage | null>(null)
+  const [uploadStatusMessage, setUploadStatusMessage] = useState<StatusMessage | null>(
+    null
+  )
 
   // Server state managed by TanStack Query
   const { data: taskStatus, isLoading: isPolling } = useCheckIpTaskQuery({
-    taskId: currentTaskId
+    taskId: currentTaskId,
   })
 
   const { uploadCsv, isUploading } = useCheckIpMutations()
   const { data: settings } = useCheckIpSettings()
 
   // Derived state with useMemo
-  const results = useMemo(() => taskStatus?.result?.results || EMPTY_RESULTS, [taskStatus])
+  const results = useMemo(
+    () => taskStatus?.result?.results || EMPTY_RESULTS,
+    [taskStatus]
+  )
 
   const effectiveDelimiter = useMemo(
     () => settings?.data?.csv_delimiter || DEFAULT_DELIMITER,
@@ -51,23 +56,23 @@ export function CheckIPPage() {
       if (taskStatus.result?.success === false) {
         return {
           type: 'error',
-          message: taskStatus.result?.error || 'Task completed with error'
+          message: taskStatus.result?.error || 'Task completed with error',
         }
       } else if (taskStatus.result?.results && taskStatus.result.results.length > 0) {
         return {
           type: 'success',
-          message: `Check completed! Found ${taskStatus.result.results.length} devices.`
+          message: `Check completed! Found ${taskStatus.result.results.length} devices.`,
         }
       }
     } else if (taskStatus.status === 'FAILURE') {
       return {
         type: 'error',
-        message: `Task failed: ${taskStatus.result?.error || 'Unknown error'}`
+        message: `Task failed: ${taskStatus.result?.error || 'Unknown error'}`,
       }
     } else if (taskStatus.status === 'PROGRESS') {
       return {
         type: 'info',
-        message: 'Processing devices...'
+        message: 'Processing devices...',
       }
     }
     return null
@@ -77,20 +82,29 @@ export function CheckIPPage() {
   const statusMessage = uploadStatusMessage || taskStatusMessage
 
   // Callbacks with useCallback for stability
-  const handleSubmit = useCallback((data: UploadFormData) => {
-    setUploadStatusMessage({ type: 'info', message: 'Uploading CSV file and starting check...' })
+  const handleSubmit = useCallback(
+    (data: UploadFormData) => {
+      setUploadStatusMessage({
+        type: 'info',
+        message: 'Uploading CSV file and starting check...',
+      })
 
-    uploadCsv.mutate(data, {
-      onSuccess: (response) => {
-        setCurrentTaskId(response.task_id)
-        setUploadStatusMessage({ type: 'success', message: 'Check started! Processing devices...' })
-      },
-      onError: () => {
-        // Error already handled by mutation hook with toast
-        setUploadStatusMessage(null)
-      }
-    })
-  }, [uploadCsv])
+      uploadCsv.mutate(data, {
+        onSuccess: response => {
+          setCurrentTaskId(response.task_id)
+          setUploadStatusMessage({
+            type: 'success',
+            message: 'Check started! Processing devices...',
+          })
+        },
+        onError: () => {
+          // Error already handled by mutation hook with toast
+          setUploadStatusMessage(null)
+        },
+      })
+    },
+    [uploadCsv]
+  )
 
   const handleToggleShowAll = useCallback(() => {
     setShowAll(prev => !prev)
@@ -108,7 +122,9 @@ export function CheckIPPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Check IP & Names</h1>
-            <p className="text-muted-foreground mt-2">Compare CSV device list with Nautobot devices</p>
+            <p className="text-muted-foreground mt-2">
+              Compare CSV device list with Nautobot devices
+            </p>
           </div>
         </div>
       </div>

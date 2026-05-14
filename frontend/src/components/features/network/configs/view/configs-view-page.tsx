@@ -4,7 +4,13 @@ import { useState, useCallback, useEffect } from 'react'
 import { Eye, RotateCcw, FolderTree, Search, GitCompare } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useApi } from '@/hooks/use-api'
@@ -32,7 +38,10 @@ export default function ConfigsViewPage() {
   const [selectedDirectoryPath, setSelectedDirectoryPath] = useState<string>('')
   const [filterText, setFilterText] = useState<string>('')
   const [globalSearchText, setGlobalSearchText] = useState<string>('')
-  const [searchResults, setSearchResults] = useState<{directories: Set<string>, files: Array<{name: string, path: string, directory: string}>} | null>(null)
+  const [searchResults, setSearchResults] = useState<{
+    directories: Set<string>
+    files: Array<{ name: string; path: string; directory: string }>
+  } | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -70,20 +79,26 @@ export default function ConfigsViewPage() {
   })
 
   // Fetch tree data
-  const { data: treeData, isLoading: treeLoading, error: treeError, refetch: refetchTree } = useGitTreeQuery(
-    selectedRepository,
-    { enabled: !!selectedRepository }
-  )
+  const {
+    data: treeData,
+    isLoading: treeLoading,
+    error: treeError,
+    refetch: refetchTree,
+  } = useGitTreeQuery(selectedRepository, { enabled: !!selectedRepository })
 
   // Load repositories
   const loadRepositories = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      const response = await apiCall<{ repositories: Repository[] }>('git-repositories/')
+      const response = await apiCall<{ repositories: Repository[] }>(
+        'git-repositories/'
+      )
       if (response?.repositories) {
         // Filter only device_configs repositories
-        const configRepos = response.repositories.filter(repo => repo.category === 'device_configs')
+        const configRepos = response.repositories.filter(
+          repo => repo.category === 'device_configs'
+        )
         setRepositories(configRepos)
 
         // Auto-select first repository if available
@@ -102,7 +117,7 @@ export default function ConfigsViewPage() {
   // Load repositories on mount
   useEffect(() => {
     loadRepositories()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Handlers
@@ -152,54 +167,59 @@ export default function ConfigsViewPage() {
   }, [selectedFiles])
 
   // Handle global search
-  const handleGlobalSearch = useCallback(async (searchText: string) => {
-    setGlobalSearchText(searchText)
-    
-    if (!selectedRepository || !searchText.trim()) {
-      setSearchResults(null)
-      return
-    }
+  const handleGlobalSearch = useCallback(
+    async (searchText: string) => {
+      setGlobalSearchText(searchText)
 
-    try {
-      setIsSearching(true)
-      const response = await apiCall<{
-        success: boolean
-        data: {
-          files: Array<{name: string, path: string, directory: string}>
-          filtered_count: number
-        }
-      }>(`git/${selectedRepository}/files/search?query=${encodeURIComponent(searchText)}&limit=1000`)
-      
-      if (response?.data?.files) {
-        // Extract unique directories from search results
-        const directories = new Set<string>()
-        response.data.files.forEach(file => {
-          if (file.directory) {
-            directories.add(file.directory)
-            // Also add parent directories
-            const parts = file.directory.split('/')
-            let currentPath = ''
-            parts.forEach(part => {
-              currentPath = currentPath ? `${currentPath}/${part}` : part
-              directories.add(currentPath)
-            })
-          } else {
-            directories.add('') // Root directory
-          }
-        })
-        
-        setSearchResults({
-          directories,
-          files: response.data.files
-        })
+      if (!selectedRepository || !searchText.trim()) {
+        setSearchResults(null)
+        return
       }
-    } catch (err) {
-      console.error('Search failed:', err)
-      setSearchResults(null)
-    } finally {
-      setIsSearching(false)
-    }
-  }, [selectedRepository, apiCall])
+
+      try {
+        setIsSearching(true)
+        const response = await apiCall<{
+          success: boolean
+          data: {
+            files: Array<{ name: string; path: string; directory: string }>
+            filtered_count: number
+          }
+        }>(
+          `git/${selectedRepository}/files/search?query=${encodeURIComponent(searchText)}&limit=1000`
+        )
+
+        if (response?.data?.files) {
+          // Extract unique directories from search results
+          const directories = new Set<string>()
+          response.data.files.forEach(file => {
+            if (file.directory) {
+              directories.add(file.directory)
+              // Also add parent directories
+              const parts = file.directory.split('/')
+              let currentPath = ''
+              parts.forEach(part => {
+                currentPath = currentPath ? `${currentPath}/${part}` : part
+                directories.add(currentPath)
+              })
+            } else {
+              directories.add('') // Root directory
+            }
+          })
+
+          setSearchResults({
+            directories,
+            files: response.data.files,
+          })
+        }
+      } catch (err) {
+        console.error('Search failed:', err)
+        setSearchResults(null)
+      } finally {
+        setIsSearching(false)
+      }
+    },
+    [selectedRepository, apiCall]
+  )
 
   // Debounce global search
   useEffect(() => {
@@ -223,42 +243,48 @@ export default function ConfigsViewPage() {
     })
   }, [])
 
-  const handleDownloadFile = useCallback(async (file: FileWithCommit) => {
-    if (!selectedRepository || !file.path) return
+  const handleDownloadFile = useCallback(
+    async (file: FileWithCommit) => {
+      if (!selectedRepository || !file.path) return
 
-    try {
-      const headers: Record<string, string> = {
-        'Accept': 'text/plain',
+      try {
+        const headers: Record<string, string> = {
+          Accept: 'text/plain',
+        }
+
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+
+        const response = await fetch(
+          `/api/proxy/git/${selectedRepository}/file-content?path=${encodeURIComponent(file.path)}`,
+          {
+            headers,
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error('Failed to download file')
+        }
+
+        // The proxy returns JSON-encoded text, so parse it first
+        const content = await response.json()
+        const blob = new Blob([content], { type: 'text/plain' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = file.name
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } catch (err) {
+        console.error('Download failed:', err)
+        alert('Failed to download file')
       }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-      
-      const response = await fetch(`/api/proxy/git/${selectedRepository}/file-content?path=${encodeURIComponent(file.path)}`, {
-        headers,
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to download file')
-      }
-      
-      // The proxy returns JSON-encoded text, so parse it first
-      const content = await response.json()
-      const blob = new Blob([content], { type: 'text/plain' })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = file.name
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-    } catch (err) {
-      console.error('Download failed:', err)
-      alert('Failed to download file')
-    }
-  }, [selectedRepository, token])
+    },
+    [selectedRepository, token]
+  )
 
   const handleCloseHistory = useCallback(() => {
     setFileHistoryDialog({
@@ -274,14 +300,17 @@ export default function ConfigsViewPage() {
     })
   }, [])
 
-  const handleCompare = useCallback((commit1: string, commit2: string, filePath: string) => {
-    setFileDiffDialog({
-      isOpen: true,
-      commit1,
-      commit2,
-      filePath,
-    })
-  }, [])
+  const handleCompare = useCallback(
+    (commit1: string, commit2: string, filePath: string) => {
+      setFileDiffDialog({
+        isOpen: true,
+        commit1,
+        commit2,
+        filePath,
+      })
+    },
+    []
+  )
 
   const handleCloseDiff = useCallback(() => {
     setFileDiffDialog({
@@ -320,17 +349,15 @@ export default function ConfigsViewPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Config File Browser</h1>
-            <p className="text-muted-foreground mt-2">Browse and compare configuration files from Git repositories</p>
+            <p className="text-muted-foreground mt-2">
+              Browse and compare configuration files from Git repositories
+            </p>
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="flex items-center space-x-2">
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            disabled={loading}
-          >
+          <Button onClick={handleRefresh} variant="outline" disabled={loading}>
             {loading ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2" />
             ) : (
@@ -354,18 +381,24 @@ export default function ConfigsViewPage() {
         </div>
         <div className="p-6 bg-gradient-to-b from-white to-gray-50">
           <div className="flex items-center gap-4">
-            <Label htmlFor="repository-select" className="text-sm font-medium whitespace-nowrap">
+            <Label
+              htmlFor="repository-select"
+              className="text-sm font-medium whitespace-nowrap"
+            >
               Select Repository:
             </Label>
             <Select
-              value={selectedRepository?.toString() || ""}
+              value={selectedRepository?.toString() || ''}
               onValueChange={handleRepositoryChange}
             >
-              <SelectTrigger className="w-96 border-2 border-gray-400 shadow-sm" id="repository-select">
+              <SelectTrigger
+                className="w-96 border-2 border-gray-400 shadow-sm"
+                id="repository-select"
+              >
                 <SelectValue placeholder="Select a config repository..." />
               </SelectTrigger>
               <SelectContent>
-                {repositories.map((repo) => (
+                {repositories.map(repo => (
                   <SelectItem key={repo.id} value={repo.id.toString()}>
                     {repo.name} {repo.description && `- ${repo.description}`}
                   </SelectItem>
@@ -378,7 +411,7 @@ export default function ConfigsViewPage() {
                 <Input
                   placeholder="Search files in repository..."
                   value={globalSearchText}
-                  onChange={(e) => setGlobalSearchText(e.target.value)}
+                  onChange={e => setGlobalSearchText(e.target.value)}
                   className="pl-9 border-2 border-gray-300 focus:border-blue-400"
                 />
                 {isSearching && (
@@ -390,13 +423,17 @@ export default function ConfigsViewPage() {
             )}
             {repositories.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                No config repositories found. Configure repositories in Settings → Git Management.
+                No config repositories found. Configure repositories in Settings → Git
+                Management.
               </p>
             )}
           </div>
           {searchResults && searchResults.files.length > 0 && (
             <div className="mt-3 text-sm text-muted-foreground">
-              Found {searchResults.files.length} matching file{searchResults.files.length !== 1 ? 's' : ''} in {searchResults.directories.size} director{searchResults.directories.size !== 1 ? 'ies' : 'y'}
+              Found {searchResults.files.length} matching file
+              {searchResults.files.length !== 1 ? 's' : ''} in{' '}
+              {searchResults.directories.size} director
+              {searchResults.directories.size !== 1 ? 'ies' : 'y'}
             </div>
           )}
           {globalSearchText && searchResults && searchResults.files.length === 0 && (
@@ -412,7 +449,12 @@ export default function ConfigsViewPage() {
         <Card className="border-destructive">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-destructive">
-              <span>{error || (treeError instanceof Error ? treeError.message : 'Error loading tree')}</span>
+              <span>
+                {error ||
+                  (treeError instanceof Error
+                    ? treeError.message
+                    : 'Error loading tree')}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -438,14 +480,18 @@ export default function ConfigsViewPage() {
               leftPanel={
                 <div className="flex flex-col h-full overflow-hidden border-r">
                   <div className="bg-gray-100 px-4 py-2 border-b flex-shrink-0">
-                    <h3 className="text-sm font-medium text-gray-700">Directory Structure</h3>
+                    <h3 className="text-sm font-medium text-gray-700">
+                      Directory Structure
+                    </h3>
                   </div>
                   <div className="flex-1 overflow-hidden">
                     {treeLoading ? (
                       <div className="flex items-center justify-center h-64">
                         <div className="text-center">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-                          <p className="mt-2 text-sm text-muted-foreground">Loading tree...</p>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Loading tree...
+                          </p>
                         </div>
                       </div>
                     ) : (
@@ -470,13 +516,14 @@ export default function ConfigsViewPage() {
                         {selectedFiles.size > 0 && (
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">
-                              {selectedFiles.size} file{selectedFiles.size !== 1 ? 's' : ''} selected
+                              {selectedFiles.size} file
+                              {selectedFiles.size !== 1 ? 's' : ''} selected
                             </span>
                             <Button
                               size="sm"
                               onClick={handleCompareFiles}
                               disabled={selectedFiles.size !== 2}
-                              variant={selectedFiles.size === 2 ? "default" : "outline"}
+                              variant={selectedFiles.size === 2 ? 'default' : 'outline'}
                             >
                               <GitCompare className="h-3 w-3 mr-1" />
                               Compare Files
@@ -488,7 +535,7 @@ export default function ConfigsViewPage() {
                           <Input
                             placeholder="Filter files..."
                             value={filterText}
-                            onChange={(e) => setFilterText(e.target.value)}
+                            onChange={e => setFilterText(e.target.value)}
                             className="pl-8 h-8 text-sm"
                           />
                         </div>
@@ -531,7 +578,10 @@ export default function ConfigsViewPage() {
         filePath={fileViewDialog.filePath}
         onDownload={() => {
           if (fileViewDialog.filePath) {
-            handleDownloadFile({ path: fileViewDialog.filePath, name: fileViewDialog.filePath.split('/').pop() || '' } as FileWithCommit)
+            handleDownloadFile({
+              path: fileViewDialog.filePath,
+              name: fileViewDialog.filePath.split('/').pop() || '',
+            } as FileWithCommit)
           }
         }}
       />

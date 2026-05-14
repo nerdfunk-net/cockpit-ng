@@ -20,7 +20,11 @@ export function LocationSearchDropdown({
   disabled = false,
 }: LocationSearchDropdownProps) {
   const [showDropdown, setShowDropdown] = useState(false)
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  })
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Get display value from selected location
@@ -90,7 +94,7 @@ export function LocationSearchDropdown({
       <Input
         placeholder={placeholder}
         value={searchQuery}
-        onChange={(e) => {
+        onChange={e => {
           setSearchQuery(e.target.value)
           setIsUserEditing(true)
           setShowDropdown(true)
@@ -110,7 +114,7 @@ export function LocationSearchDropdown({
           }}
         >
           {filteredLocations.length > 0 ? (
-            filteredLocations.map((location) => (
+            filteredLocations.map(location => (
               <div
                 key={location.id}
                 className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
@@ -120,7 +124,9 @@ export function LocationSearchDropdown({
               </div>
             ))
           ) : (
-            <div className="px-3 py-2 text-sm text-gray-500 italic">No locations found</div>
+            <div className="px-3 py-2 text-sm text-gray-500 italic">
+              No locations found
+            </div>
           )}
         </div>
       )}

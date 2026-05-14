@@ -25,10 +25,8 @@ export function hasPermission(
   // If permissions is an array (RBAC system), check for the specific permission
   if (Array.isArray(user.permissions)) {
     return user.permissions.some(
-      (perm) =>
-        perm.resource === resource &&
-        perm.action === action &&
-        perm.granted === true
+      perm =>
+        perm.resource === resource && perm.action === action && perm.granted === true
     )
   }
 
@@ -54,7 +52,7 @@ export function hasAnyPermission(
   resource: string,
   actions: string[]
 ): boolean {
-  return actions.some((action) => hasPermission(user, resource, action))
+  return actions.some(action => hasPermission(user, resource, action))
 }
 
 /**
@@ -70,7 +68,7 @@ export function hasAllPermissions(
   resource: string,
   actions: string[]
 ): boolean {
-  return actions.every((action) => hasPermission(user, resource, action))
+  return actions.every(action => hasPermission(user, resource, action))
 }
 
 /**

@@ -32,10 +32,11 @@ export function UsersManager() {
   const filteredUsers = useMemo(() => {
     if (!searchTerm) return users
     const lower = searchTerm.toLowerCase()
-    return users.filter(u =>
-      u.username.toLowerCase().includes(lower) ||
-      u.realname.toLowerCase().includes(lower) ||
-      (u.email && u.email.toLowerCase().includes(lower))
+    return users.filter(
+      u =>
+        u.username.toLowerCase().includes(lower) ||
+        u.realname.toLowerCase().includes(lower) ||
+        (u.email && u.email.toLowerCase().includes(lower))
     )
   }, [users, searchTerm])
 
@@ -50,22 +51,28 @@ export function UsersManager() {
     setIsDialogOpen(true)
   }, [])
 
-  const handleDelete = useCallback((userId: number) => {
-    openConfirm({
-      title: 'Delete User',
-      description: 'Are you sure you want to delete this user?',
-      variant: 'destructive',
-      onConfirm: () => deleteUser.mutate(userId),
-    })
-  }, [deleteUser, openConfirm])
+  const handleDelete = useCallback(
+    (userId: number) => {
+      openConfirm({
+        title: 'Delete User',
+        description: 'Are you sure you want to delete this user?',
+        variant: 'destructive',
+        onConfirm: () => deleteUser.mutate(userId),
+      })
+    },
+    [deleteUser, openConfirm]
+  )
 
-  const handleSubmit = useCallback((data: CreateUserData | UpdateUserData) => {
-    if (selectedUser) {
-      updateUser.mutate({ userId: selectedUser.id, data: data as UpdateUserData })
-    } else {
-      createUser.mutate(data as CreateUserData)
-    }
-  }, [selectedUser, createUser, updateUser])
+  const handleSubmit = useCallback(
+    (data: CreateUserData | UpdateUserData) => {
+      if (selectedUser) {
+        updateUser.mutate({ userId: selectedUser.id, data: data as UpdateUserData })
+      } else {
+        createUser.mutate(data as CreateUserData)
+      }
+    },
+    [selectedUser, createUser, updateUser]
+  )
 
   if (isLoading) {
     return <RBACLoading message="Loading users..." />
@@ -79,7 +86,7 @@ export function UsersManager() {
             type="search"
             placeholder="Search users..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex gap-2">
@@ -101,11 +108,11 @@ export function UsersManager() {
           { header: 'Real Name', accessor: 'realname' },
           {
             header: 'Email',
-            accessor: (user) => user.email || '-'
+            accessor: user => user.email || '-',
           },
           {
             header: 'Roles',
-            accessor: (user) => (
+            accessor: user => (
               <div className="flex gap-1 flex-wrap">
                 {user.roles && user.roles.length > 0 ? (
                   user.roles.map(role => (
@@ -117,28 +124,29 @@ export function UsersManager() {
                   <span className="text-muted-foreground text-sm">No roles</span>
                 )}
               </div>
-            )
+            ),
           },
           {
             header: 'Last Login',
-            accessor: (user) => (
+            accessor: user => (
               <span className="text-sm text-muted-foreground">
-                {user.last_login
-                  ? new Date(user.last_login).toLocaleString()
-                  : 'Never'}
+                {user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}
               </span>
-            )
+            ),
           },
           {
             header: 'Status',
-            accessor: (user) => (
-              <Badge variant={user.is_active ? 'default' : 'secondary'} className="text-xs">
+            accessor: user => (
+              <Badge
+                variant={user.is_active ? 'default' : 'secondary'}
+                className="text-xs"
+              >
                 {user.is_active ? 'Active' : 'Inactive'}
               </Badge>
-            )
+            ),
           },
         ]}
-        actions={(user) => (
+        actions={user => (
           <div className="flex gap-1 justify-end">
             <Button size="sm" variant="ghost" onClick={() => handleEdit(user)}>
               <Edit className="h-4 w-4" />

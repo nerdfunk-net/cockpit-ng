@@ -55,7 +55,12 @@ export interface TemplateExecutionResult {
 }
 
 export interface CommandExecutionParams {
-  selectedDevices: Array<{ id: string; name: string; primary_ip4?: string; platform?: string }>
+  selectedDevices: Array<{
+    id: string
+    name: string
+    primary_ip4?: string
+    platform?: string
+  }>
   commands: string
   enableMode: boolean
   writeConfig: boolean

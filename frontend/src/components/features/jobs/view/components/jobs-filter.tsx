@@ -9,11 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { RefreshCw, Trash2, ChevronDown } from 'lucide-react'
 import { STATUS_OPTIONS, JOB_TYPE_OPTIONS, TRIGGER_OPTIONS } from '../utils/constants'
 import type { JobTemplate } from '../types'
@@ -67,18 +63,22 @@ export function JobsFilter({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="w-[130px] justify-between">
-            {statusFilter.length === 0 ? "All Status" : `${statusFilter.length} selected`}
+            {statusFilter.length === 0
+              ? 'All Status'
+              : `${statusFilter.length} selected`}
             <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-[150px]">
           <DropdownMenuLabel>Status</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {STATUS_OPTIONS.map((option) => (
+          {STATUS_OPTIONS.map(option => (
             <DropdownMenuCheckboxItem
               key={option.value}
               checked={statusFilter.includes(option.value)}
-              onCheckedChange={() => onStatusChange(toggleFilter(statusFilter, option.value))}
+              onCheckedChange={() =>
+                onStatusChange(toggleFilter(statusFilter, option.value))
+              }
             >
               {option.label}
             </DropdownMenuCheckboxItem>
@@ -102,18 +102,22 @@ export function JobsFilter({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="w-[150px] justify-between">
-            {jobTypeFilter.length === 0 ? "All Types" : `${jobTypeFilter.length} selected`}
+            {jobTypeFilter.length === 0
+              ? 'All Types'
+              : `${jobTypeFilter.length} selected`}
             <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-[180px]">
           <DropdownMenuLabel>Job Type</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {JOB_TYPE_OPTIONS.map((option) => (
+          {JOB_TYPE_OPTIONS.map(option => (
             <DropdownMenuCheckboxItem
               key={option.value}
               checked={jobTypeFilter.includes(option.value)}
-              onCheckedChange={() => onJobTypeChange(toggleFilter(jobTypeFilter, option.value))}
+              onCheckedChange={() =>
+                onJobTypeChange(toggleFilter(jobTypeFilter, option.value))
+              }
             >
               {option.label}
             </DropdownMenuCheckboxItem>
@@ -137,18 +141,22 @@ export function JobsFilter({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="w-[130px] justify-between">
-            {triggerFilter.length === 0 ? "All Triggers" : `${triggerFilter.length} selected`}
+            {triggerFilter.length === 0
+              ? 'All Triggers'
+              : `${triggerFilter.length} selected`}
             <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-[150px]">
           <DropdownMenuLabel>Trigger</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {TRIGGER_OPTIONS.map((option) => (
+          {TRIGGER_OPTIONS.map(option => (
             <DropdownMenuCheckboxItem
               key={option.value}
               checked={triggerFilter.includes(option.value)}
-              onCheckedChange={() => onTriggerChange(toggleFilter(triggerFilter, option.value))}
+              onCheckedChange={() =>
+                onTriggerChange(toggleFilter(triggerFilter, option.value))
+              }
             >
               {option.label}
             </DropdownMenuCheckboxItem>
@@ -172,18 +180,22 @@ export function JobsFilter({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="w-[150px] justify-between">
-            {templateFilter.length === 0 ? "All Templates" : `${templateFilter.length} selected`}
+            {templateFilter.length === 0
+              ? 'All Templates'
+              : `${templateFilter.length} selected`}
             <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-[200px]">
           <DropdownMenuLabel>Template</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {availableTemplates.map((template) => (
+          {availableTemplates.map(template => (
             <DropdownMenuCheckboxItem
               key={template.id}
               checked={templateFilter.includes(template.id.toString())}
-              onCheckedChange={() => onTemplateChange(toggleFilter(templateFilter, template.id.toString()))}
+              onCheckedChange={() =>
+                onTemplateChange(toggleFilter(templateFilter, template.id.toString()))
+              }
             >
               {template.name}
             </DropdownMenuCheckboxItem>
@@ -220,11 +232,15 @@ export function JobsFilter({
             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
           >
             <Trash2 className={`mr-2 h-4 w-4 ${isClearing ? 'animate-spin' : ''}`} />
-            {hasActiveFilters ? "Clear Filtered" : "Clear All"}
+            {hasActiveFilters ? 'Clear Filtered' : 'Clear All'}
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{hasActiveFilters ? `Clear jobs matching: ${filterDescription}` : "Clear all job history"}</p>
+          <p>
+            {hasActiveFilters
+              ? `Clear jobs matching: ${filterDescription}`
+              : 'Clear all job history'}
+          </p>
         </TooltipContent>
       </Tooltip>
     </div>

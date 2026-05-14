@@ -56,10 +56,12 @@ export function YamlEditorCard({
       </CardHeader>
       <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Configuration Content</Label>
+          <Label className="text-sm font-medium text-gray-700">
+            Configuration Content
+          </Label>
           <Textarea
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={e => onChange(e.target.value)}
             placeholder="YAML content will be loaded here..."
             className="w-full h-96 font-mono text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500"
             disabled={isLoading}

@@ -111,7 +111,8 @@ export function useTemplateEditor() {
     if (templateData && templateContent !== undefined) {
       form.reset({
         name: templateData.name,
-        template_type: (templateData.template_type as EditorFormData['template_type']) || 'jinja2',
+        template_type:
+          (templateData.template_type as EditorFormData['template_type']) || 'jinja2',
         category: templateData.category || '__none__',
         description: templateData.description || '',
         scope: (templateData.scope as 'global' | 'private') || 'global',
@@ -122,7 +123,9 @@ export function useTemplateEditor() {
         useNautobotContext: templateData.use_nautobot_context ?? false,
         path: templateData.file_path || '',
         // Netmiko-specific fields
-        netmikoMode: (templateData.execution_mode as EditorFormData['netmikoMode']) || 'run_on_device',
+        netmikoMode:
+          (templateData.execution_mode as EditorFormData['netmikoMode']) ||
+          'run_on_device',
         testDeviceId: null,
         testDeviceName: '',
         preRunCommand: templateData.pre_run_command || '',
@@ -156,6 +159,14 @@ export function useTemplateEditor() {
       watchedCategory,
       setContent,
     }),
-    [form, templateId, isEditMode, isLoading, variableManager, watchedCategory, setContent]
+    [
+      form,
+      templateId,
+      isEditMode,
+      isLoading,
+      variableManager,
+      watchedCategory,
+      setContent,
+    ]
   )
 }

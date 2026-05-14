@@ -1,11 +1,17 @@
-"use client"
+'use client'
 
-import React, { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckIPJobResult } from "../types/job-results"
-import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react"
+import { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { CheckIPJobResult } from '../types/job-results'
+import { CheckCircle2, XCircle, AlertTriangle, Info } from 'lucide-react'
 
 interface CheckIPResultViewProps {
   result: CheckIPJobResult
@@ -15,11 +21,9 @@ const EMPTY_RESULTS: CheckIPJobResult['results'] = []
 
 export function CheckIPResultView({ result }: CheckIPResultViewProps) {
   const [showAll, setShowAll] = useState(false)
-  
+
   const results = result.results || EMPTY_RESULTS
-  const displayedResults = showAll 
-    ? results 
-    : results.filter(r => r.status !== 'match')
+  const displayedResults = showAll ? results : results.filter(r => r.status !== 'match')
 
   // Get status icon
   const getStatusIcon = (status: string) => {
@@ -70,26 +74,35 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Total Devices</p>
-              <p className="text-2xl font-bold">{result.total_devices || results.length}</p>
+              <p className="text-2xl font-bold">
+                {result.total_devices || results.length}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Matches</p>
-              <p className="text-2xl font-bold text-green-600">{result.statistics.matches}</p>
+              <p className="text-2xl font-bold text-green-600">
+                {result.statistics.matches}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Mismatches</p>
-              <p className="text-2xl font-bold text-yellow-600">{result.statistics.name_mismatches}</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {result.statistics.name_mismatches}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Not Found</p>
-              <p className="text-2xl font-bold text-red-600">{result.statistics.ip_not_found}</p>
+              <p className="text-2xl font-bold text-red-600">
+                {result.statistics.ip_not_found}
+              </p>
             </div>
           </div>
           {result.statistics.errors > 0 && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
               <p className="text-sm text-red-700">
                 <XCircle className="h-4 w-4 inline mr-1" />
-                {result.statistics.errors} device(s) encountered errors during processing
+                {result.statistics.errors} device(s) encountered errors during
+                processing
               </p>
             </div>
           )}
@@ -103,15 +116,14 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
             <div>
               <CardTitle>Device Results</CardTitle>
               <CardDescription>
-                {showAll 
+                {showAll
                   ? `Showing all ${results.length} devices`
-                  : `Showing ${displayedResults.length} differences (${results.length} total)`
-                }
+                  : `Showing ${displayedResults.length} differences (${results.length} total)`}
               </CardDescription>
             </div>
-            <Button 
-              onClick={() => setShowAll(!showAll)} 
-              variant={showAll ? "default" : "outline"}
+            <Button
+              onClick={() => setShowAll(!showAll)}
+              variant={showAll ? 'default' : 'outline'}
               size="sm"
             >
               {showAll ? 'Show Differences Only' : 'Show All'}
@@ -126,26 +138,35 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
                 <p>All devices matched successfully!</p>
               </div>
             ) : (
-              displayedResults.map((device) => (
-                <div key={`${device.ip_address}-${device.device_name}`} className="flex items-center justify-between p-3 border rounded-lg">
+              displayedResults.map(device => (
+                <div
+                  key={`${device.ip_address}-${device.device_name}`}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
                   <div className="flex items-center gap-3">
                     {getStatusIcon(device.status)}
                     <div>
                       <p className="font-medium">{device.device_name}</p>
-                      <p className="text-sm text-muted-foreground">{device.ip_address}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {device.ip_address}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className={getStatusColor(device.status)} variant="outline">
                       {device.status.replace('_', ' ').toUpperCase()}
                     </Badge>
-                    {device.nautobot_device_name && device.nautobot_device_name !== device.device_name && (
-                      <span className="text-sm text-muted-foreground">
-                        → {device.nautobot_device_name}
-                      </span>
-                    )}
+                    {device.nautobot_device_name &&
+                      device.nautobot_device_name !== device.device_name && (
+                        <span className="text-sm text-muted-foreground">
+                          → {device.nautobot_device_name}
+                        </span>
+                      )}
                     {device.error && (
-                      <span className="text-sm text-red-600 max-w-xs truncate" title={device.error}>
+                      <span
+                        className="text-sm text-red-600 max-w-xs truncate"
+                        title={device.error}
+                      >
                         {device.error}
                       </span>
                     )}

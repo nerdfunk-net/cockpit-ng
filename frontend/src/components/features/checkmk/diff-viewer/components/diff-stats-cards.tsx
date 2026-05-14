@@ -27,7 +27,9 @@ export function DiffStatsCards({
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center gap-2">
-            <div className="text-sm font-medium text-muted-foreground">In Both Systems</div>
+            <div className="text-sm font-medium text-muted-foreground">
+              In Both Systems
+            </div>
             <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
               both
             </Badge>
@@ -38,7 +40,9 @@ export function DiffStatsCards({
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center gap-2">
-            <div className="text-sm font-medium text-muted-foreground">Nautobot Only</div>
+            <div className="text-sm font-medium text-muted-foreground">
+              Nautobot Only
+            </div>
             <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
               nb
             </Badge>
@@ -49,8 +53,13 @@ export function DiffStatsCards({
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center gap-2">
-            <div className="text-sm font-medium text-muted-foreground">CheckMK Only</div>
-            <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
+            <div className="text-sm font-medium text-muted-foreground">
+              CheckMK Only
+            </div>
+            <Badge
+              variant="secondary"
+              className="bg-orange-100 text-orange-800 text-xs"
+            >
               cmk
             </Badge>
           </div>

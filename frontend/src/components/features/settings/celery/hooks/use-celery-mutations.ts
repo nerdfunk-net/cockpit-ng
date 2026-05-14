@@ -2,7 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
-import type { CelerySettings, CeleryActionResponse, PurgeQueueResponse, PurgeAllQueuesResponse } from '../types'
+import type {
+  CelerySettings,
+  CeleryActionResponse,
+  PurgeQueueResponse,
+  PurgeAllQueuesResponse,
+} from '../types'
 import { useMemo } from 'react'
 
 export function useCeleryMutations() {
@@ -15,14 +20,14 @@ export function useCeleryMutations() {
     mutationFn: async (settings: CelerySettings) => {
       const response = await apiCall<CeleryActionResponse>('/api/celery/settings', {
         method: 'PUT',
-        body: JSON.stringify(settings)
+        body: JSON.stringify(settings),
       })
       if (!response?.success) {
         throw new Error(response?.message || 'Failed to save settings')
       }
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.celery.settings() })
       toast({
         title: 'Success',
@@ -33,61 +38,68 @@ export function useCeleryMutations() {
       toast({
         title: 'Error',
         description: `Failed to save settings: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Trigger cleanup
   const triggerCleanup = useMutation({
     mutationFn: async () => {
       const response = await apiCall<CeleryActionResponse>('/api/celery/cleanup', {
-        method: 'POST'
+        method: 'POST',
       })
       if (!response?.task_id) {
         throw new Error(response?.message || 'Failed to trigger cleanup')
       }
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast({
         title: 'Success',
-        description: data.task_id ? `Cleanup task started: ${data.task_id}` : 'Cleanup started',
+        description: data.task_id
+          ? `Cleanup task started: ${data.task_id}`
+          : 'Cleanup started',
       })
     },
     onError: (error: Error) => {
       toast({
         title: 'Error',
         description: `Failed to trigger cleanup: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Trigger client data cleanup
   const triggerClientDataCleanup = useMutation({
     mutationFn: async () => {
-      const response = await apiCall<CeleryActionResponse>('/api/celery/client-data-cleanup', {
-        method: 'POST'
-      })
+      const response = await apiCall<CeleryActionResponse>(
+        '/api/celery/client-data-cleanup',
+        {
+          method: 'POST',
+        }
+      )
       if (!response?.task_id) {
         throw new Error(response?.message || 'Failed to trigger client data cleanup')
       }
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast({
         title: 'Success',
-        description: data.task_id ? `Client data cleanup task started: ${data.task_id}` : 'Client data cleanup started',
+        description: data.task_id
+          ? `Client data cleanup task started: ${data.task_id}`
+          : 'Client data cleanup started',
       })
     },
     onError: (error: Error) => {
       toast({
         title: 'Error',
         description: `Failed to trigger client data cleanup: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Submit test task
@@ -95,14 +107,14 @@ export function useCeleryMutations() {
     mutationFn: async (message: string) => {
       const response = await apiCall<CeleryActionResponse>('/api/celery/test', {
         method: 'POST',
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message }),
       })
       if (!response?.task_id) {
         throw new Error('Failed to submit test task')
       }
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast({
         title: 'Success',
         description: `Test task submitted: ${data.task_id}`,
@@ -112,72 +124,91 @@ export function useCeleryMutations() {
       toast({
         title: 'Error',
         description: `Failed to submit test task: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Purge queue
   const purgeQueue = useMutation({
     mutationFn: async (queueName: string) => {
-      const response = await apiCall<PurgeQueueResponse>(`/api/celery/queues/${queueName}/purge`, {
-        method: 'DELETE'
-      })
+      const response = await apiCall<PurgeQueueResponse>(
+        `/api/celery/queues/${queueName}/purge`,
+        {
+          method: 'DELETE',
+        }
+      )
       if (!response?.success) {
         throw new Error(response?.message || 'Failed to purge queue')
       }
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.celery.queues() })
       toast({
         title: 'Success',
-        description: data.message || `Purged ${data.purged_tasks} task(s) from queue ${data.queue}`,
+        description:
+          data.message ||
+          `Purged ${data.purged_tasks} task(s) from queue ${data.queue}`,
       })
     },
     onError: (error: Error) => {
       toast({
         title: 'Error',
         description: `Failed to purge queue: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Purge all queues
   const purgeAllQueues = useMutation({
     mutationFn: async () => {
-      const response = await apiCall<PurgeAllQueuesResponse>('/api/celery/queues/purge-all', {
-        method: 'DELETE'
-      })
+      const response = await apiCall<PurgeAllQueuesResponse>(
+        '/api/celery/queues/purge-all',
+        {
+          method: 'DELETE',
+        }
+      )
       if (!response?.success) {
         throw new Error(response?.message || 'Failed to purge all queues')
       }
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.celery.queues() })
       toast({
         title: 'Success',
-        description: data.message || `Purged ${data.total_purged} task(s) from all queues`,
+        description:
+          data.message || `Purged ${data.total_purged} task(s) from all queues`,
       })
     },
     onError: (error: Error) => {
       toast({
         title: 'Error',
         description: `Failed to purge all queues: ${error.message}`,
-        variant: 'destructive'
+        variant: 'destructive',
       })
-    }
+    },
   })
 
   // Memoize return object to prevent re-renders
-  return useMemo(() => ({
-    saveSettings,
-    triggerCleanup,
-    triggerClientDataCleanup,
-    submitTestTask,
-    purgeQueue,
-    purgeAllQueues,
-  }), [saveSettings, triggerCleanup, triggerClientDataCleanup, submitTestTask, purgeQueue, purgeAllQueues])
+  return useMemo(
+    () => ({
+      saveSettings,
+      triggerCleanup,
+      triggerClientDataCleanup,
+      submitTestTask,
+      purgeQueue,
+      purgeAllQueues,
+    }),
+    [
+      saveSettings,
+      triggerCleanup,
+      triggerClientDataCleanup,
+      submitTestTask,
+      purgeQueue,
+      purgeAllQueues,
+    ]
+  )
 }

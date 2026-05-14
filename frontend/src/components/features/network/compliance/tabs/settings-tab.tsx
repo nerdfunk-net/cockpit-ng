@@ -1,5 +1,11 @@
 import { useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -149,7 +155,10 @@ export function SettingsTab({
               checked={checkSshLogins}
               onCheckedChange={setCheckSshLogins}
             />
-            <Label htmlFor="check-ssh" className="flex items-center gap-2 cursor-pointer">
+            <Label
+              htmlFor="check-ssh"
+              className="flex items-center gap-2 cursor-pointer"
+            >
               <Key className="h-4 w-4" />
               Check SSH Logins
             </Label>
@@ -161,7 +170,10 @@ export function SettingsTab({
               checked={checkSnmpCredentials}
               onCheckedChange={setCheckSnmpCredentials}
             />
-            <Label htmlFor="check-snmp" className="flex items-center gap-2 cursor-pointer">
+            <Label
+              htmlFor="check-snmp"
+              className="flex items-center gap-2 cursor-pointer"
+            >
               <Network className="h-4 w-4" />
               Check SNMP Credentials
             </Label>
@@ -173,7 +185,10 @@ export function SettingsTab({
               checked={checkConfiguration}
               onCheckedChange={setCheckConfiguration}
             />
-            <Label htmlFor="check-config" className="flex items-center gap-2 cursor-pointer">
+            <Label
+              htmlFor="check-config"
+              className="flex items-center gap-2 cursor-pointer"
+            >
               <FileText className="h-4 w-4" />
               Check Configuration
             </Label>
@@ -212,39 +227,38 @@ export function SettingsTab({
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  No login credentials configured. Go to Settings / Compliance to add credentials.
+                  No login credentials configured. Go to Settings / Compliance to add
+                  credentials.
                 </AlertDescription>
               </Alert>
             ) : (
               <div className="space-y-4">
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSelectAllLogins}
-                  >
+                  <Button variant="outline" size="sm" onClick={handleSelectAllLogins}>
                     Select All
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDeselectAllLogins}
-                  >
+                  <Button variant="outline" size="sm" onClick={handleDeselectAllLogins}>
                     Deselect All
                   </Button>
                   <div className="ml-auto text-sm text-gray-500">
-                    {selectedLoginIds.length} of {loginCredentials.filter(c => c.is_active).length} selected
+                    {selectedLoginIds.length} of{' '}
+                    {loginCredentials.filter(c => c.is_active).length} selected
                   </div>
                 </div>
                 <div className="space-y-2">
                   {loginCredentials
                     .filter(c => c.is_active)
                     .map(credential => (
-                      <div key={credential.id} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50">
+                      <div
+                        key={credential.id}
+                        className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50"
+                      >
                         <Checkbox
                           id={`login-${credential.id}`}
                           checked={selectedLoginIds.includes(credential.id)}
-                          onCheckedChange={(checked) => handleLoginToggle(credential.id, checked as boolean)}
+                          onCheckedChange={checked =>
+                            handleLoginToggle(credential.id, checked as boolean)
+                          }
                         />
                         <Label
                           htmlFor={`login-${credential.id}`}
@@ -252,7 +266,9 @@ export function SettingsTab({
                         >
                           <div className="font-medium">{credential.username}</div>
                           {credential.description && (
-                            <div className="text-sm text-gray-500">{credential.description}</div>
+                            <div className="text-sm text-gray-500">
+                              {credential.description}
+                            </div>
                           )}
                         </Label>
                       </div>
@@ -295,39 +311,38 @@ export function SettingsTab({
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  No SNMP mappings configured. Go to Settings / Compliance to add SNMP credentials.
+                  No SNMP mappings configured. Go to Settings / Compliance to add SNMP
+                  credentials.
                 </AlertDescription>
               </Alert>
             ) : (
               <div className="space-y-4">
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSelectAllSnmp}
-                  >
+                  <Button variant="outline" size="sm" onClick={handleSelectAllSnmp}>
                     Select All
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDeselectAllSnmp}
-                  >
+                  <Button variant="outline" size="sm" onClick={handleDeselectAllSnmp}>
                     Deselect All
                   </Button>
                   <div className="ml-auto text-sm text-gray-500">
-                    {selectedSnmpIds.length} of {snmpMappings.filter(m => m.is_active).length} selected
+                    {selectedSnmpIds.length} of{' '}
+                    {snmpMappings.filter(m => m.is_active).length} selected
                   </div>
                 </div>
                 <div className="space-y-2">
                   {snmpMappings
                     .filter(m => m.is_active)
                     .map(mapping => (
-                      <div key={mapping.id} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50">
+                      <div
+                        key={mapping.id}
+                        className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50"
+                      >
                         <Checkbox
                           id={`snmp-${mapping.id}`}
                           checked={selectedSnmpIds.includes(mapping.id)}
-                          onCheckedChange={(checked) => handleSnmpToggle(mapping.id, checked as boolean)}
+                          onCheckedChange={checked =>
+                            handleSnmpToggle(mapping.id, checked as boolean)
+                          }
                         />
                         <Label
                           htmlFor={`snmp-${mapping.id}`}
@@ -335,7 +350,10 @@ export function SettingsTab({
                         >
                           <div className="font-medium">{mapping.device_type}</div>
                           <div className="text-sm text-gray-500">
-                            {mapping.snmp_version} - {mapping.snmp_version === 'v3' ? mapping.snmp_v3_user : mapping.snmp_community}
+                            {mapping.snmp_version} -{' '}
+                            {mapping.snmp_version === 'v3'
+                              ? mapping.snmp_v3_user
+                              : mapping.snmp_community}
                             {mapping.description && ` - ${mapping.description}`}
                           </div>
                         </Label>
@@ -379,47 +397,50 @@ export function SettingsTab({
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  No regex patterns configured. Go to Settings / Compliance to add patterns.
+                  No regex patterns configured. Go to Settings / Compliance to add
+                  patterns.
                 </AlertDescription>
               </Alert>
             ) : (
               <div className="space-y-4">
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSelectAllRegex}
-                  >
+                  <Button variant="outline" size="sm" onClick={handleSelectAllRegex}>
                     Select All
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDeselectAllRegex}
-                  >
+                  <Button variant="outline" size="sm" onClick={handleDeselectAllRegex}>
                     Deselect All
                   </Button>
                   <div className="ml-auto text-sm text-gray-500">
-                    {selectedRegexIds.length} of {regexPatterns.filter(p => p.is_active).length} selected
+                    {selectedRegexIds.length} of{' '}
+                    {regexPatterns.filter(p => p.is_active).length} selected
                   </div>
                 </div>
                 <div className="space-y-2">
                   {regexPatterns
                     .filter(p => p.is_active)
                     .map(pattern => (
-                      <div key={pattern.id} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50">
+                      <div
+                        key={pattern.id}
+                        className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50"
+                      >
                         <Checkbox
                           id={`regex-${pattern.id}`}
                           checked={selectedRegexIds.includes(pattern.id)}
-                          onCheckedChange={(checked) => handleRegexToggle(pattern.id, checked as boolean)}
+                          onCheckedChange={checked =>
+                            handleRegexToggle(pattern.id, checked as boolean)
+                          }
                         />
                         <Label
                           htmlFor={`regex-${pattern.id}`}
                           className="flex-1 cursor-pointer"
                         >
-                          <div className="font-medium font-mono text-sm">{pattern.pattern}</div>
+                          <div className="font-medium font-mono text-sm">
+                            {pattern.pattern}
+                          </div>
                           <div className="text-sm text-gray-500">
-                            {pattern.pattern_type === 'must_match' ? '✓ Must Match' : '✗ Must Not Match'}
+                            {pattern.pattern_type === 'must_match'
+                              ? '✓ Must Match'
+                              : '✗ Must Not Match'}
                             {pattern.description && ` - ${pattern.description}`}
                           </div>
                         </Label>

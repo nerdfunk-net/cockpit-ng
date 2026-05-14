@@ -27,7 +27,12 @@ interface DeviceResult {
   device_name?: string
   error?: string
   stage?: string
-  update_results?: Array<{ success: boolean; type: string; message?: string; error?: string }>
+  update_results?: Array<{
+    success: boolean
+    type: string
+    message?: string
+    error?: string
+  }>
   sync_result?: { success: boolean; job_url?: string }
 }
 
@@ -105,14 +110,18 @@ export function useJobQuery(options: UseJobQueryOptions) {
     enabled: !!taskId && enabled,
 
     // Polling logic: stops automatically when job completes
-    refetchInterval: (query) => {
+    refetchInterval: query => {
       const data = query.state.data
 
       // If no data yet, keep polling
       if (!data) return pollInterval
 
       // Stop polling if job reached terminal state
-      if (TERMINAL_JOB_STATES.includes(data.status as typeof TERMINAL_JOB_STATES[number])) {
+      if (
+        TERMINAL_JOB_STATES.includes(
+          data.status as (typeof TERMINAL_JOB_STATES)[number]
+        )
+      ) {
         return false
       }
 

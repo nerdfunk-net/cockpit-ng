@@ -19,7 +19,7 @@ export function OffboardPanel({
   offboardProperties,
   onOffboardPropertiesChange,
   onOffboard,
-  isFormValid
+  isFormValid,
 }: OffboardPanelProps) {
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
@@ -35,17 +35,22 @@ export function OffboardPanel({
       <div className="p-4 bg-white space-y-3">
         {/* IP Removal Options */}
         <div className="space-y-3">
-          <Label className="text-sm font-semibold text-gray-700">IP Address Removal</Label>
+          <Label className="text-sm font-semibold text-gray-700">
+            IP Address Removal
+          </Label>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="remove-primary-ip"
                 checked={offboardProperties.removePrimaryIp}
-                onCheckedChange={(checked) =>
+                onCheckedChange={checked =>
                   onOffboardPropertiesChange({ removePrimaryIp: checked as boolean })
                 }
               />
-              <Label htmlFor="remove-primary-ip" className="text-sm font-medium cursor-pointer">
+              <Label
+                htmlFor="remove-primary-ip"
+                className="text-sm font-medium cursor-pointer"
+              >
                 Remove Primary IP
               </Label>
             </div>
@@ -53,11 +58,14 @@ export function OffboardPanel({
               <Checkbox
                 id="remove-interface-ips"
                 checked={offboardProperties.removeInterfaceIps}
-                onCheckedChange={(checked) =>
+                onCheckedChange={checked =>
                   onOffboardPropertiesChange({ removeInterfaceIps: checked as boolean })
                 }
               />
-              <Label htmlFor="remove-interface-ips" className="text-sm font-medium cursor-pointer">
+              <Label
+                htmlFor="remove-interface-ips"
+                className="text-sm font-medium cursor-pointer"
+              >
                 Remove Interface IPs
               </Label>
             </div>
@@ -66,17 +74,22 @@ export function OffboardPanel({
 
         {/* CheckMK Removal Option */}
         <div className="space-y-3">
-          <Label className="text-sm font-semibold text-gray-700">CheckMK Integration</Label>
+          <Label className="text-sm font-semibold text-gray-700">
+            CheckMK Integration
+          </Label>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="remove-from-checkmk"
                 checked={offboardProperties.removeFromCheckMK}
-                onCheckedChange={(checked) =>
+                onCheckedChange={checked =>
                   onOffboardPropertiesChange({ removeFromCheckMK: checked as boolean })
                 }
               />
-              <Label htmlFor="remove-from-checkmk" className="text-sm font-medium cursor-pointer">
+              <Label
+                htmlFor="remove-from-checkmk"
+                className="text-sm font-medium cursor-pointer"
+              >
                 Remove from CheckMK
               </Label>
             </div>
@@ -98,7 +111,8 @@ export function OffboardPanel({
             ) : (
               <>
                 <Minus className="h-4 w-4 mr-2" />
-                Offboard {selectedCount > 0 ? `${selectedCount} ` : ''}Device{selectedCount !== 1 ? 's' : ''}
+                Offboard {selectedCount > 0 ? `${selectedCount} ` : ''}Device
+                {selectedCount !== 1 ? 's' : ''}
               </>
             )}
           </Button>

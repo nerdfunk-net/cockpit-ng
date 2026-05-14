@@ -40,7 +40,7 @@ export function parseCapabilities(capabilities: string): string[] {
   if (!capabilities) return []
   return capabilities
     .split(',')
-    .map((c) => c.trim())
+    .map(c => c.trim())
     .filter(Boolean)
 }
 

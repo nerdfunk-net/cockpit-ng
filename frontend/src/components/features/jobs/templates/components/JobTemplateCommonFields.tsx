@@ -1,12 +1,18 @@
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
-import { Globe, Lock, ShieldAlert } from "lucide-react"
-import { hasPermission } from "@/lib/permissions"
-import type { User } from "@/types/auth"
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
+import { Globe, Lock, ShieldAlert } from 'lucide-react'
+import { hasPermission } from '@/lib/permissions'
+import type { User } from '@/types/auth'
 
 interface JobType {
   value: string
@@ -57,7 +63,7 @@ export function JobTemplateCommonFields({
             id="template-name"
             placeholder="Enter template name"
             value={formName}
-            onChange={(e) => setFormName(e.target.value)}
+            onChange={e => setFormName(e.target.value)}
             className="h-9 bg-white"
           />
         </div>
@@ -75,10 +81,12 @@ export function JobTemplateCommonFields({
               <SelectValue placeholder="Select job type" />
             </SelectTrigger>
             <SelectContent>
-              {jobTypes.map((type) => (
+              {jobTypes.map(type => (
                 <SelectItem key={type.value} value={type.value}>
                   <div className="flex items-center gap-2">
-                    <div className={`h-2 w-2 rounded-full ${getJobTypeColor(type.value)}`} />
+                    <div
+                      className={`h-2 w-2 rounded-full ${getJobTypeColor(type.value)}`}
+                    />
                     <span>{type.label}</span>
                   </div>
                 </SelectItem>
@@ -97,7 +105,7 @@ export function JobTemplateCommonFields({
           id="description"
           placeholder="Enter a description for this template"
           value={formDescription}
-          onChange={(e) => setFormDescription(e.target.value)}
+          onChange={e => setFormDescription(e.target.value)}
           className="bg-white resize-none"
           rows={2}
         />
@@ -113,7 +121,10 @@ export function JobTemplateCommonFields({
               onCheckedChange={setFormIsGlobal}
               disabled={!canCreateGlobalTemplate}
             />
-            <Label htmlFor="is-global" className="text-sm font-medium text-indigo-900 cursor-pointer flex items-center gap-2">
+            <Label
+              htmlFor="is-global"
+              className="text-sm font-medium text-indigo-900 cursor-pointer flex items-center gap-2"
+            >
               {formIsGlobal ? (
                 <>
                   <Globe className="h-4 w-4 text-indigo-600" />
@@ -128,21 +139,26 @@ export function JobTemplateCommonFields({
             </Label>
           </div>
           {canCreateGlobalTemplate && (
-            <Badge variant="secondary" className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100">
-              {user?.roles?.includes("admin") ? "Admin" : "Write Access"}
+            <Badge
+              variant="secondary"
+              className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100"
+            >
+              {user?.roles?.includes('admin') ? 'Admin' : 'Write Access'}
             </Badge>
           )}
         </div>
         <p className="text-xs text-indigo-600">
           {formIsGlobal
-            ? "Global templates can be scheduled by all users"
-            : "Private templates can only be scheduled by you"}
+            ? 'Global templates can be scheduled by all users'
+            : 'Private templates can only be scheduled by you'}
         </p>
         {!canCreateGlobalTemplate && (
           <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-amber-50 border border-amber-200">
             <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-amber-700">
-              You don&apos;t have permission to create global templates. Contact your administrator to request <span className="font-mono font-semibold">jobs:write</span> permission.
+              You don&apos;t have permission to create global templates. Contact your
+              administrator to request{' '}
+              <span className="font-mono font-semibold">jobs:write</span> permission.
             </p>
           </div>
         )}

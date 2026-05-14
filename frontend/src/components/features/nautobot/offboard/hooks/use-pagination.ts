@@ -12,15 +12,18 @@ export function usePagination(totalItems: number, initialPageSize: number = 50) 
       currentPage: Math.min(currentPage, Math.max(0, totalPages - 1)),
       pageSize,
       totalItems,
-      totalPages
+      totalPages,
     }
   }, [currentPage, pageSize, totalItems])
 
-  const currentPageItems = useCallback(<T,>(items: T[]): T[] => {
-    const startIndex = pagination.currentPage * pagination.pageSize
-    const endIndex = startIndex + pagination.pageSize
-    return items.slice(startIndex, endIndex)
-  }, [pagination.currentPage, pagination.pageSize])
+  const currentPageItems = useCallback(
+    <T>(items: T[]): T[] => {
+      const startIndex = pagination.currentPage * pagination.pageSize
+      const endIndex = startIndex + pagination.pageSize
+      return items.slice(startIndex, endIndex)
+    },
+    [pagination.currentPage, pagination.pageSize]
+  )
 
   const handlePageChange = useCallback((newPage: number) => {
     setCurrentPage(newPage)
@@ -35,6 +38,6 @@ export function usePagination(totalItems: number, initialPageSize: number = 50) 
     pagination,
     currentPageItems,
     handlePageChange,
-    handlePageSizeChange
+    handlePageSizeChange,
   }
 }

@@ -1,7 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PlayCircle, RefreshCw } from 'lucide-react'
@@ -25,7 +31,9 @@ export function CeleryTestPanel() {
     <Card>
       <CardHeader>
         <CardTitle>Test Celery</CardTitle>
-        <CardDescription>Submit a test task to verify Celery is working</CardDescription>
+        <CardDescription>
+          Submit a test task to verify Celery is working
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Button onClick={handleSubmitTest} disabled={submitTestTask.isPending}>

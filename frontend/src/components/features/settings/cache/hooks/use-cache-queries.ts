@@ -6,7 +6,7 @@ import type {
   CacheSettingsResponse,
   CacheStatsResponse,
   CacheEntriesResponse,
-  NamespaceInfoResponse
+  NamespaceInfoResponse,
 } from '../types'
 import { DEFAULT_CACHE_SETTINGS, STALE_TIME } from '../utils/constants'
 
@@ -24,14 +24,18 @@ const DEFAULT_QUERY_OPTIONS: UseQueryOptions = {}
 /**
  * Fetch cache settings with automatic caching
  */
-export function useCacheSettings(options: UseCacheSettingsOptions = DEFAULT_SETTINGS_OPTIONS) {
+export function useCacheSettings(
+  options: UseCacheSettingsOptions = DEFAULT_SETTINGS_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 
   return useQuery({
     queryKey: queryKeys.cache.settings(),
     queryFn: async () => {
-      const response = await apiCall<CacheSettingsResponse>('settings/cache', { method: 'GET' })
+      const response = await apiCall<CacheSettingsResponse>('settings/cache', {
+        method: 'GET',
+      })
       if (!response?.success || !response.data) {
         throw new Error('Failed to load cache settings')
       }
@@ -40,7 +44,8 @@ export function useCacheSettings(options: UseCacheSettingsOptions = DEFAULT_SETT
       return {
         ...DEFAULT_CACHE_SETTINGS,
         ...response.data,
-        prefetch_items: response.data.prefetch_items || DEFAULT_CACHE_SETTINGS.prefetch_items,
+        prefetch_items:
+          response.data.prefetch_items || DEFAULT_CACHE_SETTINGS.prefetch_items,
       } as CacheSettings
     },
     enabled,
@@ -58,7 +63,9 @@ export function useCacheStats(options: UseQueryOptions = DEFAULT_QUERY_OPTIONS) 
   return useQuery({
     queryKey: queryKeys.cache.stats(),
     queryFn: async () => {
-      const response = await apiCall<CacheStatsResponse>('cache/stats', { method: 'GET' })
+      const response = await apiCall<CacheStatsResponse>('cache/stats', {
+        method: 'GET',
+      })
       if (!response?.success || !response.data) {
         throw new Error('Failed to load cache statistics')
       }

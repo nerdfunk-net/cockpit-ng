@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useState } from "react"
+import { useState } from 'react'
 import {
   CheckCircle2,
   XCircle,
@@ -12,19 +12,25 @@ import {
   Plus,
   RefreshCw,
   SkipForward,
-} from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { CsvImportItem, CsvImportJobResult } from "../types/job-results"
+} from 'lucide-react'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { CsvImportItem, CsvImportJobResult } from '../types/job-results'
 
 interface CsvImportResultViewProps {
   result: CsvImportJobResult
 }
 
 const IMPORT_TYPE_LABELS: Record<string, string> = {
-  devices: "Devices",
-  "ip-prefixes": "IP Prefixes",
-  "ip-addresses": "IP Addresses",
+  devices: 'Devices',
+  'ip-prefixes': 'IP Prefixes',
+  'ip-addresses': 'IP Addresses',
 }
 
 // ─── Shared collapsible item list ────────────────────────────────────────────
@@ -33,8 +39,8 @@ interface ItemListCardProps {
   title: string
   icon: React.ReactNode
   items: CsvImportItem[]
-  colorClass: string          // e.g. "border-green-200 bg-green-50/50"
-  badgeClass: string          // e.g. "bg-green-100 text-green-700 border-green-300"
+  colorClass: string // e.g. "border-green-200 bg-green-50/50"
+  badgeClass: string // e.g. "bg-green-100 text-green-700 border-green-300"
   badgeLabel: string
   defaultOpen?: boolean
 }
@@ -66,9 +72,15 @@ function ItemListCard({
             className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
           >
             {open ? (
-              <><ChevronUp className="h-4 w-4" />Collapse</>
+              <>
+                <ChevronUp className="h-4 w-4" />
+                Collapse
+              </>
             ) : (
-              <><ChevronDown className="h-4 w-4" />Expand</>
+              <>
+                <ChevronDown className="h-4 w-4" />
+                Expand
+              </>
             )}
           </button>
         </div>
@@ -94,20 +106,27 @@ function ItemListCard({
                     </Badge>
                   )}
                   {item.row !== undefined && (
-                    <span className="text-xs text-muted-foreground">Row {item.row}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Row {item.row}
+                    </span>
                   )}
                   {item.id && (
-                    <span className="text-xs text-muted-foreground font-mono">id: {item.id}</span>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      id: {item.id}
+                    </span>
                   )}
                   {item.dry_run && (
-                    <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
+                    <Badge
+                      variant="outline"
+                      className="text-xs bg-yellow-50 text-yellow-700 border-yellow-300"
+                    >
                       Dry Run
                     </Badge>
                   )}
                 </div>
                 {item.updated_fields && item.updated_fields.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Fields: {item.updated_fields.join(", ")}
+                    Fields: {item.updated_fields.join(', ')}
                   </p>
                 )}
                 {item.reason && (
@@ -163,7 +182,10 @@ export function CsvImportResultView({ result }: CsvImportResultViewProps) {
             <FileText className="h-4 w-4" />
             {importTypeLabel}
             {result.dry_run && (
-              <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
+              <Badge
+                variant="outline"
+                className="text-xs bg-yellow-50 text-yellow-700 border-yellow-300"
+              >
                 Dry Run
               </Badge>
             )}
@@ -180,7 +202,9 @@ export function CsvImportResultView({ result }: CsvImportResultViewProps) {
               <div className="flex items-center justify-center mb-1">
                 <FileText className="h-4 w-4 text-blue-500" />
               </div>
-              <p className="text-2xl font-bold text-blue-600">{result.summary.files_processed}</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {result.summary.files_processed}
+              </p>
               <p className="text-xs text-muted-foreground">Files</p>
             </div>
             <div className="text-center">
@@ -194,21 +218,27 @@ export function CsvImportResultView({ result }: CsvImportResultViewProps) {
               <div className="flex items-center justify-center mb-1">
                 <Plus className="h-4 w-4 text-green-500" />
               </div>
-              <p className="text-2xl font-bold text-green-600">{result.summary.created}</p>
+              <p className="text-2xl font-bold text-green-600">
+                {result.summary.created}
+              </p>
               <p className="text-xs text-muted-foreground">Created</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center mb-1">
                 <RefreshCw className="h-4 w-4 text-blue-500" />
               </div>
-              <p className="text-2xl font-bold text-blue-600">{result.summary.updated}</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {result.summary.updated}
+              </p>
               <p className="text-xs text-muted-foreground">Updated</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center mb-1">
                 <SkipForward className="h-4 w-4 text-yellow-500" />
               </div>
-              <p className="text-2xl font-bold text-yellow-600">{result.summary.skipped}</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {result.summary.skipped}
+              </p>
               <p className="text-xs text-muted-foreground">Skipped</p>
             </div>
             <div className="text-center">
@@ -225,37 +255,61 @@ export function CsvImportResultView({ result }: CsvImportResultViewProps) {
             <div className="mt-4">
               <div className="flex h-2 rounded-full overflow-hidden bg-gray-100">
                 {result.summary.created > 0 && (
-                  <div className="bg-green-500" style={{ width: `${(result.summary.created / result.summary.total) * 100}%` }} />
+                  <div
+                    className="bg-green-500"
+                    style={{
+                      width: `${(result.summary.created / result.summary.total) * 100}%`,
+                    }}
+                  />
                 )}
                 {result.summary.updated > 0 && (
-                  <div className="bg-blue-500" style={{ width: `${(result.summary.updated / result.summary.total) * 100}%` }} />
+                  <div
+                    className="bg-blue-500"
+                    style={{
+                      width: `${(result.summary.updated / result.summary.total) * 100}%`,
+                    }}
+                  />
                 )}
                 {result.summary.skipped > 0 && (
-                  <div className="bg-yellow-400" style={{ width: `${(result.summary.skipped / result.summary.total) * 100}%` }} />
+                  <div
+                    className="bg-yellow-400"
+                    style={{
+                      width: `${(result.summary.skipped / result.summary.total) * 100}%`,
+                    }}
+                  />
                 )}
                 {result.summary.failed > 0 && (
-                  <div className="bg-red-500" style={{ width: `${(result.summary.failed / result.summary.total) * 100}%` }} />
+                  <div
+                    className="bg-red-500"
+                    style={{
+                      width: `${(result.summary.failed / result.summary.total) * 100}%`,
+                    }}
+                  />
                 )}
               </div>
               <div className="flex gap-4 mt-1 text-xs text-muted-foreground justify-end">
                 {result.summary.created > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="inline-block w-2 h-2 rounded-full bg-green-500" />Created
+                    <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                    Created
                   </span>
                 )}
                 {result.summary.updated > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />Updated
+                    <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />
+                    Updated
                   </span>
                 )}
                 {result.summary.skipped > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="inline-block w-2 h-2 rounded-full bg-yellow-400" />Skipped
+                    <span className="inline-block w-2 h-2 rounded-full bg-yellow-400" />
+                    Skipped
                   </span>
                 )}
                 {result.summary.failed > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="inline-block w-2 h-2 rounded-full bg-red-500" />Failed
+                    <span className="inline-block w-2 h-2 rounded-full bg-red-500" />
+                    Failed
                   </span>
                 )}
               </div>
@@ -312,9 +366,15 @@ export function CsvImportResultView({ result }: CsvImportResultViewProps) {
                 className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
               >
                 {showFailures ? (
-                  <><ChevronUp className="h-4 w-4" />Collapse</>
+                  <>
+                    <ChevronUp className="h-4 w-4" />
+                    Collapse
+                  </>
                 ) : (
-                  <><ChevronDown className="h-4 w-4" />Expand</>
+                  <>
+                    <ChevronDown className="h-4 w-4" />
+                    Expand
+                  </>
                 )}
               </button>
             </div>
@@ -337,16 +397,21 @@ export function CsvImportResultView({ result }: CsvImportResultViewProps) {
                             </span>
                           )}
                           {failure.file && (
-                            <Badge variant="outline" className="text-xs font-mono bg-white">
+                            <Badge
+                              variant="outline"
+                              className="text-xs font-mono bg-white"
+                            >
                               {failure.file}
                             </Badge>
                           )}
                           {failure.row !== undefined && (
-                            <span className="text-xs text-muted-foreground">Row {failure.row}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Row {failure.row}
+                            </span>
                           )}
                         </div>
                         <p className="text-sm text-red-700 break-words">
-                          {failure.error ?? failure.reason ?? "Unknown error"}
+                          {failure.error ?? failure.reason ?? 'Unknown error'}
                         </p>
                       </div>
                     </div>

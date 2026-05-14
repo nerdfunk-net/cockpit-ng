@@ -36,6 +36,6 @@ export function useDeviceSelection() {
     selectedDevices,
     handleSelectDevice,
     handleSelectAll,
-    clearSelection
+    clearSelection,
   }
 }

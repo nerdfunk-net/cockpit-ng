@@ -30,7 +30,7 @@ export function useLocationFilter(): UseLocationFilterReturn {
   const loadLocations = useCallback(async () => {
     try {
       const data = await apiCall<LocationItem[]>('nautobot/locations')
-      const arr = Array.isArray(data) ? data : (data || [])
+      const arr = Array.isArray(data) ? data : data || []
       const processed = buildLocationHierarchy(arr)
       setLocationsList(processed)
       setLocationFiltered(processed)
@@ -41,19 +41,22 @@ export function useLocationFilter(): UseLocationFilterReturn {
     }
   }, [apiCall])
 
-  const handleLocationSearchChange = useCallback((query: string) => {
-    setLocationSearch(query)
-    if (!query.trim()) {
-      setLocationFiltered(locationsList)
-    } else {
-      setLocationFiltered(
-        locationsList.filter(l => 
-          (l.hierarchicalPath || '').toLowerCase().includes(query.toLowerCase())
+  const handleLocationSearchChange = useCallback(
+    (query: string) => {
+      setLocationSearch(query)
+      if (!query.trim()) {
+        setLocationFiltered(locationsList)
+      } else {
+        setLocationFiltered(
+          locationsList.filter(l =>
+            (l.hierarchicalPath || '').toLowerCase().includes(query.toLowerCase())
+          )
         )
-      )
-    }
-    setShowLocationDropdown(true)
-  }, [locationsList])
+      }
+      setShowLocationDropdown(true)
+    },
+    [locationsList]
+  )
 
   const handleLocationSelect = useCallback((location: LocationItem) => {
     setSelectedLocationId(location.id)
@@ -84,6 +87,6 @@ export function useLocationFilter(): UseLocationFilterReturn {
     setShowLocationDropdown,
     handleLocationSearchChange,
     handleLocationSelect,
-    loadLocations
+    loadLocations,
   }
 }

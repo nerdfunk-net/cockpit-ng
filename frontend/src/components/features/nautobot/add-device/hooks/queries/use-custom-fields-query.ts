@@ -21,7 +21,9 @@ export function useCustomFieldsQuery(
   return useQuery({
     queryKey: queryKeys.nautobot.customFields('devices'),
     queryFn: async (): Promise<CustomField[]> => {
-      const data = await apiCall<CustomField[]>('nautobot/custom-fields/devices', { method: 'GET' })
+      const data = await apiCall<CustomField[]>('nautobot/custom-fields/devices', {
+        method: 'GET',
+      })
       return data || []
     },
     enabled,
@@ -36,7 +38,10 @@ export function useCustomFieldChoicesQuery(fieldKey: string, enabled = false) {
   return useQuery({
     queryKey: queryKeys.nautobot.customFieldChoices(fieldKey),
     queryFn: async (): Promise<string[]> => {
-      const data = await apiCall<string[]>(`nautobot/custom-field-choices/${fieldKey}`, { method: 'GET' })
+      const data = await apiCall<string[]>(
+        `nautobot/custom-field-choices/${fieldKey}`,
+        { method: 'GET' }
+      )
       return data || []
     },
     enabled,

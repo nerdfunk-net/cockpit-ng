@@ -96,7 +96,15 @@ export function useCsvParser(delimiter: string): UseCsvParserResult {
   }, [])
 
   return useMemo(
-    () => ({ csvFile, headers, csvContent, isParsing, parseError, handleFileSelect, clear }),
+    () => ({
+      csvFile,
+      headers,
+      csvContent,
+      isParsing,
+      parseError,
+      handleFileSelect,
+      clear,
+    }),
     [csvFile, headers, csvContent, isParsing, parseError, handleFileSelect, clear]
   )
 }

@@ -18,14 +18,24 @@ interface WithAddress {
  * Type guard to check if object has id property
  */
 function hasId(obj: unknown): obj is WithId {
-  return typeof obj === 'object' && obj !== null && 'id' in obj && typeof (obj as WithId).id === 'string'
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'id' in obj &&
+    typeof (obj as WithId).id === 'string'
+  )
 }
 
 /**
  * Type guard to check if object has address property
  */
 function hasAddress(obj: unknown): obj is WithAddress {
-  return typeof obj === 'object' && obj !== null && 'address' in obj && typeof (obj as WithAddress).address === 'string'
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'address' in obj &&
+    typeof (obj as WithAddress).address === 'string'
+  )
 }
 
 /**
@@ -40,7 +50,7 @@ function extractFieldId(field: unknown): string | string[] | null {
   if (Array.isArray(field)) {
     // If it's an array of objects with id fields, extract the IDs
     if (field.length > 0 && hasId(field[0])) {
-      return field.map((item: unknown) => hasId(item) ? item.id : '').filter(Boolean)
+      return field.map((item: unknown) => (hasId(item) ? item.id : '')).filter(Boolean)
     }
     // For array of strings/primitives
     return field.map(String)
@@ -96,7 +106,12 @@ function extractFieldId(field: unknown): string | string[] | null {
  */
 export function convertModifiedDevicesToJSON(
   modifiedDevices: Map<string, Partial<DeviceInfo>>,
-  interfaceConfig?: { name: string; type: string; status: string; createOnIpChange: boolean },
+  interfaceConfig?: {
+    name: string
+    type: string
+    status: string
+    createOnIpChange: boolean
+  },
   namespace?: string,
   addPrefixesAutomatically?: boolean,
   useAssignedIpIfExists?: boolean

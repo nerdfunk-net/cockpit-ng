@@ -7,7 +7,7 @@ interface UseModalStateReturn {
   selectedHostForView: CheckMKHost | null
   openHostModal: (host: CheckMKHost) => void
   closeHostModal: () => void
-  
+
   // Inventory Modal
   isInventoryModalOpen: boolean
   selectedHostForInventory: CheckMKHost | null
@@ -18,17 +18,20 @@ interface UseModalStateReturn {
 /**
  * Custom hook for managing modal states in the hosts inventory page
  * Simplifies modal state management by grouping related states together
- * 
+ *
  * @returns Object with modal states and control functions
  */
 export function useModalState(): UseModalStateReturn {
   // Host Details Modal
   const [isHostModalOpen, setIsHostModalOpen] = useState(false)
-  const [selectedHostForView, setSelectedHostForView] = useState<CheckMKHost | null>(null)
-  
+  const [selectedHostForView, setSelectedHostForView] = useState<CheckMKHost | null>(
+    null
+  )
+
   // Inventory Modal
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false)
-  const [selectedHostForInventory, setSelectedHostForInventory] = useState<CheckMKHost | null>(null)
+  const [selectedHostForInventory, setSelectedHostForInventory] =
+    useState<CheckMKHost | null>(null)
 
   /**
    * Open host details modal with selected host
@@ -62,23 +65,26 @@ export function useModalState(): UseModalStateReturn {
     setSelectedHostForInventory(null)
   }, [])
 
-  return useMemo(() => ({
-    isHostModalOpen,
-    selectedHostForView,
-    openHostModal,
-    closeHostModal,
-    isInventoryModalOpen,
-    selectedHostForInventory,
-    openInventoryModal,
-    closeInventoryModal
-  }), [
-    isHostModalOpen,
-    selectedHostForView,
-    openHostModal,
-    closeHostModal,
-    isInventoryModalOpen,
-    selectedHostForInventory,
-    openInventoryModal,
-    closeInventoryModal
-  ])
+  return useMemo(
+    () => ({
+      isHostModalOpen,
+      selectedHostForView,
+      openHostModal,
+      closeHostModal,
+      isInventoryModalOpen,
+      selectedHostForInventory,
+      openInventoryModal,
+      closeInventoryModal,
+    }),
+    [
+      isHostModalOpen,
+      selectedHostForView,
+      openHostModal,
+      closeHostModal,
+      isInventoryModalOpen,
+      selectedHostForInventory,
+      openInventoryModal,
+      closeInventoryModal,
+    ]
+  )
 }

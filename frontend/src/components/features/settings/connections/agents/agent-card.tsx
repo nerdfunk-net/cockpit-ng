@@ -10,7 +10,12 @@ interface AgentCardProps {
   onRemove: (agentId: string) => void
 }
 
-export function AgentCard({ agent, gitRepositories, onEdit, onRemove }: AgentCardProps) {
+export function AgentCard({
+  agent,
+  gitRepositories,
+  onEdit,
+  onRemove,
+}: AgentCardProps) {
   const gitRepo = gitRepositories.find(repo => repo.id === agent.git_repository_id)
 
   return (

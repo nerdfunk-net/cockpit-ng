@@ -5,7 +5,7 @@
 import {
   ConditionTree,
   ConditionGroup,
-  ConditionItem
+  ConditionItem,
 } from '@/types/shared/device-selector'
 
 /**
@@ -13,16 +13,16 @@ import {
  */
 function formatOperator(operator: string): string {
   const operatorMap: Record<string, string> = {
-    'equals': '=',
-    'not_equals': '!=',
-    'contains': 'contains',
-    'not_contains': 'not contains',
-    'starts_with': 'starts with',
-    'ends_with': 'ends with',
-    'greater_than': '>',
-    'less_than': '<',
-    'is_empty': 'is empty',
-    'is_not_empty': 'is not empty'
+    equals: '=',
+    not_equals: '!=',
+    contains: 'contains',
+    not_contains: 'not contains',
+    starts_with: 'starts with',
+    ends_with: 'ends with',
+    greater_than: '>',
+    less_than: '<',
+    is_empty: 'is empty',
+    is_not_empty: 'is not empty',
   }
   return operatorMap[operator] || operator
 }
@@ -30,7 +30,9 @@ function formatOperator(operator: string): string {
 /**
  * Convert a condition tree to a human-readable expression string
  */
-export function conditionTreeToExpression(tree: ConditionTree | ConditionGroup | null | undefined): string {
+export function conditionTreeToExpression(
+  tree: ConditionTree | ConditionGroup | null | undefined
+): string {
   if (!tree || !tree.items || tree.items.length === 0) {
     return 'No conditions'
   }
@@ -59,12 +61,18 @@ export function conditionTreeToExpression(tree: ConditionTree | ConditionGroup |
   }
 
   // Join all parts with the internal logic
-  return parts.map((part, index) => {
-    if (index === 0) return part
-    // Check if part already has a logic prefix (from nested groups)
-    if (part.trim().startsWith('AND ') || part.trim().startsWith('OR ') || part.trim().startsWith('NOT ')) {
-      return part
-    }
-    return `${logic} ${part}`
-  }).join(' ')
+  return parts
+    .map((part, index) => {
+      if (index === 0) return part
+      // Check if part already has a logic prefix (from nested groups)
+      if (
+        part.trim().startsWith('AND ') ||
+        part.trim().startsWith('OR ') ||
+        part.trim().startsWith('NOT ')
+      ) {
+        return part
+      }
+      return `${logic} ${part}`
+    })
+    .join(' ')
 }

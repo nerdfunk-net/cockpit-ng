@@ -14,7 +14,11 @@ import {
 import { Search, Key } from 'lucide-react'
 import { useRbacPermissions } from '../hooks/use-rbac-queries'
 import { RBACLoading } from '../components/rbac-loading'
-import { groupPermissionsByResource, getActionColor, filterBySearchTerm } from '../utils/rbac-utils'
+import {
+  groupPermissionsByResource,
+  getActionColor,
+  filterBySearchTerm,
+} from '../utils/rbac-utils'
 import { EMPTY_PERMISSIONS } from '../utils/constants'
 
 export function PermissionsViewer() {
@@ -27,7 +31,11 @@ export function PermissionsViewer() {
   // Derived state with useMemo
   const filteredPermissions = useMemo(() => {
     if (!searchTerm) return permissions
-    return filterBySearchTerm(permissions, searchTerm, ['resource', 'action', 'description'])
+    return filterBySearchTerm(permissions, searchTerm, [
+      'resource',
+      'action',
+      'description',
+    ])
   }, [permissions, searchTerm])
 
   const groupedPermissions = useMemo(
@@ -46,8 +54,8 @@ export function PermissionsViewer() {
         <div>
           <h3 className="text-lg font-semibold">All Permissions</h3>
           <p className="text-sm text-muted-foreground">
-            {permissions.length} permissions across {Object.keys(groupedPermissions).length}{' '}
-            resources
+            {permissions.length} permissions across{' '}
+            {Object.keys(groupedPermissions).length} resources
           </p>
         </div>
         <div className="relative w-full max-w-sm">
@@ -55,7 +63,7 @@ export function PermissionsViewer() {
           <Input
             placeholder="Search permissions..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -83,12 +91,16 @@ export function PermissionsViewer() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {perms.map((perm) => (
+                {perms.map(perm => (
                   <TableRow key={perm.id}>
                     <TableCell>
-                      <Badge className={getActionColor(perm.action)}>{perm.action}</Badge>
+                      <Badge className={getActionColor(perm.action)}>
+                        {perm.action}
+                      </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{perm.description}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {perm.description}
+                    </TableCell>
                     <TableCell>
                       <code className="text-xs bg-muted px-2 py-1 rounded">
                         {perm.id}

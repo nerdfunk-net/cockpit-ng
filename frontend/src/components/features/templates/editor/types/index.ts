@@ -2,7 +2,13 @@ export type VariableType = 'custom' | 'nautobot' | 'yaml' | 'inventory' | 'auto-
 
 export interface VariableMetadata {
   // Nautobot-specific
-  nautobot_source?: 'locations' | 'tags' | 'custom-fields' | 'statuses' | 'roles' | 'namespaces'
+  nautobot_source?:
+    | 'locations'
+    | 'tags'
+    | 'custom-fields'
+    | 'statuses'
+    | 'roles'
+    | 'namespaces'
 
   // YAML-specific
   yaml_file_path?: string
@@ -11,7 +17,7 @@ export interface VariableMetadata {
   // Inventory-specific
   inventory_id?: number
   inventory_data_type?: 'locations' | 'tags' | 'custom_fields' | 'statuses' | 'roles'
-  inventory_custom_field?: string  // Only for custom_fields
+  inventory_custom_field?: string // Only for custom_fields
 }
 
 export interface VariableDefinition {
@@ -25,13 +31,13 @@ export interface TemplateVariable {
   id: string
   name: string
   value: string
-  type: VariableType  // NEW: How to populate this variable
-  metadata?: VariableMetadata  // NEW: Type-specific configuration
+  type: VariableType // NEW: How to populate this variable
+  metadata?: VariableMetadata // NEW: Type-specific configuration
   isDefault: boolean
   isAutoFilled: boolean
   description?: string
-  requiresExecution?: boolean  // For pre_run variables that need command execution
-  isExecuting?: boolean        // Track if execution is in progress
+  requiresExecution?: boolean // For pre_run variables that need command execution
+  isExecuting?: boolean // Track if execution is in progress
 }
 
 export interface EditorFormData {
@@ -58,7 +64,7 @@ export interface NetmikoExecuteResponse {
   results: Array<{
     device: string
     output: string
-    command_outputs?: Record<string, unknown>  // Contains parsed TextFSM data per command
+    command_outputs?: Record<string, unknown> // Contains parsed TextFSM data per command
     success: boolean
     error?: string
   }>

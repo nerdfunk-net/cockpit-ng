@@ -11,7 +11,7 @@ import {
   AlertTriangle,
   Loader2,
   Activity,
-  Layers
+  Layers,
 } from 'lucide-react'
 
 interface ScanPrefixResult {
@@ -34,7 +34,9 @@ interface DashboardScanPrefixStatsProps {
   refreshTrigger?: number
 }
 
-export default function DashboardScanPrefixStats({ refreshTrigger = 0 }: DashboardScanPrefixStatsProps) {
+export default function DashboardScanPrefixStats({
+  refreshTrigger = 0,
+}: DashboardScanPrefixStatsProps) {
   const { apiCall } = useApi()
   const [data, setData] = useState<ScanPrefixResult | null>(null)
   const [loading, setLoading] = useState(true)
@@ -42,7 +44,7 @@ export default function DashboardScanPrefixStats({ refreshTrigger = 0 }: Dashboa
 
   useEffect(() => {
     loadData()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger])
 
   const loadData = async () => {
@@ -123,7 +125,9 @@ export default function DashboardScanPrefixStats({ refreshTrigger = 0 }: Dashboa
                   <Layers className="h-4 w-4 text-indigo-600" />
                   <span className="text-xs font-medium text-indigo-700">Prefixes</span>
                 </div>
-                <div className="text-2xl font-bold text-indigo-700">{totalPrefixes}</div>
+                <div className="text-2xl font-bold text-indigo-700">
+                  {totalPrefixes}
+                </div>
               </div>
 
               {/* Total IPs */}
@@ -132,7 +136,9 @@ export default function DashboardScanPrefixStats({ refreshTrigger = 0 }: Dashboa
                   <Network className="h-4 w-4 text-blue-600" />
                   <span className="text-xs font-medium text-blue-700">Total IPs</span>
                 </div>
-                <div className="text-2xl font-bold text-blue-700">{formatNumber(totalIpsScanned)}</div>
+                <div className="text-2xl font-bold text-blue-700">
+                  {formatNumber(totalIpsScanned)}
+                </div>
               </div>
 
               {/* Reachable */}
@@ -141,16 +147,22 @@ export default function DashboardScanPrefixStats({ refreshTrigger = 0 }: Dashboa
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
                   <span className="text-xs font-medium text-green-700">Reachable</span>
                 </div>
-                <div className="text-2xl font-bold text-green-700">{formatNumber(totalReachable)}</div>
+                <div className="text-2xl font-bold text-green-700">
+                  {formatNumber(totalReachable)}
+                </div>
               </div>
 
               {/* Unreachable */}
               <div className="text-center p-3 rounded-lg bg-slate-100">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
                   <XCircle className="h-4 w-4 text-slate-600" />
-                  <span className="text-xs font-medium text-slate-600">Unreachable</span>
+                  <span className="text-xs font-medium text-slate-600">
+                    Unreachable
+                  </span>
                 </div>
-                <div className="text-2xl font-bold text-slate-700">{formatNumber(totalUnreachable)}</div>
+                <div className="text-2xl font-bold text-slate-700">
+                  {formatNumber(totalUnreachable)}
+                </div>
               </div>
             </div>
 
@@ -164,10 +176,14 @@ export default function DashboardScanPrefixStats({ refreshTrigger = 0 }: Dashboa
                 <div className="h-2.5 bg-slate-200 rounded-full overflow-hidden">
                   <div
                     className={cn(
-                      "h-full rounded-full transition-all duration-500",
-                      reachabilityPercent >= 90 ? "bg-green-500" :
-                      reachabilityPercent >= 70 ? "bg-green-400" :
-                      reachabilityPercent >= 50 ? "bg-amber-400" : "bg-red-400"
+                      'h-full rounded-full transition-all duration-500',
+                      reachabilityPercent >= 90
+                        ? 'bg-green-500'
+                        : reachabilityPercent >= 70
+                          ? 'bg-green-400'
+                          : reachabilityPercent >= 50
+                            ? 'bg-amber-400'
+                            : 'bg-red-400'
                     )}
                     style={{ width: `${reachabilityPercent}%` }}
                   />
@@ -178,7 +194,9 @@ export default function DashboardScanPrefixStats({ refreshTrigger = 0 }: Dashboa
             {/* Additional Info */}
             {data.resolve_dns && (
               <div className="flex justify-center">
-                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">DNS Resolved</span>
+                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
+                  DNS Resolved
+                </span>
               </div>
             )}
 

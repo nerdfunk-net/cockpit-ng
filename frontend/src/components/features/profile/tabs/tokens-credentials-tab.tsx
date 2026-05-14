@@ -3,9 +3,25 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Eye,
   EyeOff,
@@ -42,7 +58,11 @@ interface TokensCredentialsTabProps {
   onGenerateApiKey: () => void
   onAddCredential: () => void
   onRemoveCredential: (id: string) => void
-  onUpdateCredential: (id: string, field: keyof PersonalCredential, value: string | boolean) => void
+  onUpdateCredential: (
+    id: string,
+    field: keyof PersonalCredential,
+    value: string | boolean
+  ) => void
   onToggleCredentialExpanded: (id: string) => void
   onToggleCredentialPasswordVisibility: (id: string) => void
   onToggleCredentialSshPassphraseVisibility: (id: string) => void
@@ -85,7 +105,7 @@ export function TokensCredentialsTab({
               id="api_key"
               type="text"
               value={apiKey}
-              onChange={(e) => onApiKeyChange(e.target.value)}
+              onChange={e => onApiKeyChange(e.target.value)}
               placeholder="Enter your 42-character API key"
               className="font-mono text-sm"
               maxLength={42}
@@ -129,7 +149,9 @@ export function TokensCredentialsTab({
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-base font-medium">Personal Credentials</Label>
-              <p className="text-sm text-slate-500">Manage your personal authentication credentials</p>
+              <p className="text-sm text-slate-500">
+                Manage your personal authentication credentials
+              </p>
             </div>
             <Button
               type="button"
@@ -147,11 +169,13 @@ export function TokensCredentialsTab({
             <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
               <Key className="h-8 w-8 mx-auto mb-2 text-slate-400" />
               <p>No personal credentials configured</p>
-              <p className="text-sm">Click &ldquo;Add Credential&rdquo; to get started</p>
+              <p className="text-sm">
+                Click &ldquo;Add Credential&rdquo; to get started
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {personalCredentials.map((credential) => (
+              {personalCredentials.map(credential => (
                 <div key={credential.id} className="border rounded-lg">
                   <Collapsible
                     open={credential.isOpen}
@@ -169,8 +193,10 @@ export function TokensCredentialsTab({
                             {credential.name || 'Unnamed Credential'}
                           </div>
                           <div className="text-sm text-slate-500">
-                            {credential.type === 'SSH_KEY' ? 'SSH Key' : credential.type} •{' '}
-                            {credential.username || 'No username'}
+                            {credential.type === 'SSH_KEY'
+                              ? 'SSH Key'
+                              : credential.type}{' '}
+                            • {credential.username || 'No username'}
                           </div>
                         </div>
                       </CollapsibleTrigger>
@@ -193,8 +219,12 @@ export function TokensCredentialsTab({
                             <Input
                               id={`cred-name-${credential.id}`}
                               value={credential.name}
-                              onChange={(e) =>
-                                onUpdateCredential(credential.id, 'name', e.target.value)
+                              onChange={e =>
+                                onUpdateCredential(
+                                  credential.id,
+                                  'name',
+                                  e.target.value
+                                )
                               }
                               placeholder="Enter credential name"
                             />
@@ -205,7 +235,7 @@ export function TokensCredentialsTab({
                             <Label htmlFor={`cred-type-${credential.id}`}>Type</Label>
                             <Select
                               value={credential.type}
-                              onValueChange={(value) =>
+                              onValueChange={value =>
                                 onUpdateCredential(credential.id, 'type', value)
                               }
                             >
@@ -224,12 +254,18 @@ export function TokensCredentialsTab({
 
                           {/* Username */}
                           <div className="space-y-2">
-                            <Label htmlFor={`cred-username-${credential.id}`}>Username</Label>
+                            <Label htmlFor={`cred-username-${credential.id}`}>
+                              Username
+                            </Label>
                             <Input
                               id={`cred-username-${credential.id}`}
                               value={credential.username}
-                              onChange={(e) =>
-                                onUpdateCredential(credential.id, 'username', e.target.value)
+                              onChange={e =>
+                                onUpdateCredential(
+                                  credential.id,
+                                  'username',
+                                  e.target.value
+                                )
                               }
                               placeholder="Enter username"
                             />
@@ -246,15 +282,24 @@ export function TokensCredentialsTab({
                                   id={`cred-password-${credential.id}`}
                                   type={credential.showPassword ? 'text' : 'password'}
                                   value={credential.password}
-                                  onChange={(e) =>
-                                    onUpdateCredential(credential.id, 'password', e.target.value)
+                                  onChange={e =>
+                                    onUpdateCredential(
+                                      credential.id,
+                                      'password',
+                                      e.target.value
+                                    )
                                   }
                                   placeholder={
-                                    credential.type === 'Token' ? 'Enter token' : 'Enter password'
+                                    credential.type === 'Token'
+                                      ? 'Enter token'
+                                      : 'Enter password'
                                   }
                                   className="pr-10"
                                   onFocus={() => {
-                                    if (credential.password && /^•+$/.test(credential.password)) {
+                                    if (
+                                      credential.password &&
+                                      /^•+$/.test(credential.password)
+                                    ) {
                                       onUpdateCredential(credential.id, 'password', '')
                                     }
                                   }}
@@ -264,7 +309,9 @@ export function TokensCredentialsTab({
                                   variant="ghost"
                                   size="sm"
                                   className="absolute right-0 top-0 h-full px-3 py-2"
-                                  onClick={() => onToggleCredentialPasswordVisibility(credential.id)}
+                                  onClick={() =>
+                                    onToggleCredentialPasswordVisibility(credential.id)
+                                  }
                                 >
                                   {credential.showPassword ? (
                                     <EyeOff className="h-4 w-4" />
@@ -280,30 +327,36 @@ export function TokensCredentialsTab({
                           {credential.type === 'SSH_KEY' && (
                             <>
                               <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor={`cred-ssh-key-${credential.id}`}>SSH Private Key</Label>
+                                <Label htmlFor={`cred-ssh-key-${credential.id}`}>
+                                  SSH Private Key
+                                </Label>
                                 <div className="flex items-center gap-2">
                                   <Input
                                     id={`cred-ssh-key-${credential.id}`}
                                     type="file"
-                                    onChange={(e) => onSshKeyFileChange(credential.id, e)}
+                                    onChange={e => onSshKeyFileChange(credential.id, e)}
                                     className="flex-1"
                                   />
-                                  {(credential.ssh_private_key || credential.has_ssh_key) && (
+                                  {(credential.ssh_private_key ||
+                                    credential.has_ssh_key) && (
                                     <div className="flex items-center gap-1 text-green-600 text-sm">
                                       <Check className="h-4 w-4" />
                                       <span>
-                                        {credential.has_ssh_key && !credential.ssh_private_key
+                                        {credential.has_ssh_key &&
+                                        !credential.ssh_private_key
                                           ? 'Key stored'
                                           : 'Key loaded'}
                                       </span>
                                     </div>
                                   )}
                                 </div>
-                                {credential.has_ssh_key && !credential.ssh_private_key && (
-                                  <p className="text-sm text-slate-500">
-                                    SSH key is already stored. Upload a new key to replace it.
-                                  </p>
-                                )}
+                                {credential.has_ssh_key &&
+                                  !credential.ssh_private_key && (
+                                    <p className="text-sm text-slate-500">
+                                      SSH key is already stored. Upload a new key to
+                                      replace it.
+                                    </p>
+                                  )}
                               </div>
 
                               <div className="space-y-2 md:col-span-2">
@@ -313,13 +366,15 @@ export function TokensCredentialsTab({
                                 <div className="relative">
                                   <Input
                                     id={`cred-ssh-passphrase-${credential.id}`}
-                                    type={credential.showSshPassphrase ? 'text' : 'password'}
+                                    type={
+                                      credential.showSshPassphrase ? 'text' : 'password'
+                                    }
                                     value={credential.ssh_passphrase || ''}
-                                    onChange={(e) =>
+                                    onChange={e =>
                                       onUpdateCredential(
                                         credential.id,
                                         'ssh_passphrase',
-                                        e.target.value,
+                                        e.target.value
                                       )
                                     }
                                     placeholder="Enter passphrase if key is encrypted"
@@ -331,7 +386,9 @@ export function TokensCredentialsTab({
                                     size="sm"
                                     className="absolute right-0 top-0 h-full px-3 py-2"
                                     onClick={() =>
-                                      onToggleCredentialSshPassphraseVisibility(credential.id)
+                                      onToggleCredentialSshPassphraseVisibility(
+                                        credential.id
+                                      )
                                     }
                                   >
                                     {credential.showSshPassphrase ? (

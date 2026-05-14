@@ -13,24 +13,28 @@ interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
 }
 
 // Create test query client with retries disabled
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-      gcTime: 0,
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        gcTime: 0,
+      },
+      mutations: {
+        retry: false,
+      },
     },
-    mutations: {
-      retry: false,
-    },
-  },
-})
+  })
 
 const DEFAULT_RENDER_OPTIONS: CustomRenderOptions = {}
 
 /**
  * Custom render function that sets up auth state and QueryClient before rendering
  */
-export function render(ui: ReactElement, options: CustomRenderOptions = DEFAULT_RENDER_OPTIONS) {
+export function render(
+  ui: ReactElement,
+  options: CustomRenderOptions = DEFAULT_RENDER_OPTIONS
+) {
   const { authState, ...renderOptions } = options
 
   // Create fresh query client for each test
@@ -54,9 +58,7 @@ export function render(ui: ReactElement, options: CustomRenderOptions = DEFAULT_
 
   // Wrap with QueryClientProvider
   return rtlRender(
-    <QueryClientProvider client={queryClient}>
-      {ui}
-    </QueryClientProvider>,
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
     renderOptions
   )
 }

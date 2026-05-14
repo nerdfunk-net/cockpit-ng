@@ -1,9 +1,22 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { RefreshCw, Layers } from 'lucide-react'
 import { useCeleryWorkers } from '../hooks/use-celery-queries'
 import type { WorkerStats, QueueInfo } from '../types'
@@ -17,9 +30,16 @@ export function CeleryWorkersList() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Celery Workers</CardTitle>
-            <CardDescription>Active worker processes, queue assignments, and statistics</CardDescription>
+            <CardDescription>
+              Active worker processes, queue assignments, and statistics
+            </CardDescription>
           </div>
-          <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isLoading}>
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            size="sm"
+            disabled={isLoading}
+          >
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -44,10 +64,14 @@ export function CeleryWorkersList() {
                 const pool = workerStats?.pool
 
                 // Get queues for this worker
-                const workerQueues = workers.active_queues?.[name] as QueueInfo[] | undefined
+                const workerQueues = workers.active_queues?.[name] as
+                  | QueueInfo[]
+                  | undefined
 
                 // Get active tasks for this worker
-                const activeTasks = workers.active_tasks?.[name] as unknown[] | undefined
+                const activeTasks = workers.active_tasks?.[name] as
+                  | unknown[]
+                  | undefined
                 const activeTaskCount = activeTasks?.length || 0
 
                 return (
@@ -59,19 +83,31 @@ export function CeleryWorkersList() {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {workerQueues && workerQueues.length > 0 ? (
-                          workerQueues.map((queue) => (
-                            <Badge key={queue.name} variant="outline" className="font-mono text-xs">
+                          workerQueues.map(queue => (
+                            <Badge
+                              key={queue.name}
+                              variant="outline"
+                              className="font-mono text-xs"
+                            >
                               <Layers className="h-3 w-3 mr-1" />
                               {queue.name}
                             </Badge>
                           ))
                         ) : (
-                          <span className="text-xs text-muted-foreground">No queues</span>
+                          <span className="text-xs text-muted-foreground">
+                            No queues
+                          </span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className={activeTaskCount > 0 ? 'font-bold text-blue-600' : 'text-muted-foreground'}>
+                      <span
+                        className={
+                          activeTaskCount > 0
+                            ? 'font-bold text-blue-600'
+                            : 'text-muted-foreground'
+                        }
+                      >
                         {activeTaskCount}
                       </span>
                     </TableCell>

@@ -9,7 +9,11 @@ interface PageHeaderProps {
   onOpenHelp: () => void
 }
 
-export function PageHeader({ isLoading, onOpenCsvImport, onOpenHelp }: PageHeaderProps) {
+export function PageHeader({
+  isLoading,
+  onOpenCsvImport,
+  onOpenHelp,
+}: PageHeaderProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4">

@@ -1,10 +1,21 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -14,7 +25,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription
+  FormDescription,
 } from '@/components/ui/form'
 import { Upload, RefreshCw, CheckCircle } from 'lucide-react'
 import { useCredentialForm } from '../hooks/use-credential-form'
@@ -32,7 +43,7 @@ interface CredentialFormDialogProps {
 export function CredentialFormDialog({
   open,
   onOpenChange,
-  credential
+  credential,
 }: CredentialFormDialogProps) {
   const isEditing = !!credential
   const form = useCredentialForm({ credential })
@@ -75,7 +86,7 @@ export function CredentialFormDialog({
     if (!file) return
 
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = e => {
       const content = e.target?.result as string
       form.setValue('ssh_private_key', content)
     }
@@ -87,7 +98,7 @@ export function CredentialFormDialog({
     }
   }
 
-  const onSubmit = form.handleSubmit((data) => {
+  const onSubmit = form.handleSubmit(data => {
     const payload: CredentialCreatePayload = {
       name: data.name.trim(),
       username: data.username.trim(),
@@ -116,7 +127,7 @@ export function CredentialFormDialog({
       )
     } else {
       createCredential.mutate(payload, {
-        onSuccess: () => onOpenChange(false)
+        onSuccess: () => onOpenChange(false),
       })
     }
   })
@@ -171,11 +182,7 @@ export function CredentialFormDialog({
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="Enter username"
-                      maxLength={128}
-                    />
+                    <Input {...field} placeholder="Enter username" maxLength={128} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -188,17 +195,14 @@ export function CredentialFormDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Type</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
+                  <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select credential type" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {CREDENTIAL_TYPES.map((type) => (
+                      {CREDENTIAL_TYPES.map(type => (
                         <SelectItem key={type.value} value={type.value}>
                           <div className="flex items-center gap-2">
                             {getTypeIcon(type.value)}

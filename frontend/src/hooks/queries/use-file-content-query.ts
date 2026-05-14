@@ -24,10 +24,13 @@ export function useFileContentQuery(
       }
 
       // The proxy returns JSON-encoded text content
-      return apiCall<string>(`git/${repoId}/file-content?path=${encodeURIComponent(filePath)}`, {
-        method: 'GET',
-        headers: { Accept: 'text/plain' },
-      })
+      return apiCall<string>(
+        `git/${repoId}/file-content?path=${encodeURIComponent(filePath)}`,
+        {
+          method: 'GET',
+          headers: { Accept: 'text/plain' },
+        }
+      )
     },
     enabled: enabled && !!repoId && !!filePath,
     staleTime: 60 * 1000, // 1 minute

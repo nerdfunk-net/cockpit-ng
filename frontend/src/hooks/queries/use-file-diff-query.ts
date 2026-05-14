@@ -27,7 +27,7 @@ export function useFileDiffQuery(
       }
       return apiCall<FileDiffResponse>(`git/${repoId}/diff`, {
         method: 'POST',
-        body: JSON.stringify({ commit1, commit2, file_path: filePath })
+        body: JSON.stringify({ commit1, commit2, file_path: filePath }),
       })
     },
     enabled: enabled && !!repoId && !!commit1 && !!commit2 && !!filePath,

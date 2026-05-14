@@ -27,14 +27,11 @@ export function SNMPImportDialog({
 }: SNMPImportDialogProps) {
   const [importFile, setImportFile] = useState<File | null>(null)
 
-  const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files[0]) {
-        setImportFile(e.target.files[0])
-      }
-    },
-    []
-  )
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImportFile(e.target.files[0])
+    }
+  }, [])
 
   const handleImportSubmit = useCallback(() => {
     if (importFile) {
@@ -93,10 +90,7 @@ export function SNMPImportDialog({
           >
             Cancel
           </Button>
-          <Button
-            onClick={handleImportSubmit}
-            disabled={!importFile || isImporting}
-          >
+          <Button onClick={handleImportSubmit} disabled={!importFile || isImporting}>
             {isImporting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

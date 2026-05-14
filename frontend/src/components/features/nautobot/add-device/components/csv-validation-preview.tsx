@@ -12,13 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  AlertCircle,
-  CheckCircle2,
-  Loader2,
-  Settings2,
-  XCircle,
-} from 'lucide-react'
+import { AlertCircle, CheckCircle2, Loader2, Settings2, XCircle } from 'lucide-react'
 import { CSVParseResult } from '../types'
 import { useApi } from '@/hooks/use-api'
 
@@ -47,19 +41,25 @@ export function CSVValidationPreview({
   const [ipConflicts, setIpConflicts] = useState<Set<string>>(new Set())
   const { apiCall } = useApi()
 
-  const errorCount = parseResult.validationErrors.filter((e) => e.severity === 'error').length
-  const warningCount = parseResult.validationErrors.filter((e) => e.severity === 'warning').length
+  const errorCount = parseResult.validationErrors.filter(
+    e => e.severity === 'error'
+  ).length
+  const warningCount = parseResult.validationErrors.filter(
+    e => e.severity === 'warning'
+  ).length
 
   const getRoleName = (roleIdOrName: string | undefined) => {
     if (!roleIdOrName) return null
-    const role = lookupData.roles.find((r) => r.id === roleIdOrName || r.name === roleIdOrName)
+    const role = lookupData.roles.find(
+      r => r.id === roleIdOrName || r.name === roleIdOrName
+    )
     return role?.name || roleIdOrName
   }
 
   const getLocationName = (locationIdOrName: string | undefined) => {
     if (!locationIdOrName) return null
     const location = lookupData.locations.find(
-      (l) =>
+      l =>
         l.id === locationIdOrName ||
         l.name === locationIdOrName ||
         l.hierarchicalPath === locationIdOrName
@@ -70,7 +70,7 @@ export function CSVValidationPreview({
   const getDeviceTypeName = (deviceTypeIdOrName: string | undefined) => {
     if (!deviceTypeIdOrName) return null
     const deviceType = lookupData.deviceTypes.find(
-      (dt) =>
+      dt =>
         dt.id === deviceTypeIdOrName ||
         dt.model === deviceTypeIdOrName ||
         dt.display === deviceTypeIdOrName
@@ -132,8 +132,10 @@ export function CSVValidationPreview({
       setIpCheckResults(assignedIPs)
 
       if (assignedIPs.length > 0) {
-        const devicesToRemove = new Set(assignedIPs.map((r) => r.device))
-        parseResult.devices = parseResult.devices.filter((d) => !devicesToRemove.has(d.name))
+        const devicesToRemove = new Set(assignedIPs.map(r => r.device))
+        parseResult.devices = parseResult.devices.filter(
+          d => !devicesToRemove.has(d.name)
+        )
       }
     } catch (error) {
       console.error('Error checking IPs:', error)
@@ -201,8 +203,12 @@ export function CSVValidationPreview({
     <div className="space-y-3">
       {/* Summary Stats + Action Buttons */}
       <div className="flex items-center gap-4 text-sm">
-        <span className="font-medium">{parseResult.devices.length} device(s) found</span>
-        <span className="text-muted-foreground">from {parseResult.rowCount} row(s)</span>
+        <span className="font-medium">
+          {parseResult.devices.length} device(s) found
+        </span>
+        <span className="text-muted-foreground">
+          from {parseResult.rowCount} row(s)
+        </span>
         {errorCount > 0 && <Badge variant="destructive">{errorCount} error(s)</Badge>}
         {warningCount > 0 && (
           <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
@@ -262,10 +268,10 @@ export function CSVValidationPreview({
                 {ipCheckResults.length} device(s) removed due to IP conflicts:
               </p>
               <ul className="text-xs space-y-1">
-                {ipCheckResults.map((result) => (
+                {ipCheckResults.map(result => (
                   <li key={`${result.device}-${result.ip}`}>
-                    <strong>{result.device}</strong> - IP {result.ip} is already assigned to{' '}
-                    <strong>{result.assignedTo}</strong>
+                    <strong>{result.device}</strong> - IP {result.ip} is already
+                    assigned to <strong>{result.assignedTo}</strong>
                   </li>
                 ))}
               </ul>
@@ -291,7 +297,7 @@ export function CSVValidationPreview({
         <div className="border rounded-lg p-3 bg-muted/20 max-h-40 overflow-y-auto">
           <h4 className="font-medium text-sm mb-2">Validation Issues</h4>
           <ul className="space-y-1 text-xs">
-            {parseResult.validationErrors.map((error) => (
+            {parseResult.validationErrors.map(error => (
               <li
                 key={`${error.deviceName}-${error.field}-${error.message}`}
                 className="flex items-start gap-2"
@@ -323,7 +329,7 @@ export function CSVValidationPreview({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {parseResult.devices.slice(0, 10).map((device) => {
+            {parseResult.devices.slice(0, 10).map(device => {
               const hasConflict = ipConflicts.has(device.name)
               return (
                 <TableRow

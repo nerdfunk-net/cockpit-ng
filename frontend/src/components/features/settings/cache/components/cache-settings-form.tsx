@@ -9,7 +9,15 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Save, RefreshCw, Settings } from 'lucide-react'
-import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form'
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+} from '@/components/ui/form'
 import { useCacheSettings } from '../hooks/use-cache-queries'
 import { useCacheMutations } from '../hooks/use-cache-mutations'
 import { useEffect } from 'react'
@@ -51,9 +59,12 @@ export function CacheSettingsForm() {
         locations: DEFAULT_CACHE_SETTINGS.prefetch_items?.locations || false,
         devices: DEFAULT_CACHE_SETTINGS.prefetch_items?.devices || false,
       },
-      devices_cache_interval_minutes: DEFAULT_CACHE_SETTINGS.devices_cache_interval_minutes!,
-      locations_cache_interval_minutes: DEFAULT_CACHE_SETTINGS.locations_cache_interval_minutes!,
-      git_commits_cache_interval_minutes: DEFAULT_CACHE_SETTINGS.git_commits_cache_interval_minutes!,
+      devices_cache_interval_minutes:
+        DEFAULT_CACHE_SETTINGS.devices_cache_interval_minutes!,
+      locations_cache_interval_minutes:
+        DEFAULT_CACHE_SETTINGS.locations_cache_interval_minutes!,
+      git_commits_cache_interval_minutes:
+        DEFAULT_CACHE_SETTINGS.git_commits_cache_interval_minutes!,
     },
   })
 
@@ -64,7 +75,7 @@ export function CacheSettingsForm() {
     }
   }, [settings, form])
 
-  const handleSubmit = form.handleSubmit((data) => {
+  const handleSubmit = form.handleSubmit(data => {
     saveSettings.mutate(data as CacheSettings)
   })
 
@@ -95,7 +106,9 @@ export function CacheSettingsForm() {
           <Settings className="h-4 w-4" />
           <div>
             <h1 className="text-sm font-semibold">Cache Configuration</h1>
-            <p className="text-blue-100 text-xs">Configure caching behavior to optimize performance</p>
+            <p className="text-blue-100 text-xs">
+              Configure caching behavior to optimize performance
+            </p>
           </div>
         </div>
       </div>
@@ -110,16 +123,13 @@ export function CacheSettingsForm() {
               render={({ field }) => (
                 <FormItem className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base font-medium">Enable Cache</FormLabel>
-                    <FormDescription>
-                      Turn caching on or off globally
-                    </FormDescription>
+                    <FormLabel className="text-base font-medium">
+                      Enable Cache
+                    </FormLabel>
+                    <FormDescription>Turn caching on or off globally</FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -140,7 +150,7 @@ export function CacheSettingsForm() {
                       min={30}
                       step={30}
                       {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 600)}
+                      onChange={e => field.onChange(parseInt(e.target.value) || 600)}
                     />
                   </FormControl>
                   <FormDescription>
@@ -158,16 +168,15 @@ export function CacheSettingsForm() {
               render={({ field }) => (
                 <FormItem className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base font-medium">Prefetch on Startup</FormLabel>
+                    <FormLabel className="text-base font-medium">
+                      Prefetch on Startup
+                    </FormLabel>
                     <FormDescription>
                       Warm the cache when the backend starts
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -189,9 +198,7 @@ export function CacheSettingsForm() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <Label className="text-sm font-normal">
-                          Git commits
-                        </Label>
+                        <Label className="text-sm font-normal">Git commits</Label>
                       </div>
                     </FormItem>
                   )}
@@ -208,9 +215,7 @@ export function CacheSettingsForm() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <Label className="text-sm font-normal">
-                          Locations
-                        </Label>
+                        <Label className="text-sm font-normal">Locations</Label>
                       </div>
                     </FormItem>
                   )}
@@ -227,9 +232,7 @@ export function CacheSettingsForm() {
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <Label className="text-sm font-normal">
-                          Devices
-                        </Label>
+                        <Label className="text-sm font-normal">Devices</Label>
                       </div>
                     </FormItem>
                   )}
@@ -253,7 +256,7 @@ export function CacheSettingsForm() {
                       min={50}
                       step={50}
                       {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 500)}
+                      onChange={e => field.onChange(parseInt(e.target.value) || 500)}
                     />
                   </FormControl>
                   <FormDescription>
@@ -271,8 +274,8 @@ export function CacheSettingsForm() {
               <div>
                 <h3 className="text-base font-medium">Background Cache Tasks</h3>
                 <p className="text-sm text-gray-500">
-                  Configure how often background tasks refresh the cache. Set to 0 to disable a task.
-                  These tasks will appear in Jobs → View.
+                  Configure how often background tasks refresh the cache. Set to 0 to
+                  disable a task. These tasks will appear in Jobs → View.
                 </p>
               </div>
 
@@ -289,11 +292,12 @@ export function CacheSettingsForm() {
                         min={0}
                         step={5}
                         {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        onChange={e => field.onChange(parseInt(e.target.value) || 0)}
                       />
                     </FormControl>
                     <FormDescription>
-                      How often to refresh the devices cache from Nautobot (0 = disabled)
+                      How often to refresh the devices cache from Nautobot (0 =
+                      disabled)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -313,11 +317,12 @@ export function CacheSettingsForm() {
                         min={0}
                         step={1}
                         {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        onChange={e => field.onChange(parseInt(e.target.value) || 0)}
                       />
                     </FormControl>
                     <FormDescription>
-                      How often to refresh the locations cache from Nautobot (0 = disabled)
+                      How often to refresh the locations cache from Nautobot (0 =
+                      disabled)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -337,7 +342,7 @@ export function CacheSettingsForm() {
                         min={0}
                         step={1}
                         {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        onChange={e => field.onChange(parseInt(e.target.value) || 0)}
                       />
                     </FormControl>
                     <FormDescription>

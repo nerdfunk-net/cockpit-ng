@@ -52,15 +52,31 @@ export function useNautobotOptionsQuery(
       const processedLocations = buildLocationHierarchy(rawLocations as LocationItem[])
 
       return {
-        deviceStatuses: Array.isArray(deviceStatusesRes) ? deviceStatusesRes as NautobotOption[] : EMPTY_ARRAY as NautobotOption[],
-        interfaceStatuses: Array.isArray(interfaceStatusesRes) ? interfaceStatusesRes as NautobotOption[] : EMPTY_ARRAY as NautobotOption[],
-        ipAddressStatuses: Array.isArray(ipAddressStatusesRes) ? ipAddressStatusesRes as NautobotOption[] : EMPTY_ARRAY as NautobotOption[],
-        ipPrefixStatuses: Array.isArray(ipPrefixStatusesRes) ? ipPrefixStatusesRes as NautobotOption[] : EMPTY_ARRAY as NautobotOption[],
-        namespaces: Array.isArray(namespacesRes) ? namespacesRes as NautobotOption[] : EMPTY_ARRAY as NautobotOption[],
-        deviceRoles: Array.isArray(deviceRolesRes) ? deviceRolesRes as NautobotOption[] : EMPTY_ARRAY as NautobotOption[],
-        platforms: Array.isArray(platformsRes) ? platformsRes as NautobotOption[] : EMPTY_ARRAY as NautobotOption[],
+        deviceStatuses: Array.isArray(deviceStatusesRes)
+          ? (deviceStatusesRes as NautobotOption[])
+          : (EMPTY_ARRAY as NautobotOption[]),
+        interfaceStatuses: Array.isArray(interfaceStatusesRes)
+          ? (interfaceStatusesRes as NautobotOption[])
+          : (EMPTY_ARRAY as NautobotOption[]),
+        ipAddressStatuses: Array.isArray(ipAddressStatusesRes)
+          ? (ipAddressStatusesRes as NautobotOption[])
+          : (EMPTY_ARRAY as NautobotOption[]),
+        ipPrefixStatuses: Array.isArray(ipPrefixStatusesRes)
+          ? (ipPrefixStatusesRes as NautobotOption[])
+          : (EMPTY_ARRAY as NautobotOption[]),
+        namespaces: Array.isArray(namespacesRes)
+          ? (namespacesRes as NautobotOption[])
+          : (EMPTY_ARRAY as NautobotOption[]),
+        deviceRoles: Array.isArray(deviceRolesRes)
+          ? (deviceRolesRes as NautobotOption[])
+          : (EMPTY_ARRAY as NautobotOption[]),
+        platforms: Array.isArray(platformsRes)
+          ? (platformsRes as NautobotOption[])
+          : (EMPTY_ARRAY as NautobotOption[]),
         locations: processedLocations,
-        secretGroups: Array.isArray(secretGroupsRes) ? secretGroupsRes as NautobotOption[] : EMPTY_ARRAY as NautobotOption[],
+        secretGroups: Array.isArray(secretGroupsRes)
+          ? (secretGroupsRes as NautobotOption[])
+          : (EMPTY_ARRAY as NautobotOption[]),
       }
     },
     enabled,

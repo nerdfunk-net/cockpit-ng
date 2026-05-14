@@ -31,7 +31,9 @@ const DEFAULT_OPTIONS: UseNautobotRestQueryOptions = {}
  * const locations = data || []
  * ```
  */
-export function useNautobotLocationsRestQuery(options: UseNautobotRestQueryOptions = DEFAULT_OPTIONS) {
+export function useNautobotLocationsRestQuery(
+  options: UseNautobotRestQueryOptions = DEFAULT_OPTIONS
+) {
   const { apiCall } = useApi()
   const { enabled = true } = options
 

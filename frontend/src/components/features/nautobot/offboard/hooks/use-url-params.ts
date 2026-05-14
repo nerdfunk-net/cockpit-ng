@@ -13,12 +13,12 @@ export function useUrlParams(
     if (ipFilter && ipFilter !== filters.ipAddress) {
       setFilters(prev => ({
         ...prev,
-        ipAddress: ipFilter
+        ipAddress: ipFilter,
       }))
     }
   }, [searchParams, filters.ipAddress, setFilters])
 
   return {
-    ipFilter: searchParams?.get('ip_filter') || null
+    ipFilter: searchParams?.get('ip_filter') || null,
   }
 }

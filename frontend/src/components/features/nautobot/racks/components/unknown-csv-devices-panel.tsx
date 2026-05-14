@@ -25,7 +25,12 @@ interface UnknownDeviceRowProps {
   onAddReservation: UnknownCsvDevicesPanelProps['onAddReservation']
 }
 
-function UnknownDeviceRow({ device, locationId, onMapDevice, onAddReservation }: UnknownDeviceRowProps) {
+function UnknownDeviceRow({
+  device,
+  locationId,
+  onMapDevice,
+  onAddReservation,
+}: UnknownDeviceRowProps) {
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -50,11 +55,11 @@ function UnknownDeviceRow({ device, locationId, onMapDevice, onAddReservation }:
             <Input
               ref={inputRef}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={e => setQuery(e.target.value)}
               placeholder="Type device name..."
               className="h-6 border-0 focus-visible:ring-0 text-xs px-1.5 py-0 bg-transparent"
               style={{ fontSize: 11 }}
-              onKeyDown={(e) => {
+              onKeyDown={e => {
                 if (e.key === 'Escape') setQuery('')
                 if (e.key === 'Enter' && results.length > 0) {
                   const first = results[0]
@@ -76,11 +81,11 @@ function UnknownDeviceRow({ device, locationId, onMapDevice, onAddReservation }:
           </div>
           {results.length > 0 && (
             <div className="absolute left-0 right-0 top-full bg-white border border-gray-200 shadow-lg max-h-40 overflow-y-auto z-50 rounded-b-md">
-              {results.map((d) => (
+              {results.map(d => (
                 <div
                   key={d.id}
                   className="px-2 py-1 text-xs hover:bg-blue-50 cursor-pointer border-b last:border-b-0 text-gray-800"
-                  onMouseDown={(e) => {
+                  onMouseDown={e => {
                     e.preventDefault()
                     handleSelect(d)
                   }}
@@ -92,7 +97,9 @@ function UnknownDeviceRow({ device, locationId, onMapDevice, onAddReservation }:
           )}
           {query.length >= 2 && !isSearching && results.length === 0 && (
             <div className="absolute left-0 right-0 top-full bg-white border border-gray-200 shadow-lg z-50 rounded-b-md">
-              <div className="px-2 py-1 text-xs text-gray-400 italic">No devices found</div>
+              <div className="px-2 py-1 text-xs text-gray-400 italic">
+                No devices found
+              </div>
             </div>
           )}
         </div>
@@ -121,12 +128,17 @@ export function UnknownCsvDevicesPanel({
               <th className="px-2 py-1.5 text-left font-medium text-gray-600">Name</th>
               <th className="px-2 py-1.5 text-left font-medium text-gray-600">
                 Mapped Name
-                <span className="ml-1 text-amber-500" title="Use the → button to add as reservation instead">→</span>
+                <span
+                  className="ml-1 text-amber-500"
+                  title="Use the → button to add as reservation instead"
+                >
+                  →
+                </span>
               </th>
             </tr>
           </thead>
           <tbody>
-            {devices.map((device) => (
+            {devices.map(device => (
               <UnknownDeviceRow
                 key={device.csvName}
                 device={device}

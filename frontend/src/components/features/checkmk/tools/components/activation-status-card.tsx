@@ -10,7 +10,10 @@ interface ActivationStatusCardProps {
   isLoading: boolean
 }
 
-export function ActivationStatusCard({ data, isLoading: _isLoading }: ActivationStatusCardProps) {
+export function ActivationStatusCard({
+  data,
+  isLoading: _isLoading,
+}: ActivationStatusCardProps) {
   const extensions = data.data.extensions
   const isRunning = extensions.is_running
   const statusPerSite = extensions.status_per_site || []
@@ -68,12 +71,8 @@ export function ActivationStatusCard({ data, isLoading: _isLoading }: Activation
           <span className="text-sm font-medium">Activation Status</span>
         </div>
         <div className="flex items-center space-x-2">
-          {isRunning && (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          )}
-          <div className="text-xs text-blue-100">
-            {data.data.title}
-          </div>
+          {isRunning && <Loader2 className="h-4 w-4 animate-spin" />}
+          <div className="text-xs text-blue-100">{data.data.title}</div>
         </div>
       </div>
 
@@ -83,7 +82,9 @@ export function ActivationStatusCard({ data, isLoading: _isLoading }: Activation
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
             <span className="text-sm font-medium text-gray-700">Activation ID:</span>
-            <code className="text-xs font-mono bg-white px-2 py-1 rounded border">{data.data.id}</code>
+            <code className="text-xs font-mono bg-white px-2 py-1 rounded border">
+              {data.data.id}
+            </code>
           </div>
 
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
@@ -95,13 +96,15 @@ export function ActivationStatusCard({ data, isLoading: _isLoading }: Activation
 
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
             <span className="text-sm font-medium text-gray-700">Started:</span>
-            <span className="text-sm text-gray-600">{formatDate(extensions.time_started)}</span>
+            <span className="text-sm text-gray-600">
+              {formatDate(extensions.time_started)}
+            </span>
           </div>
 
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
             <span className="text-sm font-medium text-gray-700">Sites:</span>
             <div className="flex gap-1">
-              {extensions.sites.map((site) => (
+              {extensions.sites.map(site => (
                 <Badge key={site} variant="outline" className="text-xs">
                   {site}
                 </Badge>
@@ -115,7 +118,7 @@ export function ActivationStatusCard({ data, isLoading: _isLoading }: Activation
           <div className="space-y-2">
             <h4 className="text-sm font-semibold text-gray-700">Activated Changes:</h4>
             <div className="space-y-2">
-              {extensions.changes.map((change) => (
+              {extensions.changes.map(change => (
                 <div
                   key={change.id}
                   className="p-3 bg-gray-50 border border-gray-200 rounded-md"
@@ -127,7 +130,9 @@ export function ActivationStatusCard({ data, isLoading: _isLoading }: Activation
                     <span className="text-xs text-gray-500">by {change.user_id}</span>
                   </div>
                   <p className="text-sm text-gray-900 mt-1">{change.text}</p>
-                  <p className="text-xs text-gray-500 mt-1">{formatDate(change.time)}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formatDate(change.time)}
+                  </p>
                 </div>
               ))}
             </div>
@@ -139,7 +144,7 @@ export function ActivationStatusCard({ data, isLoading: _isLoading }: Activation
           <div className="space-y-2">
             <h4 className="text-sm font-semibold text-gray-700">Site Status:</h4>
             <div className="space-y-3">
-              {statusPerSite.map((siteStatus) => (
+              {statusPerSite.map(siteStatus => (
                 <Alert
                   key={siteStatus.site}
                   className={getStatusColor(siteStatus.state)}
@@ -148,9 +153,13 @@ export function ActivationStatusCard({ data, isLoading: _isLoading }: Activation
                     {getStatusIcon(siteStatus.state)}
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm">Site: {siteStatus.site}</span>
+                        <span className="font-semibold text-sm">
+                          Site: {siteStatus.site}
+                        </span>
                         <Badge
-                          variant={siteStatus.state === 'success' ? 'default' : 'secondary'}
+                          variant={
+                            siteStatus.state === 'success' ? 'default' : 'secondary'
+                          }
                           className={
                             siteStatus.state === 'success'
                               ? 'bg-green-600 hover:bg-green-700'
@@ -162,7 +171,9 @@ export function ActivationStatusCard({ data, isLoading: _isLoading }: Activation
                           {siteStatus.status_text}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-700">{siteStatus.status_details}</p>
+                      <p className="text-sm text-gray-700">
+                        {siteStatus.status_details}
+                      </p>
                       <div className="flex items-center gap-4 text-xs text-gray-600 mt-2">
                         <span>Phase: {siteStatus.phase}</span>
                         {siteStatus.start_time && (

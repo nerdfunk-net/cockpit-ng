@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   CheckCircle2,
   XCircle,
@@ -11,15 +11,16 @@ import {
   Clock,
   RefreshCw,
   Layers,
-} from "lucide-react"
-import { DeployAgentJobResult } from "../types/job-results"
+} from 'lucide-react'
+import { DeployAgentJobResult } from '../types/job-results'
 
 interface DeployAgentResultViewProps {
   result: DeployAgentJobResult
 }
 
 export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
-  const hasMultiTemplateResults = result.template_results && result.template_results.length > 0
+  const hasMultiTemplateResults =
+    result.template_results && result.template_results.length > 0
 
   return (
     <div className="space-y-4">
@@ -27,17 +28,21 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-gray-50 rounded-lg p-3 text-center">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
-          <p className={`text-lg font-semibold ${result.success ? 'text-green-600' : 'text-red-600'}`}>
+          <p
+            className={`text-lg font-semibold ${result.success ? 'text-green-600' : 'text-red-600'}`}
+          >
             {result.success ? 'Success' : 'Failed'}
           </p>
         </div>
         <div className="bg-gray-50 rounded-lg p-3 text-center">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Files Changed</p>
-          <p className="text-lg font-semibold text-gray-700">{String(result.files_changed ?? 0)}</p>
+          <p className="text-lg font-semibold text-gray-700">
+            {String(result.files_changed ?? 0)}
+          </p>
         </div>
         <div className="bg-gray-50 rounded-lg p-3 text-center">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Pushed</p>
-          <Badge variant={result.pushed ? "default" : "secondary"} className="mt-1">
+          <Badge variant={result.pushed ? 'default' : 'secondary'} className="mt-1">
             {result.pushed ? 'Yes' : 'No'}
           </Badge>
         </div>
@@ -51,17 +56,17 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
 
       {/* Message */}
       {result.message && (
-        <div className={`border rounded-lg p-3 flex items-start gap-2 ${
-          result.success ? 'status-success' : 'status-error'
-        }`}>
+        <div
+          className={`border rounded-lg p-3 flex items-start gap-2 ${
+            result.success ? 'status-success' : 'status-error'
+          }`}
+        >
           {result.success ? (
             <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
           ) : (
             <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
           )}
-          <p className="text-sm">
-            {String(result.message)}
-          </p>
+          <p className="text-sm">{String(result.message)}</p>
         </div>
       )}
 
@@ -85,7 +90,9 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
             </div>
             <div className="flex justify-between py-2 border-b">
               <span className="font-medium text-gray-600">Commit SHA</span>
-              <span className="text-gray-900 font-mono text-xs">{result.commit_sha || 'N/A'}</span>
+              <span className="text-gray-900 font-mono text-xs">
+                {result.commit_sha || 'N/A'}
+              </span>
             </div>
             <div className="flex justify-between py-2 border-b">
               <span className="font-medium text-gray-600">Files Changed</span>
@@ -93,7 +100,7 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
             </div>
             <div className="flex justify-between py-2">
               <span className="font-medium text-gray-600">Pushed to Remote</span>
-              <Badge variant={result.pushed ? "default" : "secondary"}>
+              <Badge variant={result.pushed ? 'default' : 'secondary'}>
                 {result.pushed ? 'Yes' : 'No'}
               </Badge>
             </div>
@@ -112,7 +119,7 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {result.template_results!.map((tr) => (
+              {result.template_results!.map(tr => (
                 <div
                   key={tr.template_id}
                   className={`rounded-lg border p-3 ${
@@ -132,7 +139,10 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
                         {tr.template_name || `Template ${tr.template_id}`}
                       </span>
                     </div>
-                    <Badge variant={tr.success ? "default" : "destructive"} className="text-xs">
+                    <Badge
+                      variant={tr.success ? 'default' : 'destructive'}
+                      className="text-xs"
+                    >
                       {tr.success ? 'Success' : 'Failed'}
                     </Badge>
                   </div>
@@ -150,9 +160,7 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
                       </div>
                     )}
                     {tr.error && (
-                      <div className="col-span-2 text-red-600 mt-1">
-                        {tr.error}
-                      </div>
+                      <div className="col-span-2 text-red-600 mt-1">{tr.error}</div>
                     )}
                   </div>
                 </div>
@@ -189,7 +197,9 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
                     <FileCode className="h-3.5 w-3.5" />
                     File Path
                   </span>
-                  <span className="text-gray-900 font-mono text-xs">{result.file_path}</span>
+                  <span className="text-gray-900 font-mono text-xs">
+                    {result.file_path}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between py-2">
@@ -243,7 +253,7 @@ export function DeployAgentResultView({ result }: DeployAgentResultViewProps) {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between py-2 border-b">
               <span className="font-medium text-gray-600">Activation Enabled</span>
-              <Badge variant={result.activated !== false ? "default" : "secondary"}>
+              <Badge variant={result.activated !== false ? 'default' : 'secondary'}>
                 {result.activated !== false ? 'Yes' : 'No'}
               </Badge>
             </div>

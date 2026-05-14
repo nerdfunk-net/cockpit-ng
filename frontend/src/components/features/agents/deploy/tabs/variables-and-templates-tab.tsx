@@ -1,7 +1,13 @@
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
 
 interface TemplateVariable {
@@ -48,7 +54,7 @@ export function VariablesAndTemplatesTab({
   editedTemplateContent,
   onTemplateContentChange,
   variableOverrides,
-  onVariableOverrideChange
+  onVariableOverrideChange,
 }: VariablesAndTemplatesTabProps) {
   // Extract custom variables from the selected template
   const customVariables = selectedTemplate?.variables
@@ -57,7 +63,7 @@ export function VariablesAndTemplatesTab({
         .map(([name, variable]) => ({
           name,
           defaultValue: variable.value,
-          currentValue: variableOverrides[name] ?? variable.value
+          currentValue: variableOverrides[name] ?? variable.value,
         }))
     : []
 
@@ -76,16 +82,13 @@ export function VariablesAndTemplatesTab({
         <div className="p-6 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="template">Template</Label>
-            <Select
-              value={selectedTemplateId}
-              onValueChange={onTemplateChange}
-            >
+            <Select value={selectedTemplateId} onValueChange={onTemplateChange}>
               <SelectTrigger id="template">
                 <SelectValue placeholder="Select a template" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No template selected</SelectItem>
-                {templates.map((template) => (
+                {templates.map(template => (
                   <SelectItem key={template.id} value={template.id.toString()}>
                     {template.name} ({template.scope})
                   </SelectItem>
@@ -97,7 +100,9 @@ export function VariablesAndTemplatesTab({
           {isLoadingTemplate && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-              <span className="ml-2 text-sm text-gray-600">Loading template details...</span>
+              <span className="ml-2 text-sm text-gray-600">
+                Loading template details...
+              </span>
             </div>
           )}
 
@@ -106,20 +111,36 @@ export function VariablesAndTemplatesTab({
               <div className="p-3 bg-gray-50 border border-gray-200 rounded-md space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-gray-700">Template Configuration:</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      Template Configuration:
+                    </span>
                     <span className="text-sm text-gray-600">
                       Use Nautobot data & context is{' '}
-                      <span className={selectedTemplate.use_nautobot_context ? "font-semibold text-green-600" : "font-semibold text-gray-500"}>
+                      <span
+                        className={
+                          selectedTemplate.use_nautobot_context
+                            ? 'font-semibold text-green-600'
+                            : 'font-semibold text-gray-500'
+                        }
+                      >
                         {selectedTemplate.use_nautobot_context ? 'enabled' : 'disabled'}
                       </span>
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-700">SNMP Mapping:</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    SNMP Mapping:
+                  </span>
                   <span className="text-sm text-gray-600">
                     Pass SNMP mapping is{' '}
-                    <span className={selectedTemplate.pass_snmp_mapping ? "font-semibold text-green-600" : "font-semibold text-gray-500"}>
+                    <span
+                      className={
+                        selectedTemplate.pass_snmp_mapping
+                          ? 'font-semibold text-green-600'
+                          : 'font-semibold text-gray-500'
+                      }
+                    >
                       {selectedTemplate.pass_snmp_mapping ? 'enabled' : 'disabled'}
                     </span>
                   </span>
@@ -131,7 +152,7 @@ export function VariablesAndTemplatesTab({
                 <Textarea
                   id="template-preview"
                   value={editedTemplateContent}
-                  onChange={(e) => onTemplateContentChange(e.target.value)}
+                  onChange={e => onTemplateContentChange(e.target.value)}
                   className="font-mono text-sm min-h-[300px] border-2"
                   readOnly={selectedTemplate.scope === 'global'}
                 />
@@ -153,13 +174,12 @@ export function VariablesAndTemplatesTab({
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium">Template Variables</span>
             </div>
-            <div className="text-xs text-blue-100">
-              Override custom variable values
-            </div>
+            <div className="text-xs text-blue-100">Override custom variable values</div>
           </div>
           <div className="p-6 space-y-4">
             <p className="text-sm text-gray-600 mb-4">
-              The selected template contains custom variables. You can override their default values below:
+              The selected template contains custom variables. You can override their
+              default values below:
             </p>
             <div className="space-y-3">
               {customVariables.map(({ name, defaultValue, currentValue }) => (
@@ -176,7 +196,7 @@ export function VariablesAndTemplatesTab({
                     id={`var-${name}`}
                     placeholder={`Override value for ${name}`}
                     value={currentValue}
-                    onChange={(e) => onVariableOverrideChange(name, e.target.value)}
+                    onChange={e => onVariableOverrideChange(name, e.target.value)}
                     className="border-2"
                   />
                 </div>

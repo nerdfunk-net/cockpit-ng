@@ -13,7 +13,7 @@ import {
   Network,
   Settings,
   Download,
-  HelpCircle
+  HelpCircle,
 } from 'lucide-react'
 import { useSnmpMappingQuery } from './hooks/use-snmp-mapping-query'
 import { useSnmpMutations } from './hooks/use-snmp-mutations'
@@ -125,13 +125,14 @@ export default function CommonSettingsForm() {
                 </Label>
                 <Textarea
                   value={localContent}
-                  onChange={(e) => setLocalContent(e.target.value)}
+                  onChange={e => setLocalContent(e.target.value)}
                   placeholder="YAML content will be loaded here..."
                   className="w-full h-96 font-mono text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                   disabled={isLoading}
                 />
                 <p className="text-xs text-gray-500">
-                  Edit the SNMP mapping configuration YAML file. This defines SNMP credentials and mapping for different devices.
+                  Edit the SNMP mapping configuration YAML file. This defines SNMP
+                  credentials and mapping for different devices.
                 </p>
               </div>
 
@@ -140,7 +141,9 @@ export default function CommonSettingsForm() {
                   type="button"
                   variant="outline"
                   onClick={handleReload}
-                  disabled={isLoading || validateYaml.isPending || saveMapping.isPending}
+                  disabled={
+                    isLoading || validateYaml.isPending || saveMapping.isPending
+                  }
                   className="flex items-center space-x-2"
                 >
                   {isLoading ? (
@@ -154,7 +157,9 @@ export default function CommonSettingsForm() {
                   type="button"
                   variant="outline"
                   onClick={handleOpenImportDialog}
-                  disabled={isLoading || validateYaml.isPending || saveMapping.isPending}
+                  disabled={
+                    isLoading || validateYaml.isPending || saveMapping.isPending
+                  }
                   className="flex items-center space-x-2"
                 >
                   <Download className="h-4 w-4" />
@@ -164,7 +169,12 @@ export default function CommonSettingsForm() {
                   type="button"
                   variant="outline"
                   onClick={handleValidate}
-                  disabled={isLoading || validateYaml.isPending || saveMapping.isPending || !localContent}
+                  disabled={
+                    isLoading ||
+                    validateYaml.isPending ||
+                    saveMapping.isPending ||
+                    !localContent
+                  }
                   className="flex items-center space-x-2"
                 >
                   {validateYaml.isPending ? (
@@ -177,7 +187,9 @@ export default function CommonSettingsForm() {
                 <Button
                   type="button"
                   onClick={handleSave}
-                  disabled={isLoading || validateYaml.isPending || saveMapping.isPending}
+                  disabled={
+                    isLoading || validateYaml.isPending || saveMapping.isPending
+                  }
                   className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
                 >
                   {saveMapping.isPending ? (
@@ -200,10 +212,7 @@ export default function CommonSettingsForm() {
         error={validationError}
       />
 
-      <SnmpHelpDialog
-        open={showHelpDialog}
-        onOpenChange={setShowHelpDialog}
-      />
+      <SnmpHelpDialog open={showHelpDialog} onOpenChange={setShowHelpDialog} />
 
       <GitImportDialog
         open={showImportDialog}

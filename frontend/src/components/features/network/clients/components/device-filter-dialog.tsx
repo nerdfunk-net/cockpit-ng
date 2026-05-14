@@ -2,7 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
-import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useState, useCallback } from 'react'
 import { Filter } from 'lucide-react'
@@ -32,7 +37,11 @@ interface DeviceFilterDialogProps {
   onApply: (filter: DeviceFilter) => void
 }
 
-export function DeviceFilterDialog({ open, onOpenChange, onApply }: DeviceFilterDialogProps) {
+export function DeviceFilterDialog({
+  open,
+  onOpenChange,
+  onApply,
+}: DeviceFilterDialogProps) {
   const { apiCall } = useApi()
 
   const [selectedRoleId, setSelectedRoleId] = useState('')
@@ -43,7 +52,9 @@ export function DeviceFilterDialog({ open, onOpenChange, onApply }: DeviceFilter
   const rolesQuery = useQuery({
     queryKey: ['nautobot', 'filter-options', 'roles'],
     queryFn: async () => {
-      const res = await apiCall<NamedItem[]>('nautobot/roles/devices', { method: 'GET' })
+      const res = await apiCall<NamedItem[]>('nautobot/roles/devices', {
+        method: 'GET',
+      })
       return res ?? EMPTY_NAMED
     },
     enabled: open,
@@ -53,7 +64,9 @@ export function DeviceFilterDialog({ open, onOpenChange, onApply }: DeviceFilter
   const statusesQuery = useQuery({
     queryKey: ['nautobot', 'filter-options', 'statuses'],
     queryFn: async () => {
-      const res = await apiCall<NamedItem[]>('nautobot/statuses/device', { method: 'GET' })
+      const res = await apiCall<NamedItem[]>('nautobot/statuses/device', {
+        method: 'GET',
+      })
       return res ?? EMPTY_NAMED
     },
     enabled: open,
@@ -63,7 +76,9 @@ export function DeviceFilterDialog({ open, onOpenChange, onApply }: DeviceFilter
   const deviceTypesQuery = useQuery({
     queryKey: ['nautobot', 'filter-options', 'device-types'],
     queryFn: async () => {
-      const res = await apiCall<DeviceTypeItem[]>('nautobot/device-types', { method: 'GET' })
+      const res = await apiCall<DeviceTypeItem[]>('nautobot/device-types', {
+        method: 'GET',
+      })
       return res ?? EMPTY_DEVICE_TYPES
     },
     enabled: open,
@@ -148,19 +163,19 @@ export function DeviceFilterDialog({ open, onOpenChange, onApply }: DeviceFilter
   function handleApply() {
     const filter: DeviceFilter = {}
     if (selectedRoleId) {
-      const item = roles.find((r) => r.id === selectedRoleId)
+      const item = roles.find(r => r.id === selectedRoleId)
       if (item) filter.role = item.name
     }
     if (selectedStatusId) {
-      const item = statuses.find((s) => s.id === selectedStatusId)
+      const item = statuses.find(s => s.id === selectedStatusId)
       if (item) filter.status = item.name
     }
     if (selectedDeviceTypeId) {
-      const item = deviceTypes.find((dt) => dt.id === selectedDeviceTypeId)
+      const item = deviceTypes.find(dt => dt.id === selectedDeviceTypeId)
       if (item) filter.device_type = item.model
     }
     if (selectedLocationId) {
-      const item = locations.find((l) => l.id === selectedLocationId)
+      const item = locations.find(l => l.id === selectedLocationId)
       if (item) filter.location = item.name
     }
     onApply(filter)
@@ -178,7 +193,9 @@ export function DeviceFilterDialog({ open, onOpenChange, onApply }: DeviceFilter
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center rounded-t-lg">
           <div className="flex items-center space-x-2">
             <Filter className="h-4 w-4" />
-            <DialogTitle className="text-sm font-medium text-white">Filter Devices</DialogTitle>
+            <DialogTitle className="text-sm font-medium text-white">
+              Filter Devices
+            </DialogTitle>
           </div>
         </div>
 
@@ -190,8 +207,8 @@ export function DeviceFilterDialog({ open, onOpenChange, onApply }: DeviceFilter
               label="Role"
               placeholder="Search role..."
               dropdownState={roleDropdown}
-              renderItem={(item) => <div>{item.name}</div>}
-              getItemKey={(item) => item.id}
+              renderItem={item => <div>{item.name}</div>}
+              getItemKey={item => item.id}
             />
 
             <SearchableDropdownInput
@@ -199,8 +216,8 @@ export function DeviceFilterDialog({ open, onOpenChange, onApply }: DeviceFilter
               label="Status"
               placeholder="Search status..."
               dropdownState={statusDropdown}
-              renderItem={(item) => <div>{item.name}</div>}
-              getItemKey={(item) => item.id}
+              renderItem={item => <div>{item.name}</div>}
+              getItemKey={item => item.id}
             />
 
             <SearchableDropdownInput
@@ -208,8 +225,8 @@ export function DeviceFilterDialog({ open, onOpenChange, onApply }: DeviceFilter
               label="Device Type"
               placeholder="Search device type..."
               dropdownState={deviceTypeDropdown}
-              renderItem={(item) => <div>{item.model}</div>}
-              getItemKey={(item) => item.id}
+              renderItem={item => <div>{item.model}</div>}
+              getItemKey={item => item.id}
             />
 
             <SearchableDropdownInput
@@ -217,8 +234,8 @@ export function DeviceFilterDialog({ open, onOpenChange, onApply }: DeviceFilter
               label="Location"
               placeholder="Search location..."
               dropdownState={locationDropdown}
-              renderItem={(item) => <div>{item.hierarchicalPath ?? item.name}</div>}
-              getItemKey={(item) => item.id}
+              renderItem={item => <div>{item.hierarchicalPath ?? item.name}</div>}
+              getItemKey={item => item.id}
             />
           </div>
         </div>
@@ -231,9 +248,7 @@ export function DeviceFilterDialog({ open, onOpenChange, onApply }: DeviceFilter
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={handleApply}>
-            Use Filter
-          </Button>
+          <Button onClick={handleApply}>Use Filter</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

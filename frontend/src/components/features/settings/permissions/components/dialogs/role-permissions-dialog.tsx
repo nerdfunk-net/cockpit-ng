@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Shield } from 'lucide-react'
@@ -37,7 +43,7 @@ export function RolePermissionsDialog({
   onOpenChange,
   role,
   allPermissions,
-  onTogglePermission
+  onTogglePermission,
 }: RolePermissionsDialogProps) {
   const groupedPermissions = useMemo(
     () => groupPermissionsByResource(allPermissions),
@@ -46,21 +52,25 @@ export function RolePermissionsDialog({
 
   const resourcePermissions = useMemo(() => {
     const resources: ResourcePermissions[] = []
-    
+
     Object.entries(groupedPermissions).forEach(([resource, permissions]) => {
       const permMap: ResourcePermissions['permissions'] = {}
-      
+
       permissions.forEach(perm => {
-        const action = perm.action.toLowerCase() as 'read' | 'write' | 'delete' | 'execute'
+        const action = perm.action.toLowerCase() as
+          | 'read'
+          | 'write'
+          | 'delete'
+          | 'execute'
         permMap[action] = perm
       })
-      
+
       resources.push({
         resource,
-        permissions: permMap
+        permissions: permMap,
       })
     })
-    
+
     return resources
   }, [groupedPermissions])
 
@@ -77,7 +87,8 @@ export function RolePermissionsDialog({
             {role ? `Manage Permissions for ${role.name}` : 'Loading...'}
           </DialogTitle>
           <DialogDescription>
-            Select which permissions this role should have. Changes are applied immediately.
+            Select which permissions this role should have. Changes are applied
+            immediately.
           </DialogDescription>
         </DialogHeader>
 
@@ -90,11 +101,21 @@ export function RolePermissionsDialog({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px] border-r bg-gray-100">Name of Permission</TableHead>
-                  <TableHead className="text-center w-[100px] border-r bg-gray-100">Read</TableHead>
-                  <TableHead className="text-center w-[100px] border-r bg-gray-100">Write</TableHead>
-                  <TableHead className="text-center w-[100px] border-r bg-gray-100">Delete</TableHead>
-                  <TableHead className="text-center w-[100px] bg-gray-100">Execute</TableHead>
+                  <TableHead className="w-[180px] border-r bg-gray-100">
+                    Name of Permission
+                  </TableHead>
+                  <TableHead className="text-center w-[100px] border-r bg-gray-100">
+                    Read
+                  </TableHead>
+                  <TableHead className="text-center w-[100px] border-r bg-gray-100">
+                    Write
+                  </TableHead>
+                  <TableHead className="text-center w-[100px] border-r bg-gray-100">
+                    Delete
+                  </TableHead>
+                  <TableHead className="text-center w-[100px] bg-gray-100">
+                    Execute
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -107,9 +128,9 @@ export function RolePermissionsDialog({
                           <Checkbox
                             id={`perm-${permissions.read.id}`}
                             checked={isPermissionGranted(permissions.read.id)}
-                            onCheckedChange={() => 
+                            onCheckedChange={() =>
                               onTogglePermission(
-                                permissions.read!.id, 
+                                permissions.read!.id,
                                 isPermissionGranted(permissions.read!.id)
                               )
                             }
@@ -126,9 +147,9 @@ export function RolePermissionsDialog({
                           <Checkbox
                             id={`perm-${permissions.write.id}`}
                             checked={isPermissionGranted(permissions.write.id)}
-                            onCheckedChange={() => 
+                            onCheckedChange={() =>
                               onTogglePermission(
-                                permissions.write!.id, 
+                                permissions.write!.id,
                                 isPermissionGranted(permissions.write!.id)
                               )
                             }
@@ -145,9 +166,9 @@ export function RolePermissionsDialog({
                           <Checkbox
                             id={`perm-${permissions.delete.id}`}
                             checked={isPermissionGranted(permissions.delete.id)}
-                            onCheckedChange={() => 
+                            onCheckedChange={() =>
                               onTogglePermission(
-                                permissions.delete!.id, 
+                                permissions.delete!.id,
                                 isPermissionGranted(permissions.delete!.id)
                               )
                             }
@@ -164,9 +185,9 @@ export function RolePermissionsDialog({
                           <Checkbox
                             id={`perm-${permissions.execute.id}`}
                             checked={isPermissionGranted(permissions.execute.id)}
-                            onCheckedChange={() => 
+                            onCheckedChange={() =>
                               onTogglePermission(
-                                permissions.execute!.id, 
+                                permissions.execute!.id,
                                 isPermissionGranted(permissions.execute!.id)
                               )
                             }

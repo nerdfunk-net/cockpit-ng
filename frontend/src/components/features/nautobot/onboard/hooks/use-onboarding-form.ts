@@ -1,6 +1,11 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
-import type { OnboardFormData, StatusMessage, IPValidation, OnboardResponse } from '../types'
+import type {
+  OnboardFormData,
+  StatusMessage,
+  IPValidation,
+  OnboardResponse,
+} from '../types'
 import { validateIPAddress } from '../utils/helpers'
 
 export function useOnboardingForm() {
@@ -20,12 +25,12 @@ export function useOnboardingForm() {
     port: 22,
     timeout: 30,
     onboarding_timeout: 120,
-    sync_options: ['cables', 'software', 'vlans', 'vrfs']
+    sync_options: ['cables', 'software', 'vlans', 'vrfs'],
   })
 
   const [ipValidation, setIpValidation] = useState<IPValidation>({
     isValid: false,
-    message: ''
+    message: '',
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -40,15 +45,18 @@ export function useOnboardingForm() {
     setFormData(prev => ({ ...prev, ip_address: value }))
 
     const isValid = validateIPAddress(value)
-    const ipCount = value.split(',').map(ip => ip.trim()).filter(ip => ip.length > 0).length
-    
+    const ipCount = value
+      .split(',')
+      .map(ip => ip.trim())
+      .filter(ip => ip.length > 0).length
+
     setIpValidation({
       isValid,
-      message: isValid 
-        ? ipCount > 1 
-          ? `✓ ${ipCount} valid IP addresses` 
+      message: isValid
+        ? ipCount > 1
+          ? `✓ ${ipCount} valid IP addresses`
           : 'Valid IP address'
-        : 'Please enter valid IP address(es) separated by commas'
+        : 'Please enter valid IP address(es) separated by commas',
     })
   }, [])
 
@@ -58,7 +66,10 @@ export function useOnboardingForm() {
         return { type: 'error', message: 'Please enter valid IP address(es) first.' }
       }
 
-      const ipAddresses = ipAddress.split(',').map(ip => ip.trim()).filter(ip => ip.length > 0)
+      const ipAddresses = ipAddress
+        .split(',')
+        .map(ip => ip.trim())
+        .filter(ip => ip.length > 0)
       const firstIP = ipAddresses[0]
 
       setIsValidatingIP(true)
@@ -69,7 +80,7 @@ export function useOnboardingForm() {
           assigned_devices?: Array<{ name: string }>
         }>('nautobot/check-ip', {
           method: 'POST',
-          body: { ip_address: firstIP }
+          body: { ip_address: firstIP },
         })
 
         let message = ''
@@ -79,28 +90,30 @@ export function useOnboardingForm() {
 
         if (data.exists) {
           if (data.is_assigned_to_device && data.assigned_devices?.length) {
-            const deviceNames = data.assigned_devices.map(device => device.name).join(', ')
+            const deviceNames = data.assigned_devices
+              .map(device => device.name)
+              .join(', ')
             return {
               type: 'error',
-              message: `❌ ${message}IP address '${firstIP}' found in Nautobot and assigned to device(s): ${deviceNames}`
+              message: `❌ ${message}IP address '${firstIP}' found in Nautobot and assigned to device(s): ${deviceNames}`,
             }
           } else {
             return {
               type: 'warning',
-              message: `⚠️ ${message}IP address '${firstIP}' found in Nautobot but not assigned to any device.`
+              message: `⚠️ ${message}IP address '${firstIP}' found in Nautobot but not assigned to any device.`,
             }
           }
         } else {
           return {
             type: 'success',
-            message: `✅ ${message}IP address '${firstIP}' not found in Nautobot. Ready for onboarding.`
+            message: `✅ ${message}IP address '${firstIP}' not found in Nautobot. Ready for onboarding.`,
           }
         }
       } catch (error) {
         console.error('Error checking IP:', error)
         return {
           type: 'error',
-          message: `❌ Error checking IP address: ${error instanceof Error ? error.message : 'Unknown error'}`
+          message: `❌ Error checking IP address: ${error instanceof Error ? error.message : 'Unknown error'}`,
         }
       } finally {
         setIsValidatingIP(false)
@@ -125,7 +138,9 @@ export function useOnboardingForm() {
             primary_ip4?: { address: string }
             status?: { name: string }
           }>
-        }>(`nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(deviceName)}&limit=10`)
+        }>(
+          `nautobot/devices?filter_type=name&filter_value=${encodeURIComponent(deviceName)}&limit=10`
+        )
 
         if (data.devices?.length > 0) {
           if (data.devices.length === 1 && data.devices[0]) {
@@ -137,7 +152,7 @@ export function useOnboardingForm() {
 
             return {
               type: 'success',
-              message: `✅ Device found in Nautobot: ${device.name}${role}${location}${ip}${status}`
+              message: `✅ Device found in Nautobot: ${device.name}${role}${location}${ip}${status}`,
             }
           } else {
             const deviceList = data.devices
@@ -152,20 +167,20 @@ export function useOnboardingForm() {
 
             return {
               type: 'success',
-              message: `✅ Found ${data.devices.length} device(s) matching "${deviceName}": ${deviceList}`
+              message: `✅ Found ${data.devices.length} device(s) matching "${deviceName}": ${deviceList}`,
             }
           }
         } else {
           return {
             type: 'info',
-            message: `ℹ️ No devices found in Nautobot with name containing "${deviceName}". This name is available for onboarding.`
+            message: `ℹ️ No devices found in Nautobot with name containing "${deviceName}". This name is available for onboarding.`,
           }
         }
       } catch (error) {
         console.error('Error searching device:', error)
         return {
           type: 'error',
-          message: `❌ Error searching for device: ${error instanceof Error ? error.message : 'Unknown error'}`
+          message: `❌ Error searching for device: ${error instanceof Error ? error.message : 'Unknown error'}`,
         }
       } finally {
         setIsSearchingDevice(false)
@@ -187,7 +202,7 @@ export function useOnboardingForm() {
       { field: 'secret_groups_id', name: 'Secret Group' },
       { field: 'interface_status_id', name: 'Interface Status' },
       { field: 'ip_address_status_id', name: 'IP Address Status' },
-      { field: 'prefix_status_id', name: 'Prefix Status' }
+      { field: 'prefix_status_id', name: 'Prefix Status' },
     ]
 
     const missingFields = requiredFields.filter(
@@ -196,7 +211,10 @@ export function useOnboardingForm() {
 
     if (missingFields.length > 0) {
       const fieldNames = missingFields.map(f => f.name).join(', ')
-      return { isValid: false, message: `Please fill in all required fields: ${fieldNames}` }
+      return {
+        isValid: false,
+        message: `Please fill in all required fields: ${fieldNames}`,
+      }
     }
 
     return { isValid: true }
@@ -207,7 +225,7 @@ export function useOnboardingForm() {
     try {
       const response = await apiCall<OnboardResponse>('nautobot/devices/onboard', {
         method: 'POST',
-        body: formData
+        body: formData,
       })
       return response
     } finally {
@@ -230,7 +248,7 @@ export function useOnboardingForm() {
       checkIPInNautobot,
       searchDevice,
       validateForm,
-      submitOnboarding
+      submitOnboarding,
     }),
     [
       formData,
@@ -243,7 +261,7 @@ export function useOnboardingForm() {
       checkIPInNautobot,
       searchDevice,
       validateForm,
-      submitOnboarding
+      submitOnboarding,
     ]
   )
 }

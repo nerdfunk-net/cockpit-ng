@@ -14,7 +14,14 @@ interface DiffTableRowProps {
   onSync: (device: DiffDevice) => void
 }
 
-export function DiffTableRow({ device, index, isSelected, onSelectDevice, onGetDiff, onSync }: DiffTableRowProps) {
+export function DiffTableRow({
+  device,
+  index,
+  isSelected,
+  onSelectDevice,
+  onGetDiff,
+  onSync,
+}: DiffTableRowProps) {
   const alternatingRowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
   const displayIp = device.ip_address || device.checkmk_ip || 'N/A'
   const canViewDiff = !!device.nautobot_id
@@ -27,7 +34,7 @@ export function DiffTableRow({ device, index, isSelected, onSelectDevice, onGetD
       <td className="pl-3 pr-1 py-3 w-10">
         <Checkbox
           checked={isSelected}
-          onCheckedChange={(checked) => {
+          onCheckedChange={checked => {
             if (device.nautobot_id) onSelectDevice(device.nautobot_id, !!checked)
           }}
           disabled={!device.nautobot_id}
@@ -37,9 +44,7 @@ export function DiffTableRow({ device, index, isSelected, onSelectDevice, onGetD
       <td className="pl-4 pr-2 py-3 w-56 text-sm font-medium text-gray-900">
         {device.name}
       </td>
-      <td className="px-4 py-3 w-36 text-sm text-gray-600">
-        {displayIp}
-      </td>
+      <td className="px-4 py-3 w-36 text-sm text-gray-600">{displayIp}</td>
       <td className="px-4 py-3 w-40 text-sm text-gray-600">
         {device.role || 'Unknown'}
       </td>

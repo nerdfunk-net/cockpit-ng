@@ -12,7 +12,7 @@ export function useGitCommits(repoId: number | null, branch: string) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { apiCall } = useApi()
-  
+
   // Use ref to avoid recreating loadCommits when apiCall changes
   const apiCallRef = useRef(apiCall)
   apiCallRef.current = apiCall
@@ -47,10 +47,13 @@ export function useGitCommits(repoId: number | null, branch: string) {
   }, [repoId, branch, loadCommits])
 
   // Memoize the return object to ensure stable reference
-  return useMemo(() => ({
-    commits,
-    loading,
-    error,
-    reload: loadCommits
-  }), [commits, loading, error, loadCommits])
+  return useMemo(
+    () => ({
+      commits,
+      loading,
+      error,
+      reload: loadCommits,
+    }),
+    [commits, loading, error, loadCommits]
+  )
 }

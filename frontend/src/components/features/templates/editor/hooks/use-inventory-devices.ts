@@ -25,13 +25,13 @@ interface DeviceDetail {
     manufacturer: { id: string; name: string }
   }
   role?: { id: string; name: string }
-  platform?: { 
+  platform?: {
     id: string
     name: string
     network_driver?: string
     manufacturer?: { id: string; name: string } | null
   }
-  location?: { 
+  location?: {
     id: string
     name: string
     description?: string
@@ -92,7 +92,10 @@ interface InventoryDevicesResponse {
   inventory_name: string
 }
 
-export function useInventoryDevices(inventoryId: number | null, enabled: boolean = true) {
+export function useInventoryDevices(
+  inventoryId: number | null,
+  enabled: boolean = true
+) {
   const { apiCall } = useApi()
 
   // Fetch inventory devices with full details in one call
@@ -115,7 +118,11 @@ export function useInventoryDevices(inventoryId: number | null, enabled: boolean
 
   // Format data for template variables
   const formattedData = useMemo(() => {
-    if (!inventoryData || !inventoryData.device_details || inventoryData.device_details.length === 0) {
+    if (
+      !inventoryData ||
+      !inventoryData.device_details ||
+      inventoryData.device_details.length === 0
+    ) {
       return {
         devices: [],
         device_details: {},
@@ -129,7 +136,7 @@ export function useInventoryDevices(inventoryId: number | null, enabled: boolean
     // Convert device_details array to keyed object for easy access
     // Use device name (hostname) as key for user-friendly Jinja2 templates
     const device_details: Record<string, DeviceDetail> = {}
-    inventoryData.device_details.forEach((device) => {
+    inventoryData.device_details.forEach(device => {
       device_details[device.name] = device
     })
 

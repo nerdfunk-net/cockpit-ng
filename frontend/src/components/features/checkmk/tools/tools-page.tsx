@@ -16,7 +16,9 @@ export default function ToolsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">CheckMK Tools</h1>
-            <p className="text-muted-foreground mt-2">Manage CheckMK changes and service discovery</p>
+            <p className="text-muted-foreground mt-2">
+              Manage CheckMK changes and service discovery
+            </p>
           </div>
         </div>
       </div>

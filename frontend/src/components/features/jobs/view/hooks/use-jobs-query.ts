@@ -26,7 +26,8 @@ export function useJobsQuery(options: UseJobsQueryOptions = DEFAULT_OPTIONS) {
       const searchParams = new URLSearchParams()
 
       if (params?.page) searchParams.append('page', params.page.toString())
-      if (params?.page_size) searchParams.append('page_size', params.page_size.toString())
+      if (params?.page_size)
+        searchParams.append('page_size', params.page_size.toString())
 
       // Handle multi-select filters
       if (params?.status) {
@@ -34,23 +35,34 @@ export function useJobsQuery(options: UseJobsQueryOptions = DEFAULT_OPTIONS) {
         if (statusArr.length > 0) searchParams.append('status', statusArr.join(','))
       }
       if (params?.job_type) {
-        const typeArr = Array.isArray(params.job_type) ? params.job_type : [params.job_type]
+        const typeArr = Array.isArray(params.job_type)
+          ? params.job_type
+          : [params.job_type]
         if (typeArr.length > 0) searchParams.append('job_type', typeArr.join(','))
       }
       if (params?.triggered_by) {
-        const triggerArr = Array.isArray(params.triggered_by) ? params.triggered_by : [params.triggered_by]
-        if (triggerArr.length > 0) searchParams.append('triggered_by', triggerArr.join(','))
+        const triggerArr = Array.isArray(params.triggered_by)
+          ? params.triggered_by
+          : [params.triggered_by]
+        if (triggerArr.length > 0)
+          searchParams.append('triggered_by', triggerArr.join(','))
       }
       if (params?.template_id) {
-        const templateArr = Array.isArray(params.template_id) ? params.template_id : [params.template_id]
-        if (templateArr.length > 0) searchParams.append('template_id', templateArr.join(','))
+        const templateArr = Array.isArray(params.template_id)
+          ? params.template_id
+          : [params.template_id]
+        if (templateArr.length > 0)
+          searchParams.append('template_id', templateArr.join(','))
       }
 
       // Always exclude noisy system cache job types
       const excludeTypes = params?.exclude_job_type
-        ? Array.isArray(params.exclude_job_type) ? params.exclude_job_type : [params.exclude_job_type]
+        ? Array.isArray(params.exclude_job_type)
+          ? params.exclude_job_type
+          : [params.exclude_job_type]
         : [...HIDDEN_JOB_TYPES]
-      if (excludeTypes.length > 0) searchParams.append('exclude_job_type', excludeTypes.join(','))
+      if (excludeTypes.length > 0)
+        searchParams.append('exclude_job_type', excludeTypes.join(','))
 
       const queryString = searchParams.toString()
       const endpoint = queryString ? `job-runs?${queryString}` : 'job-runs'

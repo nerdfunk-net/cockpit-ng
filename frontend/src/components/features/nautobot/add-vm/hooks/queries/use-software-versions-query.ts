@@ -25,7 +25,9 @@ export function useSoftwareVersionsQuery(
     queryFn: async (): Promise<SoftwareVersion[]> => {
       const params = platformName ? `?platform=${encodeURIComponent(platformName)}` : ''
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = await apiCall<any>(`nautobot/software-versions${params}`, { method: 'GET' }).catch(() => [])
+      const data = await apiCall<any>(`nautobot/software-versions${params}`, {
+        method: 'GET',
+      }).catch(() => [])
       return Array.isArray(data) ? data : []
     },
     staleTime: QUERY_STALE_TIMES.STATIC,

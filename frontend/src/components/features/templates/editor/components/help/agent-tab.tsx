@@ -14,27 +14,33 @@ export function AgentTab() {
         </div>
         <div className="p-6 space-y-4">
           <p className="text-gray-700">
-            Agent templates are designed for deploying configuration files to remote agents. These templates
-            leverage <strong>Jinja2</strong> syntax and can access inventory data, SNMP mappings, and device
-            details from Nautobot to generate configuration files tailored to specific devices or environments.
+            Agent templates are designed for deploying configuration files to remote
+            agents. These templates leverage <strong>Jinja2</strong> syntax and can
+            access inventory data, SNMP mappings, and device details from Nautobot to
+            generate configuration files tailored to specific devices or environments.
           </p>
           <div className="grid md:grid-cols-3 gap-4 mt-4">
             <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-              <h4 className="font-semibold text-indigo-800 mb-2">Inventory Integration</h4>
+              <h4 className="font-semibold text-indigo-800 mb-2">
+                Inventory Integration
+              </h4>
               <p className="text-sm text-indigo-700">
-                Select an inventory to access device lists and detailed device information for template rendering.
+                Select an inventory to access device lists and detailed device
+                information for template rendering.
               </p>
             </div>
             <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
               <h4 className="font-semibold text-purple-800 mb-2">SNMP Mappings</h4>
               <p className="text-sm text-purple-700">
-                Automatically include SNMP OID mappings for network monitoring and device discovery.
+                Automatically include SNMP OID mappings for network monitoring and
+                device discovery.
               </p>
             </div>
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
               <h4 className="font-semibold text-blue-800 mb-2">File Path Support</h4>
               <p className="text-sm text-blue-700">
-                Specify the destination file path where the rendered template will be deployed on the agent.
+                Specify the destination file path where the rendered template will be
+                deployed on the agent.
               </p>
             </div>
           </div>
@@ -51,13 +57,17 @@ export function AgentTab() {
         </div>
         <div className="p-6 space-y-6">
           <p className="text-gray-600 text-sm">
-            Agent templates have access to multiple variable sources including inventory data, custom variables, and YAML files:
+            Agent templates have access to multiple variable sources including inventory
+            data, custom variables, and YAML files:
           </p>
 
           <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Custom Variables & YAML Files</h4>
+            <h4 className="font-semibold text-gray-800">
+              Custom Variables & YAML Files
+            </h4>
             <p className="text-gray-600 text-sm">
-              Just like Netmiko templates, you can define custom variables and load YAML files:
+              Just like Netmiko templates, you can define custom variables and load YAML
+              files:
             </p>
             <div className="grid md:grid-cols-2 gap-3 text-sm">
               <div className="p-3 bg-green-50 rounded-lg border">
@@ -66,7 +76,9 @@ export function AgentTab() {
               </div>
               <div className="p-3 bg-amber-50 rounded-lg border">
                 <code className="text-amber-600">{'{{ yaml_data.config }}'}</code>
-                <p className="text-xs text-gray-500 mt-1">Data loaded from YAML files</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Data loaded from YAML files
+                </p>
               </div>
             </div>
           </div>
@@ -79,11 +91,16 @@ export function AgentTab() {
             <div className="grid md:grid-cols-2 gap-3 text-sm">
               <div className="p-3 bg-blue-50 rounded-lg border">
                 <code className="text-blue-600">{'{{ devices }}'}</code>
-                <p className="text-xs text-gray-500 mt-1">List of all devices in the inventory</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  List of all devices in the inventory
+                </p>
               </div>
               <div className="p-3 bg-blue-50 rounded-lg border">
                 <code className="text-blue-600">{'{{ device_details }}'}</code>
-                <p className="text-xs text-gray-500 mt-1">Detailed information for devices (when Use Nautobot Context is enabled)</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Detailed information for devices (when Use Nautobot Context is
+                  enabled)
+                </p>
               </div>
             </div>
           </div>
@@ -143,8 +160,10 @@ export function AgentTab() {
         </div>
         <div className="p-6 space-y-6">
           <p className="text-gray-600 text-sm">
-            When &quot;Use Nautobot Context&quot; is enabled, the <code className="bg-gray-100 px-1 rounded">device_details</code> variable
-            contains comprehensive device information from Nautobot, including interfaces, custom fields, and more.
+            When &quot;Use Nautobot Context&quot; is enabled, the{' '}
+            <code className="bg-gray-100 px-1 rounded">device_details</code> variable
+            contains comprehensive device information from Nautobot, including
+            interfaces, custom fields, and more.
           </p>
 
           <div className="space-y-4">
@@ -295,43 +314,46 @@ sequence={{ loop.index }}
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">•</span>
               <span>
-                <strong>Select appropriate inventory:</strong> Always choose the correct inventory that contains
-                the devices you want to configure.
+                <strong>Select appropriate inventory:</strong> Always choose the correct
+                inventory that contains the devices you want to configure.
               </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">•</span>
               <span>
-                <strong>Specify file paths:</strong> Provide clear destination paths for where configuration
-                files should be deployed on the agent.
+                <strong>Specify file paths:</strong> Provide clear destination paths for
+                where configuration files should be deployed on the agent.
               </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">•</span>
               <span>
-                <strong>Use Nautobot Context wisely:</strong> Enable this option only when you need detailed
-                device information to avoid unnecessary API calls.
+                <strong>Use Nautobot Context wisely:</strong> Enable this option only
+                when you need detailed device information to avoid unnecessary API
+                calls.
               </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">•</span>
               <span>
-                <strong>Check for empty lists:</strong> Always verify that device lists are not empty before
-                iterating to avoid generating empty configuration files.
+                <strong>Check for empty lists:</strong> Always verify that device lists
+                are not empty before iterating to avoid generating empty configuration
+                files.
               </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">•</span>
               <span>
-                <strong>Format output appropriately:</strong> Consider the target system&apos;s configuration
-                format (INI, YAML, JSON, etc.) when generating files.
+                <strong>Format output appropriately:</strong> Consider the target
+                system&apos;s configuration format (INI, YAML, JSON, etc.) when
+                generating files.
               </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">•</span>
               <span>
-                <strong>Test rendering:</strong> Always use the preview function to verify your template
-                generates the expected output before deployment.
+                <strong>Test rendering:</strong> Always use the preview function to
+                verify your template generates the expected output before deployment.
               </span>
             </li>
           </ul>

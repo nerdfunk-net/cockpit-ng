@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import React from 'react'
+import { StrictMode, type ReactNode } from 'react'
 import './globals.css'
 import { localFonts } from '@/lib/local-fonts'
 import { AuthHydration } from '@/components/auth/components/auth-hydration'
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: ReactNode
 }>) {
   // Note: Console override removed due to React immutability rules
   // Use React DevTools and browser console for debugging instead
@@ -56,13 +56,13 @@ export default function RootLayout({
         />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <React.StrictMode>
+        <StrictMode>
           <QueryProvider>
             <AuthHydration />
             {children}
             <Toaster />
           </QueryProvider>
-        </React.StrictMode>
+        </StrictMode>
       </body>
     </html>
   )

@@ -37,7 +37,7 @@ export function DeployTab({
   onDryRun,
   onDeployToGit,
   onActivate,
-  selectedInventoryId
+  selectedInventoryId,
 }: DeployTabProps) {
   return (
     <div className="space-y-6">
@@ -45,8 +45,9 @@ export function DeployTab({
       {!selectedInventoryId && (
         <Alert className="status-warning">
           <AlertDescription>
-            <strong>No inventory selected.</strong> Agent deployment requires a saved inventory.
-            Please load a saved inventory from the Devices tab before deploying.
+            <strong>No inventory selected.</strong> Agent deployment requires a saved
+            inventory. Please load a saved inventory from the Devices tab before
+            deploying.
           </AlertDescription>
         </Alert>
       )}
@@ -67,20 +68,19 @@ export function DeployTab({
             onChange={onAgentChange}
             loading={isAgentsLoading}
           />
-          
+
           <div className="space-y-2">
-            <Label htmlFor="deploy-path">
-              Path
-            </Label>
+            <Label htmlFor="deploy-path">Path</Label>
             <Input
               id="deploy-path"
               type="text"
               placeholder="e.g., /etc/telegraf/telegraf.d"
               value={deployPath}
-              onChange={(e) => onDeployPathChange(e.target.value)}
+              onChange={e => onDeployPathChange(e.target.value)}
             />
             <p className="text-sm text-muted-foreground">
-              Absolute path on the target device where the rendered configuration will be deployed
+              Absolute path on the target device where the rendered configuration will
+              be deployed
             </p>
           </div>
         </div>

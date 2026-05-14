@@ -58,11 +58,14 @@ export function useAgentSelector() {
     [agents, selectedAgentId]
   )
 
-  return useMemo(() => ({
-    agents,
-    selectedAgentId,
-    selectedAgent,
-    setSelectedAgentId,
-    loading
-  }), [agents, selectedAgentId, selectedAgent, loading])
+  return useMemo(
+    () => ({
+      agents,
+      selectedAgentId,
+      selectedAgent,
+      setSelectedAgentId,
+      loading,
+    }),
+    [agents, selectedAgentId, selectedAgent, loading]
+  )
 }

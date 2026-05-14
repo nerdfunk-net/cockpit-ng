@@ -42,7 +42,12 @@ export function ColumnSelector({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" disabled={isLoading} className="text-white hover:bg-white/20 text-xs h-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={isLoading}
+          className="text-white hover:bg-white/20 text-xs h-6"
+        >
           <Settings className="h-3 w-3 mr-1" />
           Columns
         </Button>
@@ -50,11 +55,11 @@ export function ColumnSelector({
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {availableColumns.map((column) => (
+        {availableColumns.map(column => (
           <DropdownMenuCheckboxItem
             key={column.id}
             checked={isColumnVisible(column.id)}
-            onCheckedChange={(checked) => handleToggleColumn(column.id, checked)}
+            onCheckedChange={checked => handleToggleColumn(column.id, checked)}
           >
             {column.label}
           </DropdownMenuCheckboxItem>

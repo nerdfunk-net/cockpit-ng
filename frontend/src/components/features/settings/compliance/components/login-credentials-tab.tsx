@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -27,16 +33,22 @@ interface LoginCredentialsTabProps {
   isActiveTab: boolean
 }
 
-export function LoginCredentialsTab({ openConfirm, isActiveTab }: LoginCredentialsTabProps) {
+export function LoginCredentialsTab({
+  openConfirm,
+  isActiveTab,
+}: LoginCredentialsTabProps) {
   const {
     data: loginCredentials = EMPTY_LOGIN_CREDENTIALS,
     isLoading: loginCredentialsLoading,
   } = useLoginCredentialsQuery({ enabled: isActiveTab })
 
-  const { createCredential, updateCredential, deleteCredential } = useLoginCredentialsMutations()
+  const { createCredential, updateCredential, deleteCredential } =
+    useLoginCredentialsMutations()
 
   const [showDialog, setShowDialog] = useState(false)
-  const [editingCredential, setEditingCredential] = useState<LoginCredential | null>(null)
+  const [editingCredential, setEditingCredential] = useState<LoginCredential | null>(
+    null
+  )
   const [form, setForm] = useState<LoginCredentialFormData>(DEFAULT_LOGIN_FORM)
 
   const handleAdd = useCallback(() => {
@@ -100,7 +112,9 @@ export function LoginCredentialsTab({ openConfirm, isActiveTab }: LoginCredentia
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : loginCredentials.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No credentials configured</p>
+            <p className="text-center text-muted-foreground py-8">
+              No credentials configured
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -114,13 +128,15 @@ export function LoginCredentialsTab({ openConfirm, isActiveTab }: LoginCredentia
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loginCredentials.map((credential) => (
+                {loginCredentials.map(credential => (
                   <TableRow key={credential.id}>
                     <TableCell className="font-medium">
                       {credential.name || credential.username}
                     </TableCell>
                     <TableCell>{credential.username}</TableCell>
-                    <TableCell className="font-mono text-sm">{credential.password}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {credential.password}
+                    </TableCell>
                     <TableCell>{credential.description || '-'}</TableCell>
                     <TableCell>
                       <Badge variant={credential.is_active ? 'default' : 'secondary'}>

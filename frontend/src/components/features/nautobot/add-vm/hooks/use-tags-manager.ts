@@ -20,7 +20,10 @@ export function useTagsManager(): TagsManagerHook {
   const [showModal, setShowModal] = useState(false)
 
   // Fetch tags only when modal is open
-  const { data: availableTags = EMPTY_STRING_ARRAY as unknown as TagItem[], isLoading } = useTagsQuery({
+  const {
+    data: availableTags = EMPTY_STRING_ARRAY as unknown as TagItem[],
+    isLoading,
+  } = useTagsQuery({
     enabled: showModal,
   })
 
@@ -33,8 +36,8 @@ export function useTagsManager(): TagsManagerHook {
   }, [])
 
   const toggleTag = useCallback((tagId: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    setSelectedTags(prev =>
+      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
     )
   }, [])
 

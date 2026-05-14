@@ -3,10 +3,23 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { ChevronDown, ChevronRight, Settings2 } from 'lucide-react'
-import type { CsvImportNautobotData, NautobotItem } from '../hooks/use-csv-import-nautobot-query'
+import type {
+  CsvImportNautobotData,
+  NautobotItem,
+} from '../hooks/use-csv-import-nautobot-query'
 import { useSearchableDropdown } from '@/components/features/nautobot/add-device/hooks/use-searchable-dropdown'
 import { SearchableDropdownInput } from '@/components/features/nautobot/add-device/components/searchable-dropdown-input'
 import { buildLocationHierarchy } from '@/components/features/nautobot/add-device/utils'
@@ -43,7 +56,12 @@ function getFieldConfigs(
   if (importType === 'devices') {
     return [
       { key: 'location', label: 'Location', required: true, items: data.locations },
-      { key: 'device_type', label: 'Device Type', required: true, items: data.deviceTypes },
+      {
+        key: 'device_type',
+        label: 'Device Type',
+        required: true,
+        items: data.deviceTypes,
+      },
       { key: 'status', label: 'Status', required: true, items: data.deviceStatuses },
       { key: 'role', label: 'Role', required: true, items: data.deviceRoles },
       { key: 'platform', label: 'Platform', required: false, items: data.platforms },
@@ -120,7 +138,7 @@ function LocationField({ items, value, disabled, onChange }: LocationFieldProps)
     items: hierarchicalItems,
     selectedId: value,
     onSelect: onChange,
-    getDisplayText: (item) => item.hierarchicalPath ?? item.name,
+    getDisplayText: item => item.hierarchicalPath ?? item.name,
     filterPredicate,
   })
 
@@ -133,8 +151,8 @@ function LocationField({ items, value, disabled, onChange }: LocationFieldProps)
       disabled={disabled}
       inputClassName="h-8 text-sm bg-white border-gray-300 shadow-sm"
       dropdownState={locationDropdown}
-      renderItem={(item) => <span>{item.hierarchicalPath ?? item.name}</span>}
-      getItemKey={(item) => item.id}
+      renderItem={item => <span>{item.hierarchicalPath ?? item.name}</span>}
+      getItemKey={item => item.id}
     />
   )
 }
@@ -183,93 +201,114 @@ export function CsvImportDefaultsPanel({
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs text-blue-100">
-                Used when CSV rows are missing these fields — CSV data always takes priority
+                Used when CSV rows are missing these fields — CSV data always takes
+                priority
               </span>
-              {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              {open ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
             </div>
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
             <div className="grid grid-cols-2 gap-4">
-          {fieldConfigs.map((field) => {
-            const currentValue = defaults[field.key] ?? ''
+              {fieldConfigs.map(field => {
+                const currentValue = defaults[field.key] ?? ''
 
-            // Location gets a searchable filter input instead of a plain select
-            if (field.key === 'location' && field.items) {
-              return (
-                <LocationField
-                  key={field.key}
-                  items={field.items}
-                  value={currentValue}
-                  disabled={isLoading}
-                  onChange={(id) => handleChange(field.key, id)}
-                />
-              )
-            }
+                // Location gets a searchable filter input instead of a plain select
+                if (field.key === 'location' && field.items) {
+                  return (
+                    <LocationField
+                      key={field.key}
+                      items={field.items}
+                      value={currentValue}
+                      disabled={isLoading}
+                      onChange={id => handleChange(field.key, id)}
+                    />
+                  )
+                }
 
-            if (field.type === 'text') {
-              return (
-                <div key={field.key} className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">
-                    {field.label}
-                    {field.required && <span className="text-blue-500 ml-1">*</span>}
-                  </Label>
-                  <Input
-                    className="h-8 text-sm bg-white border-gray-300 shadow-sm"
-                    value={currentValue}
-                    placeholder={field.placeholder ?? `Default ${field.label.toLowerCase()}...`}
-                    disabled={isLoading}
-                    onChange={(e) => handleChange(field.key, e.target.value)}
-                  />
-                </div>
-              )
-            }
+                if (field.type === 'text') {
+                  return (
+                    <div key={field.key} className="space-y-1">
+                      <Label className="text-xs font-medium text-gray-600">
+                        {field.label}
+                        {field.required && (
+                          <span className="text-blue-500 ml-1">*</span>
+                        )}
+                      </Label>
+                      <Input
+                        className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                        value={currentValue}
+                        placeholder={
+                          field.placeholder ?? `Default ${field.label.toLowerCase()}...`
+                        }
+                        disabled={isLoading}
+                        onChange={e => handleChange(field.key, e.target.value)}
+                      />
+                    </div>
+                  )
+                }
 
-            // Build options with a stable `id` for the React key, separate from the stored value.
-            // Some Nautobot types (e.g. device types) expose `display` instead of `name`.
-            const options = field.staticOptions
-              ? field.staticOptions.map((o, i) => ({ id: String(i), value: o.value, label: o.label }))
-              : (field.items ?? []).map((item) => {
-                  const label = item.display ?? item.name ?? item.id
-                  return { id: item.id, value: item.id, label }
-                })
+                // Build options with a stable `id` for the React key, separate from the stored value.
+                // Some Nautobot types (e.g. device types) expose `display` instead of `name`.
+                const options = field.staticOptions
+                  ? field.staticOptions.map((o, i) => ({
+                      id: String(i),
+                      value: o.value,
+                      label: o.label,
+                    }))
+                  : (field.items ?? []).map(item => {
+                      const label = item.display ?? item.name ?? item.id
+                      return { id: item.id, value: item.id, label }
+                    })
 
-            return (
-              <div key={field.key} className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">
-                  {field.label}
-                  {field.required && (
-                    <span className="text-blue-500 ml-1">*</span>
-                  )}
-                </Label>
-                <Select
-                  value={currentValue || '__none__'}
-                  onValueChange={(val) => handleChange(field.key, val === '__none__' ? '' : val)}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
-                    <SelectValue placeholder={isLoading ? 'Loading...' : `Select default ${field.label.toLowerCase()}...`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">
-                      <span className="text-gray-400">
-                        {field.required ? '— No default (required in CSV) —' : '— No default —'}
-                      </span>
-                    </SelectItem>
-                    {options.map((opt) => (
-                      <SelectItem key={opt.id} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-      </CollapsibleContent>
+                return (
+                  <div key={field.key} className="space-y-1">
+                    <Label className="text-xs font-medium text-gray-600">
+                      {field.label}
+                      {field.required && <span className="text-blue-500 ml-1">*</span>}
+                    </Label>
+                    <Select
+                      value={currentValue || '__none__'}
+                      onValueChange={val =>
+                        handleChange(field.key, val === '__none__' ? '' : val)
+                      }
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                        <SelectValue
+                          placeholder={
+                            isLoading
+                              ? 'Loading...'
+                              : `Select default ${field.label.toLowerCase()}...`
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">
+                          <span className="text-gray-400">
+                            {field.required
+                              ? '— No default (required in CSV) —'
+                              : '— No default —'}
+                          </span>
+                        </SelectItem>
+                        {options.map(opt => (
+                          <SelectItem key={opt.id} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </CollapsibleContent>
       </div>
     </Collapsible>
   )

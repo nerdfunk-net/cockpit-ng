@@ -1,7 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -16,7 +22,11 @@ const EMPTY_ENTRIES: CacheEntry[] = []
 
 export function CacheEntriesList() {
   const [includeExpired, setIncludeExpired] = useState(false)
-  const { data: entries = EMPTY_ENTRIES, isLoading, refetch } = useCacheEntries(includeExpired)
+  const {
+    data: entries = EMPTY_ENTRIES,
+    isLoading,
+    refetch,
+  } = useCacheEntries(includeExpired)
   const { clearCache } = useCacheMutations()
   const { confirmDialog, openConfirm } = useConfirmDialog()
 
@@ -50,7 +60,7 @@ export function CacheEntriesList() {
               <Switch
                 id="include-expired"
                 checked={includeExpired}
-                onCheckedChange={(checked) => {
+                onCheckedChange={checked => {
                   setIncludeExpired(checked)
                 }}
               />
@@ -73,13 +83,11 @@ export function CacheEntriesList() {
           {entries.length > 0 ? (
             <>
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {entries.map((entry) => (
+                {entries.map(entry => (
                   <div
                     key={entry.key}
                     className={`p-3 rounded-lg border ${
-                      entry.is_expired
-                        ? 'status-error'
-                        : 'bg-white border-gray-200'
+                      entry.is_expired ? 'status-error' : 'bg-white border-gray-200'
                     }`}
                   >
                     <div className="flex items-start justify-between">
@@ -108,7 +116,8 @@ export function CacheEntriesList() {
                         onClick={() => {
                           openConfirm({
                             title: `Clear namespace "${entry.namespace}"?`,
-                            description: 'This will remove all cache entries in this namespace.',
+                            description:
+                              'This will remove all cache entries in this namespace.',
                             onConfirm: () => clearCache.mutate(entry.namespace),
                             variant: 'destructive',
                           })
@@ -128,9 +137,7 @@ export function CacheEntriesList() {
               </div>
             </>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              No cache entries found
-            </div>
+            <div className="text-center py-8 text-gray-500">No cache entries found</div>
           )}
         </div>
       </CardContent>

@@ -13,13 +13,17 @@ interface CustomVariableTabProps {
   existingVariableNames: string[]
 }
 
-export function CustomVariableTab({ onAdd, existingVariableNames }: CustomVariableTabProps) {
+export function CustomVariableTab({
+  onAdd,
+  existingVariableNames,
+}: CustomVariableTabProps) {
   const [name, setName] = useState('')
   const [value, setValue] = useState('')
 
-  const nameError = name && existingVariableNames.includes(name)
-    ? 'A variable with this name already exists'
-    : ''
+  const nameError =
+    name && existingVariableNames.includes(name)
+      ? 'A variable with this name already exists'
+      : ''
 
   const canAdd = name.trim().length > 0 && !nameError
 
@@ -43,12 +47,10 @@ export function CustomVariableTab({ onAdd, existingVariableNames }: CustomVariab
           id="custom-var-name"
           placeholder="my_variable"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={e => setName(e.target.value)}
           className={nameError ? 'border-red-300' : ''}
         />
-        {nameError && (
-          <p className="text-xs text-red-500">{nameError}</p>
-        )}
+        {nameError && <p className="text-xs text-red-500">{nameError}</p>}
       </div>
 
       <div className="space-y-2">
@@ -57,7 +59,7 @@ export function CustomVariableTab({ onAdd, existingVariableNames }: CustomVariab
           id="custom-var-value"
           placeholder="Enter value or leave empty..."
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={e => setValue(e.target.value)}
           rows={4}
           className="font-mono text-sm"
         />

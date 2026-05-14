@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Tags as TagsIcon } from 'lucide-react'
@@ -22,7 +28,7 @@ export function TagsModal({
   isLoading,
 }: TagsModalProps) {
   return (
-    <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={show} onOpenChange={open => !open && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -37,10 +43,12 @@ export function TagsModal({
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : availableTags.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No tags available</p>
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No tags available
+            </p>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {availableTags.map((tag) => (
+              {availableTags.map(tag => (
                 <Badge
                   key={tag.id}
                   variant={selectedTags.includes(tag.id) ? 'default' : 'outline'}

@@ -3,9 +3,24 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Save, History, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import {
+  Save,
+  History,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react'
 import { useBackupMutations } from '../hooks/use-backup-mutations'
 import type { Device, DeviceFilters, FilterOptions, BackupSorting } from '../types'
 
@@ -38,7 +53,7 @@ export function BackupDevicesTable({
   onPageChange,
   onPageSizeChange,
   sorting,
-  onSortChange
+  onSortChange,
 }: BackupDevicesTableProps) {
   const { triggerBackup } = useBackupMutations()
 
@@ -101,23 +116,29 @@ export function BackupDevicesTable({
                       <Input
                         placeholder="Type 3+ chars for backend search..."
                         value={filters.name || ''}
-                        onChange={(e) => onFiltersChange({ ...filters, name: e.target.value })}
+                        onChange={e =>
+                          onFiltersChange({ ...filters, name: e.target.value })
+                        }
                         className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                       />
                     </div>
                   </div>
                 </th>
-                <th className="px-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">IP Address</th>
+                <th className="px-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">
+                  IP Address
+                </th>
                 <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
                   <div className="space-y-1">
                     <div>Role</div>
                     <div>
                       <Select
-                        value={filters.role || "all"}
-                        onValueChange={(value) => onFiltersChange({
-                          ...filters,
-                          role: value === "all" ? "" : value
-                        })}
+                        value={filters.role || 'all'}
+                        onValueChange={value =>
+                          onFiltersChange({
+                            ...filters,
+                            role: value === 'all' ? '' : value,
+                          })
+                        }
                       >
                         <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                           <SelectValue placeholder="All Roles" />
@@ -125,7 +146,9 @@ export function BackupDevicesTable({
                         <SelectContent>
                           <SelectItem value="all">All Roles</SelectItem>
                           {[...filterOptions.roles].sort().map(role => (
-                            <SelectItem key={`backup-role-${role}`} value={role}>{role}</SelectItem>
+                            <SelectItem key={`backup-role-${role}`} value={role}>
+                              {role}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -137,11 +160,13 @@ export function BackupDevicesTable({
                     <div>Location</div>
                     <div>
                       <Select
-                        value={filters.location || "all"}
-                        onValueChange={(value) => onFiltersChange({
-                          ...filters,
-                          location: value === "all" ? "" : value
-                        })}
+                        value={filters.location || 'all'}
+                        onValueChange={value =>
+                          onFiltersChange({
+                            ...filters,
+                            location: value === 'all' ? '' : value,
+                          })
+                        }
                       >
                         <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                           <SelectValue placeholder="All Locations" />
@@ -149,7 +174,12 @@ export function BackupDevicesTable({
                         <SelectContent>
                           <SelectItem value="all">All Locations</SelectItem>
                           {[...filterOptions.locations].sort().map(location => (
-                            <SelectItem key={`backup-location-${location}`} value={location}>{location}</SelectItem>
+                            <SelectItem
+                              key={`backup-location-${location}`}
+                              value={location}
+                            >
+                              {location}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -161,11 +191,13 @@ export function BackupDevicesTable({
                     <div>Device Type</div>
                     <div>
                       <Select
-                        value={filters.deviceType || "all"}
-                        onValueChange={(value) => onFiltersChange({
-                          ...filters,
-                          deviceType: value === "all" ? "" : value
-                        })}
+                        value={filters.deviceType || 'all'}
+                        onValueChange={value =>
+                          onFiltersChange({
+                            ...filters,
+                            deviceType: value === 'all' ? '' : value,
+                          })
+                        }
                       >
                         <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                           <SelectValue placeholder="All Types" />
@@ -173,7 +205,12 @@ export function BackupDevicesTable({
                         <SelectContent>
                           <SelectItem value="all">All Types</SelectItem>
                           {[...filterOptions.deviceTypes].sort().map(deviceType => (
-                            <SelectItem key={`backup-devicetype-${deviceType}`} value={deviceType}>{deviceType}</SelectItem>
+                            <SelectItem
+                              key={`backup-devicetype-${deviceType}`}
+                              value={deviceType}
+                            >
+                              {deviceType}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -185,11 +222,13 @@ export function BackupDevicesTable({
                     <div>Status</div>
                     <div>
                       <Select
-                        value={filters.status || "all"}
-                        onValueChange={(value) => onFiltersChange({
-                          ...filters,
-                          status: value === "all" ? "" : value
-                        })}
+                        value={filters.status || 'all'}
+                        onValueChange={value =>
+                          onFiltersChange({
+                            ...filters,
+                            status: value === 'all' ? '' : value,
+                          })
+                        }
                       >
                         <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                           <SelectValue placeholder="All Statuses" />
@@ -197,7 +236,9 @@ export function BackupDevicesTable({
                         <SelectContent>
                           <SelectItem value="all">All Statuses</SelectItem>
                           {[...filterOptions.statuses].sort().map(status => (
-                            <SelectItem key={`backup-status-${status}`} value={status}>{status}</SelectItem>
+                            <SelectItem key={`backup-status-${status}`} value={status}>
+                              {status}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -213,7 +254,9 @@ export function BackupDevicesTable({
                     {getSortIcon('last_backup')}
                   </button>
                 </th>
-                <th className="pl-16 pr-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">Actions</th>
+                <th className="pl-16 pr-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -224,23 +267,40 @@ export function BackupDevicesTable({
                   </td>
                 </tr>
               ) : (
-                devices.map((device) => {
+                devices.map(device => {
                   const isOffline = isDeviceOffline(device.status?.name || '')
                   const isBackingUp = backupInProgress.has(device.id)
 
                   return (
-                    <tr key={`backup-device-${device.id}`} className="border-b hover:bg-muted/50">
-                      <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-gray-900">{device.name}</td>
-                      <td className="px-4 py-3 w-32 text-sm text-gray-600">{device.primary_ip4?.address || 'N/A'}</td>
-                      <td className="px-4 py-3 w-36 text-sm text-gray-600">{device.role?.name || 'Unknown'}</td>
-                      <td className="pl-12 pr-4 py-3 w-56 text-sm text-gray-600">{device.location?.name || 'Unknown'}</td>
-                      <td className="px-4 py-3 w-36 text-sm text-gray-600">{device.device_type?.model || 'Unknown'}</td>
+                    <tr
+                      key={`backup-device-${device.id}`}
+                      className="border-b hover:bg-muted/50"
+                    >
+                      <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-gray-900">
+                        {device.name}
+                      </td>
+                      <td className="px-4 py-3 w-32 text-sm text-gray-600">
+                        {device.primary_ip4?.address || 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 w-36 text-sm text-gray-600">
+                        {device.role?.name || 'Unknown'}
+                      </td>
+                      <td className="pl-12 pr-4 py-3 w-56 text-sm text-gray-600">
+                        {device.location?.name || 'Unknown'}
+                      </td>
+                      <td className="px-4 py-3 w-36 text-sm text-gray-600">
+                        {device.device_type?.model || 'Unknown'}
+                      </td>
                       <td className="px-4 py-3 w-44">
-                        <Badge variant={getStatusBadgeVariant(device.status?.name || '')}>
+                        <Badge
+                          variant={getStatusBadgeVariant(device.status?.name || '')}
+                        >
                           {device.status?.name || 'Unknown'}
                         </Badge>
                       </td>
-                      <td className="pl-12 pr-4 py-3 w-40 text-sm text-gray-600">{device.cf_last_backup || 'Never'}</td>
+                      <td className="pl-12 pr-4 py-3 w-40 text-sm text-gray-600">
+                        {device.cf_last_backup || 'Never'}
+                      </td>
                       <td className="pl-16 pr-4 py-3 w-32">
                         <div className="flex gap-1">
                           <Button
@@ -278,7 +338,8 @@ export function BackupDevicesTable({
         {/* Pagination */}
         <div className="flex items-center justify-between pt-4">
           <div className="text-sm text-muted-foreground">
-            Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, total)} of {total} entries
+            Showing {currentPage * pageSize + 1} to{' '}
+            {Math.min((currentPage + 1) * pageSize, total)} of {total} entries
           </div>
 
           <div className="flex items-center gap-1">
@@ -304,13 +365,14 @@ export function BackupDevicesTable({
 
                 {/* Page numbers */}
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNum = Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i
+                  const pageNum =
+                    Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i
                   if (pageNum >= totalPages) return null
 
                   return (
                     <Button
                       key={`backup-page-${pageNum}`}
-                      variant={pageNum === currentPage ? "default" : "outline"}
+                      variant={pageNum === currentPage ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => onPageChange(pageNum)}
                     >
@@ -341,8 +403,13 @@ export function BackupDevicesTable({
 
             {/* Page Size Selector */}
             <div className="flex items-center gap-1 ml-2">
-              <Label htmlFor="page-size" className="text-xs text-muted-foreground">Show:</Label>
-              <Select value={pageSize.toString()} onValueChange={(value) => onPageSizeChange(parseInt(value))}>
+              <Label htmlFor="page-size" className="text-xs text-muted-foreground">
+                Show:
+              </Label>
+              <Select
+                value={pageSize.toString()}
+                onValueChange={value => onPageSizeChange(parseInt(value))}
+              >
                 <SelectTrigger className="w-20 h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                   <SelectValue />
                 </SelectTrigger>

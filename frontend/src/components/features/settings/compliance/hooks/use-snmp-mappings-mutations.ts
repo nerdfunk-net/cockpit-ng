@@ -123,7 +123,7 @@ export function useSnmpMappingsMutations() {
 
       throw new Error('Failed to import SNMP mappings')
     },
-    onSuccess: (response) => {
+    onSuccess: response => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.complianceSettings.snmpMappings(),
       })

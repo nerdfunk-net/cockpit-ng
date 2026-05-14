@@ -15,7 +15,7 @@ export function buildLocationHierarchy(locations: LocationItem[]): LocationItem[
     const hierarchicalPath = buildLocationPath(location, locationMap)
     return {
       ...location,
-      hierarchicalPath
+      hierarchicalPath,
     }
   })
 
@@ -42,7 +42,8 @@ export function buildLocationPath(
     // Move to parent if it exists
     if (current.parent?.id) {
       const parent = locationMap.get(current.parent.id)
-      if (parent && !path.includes(parent.name)) { // Prevent circular references
+      if (parent && !path.includes(parent.name)) {
+        // Prevent circular references
         current = parent
       } else {
         break
@@ -53,7 +54,7 @@ export function buildLocationPath(
   }
 
   // Join path with arrows, or return just the name if it's a root location
-  return path.length > 1 ? path.join(' → ') : (path[0] || '')
+  return path.length > 1 ? path.join(' → ') : path[0] || ''
 }
 
 /**

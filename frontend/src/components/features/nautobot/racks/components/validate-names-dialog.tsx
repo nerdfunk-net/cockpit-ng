@@ -1,7 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { CheckCircle2, XCircle, Loader2, ShieldCheck, ArrowRight, Pencil } from 'lucide-react'
+import {
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  ShieldCheck,
+  ArrowRight,
+  Pencil,
+} from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -13,7 +20,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/hooks/use-api'
 import { applyNameTransform } from '../utils/name-transform'
-import type { RackFaceAssignments, RackDevice, MatchingStrategy, NameTransform } from '../types'
+import type {
+  RackFaceAssignments,
+  RackDevice,
+  MatchingStrategy,
+  NameTransform,
+} from '../types'
 
 interface NautobotDeviceListItem {
   id: string
@@ -77,12 +89,28 @@ export function ValidateNamesDialog({
     const isReservation = (id: string) => id.startsWith('__reservation__::')
     const seen = new Map<string, { deviceId: string; deviceName: string }>()
     for (const slot of Object.values(localFront)) {
-      if (slot && !slot.isReservation && !isReservation(slot.deviceId) && !seen.has(slot.deviceId))
-        seen.set(slot.deviceId, { deviceId: slot.deviceId, deviceName: slot.deviceName })
+      if (
+        slot &&
+        !slot.isReservation &&
+        !isReservation(slot.deviceId) &&
+        !seen.has(slot.deviceId)
+      )
+        seen.set(slot.deviceId, {
+          deviceId: slot.deviceId,
+          deviceName: slot.deviceName,
+        })
     }
     for (const slot of Object.values(localRear)) {
-      if (slot && !slot.isReservation && !isReservation(slot.deviceId) && !seen.has(slot.deviceId))
-        seen.set(slot.deviceId, { deviceId: slot.deviceId, deviceName: slot.deviceName })
+      if (
+        slot &&
+        !slot.isReservation &&
+        !isReservation(slot.deviceId) &&
+        !seen.has(slot.deviceId)
+      )
+        seen.set(slot.deviceId, {
+          deviceId: slot.deviceId,
+          deviceName: slot.deviceName,
+        })
     }
     for (const d of localUnpositioned) {
       if (!d.isReservation && !isReservation(d.id) && !seen.has(d.id))
@@ -106,12 +134,12 @@ export function ValidateNamesDialog({
           const params = new URLSearchParams({ name_ic: lookupName })
           if (selectedLocationId) params.append('location_id', selectedLocationId)
 
-          const result = await apiCall<NautobotDeviceListItem[] | { devices?: NautobotDeviceListItem[] }>(
-            `nautobot/devices?${params.toString()}`
-          )
+          const result = await apiCall<
+            NautobotDeviceListItem[] | { devices?: NautobotDeviceListItem[] }
+          >(`nautobot/devices?${params.toString()}`)
           const items = Array.isArray(result)
             ? result
-            : (result as { devices?: NautobotDeviceListItem[] }).devices ?? []
+            : ((result as { devices?: NautobotDeviceListItem[] }).devices ?? [])
 
           const matched = applyMatchingStrategy(items, lookupName, matchingStrategy)
           return {
@@ -139,7 +167,7 @@ export function ValidateNamesDialog({
   // Auto-run validation whenever the dialog opens
   useEffect(() => {
     if (open) runValidation()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   const foundCount = results.filter(r => r.found).length
@@ -183,7 +211,8 @@ export function ValidateNamesDialog({
               <span className="text-gray-300">·</span>
               <span>Name transform:</span>
               <Badge variant="outline" className="text-xs font-normal font-mono">
-                {nameTransform.mode === 'regex' ? 'regex' : 'replace'}: {nameTransform.pattern}
+                {nameTransform.mode === 'regex' ? 'regex' : 'replace'}:{' '}
+                {nameTransform.pattern}
               </Badge>
             </>
           ) : (
@@ -198,7 +227,9 @@ export function ValidateNamesDialog({
         {isValidating && (
           <div className="flex flex-col items-center justify-center py-10 gap-3 text-muted-foreground">
             <Loader2 className="h-7 w-7 animate-spin" />
-            <span className="text-sm">Checking {uniqueDevices.length} device(s) against Nautobot…</span>
+            <span className="text-sm">
+              Checking {uniqueDevices.length} device(s) against Nautobot…
+            </span>
           </div>
         )}
 
@@ -271,7 +302,9 @@ export function ValidateNamesDialog({
                             )}
                           </td>
                           <td className="px-3 py-2 font-mono text-blue-700">
-                            {entry.lookupName !== entry.deviceName ? entry.lookupName : ''}
+                            {entry.lookupName !== entry.deviceName
+                              ? entry.lookupName
+                              : ''}
                           </td>
                         </>
                       )}
@@ -294,10 +327,7 @@ export function ValidateNamesDialog({
         <DialogFooter className="flex items-center justify-between gap-2 pt-4 border-t border-gray-100 mt-2">
           <div>
             {!isValidating && foundCount > 0 && (
-              <Button
-                onClick={handleApplyNames}
-                className="gap-2"
-              >
+              <Button onClick={handleApplyNames} className="gap-2">
                 <Pencil className="h-4 w-4" />
                 Apply Names
                 {renamedCount > 0 && (

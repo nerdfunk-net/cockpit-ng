@@ -1,15 +1,37 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { CheckMKInterface, CheckMKAddress } from '../utils/interface-mapping-utils'
-import { getAdminStatusLabel, getOperStatusLabel, formatSpeed } from '../utils/interface-mapping-utils'
+import {
+  getAdminStatusLabel,
+  getOperStatusLabel,
+  formatSpeed,
+} from '../utils/interface-mapping-utils'
 
 interface InterfaceMappingTableProps {
   interfaces: CheckMKInterface[]
   ipAddressStatuses: Array<{ id: string; name: string }> | null
   ipAddressRoles: Array<{ id: string; name: string }> | null
-  onInterfaceMappingsChange?: (mappings: Record<string, { enabled: boolean; ipRole: string; status: string; ipAddress: string; interfaceName: string; isPrimary: boolean }>) => void
+  onInterfaceMappingsChange?: (
+    mappings: Record<
+      string,
+      {
+        enabled: boolean
+        ipRole: string
+        status: string
+        ipAddress: string
+        interfaceName: string
+        isPrimary: boolean
+      }
+    >
+  ) => void
 }
 
 export interface InterfaceMapping {
@@ -28,13 +50,18 @@ interface IPAddressRow {
   rowKey: string // Unique key: "interfaceIndex-ipAddress"
 }
 
-export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddressRoles, onInterfaceMappingsChange }: InterfaceMappingTableProps) {
+export function InterfaceMappingTable({
+  interfaces,
+  ipAddressStatuses,
+  ipAddressRoles,
+  onInterfaceMappingsChange,
+}: InterfaceMappingTableProps) {
   // Flatten interfaces into IP address rows
   const ipAddressRows = useMemo<IPAddressRow[]>(() => {
     const rows: IPAddressRow[] = []
-    interfaces.forEach((iface) => {
+    interfaces.forEach(iface => {
       if (iface.ipAddresses.length > 0) {
-        iface.ipAddresses.forEach((ipAddr) => {
+        iface.ipAddresses.forEach(ipAddr => {
           rows.push({
             interface: iface,
             ipAddress: ipAddr,
@@ -47,16 +74,38 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
   }, [interfaces])
 
   // State for IP address mappings: rowKey -> { enabled, ipRole, status, ipAddress, interfaceName, isPrimary }
-  const [ipMappings, setIpMappings] = useState<Record<string, { enabled: boolean; ipRole: string; status: string; ipAddress: string; interfaceName: string; isPrimary: boolean }>>(() => {
+  const [ipMappings, setIpMappings] = useState<
+    Record<
+      string,
+      {
+        enabled: boolean
+        ipRole: string
+        status: string
+        ipAddress: string
+        interfaceName: string
+        isPrimary: boolean
+      }
+    >
+  >(() => {
     // Initialize with all IP addresses enabled and default IP role/status
-    const initial: Record<string, { enabled: boolean; ipRole: string; status: string; ipAddress: string; interfaceName: string; isPrimary: boolean }> = {}
+    const initial: Record<
+      string,
+      {
+        enabled: boolean
+        ipRole: string
+        status: string
+        ipAddress: string
+        interfaceName: string
+        isPrimary: boolean
+      }
+    > = {}
     const defaultStatus = ipAddressStatuses?.[0]?.name || 'Active'
     const defaultIpRole = 'none' // Default to 'none' - no role assigned
 
     // Track first IP per interface for isPrimary
     const firstIpPerInterface = new Map<number, boolean>()
 
-    ipAddressRows.forEach((row) => {
+    ipAddressRows.forEach(row => {
       const isFirstIpOnInterface = !firstIpPerInterface.has(row.interface.index)
       if (isFirstIpOnInterface) {
         firstIpPerInterface.set(row.interface.index, true)
@@ -71,7 +120,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
         isPrimary: isFirstIpOnInterface && row.interface.oper_status === 1, // First IP on each interface is primary
       }
     })
-    
+
     return initial
   })
 
@@ -81,7 +130,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
   }, [ipMappings, onInterfaceMappingsChange])
 
   const handleToggleIpAddress = (rowKey: string) => {
-    setIpMappings((prev) => ({
+    setIpMappings(prev => ({
       ...prev,
       [rowKey]: {
         enabled: !prev[rowKey]?.enabled,
@@ -95,7 +144,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
   }
 
   const handleIpRoleChange = (rowKey: string, ipRole: string) => {
-    setIpMappings((prev) => ({
+    setIpMappings(prev => ({
       ...prev,
       [rowKey]: {
         enabled: prev[rowKey]?.enabled || false,
@@ -109,7 +158,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
   }
 
   const handleStatusChange = (rowKey: string, status: string) => {
-    setIpMappings((prev) => ({
+    setIpMappings(prev => ({
       ...prev,
       [rowKey]: {
         enabled: prev[rowKey]?.enabled || false,
@@ -123,7 +172,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
   }
 
   const handleIpAddressChange = (rowKey: string, ipAddress: string) => {
-    setIpMappings((prev) => ({
+    setIpMappings(prev => ({
       ...prev,
       [rowKey]: {
         enabled: prev[rowKey]?.enabled || false,
@@ -137,7 +186,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
   }
 
   const handleInterfaceNameChange = (rowKey: string, interfaceName: string) => {
-    setIpMappings((prev) => ({
+    setIpMappings(prev => ({
       ...prev,
       [rowKey]: {
         enabled: prev[rowKey]?.enabled || false,
@@ -151,7 +200,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
   }
 
   const handleSetPrimary = (rowKey: string) => {
-    setIpMappings((prev) => {
+    setIpMappings(prev => {
       const updated: Record<string, InterfaceMapping> = {}
       // Clear all isPrimary flags
       Object.keys(prev).forEach(key => {
@@ -177,7 +226,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
 
   // Filter out rows from Null interfaces
   const displayedRows = useMemo(() => {
-    return ipAddressRows.filter((row) => {
+    return ipAddressRows.filter(row => {
       const name = row.interface.name.toLowerCase()
       return !name.includes('null') // Show all except Null interfaces
     })
@@ -206,7 +255,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
           </tr>
         </thead>
         <tbody className="bg-white divide-y">
-          {displayedRows.map((row) => {
+          {displayedRows.map(row => {
             const mapping = ipMappings[row.rowKey] || {
               enabled: false,
               ipRole: 'none',
@@ -219,7 +268,10 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
             const operStatus = getOperStatusLabel(row.interface.oper_status)
 
             return (
-              <tr key={row.rowKey} className={`hover:bg-green-50/30 ${!mapping.enabled ? 'opacity-50' : ''}`}>
+              <tr
+                key={row.rowKey}
+                className={`hover:bg-green-50/30 ${!mapping.enabled ? 'opacity-50' : ''}`}
+              >
                 {/* Sync checkbox */}
                 <td className="p-2 align-top">
                   <div className="pt-1">
@@ -250,7 +302,9 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
                     <input
                       type="text"
                       value={mapping.interfaceName}
-                      onChange={(e) => handleInterfaceNameChange(row.rowKey, e.target.value)}
+                      onChange={e =>
+                        handleInterfaceNameChange(row.rowKey, e.target.value)
+                      }
                       disabled={!mapping.enabled}
                       className="w-full px-2 py-1 text-xs border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
                       placeholder="Ethernet0/0"
@@ -266,7 +320,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
                   <input
                     type="text"
                     value={mapping.ipAddress}
-                    onChange={(e) => handleIpAddressChange(row.rowKey, e.target.value)}
+                    onChange={e => handleIpAddressChange(row.rowKey, e.target.value)}
                     disabled={!mapping.enabled}
                     className="w-full px-2 py-1 text-xs border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
                     placeholder="192.168.1.1/24"
@@ -277,7 +331,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
                 <td className="p-2 align-top">
                   <Select
                     value={mapping.ipRole}
-                    onValueChange={(value) => handleIpRoleChange(row.rowKey, value)}
+                    onValueChange={value => handleIpRoleChange(row.rowKey, value)}
                     disabled={!mapping.enabled}
                   >
                     <SelectTrigger className="h-7 text-xs bg-white border-gray-300">
@@ -288,8 +342,12 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
                         (none)
                       </SelectItem>
                       {ipAddressRoles && ipAddressRoles.length > 0 ? (
-                        ipAddressRoles.map((role) => (
-                          <SelectItem key={role.id} value={role.name} className="text-xs">
+                        ipAddressRoles.map(role => (
+                          <SelectItem
+                            key={role.id}
+                            value={role.name}
+                            className="text-xs"
+                          >
                             {role.name}
                           </SelectItem>
                         ))
@@ -306,7 +364,7 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
                 <td className="p-2 align-top">
                   <Select
                     value={mapping.status}
-                    onValueChange={(value) => handleStatusChange(row.rowKey, value)}
+                    onValueChange={value => handleStatusChange(row.rowKey, value)}
                     disabled={!mapping.enabled}
                   >
                     <SelectTrigger className="h-7 text-xs bg-white border-gray-300">
@@ -314,8 +372,12 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
                     </SelectTrigger>
                     <SelectContent>
                       {ipAddressStatuses && ipAddressStatuses.length > 0 ? (
-                        ipAddressStatuses.map((status) => (
-                          <SelectItem key={status.id} value={status.name} className="text-xs">
+                        ipAddressStatuses.map(status => (
+                          <SelectItem
+                            key={status.id}
+                            value={status.name}
+                            className="text-xs"
+                          >
                             {status.name}
                           </SelectItem>
                         ))
@@ -371,11 +433,15 @@ export function InterfaceMappingTable({ interfaces, ipAddressStatuses, ipAddress
           </span>
           <span>
             <strong>Enabled:</strong>{' '}
-            {Object.values(ipMappings).filter((m) => m.enabled).length}
+            {Object.values(ipMappings).filter(m => m.enabled).length}
           </span>
           <span>
             <strong>Up/Up:</strong>{' '}
-            {displayedRows.filter((r) => r.interface.admin_status === 1 && r.interface.oper_status === 1).length}
+            {
+              displayedRows.filter(
+                r => r.interface.admin_status === 1 && r.interface.oper_status === 1
+              ).length
+            }
           </span>
         </div>
       </div>

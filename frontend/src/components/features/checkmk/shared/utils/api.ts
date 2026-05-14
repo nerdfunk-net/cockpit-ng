@@ -12,12 +12,15 @@ export interface Job {
 /**
  * Fetch available completed jobs
  */
-export const fetchJobs = async (token: string, limit = 50): Promise<{ jobs: Job[] }> => {
+export const fetchJobs = async (
+  token: string,
+  limit = 50
+): Promise<{ jobs: Job[] }> => {
   const response = await fetch(`/api/proxy/nb2cmk/jobs?limit=${limit}`, {
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
   })
 
   if (!response.ok) {
@@ -33,9 +36,9 @@ export const fetchJobs = async (token: string, limit = 50): Promise<{ jobs: Job[
 export const loadJobResults = async (token: string, jobId: string) => {
   const response = await fetch(`/api/proxy/nb2cmk/jobs/${jobId}`, {
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
   })
 
   if (!response.ok) {
@@ -53,9 +56,9 @@ export const clearResults = async (token: string) => {
   const response = await fetch('/api/proxy/nb2cmk/jobs/clear', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
   })
 
   if (!response.ok) {
@@ -69,14 +72,16 @@ export const clearResults = async (token: string) => {
 /**
  * Start a new device comparison job using Celery
  */
-export const startComparisonJob = async (token: string): Promise<{ task_id: string; job_id?: string }> => {
+export const startComparisonJob = async (
+  token: string
+): Promise<{ task_id: string; job_id?: string }> => {
   const response = await fetch('/api/proxy/celery/tasks/compare-nautobot-and-checkmk', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify(null)
+    body: JSON.stringify(null),
   })
 
   if (!response.ok) {

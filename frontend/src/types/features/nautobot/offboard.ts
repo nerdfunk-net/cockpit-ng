@@ -77,7 +77,6 @@ export interface OffboardProperties {
   removeFromCheckMK: boolean
 }
 
-
 export interface OffboardResult {
   success: boolean
   device_id: string

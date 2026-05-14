@@ -28,8 +28,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useLocationTypesQuery, buildLocationTypeOptions } from '../hooks/use-location-types-query'
-import type { LocationType, MatchingStrategy, NameTransform, NameTransformMode } from '../types'
+import {
+  useLocationTypesQuery,
+  buildLocationTypeOptions,
+} from '../hooks/use-location-types-query'
+import type {
+  LocationType,
+  MatchingStrategy,
+  NameTransform,
+  NameTransformMode,
+} from '../types'
 
 /**
  * Client-side mirror of the name transform logic.
@@ -71,12 +79,14 @@ const MATCHING_STRATEGY_OPTIONS: {
   {
     value: 'contains',
     label: 'Contains',
-    description: 'Match any device whose name contains the given value (e.g. "lab-003")',
+    description:
+      'Match any device whose name contains the given value (e.g. "lab-003")',
   },
   {
     value: 'starts_with',
     label: 'Starts with',
-    description: 'Match any device whose name starts with the given value (e.g. "lab-003")',
+    description:
+      'Match any device whose name starts with the given value (e.g. "lab-003")',
   },
 ]
 
@@ -111,7 +121,10 @@ export function ImportPositionsStepProperties({
 }: ImportPositionsStepPropertiesProps) {
   const [tryModalOpen, setTryModalOpen] = useState(false)
   const { data: locationTypes = EMPTY_LOCATION_TYPES } = useLocationTypesQuery()
-  const locationTypeOptions = useMemo(() => buildLocationTypeOptions(locationTypes), [locationTypes])
+  const locationTypeOptions = useMemo(
+    () => buildLocationTypeOptions(locationTypes),
+    [locationTypes]
+  )
 
   const tryResults = useMemo(() => {
     if (!tryModalOpen || !nameTransform?.pattern) return []
@@ -189,7 +202,9 @@ export function ImportPositionsStepProperties({
                 className="mt-0.5 accent-blue-600"
               />
               <div>
-                <span className="text-sm font-medium text-gray-800">{option.label}</span>
+                <span className="text-sm font-medium text-gray-800">
+                  {option.label}
+                </span>
                 <p className="text-xs text-gray-500 mt-0.5">{option.description}</p>
               </div>
             </label>
@@ -204,9 +219,9 @@ export function ImportPositionsStepProperties({
           <h3 className="text-sm font-semibold text-gray-800">Load devices up to</h3>
         </div>
         <p className="text-xs text-gray-500">
-          Widen the device search to include all devices at this level of the location hierarchy or
-          below. Use this when a device&apos;s Nautobot location is a parent of the rack&apos;s
-          location.
+          Widen the device search to include all devices at this level of the location
+          hierarchy or below. Use this when a device&apos;s Nautobot location is a
+          parent of the rack&apos;s location.
         </p>
         <Select
           value={loadDevicesUpToLocationTypeId ?? '__none__'}
@@ -235,9 +250,9 @@ export function ImportPositionsStepProperties({
           <h3 className="text-sm font-semibold text-gray-800">Customize Name</h3>
         </div>
         <p className="text-xs text-gray-500">
-          Transform the CSV name value before it is used to look up the device in Nautobot.
-          Leave <span className="font-medium text-gray-700">Pattern</span> empty to skip
-          transformation.
+          Transform the CSV name value before it is used to look up the device in
+          Nautobot. Leave <span className="font-medium text-gray-700">Pattern</span>{' '}
+          empty to skip transformation.
         </p>
 
         <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
@@ -273,7 +288,9 @@ export function ImportPositionsStepProperties({
 
           {nameTransform?.mode === 'replace' && (
             <>
-              <Label className="text-xs text-gray-600 whitespace-nowrap">Replacement</Label>
+              <Label className="text-xs text-gray-600 whitespace-nowrap">
+                Replacement
+              </Label>
               <Input
                 value={nameTransform.replacement}
                 onChange={e => handleNameTransformReplacementChange(e.target.value)}
@@ -299,7 +316,9 @@ export function ImportPositionsStepProperties({
               className="h-7 px-2 text-xs gap-1 shrink-0"
               disabled={csvNameValues.length === 0}
               title={
-                csvNameValues.length === 0 ? 'No CSV data loaded' : 'Preview transform results'
+                csvNameValues.length === 0
+                  ? 'No CSV data loaded'
+                  : 'Preview transform results'
               }
               onClick={() => setTryModalOpen(true)}
             >
@@ -326,7 +345,9 @@ export function ImportPositionsStepProperties({
               {nameTransform?.mode === 'regex' ? 'Regular Expression' : 'Replace'}
             </span>
             {' · '}Pattern:{' '}
-            <code className="font-mono bg-gray-100 px-1 rounded">{nameTransform?.pattern}</code>
+            <code className="font-mono bg-gray-100 px-1 rounded">
+              {nameTransform?.pattern}
+            </code>
             {nameTransform?.mode === 'replace' && (
               <>
                 {' · '}Replacement:{' '}
@@ -365,7 +386,9 @@ export function ImportPositionsStepProperties({
                   const changed = row.result !== row.original && !row.error
                   return (
                     <tr key={row.original} className={changed ? 'bg-blue-50/40' : ''}>
-                      <td className="px-3 py-1.5 font-mono text-gray-700">{row.original}</td>
+                      <td className="px-3 py-1.5 font-mono text-gray-700">
+                        {row.original}
+                      </td>
                       <td className="text-center text-gray-400">
                         <ArrowRight className="h-3 w-3 inline" />
                       </td>
@@ -412,8 +435,9 @@ export function ImportPositionsStepProperties({
               Clear rack before import
             </Label>
             <p className="text-xs text-muted-foreground">
-              When enabled, all devices are removed from the rack before the CSV data is applied.
-              When disabled, CSV assignments are overlaid on top of the existing rack layout.
+              When enabled, all devices are removed from the rack before the CSV data is
+              applied. When disabled, CSV assignments are overlaid on top of the
+              existing rack layout.
             </p>
           </div>
         </div>

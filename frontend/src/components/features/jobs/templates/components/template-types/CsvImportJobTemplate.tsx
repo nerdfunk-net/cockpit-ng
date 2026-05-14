@@ -1,17 +1,35 @@
 'use client'
 
-import { useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { AlertCircle, ChevronDown, ChevronRight, Filter, Loader2, Settings2, Upload } from "lucide-react"
-import type { CsvRepoFile, GitRepository } from "../../types"
-import { CSV_IMPORT_FORMAT_LABELS, CSV_IMPORT_TYPE_LABELS } from "../../utils/constants"
+import { useState } from 'react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  Filter,
+  Loader2,
+  Settings2,
+  Upload,
+} from 'lucide-react'
+import type { CsvRepoFile, GitRepository } from '../../types'
+import { CSV_IMPORT_FORMAT_LABELS, CSV_IMPORT_TYPE_LABELS } from '../../utils/constants'
 
 interface CsvImportJobTemplateProps {
   formCsvImportRepoId: number | null
@@ -95,204 +113,239 @@ export function CsvImportJobTemplate({
                 <Upload className="h-4 w-4" />
                 <span className="text-sm font-medium">CSV Import Configuration</span>
               </div>
-              {configOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              {configOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-          <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
-            {/* Info alert */}
-            <Alert className="status-info">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              The <strong>CSV File</strong> and file filter below are used only to load an
-              example file for column mapping configuration. The actual files imported at
-              runtime are determined by the <strong>Import Options</strong> file filter below.
-            </AlertDescription>
-          </Alert>
+            <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+              {/* Info alert */}
+              <Alert className="status-info">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  The <strong>CSV File</strong> and file filter below are used only to
+                  load an example file for column mapping configuration. The actual
+                  files imported at runtime are determined by the{' '}
+                  <strong>Import Options</strong> file filter below.
+                </AlertDescription>
+              </Alert>
 
-          {/* Git Repository */}
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Git Repository</Label>
-              <Select
-                value={formCsvImportRepoId?.toString() || ""}
-                onValueChange={(val) => {
-                  setFormCsvImportRepoId(val ? parseInt(val) : null)
-                  setFormCsvImportFilePath("")
-                  setFormCsvImportPrimaryKey("")
-                }}
-              >
-                <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
-                  <SelectValue placeholder="Select a CSV imports repository..." />
-                </SelectTrigger>
-              <SelectContent>
-                {csvImportRepos.map((repo) => (
-                  <SelectItem key={repo.id} value={repo.id.toString()}>
-                    {repo.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {csvImportRepos.length === 0 && (
-              <p className="text-xs text-gray-500">
-                No repositories with category &quot;csv_imports&quot; found. Add one in Settings → Git.
-              </p>
-            )}
-            </div>
-
-          {/* File Selector */}
-            {formCsvImportRepoId && (
+              {/* Git Repository */}
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">CSV File (example for mapping)</Label>
-                <Input
-                  className="h-7 text-xs mb-1 bg-white border-gray-300 shadow-sm"
-                  placeholder="Filter files..."
-                  value={fileQuery}
-                  onChange={(e) => setFileQuery(e.target.value)}
-                />
+                <Label className="text-xs font-medium text-gray-600">
+                  Git Repository
+                </Label>
                 <Select
-                  value={formCsvImportFilePath}
-                  onValueChange={(val) => {
-                    setFormCsvImportFilePath(val)
-                    setFormCsvImportPrimaryKey("")
+                  value={formCsvImportRepoId?.toString() || ''}
+                  onValueChange={val => {
+                    setFormCsvImportRepoId(val ? parseInt(val) : null)
+                    setFormCsvImportFilePath('')
+                    setFormCsvImportPrimaryKey('')
                   }}
                 >
                   <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
-                  {csvFilesLoading ? (
-                    <span className="flex items-center gap-1 text-gray-500">
-                      <Loader2 className="h-3 w-3 animate-spin" /> Loading...
-                    </span>
-                  ) : (
-                    <SelectValue placeholder="Select a CSV file..." />
-                  )}
-                </SelectTrigger>
-                <SelectContent>
-                  {csvFiles.length === 0 && !csvFilesLoading && (
-                    <SelectItem value="__none__" disabled>No CSV files found</SelectItem>
-                  )}
-                  {csvFiles.filter((f) => f.path.trim() !== "").map((file) => (
-                    <SelectItem key={file.path} value={file.path}>
-                      {file.path}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            )}
-
-          {/* Import Type */}
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Import Type</Label>
-              <Select
-                value={formCsvImportType}
-                onValueChange={(val) => {
-                  setFormCsvImportType(val)
-                  setFormCsvImportPrimaryKey("")
-                }}
-              >
-                <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
-                  <SelectValue placeholder="Select object type..." />
-                </SelectTrigger>
-              <SelectContent>
-                {Object.entries(CSV_IMPORT_TYPE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            </div>
-
-          {/* Primary Key */}
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Primary Key Column</Label>
-              <Select
-                value={formCsvImportPrimaryKey}
-                onValueChange={setFormCsvImportPrimaryKey}
-                disabled={!formCsvImportFilePath || csvHeadersLoading || csvHeaders.length === 0}
-              >
-                <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
-                  {csvHeadersLoading ? (
-                    <span className="flex items-center gap-1 text-gray-500">
-                      <Loader2 className="h-3 w-3 animate-spin" /> Loading headers...
-                    </span>
-                  ) : (
-                    <SelectValue placeholder={
-                      !formCsvImportFilePath ? "Select a file first..." : "Select lookup column..."
-                    } />
-                  )}
-                </SelectTrigger>
-              <SelectContent>
-                {csvHeaders.filter((h) => h.trim() !== "").map((header) => (
-                  <SelectItem key={header} value={header}>
-                    <code className="text-xs">{header}</code>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-gray-500">
-              Column used to look up existing objects in Nautobot (e.g. &quot;name&quot;, &quot;address&quot;)
-            </p>
-            </div>
-
-          {/* Update Existing */}
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-xs font-medium text-gray-600">Update Existing Objects</Label>
-              <p className="text-xs text-gray-500">When off, existing objects are skipped instead of updated</p>
-            </div>
-            <Switch
-              checked={formCsvImportUpdateExisting}
-              onCheckedChange={setFormCsvImportUpdateExisting}
-            />
-          </div>
-
-          {/* Delimiter & Quote Char */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Delimiter</Label>
-                <Input
-                  className="h-8 text-sm bg-white border-gray-300 shadow-sm"
-                  value={formCsvImportDelimiter}
-                  onChange={(e) => setFormCsvImportDelimiter(e.target.value)}
-                  placeholder=","
-                  maxLength={10}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Quote Character</Label>
-                <Input
-                  className="h-8 text-sm bg-white border-gray-300 shadow-sm"
-                  value={formCsvImportQuoteChar}
-                  onChange={(e) => setFormCsvImportQuoteChar(e.target.value)}
-                  placeholder={'"'}
-                  maxLength={10}
-                />
-              </div>
-            </div>
-
-          {/* Column Mapping */}
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-xs font-medium text-gray-600">Column Mapping</Label>
-                {mappedColumnCount > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    {mappedColumnCount} columns mapped
-                  </Badge>
+                    <SelectValue placeholder="Select a CSV imports repository..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {csvImportRepos.map(repo => (
+                      <SelectItem key={repo.id} value={repo.id.toString()}>
+                        {repo.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {csvImportRepos.length === 0 && (
+                  <p className="text-xs text-gray-500">
+                    No repositories with category &quot;csv_imports&quot; found. Add one
+                    in Settings → Git.
+                  </p>
                 )}
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                disabled={csvHeaders.length === 0 || !formCsvImportType}
-                onClick={onOpenMappingDialog}
-              >
-                <Settings2 className="h-3 w-3 mr-1" />
-                Edit Mapping
-              </Button>
+
+              {/* File Selector */}
+              {formCsvImportRepoId && (
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-gray-600">
+                    CSV File (example for mapping)
+                  </Label>
+                  <Input
+                    className="h-7 text-xs mb-1 bg-white border-gray-300 shadow-sm"
+                    placeholder="Filter files..."
+                    value={fileQuery}
+                    onChange={e => setFileQuery(e.target.value)}
+                  />
+                  <Select
+                    value={formCsvImportFilePath}
+                    onValueChange={val => {
+                      setFormCsvImportFilePath(val)
+                      setFormCsvImportPrimaryKey('')
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                      {csvFilesLoading ? (
+                        <span className="flex items-center gap-1 text-gray-500">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Loading...
+                        </span>
+                      ) : (
+                        <SelectValue placeholder="Select a CSV file..." />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {csvFiles.length === 0 && !csvFilesLoading && (
+                        <SelectItem value="__none__" disabled>
+                          No CSV files found
+                        </SelectItem>
+                      )}
+                      {csvFiles
+                        .filter(f => f.path.trim() !== '')
+                        .map(file => (
+                          <SelectItem key={file.path} value={file.path}>
+                            {file.path}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Import Type */}
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-gray-600">Import Type</Label>
+                <Select
+                  value={formCsvImportType}
+                  onValueChange={val => {
+                    setFormCsvImportType(val)
+                    setFormCsvImportPrimaryKey('')
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                    <SelectValue placeholder="Select object type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(CSV_IMPORT_TYPE_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Primary Key */}
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-gray-600">
+                  Primary Key Column
+                </Label>
+                <Select
+                  value={formCsvImportPrimaryKey}
+                  onValueChange={setFormCsvImportPrimaryKey}
+                  disabled={
+                    !formCsvImportFilePath ||
+                    csvHeadersLoading ||
+                    csvHeaders.length === 0
+                  }
+                >
+                  <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                    {csvHeadersLoading ? (
+                      <span className="flex items-center gap-1 text-gray-500">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Loading headers...
+                      </span>
+                    ) : (
+                      <SelectValue
+                        placeholder={
+                          !formCsvImportFilePath
+                            ? 'Select a file first...'
+                            : 'Select lookup column...'
+                        }
+                      />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {csvHeaders
+                      .filter(h => h.trim() !== '')
+                      .map(header => (
+                        <SelectItem key={header} value={header}>
+                          <code className="text-xs">{header}</code>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  Column used to look up existing objects in Nautobot (e.g.
+                  &quot;name&quot;, &quot;address&quot;)
+                </p>
+              </div>
+
+              {/* Update Existing */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-xs font-medium text-gray-600">
+                    Update Existing Objects
+                  </Label>
+                  <p className="text-xs text-gray-500">
+                    When off, existing objects are skipped instead of updated
+                  </p>
+                </div>
+                <Switch
+                  checked={formCsvImportUpdateExisting}
+                  onCheckedChange={setFormCsvImportUpdateExisting}
+                />
+              </div>
+
+              {/* Delimiter & Quote Char */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-gray-600">Delimiter</Label>
+                  <Input
+                    className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                    value={formCsvImportDelimiter}
+                    onChange={e => setFormCsvImportDelimiter(e.target.value)}
+                    placeholder=","
+                    maxLength={10}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-gray-600">
+                    Quote Character
+                  </Label>
+                  <Input
+                    className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                    value={formCsvImportQuoteChar}
+                    onChange={e => setFormCsvImportQuoteChar(e.target.value)}
+                    placeholder={'"'}
+                    maxLength={10}
+                  />
+                </div>
+              </div>
+
+              {/* Column Mapping */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-xs font-medium text-gray-600">
+                    Column Mapping
+                  </Label>
+                  {mappedColumnCount > 0 && (
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {mappedColumnCount} columns mapped
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={csvHeaders.length === 0 || !formCsvImportType}
+                  onClick={onOpenMappingDialog}
+                >
+                  <Settings2 className="h-3 w-3 mr-1" />
+                  Edit Mapping
+                </Button>
+              </div>
             </div>
-          </div>
           </CollapsibleContent>
         </div>
       </Collapsible>
@@ -306,70 +359,93 @@ export function CsvImportJobTemplate({
                 <Filter className="h-4 w-4" />
                 <span className="text-sm font-medium">Import Options</span>
               </div>
-              {optionsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              {optionsOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-          <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">Import Format</Label>
-              <Select value={formCsvImportFormat} onValueChange={setFormCsvImportFormat}>
-                <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
-                  <SelectValue placeholder="Select import format..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CSV_IMPORT_FORMAT_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-gray-500">
-                Cockpit: multi-row per device (one row per interface). Nautobot: single-row export with NULL filtering. Generic: plain CSV.
-              </p>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-xs font-medium text-gray-600">Add Missing IP Prefixes</Label>
-                  <p className="text-xs text-gray-500">Automatically create parent prefixes when an IP address has no matching prefix in Nautobot</p>
-                </div>
-                <Switch
-                  checked={formCsvImportAddPrefixes}
-                  onCheckedChange={setFormCsvImportAddPrefixes}
-                />
+            <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-gray-600">
+                  Import Format
+                </Label>
+                <Select
+                  value={formCsvImportFormat}
+                  onValueChange={setFormCsvImportFormat}
+                >
+                  <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                    <SelectValue placeholder="Select import format..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(CSV_IMPORT_FORMAT_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  Cockpit: multi-row per device (one row per interface). Nautobot:
+                  single-row export with NULL filtering. Generic: plain CSV.
+                </p>
               </div>
-              {formCsvImportAddPrefixes && (
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">Default Prefix Length</Label>
-                  <Input
-                    className="h-8 text-sm bg-white border-gray-300 shadow-sm w-32"
-                    value={formCsvImportDefaultPrefixLength}
-                    onChange={(e) => setFormCsvImportDefaultPrefixLength(e.target.value)}
-                    placeholder="e.g. 24"
-                    maxLength={3}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-xs font-medium text-gray-600">
+                      Add Missing IP Prefixes
+                    </Label>
+                    <p className="text-xs text-gray-500">
+                      Automatically create parent prefixes when an IP address has no
+                      matching prefix in Nautobot
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formCsvImportAddPrefixes}
+                    onCheckedChange={setFormCsvImportAddPrefixes}
                   />
-                  <p className="text-xs text-gray-500">
-                    Applied when an IP in the CSV has no CIDR mask (e.g. <code>192.168.1.1</code> → <code>192.168.1.1/24</code>).
-                    IPs that already include a mask (e.g. <code>192.168.1.1/24</code>) are used as-is.
-                  </p>
                 </div>
-              )}
+                {formCsvImportAddPrefixes && (
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-gray-600">
+                      Default Prefix Length
+                    </Label>
+                    <Input
+                      className="h-8 text-sm bg-white border-gray-300 shadow-sm w-32"
+                      value={formCsvImportDefaultPrefixLength}
+                      onChange={e =>
+                        setFormCsvImportDefaultPrefixLength(e.target.value)
+                      }
+                      placeholder="e.g. 24"
+                      maxLength={3}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Applied when an IP in the CSV has no CIDR mask (e.g.{' '}
+                      <code>192.168.1.1</code> → <code>192.168.1.1/24</code>). IPs that
+                      already include a mask (e.g. <code>192.168.1.1/24</code>) are used
+                      as-is.
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-gray-600">File Filter</Label>
+                <Input
+                  className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                  value={formCsvImportFileFilter}
+                  onChange={e => setFormCsvImportFileFilter(e.target.value)}
+                  placeholder="e.g. *.csv or devices_*.csv"
+                />
+                <p className="text-xs text-gray-500">
+                  Glob pattern to select which CSV files are imported when the job runs.
+                  All matching files in the repository will be processed sequentially.
+                  Leave empty to import only the example file selected above.
+                </p>
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">File Filter</Label>
-              <Input
-                className="h-8 text-sm bg-white border-gray-300 shadow-sm"
-                value={formCsvImportFileFilter}
-                onChange={(e) => setFormCsvImportFileFilter(e.target.value)}
-                placeholder="e.g. *.csv or devices_*.csv"
-              />
-              <p className="text-xs text-gray-500">
-                Glob pattern to select which CSV files are imported when the job runs.
-                All matching files in the repository will be processed sequentially.
-                Leave empty to import only the example file selected above.
-              </p>
-            </div>
-          </div>
           </CollapsibleContent>
         </div>
       </Collapsible>

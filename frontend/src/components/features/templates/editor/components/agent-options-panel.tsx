@@ -12,13 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-} from '@/components/ui/form'
+import { Form, FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form'
 import { Server, ChevronDown, ChevronUp } from 'lucide-react'
 import { useSavedInventoriesQuery } from '@/hooks/queries/use-saved-inventories-queries'
 import type { EditorFormData } from '../types'
@@ -29,7 +23,11 @@ interface AgentOptionsPanelProps {
   deviceCount?: number
 }
 
-export function AgentOptionsPanel({ form, isLoadingDevices, deviceCount }: AgentOptionsPanelProps) {
+export function AgentOptionsPanel({
+  form,
+  isLoadingDevices,
+  deviceCount,
+}: AgentOptionsPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { data: inventoriesData, isLoading: isLoadingInventories } =
     useSavedInventoriesQuery()
@@ -72,104 +70,108 @@ export function AgentOptionsPanel({ form, isLoadingDevices, deviceCount }: Agent
 
       {/* Content area */}
       {!isCollapsed && (
-      <div className="p-4 bg-gradient-to-b from-white to-gray-50">
-        <Form {...form}>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
-          {/* Inventory selector */}
-          <FormField
-            control={form.control}
-            name="inventoryId"
-            render={({ field }) => (
-              <FormItem className="md:col-span-4">
-                <FormLabel>Inventory</FormLabel>
-                <Select
-                  value={field.value?.toString() || 'none'}
-                  onValueChange={(val) =>
-                    field.onChange(val === 'none' ? null : Number(val))
-                  }
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          isLoadingInventories ? 'Loading...' : 'Select inventory...'
-                        }
-                      />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">No inventory</SelectItem>
-                    {inventories.map((inv) => (
-                      <SelectItem key={inv.id} value={inv.id.toString()}>
-                        {inv.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormItem>
-            )}
-          />
+        <div className="p-4 bg-gradient-to-b from-white to-gray-50">
+          <Form {...form}>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+              {/* Inventory selector */}
+              <FormField
+                control={form.control}
+                name="inventoryId"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-4">
+                    <FormLabel>Inventory</FormLabel>
+                    <Select
+                      value={field.value?.toString() || 'none'}
+                      onValueChange={val =>
+                        field.onChange(val === 'none' ? null : Number(val))
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              isLoadingInventories
+                                ? 'Loading...'
+                                : 'Select inventory...'
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No inventory</SelectItem>
+                        {inventories.map(inv => (
+                          <SelectItem key={inv.id} value={inv.id.toString()}>
+                            {inv.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
 
-          {/* Path input */}
-          <FormField
-            control={form.control}
-            name="path"
-            render={({ field }) => (
-              <FormItem className="md:col-span-4">
-                <FormLabel>Deployment Path</FormLabel>
-                <FormControl>
-                  <Input placeholder="/etc/telegraf/telegraf.conf" {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+              {/* Path input */}
+              <FormField
+                control={form.control}
+                name="path"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-4">
+                    <FormLabel>Deployment Path</FormLabel>
+                    <FormControl>
+                      <Input placeholder="/etc/telegraf/telegraf.conf" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
-          {/* Use Nautobot Context checkbox */}
-          <FormField
-            control={form.control}
-            name="useNautobotContext"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel className="text-sm mb-2 block">Nautobot Context</FormLabel>
-                <div className="flex items-center space-x-2 h-9">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormLabel className="text-xs font-normal cursor-pointer">
-                    Use data & context
-                  </FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
+              {/* Use Nautobot Context checkbox */}
+              <FormField
+                control={form.control}
+                name="useNautobotContext"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel className="text-sm mb-2 block">
+                      Nautobot Context
+                    </FormLabel>
+                    <div className="flex items-center space-x-2 h-9">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-xs font-normal cursor-pointer">
+                        Use data & context
+                      </FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
 
-          {/* SNMP Mapping checkbox */}
-          <FormField
-            control={form.control}
-            name="passSnmpMapping"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel className="text-sm mb-2 block">SNMP Mapping</FormLabel>
-                <div className="flex items-center space-x-2 h-9">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormLabel className="text-xs font-normal cursor-pointer">
-                    Add mapping
-                  </FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
+              {/* SNMP Mapping checkbox */}
+              <FormField
+                control={form.control}
+                name="passSnmpMapping"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel className="text-sm mb-2 block">SNMP Mapping</FormLabel>
+                    <div className="flex items-center space-x-2 h-9">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-xs font-normal cursor-pointer">
+                        Add mapping
+                      </FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+          </Form>
         </div>
-        </Form>
-      </div>
       )}
     </div>
   )

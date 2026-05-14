@@ -21,7 +21,9 @@ export function useCustomFieldsQuery(
   return useQuery({
     queryKey: queryKeys.nautobot.customFields('vm'),
     queryFn: async (): Promise<CustomField[]> => {
-      const data = await apiCall<CustomField[]>('nautobot/custom-fields/vm', { method: 'GET' })
+      const data = await apiCall<CustomField[]>('nautobot/custom-fields/vm', {
+        method: 'GET',
+      })
       return data || []
     },
     enabled,

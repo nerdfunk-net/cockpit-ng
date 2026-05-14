@@ -77,16 +77,14 @@ export function SNMPMappingDialog({
             <Input
               id="snmp-name"
               value={formData.name}
-              onChange={(e) =>
-                onFormChange({ ...formData, name: e.target.value })
-              }
+              onChange={e => onFormChange({ ...formData, name: e.target.value })}
               placeholder="snmp-prod-1"
               className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
             />
             <p className="text-xs text-gray-500">
               A unique identifier for this SNMP credential (e.g.,
-              &quot;snmp-prod-1&quot;, &quot;lab-snmpv3&quot;). SNMP credentials
-              are device-type independent.
+              &quot;snmp-prod-1&quot;, &quot;lab-snmpv3&quot;). SNMP credentials are
+              device-type independent.
             </p>
           </div>
 
@@ -116,8 +114,7 @@ export function SNMPMappingDialog({
             </Select>
           </div>
 
-          {(formData.snmp_version === 'v1' ||
-            formData.snmp_version === 'v2c') && (
+          {(formData.snmp_version === 'v1' || formData.snmp_version === 'v2c') && (
             <div className="space-y-2 p-4 bg-amber-50 border border-amber-200 rounded-md">
               <Label
                 htmlFor="snmp-community"
@@ -130,7 +127,7 @@ export function SNMPMappingDialog({
                 id="snmp-community"
                 type="password"
                 value={formData.snmp_community}
-                onChange={(e) =>
+                onChange={e =>
                   onFormChange({ ...formData, snmp_community: e.target.value })
                 }
                 placeholder="public"
@@ -156,7 +153,7 @@ export function SNMPMappingDialog({
                 <Input
                   id="snmp-v3-user"
                   value={formData.snmp_v3_user}
-                  onChange={(e) =>
+                  onChange={e =>
                     onFormChange({ ...formData, snmp_v3_user: e.target.value })
                   }
                   placeholder="snmpuser"
@@ -169,9 +166,7 @@ export function SNMPMappingDialog({
 
               {/* Authentication Section */}
               <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-gray-700">
-                  Authentication
-                </h4>
+                <h4 className="text-sm font-semibold text-gray-700">Authentication</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label
@@ -182,7 +177,7 @@ export function SNMPMappingDialog({
                     </Label>
                     <Select
                       value={formData.snmp_v3_auth_protocol}
-                      onValueChange={(value) =>
+                      onValueChange={value =>
                         onFormChange({
                           ...formData,
                           snmp_v3_auth_protocol: value,
@@ -196,9 +191,7 @@ export function SNMPMappingDialog({
                         <SelectItem value="MD5">MD5 (Less Secure)</SelectItem>
                         <SelectItem value="SHA">SHA</SelectItem>
                         <SelectItem value="SHA-224">SHA-224</SelectItem>
-                        <SelectItem value="SHA-256">
-                          SHA-256 (Recommended)
-                        </SelectItem>
+                        <SelectItem value="SHA-256">SHA-256 (Recommended)</SelectItem>
                         <SelectItem value="SHA-384">SHA-384</SelectItem>
                         <SelectItem value="SHA-512">SHA-512</SelectItem>
                       </SelectContent>
@@ -215,15 +208,13 @@ export function SNMPMappingDialog({
                       id="auth-password"
                       type="password"
                       value={formData.snmp_v3_auth_password}
-                      onChange={(e) =>
+                      onChange={e =>
                         onFormChange({
                           ...formData,
                           snmp_v3_auth_password: e.target.value,
                         })
                       }
-                      placeholder={
-                        mapping ? '(unchanged)' : 'Authentication password'
-                      }
+                      placeholder={mapping ? '(unchanged)' : 'Authentication password'}
                       className="bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
@@ -245,7 +236,7 @@ export function SNMPMappingDialog({
                     </Label>
                     <Select
                       value={formData.snmp_v3_priv_protocol}
-                      onValueChange={(value) =>
+                      onValueChange={value =>
                         onFormChange({
                           ...formData,
                           snmp_v3_priv_protocol: value,
@@ -259,9 +250,7 @@ export function SNMPMappingDialog({
                         <SelectItem value="DES">DES (Legacy)</SelectItem>
                         <SelectItem value="AES">AES-128</SelectItem>
                         <SelectItem value="AES-192">AES-192</SelectItem>
-                        <SelectItem value="AES-256">
-                          AES-256 (Recommended)
-                        </SelectItem>
+                        <SelectItem value="AES-256">AES-256 (Recommended)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -276,7 +265,7 @@ export function SNMPMappingDialog({
                       id="priv-password"
                       type="password"
                       value={formData.snmp_v3_priv_password}
-                      onChange={(e) =>
+                      onChange={e =>
                         onFormChange({
                           ...formData,
                           snmp_v3_priv_password: e.target.value,
@@ -305,15 +294,12 @@ export function SNMPMappingDialog({
             <Textarea
               id="snmp-description"
               value={formData.description}
-              onChange={(e) =>
-                onFormChange({ ...formData, description: e.target.value })
-              }
+              onChange={e => onFormChange({ ...formData, description: e.target.value })}
               placeholder="Describe this SNMP mapping (optional)"
               className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[80px]"
             />
             <p className="text-xs text-gray-500">
-              Add notes about when to use this mapping or special configuration
-              details
+              Add notes about when to use this mapping or special configuration details
             </p>
           </div>
         </div>

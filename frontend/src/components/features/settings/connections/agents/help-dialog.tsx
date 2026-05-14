@@ -35,9 +35,10 @@ export function HelpDialog({ isOpen, onClose }: HelpDialogProps) {
               What are Agents?
             </h4>
             <p className="text-sm text-gray-700 leading-relaxed">
-              Agents are external applications used for monitoring, metrics collection, and observability.
-              Cockpit can manage configurations for applications like <strong>Grafana</strong>,{' '}
-              <strong>Telegraf</strong>, <strong>InfluxDB</strong>, and <strong>Smokeping</strong>.
+              Agents are external applications used for monitoring, metrics collection,
+              and observability. Cockpit can manage configurations for applications like{' '}
+              <strong>Grafana</strong>, <strong>Telegraf</strong>,{' '}
+              <strong>InfluxDB</strong>, and <strong>Smokeping</strong>.
             </p>
           </div>
 
@@ -49,10 +50,15 @@ export function HelpDialog({ isOpen, onClose }: HelpDialogProps) {
             </h4>
             <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
               <ol className="text-sm text-gray-700 space-y-2 list-decimal list-inside">
-                <li>Cockpit renders configuration templates based on your network infrastructure</li>
+                <li>
+                  Cockpit renders configuration templates based on your network
+                  infrastructure
+                </li>
                 <li>Configurations are committed to the configured Git repository</li>
                 <li>The agent is called to restart its Docker container</li>
-                <li>Your monitoring stack stays synchronized with your infrastructure</li>
+                <li>
+                  Your monitoring stack stays synchronized with your infrastructure
+                </li>
               </ol>
             </div>
           </div>
@@ -65,19 +71,20 @@ export function HelpDialog({ isOpen, onClose }: HelpDialogProps) {
             </h4>
             <ol className="text-sm text-gray-700 space-y-2 list-decimal list-inside ml-1">
               <li>
-                <strong>Add a new agent</strong> by clicking the &quot;Add New Agent&quot; button
+                <strong>Add a new agent</strong> by clicking the &quot;Add New
+                Agent&quot; button
               </li>
               <li>
-                <strong>Provide a name and description</strong> to identify the agent (e.g., &quot;Grafana
-                Production&quot;)
+                <strong>Provide a name and description</strong> to identify the agent
+                (e.g., &quot;Grafana Production&quot;)
               </li>
               <li>
-                <strong>Select a Git repository</strong> where the agent&apos;s configuration files will be
-                stored
+                <strong>Select a Git repository</strong> where the agent&apos;s
+                configuration files will be stored
               </li>
               <li>
-                <strong>Save the configuration</strong> and the agent will be ready to receive updates from
-                Cockpit
+                <strong>Save the configuration</strong> and the agent will be ready to
+                receive updates from Cockpit
               </li>
             </ol>
           </div>
@@ -85,9 +92,10 @@ export function HelpDialog({ isOpen, onClose }: HelpDialogProps) {
           {/* Note */}
           <div className="bg-amber-50 p-3 rounded-md border border-amber-200">
             <p className="text-xs text-amber-800">
-              <strong>Note:</strong> Make sure your Git repositories are properly configured in Settings →
-              Git Management before adding agents. Only repositories with category &quot;Cockpit
-              Configs&quot; can be used for agent configurations.
+              <strong>Note:</strong> Make sure your Git repositories are properly
+              configured in Settings → Git Management before adding agents. Only
+              repositories with category &quot;Cockpit Configs&quot; can be used for
+              agent configurations.
             </p>
           </div>
         </div>

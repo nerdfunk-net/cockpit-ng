@@ -1,6 +1,12 @@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -9,11 +15,15 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuItem
+  DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { ChevronDown } from 'lucide-react'
-import type { TableFilters, DropdownOption, LocationItem } from '@/types/features/nautobot/offboard'
+import type {
+  TableFilters,
+  DropdownOption,
+  LocationItem,
+} from '@/types/features/nautobot/offboard'
 import type { RefObject } from 'react'
 
 interface DeviceFiltersProps {
@@ -47,7 +57,7 @@ export function DeviceFilters({
   onRoleFiltersChange,
   onLocationSearchChange,
   onLocationSelect,
-  onLocationDropdownToggle
+  onLocationDropdownToggle,
 }: DeviceFiltersProps) {
   return (
     <div className="bg-gray-50 border-b">
@@ -61,11 +71,13 @@ export function DeviceFilters({
               {/* Device Name Filter */}
               <td className="pl-4 pr-2 py-3 w-48">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">Device Name</Label>
+                  <Label className="text-xs font-medium text-gray-600">
+                    Device Name
+                  </Label>
                   <Input
                     placeholder="Filter by name..."
                     value={filters.deviceName}
-                    onChange={(e) => onFilterChange('deviceName', e.target.value)}
+                    onChange={e => onFilterChange('deviceName', e.target.value)}
                     className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                   />
                 </div>
@@ -74,11 +86,13 @@ export function DeviceFilters({
               {/* IP Address Filter */}
               <td className="px-4 py-3 w-32">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">IP Address</Label>
+                  <Label className="text-xs font-medium text-gray-600">
+                    IP Address
+                  </Label>
                   <Input
                     placeholder="Filter by IP..."
                     value={filters.ipAddress}
-                    onChange={(e) => onFilterChange('ipAddress', e.target.value)}
+                    onChange={e => onFilterChange('ipAddress', e.target.value)}
                     className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                   />
                 </div>
@@ -90,9 +104,14 @@ export function DeviceFilters({
                   <Label className="text-xs font-medium text-gray-600">Role</Label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-8 text-xs justify-between w-full">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs justify-between w-full"
+                      >
                         Role Filter
-                        {Object.values(roleFilters).filter(Boolean).length < dropdownOptions.roles.length && (
+                        {Object.values(roleFilters).filter(Boolean).length <
+                          dropdownOptions.roles.length && (
                           <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
                             {Object.values(roleFilters).filter(Boolean).length}
                           </Badge>
@@ -101,7 +120,9 @@ export function DeviceFilters({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-40">
-                      <DropdownMenuLabel className="text-xs">Filter by Role</DropdownMenuLabel>
+                      <DropdownMenuLabel className="text-xs">
+                        Filter by Role
+                      </DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="cursor-pointer text-red-600 hover:bg-red-50"
@@ -116,12 +137,15 @@ export function DeviceFilters({
                         Deselect all
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      {dropdownOptions.roles.map((role) => (
+                      {dropdownOptions.roles.map(role => (
                         <DropdownMenuCheckboxItem
                           key={role.id}
                           checked={roleFilters[role.name] || false}
-                          onCheckedChange={(checked) =>
-                            onRoleFiltersChange({ ...roleFilters, [role.name]: !!checked })
+                          onCheckedChange={checked =>
+                            onRoleFiltersChange({
+                              ...roleFilters,
+                              [role.name]: !!checked,
+                            })
                           }
                         >
                           {role.name}
@@ -140,7 +164,7 @@ export function DeviceFilters({
                     <Input
                       placeholder="Filter by location..."
                       value={locationSearch}
-                      onChange={(e) => onLocationSearchChange(e.target.value)}
+                      onChange={e => onLocationSearchChange(e.target.value)}
                       onFocus={() => onLocationDropdownToggle(true)}
                       className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                     />
@@ -160,7 +184,9 @@ export function DeviceFilters({
                             </div>
                           ))
                         ) : (
-                          <div className="px-3 py-2 text-sm text-gray-500 italic">No locations found</div>
+                          <div className="px-3 py-2 text-sm text-gray-500 italic">
+                            No locations found
+                          </div>
                         )}
                       </div>
                     )}
@@ -172,14 +198,19 @@ export function DeviceFilters({
               <td className="px-4 py-3">
                 <div className="space-y-1">
                   <Label className="text-xs font-medium text-gray-600">Status</Label>
-                  <Select value={filters.status} onValueChange={(value) => onFilterChange('status', value)}>
+                  <Select
+                    value={filters.status}
+                    onValueChange={value => onFilterChange('status', value)}
+                  >
                     <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                       <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Statuses</SelectItem>
                       {dropdownOptions.statuses.map(status => (
-                        <SelectItem key={status.id} value={status.name}>{status.name}</SelectItem>
+                        <SelectItem key={status.id} value={status.name}>
+                          {status.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

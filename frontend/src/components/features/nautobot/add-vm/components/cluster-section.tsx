@@ -27,9 +27,10 @@ export function ClusterSection({ form, dropdownData, isLoading }: ClusterSection
 
   // Filter clusters by selected cluster group
   const filteredClusters = useMemo(() => {
-    if (!selectedClusterGroup || selectedClusterGroup === 'all') return dropdownData.clusters
+    if (!selectedClusterGroup || selectedClusterGroup === 'all')
+      return dropdownData.clusters
     return dropdownData.clusters.filter(
-      (cluster) => cluster.cluster_group?.id === selectedClusterGroup
+      cluster => cluster.cluster_group?.id === selectedClusterGroup
     )
   }, [dropdownData.clusters, selectedClusterGroup])
 
@@ -47,19 +48,22 @@ export function ClusterSection({ form, dropdownData, isLoading }: ClusterSection
             </Label>
             <Select
               value={watch('clusterGroup') ?? 'all'}
-              onValueChange={(value) => {
+              onValueChange={value => {
                 setValue('clusterGroup', value === 'all' ? undefined : value)
                 // Reset cluster when group changes
                 setValue('cluster', '')
               }}
               disabled={isLoading}
             >
-              <SelectTrigger id="clusterGroup" className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+              <SelectTrigger
+                id="clusterGroup"
+                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+              >
                 <SelectValue placeholder="All groups..." />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All groups</SelectItem>
-                {dropdownData.clusterGroups.map((group) => (
+                {dropdownData.clusterGroups.map(group => (
                   <SelectItem key={group.id} value={group.id}>
                     {group.name}
                   </SelectItem>
@@ -75,14 +79,17 @@ export function ClusterSection({ form, dropdownData, isLoading }: ClusterSection
             </Label>
             <Select
               value={watch('cluster') ?? ''}
-              onValueChange={(value) => setValue('cluster', value)}
+              onValueChange={value => setValue('cluster', value)}
               disabled={isLoading}
             >
-              <SelectTrigger id="cluster" className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+              <SelectTrigger
+                id="cluster"
+                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+              >
                 <SelectValue placeholder="Select cluster..." />
               </SelectTrigger>
               <SelectContent>
-                {filteredClusters.map((cluster) => (
+                {filteredClusters.map(cluster => (
                   <SelectItem key={cluster.id} value={cluster.id}>
                     {cluster.name}
                   </SelectItem>

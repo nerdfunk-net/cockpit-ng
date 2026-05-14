@@ -15,13 +15,48 @@ import { RefreshCw, Download } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import type { NautobotDataType } from '../types'
 
-const DATA_TYPE_OPTIONS: { value: NautobotDataType; label: string; endpoint: string; suggestedName: string }[] = [
-  { value: 'locations', label: 'Locations', endpoint: 'nautobot/locations', suggestedName: 'nautobot_locations' },
-  { value: 'tags', label: 'Tags', endpoint: 'nautobot/tags', suggestedName: 'nautobot_tags' },
-  { value: 'custom-fields', label: 'Custom Fields', endpoint: 'nautobot/custom-fields/devices', suggestedName: 'nautobot_custom_fields' },
-  { value: 'statuses', label: 'Statuses', endpoint: 'nautobot/statuses', suggestedName: 'nautobot_statuses' },
-  { value: 'roles', label: 'Roles', endpoint: 'nautobot/roles', suggestedName: 'nautobot_roles' },
-  { value: 'namespaces', label: 'Namespaces', endpoint: 'nautobot/namespaces', suggestedName: 'nautobot_namespaces' },
+const DATA_TYPE_OPTIONS: {
+  value: NautobotDataType
+  label: string
+  endpoint: string
+  suggestedName: string
+}[] = [
+  {
+    value: 'locations',
+    label: 'Locations',
+    endpoint: 'nautobot/locations',
+    suggestedName: 'nautobot_locations',
+  },
+  {
+    value: 'tags',
+    label: 'Tags',
+    endpoint: 'nautobot/tags',
+    suggestedName: 'nautobot_tags',
+  },
+  {
+    value: 'custom-fields',
+    label: 'Custom Fields',
+    endpoint: 'nautobot/custom-fields/devices',
+    suggestedName: 'nautobot_custom_fields',
+  },
+  {
+    value: 'statuses',
+    label: 'Statuses',
+    endpoint: 'nautobot/statuses',
+    suggestedName: 'nautobot_statuses',
+  },
+  {
+    value: 'roles',
+    label: 'Roles',
+    endpoint: 'nautobot/roles',
+    suggestedName: 'nautobot_roles',
+  },
+  {
+    value: 'namespaces',
+    label: 'Namespaces',
+    endpoint: 'nautobot/namespaces',
+    suggestedName: 'nautobot_namespaces',
+  },
 ]
 
 import type { VariableDefinition } from '../types'
@@ -31,7 +66,10 @@ interface NautobotDataTabProps {
   existingVariableNames: string[]
 }
 
-export function NautobotDataTab({ onAdd, existingVariableNames }: NautobotDataTabProps) {
+export function NautobotDataTab({
+  onAdd,
+  existingVariableNames,
+}: NautobotDataTabProps) {
   const { apiCall } = useApi()
   const [selectedType, setSelectedType] = useState<NautobotDataType | ''>('')
   const [variableName, setVariableName] = useState('')
@@ -40,22 +78,23 @@ export function NautobotDataTab({ onAdd, existingVariableNames }: NautobotDataTa
   // Auto-suggest variable name when data type changes
   useEffect(() => {
     if (selectedType) {
-      const option = DATA_TYPE_OPTIONS.find((o) => o.value === selectedType)
+      const option = DATA_TYPE_OPTIONS.find(o => o.value === selectedType)
       if (option) {
         setVariableName(option.suggestedName)
       }
     }
   }, [selectedType])
 
-  const nameError = variableName && existingVariableNames.includes(variableName)
-    ? 'A variable with this name already exists'
-    : ''
+  const nameError =
+    variableName && existingVariableNames.includes(variableName)
+      ? 'A variable with this name already exists'
+      : ''
 
   const canFetch = selectedType && variableName.trim() && !nameError
 
   const handleFetch = useCallback(async () => {
     if (!canFetch || !selectedType) return
-    const option = DATA_TYPE_OPTIONS.find((o) => o.value === selectedType)
+    const option = DATA_TYPE_OPTIONS.find(o => o.value === selectedType)
     if (!option) return
 
     setFetching(true)
@@ -83,12 +122,15 @@ export function NautobotDataTab({ onAdd, existingVariableNames }: NautobotDataTa
     <div className="space-y-4">
       <div className="space-y-2">
         <Label>Data Type</Label>
-        <Select value={selectedType} onValueChange={(v) => setSelectedType(v as NautobotDataType)}>
+        <Select
+          value={selectedType}
+          onValueChange={v => setSelectedType(v as NautobotDataType)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select Nautobot data type" />
           </SelectTrigger>
           <SelectContent>
-            {DATA_TYPE_OPTIONS.map((option) => (
+            {DATA_TYPE_OPTIONS.map(option => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
@@ -103,12 +145,10 @@ export function NautobotDataTab({ onAdd, existingVariableNames }: NautobotDataTa
           <Input
             id="nautobot-var-name"
             value={variableName}
-            onChange={(e) => setVariableName(e.target.value)}
+            onChange={e => setVariableName(e.target.value)}
             className={nameError ? 'border-red-300' : ''}
           />
-          {nameError && (
-            <p className="text-xs text-red-500">{nameError}</p>
-          )}
+          {nameError && <p className="text-xs text-red-500">{nameError}</p>}
         </div>
       )}
 

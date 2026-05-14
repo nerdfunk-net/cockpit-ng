@@ -56,7 +56,11 @@ export function DevicesFilters({
   const locationContainerRef = useRef<HTMLDivElement | null>(null)
   const [locationSearch, setLocationSearch] = useState<string>('')
   const [showLocationDropdown, setShowLocationDropdown] = useState<boolean>(false)
-  const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition>({ top: 0, left: 0, width: 'auto' })
+  const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition>({
+    top: 0,
+    left: 0,
+    width: 'auto',
+  })
 
   // Derive filtered locations from search and locations prop
   const locationFiltered = useMemo(() => {
@@ -64,7 +68,7 @@ export function DevicesFilters({
     if (!locationSearch.trim()) {
       return baseLocations
     }
-    return baseLocations.filter((l) =>
+    return baseLocations.filter(l =>
       (l.hierarchicalPath || '').toLowerCase().includes(locationSearch.toLowerCase())
     )
   }, [locations, locationSearch])
@@ -98,15 +102,18 @@ export function DevicesFilters({
     setShowLocationDropdown(true)
   }, [])
 
-  const handleLocationSelect = useCallback((loc: LocationItem) => {
-    setLocationSearch(loc.hierarchicalPath || loc.name)
-    setShowLocationDropdown(false)
-    onFilterChange('location', loc.name)
-  }, [onFilterChange])
+  const handleLocationSelect = useCallback(
+    (loc: LocationItem) => {
+      setLocationSearch(loc.hierarchicalPath || loc.name)
+      setShowLocationDropdown(false)
+      onFilterChange('location', loc.name)
+    },
+    [onFilterChange]
+  )
 
   const handleDeselectAllRoles = useCallback(() => {
     const resetRoleFilters: Record<string, boolean> = {}
-    filterOptions.roles.forEach((role) => {
+    filterOptions.roles.forEach(role => {
       resetRoleFilters[role.name] = false
     })
     onRoleFiltersChange(resetRoleFilters)
@@ -126,11 +133,13 @@ export function DevicesFilters({
               {/* Device Name Filter */}
               <td className="pl-4 pr-2 py-3 w-48">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">Device Name</Label>
+                  <Label className="text-xs font-medium text-gray-600">
+                    Device Name
+                  </Label>
                   <Input
                     placeholder="Filter by name..."
                     value={filters.deviceName}
-                    onChange={(e) => onFilterChange('deviceName', e.target.value)}
+                    onChange={e => onFilterChange('deviceName', e.target.value)}
                     className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                   />
                 </div>
@@ -139,11 +148,13 @@ export function DevicesFilters({
               {/* IP Address Filter */}
               <td className="px-4 py-3 w-32">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">IP Address</Label>
+                  <Label className="text-xs font-medium text-gray-600">
+                    IP Address
+                  </Label>
                   <Input
                     placeholder="Filter by IP..."
                     value={filters.ipAddress}
-                    onChange={(e) => onFilterChange('ipAddress', e.target.value)}
+                    onChange={e => onFilterChange('ipAddress', e.target.value)}
                     className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                   />
                 </div>
@@ -155,7 +166,11 @@ export function DevicesFilters({
                   <Label className="text-xs font-medium text-gray-600">Role</Label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-8 text-xs justify-between w-full">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs justify-between w-full"
+                      >
                         Role Filter
                         {selectedRoleCount < filterOptions.roles.length && (
                           <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
@@ -166,7 +181,9 @@ export function DevicesFilters({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-40">
-                      <DropdownMenuLabel className="text-xs">Filter by Role</DropdownMenuLabel>
+                      <DropdownMenuLabel className="text-xs">
+                        Filter by Role
+                      </DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="cursor-pointer text-red-600 hover:bg-red-50"
@@ -175,12 +192,15 @@ export function DevicesFilters({
                         Deselect all
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      {filterOptions.roles.map((role) => (
+                      {filterOptions.roles.map(role => (
                         <DropdownMenuCheckboxItem
                           key={role.id}
                           checked={roleFilters[role.name] || false}
-                          onCheckedChange={(checked) =>
-                            onRoleFiltersChange({ ...roleFilters, [role.name]: !!checked })
+                          onCheckedChange={checked =>
+                            onRoleFiltersChange({
+                              ...roleFilters,
+                              [role.name]: !!checked,
+                            })
                           }
                         >
                           {role.name}
@@ -199,7 +219,7 @@ export function DevicesFilters({
                     <Input
                       placeholder="Filter by location..."
                       value={locationSearch}
-                      onChange={(e) => handleLocationSearch(e.target.value)}
+                      onChange={e => handleLocationSearch(e.target.value)}
                       onFocus={() => setShowLocationDropdown(true)}
                       className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
                     />
@@ -213,7 +233,7 @@ export function DevicesFilters({
                         }}
                       >
                         {locationFiltered.length > 0 ? (
-                          locationFiltered.map((loc) => (
+                          locationFiltered.map(loc => (
                             <div
                               key={loc.id}
                               className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
@@ -239,14 +259,14 @@ export function DevicesFilters({
                   <Label className="text-xs font-medium text-gray-600">Status</Label>
                   <Select
                     value={filters.status}
-                    onValueChange={(value) => onFilterChange('status', value)}
+                    onValueChange={value => onFilterChange('status', value)}
                   >
                     <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
                       <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Statuses</SelectItem>
-                      {filterOptions.statuses.map((status) => (
+                      {filterOptions.statuses.map(status => (
                         <SelectItem key={status.id} value={status.name}>
                           {status.name}
                         </SelectItem>

@@ -83,7 +83,8 @@ export function CommandExecutionTab({
             <Alert className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                No devices selected. Please select devices in the <strong>Devices</strong> tab first.
+                No devices selected. Please select devices in the{' '}
+                <strong>Devices</strong> tab first.
               </AlertDescription>
             </Alert>
           )}
@@ -91,7 +92,8 @@ export function CommandExecutionTab({
           {selectedDevices.length > 0 && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                <strong>{selectedDevices.length}</strong> device{selectedDevices.length !== 1 ? 's' : ''} selected
+                <strong>{selectedDevices.length}</strong> device
+                {selectedDevices.length !== 1 ? 's' : ''} selected
               </p>
             </div>
           )}
@@ -116,12 +118,13 @@ export function CommandExecutionTab({
                   id="commands"
                   placeholder="Enter commands, one per line. Example:&#10;show version&#10;show ip interface brief&#10;show running-config"
                   value={commands}
-                  onChange={(e) => setCommands(e.target.value)}
+                  onChange={e => setCommands(e.target.value)}
                   rows={8}
                   className="font-mono text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                 />
                 <p className="text-xs text-gray-500">
-                  Tip: Enter one command per line. Commands will be executed in sequence.
+                  Tip: Enter one command per line. Commands will be executed in
+                  sequence.
                 </p>
               </div>
             ) : (
@@ -131,10 +134,12 @@ export function CommandExecutionTab({
                   <Label className="text-blue-900 font-semibold">Using Template</Label>
                 </div>
                 <p className="text-sm text-blue-800">
-                  Commands will be generated from the selected template: <strong>{selectedTemplate?.name}</strong>
+                  Commands will be generated from the selected template:{' '}
+                  <strong>{selectedTemplate?.name}</strong>
                 </p>
                 <p className="text-xs text-blue-700">
-                  The template will be rendered for each device using Nautobot context and your defined variables.
+                  The template will be rendered for each device using Nautobot context
+                  and your defined variables.
                 </p>
               </div>
             )}
@@ -148,7 +153,10 @@ export function CommandExecutionTab({
                 className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-400 border-2 border-slate-300"
               />
               <div className="flex-1">
-                <Label htmlFor="enable-mode" className="font-medium text-slate-800 cursor-pointer">
+                <Label
+                  htmlFor="enable-mode"
+                  className="font-medium text-slate-800 cursor-pointer"
+                >
                   Enable configure mode after login
                 </Label>
                 <p className="text-xs text-slate-600 mt-1">
@@ -166,11 +174,15 @@ export function CommandExecutionTab({
                 className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-slate-400 border-2 border-slate-300"
               />
               <div className="flex-1">
-                <Label htmlFor="write-config" className="font-medium text-slate-800 cursor-pointer">
+                <Label
+                  htmlFor="write-config"
+                  className="font-medium text-slate-800 cursor-pointer"
+                >
                   Write config at the end (when no errors occurred)
                 </Label>
                 <p className="text-xs text-slate-600 mt-1">
-                  When enabled, runs &quot;copy running-config startup-config&quot; after successful command execution
+                  When enabled, runs &quot;copy running-config startup-config&quot;
+                  after successful command execution
                 </p>
               </div>
             </div>
@@ -185,11 +197,15 @@ export function CommandExecutionTab({
                   className="data-[state=checked]:bg-amber-500 data-[state=unchecked]:bg-slate-400 border-2 border-amber-300"
                 />
                 <div className="flex-1">
-                  <Label htmlFor="dry-run" className="font-medium cursor-pointer text-amber-900">
+                  <Label
+                    htmlFor="dry-run"
+                    className="font-medium cursor-pointer text-amber-900"
+                  >
                     Dry Run (render only, do not execute)
                   </Label>
                   <p className="text-xs text-amber-700 mt-1">
-                    When enabled, the template will be rendered for each device but NOT executed. Use this to preview generated commands.
+                    When enabled, the template will be rendered for each device but NOT
+                    executed. Use this to preview generated commands.
                   </p>
                 </div>
               </div>
@@ -212,7 +228,9 @@ export function CommandExecutionTab({
                 icon={<Play className="h-5 w-5" />}
               >
                 {usingTemplate
-                  ? (dryRun ? 'Render Template (Dry Run)' : 'Execute Template')
+                  ? dryRun
+                    ? 'Render Template (Dry Run)'
+                    : 'Execute Template'
                   : 'Run Commands'}
               </LoadingButton>
 

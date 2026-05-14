@@ -14,31 +14,41 @@ interface ToastStore {
   removeToast: (id: string) => void
 }
 
-export const useToastStore = create<ToastStore>((set) => ({
+export const useToastStore = create<ToastStore>(set => ({
   toasts: [],
-  addToast: (toast) => set((state) => ({ toasts: [...state.toasts, toast] })),
-  removeToast: (id) => set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
+  addToast: toast => set(state => ({ toasts: [...state.toasts, toast] })),
+  removeToast: id => set(state => ({ toasts: state.toasts.filter(t => t.id !== id) })),
 }))
 
 export function useToast() {
   const { addToast, removeToast, toasts } = useToastStore()
 
-  const toast = useCallback(({ title, description, variant = 'default' }: {
-    title?: string
-    description: string
-    variant?: 'default' | 'destructive'
-  }) => {
-    const id = Math.random().toString(36).substr(2, 9)
-    addToast({ id, title, description, variant })
+  const toast = useCallback(
+    ({
+      title,
+      description,
+      variant = 'default',
+    }: {
+      title?: string
+      description: string
+      variant?: 'default' | 'destructive'
+    }) => {
+      const id = Math.random().toString(36).substr(2, 9)
+      addToast({ id, title, description, variant })
 
-    setTimeout(() => {
+      setTimeout(() => {
+        removeToast(id)
+      }, 5000)
+    },
+    [addToast, removeToast]
+  )
+
+  const dismiss = useCallback(
+    (id: string) => {
       removeToast(id)
-    }, 5000)
-  }, [addToast, removeToast])
-
-  const dismiss = useCallback((id: string) => {
-    removeToast(id)
-  }, [removeToast])
+    },
+    [removeToast]
+  )
 
   return { toast, dismiss, toasts }
 }

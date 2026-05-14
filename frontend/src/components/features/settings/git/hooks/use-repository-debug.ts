@@ -37,45 +37,61 @@ export function useRepositoryDebug(): RepositoryDebugHook {
     setDebugResult(null)
   }, [])
 
-  const runOperation = useCallback(async (operation: DebugOperation) => {
-    if (!debugRepo) return
+  const runOperation = useCallback(
+    async (operation: DebugOperation) => {
+      if (!debugRepo) return
 
-    setIsLoading(true)
-    setDebugResult(null)
+      setIsLoading(true)
+      setDebugResult(null)
 
-    try {
-      const endpoint = operation === 'diagnostics'
-        ? `git-repositories/${debugRepo.id}/debug/diagnostics`
-        : `git-repositories/${debugRepo.id}/debug/${operation}`
+      try {
+        const endpoint =
+          operation === 'diagnostics'
+            ? `git-repositories/${debugRepo.id}/debug/diagnostics`
+            : `git-repositories/${debugRepo.id}/debug/${operation}`
 
-      const method = operation === 'diagnostics' ? 'GET' : 'POST'
+        const method = operation === 'diagnostics' ? 'GET' : 'POST'
 
-      const response = await apiCall(endpoint, { method })
-      setDebugResult(response as DebugResult)
-    } catch (error) {
-      const err = error as Error
-      setDebugResult({
-        success: false,
-        message: err.message || 'Debug operation failed',
-        details: {
-          error: err.message || 'Unknown error',
-          error_type: 'FetchError',
-        },
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }, [debugRepo, apiCall])
+        const response = await apiCall(endpoint, { method })
+        setDebugResult(response as DebugResult)
+      } catch (error) {
+        const err = error as Error
+        setDebugResult({
+          success: false,
+          message: err.message || 'Debug operation failed',
+          details: {
+            error: err.message || 'Unknown error',
+            error_type: 'FetchError',
+          },
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [debugRepo, apiCall]
+  )
 
-  return useMemo(() => ({
-    debugRepo,
-    debugResult,
-    debugTab,
-    isLoading,
-    showDialog,
-    openDialog,
-    closeDialog,
-    setDebugTab,
-    runOperation,
-  }), [debugRepo, debugResult, debugTab, isLoading, showDialog, openDialog, closeDialog, runOperation])
+  return useMemo(
+    () => ({
+      debugRepo,
+      debugResult,
+      debugTab,
+      isLoading,
+      showDialog,
+      openDialog,
+      closeDialog,
+      setDebugTab,
+      runOperation,
+    }),
+    [
+      debugRepo,
+      debugResult,
+      debugTab,
+      isLoading,
+      showDialog,
+      openDialog,
+      closeDialog,
+      runOperation,
+    ]
+  )
 }

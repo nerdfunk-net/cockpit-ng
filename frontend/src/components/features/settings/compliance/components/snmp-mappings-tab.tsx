@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -150,7 +156,8 @@ export function SnmpMappingsTab({ openConfirm, isActiveTab }: SnmpMappingsTabPro
             <div>
               <CardTitle>SNMP Credentials</CardTitle>
               <CardDescription>
-                Configure SNMP credentials for compliance checks (device-type independent)
+                Configure SNMP credentials for compliance checks (device-type
+                independent)
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -187,7 +194,9 @@ export function SnmpMappingsTab({ openConfirm, isActiveTab }: SnmpMappingsTabPro
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : snmpMappings.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No SNMP mappings configured</p>
+            <p className="text-center text-muted-foreground py-8">
+              No SNMP mappings configured
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -201,7 +210,7 @@ export function SnmpMappingsTab({ openConfirm, isActiveTab }: SnmpMappingsTabPro
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {snmpMappings.map((mapping) => (
+                {snmpMappings.map(mapping => (
                   <TableRow key={mapping.id}>
                     <TableCell className="font-medium">{mapping.name}</TableCell>
                     <TableCell>

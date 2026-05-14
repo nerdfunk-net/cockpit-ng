@@ -42,7 +42,7 @@ export function VariablesPanel({
             No variables. Select a category or add custom variables.
           </p>
         )}
-        {variables.map((variable) => (
+        {variables.map(variable => (
           <div
             key={variable.id}
             onClick={() => onSelectVariable(variable.id)}
@@ -67,7 +67,7 @@ export function VariablesPanel({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation()
                   onRemoveVariable(variable.id)
                 }}

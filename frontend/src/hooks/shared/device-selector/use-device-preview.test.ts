@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import React from 'react'
+import { createElement, type ReactElement, type ReactNode } from 'react'
 import { useDevicePreview } from './use-device-preview'
 import type { ConditionTree, DeviceInfo } from '@/types/shared/device-selector'
 import { createEmptyTree } from './use-condition-tree'
@@ -14,49 +14,44 @@ vi.mock('@/hooks/mutations/use-device-preview-mutation')
 const mockDevices: DeviceInfo[] = [
   {
     id: 'device-1',
-    device_id: 'device-1',
     name: 'router-01',
     device_type: 'Router',
     role: 'Core',
     status: 'Active',
-    manufacturer: 'Cisco'
+    manufacturer: 'Cisco',
+    tags: [],
   },
   {
     id: 'device-2',
-    device_id: 'device-2',
     name: 'switch-01',
     device_type: 'Switch',
     role: 'Access',
     status: 'Active',
-    manufacturer: 'Cisco'
-  }
+    manufacturer: 'Cisco',
+    tags: [],
+  },
 ]
 
 describe('useDevicePreview', () => {
   let conditionTree: ConditionTree
   let queryClient: QueryClient
-  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactElement
+  let wrapper: ({ children }: { children: ReactNode }) => ReactElement
 
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     // Create a fresh QueryClient for each test with gcTime set to prevent caching issues
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false, gcTime: 0 },
-        mutations: { retry: false, gcTime: 0 }
+        mutations: { retry: false, gcTime: 0 },
       },
-      logger: {
-        log: () => {},
-        warn: () => {},
-        error: () => {}
-      }
     })
-    
+
     // Create wrapper component
-    wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(QueryClientProvider, { client: queryClient }, children)
-    
+    wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children)
+
     // Setup default mock for mutation - simple mock that doesn't trigger callbacks
     vi.mocked(devicePreviewMutation.useDevicePreviewMutation).mockReturnValue({
       mutate: vi.fn(),
@@ -73,18 +68,20 @@ describe('useDevicePreview', () => {
       failureCount: 0,
       failureReason: null,
       isPaused: false,
-      submittedAt: 0
+      submittedAt: 0,
     } as any)
-    
+
     conditionTree = createEmptyTree()
-    conditionTree.items = [{
-      id: 'cond-1',
-      field: 'device_type',
-      operator: 'equals',
-      value: 'Router'
-    }]
+    conditionTree.items = [
+      {
+        id: 'cond-1',
+        field: 'device_type',
+        operator: 'equals',
+        value: 'Router',
+      },
+    ]
   })
-  
+
   afterEach(async () => {
     // Clear all query client caches and subscriptions
     queryClient.clear()
@@ -94,10 +91,7 @@ describe('useDevicePreview', () => {
 
   describe('initialization', () => {
     it('should initialize with default values', () => {
-      const { result } = renderHook(
-        () => useDevicePreview(conditionTree),
-        { wrapper }
-      )
+      const { result } = renderHook(() => useDevicePreview(conditionTree), { wrapper })
 
       expect(result.current.previewDevices).toEqual([])
       expect(result.current.totalDevices).toBe(0)
@@ -137,8 +131,8 @@ describe('useDevicePreview', () => {
       const manyDevices = Array.from({ length: 45 }, (_, i) => ({
         ...mockDevices[0],
         id: `device-${i}`,
-        device_id: `device-${i}`,
-        name: `device-${i}`
+        name: `device-${i}`,
+        tags: [] as string[],
       }))
 
       const { result } = renderHook(
@@ -153,8 +147,8 @@ describe('useDevicePreview', () => {
       const manyDevices = Array.from({ length: 25 }, (_, i) => ({
         ...mockDevices[0],
         id: `device-${i}`,
-        device_id: `device-${i}`,
-        name: `device-${i}`
+        name: `device-${i}`,
+        tags: [] as string[],
       }))
 
       const { result } = renderHook(
@@ -164,7 +158,7 @@ describe('useDevicePreview', () => {
 
       // Page 1: devices 0-19
       expect(result.current.currentPageDevices).toHaveLength(20)
-      expect(result.current.currentPageDevices[0].name).toBe('device-0')
+      expect(result.current.currentPageDevices[0]!.name).toBe('device-0')
 
       // Go to page 2
       act(() => {
@@ -173,7 +167,7 @@ describe('useDevicePreview', () => {
 
       // Page 2: devices 20-24
       expect(result.current.currentPageDevices).toHaveLength(5)
-      expect(result.current.currentPageDevices[0].name).toBe('device-20')
+      expect(result.current.currentPageDevices[0]!.name).toBe('device-20')
       expect(result.current.currentPage).toBe(2)
     })
 
@@ -181,8 +175,8 @@ describe('useDevicePreview', () => {
       const manyDevices = Array.from({ length: 100 }, (_, i) => ({
         ...mockDevices[0],
         id: `device-${i}`,
-        device_id: `device-${i}`,
-        name: `device-${i}`
+        name: `device-${i}`,
+        tags: [] as string[],
       }))
 
       const { result } = renderHook(
@@ -261,7 +255,14 @@ describe('useDevicePreview', () => {
       const onSelectionChange = vi.fn()
 
       const { result } = renderHook(
-        () => useDevicePreview(conditionTree, mockDevices, [], undefined, onSelectionChange),
+        () =>
+          useDevicePreview(
+            conditionTree,
+            mockDevices,
+            [],
+            undefined,
+            onSelectionChange
+          ),
         { wrapper }
       )
 
@@ -271,7 +272,7 @@ describe('useDevicePreview', () => {
 
       expect(onSelectionChange).toHaveBeenCalledWith(
         ['device-1'],
-        expect.arrayContaining([expect.objectContaining({ device_id: 'device-1' })])
+        expect.arrayContaining([expect.objectContaining({ id: 'device-1' })])
       )
     })
   })
@@ -283,14 +284,11 @@ describe('useDevicePreview', () => {
         internalLogic: 'AND',
         items: [
           { id: '1', field: 'device_type', operator: 'equals', value: 'Router' },
-          { id: '2', field: 'role', operator: 'equals', value: 'Core' }
-        ]
+          { id: '2', field: 'role', operator: 'equals', value: 'Core' },
+        ],
       }
 
-      const { result } = renderHook(
-        () => useDevicePreview(tree),
-        { wrapper }
-      )
+      const { result } = renderHook(() => useDevicePreview(tree), { wrapper })
 
       const flatConditions = result.current.treeToFlatConditions(tree)
 
@@ -299,13 +297,13 @@ describe('useDevicePreview', () => {
         field: 'device_type',
         operator: 'equals',
         value: 'Router',
-        logic: 'AND'
+        logic: 'AND',
       })
       expect(flatConditions[1]).toEqual({
         field: 'role',
         operator: 'equals',
         value: 'Core',
-        logic: 'AND'
+        logic: 'AND',
       })
     })
 
@@ -322,25 +320,22 @@ describe('useDevicePreview', () => {
             logic: 'AND',
             items: [
               { id: '3', field: 'status', operator: 'equals', value: 'Active' },
-              { id: '4', field: 'status', operator: 'equals', value: 'Staged' }
-            ]
-          }
-        ]
+              { id: '4', field: 'status', operator: 'equals', value: 'Staged' },
+            ],
+          },
+        ],
       }
 
-      const { result } = renderHook(
-        () => useDevicePreview(tree),
-        { wrapper }
-      )
+      const { result } = renderHook(() => useDevicePreview(tree), { wrapper })
 
       const flatConditions = result.current.treeToFlatConditions(tree)
 
       expect(flatConditions).toHaveLength(3)
-      expect(flatConditions[0].field).toBe('device_type')
-      expect(flatConditions[1].field).toBe('status')
-      expect(flatConditions[1].logic).toBe('OR')
-      expect(flatConditions[2].field).toBe('status')
-      expect(flatConditions[2].logic).toBe('OR')
+      expect(flatConditions[0]!.field).toBe('device_type')
+      expect(flatConditions[1]!.field).toBe('status')
+      expect(flatConditions[1]!.logic).toBe('OR')
+      expect(flatConditions[2]!.field).toBe('status')
+      expect(flatConditions[2]!.logic).toBe('OR')
     })
   })
 
@@ -349,10 +344,7 @@ describe('useDevicePreview', () => {
       const emptyTree = createEmptyTree()
       const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
 
-      const { result } = renderHook(
-        () => useDevicePreview(emptyTree),
-        { wrapper }
-      )
+      const { result } = renderHook(() => useDevicePreview(emptyTree), { wrapper })
 
       act(() => {
         result.current.loadPreview()
@@ -368,13 +360,10 @@ describe('useDevicePreview', () => {
         mutate: mutateSpy,
         isPending: false,
         data: null,
-        error: null
+        error: null,
       } as any)
 
-      const { result } = renderHook(
-        () => useDevicePreview(conditionTree),
-        { wrapper }
-      )
+      const { result } = renderHook(() => useDevicePreview(conditionTree), { wrapper })
 
       act(() => {
         result.current.loadPreview()
@@ -384,9 +373,9 @@ describe('useDevicePreview', () => {
         operations: expect.arrayContaining([
           expect.objectContaining({
             operation_type: expect.any(String),
-            conditions: expect.any(Array)
-          })
-        ])
+            conditions: expect.any(Array),
+          }),
+        ]),
       })
     })
   })
@@ -403,7 +392,7 @@ describe('useDevicePreview', () => {
         data: {
           devices: mockDevices,
           total_count: 2,
-          operations_executed: 1
+          operations_executed: 1,
         },
         error: null,
         isIdle: false,
@@ -415,7 +404,7 @@ describe('useDevicePreview', () => {
         failureCount: 0,
         failureReason: null,
         isPaused: false,
-        submittedAt: 0
+        submittedAt: 0,
       } as any)
 
       const { rerender } = renderHook(
@@ -435,8 +424,8 @@ describe('useDevicePreview', () => {
           expect.objectContaining({
             field: 'device_type',
             operator: 'equals',
-            value: 'Router'
-          })
+            value: 'Router',
+          }),
         ])
       )
 
@@ -450,10 +439,7 @@ describe('useDevicePreview', () => {
 
   describe('state updates', () => {
     it('should update showPreviewResults', () => {
-      const { result } = renderHook(
-        () => useDevicePreview(conditionTree),
-        { wrapper }
-      )
+      const { result } = renderHook(() => useDevicePreview(conditionTree), { wrapper })
 
       expect(result.current.showPreviewResults).toBe(false)
 
@@ -465,10 +451,7 @@ describe('useDevicePreview', () => {
     })
 
     it('should update currentPage', () => {
-      const { result } = renderHook(
-        () => useDevicePreview(conditionTree),
-        { wrapper }
-      )
+      const { result } = renderHook(() => useDevicePreview(conditionTree), { wrapper })
 
       act(() => {
         result.current.setCurrentPage(3)
@@ -478,10 +461,7 @@ describe('useDevicePreview', () => {
     })
 
     it('should update selectedIds', () => {
-      const { result } = renderHook(
-        () => useDevicePreview(conditionTree),
-        { wrapper }
-      )
+      const { result } = renderHook(() => useDevicePreview(conditionTree), { wrapper })
 
       const newIds = new Set(['device-1', 'device-2'])
 

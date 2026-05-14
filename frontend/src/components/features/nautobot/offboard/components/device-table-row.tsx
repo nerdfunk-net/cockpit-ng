@@ -10,13 +10,18 @@ interface DeviceTableRowProps {
   onSelect: (deviceId: string, checked: boolean) => void
 }
 
-export function DeviceTableRow({ device, isSelected, index, onSelect }: DeviceTableRowProps) {
+export function DeviceTableRow({
+  device,
+  isSelected,
+  index,
+  onSelect,
+}: DeviceTableRowProps) {
   return (
     <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
       <td className="pl-4 pr-2 py-3 w-8 text-left">
         <Checkbox
           checked={isSelected}
-          onCheckedChange={(checked) => onSelect(device.id, checked as boolean)}
+          onCheckedChange={checked => onSelect(device.id, checked as boolean)}
         />
       </td>
       <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-gray-900">
@@ -32,7 +37,9 @@ export function DeviceTableRow({ device, isSelected, index, onSelect }: DeviceTa
         {device.location?.name || 'Unknown'}
       </td>
       <td className="px-4 py-3">
-        <Badge className={`text-white ${getStatusBadgeClass(device.status?.name || 'unknown')}`}>
+        <Badge
+          className={`text-white ${getStatusBadgeClass(device.status?.name || 'unknown')}`}
+        >
           {device.status?.name || 'Unknown'}
         </Badge>
       </td>

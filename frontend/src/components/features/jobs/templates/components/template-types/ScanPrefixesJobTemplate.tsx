@@ -1,10 +1,16 @@
-import { useEffect, useState, useCallback } from "react"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Radar, Network } from "lucide-react"
-import { useAuthStore } from "@/lib/auth-store"
+import { useEffect, useState, useCallback } from 'react'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Radar, Network } from 'lucide-react'
+import { useAuthStore } from '@/lib/auth-store'
 
 interface CustomField {
   id: string
@@ -70,7 +76,9 @@ export function ScanPrefixesJobTemplate({
 }: ScanPrefixesJobTemplateProps) {
   const token = useAuthStore(state => state.token)
   const [customFields, setCustomFields] = useState<CustomField[]>(EMPTY_CUSTOM_FIELDS)
-  const [selectedFieldChoices, setSelectedFieldChoices] = useState<Array<{ value: string, display: string }>>([])
+  const [selectedFieldChoices, setSelectedFieldChoices] = useState<
+    Array<{ value: string; display: string }>
+  >([])
   const [loadingCustomFields, setLoadingCustomFields] = useState(false)
 
   // Fetch custom fields for ipam.prefix
@@ -79,10 +87,10 @@ export function ScanPrefixesJobTemplate({
 
     setLoadingCustomFields(true)
     try {
-      const response = await fetch("/api/proxy/api/nautobot/custom-fields/prefixes", {
+      const response = await fetch('/api/proxy/api/nautobot/custom-fields/prefixes', {
         headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       })
 
@@ -91,7 +99,7 @@ export function ScanPrefixesJobTemplate({
         setCustomFields(data || [])
       }
     } catch (error) {
-      console.error("Error fetching prefix custom fields:", error)
+      console.error('Error fetching prefix custom fields:', error)
     } finally {
       setLoadingCustomFields(false)
     }
@@ -126,7 +134,9 @@ export function ScanPrefixesJobTemplate({
       <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Network className="h-4 w-4 text-purple-600" />
-          <Label className="text-sm font-semibold text-purple-900">Prefix Custom Fields</Label>
+          <Label className="text-sm font-semibold text-purple-900">
+            Prefix Custom Fields
+          </Label>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -140,10 +150,14 @@ export function ScanPrefixesJobTemplate({
               disabled={loadingCustomFields}
             >
               <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
-                <SelectValue placeholder={loadingCustomFields ? "Loading..." : "Select custom field..."} />
+                <SelectValue
+                  placeholder={
+                    loadingCustomFields ? 'Loading...' : 'Select custom field...'
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                {customFields.map((field) => (
+                {customFields.map(field => (
                   <SelectItem key={field.key} value={field.key}>
                     {field.label} ({field.type.label})
                   </SelectItem>
@@ -151,7 +165,8 @@ export function ScanPrefixesJobTemplate({
               </SelectContent>
             </Select>
             <p className="text-xs text-purple-700">
-              Select the custom field on prefixes to filter by (content_type: ipam.prefix)
+              Select the custom field on prefixes to filter by (content_type:
+              ipam.prefix)
             </p>
           </div>
 
@@ -182,7 +197,7 @@ export function ScanPrefixesJobTemplate({
                     <SelectValue placeholder="Select value..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {selectedFieldChoices.map((choice) => (
+                    {selectedFieldChoices.map(choice => (
                       <SelectItem key={choice.value} value={choice.value}>
                         {choice.display}
                       </SelectItem>
@@ -194,7 +209,7 @@ export function ScanPrefixesJobTemplate({
                   id="custom-field-value"
                   type="text"
                   value={formScanCustomFieldValue}
-                  onChange={(e) => setFormScanCustomFieldValue(e.target.value)}
+                  onChange={e => setFormScanCustomFieldValue(e.target.value)}
                   placeholder="Enter value..."
                   className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
                 />
@@ -209,7 +224,10 @@ export function ScanPrefixesJobTemplate({
         {/* Response Custom Field */}
         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-purple-200">
           <div className="space-y-2">
-            <Label htmlFor="response-custom-field-name" className="text-sm text-purple-900">
+            <Label
+              htmlFor="response-custom-field-name"
+              className="text-sm text-purple-900"
+            >
               Write Response to
             </Label>
             <Select
@@ -218,10 +236,14 @@ export function ScanPrefixesJobTemplate({
               disabled={loadingCustomFields}
             >
               <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
-                <SelectValue placeholder={loadingCustomFields ? "Loading..." : "Select custom field..."} />
+                <SelectValue
+                  placeholder={
+                    loadingCustomFields ? 'Loading...' : 'Select custom field...'
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                {customFields.map((field) => (
+                {customFields.map(field => (
                   <SelectItem key={field.key} value={field.key}>
                     {field.label} ({field.type.label})
                   </SelectItem>
@@ -229,7 +251,8 @@ export function ScanPrefixesJobTemplate({
               </SelectContent>
             </Select>
             <p className="text-xs text-purple-700">
-              Optional: Write scan results to this custom field (content_type: ipam.prefix)
+              Optional: Write scan results to this custom field (content_type:
+              ipam.prefix)
             </p>
           </div>
         </div>
@@ -242,7 +265,10 @@ export function ScanPrefixesJobTemplate({
               checked={formScanSetReachableIpActive}
               onCheckedChange={setFormScanSetReachableIpActive}
             />
-            <Label htmlFor="scan-set-reachable-ip-active" className="text-sm text-purple-900 cursor-pointer">
+            <Label
+              htmlFor="scan-set-reachable-ip-active"
+              className="text-sm text-purple-900 cursor-pointer"
+            >
               Set reachable IP to Active
             </Label>
           </div>
@@ -265,7 +291,10 @@ export function ScanPrefixesJobTemplate({
             checked={formScanResolveDns}
             onCheckedChange={setFormScanResolveDns}
           />
-          <Label htmlFor="scan-resolve-dns" className="text-sm text-purple-900 cursor-pointer">
+          <Label
+            htmlFor="scan-resolve-dns"
+            className="text-sm text-purple-900 cursor-pointer"
+          >
             Resolve DNS
           </Label>
         </div>
@@ -284,11 +313,13 @@ export function ScanPrefixesJobTemplate({
               min="1"
               max="10"
               value={formScanPingCount}
-              onChange={(e) => setFormScanPingCount(e.target.value)}
+              onChange={e => setFormScanPingCount(e.target.value)}
               placeholder="3"
               className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
             />
-            <p className="text-xs text-purple-700">Number of ping attempts per host (1-10)</p>
+            <p className="text-xs text-purple-700">
+              Number of ping attempts per host (1-10)
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -301,11 +332,13 @@ export function ScanPrefixesJobTemplate({
               min="100"
               max="30000"
               value={formScanTimeoutMs}
-              onChange={(e) => setFormScanTimeoutMs(e.target.value)}
+              onChange={e => setFormScanTimeoutMs(e.target.value)}
               placeholder="1000"
               className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
             />
-            <p className="text-xs text-purple-700">Timeout in milliseconds (100-30000)</p>
+            <p className="text-xs text-purple-700">
+              Timeout in milliseconds (100-30000)
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -318,7 +351,7 @@ export function ScanPrefixesJobTemplate({
               min="0"
               max="5"
               value={formScanRetries}
-              onChange={(e) => setFormScanRetries(e.target.value)}
+              onChange={e => setFormScanRetries(e.target.value)}
               placeholder="2"
               className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
             />
@@ -334,11 +367,13 @@ export function ScanPrefixesJobTemplate({
               type="number"
               min="0"
               value={formScanMaxIps}
-              onChange={(e) => setFormScanMaxIps(e.target.value)}
+              onChange={e => setFormScanMaxIps(e.target.value)}
               placeholder="No limit"
               className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
             />
-            <p className="text-xs text-purple-700">Maximum number of IPs to scan. Larger jobs will be split.</p>
+            <p className="text-xs text-purple-700">
+              Maximum number of IPs to scan. Larger jobs will be split.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -351,11 +386,13 @@ export function ScanPrefixesJobTemplate({
               min="0"
               max="10000"
               value={formScanIntervalMs}
-              onChange={(e) => setFormScanIntervalMs(e.target.value)}
+              onChange={e => setFormScanIntervalMs(e.target.value)}
               placeholder="100"
               className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
             />
-            <p className="text-xs text-purple-700">Interval between scans in milliseconds (0-10000)</p>
+            <p className="text-xs text-purple-700">
+              Interval between scans in milliseconds (0-10000)
+            </p>
           </div>
         </div>
       </div>

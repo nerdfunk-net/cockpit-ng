@@ -12,7 +12,9 @@ export function useCredentialManager() {
   const loadStoredCredentials = async () => {
     try {
       // Fetch both general and user's private credentials (source not specified = all accessible)
-      const response = await apiCall<StoredCredential[]>('credentials?include_expired=false')
+      const response = await apiCall<StoredCredential[]>(
+        'credentials?include_expired=false'
+      )
       // Filter for SSH credentials only
       const sshCredentials = response.filter(cred => cred.type === 'ssh')
       setStoredCredentials(sshCredentials)
@@ -40,7 +42,9 @@ export function useCredentialManager() {
       if (credential) {
         setUsername(credential.username)
         try {
-          const response = await apiCall<{password: string}>(`credentials/${credId}/password`)
+          const response = await apiCall<{ password: string }>(
+            `credentials/${credId}/password`
+          )
           setPassword(response.password)
         } catch (error) {
           console.error('Error fetching credential password:', error)

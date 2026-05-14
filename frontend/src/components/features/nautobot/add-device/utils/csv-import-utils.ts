@@ -188,7 +188,11 @@ export function parseCsvDevices(
     deviceEntry.rowIndices.push(i + 1)
 
     // If an IP is present but no interface name, use the default interface name
-    if (interfaceFields.ip_address && !interfaceFields.name && defaults['interface_name']) {
+    if (
+      interfaceFields.ip_address &&
+      !interfaceFields.name &&
+      defaults['interface_name']
+    ) {
       interfaceFields.name = defaults['interface_name']
     }
 
@@ -359,7 +363,11 @@ function setDeviceField(device: Partial<ParsedDevice>, field: string, value: str
   }
 }
 
-function setInterfaceField(iface: Partial<CSVInterfaceData>, field: string, value: string) {
+function setInterfaceField(
+  iface: Partial<CSVInterfaceData>,
+  field: string,
+  value: string
+) {
   switch (field) {
     case 'name':
       iface.name = value

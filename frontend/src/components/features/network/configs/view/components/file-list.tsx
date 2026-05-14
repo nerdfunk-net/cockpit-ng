@@ -30,7 +30,7 @@ export function FileList({
   onFileSelect,
   onShowHistory,
   onViewFile,
-  onDownloadFile
+  onDownloadFile,
 }: FileListProps) {
   const { data, isLoading, error } = useDirectoryFilesQuery(repoId, {
     path: directoryPath,
@@ -55,8 +55,10 @@ export function FileList({
       if (diffInSeconds < 60) return 'just now'
       if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
       if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-      if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`
-      if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} months ago`
+      if (diffInSeconds < 2592000)
+        return `${Math.floor(diffInSeconds / 86400)} days ago`
+      if (diffInSeconds < 31536000)
+        return `${Math.floor(diffInSeconds / 2592000)} months ago`
       return `${Math.floor(diffInSeconds / 31536000)} years ago`
     }
   }, [])
@@ -67,9 +69,7 @@ export function FileList({
     if (!filterText.trim()) return files
 
     const searchTerm = filterText.toLowerCase()
-    return files.filter(file =>
-      file.name.toLowerCase().includes(searchTerm)
-    )
+    return files.filter(file => file.name.toLowerCase().includes(searchTerm))
   }, [data, filterText])
 
   if (isLoading) {
@@ -128,7 +128,9 @@ export function FileList({
         <table className="w-full">
           <thead className="border-b sticky top-0 bg-background z-10">
             <tr>
-              {onFileSelect && <th className="text-left p-3 font-semibold text-sm w-12">Select</th>}
+              {onFileSelect && (
+                <th className="text-left p-3 font-semibold text-sm w-12">Select</th>
+              )}
               <th className="text-left p-3 font-semibold text-sm">File Name</th>
               <th className="text-left p-3 font-semibold text-sm w-24">Size</th>
               <th className="text-left p-3 font-semibold text-sm">Last Commit</th>
@@ -137,16 +139,13 @@ export function FileList({
             </tr>
           </thead>
           <tbody className="divide-y">
-            {filteredFiles.map((file) => (
-              <tr
-                key={file.path}
-                className="hover:bg-muted/50 transition-colors"
-              >
+            {filteredFiles.map(file => (
+              <tr key={file.path} className="hover:bg-muted/50 transition-colors">
                 {onFileSelect && (
                   <td className="p-3">
                     <Checkbox
                       checked={selectedFiles.has(file.path)}
-                      onCheckedChange={(checked) => onFileSelect(file.path, !!checked)}
+                      onCheckedChange={checked => onFileSelect(file.path, !!checked)}
                     />
                   </td>
                 )}
@@ -170,7 +169,10 @@ export function FileList({
                         {file.last_commit.short_hash}
                       </Badge>
                     )}
-                    <span className="text-sm text-muted-foreground truncate max-w-xs" title={file.last_commit.message}>
+                    <span
+                      className="text-sm text-muted-foreground truncate max-w-xs"
+                      title={file.last_commit.message}
+                    >
                       {file.last_commit.message}
                     </span>
                   </div>

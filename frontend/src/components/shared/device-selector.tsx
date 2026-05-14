@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   DeviceSelectorProps,
   LogicalCondition,
-  DeviceInfo
+  DeviceInfo,
 } from '@/types/shared/device-selector'
 
 // Re-export types for backward compatibility
@@ -14,7 +14,7 @@ export type {
   DeviceInfo,
   ConditionTree,
   ConditionItem,
-  ConditionGroup
+  ConditionGroup,
 } from '@/types/shared/device-selector'
 
 import { useConditionTree } from '@/hooks/shared/device-selector/use-condition-tree'
@@ -45,9 +45,8 @@ export function DeviceSelector({
   enableSelection = false,
   selectedDeviceIds = EMPTY_DEVICE_IDS,
   onSelectionChange,
-  onInventoryLoaded
+  onInventoryLoaded,
 }: DeviceSelectorProps) {
-
   // -- HOOKS --
 
   // 1. Condition Tree Logic
@@ -61,7 +60,7 @@ export function DeviceSelector({
     removeItemFromTree,
     updateGroupLogic,
     findGroupPath,
-    flatConditionsToTree
+    flatConditionsToTree,
   } = useConditionTree()
 
   // 2. Device Filter Options & Inputs
@@ -90,7 +89,7 @@ export function DeviceSelector({
     isLoadingCustomFields,
     handleFieldChange,
     handleOperatorChange,
-    handleCustomFieldSelect
+    handleCustomFieldSelect,
   } = useDeviceFilter()
 
   // 3. Device Preview & Selection
@@ -111,7 +110,7 @@ export function DeviceSelector({
     handlePageChange,
     handleSelectAll,
     handleSelectDevice,
-    loadPreview
+    loadPreview,
   } = useDevicePreview(
     conditionTree,
     initialDevices,
@@ -131,7 +130,7 @@ export function DeviceSelector({
     updateInventoryDetails,
     deleteInventory,
     exportInventory,
-    importInventory
+    importInventory,
   } = useSavedInventories()
 
   // -- LOCAL UI STATE --
@@ -143,7 +142,10 @@ export function DeviceSelector({
   const [showHelpModal, setShowHelpModal] = useState(false)
 
   // Track the currently loaded inventory for Save / Save as
-  const [loadedInventory, setLoadedInventory] = useState<Pick<LoadedInventoryData, 'id' | 'name' | 'description' | 'scope' | 'group_path'> | null>(null)
+  const [loadedInventory, setLoadedInventory] = useState<Pick<
+    LoadedInventoryData,
+    'id' | 'name' | 'description' | 'scope' | 'group_path'
+  > | null>(null)
 
   // -- EFFECTS --
 
@@ -176,9 +178,24 @@ export function DeviceSelector({
     setShowManageModal(true)
   }
 
-  const handleSaveInventory = async (name: string, description: string, scope: string, isUpdate: boolean, existingId?: number, group_path?: string | null) => {
+  const handleSaveInventory = async (
+    name: string,
+    description: string,
+    scope: string,
+    isUpdate: boolean,
+    existingId?: number,
+    group_path?: string | null
+  ) => {
     try {
-      const success = await saveInventory(name, description, scope, conditionTree, isUpdate, existingId, group_path)
+      const success = await saveInventory(
+        name,
+        description,
+        scope,
+        conditionTree,
+        isUpdate,
+        existingId,
+        group_path
+      )
       return success
     } catch (e) {
       alert('Error saving inventory: ' + (e as Error).message)
@@ -191,7 +208,13 @@ export function DeviceSelector({
       const result = await loadInventory(id)
       if (result) {
         setConditionTree(result.tree)
-        setLoadedInventory({ id: result.id, name: result.name, description: result.description, scope: result.scope, group_path: result.group_path })
+        setLoadedInventory({
+          id: result.id,
+          name: result.name,
+          description: result.description,
+          scope: result.scope,
+          group_path: result.group_path,
+        })
         setShowPreviewResults(false)
         setShowLoadModal(false)
         // Notify parent component that an inventory was loaded
@@ -250,7 +273,6 @@ export function DeviceSelector({
         removeItemFromTree={removeItemFromTree}
         updateGroupLogic={updateGroupLogic}
         findGroupPath={findGroupPath}
-
         currentField={currentField}
         setCurrentField={setCurrentField}
         currentOperator={currentOperator}
@@ -261,7 +283,6 @@ export function DeviceSelector({
         setCurrentLogic={setCurrentLogic}
         currentNegate={currentNegate}
         setCurrentNegate={setCurrentNegate}
-
         fieldOptions={fieldOptions}
         operatorOptions={operatorOptions}
         fieldValues={fieldValues}
@@ -271,20 +292,16 @@ export function DeviceSelector({
         setLocationSearchValue={setLocationSearchValue}
         showLocationDropdown={showLocationDropdown}
         setShowLocationDropdown={setShowLocationDropdown}
-
         handleFieldChange={handleFieldChange}
         handleOperatorChange={handleOperatorChange}
         handleCustomFieldSelect={handleCustomFieldSelect}
         selectedCustomField={selectedCustomField}
-
         isLoadingFieldValues={isLoadingFieldValues}
         isLoadingCustomFields={isLoadingCustomFields}
-
         onPreview={loadPreview}
         isLoadingPreview={isLoadingPreview}
         showActions={showActions}
         showSaveLoad={showSaveLoad}
-
         loadedInventoryName={loadedInventory?.name}
         onSaveCurrent={handleDirectSave}
         isSavingCurrent={isSavingInventory}
@@ -351,10 +368,7 @@ export function DeviceSelector({
         conditionTree={conditionTree}
       />
 
-      <HelpModal
-        isOpen={showHelpModal}
-        onClose={() => setShowHelpModal(false)}
-      />
+      <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
   )
 }

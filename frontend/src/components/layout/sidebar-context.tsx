@@ -7,7 +7,9 @@ interface SidebarContextType {
   setIsCollapsed: (collapsed: boolean) => void
   toggleCollapsed: () => void
   collapsedSections: Set<string>
-  setCollapsedSections: (sections: Set<string> | ((prev: Set<string>) => Set<string>)) => void
+  setCollapsedSections: (
+    sections: Set<string> | ((prev: Set<string>) => Set<string>)
+  ) => void
   collapsedItems: Set<string>
   setCollapsedItems: (items: Set<string> | ((prev: Set<string>) => Set<string>)) => void
 }
@@ -15,7 +17,15 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
 
 // Navigation sections - all collapsed by default on login
-const navigationSectionTitles = ['General', 'Nautobot', 'CheckMK', 'Agents', 'Network', 'Jobs', 'Settings']
+const navigationSectionTitles = [
+  'General',
+  'Nautobot',
+  'CheckMK',
+  'Agents',
+  'Network',
+  'Jobs',
+  'Settings',
+]
 
 // Collapsible menu items - all collapsed by default on login
 const collapsibleMenuItems = [
@@ -44,15 +54,17 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <SidebarContext.Provider value={{
-      isCollapsed,
-      setIsCollapsed,
-      toggleCollapsed,
-      collapsedSections,
-      setCollapsedSections,
-      collapsedItems,
-      setCollapsedItems
-    }}>
+    <SidebarContext.Provider
+      value={{
+        isCollapsed,
+        setIsCollapsed,
+        toggleCollapsed,
+        collapsedSections,
+        setCollapsedSections,
+        collapsedItems,
+        setCollapsedItems,
+      }}
+    >
       {children}
     </SidebarContext.Provider>
   )

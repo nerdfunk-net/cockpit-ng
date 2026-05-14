@@ -70,9 +70,7 @@ export function LoginCredentialDialog({
             <Input
               id="credential-name"
               value={formData.name}
-              onChange={(e) =>
-                onFormChange({ ...formData, name: e.target.value })
-              }
+              onChange={e => onFormChange({ ...formData, name: e.target.value })}
               placeholder="Production Admin"
               className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
             />
@@ -94,9 +92,7 @@ export function LoginCredentialDialog({
             <Input
               id="username"
               value={formData.username}
-              onChange={(e) =>
-                onFormChange({ ...formData, username: e.target.value })
-              }
+              onChange={e => onFormChange({ ...formData, username: e.target.value })}
               placeholder="admin"
               className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
             />
@@ -118,9 +114,7 @@ export function LoginCredentialDialog({
               id="password"
               type="password"
               value={formData.password}
-              onChange={(e) =>
-                onFormChange({ ...formData, password: e.target.value })
-              }
+              onChange={e => onFormChange({ ...formData, password: e.target.value })}
               placeholder={
                 credential ? '(leave blank to keep current)' : 'Enter password'
               }
@@ -144,9 +138,7 @@ export function LoginCredentialDialog({
             <Textarea
               id="login-description"
               value={formData.description}
-              onChange={(e) =>
-                onFormChange({ ...formData, description: e.target.value })
-              }
+              onChange={e => onFormChange({ ...formData, description: e.target.value })}
               placeholder="Describe this credential"
               rows={3}
               className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"

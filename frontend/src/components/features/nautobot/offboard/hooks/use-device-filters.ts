@@ -1,5 +1,9 @@
 import { useState, useCallback, useMemo } from 'react'
-import type { Device, TableFilters, DropdownOption } from '@/types/features/nautobot/offboard'
+import type {
+  Device,
+  TableFilters,
+  DropdownOption,
+} from '@/types/features/nautobot/offboard'
 
 export function useDeviceFilters(
   devices: Device[],
@@ -14,7 +18,7 @@ export function useDeviceFilters(
     role: 'all',
     location: 'all',
     ipAddress: '',
-    status: 'all'
+    status: 'all',
   })
 
   const [roleFilters, setRoleFilters] = useState<Record<string, boolean>>({})
@@ -23,7 +27,7 @@ export function useDeviceFilters(
   const effectiveRoleFilters = useMemo(() => {
     // If user has set filters, use them
     if (Object.keys(roleFilters).length > 0) return roleFilters
-    
+
     // Otherwise, default to all roles selected
     const defaultFilters: Record<string, boolean> = {}
     dropdownOptions.roles.forEach(role => {
@@ -36,8 +40,10 @@ export function useDeviceFilters(
     let filtered = devices
 
     if (filters.deviceName) {
-      filtered = filtered.filter(device =>
-        device.name && device.name.toLowerCase().includes(filters.deviceName.toLowerCase())
+      filtered = filtered.filter(
+        device =>
+          device.name &&
+          device.name.toLowerCase().includes(filters.deviceName.toLowerCase())
       )
     }
 
@@ -56,7 +62,9 @@ export function useDeviceFilters(
 
     if (filters.ipAddress) {
       filtered = filtered.filter(device =>
-        device.primary_ip4?.address?.toLowerCase().includes(filters.ipAddress.toLowerCase())
+        device.primary_ip4?.address
+          ?.toLowerCase()
+          .includes(filters.ipAddress.toLowerCase())
       )
     }
 
@@ -77,7 +85,7 @@ export function useDeviceFilters(
       role: 'all',
       location: 'all',
       ipAddress: '',
-      status: 'all'
+      status: 'all',
     })
 
     const resetRoleFilters: Record<string, boolean> = {}
@@ -94,6 +102,6 @@ export function useDeviceFilters(
     setFilters,
     setRoleFilters,
     handleFilterChange,
-    clearAllFilters
+    clearAllFilters,
   }
 }

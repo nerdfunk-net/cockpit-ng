@@ -1,11 +1,25 @@
-"use client"
+'use client'
 
-import React, { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScanPrefixJobResult, PrefixScanResult } from "../types/job-results"
-import { Network, CheckCircle2, XCircle, Activity, ChevronDown, ChevronUp, Globe } from "lucide-react"
+import { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { ScanPrefixJobResult, PrefixScanResult } from '../types/job-results'
+import {
+  Network,
+  CheckCircle2,
+  XCircle,
+  Activity,
+  ChevronDown,
+  ChevronUp,
+  Globe,
+} from 'lucide-react'
 
 interface ScanPrefixResultViewProps {
   result: ScanPrefixJobResult
@@ -63,16 +77,23 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Total IPs Scanned</p>
-              <p className="text-2xl font-bold">{result.total_ips_scanned.toLocaleString()}</p>
+              <p className="text-2xl font-bold">
+                {result.total_ips_scanned.toLocaleString()}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Reachable</p>
               <p className="text-2xl font-bold text-green-600">
                 {result.total_reachable.toLocaleString()}
                 <span className="text-sm text-muted-foreground ml-1">
-                  ({result.total_ips_scanned > 0
-                    ? ((result.total_reachable / result.total_ips_scanned) * 100).toFixed(1)
-                    : 0}%)
+                  (
+                  {result.total_ips_scanned > 0
+                    ? (
+                        (result.total_reachable / result.total_ips_scanned) *
+                        100
+                      ).toFixed(1)
+                    : 0}
+                  %)
                 </span>
               </p>
             </div>
@@ -81,9 +102,14 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
               <p className="text-2xl font-bold text-slate-600">
                 {result.total_unreachable.toLocaleString()}
                 <span className="text-sm text-muted-foreground ml-1">
-                  ({result.total_ips_scanned > 0
-                    ? ((result.total_unreachable / result.total_ips_scanned) * 100).toFixed(1)
-                    : 0}%)
+                  (
+                  {result.total_ips_scanned > 0
+                    ? (
+                        (result.total_unreachable / result.total_ips_scanned) *
+                        100
+                      ).toFixed(1)
+                    : 0}
+                  %)
                 </span>
               </p>
             </div>
@@ -93,7 +119,10 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
           <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-md">
             <p className="text-sm text-slate-700">
               <Network className="h-4 w-4 inline mr-1" />
-              Filtered by: <code className="bg-white px-2 py-0.5 rounded text-xs">{result.custom_field_name} = {result.custom_field_value}</code>
+              Filtered by:{' '}
+              <code className="bg-white px-2 py-0.5 rounded text-xs">
+                {result.custom_field_name} = {result.custom_field_value}
+              </code>
             </p>
           </div>
         </CardContent>
@@ -105,9 +134,7 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Prefix Details</CardTitle>
-              <CardDescription>
-                Breakdown by network prefix
-              </CardDescription>
+              <CardDescription>Breakdown by network prefix</CardDescription>
             </div>
             <div className="flex gap-2">
               <Button onClick={expandAll} variant="outline" size="sm">
@@ -127,14 +154,18 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                 <p>No prefixes scanned</p>
               </div>
             ) : (
-              prefixes.map((prefix) => {
+              prefixes.map(prefix => {
                 const isExpanded = expandedPrefixes.has(prefix.prefix)
-                const reachabilityPercent = prefix.total_ips > 0
-                  ? ((prefix.reachable_count / prefix.total_ips) * 100).toFixed(1)
-                  : 0
+                const reachabilityPercent =
+                  prefix.total_ips > 0
+                    ? ((prefix.reachable_count / prefix.total_ips) * 100).toFixed(1)
+                    : 0
 
                 return (
-                  <div key={prefix.prefix} className="border rounded-lg overflow-hidden">
+                  <div
+                    key={prefix.prefix}
+                    className="border rounded-lg overflow-hidden"
+                  >
                     {/* Prefix Header */}
                     <button
                       onClick={() => togglePrefix(prefix.prefix)}
@@ -143,7 +174,9 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                       <div className="flex items-center gap-3">
                         <Network className="h-5 w-5 text-slate-600" />
                         <div className="text-left">
-                          <p className="font-semibold text-slate-900">{prefix.prefix}</p>
+                          <p className="font-semibold text-slate-900">
+                            {prefix.prefix}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             {prefix.total_ips.toLocaleString()} IPs scanned
                           </p>
@@ -155,7 +188,10 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                             <CheckCircle2 className="h-3 w-3 mr-1" />
                             {prefix.reachable_count} ({reachabilityPercent}%)
                           </Badge>
-                          <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-300">
+                          <Badge
+                            variant="outline"
+                            className="bg-slate-50 text-slate-700 border-slate-300"
+                          >
                             <XCircle className="h-3 w-3 mr-1" />
                             {prefix.unreachable_count}
                           </Badge>
@@ -179,12 +215,14 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                               Reachable IPs ({prefix.reachable_count})
                             </h4>
                             <div className="space-y-1 max-h-64 overflow-y-auto">
-                              {prefix.reachable.map((ip) => (
+                              {prefix.reachable.map(ip => (
                                 <div
                                   key={`${prefix.prefix}-${ip.ip}`}
                                   className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded text-sm"
                                 >
-                                  <span className="font-mono text-green-900">{ip.ip}</span>
+                                  <span className="font-mono text-green-900">
+                                    {ip.ip}
+                                  </span>
                                   {ip.hostname && (
                                     <span className="text-green-700 flex items-center gap-1">
                                       <Globe className="h-3 w-3" />
@@ -205,7 +243,7 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                               Unreachable IP Ranges ({prefix.unreachable_count})
                             </h4>
                             <div className="space-y-1 max-h-48 overflow-y-auto">
-                              {prefix.unreachable.slice(0, 5).map((range) => (
+                              {prefix.unreachable.slice(0, 5).map(range => (
                                 <div
                                   key={`${prefix.prefix}-${range}`}
                                   className="p-2 bg-slate-50 border border-slate-200 rounded text-sm font-mono text-slate-700"
@@ -223,11 +261,12 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                         )}
 
                         {/* Empty state */}
-                        {prefix.reachable.length === 0 && prefix.unreachable.length === 0 && (
-                          <p className="text-sm text-muted-foreground italic text-center py-4">
-                            No detailed results available
-                          </p>
-                        )}
+                        {prefix.reachable.length === 0 &&
+                          prefix.unreachable.length === 0 && (
+                            <p className="text-sm text-muted-foreground italic text-center py-4">
+                              No detailed results available
+                            </p>
+                          )}
                       </div>
                     )}
                   </div>

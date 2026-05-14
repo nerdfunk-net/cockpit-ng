@@ -20,10 +20,13 @@ export function useNautobotMutations() {
    */
   const saveSettings = useMutation({
     mutationFn: async (settings: NautobotSettings) => {
-      const response = await apiCall<ApiResponse<NautobotSettings>>('settings/nautobot', {
-        method: 'POST',
-        body: JSON.stringify(settings),
-      })
+      const response = await apiCall<ApiResponse<NautobotSettings>>(
+        'settings/nautobot',
+        {
+          method: 'POST',
+          body: JSON.stringify(settings),
+        }
+      )
 
       if (!response.success) {
         throw new Error(response.message || 'Failed to save settings')
@@ -83,10 +86,13 @@ export function useNautobotMutations() {
    */
   const saveDefaults = useMutation({
     mutationFn: async (defaults: NautobotDefaults) => {
-      const response = await apiCall<ApiResponse<NautobotDefaults>>('settings/nautobot/defaults', {
-        method: 'POST',
-        body: JSON.stringify(defaults),
-      })
+      const response = await apiCall<ApiResponse<NautobotDefaults>>(
+        'settings/nautobot/defaults',
+        {
+          method: 'POST',
+          body: JSON.stringify(defaults),
+        }
+      )
 
       if (!response.success) {
         throw new Error(response.message || 'Failed to save defaults')

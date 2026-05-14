@@ -1,7 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { JsonRenderer } from '../components/json-renderer'
@@ -14,26 +26,37 @@ interface HostDetailsDialogProps {
   host: CheckMKHost | null
 }
 
-export function HostDetailsDialog({ open, onOpenChange, host }: HostDetailsDialogProps) {
+export function HostDetailsDialog({
+  open,
+  onOpenChange,
+  host,
+}: HostDetailsDialogProps) {
   const { apiCall } = useApi()
   const [hostDetails, setHostDetails] = useState<Record<string, unknown> | null>(null)
   const [loadingHostDetails, setLoadingHostDetails] = useState(false)
   const [showEffectiveAttributes, setShowEffectiveAttributes] = useState(false)
 
-  const loadHostDetails = useCallback(async (hostName: string, effectiveAttrs: boolean) => {
-    try {
-      setLoadingHostDetails(true)
-      const params = effectiveAttrs ? '?effective_attributes=true' : ''
-      const response = await apiCall<{ success: boolean; message: string; data: Record<string, unknown> }>(`checkmk/hosts/${hostName}${params}`)
-      // Extract the actual host data from the CheckMKOperationResponse wrapper
-      setHostDetails(response?.data || null)
-    } catch (err) {
-      console.error('Failed to load host details:', err)
-      setHostDetails(null)
-    } finally {
-      setLoadingHostDetails(false)
-    }
-  }, [apiCall])
+  const loadHostDetails = useCallback(
+    async (hostName: string, effectiveAttrs: boolean) => {
+      try {
+        setLoadingHostDetails(true)
+        const params = effectiveAttrs ? '?effective_attributes=true' : ''
+        const response = await apiCall<{
+          success: boolean
+          message: string
+          data: Record<string, unknown>
+        }>(`checkmk/hosts/${hostName}${params}`)
+        // Extract the actual host data from the CheckMKOperationResponse wrapper
+        setHostDetails(response?.data || null)
+      } catch (err) {
+        console.error('Failed to load host details:', err)
+        setHostDetails(null)
+      } finally {
+        setLoadingHostDetails(false)
+      }
+    },
+    [apiCall]
+  )
 
   // Load host details when modal opens or host changes
   useEffect(() => {
@@ -52,10 +75,15 @@ export function HostDetailsDialog({ open, onOpenChange, host }: HostDetailsDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-[64vw] !w-[64vw] max-h-[90vh] overflow-hidden flex flex-col p-0" style={{ maxWidth: '64vw', width: '64vw' }}>
+      <DialogContent
+        className="!max-w-[64vw] !w-[64vw] max-h-[90vh] overflow-hidden flex flex-col p-0"
+        style={{ maxWidth: '64vw', width: '64vw' }}
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>Host Details - {host?.host_name}</DialogTitle>
-          <DialogDescription>View detailed information and attributes for the selected host</DialogDescription>
+          <DialogDescription>
+            View detailed information and attributes for the selected host
+          </DialogDescription>
         </DialogHeader>
 
         {/* Compact Blue Header */}
@@ -66,12 +94,15 @@ export function HostDetailsDialog({ open, onOpenChange, host }: HostDetailsDialo
               <p className="text-blue-100 text-xs">{host?.host_name}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Label htmlFor="effective-attrs" className="text-xs text-blue-100 whitespace-nowrap">
+              <Label
+                htmlFor="effective-attrs"
+                className="text-xs text-blue-100 whitespace-nowrap"
+              >
                 Effective Attributes:
               </Label>
               <Select
                 value={showEffectiveAttributes ? 'true' : 'false'}
-                onValueChange={(value) => setShowEffectiveAttributes(value === 'true')}
+                onValueChange={value => setShowEffectiveAttributes(value === 'true')}
               >
                 <SelectTrigger className="w-20 h-7 text-xs border-white/30 bg-white/10 hover:bg-white/20 text-white">
                   <SelectValue />
@@ -91,7 +122,9 @@ export function HostDetailsDialog({ open, onOpenChange, host }: HostDetailsDialo
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                <p className="mt-2 text-sm text-muted-foreground">Loading host details...</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Loading host details...
+                </p>
               </div>
             </div>
           ) : hostDetails ? (
@@ -102,8 +135,12 @@ export function HostDetailsDialog({ open, onOpenChange, host }: HostDetailsDialo
                   if (hostDetails.id && typeof hostDetails.id === 'string') {
                     return (
                       <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-md p-3 border border-blue-200/60">
-                        <div className="text-[10px] font-semibold text-blue-600/80 uppercase tracking-wide mb-1">Host Name</div>
-                        <div className="font-mono text-sm font-semibold text-gray-900">{hostDetails.id}</div>
+                        <div className="text-[10px] font-semibold text-blue-600/80 uppercase tracking-wide mb-1">
+                          Host Name
+                        </div>
+                        <div className="font-mono text-sm font-semibold text-gray-900">
+                          {hostDetails.id}
+                        </div>
                       </div>
                     )
                   }
@@ -111,12 +148,16 @@ export function HostDetailsDialog({ open, onOpenChange, host }: HostDetailsDialo
                 })()}
 
                 {(() => {
-                  const extensions = hostDetails.extensions as Record<string, unknown> | undefined
+                  const extensions = hostDetails.extensions as
+                    | Record<string, unknown>
+                    | undefined
                   const folder = extensions?.folder
                   if (folder && typeof folder === 'string') {
                     return (
                       <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-md p-3 border border-blue-200/60">
-                        <div className="text-[10px] font-semibold text-blue-600/80 uppercase tracking-wide mb-1">Folder</div>
+                        <div className="text-[10px] font-semibold text-blue-600/80 uppercase tracking-wide mb-1">
+                          Folder
+                        </div>
                         <div className="font-mono text-sm font-semibold text-gray-900">
                           {folder}
                         </div>
@@ -129,8 +170,13 @@ export function HostDetailsDialog({ open, onOpenChange, host }: HostDetailsDialo
 
               {/* Attributes Section - Grouped */}
               {(() => {
-                const extensions = hostDetails.extensions as Record<string, unknown> | undefined
-                if (extensions?.attributes && typeof extensions.attributes === 'object') {
+                const extensions = hostDetails.extensions as
+                  | Record<string, unknown>
+                  | undefined
+                if (
+                  extensions?.attributes &&
+                  typeof extensions.attributes === 'object'
+                ) {
                   const allAttrs = extensions.attributes as Record<string, unknown>
                   const tagAttrs: Record<string, unknown> = {}
                   const coreAttrs: Record<string, unknown> = {}
@@ -181,9 +227,18 @@ export function HostDetailsDialog({ open, onOpenChange, host }: HostDetailsDialo
 
               {/* Effective Attributes Section - Grouped */}
               {(() => {
-                const extensions = hostDetails.extensions as Record<string, unknown> | undefined
-                if (showEffectiveAttributes && extensions?.effective_attributes && typeof extensions.effective_attributes === 'object') {
-                  const allEffAttrs = extensions.effective_attributes as Record<string, unknown>
+                const extensions = hostDetails.extensions as
+                  | Record<string, unknown>
+                  | undefined
+                if (
+                  showEffectiveAttributes &&
+                  extensions?.effective_attributes &&
+                  typeof extensions.effective_attributes === 'object'
+                ) {
+                  const allEffAttrs = extensions.effective_attributes as Record<
+                    string,
+                    unknown
+                  >
                   const tagEffAttrs: Record<string, unknown> = {}
                   const coreEffAttrs: Record<string, unknown> = {}
 
@@ -233,22 +288,32 @@ export function HostDetailsDialog({ open, onOpenChange, host }: HostDetailsDialo
 
               {/* Cluster Info */}
               {(() => {
-                const extensions = hostDetails.extensions as Record<string, unknown> | undefined
+                const extensions = hostDetails.extensions as
+                  | Record<string, unknown>
+                  | undefined
                 if (extensions?.is_cluster) {
                   return (
                     <div className="mb-4">
                       <div className="flex items-center mb-2 pb-1.5 border-b border-blue-400/60">
-                        <h3 className="text-sm font-semibold text-gray-900">Cluster Information</h3>
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          Cluster Information
+                        </h3>
                       </div>
                       <div className="bg-blue-50/30 rounded-md p-4 border border-blue-200">
                         <div className="space-y-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-700">Status:</span>
-                            <Badge className="bg-blue-500 hover:bg-blue-600 text-xs h-5">Cluster</Badge>
+                            <span className="text-xs font-medium text-gray-700">
+                              Status:
+                            </span>
+                            <Badge className="bg-blue-500 hover:bg-blue-600 text-xs h-5">
+                              Cluster
+                            </Badge>
                           </div>
                           {extensions.cluster_nodes ? (
                             <div>
-                              <div className="text-xs font-medium text-gray-700 mb-1.5">Cluster Nodes:</div>
+                              <div className="text-xs font-medium text-gray-700 mb-1.5">
+                                Cluster Nodes:
+                              </div>
                               <div className="bg-white rounded p-3 border border-blue-200">
                                 <JsonRenderer data={extensions.cluster_nodes} />
                               </div>

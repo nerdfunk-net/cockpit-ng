@@ -1,6 +1,13 @@
 'use client'
 
-import { Search, Server, ChevronLeft, ChevronRight, Activity, Filter } from 'lucide-react'
+import {
+  Search,
+  Server,
+  ChevronLeft,
+  ChevronRight,
+  Activity,
+  Filter,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import {
@@ -84,7 +91,7 @@ export function DeviceList({
           <Input
             placeholder="Search devices..."
             value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={e => onSearchChange(e.target.value)}
             className="pl-7 h-7 text-xs"
           />
         </div>
@@ -113,8 +120,8 @@ export function DeviceList({
               </button>
             </li>
 
-            {devices.map((device) => {
-              const deviceObj = deviceObjects?.find((d) => d.name === device)
+            {devices.map(device => {
+              const deviceObj = deviceObjects?.find(d => d.name === device)
               return (
                 <li key={device} className="group flex items-center">
                   <button
@@ -131,7 +138,7 @@ export function DeviceList({
                   </button>
                   {onLiveStatusClick && deviceObj && (
                     <button
-                      onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation()
                         onLiveStatusClick(deviceObj)
                       }}
@@ -167,13 +174,13 @@ export function DeviceList({
           <div className="flex items-center gap-1">
             <Select
               value={String(pageSize)}
-              onValueChange={(v) => onPageSizeChange(Number(v))}
+              onValueChange={v => onPageSizeChange(Number(v))}
             >
               <SelectTrigger className="h-6 w-16 text-xs px-1.5">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PAGE_SIZE_OPTIONS.map((size) => (
+                {PAGE_SIZE_OPTIONS.map(size => (
                   <SelectItem key={size} value={String(size)} className="text-xs">
                     {size}
                   </SelectItem>

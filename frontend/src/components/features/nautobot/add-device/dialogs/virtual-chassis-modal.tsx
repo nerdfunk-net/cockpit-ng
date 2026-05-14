@@ -41,7 +41,7 @@ export function VirtualChassisModal({
 }: VirtualChassisModalProps) {
   const [filter, setFilter] = useState('')
 
-  const filteredItems = items.filter((vc) =>
+  const filteredItems = items.filter(vc =>
     vc.name.toLowerCase().includes(filter.toLowerCase())
   )
 
@@ -57,7 +57,7 @@ export function VirtualChassisModal({
   const createPanelDimmed = mode === 'select' && selectedVcId !== ''
 
   return (
-    <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={show} onOpenChange={open => !open && onClose()}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -65,7 +65,8 @@ export function VirtualChassisModal({
             Virtual Chassis (Stack)
           </DialogTitle>
           <DialogDescription>
-            Select an existing stack to join, or create a new one. The new device will become master of any newly created stack.
+            Select an existing stack to join, or create a new one. The new device will
+            become master of any newly created stack.
           </DialogDescription>
         </DialogHeader>
 
@@ -85,7 +86,7 @@ export function VirtualChassisModal({
                 <div className="text-xs text-blue-100">
                   Selected:{' '}
                   <span className="font-medium">
-                    {items.find((v) => v.id === selectedVcId)?.name ?? selectedVcId}
+                    {items.find(v => v.id === selectedVcId)?.name ?? selectedVcId}
                   </span>
                 </div>
               )}
@@ -102,7 +103,7 @@ export function VirtualChassisModal({
                   <Input
                     placeholder="Filter virtual chassis..."
                     value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
+                    onChange={e => setFilter(e.target.value)}
                     className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
                   />
 
@@ -114,7 +115,7 @@ export function VirtualChassisModal({
                     </p>
                   ) : (
                     <div className="max-h-48 overflow-y-auto border-2 border-slate-200 rounded-md">
-                      {filteredItems.map((vc) => (
+                      {filteredItems.map(vc => (
                         <button
                           key={vc.id}
                           type="button"
@@ -139,7 +140,7 @@ export function VirtualChassisModal({
                       <span>
                         Selected:{' '}
                         <span className="font-medium text-blue-700">
-                          {items.find((v) => v.id === selectedVcId)?.name ?? selectedVcId}
+                          {items.find(v => v.id === selectedVcId)?.name ?? selectedVcId}
                         </span>
                       </span>
                       <button
@@ -167,7 +168,9 @@ export function VirtualChassisModal({
                 <Plus className="h-4 w-4" />
                 <span className="text-sm font-medium">Add Device to New Stack</span>
               </div>
-              <div className="text-xs text-green-100">Device becomes master at position 1</div>
+              <div className="text-xs text-green-100">
+                Device becomes master at position 1
+              </div>
             </div>
 
             <div className="p-4 bg-gradient-to-b from-white to-gray-50 space-y-2">
@@ -185,7 +188,9 @@ export function VirtualChassisModal({
                 <div className="flex items-center justify-between text-xs text-muted-foreground bg-green-50 px-3 py-2 rounded-md">
                   <span>
                     New stack:{' '}
-                    <span className="font-medium text-green-700">{newVcName.trim()}</span>
+                    <span className="font-medium text-green-700">
+                      {newVcName.trim()}
+                    </span>
                   </span>
                   <button
                     type="button"
@@ -197,7 +202,8 @@ export function VirtualChassisModal({
                 </div>
               )}
               <p className="text-xs text-gray-500">
-                A new Virtual Chassis will be created in Nautobot. The new device will be assigned as master at position 1.
+                A new Virtual Chassis will be created in Nautobot. The new device will
+                be assigned as master at position 1.
               </p>
             </div>
           </div>

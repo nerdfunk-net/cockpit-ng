@@ -11,7 +11,7 @@ import {
   CheckCircle,
   Loader2,
   CheckSquare,
-  Square
+  Square,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useImportableTemplates } from '../hooks/use-template-queries'
@@ -24,16 +24,19 @@ const EMPTY_FAILED: string[] = []
 const EMPTY_IMPORTABLE_TEMPLATES: ImportableTemplate[] = []
 
 export function ImportTemplates() {
-  const [importResults, setImportResults] = useState<{ success: string[], failed: string[] }>({
+  const [importResults, setImportResults] = useState<{
+    success: string[]
+    failed: string[]
+  }>({
     success: EMPTY_SUCCESS,
-    failed: EMPTY_FAILED
+    failed: EMPTY_FAILED,
   })
   const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set())
 
   const {
     data: importableTemplates = EMPTY_IMPORTABLE_TEMPLATES,
     isLoading: isScanning,
-    refetch: scanDirectory
+    refetch: scanDirectory,
   } = useImportableTemplates({ enabled: false })
 
   const { importTemplates } = useTemplateMutations()
@@ -64,12 +67,12 @@ export function ImportTemplates() {
 
     const result = await importTemplates.mutateAsync({
       filePaths,
-      overwriteExisting: false
+      overwriteExisting: false,
     })
 
     setImportResults({
       success: result.imported_templates || EMPTY_SUCCESS,
-      failed: result.failed_templates || EMPTY_FAILED
+      failed: result.failed_templates || EMPTY_FAILED,
     })
   }
 
@@ -87,11 +90,15 @@ export function ImportTemplates() {
           <div className="flex items-start space-x-3">
             <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
             <div>
-              <h3 className="font-medium text-blue-900 mb-1">Template Import Instructions</h3>
+              <h3 className="font-medium text-blue-900 mb-1">
+                Template Import Instructions
+              </h3>
               <p className="text-blue-800 text-sm">
-                This feature scans the <code className="bg-blue-100 px-1 rounded">./contributing-data</code> directory
-                for YAML files containing template definitions. Each YAML file should have properties like name, source, type,
-                category, and description. Perfect for initial setup or bulk template imports.
+                This feature scans the{' '}
+                <code className="bg-blue-100 px-1 rounded">./contributing-data</code>{' '}
+                directory for YAML files containing template definitions. Each YAML file
+                should have properties like name, source, type, category, and
+                description. Perfect for initial setup or bulk template imports.
               </p>
             </div>
           </div>
@@ -100,12 +107,13 @@ export function ImportTemplates() {
         {/* Scan Button */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">Available Templates</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">
+              Available Templates
+            </h3>
             <p className="text-gray-600 text-sm">
               {importableTemplates.length > 0
                 ? `Found ${importableTemplates.length} importable templates`
-                : 'Click "Scan Directory" to discover available templates'
-              }
+                : 'Click "Scan Directory" to discover available templates'}
             </p>
           </div>
           <Button
@@ -130,10 +138,16 @@ export function ImportTemplates() {
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-green-900 mb-2">Successfully Imported ({importResults.success.length})</h4>
+                    <h4 className="font-medium text-green-900 mb-2">
+                      Successfully Imported ({importResults.success.length})
+                    </h4>
                     <div className="flex flex-wrap gap-2">
                       {importResults.success.map(name => (
-                        <Badge key={name} variant="outline" className="bg-green-100 text-green-800 border-green-300">
+                        <Badge
+                          key={name}
+                          variant="outline"
+                          className="bg-green-100 text-green-800 border-green-300"
+                        >
                           {name}
                         </Badge>
                       ))}
@@ -148,10 +162,16 @@ export function ImportTemplates() {
                 <div className="flex items-start space-x-3">
                   <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-red-900 mb-2">Failed to Import ({importResults.failed.length})</h4>
+                    <h4 className="font-medium text-red-900 mb-2">
+                      Failed to Import ({importResults.failed.length})
+                    </h4>
                     <div className="flex flex-wrap gap-2">
                       {importResults.failed.map(name => (
-                        <Badge key={name} variant="outline" className="bg-red-100 text-red-800 border-red-300">
+                        <Badge
+                          key={name}
+                          variant="outline"
+                          className="bg-red-100 text-red-800 border-red-300"
+                        >
                           {name}
                         </Badge>
                       ))}
@@ -181,7 +201,9 @@ export function ImportTemplates() {
                     <Square className="h-4 w-4" />
                   )}
                   <span>
-                    {selectedTemplates.size === importableTemplates.length ? 'Deselect All' : 'Select All'}
+                    {selectedTemplates.size === importableTemplates.length
+                      ? 'Deselect All'
+                      : 'Select All'}
                   </span>
                 </Button>
                 <span className="text-sm text-gray-600">
@@ -220,26 +242,40 @@ export function ImportTemplates() {
                               <Square className="h-4 w-4 text-gray-400" />
                             )}
                           </button>
-                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Select</span>
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Select
+                          </span>
                         </div>
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Source
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        File
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {importableTemplates.map((template) => {
+                    {importableTemplates.map(template => {
                       const isSelected = selectedTemplates.has(template.file_path)
                       return (
                         <tr
                           key={template.file_path}
                           className={cn(
-                            "hover:bg-gray-50 transition-colors",
-                            isSelected && "bg-blue-50"
+                            'hover:bg-gray-50 transition-colors',
+                            isSelected && 'bg-blue-50'
                           )}
                         >
                           <td className="px-4 py-4">
@@ -255,7 +291,9 @@ export function ImportTemplates() {
                             </button>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="font-medium text-gray-900">{template.name}</div>
+                            <div className="font-medium text-gray-900">
+                              {template.name}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <Badge variant={getSourceBadgeVariant(template.source)}>
@@ -290,10 +328,16 @@ export function ImportTemplates() {
             <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <Download className="h-8 w-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Templates Found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No Templates Found
+            </h3>
             <p className="text-gray-600 mb-4 max-w-md mx-auto">
-              No YAML template files were found in the import directory. Make sure template files are placed in
-              <code className="bg-gray-100 px-1 rounded mx-1">./contributing-data</code> and click &quot;Scan Directory&quot;.
+              No YAML template files were found in the import directory. Make sure
+              template files are placed in
+              <code className="bg-gray-100 px-1 rounded mx-1">
+                ./contributing-data
+              </code>{' '}
+              and click &quot;Scan Directory&quot;.
             </p>
             <Button
               onClick={() => scanDirectory()}

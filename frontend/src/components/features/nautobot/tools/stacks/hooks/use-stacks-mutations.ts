@@ -15,12 +15,12 @@ export function useStacksMutations() {
   const { toast } = useToast()
 
   const processStacks = useMutation<ProcessStacksResponse, Error, ProcessStacksInput>({
-    mutationFn: (input) =>
+    mutationFn: input =>
       apiCall<ProcessStacksResponse>('nautobot/devices/stacks/process', {
         method: 'POST',
         body: JSON.stringify(input),
       }),
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.nautobot.stackDevices() })
       queryClient.invalidateQueries({ queryKey: queryKeys.nautobot.devices() })
 
@@ -37,7 +37,7 @@ export function useStacksMutations() {
         })
       }
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: 'Processing failed',
         description: error.message,

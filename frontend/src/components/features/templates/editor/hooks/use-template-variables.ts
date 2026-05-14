@@ -1,5 +1,9 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
-import type { TemplateVariable, NautobotDeviceDetails, VariableMetadata } from '../types'
+import type {
+  TemplateVariable,
+  NautobotDeviceDetails,
+  VariableMetadata,
+} from '../types'
 import { getDefaultVariables } from '../utils/category-variables'
 
 interface DeviceData {
@@ -27,25 +31,28 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
   const [variables, setVariables] = useState<TemplateVariable[]>(() =>
     getDefaultVariables(initialCategory)
   )
-  
+
   // Cache for snmp_mapping value when temporarily removed
   const snmpMappingCacheRef = useRef<string>('')
   // Cache for device_details value when temporarily removed
   const deviceDetailsCacheRef = useRef<string>('')
 
-  const updateForCategory = useCallback((category: string, includeSnmpMapping: boolean = true) => {
-    setVariables((prev) => {
-      const userVars = prev.filter((v) => !v.isDefault)
-      const defaults = getDefaultVariables(category)
-      
-      // Filter out snmp_mapping if not needed
-      const filteredDefaults = includeSnmpMapping 
-        ? defaults 
-        : defaults.filter(v => v.name !== 'snmp_mapping')
-      
-      return [...filteredDefaults, ...userVars]
-    })
-  }, [])
+  const updateForCategory = useCallback(
+    (category: string, includeSnmpMapping: boolean = true) => {
+      setVariables(prev => {
+        const userVars = prev.filter(v => !v.isDefault)
+        const defaults = getDefaultVariables(category)
+
+        // Filter out snmp_mapping if not needed
+        const filteredDefaults = includeSnmpMapping
+          ? defaults
+          : defaults.filter(v => v.name !== 'snmp_mapping')
+
+        return [...filteredDefaults, ...userVars]
+      })
+    },
+    []
+  )
 
   const updateDeviceData = useCallback((deviceData: DeviceData | null) => {
     // Always update cache when we have new device data
@@ -53,9 +60,9 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       deviceDetailsCacheRef.current = JSON.stringify(deviceData.device_details, null, 2)
     }
 
-    setVariables((prev) => {
+    setVariables(prev => {
       let hasChanges = false
-      const updated = prev.map((v) => {
+      const updated = prev.map(v => {
         if (!v.isDefault || !v.isAutoFilled) return v
 
         if (v.name === 'devices' && deviceData) {
@@ -83,9 +90,9 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
     // Always update cache
     snmpMappingCacheRef.current = newValue
 
-    setVariables((prev) => {
+    setVariables(prev => {
       let hasChanges = false
-      const updated = prev.map((v) => {
+      const updated = prev.map(v => {
         if (v.name === 'snmp_mapping' && v.isDefault && v.isAutoFilled) {
           if (v.value === newValue) return v
           hasChanges = true
@@ -98,9 +105,9 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
   }, [])
 
   const toggleSnmpMappingVariable = useCallback((show: boolean) => {
-    setVariables((prev) => {
+    setVariables(prev => {
       const existingSnmpVar = prev.find(v => v.name === 'snmp_mapping' && v.isDefault)
-      
+
       if (show && !existingSnmpVar) {
         // Add snmp_mapping variable with cached value
         const snmpVar: TemplateVariable = {
@@ -128,15 +135,17 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
         // Remove snmp_mapping variable
         return prev.filter(v => v.name !== 'snmp_mapping' || !v.isDefault)
       }
-      
+
       return prev
     })
   }, [])
 
   const toggleDeviceDetailsVariable = useCallback((show: boolean) => {
-    setVariables((prev) => {
-      const existingDeviceDetailsVar = prev.find(v => v.name === 'device_details' && v.isDefault)
-      
+    setVariables(prev => {
+      const existingDeviceDetailsVar = prev.find(
+        v => v.name === 'device_details' && v.isDefault
+      )
+
       if (show && !existingDeviceDetailsVar) {
         // Add device_details variable with cached value
         const deviceDetailsVar: TemplateVariable = {
@@ -164,15 +173,15 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
         // Remove device_details variable
         return prev.filter(v => v.name !== 'device_details' || !v.isDefault)
       }
-      
+
       return prev
     })
   }, [])
 
   const updatePath = useCallback((path: string) => {
-    setVariables((prev) => {
+    setVariables(prev => {
       let hasChanges = false
-      const updated = prev.map((v) => {
+      const updated = prev.map(v => {
         if (v.name === 'path' && v.isDefault && v.isAutoFilled) {
           if (v.value === path) return v
           hasChanges = true
@@ -185,7 +194,7 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
   }, [])
 
   const addVariable = useCallback(() => {
-    setVariables((prev) => [
+    setVariables(prev => [
       ...prev,
       {
         id: crypto.randomUUID(),
@@ -200,7 +209,7 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
 
   const addVariableWithData = useCallback((name: string, value: string) => {
     const newId = crypto.randomUUID()
-    setVariables((prev) => [
+    setVariables(prev => [
       ...prev,
       { id: newId, name, value, type: 'custom', isDefault: false, isAutoFilled: false },
     ])
@@ -215,9 +224,17 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       metadata?: VariableMetadata
     ) => {
       const newId = crypto.randomUUID()
-      setVariables((prev) => [
+      setVariables(prev => [
         ...prev,
-        { id: newId, name, value, type, metadata, isDefault: false, isAutoFilled: false },
+        {
+          id: newId,
+          name,
+          value,
+          type,
+          metadata,
+          isDefault: false,
+          isAutoFilled: false,
+        },
       ])
       return newId
     },
@@ -225,131 +242,158 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
   )
 
   const removeVariable = useCallback((id: string) => {
-    setVariables((prev) => prev.filter((v) => v.id !== id || v.isDefault))
+    setVariables(prev => prev.filter(v => v.id !== id || v.isDefault))
   }, [])
 
   const updateVariable = useCallback(
     (id: string, field: 'name' | 'value', value: string) => {
-      setVariables((prev) =>
-        prev.map((v) => (v.id === id ? { ...v, [field]: value } : v))
+      setVariables(prev => prev.map(v => (v.id === id ? { ...v, [field]: value } : v)))
+    },
+    []
+  )
+
+  const setCustomVariables = useCallback(
+    (
+      savedVars: Record<
+        string,
+        string | { value: string; type?: string; metadata?: unknown }
+      >
+    ) => {
+      setVariables(prev => {
+        // Keep only default variables, replace all custom ones with saved data
+        const defaults = prev.filter(v => v.isDefault)
+        const custom: TemplateVariable[] = Object.entries(savedVars).map(
+          ([name, varData]) => {
+            // Handle both old format (string) and new format (object)
+            if (typeof varData === 'string') {
+              // Old format: just a string value
+              return {
+                id: crypto.randomUUID(),
+                name,
+                value: varData,
+                type: 'custom' as const,
+                isDefault: false,
+                isAutoFilled: false,
+              }
+            } else {
+              // New format: object with value, type, metadata
+              return {
+                id: crypto.randomUUID(),
+                name,
+                value: varData.value,
+                type:
+                  (varData.type as 'custom' | 'nautobot' | 'yaml' | 'inventory') ||
+                  'custom',
+                metadata: varData.metadata as VariableMetadata | undefined,
+                isDefault: false,
+                isAutoFilled: false,
+              }
+            }
+          }
+        )
+        return [...defaults, ...custom]
+      })
+    },
+    []
+  )
+
+  const updatePreRunVariable = useCallback(
+    (variableName: 'pre_run.raw' | 'pre_run.parsed', value: string) => {
+      setVariables(prev =>
+        prev.map(v => {
+          if (v.name === variableName && v.isDefault && v.requiresExecution) {
+            return {
+              ...v,
+              value,
+              isExecuting: false,
+            }
+          }
+          return v
+        })
       )
     },
     []
   )
 
-  const setCustomVariables = useCallback((savedVars: Record<string, string | { value: string; type?: string; metadata?: unknown }>) => {
-    setVariables((prev) => {
-      // Keep only default variables, replace all custom ones with saved data
-      const defaults = prev.filter((v) => v.isDefault)
-      const custom: TemplateVariable[] = Object.entries(savedVars).map(([name, varData]) => {
-        // Handle both old format (string) and new format (object)
-        if (typeof varData === 'string') {
-          // Old format: just a string value
-          return {
-            id: crypto.randomUUID(),
-            name,
-            value: varData,
-            type: 'custom' as const,
-            isDefault: false,
-            isAutoFilled: false,
+  const setPreRunExecuting = useCallback(
+    (variableName: 'pre_run.raw' | 'pre_run.parsed', isExecuting: boolean) => {
+      setVariables(prev =>
+        prev.map(v => {
+          if (v.name === variableName && v.isDefault && v.requiresExecution) {
+            return {
+              ...v,
+              isExecuting,
+            }
           }
-        } else {
-          // New format: object with value, type, metadata
-          return {
-            id: crypto.randomUUID(),
-            name,
-            value: varData.value,
-            type: (varData.type as 'custom' | 'nautobot' | 'yaml' | 'inventory') || 'custom',
-            metadata: varData.metadata as VariableMetadata | undefined,
-            isDefault: false,
-            isAutoFilled: false,
-          }
-        }
-      })
-      return [...defaults, ...custom]
-    })
-  }, [])
+          return v
+        })
+      )
+    },
+    []
+  )
 
-  const updatePreRunVariable = useCallback((variableName: 'pre_run.raw' | 'pre_run.parsed', value: string) => {
-    setVariables((prev) =>
-      prev.map((v) => {
-        if (v.name === variableName && v.isDefault && v.requiresExecution) {
-          return {
-            ...v,
-            value,
-            isExecuting: false,
+  const updateInventoryIdForInventoryVariables = useCallback(
+    (newInventoryId: number) => {
+      setVariables(prev => {
+        let hasChanges = false
+        const updated = prev.map(v => {
+          // Only update inventory-type variables
+          if (
+            v.type === 'inventory' &&
+            v.metadata?.inventory_id &&
+            v.metadata.inventory_id !== newInventoryId
+          ) {
+            hasChanges = true
+            return {
+              ...v,
+              metadata: {
+                ...v.metadata,
+                inventory_id: newInventoryId,
+              },
+            }
           }
-        }
-        return v
+          return v
+        })
+        return hasChanges ? updated : prev
       })
-    )
-  }, [])
-
-  const setPreRunExecuting = useCallback((variableName: 'pre_run.raw' | 'pre_run.parsed', isExecuting: boolean) => {
-    setVariables((prev) =>
-      prev.map((v) => {
-        if (v.name === variableName && v.isDefault && v.requiresExecution) {
-          return {
-            ...v,
-            isExecuting,
-          }
-        }
-        return v
-      })
-    )
-  }, [])
-
-  const updateInventoryIdForInventoryVariables = useCallback((newInventoryId: number) => {
-    setVariables((prev) => {
-      let hasChanges = false
-      const updated = prev.map((v) => {
-        // Only update inventory-type variables
-        if (v.type === 'inventory' && v.metadata?.inventory_id && v.metadata.inventory_id !== newInventoryId) {
-          hasChanges = true
-          return {
-            ...v,
-            metadata: {
-              ...v.metadata,
-              inventory_id: newInventoryId,
-            },
-          }
-        }
-        return v
-      })
-      return hasChanges ? updated : prev
-    })
-  }, [])
+    },
+    []
+  )
 
   // Updates inventory-type variable values by name (used to refresh stale saved values on load)
-  const updateInventoryVariableValues = useCallback((updates: Record<string, string>) => {
-    setVariables((prev) => {
-      let hasChanges = false
-      const updated = prev.map((v) => {
-        if (v.type === 'inventory' && v.name in updates) {
-           
-          const freshValue: string = updates[v.name]!
-          if (v.value !== freshValue) {
-            hasChanges = true
-            return { ...v, value: freshValue }
+  const updateInventoryVariableValues = useCallback(
+    (updates: Record<string, string>) => {
+      setVariables(prev => {
+        let hasChanges = false
+        const updated = prev.map(v => {
+          if (v.type === 'inventory' && v.name in updates) {
+            const freshValue: string = updates[v.name]!
+            if (v.value !== freshValue) {
+              hasChanges = true
+              return { ...v, value: freshValue }
+            }
           }
-        }
-        return v
+          return v
+        })
+        return hasChanges ? updated : prev
       })
-      return hasChanges ? updated : prev
-    })
-  }, [])
+    },
+    []
+  )
 
   const togglePreRunVariables = useCallback((show: boolean) => {
-    setVariables((prev) => {
+    setVariables(prev => {
       if (show) {
         // Add pre_run variables if they don't exist
         const hasPreRunRaw = prev.some(v => v.name === 'pre_run.raw' && v.isDefault)
-        const hasPreRunParsed = prev.some(v => v.name === 'pre_run.parsed' && v.isDefault)
-        
+        const hasPreRunParsed = prev.some(
+          v => v.name === 'pre_run.parsed' && v.isDefault
+        )
+
         if (!hasPreRunRaw || !hasPreRunParsed) {
           const defaultVars = prev.filter(v => v.isDefault)
           const userVars = prev.filter(v => !v.isDefault)
-          
+
           if (!hasPreRunRaw) {
             const preRunRaw: TemplateVariable = {
               id: 'default-pre_run.raw',
@@ -379,7 +423,7 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
             }
             defaultVars.push(preRunParsed)
           }
-          
+
           return [...defaultVars, ...userVars]
         }
         return prev
@@ -411,6 +455,25 @@ export function useTemplateVariables(initialCategory: string = '__none__') {
       updateInventoryIdForInventoryVariables,
       updateInventoryVariableValues,
     }),
-    [variables, updateForCategory, updateDeviceData, updateSnmpMapping, toggleSnmpMappingVariable, toggleDeviceDetailsVariable, updatePath, addVariable, addVariableWithData, addVariableWithMetadata, removeVariable, updateVariable, setCustomVariables, updatePreRunVariable, setPreRunExecuting, togglePreRunVariables, updateInventoryIdForInventoryVariables, updateInventoryVariableValues]
+    [
+      variables,
+      updateForCategory,
+      updateDeviceData,
+      updateSnmpMapping,
+      toggleSnmpMappingVariable,
+      toggleDeviceDetailsVariable,
+      updatePath,
+      addVariable,
+      addVariableWithData,
+      addVariableWithMetadata,
+      removeVariable,
+      updateVariable,
+      setCustomVariables,
+      updatePreRunVariable,
+      setPreRunExecuting,
+      togglePreRunVariables,
+      updateInventoryIdForInventoryVariables,
+      updateInventoryVariableValues,
+    ]
   )
 }
