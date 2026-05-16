@@ -7,7 +7,7 @@ This service only manages the database records.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from core.models import GitRepository
@@ -115,7 +115,7 @@ class GitRepositoryService:
                         f"Repository with name '{update_kwargs['name']}' already exists"
                     )
 
-            update_kwargs["updated_at"] = datetime.utcnow()
+            update_kwargs["updated_at"] = datetime.now(timezone.utc)
             self._repo.update(repo_id, **update_kwargs)
             logger.info("Updated git repository ID: %s", repo_id)
             return True
@@ -133,7 +133,7 @@ class GitRepositoryService:
                 action = "Deleted"
             else:
                 self._repo.update(
-                    repo_id, is_active=False, updated_at=datetime.utcnow()
+                    repo_id, is_active=False, updated_at=datetime.now(timezone.utc)
                 )
                 action = "Deactivated"
             logger.info("%s git repository ID: %s", action, repo_id)
@@ -148,12 +148,12 @@ class GitRepositoryService:
         """Update the sync status of a repository."""
         try:
             if last_sync is None:
-                last_sync = datetime.utcnow()
+                last_sync = datetime.now(timezone.utc)
             self._repo.update(
                 repo_id,
                 sync_status=status,
                 last_sync=last_sync,
-                updated_at=datetime.utcnow(),
+                updated_at=datetime.now(timezone.utc),
             )
             return True
         except Exception as e:
