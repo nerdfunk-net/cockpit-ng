@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import type { DiffDevice, IpAddressFilter, SystemFilter } from '../types'
+import type { DiffDevice, IpAddressFilter } from '../types'
 
 interface FilterOptions {
   roles: Set<string>
@@ -15,6 +15,7 @@ const EMPTY_FILTER_OPTIONS: FilterOptions = {
 
 const EMPTY_ROLE_FILTERS: Record<string, boolean> = {}
 const EMPTY_DIFF_STATUS_FILTERS: Record<string, boolean> = {}
+const EMPTY_SYSTEM_FILTERS: Record<string, boolean> = {}
 
 export function useDiffFilters(devices: DiffDevice[]) {
   const [deviceNameFilter, setDeviceNameFilter] = useState('')
@@ -22,7 +23,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
     useState<Record<string, boolean>>(EMPTY_ROLE_FILTERS)
   const [selectedLocation, setSelectedLocation] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [systemFilter, setSystemFilter] = useState<SystemFilter>('all')
+  const [systemFilters, setSystemFilters] = useState<Record<string, boolean>>(EMPTY_SYSTEM_FILTERS)
   const [ipAddressFilter, setIpAddressFilter] = useState<IpAddressFilter>('all')
   const [diffStatusFilters, setDiffStatusFilters] = useState<Record<string, boolean>>(
     EMPTY_DIFF_STATUS_FILTERS
@@ -68,14 +69,24 @@ export function useDiffFilters(devices: DiffDevice[]) {
     return merged
   }, [diffStatusFilters])
 
+  const effectiveSystemFilters = useMemo(() => {
+    const hasAnyFilter = Object.keys(systemFilters).length > 0
+    if (!hasAnyFilter) return { nautobot: true, checkmk: true }
+    return { nautobot: true, checkmk: true, ...systemFilters }
+  }, [systemFilters])
+
   // Filter devices
   const filteredDevices = useMemo(() => {
     let result = devices
 
-    // System filter
-    if (systemFilter !== 'all') {
-      result = result.filter(d => d.source === systemFilter)
-    }
+    // System filter (multi-select)
+    result = result.filter(d => {
+      const src = d.source
+      if (src === 'both') {
+        return effectiveSystemFilters['nautobot'] === true || effectiveSystemFilters['checkmk'] === true
+      }
+      return effectiveSystemFilters[src] === true
+    })
 
     // Name filter
     if (deviceNameFilter) {
@@ -138,7 +149,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
     return result
   }, [
     devices,
-    systemFilter,
+    effectiveSystemFilters,
     deviceNameFilter,
     roleFilters,
     selectedLocation,
@@ -154,7 +165,10 @@ export function useDiffFilters(devices: DiffDevice[]) {
     if (Object.values(roleFilters).some(v => v)) count++
     if (selectedLocation !== 'all') count++
     if (statusFilter !== 'all') count++
-    if (systemFilter !== 'all') count++
+    const allSystemSelected =
+      Object.keys(effectiveSystemFilters).length === 2 &&
+      Object.values(effectiveSystemFilters).every(v => v === true)
+    if (!allSystemSelected) count++
     if (ipAddressFilter !== 'all') count++
     // Add count for diff status filters (if any are deselected from the default "all selected")
     const allDiffStatusSelected =
@@ -167,7 +181,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
     roleFilters,
     selectedLocation,
     statusFilter,
-    systemFilter,
+    effectiveSystemFilters,
     ipAddressFilter,
     effectiveDiffStatusFilters,
   ])
@@ -177,7 +191,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
     setRoleFilters(EMPTY_ROLE_FILTERS)
     setSelectedLocation('all')
     setStatusFilter('all')
-    setSystemFilter('all')
+    setSystemFilters(EMPTY_SYSTEM_FILTERS)
     setIpAddressFilter('all')
     // Reset to all selected
     setDiffStatusFilters({
@@ -198,8 +212,8 @@ export function useDiffFilters(devices: DiffDevice[]) {
       setSelectedLocation,
       statusFilter,
       setStatusFilter,
-      systemFilter,
-      setSystemFilter,
+      systemFilters,
+      setSystemFilters,
       ipAddressFilter,
       setIpAddressFilter,
       diffStatusFilters,
@@ -214,7 +228,7 @@ export function useDiffFilters(devices: DiffDevice[]) {
       roleFilters,
       selectedLocation,
       statusFilter,
-      systemFilter,
+      systemFilters,
       ipAddressFilter,
       diffStatusFilters,
       filterOptions,

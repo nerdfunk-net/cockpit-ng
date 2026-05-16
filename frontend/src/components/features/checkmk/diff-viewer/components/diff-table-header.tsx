@@ -19,14 +19,14 @@ import {
   DropdownMenuItem,
   DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu'
-import type { IpAddressFilter, SystemFilter } from '../types'
+import type { IpAddressFilter } from '../types'
 
 interface DiffTableHeaderProps {
   deviceNameFilter: string
   roleFilters: Record<string, boolean>
   selectedLocation: string
   statusFilter: string
-  systemFilter: SystemFilter
+  systemFilters: Record<string, boolean>
   ipAddressFilter: IpAddressFilter
   diffStatusFilters: Record<string, boolean>
   filterOptions: {
@@ -41,7 +41,7 @@ interface DiffTableHeaderProps {
   onRoleFiltersChange: (value: Record<string, boolean>) => void
   onLocationChange: (value: string) => void
   onStatusFilterChange: (value: string) => void
-  onSystemFilterChange: (value: SystemFilter) => void
+  onSystemFiltersChange: (value: Record<string, boolean>) => void
   onIpAddressFilterChange: (value: IpAddressFilter) => void
   onDiffStatusFiltersChange: (value: Record<string, boolean>) => void
 }
@@ -51,7 +51,7 @@ export function DiffTableHeader({
   roleFilters,
   selectedLocation,
   statusFilter,
-  systemFilter,
+  systemFilters,
   ipAddressFilter,
   diffStatusFilters,
   filterOptions,
@@ -62,7 +62,7 @@ export function DiffTableHeader({
   onRoleFiltersChange,
   onLocationChange,
   onStatusFilterChange,
-  onSystemFilterChange,
+  onSystemFiltersChange,
   onIpAddressFilterChange,
   onDiffStatusFiltersChange,
 }: DiffTableHeaderProps) {
@@ -203,21 +203,84 @@ export function DiffTableHeader({
         </th>
         <th className="px-4 py-3 w-44 text-left text-xs font-medium text-gray-600 uppercase">
           <div className="space-y-1">
-            <div>System</div>
-            <Select
-              value={systemFilter}
-              onValueChange={v => onSystemFilterChange(v as SystemFilter)}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="both">Both Systems</SelectItem>
-                <SelectItem value="nautobot">Nautobot Only</SelectItem>
-                <SelectItem value="checkmk">CheckMK Only</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-1">
+              System
+              {(() => {
+                const selectedCount = Object.values(systemFilters).filter(Boolean).length
+                const hasFilters = Object.keys(systemFilters).length > 0
+                const isFiltered = hasFilters && selectedCount < 2
+                return (
+                  isFiltered && (
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                      {selectedCount}
+                    </Badge>
+                  )
+                )
+              })()}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-full text-xs justify-between"
+                >
+                  System
+                  <ChevronDown className="h-4 w-4 ml-auto" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-44">
+                <DropdownMenuLabel className="text-xs">Filter by System</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer text-blue-600 hover:bg-blue-50"
+                  onSelect={e => {
+                    e.preventDefault()
+                    onSystemFiltersChange({ nautobot: true, checkmk: true })
+                  }}
+                >
+                  Select all
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer text-red-600 hover:bg-red-50"
+                  onSelect={e => {
+                    e.preventDefault()
+                    onSystemFiltersChange({ nautobot: false, checkmk: false })
+                  }}
+                >
+                  Deselect all
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={systemFilters['nautobot'] !== false}
+                  onCheckedChange={checked => {
+                    const updated = {
+                      nautobot: systemFilters['nautobot'] !== false,
+                      checkmk: systemFilters['checkmk'] !== false,
+                    }
+                    updated.nautobot = !!checked
+                    onSystemFiltersChange(updated)
+                  }}
+                  onSelect={e => e.preventDefault()}
+                >
+                  Nautobot
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={systemFilters['checkmk'] !== false}
+                  onCheckedChange={checked => {
+                    const updated = {
+                      nautobot: systemFilters['nautobot'] !== false,
+                      checkmk: systemFilters['checkmk'] !== false,
+                    }
+                    updated.checkmk = !!checked
+                    onSystemFiltersChange(updated)
+                  }}
+                  onSelect={e => e.preventDefault()}
+                >
+                  CheckMK
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </th>
         <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">

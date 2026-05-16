@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select'
 import { DiffTableHeader } from './diff-table-header'
 import { DiffTableRow } from './diff-table-row'
-import type { DiffDevice, IpAddressFilter, SystemFilter, ViewMode } from '../types'
+import type { DiffDevice, IpAddressFilter } from '../types'
 
 interface DiffDeviceTableProps {
   devices: DiffDevice[]
@@ -26,7 +26,7 @@ interface DiffDeviceTableProps {
   roleFilters: Record<string, boolean>
   selectedLocation: string
   statusFilter: string
-  systemFilter: SystemFilter
+  systemFilters: Record<string, boolean>
   ipAddressFilter: IpAddressFilter
   diffStatusFilters: Record<string, boolean>
   filterOptions: {
@@ -48,7 +48,7 @@ interface DiffDeviceTableProps {
   onRoleFiltersChange: (value: Record<string, boolean>) => void
   onLocationChange: (value: string) => void
   onStatusFilterChange: (value: string) => void
-  onSystemFilterChange: (value: SystemFilter) => void
+  onSystemFiltersChange: (value: Record<string, boolean>) => void
   onIpAddressFilterChange: (value: IpAddressFilter) => void
   onDiffStatusFiltersChange: (value: Record<string, boolean>) => void
   onResetFilters: () => void
@@ -56,8 +56,6 @@ interface DiffDeviceTableProps {
   onSync: (device: DiffDevice) => void
   onRunDiff: () => void
   onRefresh: () => void
-  mode: ViewMode
-  onModeChange: (mode: ViewMode) => void
 }
 
 export function DiffDeviceTable({
@@ -67,7 +65,7 @@ export function DiffDeviceTable({
   roleFilters,
   selectedLocation,
   statusFilter,
-  systemFilter,
+  systemFilters,
   ipAddressFilter,
   diffStatusFilters,
   filterOptions,
@@ -85,7 +83,7 @@ export function DiffDeviceTable({
   onRoleFiltersChange,
   onLocationChange,
   onStatusFilterChange,
-  onSystemFilterChange,
+  onSystemFiltersChange,
   onIpAddressFilterChange,
   onDiffStatusFiltersChange,
   onResetFilters,
@@ -93,8 +91,6 @@ export function DiffDeviceTable({
   onSync,
   onRunDiff,
   onRefresh,
-  mode,
-  onModeChange,
 }: DiffDeviceTableProps) {
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(25)
@@ -172,7 +168,7 @@ export function DiffDeviceTable({
                 </div>
               ) : (
                 <p className="text-blue-100 text-xs mt-0.5">
-                  {mode === null ? 'Select a mode to load devices.' : 'Loading…'}
+                  {loading ? 'Loading…' : 'Click Run Diff or Refresh to load devices.'}
                 </p>
               )}
             </div>
@@ -217,51 +213,31 @@ export function DiffDeviceTable({
                 </Button>
               </>
             )}
-            <Select
-              value={mode ?? ''}
-              onValueChange={val => onModeChange((val || null) as ViewMode)}
+            <Button
+              onClick={onRefresh}
+              variant="ghost"
+              size="sm"
+              disabled={loading}
+              className="text-white hover:bg-white/20"
+              title="Reload devices from Nautobot (bypass cache)"
             >
-              <SelectTrigger className="h-7 w-[140px] text-xs bg-white/10 text-white border-white/40 font-medium hover:bg-white/20 focus:ring-white/30 [&>span]:text-white [&_svg]:text-white">
-                <SelectValue placeholder="Select mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="nautobot_only">Nautobot only</SelectItem>
-                <SelectItem value="combined">Combined</SelectItem>
-              </SelectContent>
-            </Select>
-            {mode === 'nautobot_only' && (
-              <Button
-                onClick={onRefresh}
-                variant="ghost"
-                size="sm"
-                disabled={loading}
-                className="text-white hover:bg-white/20"
-                title="Reload devices from Nautobot (bypass cache)"
-              >
-                {loading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                {loading ? 'Loading...' : 'Refresh'}
-              </Button>
-            )}
-            {mode === 'combined' && (
-              <Button
-                onClick={onRunDiff}
-                variant="ghost"
-                size="sm"
-                disabled={loading}
-                className="text-white hover:bg-white/20"
-              >
-                {loading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                ) : (
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                )}
-                {loading ? 'Running...' : 'Run Diff'}
-              </Button>
-            )}
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Load Nautobot
+            </Button>
+            <Button
+              onClick={onRunDiff}
+              variant="ghost"
+              size="sm"
+              disabled={loading}
+              className="text-white hover:bg-white/20"
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+              ) : (
+                <RotateCcw className="h-4 w-4 mr-2" />
+              )}
+              {loading ? 'Running...' : 'Run Diff'}
+            </Button>
           </div>
         </div>
       </div>
@@ -274,7 +250,7 @@ export function DiffDeviceTable({
             roleFilters={roleFilters}
             selectedLocation={selectedLocation}
             statusFilter={statusFilter}
-            systemFilter={systemFilter}
+            systemFilters={systemFilters}
             ipAddressFilter={ipAddressFilter}
             diffStatusFilters={diffStatusFilters}
             filterOptions={filterOptions}
@@ -297,8 +273,8 @@ export function DiffDeviceTable({
               onStatusFilterChange(v)
               setCurrentPage(0)
             }}
-            onSystemFilterChange={v => {
-              onSystemFilterChange(v)
+            onSystemFiltersChange={v => {
+              onSystemFiltersChange(v)
               setCurrentPage(0)
             }}
             onIpAddressFilterChange={v => {
@@ -315,11 +291,9 @@ export function DiffDeviceTable({
               <tr>
                 <td colSpan={9} className="text-center py-8 text-muted-foreground">
                   {totalDeviceCount === 0
-                    ? mode === null
-                      ? 'Select a mode to load devices.'
-                      : mode === 'nautobot_only'
-                        ? 'Loading Nautobot devices...'
-                        : 'No devices loaded. Click "Run Diff" to compare inventories.'
+                    ? loading
+                      ? 'Loading devices...'
+                      : 'No devices loaded. Click "Run Diff" to compare inventories, or "Refresh" to load Nautobot devices.'
                     : 'No devices match the current filters.'}
                 </td>
               </tr>

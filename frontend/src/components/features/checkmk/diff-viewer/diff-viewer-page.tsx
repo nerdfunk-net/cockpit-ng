@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { X } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
@@ -19,7 +19,7 @@ import { useDiffComparison } from '../shared/hooks/use-diff-comparison'
 import { StatusMessageCard } from '../shared/components/status-message-card'
 import { JobControlsPanel } from '../shared/components/job-controls-panel'
 import { DiffModal } from '../shared/components/diff-modal'
-import type { DiffDevice, ViewMode, DiffDataSnapshot } from './types'
+import type { DiffDevice } from './types'
 import type { Device, CeleryTaskResponse } from '../shared/types'
 
 export default function DiffViewerPage() {
@@ -42,13 +42,7 @@ export default function DiffViewerPage() {
     error,
     runDiff,
     loadNautobotDevices,
-    restoreData,
   } = useDiffDeviceLoader()
-
-  // Mode state and per-mode data snapshots
-  const [mode, setMode] = useState<ViewMode>(null)
-  const nautobotSnapshotRef = useRef<DiffDataSnapshot | null>(null)
-  const combinedSnapshotRef = useRef<DiffDataSnapshot | null>(null)
 
   // Track overlaid comparison statuses (must be before callbacks that use it)
   const [comparisonOverlay, setComparisonOverlay] = useState<Map<string, string>>(
@@ -115,8 +109,8 @@ export default function DiffViewerPage() {
     setSelectedLocation,
     statusFilter,
     setStatusFilter,
-    systemFilter,
-    setSystemFilter,
+    systemFilters,
+    setSystemFilters,
     ipAddressFilter,
     setIpAddressFilter,
     diffStatusFilters,
@@ -127,43 +121,10 @@ export default function DiffViewerPage() {
     resetFilters,
   } = useDiffFilters(enrichedDevices)
 
-  // Capture a snapshot of loaded data the first time each mode loads successfully
-  useEffect(() => {
-    if (loading || devices.length === 0) return
-    if (mode === 'nautobot_only' && nautobotSnapshotRef.current === null) {
-      nautobotSnapshotRef.current = { devices, totalNautobot, totalCheckmk, totalBoth }
-    } else if (mode === 'combined' && combinedSnapshotRef.current === null) {
-      combinedSnapshotRef.current = { devices, totalNautobot, totalCheckmk, totalBoth }
-    }
-  }, [loading, devices, totalNautobot, totalCheckmk, totalBoth, mode])
-
-  // Handle refresh: clear snapshot so it re-captures fresh data, then reload bypassing cache
+  // Handle refresh: reload Nautobot devices bypassing cache
   const handleRefreshNautobot = useCallback(() => {
-    nautobotSnapshotRef.current = null
     loadNautobotDevices(true)
   }, [loadNautobotDevices])
-
-  // Handle mode selection
-  const handleModeChange = useCallback(
-    (newMode: ViewMode) => {
-      setMode(newMode)
-      resetFilters()
-      if (newMode === 'nautobot_only') {
-        if (nautobotSnapshotRef.current) {
-          restoreData(nautobotSnapshotRef.current)
-        } else {
-          loadNautobotDevices()
-        }
-      } else if (newMode === 'combined') {
-        if (combinedSnapshotRef.current) {
-          restoreData(combinedSnapshotRef.current)
-        } else {
-          runDiff()
-        }
-      }
-    },
-    [resetFilters, restoreData, loadNautobotDevices, runDiff]
-  )
 
   // Handle get diff for a device
   const handleGetDiff = useCallback(
@@ -351,7 +312,7 @@ export default function DiffViewerPage() {
         roleFilters={roleFilters}
         selectedLocation={selectedLocation}
         statusFilter={statusFilter}
-        systemFilter={systemFilter}
+        systemFilters={systemFilters}
         ipAddressFilter={ipAddressFilter}
         diffStatusFilters={diffStatusFilters}
         filterOptions={filterOptions}
@@ -369,7 +330,7 @@ export default function DiffViewerPage() {
         onRoleFiltersChange={setRoleFilters}
         onLocationChange={setSelectedLocation}
         onStatusFilterChange={setStatusFilter}
-        onSystemFilterChange={setSystemFilter}
+        onSystemFiltersChange={setSystemFilters}
         onIpAddressFilterChange={setIpAddressFilter}
         onDiffStatusFiltersChange={setDiffStatusFilters}
         onResetFilters={resetFilters}
@@ -377,8 +338,6 @@ export default function DiffViewerPage() {
         onSync={handleSync}
         onRunDiff={runDiff}
         onRefresh={handleRefreshNautobot}
-        mode={mode}
-        onModeChange={handleModeChange}
       />
 
       {/* Job Controls Panel */}

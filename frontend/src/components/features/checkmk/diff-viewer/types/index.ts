@@ -1,7 +1,5 @@
 export type DeviceSource = 'nautobot' | 'checkmk' | 'both'
-export type SystemFilter = 'all' | 'both' | 'nautobot' | 'checkmk'
 export type IpAddressFilter = 'all' | 'has_ip' | 'no_ip'
-export type ViewMode = 'nautobot_only' | 'combined' | null
 
 export interface DiffDevice {
   name: string
