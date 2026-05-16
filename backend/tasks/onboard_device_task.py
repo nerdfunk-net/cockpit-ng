@@ -9,6 +9,23 @@ from services.nautobot.onboarding.onboarding_service import DeviceOnboardingServ
 _onboarding_service = DeviceOnboardingService()
 
 
+def _trigger_nautobot_onboarding(**kwargs):
+    """Compatibility wrapper used by bulk onboarding."""
+    return _onboarding_service._trigger_nautobot_onboarding(**kwargs)
+
+
+def _wait_for_job_completion(task_instance, job_id: str, max_wait: int = 120):
+    """Compatibility wrapper used by bulk onboarding."""
+    return _onboarding_service._wait_for_job_completion(
+        task_instance, job_id, max_wait=max_wait
+    )
+
+
+def _process_single_device(**kwargs):
+    """Compatibility wrapper used by bulk onboarding."""
+    return _onboarding_service._process_single_device(**kwargs)
+
+
 @shared_task(bind=True, name="tasks.onboard_device_task")
 def onboard_device_task(
     self,

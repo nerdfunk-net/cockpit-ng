@@ -38,6 +38,8 @@ def execute_run_commands(
     Returns:
         dict: Command execution results with detailed per-device output
     """
+    import asyncio
+
     import service_factory
     from services.network.automation.netmiko import NetmikoService
     from services.network.automation.render import RenderService
@@ -100,10 +102,6 @@ def execute_run_commands(
                     "status": "Fetching devices from Nautobot...",
                 },
             )
-
-            import asyncio
-
-            import service_factory
 
             device_query_service = service_factory.build_device_query_service()
 
@@ -445,10 +443,6 @@ def execute_run_commands(
 
                 logger.info("[%s] Commands to execute: %s", idx, len(commands))
 
-                # Map platform to Netmiko device type
-                from utils.netmiko_platform_mapper import map_platform_to_netmiko
-
-                device_type = map_platform_to_netmiko(platform)
                 logger.info("[%s] Netmiko device type: %s", idx, device_type)
 
                 # Execute commands using Netmiko

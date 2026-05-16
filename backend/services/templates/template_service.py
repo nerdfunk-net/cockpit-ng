@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class TemplateService:
     """CRUD service for templates stored in PostgreSQL."""
 
-    def __init__(self, storage_path: str = None) -> None:
+    def __init__(self, storage_path: Optional[str] = None) -> None:
         # storage_path parameter kept for backwards compatibility but no longer used
         pass
 
@@ -100,8 +100,8 @@ class TemplateService:
 
             if template:
                 result = self._model_to_dict(template)
-                logger.info(
-                    "DEBUG: get_template(%s) - scope=%s, created_by=%s",
+                logger.debug(
+                    "get_template(%s) - scope=%s, created_by=%s",
                     template_id,
                     result.get("scope"),
                     result.get("created_by"),
@@ -142,7 +142,7 @@ class TemplateService:
         try:
             repo = TemplateRepository()
 
-            logger.info("DEBUG: list_templates - filtering for username=%s", username)
+            logger.debug("list_templates - filtering for username=%s", username)
 
             templates = repo.list_templates(
                 category=category,
@@ -152,10 +152,10 @@ class TemplateService:
             )
 
             results = [self._model_to_dict(t) for t in templates]
-            logger.info("DEBUG: list_templates - found %s templates", len(results))
+            logger.debug("list_templates - found %s templates", len(results))
             for template in results:
-                logger.info(
-                    "DEBUG: list_templates - template: id=%s, name=%s, scope=%s, created_by=%s",
+                logger.debug(
+                    "list_templates - template: id=%s, name=%s, scope=%s, created_by=%s",
                     template["id"],
                     template["name"],
                     template.get("scope"),
@@ -180,15 +180,17 @@ class TemplateService:
 
             current = self._model_to_dict(current_obj)
 
-            logger.info(
-                "DEBUG: update_template(%s) - incoming scope=%s, current scope=%s",
+            logger.debug(
+                "update_template(%s) - incoming scope=%s, current scope=%s",
                 template_id,
                 template_data.get("scope"),
                 current.get("scope"),
             )
 
-            variables_json = json.dumps(template_data.get("variables", {}))
-            tags_json = json.dumps(template_data.get("tags", []))
+            variables_json = json.dumps(
+                template_data.get("variables", current.get("variables", {}))
+            )
+            tags_json = json.dumps(template_data.get("tags", current.get("tags", [])))
 
             content = template_data.get("content", current.get("content", ""))
             content_hash = (
@@ -198,8 +200,8 @@ class TemplateService:
             content_changed = content_hash != current.get("content_hash")
 
             new_scope = template_data.get("scope", current.get("scope", "global"))
-            logger.info(
-                "DEBUG: update_template(%s) - will update scope to: %s",
+            logger.debug(
+                "update_template(%s) - will update scope to: %s",
                 template_id,
                 new_scope,
             )
@@ -240,8 +242,8 @@ class TemplateService:
 
             repo.update(template_id, **update_kwargs)
 
-            logger.info(
-                "DEBUG: update_template(%s) - SQL UPDATE executed with scope=%s",
+            logger.debug(
+                "update_template(%s) - SQL UPDATE executed with scope=%s",
                 template_id,
                 new_scope,
             )

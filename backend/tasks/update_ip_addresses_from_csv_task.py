@@ -23,7 +23,7 @@ import asyncio
 import csv
 import io
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Tuple
 
 import service_factory
@@ -418,7 +418,7 @@ def update_ip_addresses_from_csv_task(
             "successes": successes,
             "failures": failures,
             "skipped": skipped,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         # Update job run status if tracked

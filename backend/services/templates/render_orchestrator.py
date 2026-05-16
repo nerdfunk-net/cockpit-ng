@@ -250,11 +250,6 @@ class TemplateRenderOrchestrator:
         username: str | None,
     ) -> TemplateExecuteAndSyncResponse:
         """Render template per device, parse output, queue Celery update task."""
-        import service_factory
-        from tasks.update_devices_task import update_devices_task
-
-        _jrs = service_factory.build_job_run_service()
-
         template = self._tm.get_template(request.template_id)
         if not template:
             raise ValueError(f"Template with ID {request.template_id} not found")
@@ -330,8 +325,12 @@ class TemplateRenderOrchestrator:
                 warnings=warnings,
             )
 
+        import service_factory
+        from tasks.update_devices_task import update_devices_task
+
         task = update_devices_task.delay(devices=parsed_updates, dry_run=False)
 
+        _jrs = service_factory.build_job_run_service()
         job_name = f"Sync to Nautobot from template '{template['name']}'"
         job_run = _jrs.create_job_run(
             job_name=job_name,
