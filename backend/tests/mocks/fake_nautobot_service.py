@@ -644,6 +644,16 @@ class FakeNautobotService:
             ]
         if params.get("interface"):
             results = [a for a in results if a.get("interface") == params["interface"]]
+        if params.get("vm_interface"):
+            results = [
+                a
+                for a in results
+                if a.get("vm_interface") == params["vm_interface"]
+                or (
+                    isinstance(a.get("vm_interface"), dict)
+                    and a["vm_interface"].get("id") == params["vm_interface"]
+                )
+            ]
         return self._count_list_response(results)
 
     # ── Prefix handlers ─────────────────────────────────────────────────────────

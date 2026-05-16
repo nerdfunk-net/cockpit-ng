@@ -626,3 +626,4 @@ async def test_<method>_error_propagates():
 | Flaky test: state leaks between tests | Shared `FakeCheckMKClient` instance across tests | Create a new `FakeCheckMKClient()` in each test function |
 | Wrong patch path | Module path does not match where the symbol is *used*, not defined | The path must be `<importing_module>.<ClassName>.<method>` |
 | `CheckMKAPIError` not raised | `error_on` key uses wrong method name | Check `call_log` to see the actual method name that was called |
+| Deprecation warnings in tests | Test or application code uses deprecated APIs | Replace deprecated APIs instead of suppressing warnings; for UTC timestamps use `datetime.now(timezone.utc)`, not `datetime.utcnow()` |
