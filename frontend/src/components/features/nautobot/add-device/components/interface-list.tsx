@@ -95,7 +95,7 @@ export function InterfaceList({
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
-                      onClick={() => onOpenProperties(field.id)}
+                      onClick={() => onOpenProperties(watch(`interfaces.${index}.id`))}
                       disabled={isLoading}
                       size="sm"
                       variant="outline"
