@@ -29,7 +29,7 @@ class AgentDeploymentService:
         )
         from repositories.settings.settings_repository import AgentsSettingRepository
 
-        self.template_manager = _sf.build_template_manager()
+        self.template_manager = _sf.build_template_service()
         self.agent_template_render_service = _sf.build_agent_template_render_service()
         self.git_service = git_service
         self.git_repo_repository = GitRepositoryRepository()

@@ -48,9 +48,6 @@ def execute_scan_prefixes(
             meta={"current": 0, "total": 100, "status": "Initializing scan..."},
         )
 
-        # Import the internal execution function
-        from tasks.scan_prefixes_task import _execute_scan_prefixes
-
         # Get scan options from template
         if not template:
             return {
@@ -90,11 +87,11 @@ def execute_scan_prefixes(
             scan_max_ips,
         )
 
-        # Execute the scan logic directly (the job_run is already created by dispatcher)
-        # Pass task_context=None to prevent creating a duplicate job_run
-        # The dispatcher already created the job_run and will handle completion/failure
-        # Note: Progress updates will use the task_context at the executor level
-        result = _execute_scan_prefixes(
+        from services.network.scanning.prefix_scan_service import PrefixScanService
+
+        # The dispatcher already created the job_run; pass task_context=None to prevent
+        # PrefixScanService from creating a duplicate one.
+        result = PrefixScanService().execute(
             custom_field_name=custom_field_name,
             custom_field_value=custom_field_value,
             response_custom_field_name=response_custom_field_name,
@@ -105,7 +102,7 @@ def execute_scan_prefixes(
             retries=retries,
             interval_ms=interval_ms,
             executed_by="scheduled" if schedule_id else "manual",
-            task_context=None,  # Don't pass context - prevents duplicate job_run creation
+            task_context=None,
             scan_max_ips=scan_max_ips,
             job_run_id=None,
         )
