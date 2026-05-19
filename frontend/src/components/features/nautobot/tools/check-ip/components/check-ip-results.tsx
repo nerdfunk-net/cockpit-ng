@@ -85,7 +85,7 @@ export function CheckIPResults({
               </div>
               <div className="flex items-center gap-2">
                 <Badge className={getStatusColor(result.status)} variant="outline">
-                  {result.status.replace('_', ' ').toUpperCase()}
+                  {result.status.replaceAll('_', ' ').toUpperCase()}
                 </Badge>
                 {result.nautobot_device_name &&
                   result.nautobot_device_name !== result.device_name && (

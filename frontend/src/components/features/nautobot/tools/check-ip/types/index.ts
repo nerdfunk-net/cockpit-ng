@@ -1,6 +1,7 @@
 export const RESULT_STATUS = {
   MATCH: 'match',
   NAME_MISMATCH: 'name_mismatch',
+  NAME_PARTIAL_MISMATCH: 'name_partial_mismatch',
   IP_NOT_FOUND: 'ip_not_found',
   ERROR: 'error',
 } as const

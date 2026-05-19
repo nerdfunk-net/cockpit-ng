@@ -6,6 +6,8 @@ export function getStatusIcon(status: string) {
       return <CheckCircle2 className="h-4 w-4 text-green-500" />
     case 'name_mismatch':
       return <AlertTriangle className="h-4 w-4 text-yellow-500" />
+    case 'name_partial_mismatch':
+      return <AlertTriangle className="h-4 w-4 text-orange-500" />
     case 'ip_not_found':
       return <XCircle className="h-4 w-4 text-red-500" />
     case 'error':
@@ -21,6 +23,8 @@ export function getStatusColor(status: string): string {
       return 'bg-green-100 text-green-700 border-green-300'
     case 'name_mismatch':
       return 'bg-yellow-100 text-yellow-700 border-yellow-300'
+    case 'name_partial_mismatch':
+      return 'bg-orange-100 text-orange-700 border-orange-300'
     case 'ip_not_found':
       return 'bg-red-100 text-red-700 border-red-300'
     case 'error':

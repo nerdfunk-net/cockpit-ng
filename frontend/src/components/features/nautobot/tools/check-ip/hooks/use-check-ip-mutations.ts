@@ -25,8 +25,8 @@ export function useCheckIpMutations() {
 
     onSuccess: () => {
       toast({
-        title: 'Upload successful',
-        description: 'Processing CSV file...',
+        title: 'Check started!',
+        description: 'Processing devices in the background...',
       })
     },
 

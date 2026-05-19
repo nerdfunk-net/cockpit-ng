@@ -262,21 +262,34 @@ def check_ip_task(
                 if csv_ip_clean in nautobot_lookup:
                     nautobot_name = nautobot_lookup[csv_ip_clean]
 
-                    if csv_name.lower() == nautobot_name.lower():
+                    csv_lower = csv_name.lower()
+                    nb_lower = nautobot_name.lower()
+
+                    if csv_lower == nb_lower:
                         # Perfect match
                         results.append(
                             {
-                                "ip_address": csv_ip_clean,  # Use cleaned IP in results
+                                "ip_address": csv_ip_clean,
                                 "device_name": csv_name,
                                 "status": "match",
                                 "nautobot_device_name": nautobot_name,
                             }
                         )
-                    else:
-                        # IP found but name mismatch
+                    elif csv_lower in nb_lower or nb_lower in csv_lower:
+                        # One name is a substring of the other
                         results.append(
                             {
-                                "ip_address": csv_ip_clean,  # Use cleaned IP in results
+                                "ip_address": csv_ip_clean,
+                                "device_name": csv_name,
+                                "status": "name_partial_mismatch",
+                                "nautobot_device_name": nautobot_name,
+                            }
+                        )
+                    else:
+                        # IP found but names share no substring relationship
+                        results.append(
+                            {
+                                "ip_address": csv_ip_clean,
                                 "device_name": csv_name,
                                 "status": "name_mismatch",
                                 "nautobot_device_name": nautobot_name,
@@ -309,17 +322,28 @@ def check_ip_task(
         # Calculate statistics
         match_count = sum(1 for r in results if r["status"] == "match")
         mismatch_count = sum(1 for r in results if r["status"] == "name_mismatch")
+        partial_mismatch_count = sum(
+            1 for r in results if r["status"] == "name_partial_mismatch"
+        )
         not_found_count = sum(1 for r in results if r["status"] == "ip_not_found")
         error_count = sum(1 for r in results if r["status"] == "error")
 
         result_data = {
             "success": True,
-            "message": f"Compared {len(csv_devices)} devices. Matches: {match_count}, Mismatches: {mismatch_count}, Not found: {not_found_count}, Errors: {error_count}",
+            "message": (
+                f"Compared {len(csv_devices)} devices. "
+                f"Matches: {match_count}, "
+                f"Mismatches: {mismatch_count}, "
+                f"Partial mismatches: {partial_mismatch_count}, "
+                f"Not found: {not_found_count}, "
+                f"Errors: {error_count}"
+            ),
             "total_devices": len(csv_devices),
             "processed_devices": len(results),
             "statistics": {
                 "matches": match_count,
                 "name_mismatches": mismatch_count,
+                "name_partial_mismatches": partial_mismatch_count,
                 "ip_not_found": not_found_count,
                 "errors": error_count,
             },

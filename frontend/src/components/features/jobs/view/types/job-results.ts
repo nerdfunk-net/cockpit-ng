@@ -277,7 +277,7 @@ export interface UpdateDevicesJobResult {
 export interface CheckIPDeviceResult {
   ip_address: string
   device_name: string
-  status: 'match' | 'name_mismatch' | 'ip_not_found' | 'error'
+  status: 'match' | 'name_mismatch' | 'name_partial_mismatch' | 'ip_not_found' | 'error'
   nautobot_device_name?: string
   error?: string
 }
@@ -291,6 +291,7 @@ export interface CheckIPJobResult {
   statistics: {
     matches: number
     name_mismatches: number
+    name_partial_mismatches: number
     ip_not_found: number
     errors: number
   }

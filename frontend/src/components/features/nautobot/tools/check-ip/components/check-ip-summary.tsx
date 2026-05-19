@@ -14,6 +14,7 @@ export function CheckIPSummary({ results }: CheckIPSummaryProps) {
       total: results.length,
       matches: results.filter(r => r.status === RESULT_STATUS.MATCH).length,
       mismatches: results.filter(r => r.status === RESULT_STATUS.NAME_MISMATCH).length,
+      partialMismatches: results.filter(r => r.status === RESULT_STATUS.NAME_PARTIAL_MISMATCH).length,
       notFound: results.filter(r => r.status === RESULT_STATUS.IP_NOT_FOUND).length,
     }),
     [results]
@@ -28,7 +29,7 @@ export function CheckIPSummary({ results }: CheckIPSummaryProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Total Devices</p>
             <p className="text-2xl font-bold">{stats.total}</p>
@@ -40,6 +41,10 @@ export function CheckIPSummary({ results }: CheckIPSummaryProps) {
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Mismatches</p>
             <p className="text-2xl font-bold text-yellow-600">{stats.mismatches}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Partial Mismatches</p>
+            <p className="text-2xl font-bold text-orange-500">{stats.partialMismatches}</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Not Found</p>

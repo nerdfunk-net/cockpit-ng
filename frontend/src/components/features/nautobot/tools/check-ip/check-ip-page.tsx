@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
-import { Search } from 'lucide-react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { Search, HelpCircle } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { StatusAlert } from './components/status-alert'
 import { CheckIPUploadForm } from './components/check-ip-upload-form'
 import { CheckIPProgress } from './components/check-ip-progress'
@@ -10,6 +11,7 @@ import { CheckIPResults } from './components/check-ip-results'
 import { useCheckIpTaskQuery } from './hooks/use-check-ip-task-query'
 import { useCheckIpMutations } from './hooks/use-check-ip-mutations'
 import { useCheckIpSettings } from './hooks/use-check-ip-settings'
+import { useToast } from '@/hooks/use-toast'
 import type { StatusMessage, UploadFormData } from './types'
 import { DEFAULT_DELIMITER, DEFAULT_QUOTE_CHAR, EMPTY_RESULTS } from './utils/constants'
 
@@ -17,9 +19,6 @@ export function CheckIPPage() {
   // Client-side UI state only
   const [showAll, setShowAll] = useState(false)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
-  const [uploadStatusMessage, setUploadStatusMessage] = useState<StatusMessage | null>(
-    null
-  )
 
   // Server state managed by TanStack Query
   const { data: taskStatus, isLoading: isPolling } = useCheckIpTaskQuery({
@@ -28,6 +27,8 @@ export function CheckIPPage() {
 
   const { uploadCsv, isUploading } = useCheckIpMutations()
   const { data: settings } = useCheckIpSettings()
+  const { toast } = useToast()
+  const toastedTaskRef = useRef<string | null>(null)
 
   // Derived state with useMemo
   const results = useMemo(
@@ -48,28 +49,39 @@ export function CheckIPPage() {
   // Check if task completed with results
   const hasResults = results.length > 0
 
-  // Derive status message from taskStatus - no side effects
+  // Fire a toast once when the task completes successfully
+  useEffect(() => {
+    if (
+      taskStatus?.status === 'SUCCESS' &&
+      taskStatus.result?.results &&
+      taskStatus.result.results.length > 0 &&
+      toastedTaskRef.current !== taskStatus.task_id
+    ) {
+      toastedTaskRef.current = taskStatus.task_id
+      toast({
+        title: 'Check completed!',
+        description: `Found ${taskStatus.result.results.length} devices.`,
+      })
+    }
+  }, [taskStatus, toast])
+
+  // Status messages for errors and in-progress state only
   const taskStatusMessage = useMemo<StatusMessage | null>(() => {
     if (!taskStatus) return null
 
-    if (taskStatus.status === 'SUCCESS') {
-      if (taskStatus.result?.success === false) {
-        return {
-          type: 'error',
-          message: taskStatus.result?.error || 'Task completed with error',
-        }
-      } else if (taskStatus.result?.results && taskStatus.result.results.length > 0) {
-        return {
-          type: 'success',
-          message: `Check completed! Found ${taskStatus.result.results.length} devices.`,
-        }
+    if (taskStatus.status === 'SUCCESS' && taskStatus.result?.success === false) {
+      return {
+        type: 'error',
+        message: taskStatus.result?.error || 'Task completed with error',
       }
-    } else if (taskStatus.status === 'FAILURE') {
+    }
+    if (taskStatus.status === 'FAILURE') {
       return {
         type: 'error',
         message: `Task failed: ${taskStatus.result?.error || 'Unknown error'}`,
       }
-    } else if (taskStatus.status === 'PROGRESS') {
+    }
+    if (taskStatus.status === 'PROGRESS') {
       return {
         type: 'info',
         message: 'Processing devices...',
@@ -78,28 +90,14 @@ export function CheckIPPage() {
     return null
   }, [taskStatus])
 
-  // Use upload message if present, otherwise use task message
-  const statusMessage = uploadStatusMessage || taskStatusMessage
+  const statusMessage = taskStatusMessage
 
   // Callbacks with useCallback for stability
   const handleSubmit = useCallback(
     (data: UploadFormData) => {
-      setUploadStatusMessage({
-        type: 'info',
-        message: 'Uploading CSV file and starting check...',
-      })
-
       uploadCsv.mutate(data, {
         onSuccess: response => {
           setCurrentTaskId(response.task_id)
-          setUploadStatusMessage({
-            type: 'success',
-            message: 'Check started! Processing devices...',
-          })
-        },
-        onError: () => {
-          // Error already handled by mutation hook with toast
-          setUploadStatusMessage(null)
         },
       })
     },
@@ -127,6 +125,30 @@ export function CheckIPPage() {
             </p>
           </div>
         </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Help">
+              <HelpCircle className="h-5 w-5" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 text-sm space-y-2">
+            <p className="font-semibold">How it works</p>
+            <p>
+              Upload a CSV file with <code className="bg-muted px-1 rounded">ip_address</code> and{' '}
+              <code className="bg-muted px-1 rounded">name</code> columns. The task loads all
+              devices from Nautobot and compares each row:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+              <li><span className="text-green-600 font-medium">Match</span> — IP found and device name matches.</li>
+              <li><span className="text-yellow-600 font-medium">Name mismatch</span> — IP found but names are completely different.</li>
+              <li><span className="text-orange-500 font-medium">Partial mismatch</span> — IP found but one name is contained within the other (e.g. &ldquo;lab-003&rdquo; vs &ldquo;lab-003.tld.zz&rdquo;).</li>
+              <li><span className="text-red-600 font-medium">IP not found</span> — IP does not exist in Nautobot.</li>
+            </ul>
+            <p className="text-muted-foreground">
+              CIDR notation is stripped before comparison. Name matching is case-insensitive.
+            </p>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Status Messages */}

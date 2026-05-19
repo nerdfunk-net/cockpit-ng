@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useState, useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,8 +21,9 @@ import {
   FormControl,
   FormMessage,
 } from '@/components/ui/form'
-import { Upload, FileText, Search } from 'lucide-react'
+import { Upload, FileText, Search, Eye, CheckCircle2, XCircle } from 'lucide-react'
 import type { UploadFormData } from '../types'
+import { type CSVPreviewResult, previewCSV } from '../utils/csv-preview'
 
 const uploadFormSchema = z.object({
   file: z.instanceof(File, { message: 'Please select a CSV file' }),
@@ -44,6 +45,7 @@ export function CheckIPUploadForm({
   defaultQuoteChar,
 }: CheckIPUploadFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [preview, setPreview] = useState<CSVPreviewResult | null>(null)
 
   const form = useForm<z.infer<typeof uploadFormSchema>>({
     resolver: zodResolver(uploadFormSchema),
@@ -54,6 +56,13 @@ export function CheckIPUploadForm({
   })
 
   const selectedFile = useWatch({ control: form.control, name: 'file' })
+  const delimiter = useWatch({ control: form.control, name: 'delimiter' })
+  const quoteChar = useWatch({ control: form.control, name: 'quoteChar' })
+
+  // Clear preview when parsing settings change so stale results aren't shown
+  useEffect(() => {
+    setPreview(null)
+  }, [delimiter, quoteChar])
 
   const handleFileSelect = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,6 +71,7 @@ export function CheckIPUploadForm({
         if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
           form.setValue('file', file)
           form.clearErrors('file')
+          setPreview(null)
         } else {
           form.setError('file', {
             type: 'manual',
@@ -73,6 +83,24 @@ export function CheckIPUploadForm({
     [form]
   )
 
+  const handlePreview = useCallback(() => {
+    const file = form.getValues('file')
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = e => {
+      const content = e.target?.result as string
+      setPreview(
+        previewCSV(
+          content,
+          form.getValues('delimiter'),
+          form.getValues('quoteChar')
+        )
+      )
+    }
+    reader.readAsText(file)
+  }, [form])
+
   const handleFormSubmit = form.handleSubmit(data => {
     onSubmit(data)
   })
@@ -82,6 +110,7 @@ export function CheckIPUploadForm({
       delimiter: defaultDelimiter,
       quoteChar: defaultQuoteChar,
     })
+    setPreview(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -188,7 +217,7 @@ export function CheckIPUploadForm({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 type="submit"
                 disabled={!selectedFile || isDisabled}
@@ -208,6 +237,15 @@ export function CheckIPUploadForm({
               </Button>
               <Button
                 type="button"
+                onClick={handlePreview}
+                variant="outline"
+                disabled={!selectedFile || isDisabled}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
+              </Button>
+              <Button
+                type="button"
                 onClick={handleReset}
                 variant="outline"
                 disabled={isDisabled}
@@ -215,9 +253,75 @@ export function CheckIPUploadForm({
                 Reset
               </Button>
             </div>
+
+            {/* CSV Preview Results */}
+            {preview && <CSVPreview preview={preview} />}
           </form>
         </Form>
       </CardContent>
     </Card>
+  )
+}
+
+function CSVPreview({ preview }: { preview: CSVPreviewResult }) {
+  return (
+    <div className="rounded-md border bg-muted/30 p-4 space-y-3">
+      {/* Column validation status */}
+      {preview.error ? (
+        <div className="flex items-center gap-2 text-sm text-red-700">
+          <XCircle className="h-4 w-4 flex-shrink-0" />
+          {preview.error}
+        </div>
+      ) : preview.isValid ? (
+        <div className="flex items-center gap-2 text-sm text-green-700">
+          <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+          Required columns <code className="font-mono">ip_address</code> and{' '}
+          <code className="font-mono">name</code> found
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-sm text-red-700">
+          <XCircle className="h-4 w-4 flex-shrink-0" />
+          Missing columns:{' '}
+          <code className="font-mono">{preview.missingColumns.join(', ')}</code>
+          {preview.headers.length > 0 && (
+            <span className="text-muted-foreground">
+              — found: <code className="font-mono">{preview.headers.join(', ')}</code>
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Preview table */}
+      {preview.rows.length > 0 && (
+        <div className="overflow-auto max-h-48 rounded border bg-white">
+          <table className="text-xs w-full border-collapse">
+            <thead>
+              <tr className="bg-muted border-b">
+                {preview.headers.map(h => (
+                  <th key={h} className="text-left px-2 py-1.5 font-medium">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {preview.rows.map((row) => (
+                <tr key={row.join('\x00')} className="border-b last:border-0 hover:bg-muted/40">
+                  {row.map((cell, j) => (
+                    <td key={preview.headers[j]} className="px-2 py-1.5">
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground">
+        Showing {preview.rows.length} of {preview.totalDataRows} data rows
+      </p>
+    </div>
   )
 }

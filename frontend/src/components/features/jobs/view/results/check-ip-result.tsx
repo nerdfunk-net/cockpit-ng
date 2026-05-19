@@ -11,13 +11,45 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { CheckIPJobResult } from '../types/job-results'
-import { CheckCircle2, XCircle, AlertTriangle, Info } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertTriangle, Info, Download } from 'lucide-react'
 
 interface CheckIPResultViewProps {
   result: CheckIPJobResult
 }
 
 const EMPTY_RESULTS: CheckIPJobResult['results'] = []
+
+function downloadCSV(results: CheckIPJobResult['results']): void {
+  if (results.length === 0) return
+
+  const headers = ['IP Address', 'Device Name', 'Status', 'Nautobot Device Name', 'Error']
+  const escape = (v: string) => {
+    const s = v ?? ''
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+      return `"${s.replace(/"/g, '""')}"`
+    }
+    return s
+  }
+  const rows = results.map(r => [
+    escape(r.ip_address),
+    escape(r.device_name),
+    escape(r.status),
+    escape(r.nautobot_device_name ?? ''),
+    escape(r.error ?? ''),
+  ])
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `check-ip-results-${new Date().toISOString().split('T')[0]}.csv`
+  link.style.display = 'none'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
 
 export function CheckIPResultView({ result }: CheckIPResultViewProps) {
   const [showAll, setShowAll] = useState(false)
@@ -32,6 +64,8 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
         return <CheckCircle2 className="h-4 w-4 text-green-600" />
       case 'name_mismatch':
         return <AlertTriangle className="h-4 w-4 text-yellow-600" />
+      case 'name_partial_mismatch':
+        return <AlertTriangle className="h-4 w-4 text-orange-500" />
       case 'ip_not_found':
         return <XCircle className="h-4 w-4 text-red-600" />
       case 'error':
@@ -48,6 +82,8 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
         return 'bg-green-100 text-green-700 border-green-300'
       case 'name_mismatch':
         return 'bg-yellow-100 text-yellow-700 border-yellow-300'
+      case 'name_partial_mismatch':
+        return 'bg-orange-100 text-orange-700 border-orange-300'
       case 'ip_not_found':
         return 'bg-red-100 text-red-700 border-red-300'
       case 'error':
@@ -71,7 +107,7 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Total Devices</p>
               <p className="text-2xl font-bold">
@@ -88,6 +124,12 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
               <p className="text-sm text-muted-foreground">Mismatches</p>
               <p className="text-2xl font-bold text-yellow-600">
                 {result.statistics.name_mismatches}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Partial Mismatches</p>
+              <p className="text-2xl font-bold text-orange-500">
+                {result.statistics.name_partial_mismatches ?? 0}
               </p>
             </div>
             <div className="space-y-1">
@@ -121,13 +163,24 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
                   : `Showing ${displayedResults.length} differences (${results.length} total)`}
               </CardDescription>
             </div>
-            <Button
-              onClick={() => setShowAll(!showAll)}
-              variant={showAll ? 'default' : 'outline'}
-              size="sm"
-            >
-              {showAll ? 'Show Differences Only' : 'Show All'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => downloadCSV(results)}
+                variant="outline"
+                size="sm"
+                disabled={results.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download CSV
+              </Button>
+              <Button
+                onClick={() => setShowAll(!showAll)}
+                variant={showAll ? 'default' : 'outline'}
+                size="sm"
+              >
+                {showAll ? 'Show Differences Only' : 'Show All'}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -154,7 +207,7 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className={getStatusColor(device.status)} variant="outline">
-                      {device.status.replace('_', ' ').toUpperCase()}
+                      {device.status.replaceAll('_', ' ').toUpperCase()}
                     </Badge>
                     {device.nautobot_device_name &&
                       device.nautobot_device_name !== device.device_name && (
