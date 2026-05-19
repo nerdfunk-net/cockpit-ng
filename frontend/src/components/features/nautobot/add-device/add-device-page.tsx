@@ -372,6 +372,27 @@ export function AddDevicePage() {
     ]
   )
 
+  const handleUseDefaults = useCallback(() => {
+    const defaults = dropdownData.nautobotDefaults
+    if (!defaults) return
+
+    if (defaults.device_role) form.setValue('selectedRole', defaults.device_role)
+    if (defaults.device_status) form.setValue('selectedStatus', defaults.device_status)
+    if (defaults.location) form.setValue('selectedLocation', defaults.location)
+    if (defaults.platform) form.setValue('selectedPlatform', defaults.platform)
+
+    const interfaces = form.getValues('interfaces')
+    const firstInterface = interfaces[0]
+    if (firstInterface) {
+      if (defaults.interface_status)
+        form.setValue('interfaces.0.status', defaults.interface_status)
+      if (defaults.namespace && firstInterface.ip_addresses.length > 0)
+        form.setValue('interfaces.0.ip_addresses.0.namespace', defaults.namespace)
+    }
+
+    toast({ title: 'Defaults applied', description: 'Default values loaded from settings.' })
+  }, [dropdownData.nautobotDefaults, form, toast])
+
   const handleClearForm = useCallback(() => {
     reset()
     tagsManager.clearSelectedTags()
@@ -412,6 +433,8 @@ export function AddDevicePage() {
         isLoading={createDevice.isPending}
         onOpenCsvImport={() => csvImport.setShowModal(true)}
         onOpenHelp={() => setShowHelpModal(true)}
+        onUseDefaults={handleUseDefaults}
+        hasDefaults={!!dropdownData.nautobotDefaults}
       />
 
       <form onSubmit={formHandleSubmit(onSubmit, onInvalid)} className="space-y-6">

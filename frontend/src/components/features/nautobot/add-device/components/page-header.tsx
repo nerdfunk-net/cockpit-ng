@@ -1,18 +1,22 @@
 'use client'
 
-import { Server, FileSpreadsheet, HelpCircle } from 'lucide-react'
+import { Server, FileSpreadsheet, HelpCircle, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface PageHeaderProps {
   isLoading: boolean
   onOpenCsvImport: () => void
   onOpenHelp: () => void
+  onUseDefaults?: () => void
+  hasDefaults?: boolean
 }
 
 export function PageHeader({
   isLoading,
   onOpenCsvImport,
   onOpenHelp,
+  onUseDefaults,
+  hasDefaults,
 }: PageHeaderProps) {
   return (
     <div className="flex items-center justify-between">
@@ -37,6 +41,18 @@ export function PageHeader({
           <FileSpreadsheet className="h-4 w-4 mr-2" />
           Import from CSV
         </Button>
+        {onUseDefaults && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={onUseDefaults}
+            disabled={isLoading || !hasDefaults}
+            title="Use defaults"
+          >
+            <Wand2 className="h-4 w-4" />
+          </Button>
+        )}
         <Button
           type="button"
           variant="outline"
