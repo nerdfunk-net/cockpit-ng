@@ -356,7 +356,7 @@ def cleanup_client_data_task() -> dict:
             age_hours,
         )
 
-        from repositories.client_data_repository import ClientDataRepository
+        from repositories.client_data.client_data_repository import ClientDataRepository
 
         cleanup = ClientDataRepository().delete_records_older_than(cutoff_time)
         removed_ip = cleanup.ip

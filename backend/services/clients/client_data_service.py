@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List, Optional, Tuple
 
-from repositories.client_data_repository import ClientDataRepository
+from repositories.client_data.client_data_repository import ClientDataRepository
 
 
 class ClientDataService:

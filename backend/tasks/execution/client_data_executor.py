@@ -54,7 +54,7 @@ def execute_get_client_data(
     import service_factory
 
     credentials_manager = service_factory.build_credentials_service()
-    from repositories.client_data_repository import ClientDataRepository
+    from repositories.client_data.client_data_repository import ClientDataRepository
 
     # -------------------------------------------------------------------------
     # Determine collect_* flags (job_parameters > template > True default)

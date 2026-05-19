@@ -13,7 +13,7 @@ import redis
 from sqlalchemy.orm import Session
 
 from config import settings
-from repositories.cockpit_agent_repository import CockpitAgentRepository
+from repositories.cockpit_agent.cockpit_agent_repository import CockpitAgentRepository
 
 logger = logging.getLogger(__name__)
 

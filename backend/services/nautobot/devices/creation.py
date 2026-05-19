@@ -10,7 +10,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from models.nautobot import AddDeviceRequest, InterfaceData
-from repositories.audit_log_repository import audit_log_repo
+from repositories.audit_log.audit_log_repository import audit_log_repo
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.common.validators import is_valid_uuid
 from services.nautobot.devices.common import DeviceCommonService

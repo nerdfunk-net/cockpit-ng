@@ -27,7 +27,7 @@ from models.cockpit_agent import (
     PingRequest,
 )
 from models.inventory import LogicalOperation
-from services.cockpit_agent_service import CockpitAgentService
+from services.cockpit_agent.cockpit_agent_service import CockpitAgentService
 
 logger = logging.getLogger(__name__)
 

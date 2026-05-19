@@ -501,7 +501,7 @@ class AgentDeploymentService:
         try:
             # Import service and get DB session
             from core.database import SessionLocal
-            from services.cockpit_agent_service import CockpitAgentService
+            from services.cockpit_agent.cockpit_agent_service import CockpitAgentService
 
             db = SessionLocal()
             try:

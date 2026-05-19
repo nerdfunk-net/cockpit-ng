@@ -265,7 +265,7 @@ def update_devices_task(
                     # Log device update to audit log
                     if username and not dry_run:
                         try:
-                            from repositories.audit_log_repository import (
+                            from repositories.audit_log.audit_log_repository import (
                                 audit_log_repo,
                             )
 

@@ -69,7 +69,7 @@ def client_data_repository_pg(postgres_engine_client_data, monkeypatch):
 
     make_session = sessionmaker(bind=postgres_engine_client_data)
     monkeypatch.setattr(mod, "get_db_session", lambda: make_session())
-    from repositories.client_data_repository import ClientDataRepository
+    from repositories.client_data.client_data_repository import ClientDataRepository
 
     return ClientDataRepository()
 

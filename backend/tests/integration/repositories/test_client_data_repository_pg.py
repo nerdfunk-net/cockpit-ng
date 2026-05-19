@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 import pytest
 from sqlalchemy import text
 
-from repositories.client_data_repository import ClientDataRepository
+from repositories.client_data.client_data_repository import ClientDataRepository
 
 pytestmark = pytest.mark.postgres
 

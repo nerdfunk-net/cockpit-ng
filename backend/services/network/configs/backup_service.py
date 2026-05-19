@@ -7,7 +7,7 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
-from repositories.backup_repository import BackupRepository
+from repositories.backup.backup_repository import BackupRepository
 
 logger = logging.getLogger(__name__)
 

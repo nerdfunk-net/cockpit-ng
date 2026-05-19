@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Optional
 
 from core.database import db_transaction
-from repositories.audit_log_repository import AuditLogRepository
+from repositories.audit_log.audit_log_repository import AuditLogRepository
 from repositories.auth.user_repository import UserRepository
 
 

@@ -304,7 +304,7 @@ def test_cleanup_client_data_disabled_does_not_open_db():
 
 @pytest.mark.unit
 def test_cleanup_client_data_delegates_to_repository():
-    from repositories.client_data_repository import ClientDataCleanupResult
+    from repositories.client_data.client_data_repository import ClientDataCleanupResult
 
     settings = {
         "client_data_cleanup_enabled": True,

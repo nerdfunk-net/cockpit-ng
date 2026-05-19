@@ -75,7 +75,7 @@ def execute_ping_agent(
     )
 
     from core.database import SessionLocal
-    from services.cockpit_agent_service import CockpitAgentService
+    from services.cockpit_agent.cockpit_agent_service import CockpitAgentService
 
     db = SessionLocal()
     try:

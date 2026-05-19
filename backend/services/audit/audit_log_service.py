@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from core.models import AuditLog
-from repositories.audit_log_repository import AuditLogRepository
+from repositories.audit_log.audit_log_repository import AuditLogRepository
 
 
 class AuditLogService:

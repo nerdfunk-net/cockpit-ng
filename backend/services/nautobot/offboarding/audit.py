@@ -6,7 +6,7 @@ import logging
 from typing import Any, Dict
 
 from models.nautobot import OffboardDeviceRequest
-from repositories.audit_log_repository import audit_log_repo
+from repositories.audit_log.audit_log_repository import audit_log_repo
 from services.nautobot.offboarding.types import OffboardingResult
 
 logger = logging.getLogger(__name__)
