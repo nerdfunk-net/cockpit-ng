@@ -293,7 +293,7 @@ def test_cleanup_client_data_disabled_does_not_open_db():
             "client_data_cleanup_enabled": False,
         }
         with patch(
-            "repositories.client_data_repository.ClientDataRepository"
+            "repositories.client_data.client_data_repository.ClientDataRepository"
         ) as MockRepoCls:
             result = cleanup_client_data_task()
 
@@ -318,7 +318,7 @@ def test_cleanup_client_data_delegates_to_repository():
     with patch(_PATCH_SETTINGS_MGR) as MockSM:
         MockSM.return_value.get_celery_settings.return_value = settings
         with patch(
-            "repositories.client_data_repository.ClientDataRepository",
+            "repositories.client_data.client_data_repository.ClientDataRepository",
             return_value=mock_inst,
         ):
             result = cleanup_client_data_task()
