@@ -78,7 +78,7 @@ def execute_backup(
 
         # Import services
         import service_factory
-        from services.settings.git.shared_utils import git_repo_manager
+        from services.git.shared_utils import git_repo_manager
 
         git_service = service_factory.build_git_service()
         git_auth_service = service_factory.build_git_auth_service()

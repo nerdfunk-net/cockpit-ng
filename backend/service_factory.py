@@ -230,28 +230,28 @@ def build_device_normalization_service():
 
 def build_git_service():
     """Create a fresh GitService instance."""
-    from services.settings.git.service import GitService
+    from services.git.service import GitService
 
     return GitService()
 
 
 def build_git_auth_service():
     """Create a fresh GitAuthenticationService instance."""
-    from services.settings.git.auth import GitAuthenticationService
+    from services.git.auth import GitAuthenticationService
 
     return GitAuthenticationService()
 
 
 def build_git_cache_service():
     """Create a fresh GitCacheService instance."""
-    from services.settings.git.cache import GitCacheService
+    from services.git.cache import GitCacheService
 
     return GitCacheService(build_cache_service())
 
 
 def build_git_repository_service():
     """Create a fresh GitRepositoryService instance."""
-    from services.settings.git.repository_service import GitRepositoryService
+    from services.git.repository_service import GitRepositoryService
 
     return GitRepositoryService()
 
@@ -300,21 +300,21 @@ def build_rbac_service():
 
 def build_git_operations_service():
     """Create a fresh GitOperationsService instance."""
-    from services.settings.git.operations import GitOperationsService
+    from services.git.operations import GitOperationsService
 
     return GitOperationsService()
 
 
 def build_git_connection_service():
     """Create a fresh GitConnectionService instance."""
-    from services.settings.git.connection import GitConnectionService
+    from services.git.connection import GitConnectionService
 
     return GitConnectionService()
 
 
 def build_git_diff_service():
     """Create a fresh GitDiffService instance."""
-    from services.settings.git.diff import GitDiffService
+    from services.git.diff import GitDiffService
 
     return GitDiffService()
 

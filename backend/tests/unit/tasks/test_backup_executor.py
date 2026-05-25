@@ -58,7 +58,7 @@ def test_execute_backup_fetches_repository_from_template_schedule() -> None:
     ), patch(
         "service_factory.build_job_template_service", return_value=template_service
     ), patch(
-        "services.settings.git.shared_utils.git_repo_manager", git_repo_manager
+        "services.git.shared_utils.git_repo_manager", git_repo_manager
     ):
         result = execute_backup(
             schedule_id=5,

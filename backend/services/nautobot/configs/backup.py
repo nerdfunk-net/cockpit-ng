@@ -71,7 +71,7 @@ class DeviceBackupService:
             ValueError: If validation fails
         """
         import service_factory
-        from services.settings.git.shared_utils import git_repo_manager
+        from services.git.shared_utils import git_repo_manager
 
         credentials_manager = service_factory.build_credentials_service()
 

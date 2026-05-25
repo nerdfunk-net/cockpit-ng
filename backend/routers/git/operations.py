@@ -20,9 +20,9 @@ from dependencies import (
     get_git_cache_service,
     get_git_operations_service,
 )
-from services.settings.git.env import set_ssl_env
-from services.settings.git.paths import repo_path as git_repo_path
-from services.settings.git.shared_utils import get_git_repo_by_id, git_repo_manager
+from services.git.env import set_ssl_env
+from services.git.paths import repo_path as git_repo_path
+from services.git.shared_utils import get_git_repo_by_id, git_repo_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git/{repo_id}", tags=["git-operations"])

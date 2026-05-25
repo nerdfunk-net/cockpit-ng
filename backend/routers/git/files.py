@@ -11,7 +11,7 @@ from fastapi.responses import PlainTextResponse
 
 from core.auth import require_permission
 from dependencies import get_cache_service
-from services.settings.git.file_service import GitFileService
+from services.git.file_service import GitFileService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git/{repo_id}", tags=["git-files"])

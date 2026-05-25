@@ -12,11 +12,11 @@ import service_factory
 from models.snapshots import SnapshotExecuteRequest, SnapshotResponse
 from repositories.snapshots import SnapshotRepository, SnapshotTemplateRepository
 from services.network.automation.netmiko import NetmikoService
-from services.settings.git.paths import repo_path
-from services.settings.git.repository_service import (
+from services.git.paths import repo_path
+from services.git.repository_service import (
     GitRepositoryService as GitRepositoryManager,
 )
-from services.settings.git.service import GitService
+from services.git.service import GitService
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ class SnapshotExecutionService:
             repo = self._git.open_or_clone(repo_data)
 
             # Get the repository path
-            from services.settings.git.paths import repo_path
+            from services.git.paths import repo_path
 
             local_repo_path = repo_path(repo_data)
 

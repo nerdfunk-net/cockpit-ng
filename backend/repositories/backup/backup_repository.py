@@ -151,7 +151,7 @@ class BackupRepository:
         related to the device's configuration files.
         """
         # Import here to avoid circular dependency
-        from services.settings.git.shared_utils import get_git_repositories_by_category
+        from services.git.shared_utils import get_git_repositories_by_category
 
         try:
             # Get device config repositories

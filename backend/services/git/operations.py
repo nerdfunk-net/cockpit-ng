@@ -17,9 +17,9 @@ from typing import Any, Dict
 from git import GitCommandError, Repo
 
 from models.git import CloneResult, SyncResult
-from services.settings.git.auth import GitAuthenticationService
-from services.settings.git.env import set_ssl_env
-from services.settings.git.paths import repo_path as get_repo_path
+from services.git.auth import GitAuthenticationService
+from services.git.env import set_ssl_env
+from services.git.paths import repo_path as get_repo_path
 
 logger = logging.getLogger(__name__)
 

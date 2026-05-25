@@ -1,4 +1,4 @@
-"""Unit tests for services/settings/git/repository_service.py.
+"""Unit tests for services/git/repository_service.py.
 
 All tests run offline — GitRepositoryRepository is patched.
 """
@@ -10,9 +10,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from services.settings.git.repository_service import GitRepositoryService
+from services.git.repository_service import GitRepositoryService
 
-_PATCH_REPO = "services.settings.git.repository_service.GitRepositoryRepository"
+_PATCH_REPO = "services.git.repository_service.GitRepositoryRepository"
 
 
 def _make_repo_obj(

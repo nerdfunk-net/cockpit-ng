@@ -17,8 +17,8 @@ import tempfile
 from pathlib import Path
 
 from models.git_repositories import GitConnectionTestRequest, GitConnectionTestResponse
-from services.settings.git.auth import GitAuthenticationService
-from services.settings.git.env import set_ssl_env
+from services.git.auth import GitAuthenticationService
+from services.git.env import set_ssl_env
 
 logger = logging.getLogger(__name__)
 

@@ -13,8 +13,8 @@ import yaml
 from fastapi import HTTPException, status
 from git import GitCommandError, InvalidGitRepositoryError
 
-from services.settings.git.paths import repo_path as git_repo_path
-from services.settings.git.shared_utils import get_git_repo_by_id, git_repo_manager
+from services.git.paths import repo_path as git_repo_path
+from services.git.shared_utils import get_git_repo_by_id, git_repo_manager
 
 logger = logging.getLogger(__name__)
 

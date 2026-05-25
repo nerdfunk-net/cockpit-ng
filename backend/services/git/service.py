@@ -40,10 +40,10 @@ from typing import Any, Dict, List, Optional, Union
 from git import Repo
 from git.exc import GitCommandError, InvalidGitRepositoryError
 
-from services.settings.git.auth import GitAuthenticationService
-from services.settings.git.config import set_git_author
-from services.settings.git.env import set_ssl_env
-from services.settings.git.paths import repo_path as get_repo_path
+from services.git.auth import GitAuthenticationService
+from services.git.config import set_git_author
+from services.git.env import set_ssl_env
+from services.git.paths import repo_path as get_repo_path
 
 logger = logging.getLogger(__name__)
 

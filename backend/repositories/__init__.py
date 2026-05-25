@@ -19,7 +19,7 @@ from .jobs.job_run_repository import JobRunRepository, job_run_repository
 from .jobs.job_schedule_repository import JobScheduleRepository
 from .jobs.job_template_repository import JobTemplateRepository
 from .settings.credentials_repository import CredentialsRepository
-from .settings.git_repository_repository import GitRepositoryRepository
+from .git.git_repository_repository import GitRepositoryRepository
 from .settings.template_repository import TemplateRepository
 
 __all__ = [

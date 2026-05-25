@@ -24,7 +24,7 @@ class AgentDeploymentService:
         import service_factory as _sf
 
         git_service = _sf.build_git_service()
-        from repositories.settings.git_repository_repository import (
+        from repositories.git.git_repository_repository import (
             GitRepositoryRepository,
         )
         from repositories.settings.settings_repository import AgentsSettingRepository

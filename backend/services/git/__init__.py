@@ -15,6 +15,6 @@ This package contains services for:
 """
 
 # Note: Services can be imported individually as needed
-# Example: from services.settings.git.service import GitService
+# Example: from services.git.service import GitService
 
 __all__ = []

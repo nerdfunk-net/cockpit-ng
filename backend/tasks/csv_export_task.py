@@ -179,8 +179,8 @@ def _run_csv_export(
             meta={"current": 60, "total": 100, "status": "Syncing Git repository..."},
         )
 
-        from services.settings.git.paths import repo_path as get_repo_path
-        from services.settings.git.shared_utils import git_repo_manager
+        from services.git.paths import repo_path as get_repo_path
+        from services.git.shared_utils import git_repo_manager
 
         repository = git_repo_manager.get_repository(repo_id)
         if not repository:

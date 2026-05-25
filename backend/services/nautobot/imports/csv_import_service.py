@@ -16,8 +16,8 @@ import service_factory
 from services.nautobot import NautobotService
 from services.nautobot.devices.import_service import DeviceImportService
 from services.nautobot.devices.update import DeviceUpdateService
-from services.settings.git.paths import repo_path as git_repo_path
-from services.settings.git.shared_utils import git_repo_manager
+from services.git.paths import repo_path as git_repo_path
+from services.git.shared_utils import git_repo_manager
 
 logger = logging.getLogger(__name__)
 

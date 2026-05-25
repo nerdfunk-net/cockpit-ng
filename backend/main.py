@@ -100,6 +100,7 @@ from routers.network.snapshots import (
 )
 
 # Settings routers now use feature-based structure (Phase 3.1-3.3 migration)
+from routers.git import router as git_router
 from routers.settings import (
     agents_settings_router,
     cache_router,
@@ -108,7 +109,6 @@ from routers.settings import (
     compliance_router,
     config_router,
     credentials_router,
-    git_router,
     git_settings_router,
     nautobot_settings_router,
     rbac_router,
@@ -424,7 +424,7 @@ async def _startup_services():
         from services.settings.manager import SettingsManager
 
         settings_manager = SettingsManager()
-        from services.settings.git.shared_utils import get_git_repo_by_id
+        from services.git.shared_utils import get_git_repo_by_id
 
         cache_service = service_factory.build_cache_service()
 

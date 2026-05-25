@@ -21,7 +21,7 @@ from models.git_repositories import (
     GitRepositoryResponse,
     GitRepositoryUpdateRequest,
 )
-from services.settings.git.shared_utils import git_repo_manager
+from services.git.shared_utils import git_repo_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git-repositories", tags=["git-repositories"])

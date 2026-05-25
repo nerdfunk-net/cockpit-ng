@@ -8,7 +8,7 @@ import logging
 from fastapi import HTTPException, status
 
 from core.safe_http_errors import raise_internal_server_error
-from services.settings.git.repository_service import (
+from services.git.repository_service import (
     GitRepositoryService as GitRepositoryManager,
 )
 

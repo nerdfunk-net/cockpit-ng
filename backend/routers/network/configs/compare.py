@@ -31,7 +31,7 @@ async def compare_files(
                 status_code=400, detail="Repository ID is required for file comparison"
             )
 
-        from services.settings.git.shared_utils import get_git_repo_by_id
+        from services.git.shared_utils import get_git_repo_by_id
 
         # Get the Git repository
         try:

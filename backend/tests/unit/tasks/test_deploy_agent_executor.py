@@ -25,7 +25,7 @@ _PATCH_TEMPLATE_SVC = "service_factory.build_template_service"  # correct name (
 _PATCH_RENDER_SVC = "service_factory.build_agent_template_render_service"
 _PATCH_SCHEDULE_SVC = "service_factory.build_job_schedule_service"
 _PATCH_TEMPLATE_JOB_SVC = "service_factory.build_job_template_service"
-_PATCH_GIT_REPO = "repositories.settings.git_repository_repository.GitRepositoryRepository"
+_PATCH_GIT_REPO = "repositories.git.git_repository_repository.GitRepositoryRepository"
 _PATCH_AGENTS_REPO = "repositories.settings.settings_repository.AgentsSettingRepository"
 _PATCH_DEPLOY = "services.agents.deployment_service.AgentDeploymentService.deploy"
 

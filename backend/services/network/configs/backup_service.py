@@ -180,7 +180,7 @@ class BackupService:
         try:
             import git
 
-            from services.settings.git.shared_utils import (
+            from services.git.shared_utils import (
                 get_git_repositories_by_category,
             )
 

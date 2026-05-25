@@ -16,9 +16,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import require_permission
 from dependencies import get_git_auth_service
-from services.settings.git.config import set_git_author
-from services.settings.git.env import set_ssl_env
-from services.settings.git.shared_utils import get_git_repo_by_id, git_repo_manager
+from services.git.config import set_git_author
+from services.git.env import set_ssl_env
+from services.git.shared_utils import get_git_repo_by_id, git_repo_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git-repositories", tags=["git-debug"])
