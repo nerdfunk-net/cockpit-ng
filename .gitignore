@@ -205,3 +205,4 @@ apscheduler_jobs.db
 /agent-os
 /.claude
 config/oidc_providers.yaml
+scripts/docker_ansible_image/airgap-artifacts/

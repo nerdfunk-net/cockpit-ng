@@ -1,0 +1,74 @@
+# docker-compose.yaml — Cockpit Ansible Agent
+#
+# Production (connects to the Cockpit server's Redis):
+#   docker compose up -d
+#
+# Local development (spins up a bundled Redis for testing):
+#   docker compose --profile dev up -d
+
+services:
+  cockpit-ansible-agent:
+    build:
+      context: ../..                                    # repo root (COPY paths are relative to it)
+      dockerfile: scripts/docker_ansible_image/Dockerfile
+    image: cockpit-agent-ansible:latest
+    container_name: cockpit-ansible-agent
+    restart: unless-stopped
+    environment:
+      # Redis — point to the Cockpit server in production;
+      # use "redis" (service name below) for local dev testing.
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-changeme}
+      - REDIS_DB=${REDIS_DB:-0}
+
+      # Agent identity (defaults to container hostname if unset)
+      - AGENT_ID=${AGENT_ID:-}
+
+      # Ansible
+      - ANSIBLE_PLAYBOOK_DIR=/app
+      - ANSIBLE_TIMEOUT=${ANSIBLE_TIMEOUT:-60}
+      - ANSIBLE_HOST_KEY_CHECKING=${ANSIBLE_HOST_KEY_CHECKING:-False}
+
+      # Operational
+      - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL:-30}
+      - LOGLEVEL=${LOGLEVEL:-INFO}
+    volumes:
+      # Mount SSH keys so Ansible can reach targets via key-based auth.
+      # The host path must contain the private key(s) with mode 0600.
+      - ${SSH_KEY_DIR:-~/.ssh}:/root/.ssh:ro
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis; r = redis.Redis(host='${REDIS_HOST:-cockpit.example.com}', port=${REDIS_PORT:-6379}, password='${REDIS_PASSWORD:-changeme}'); r.ping()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Local Redis (development / testing only) ─────────────────────────────
+  # Start with: docker compose --profile dev up -d
+  # Then set REDIS_HOST=redis in your .env file.
+  redis:
+    profiles:
+      - dev
+    image: redis:alpine
+    container_name: cockpit-agent-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - backend
+
+#networks:
+#  backend:
+#    driver: bridge
+
+networks:
+  backend:
+    external: true
