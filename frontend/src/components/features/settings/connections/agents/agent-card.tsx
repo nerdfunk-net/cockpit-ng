@@ -1,7 +1,19 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Edit2, Trash2, GitBranch } from 'lucide-react'
-import type { Agent, GitRepository } from './types'
+import type { Agent, AgentType, GitRepository } from './types'
+
+const TYPE_BADGE_CLASSES: Record<AgentType, string> = {
+  generic: 'bg-white/20 text-white border-white/30',
+  'git-based': 'bg-blue-600/80 text-white border-blue-400/50',
+  ansible: 'bg-amber-500/80 text-white border-amber-400/50',
+}
+
+const TYPE_LABELS: Record<AgentType, string> = {
+  generic: 'Generic',
+  'git-based': 'Git-based',
+  ansible: 'Ansible',
+}
 
 interface AgentCardProps {
   agent: Agent
@@ -24,6 +36,12 @@ export function AgentCard({
         <div className="flex items-center space-x-2 flex-1">
           <div className="flex items-center space-x-2 flex-1">
             <span className="text-sm font-medium">{agent.name}</span>
+            <Badge
+              variant="outline"
+              className={`text-xs px-1.5 py-0 ${TYPE_BADGE_CLASSES[agent.type ?? 'generic']}`}
+            >
+              {TYPE_LABELS[agent.type ?? 'generic']}
+            </Badge>
           </div>
         </div>
         <div className="flex items-center gap-2">

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Dict, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class NautobotSettingsRequest(BaseModel):
@@ -93,7 +93,14 @@ class Agent(BaseModel):
     agent_id: Optional[str] = None
     name: str
     description: str
+    type: Literal["generic", "git-based", "ansible"] = "generic"
     git_repository_id: Optional[int] = None
+
+    @model_validator(mode="after")
+    def git_repo_required_for_git_based(self) -> "Agent":
+        if self.type == "git-based" and self.git_repository_id is None:
+            raise ValueError("git_repository_id is required for git-based agents")
+        return self
 
 
 class AgentsSettingsRequest(BaseModel):

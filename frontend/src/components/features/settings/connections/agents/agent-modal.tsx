@@ -18,7 +18,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
-import type { Agent, GitRepository } from './types'
+import type { Agent, AgentType, GitRepository } from './types'
+
+const AGENT_TYPE_LABELS: Record<AgentType, string> = {
+  generic: 'Generic',
+  'git-based': 'Git-based',
+  ansible: 'Ansible',
+}
 
 interface AgentModalProps {
   isOpen: boolean
@@ -29,6 +35,15 @@ interface AgentModalProps {
   onCancel: () => void
 }
 
+const EMPTY_FORM: Agent = {
+  id: '',
+  agent_id: '',
+  name: '',
+  description: '',
+  type: 'generic',
+  git_repository_id: null,
+}
+
 export function AgentModal({
   isOpen,
   agent,
@@ -37,33 +52,26 @@ export function AgentModal({
   onSave,
   onCancel,
 }: AgentModalProps) {
-  const [formData, setFormData] = useState<Agent>({
-    id: '',
-    agent_id: '',
-    name: '',
-    description: '',
-    git_repository_id: null,
-  })
-
+  const [formData, setFormData] = useState<Agent>(EMPTY_FORM)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (agent) {
       setFormData({
         ...agent,
-        agent_id: agent.agent_id || '', // Ensure agent_id is always a string
+        agent_id: agent.agent_id || '',
+        type: agent.type ?? 'generic',
       })
     } else {
       setFormData({
+        ...EMPTY_FORM,
         id: crypto.randomUUID(),
-        agent_id: '',
-        name: '',
-        description: '',
-        git_repository_id: null,
       })
     }
     setErrors({})
   }, [agent, isOpen])
+
+  const isGitRepoRequired = formData.type === 'git-based'
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -76,12 +84,19 @@ export function AgentModal({
       newErrors.name = 'Name is required'
     }
 
-    if (!formData.git_repository_id) {
-      newErrors.git_repository_id = 'Git repository is required'
+    if (isGitRepoRequired && !formData.git_repository_id) {
+      newErrors.git_repository_id = 'Git repository is required for git-based agents'
     }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
+  }
+
+  const handleTypeChange = (value: AgentType) => {
+    setFormData(prev => ({ ...prev, type: value }))
+    if (errors.git_repository_id) {
+      setErrors(prev => ({ ...prev, git_repository_id: '' }))
+    }
   }
 
   const handleSave = () => {
@@ -155,10 +170,37 @@ export function AgentModal({
             </p>
           </div>
 
+          {/* Agent Type */}
+          <div className="space-y-2">
+            <Label htmlFor="agent-type">
+              Agent Type <span className="text-red-500">*</span>
+            </Label>
+            <Select value={formData.type} onValueChange={handleTypeChange}>
+              <SelectTrigger id="agent-type">
+                <SelectValue placeholder="Select agent type" />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(AGENT_TYPE_LABELS) as AgentType[]).map(t => (
+                  <SelectItem key={t} value={t}>
+                    {AGENT_TYPE_LABELS[t]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {formData.type === 'git-based'
+                ? 'Git-based agents deploy configuration from a Git repository (required).'
+                : formData.type === 'ansible'
+                  ? 'Ansible agents run playbooks, optionally sourced from a Git repository.'
+                  : 'Generic agents can optionally use a Git repository for configuration.'}
+            </p>
+          </div>
+
           {/* Git Repository */}
           <div className="space-y-2">
             <Label htmlFor="agent-git-repo">
-              Configuration Repository <span className="text-red-500">*</span>
+              Configuration Repository{' '}
+              {isGitRepoRequired && <span className="text-red-500">*</span>}
             </Label>
             {loadingGitRepos ? (
               <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-gray-50">
@@ -180,7 +222,7 @@ export function AgentModal({
                     id="agent-git-repo"
                     className={`h-auto min-h-[44px] ${errors.git_repository_id ? 'border-red-500' : ''}`}
                   >
-                    <SelectValue placeholder="Select a repository" />
+                    <SelectValue placeholder={isGitRepoRequired ? 'Select a repository' : 'Select a repository (optional)'} />
                   </SelectTrigger>
                   <SelectContent className="max-w-[550px]">
                     {gitRepositories.map(repo => (
@@ -203,7 +245,9 @@ export function AgentModal({
                   <p className="text-xs text-red-500">{errors.git_repository_id}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Only repositories with category &quot;Agent&quot; are shown
+                  {isGitRepoRequired
+                    ? 'Required for git-based agents. Only repositories with category "Agent" are shown.'
+                    : 'Optional. Only repositories with category "Agent" are shown.'}
                 </p>
               </>
             ) : (

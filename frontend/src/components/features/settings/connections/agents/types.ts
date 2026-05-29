@@ -1,8 +1,11 @@
+export type AgentType = 'generic' | 'git-based' | 'ansible'
+
 export interface Agent {
   id: string
   agent_id?: string
   name: string
   description: string
+  type: AgentType
   git_repository_id: number | null
 }
 
