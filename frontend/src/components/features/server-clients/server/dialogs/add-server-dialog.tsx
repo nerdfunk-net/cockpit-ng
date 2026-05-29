@@ -72,7 +72,7 @@ function parseAnsibleFacts(output: unknown) {
   const mounts = (f.mounts as Array<{ device?: string; fstype?: string }>) ?? []
 
   return {
-    hostname: (f.hostname as string) ?? '',
+    hostname: (f.fqdn as string) ?? (f.hostname as string) ?? '',
     os_family: (f.os_family as string) ?? '',
     processor_count: (f.processor_count as number) ?? null,
     memtotal_mb: (f.memtotal_mb as number) ?? null,
