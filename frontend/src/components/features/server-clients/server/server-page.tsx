@@ -1,10 +1,13 @@
 'use client'
 
-import { Loader2, Server } from 'lucide-react'
+import { Loader2, Plus, Server } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
+import { Button } from '@/components/ui/button'
 
 import { useServersQuery } from '@/hooks/queries/use-servers-query'
+import { useServerMutations } from '@/hooks/queries/use-server-mutations'
 import { AnsibleFactsModal } from './dialogs/ansible-facts-modal'
+import { AddServerDialog } from './dialogs/add-server-dialog'
 import { ServerDetail } from './components/server-detail'
 import { ServerTree } from './components/server-tree'
 import type { GroupByField, ServerResponse } from './types'
@@ -16,8 +19,10 @@ export function ServerPage() {
   const [groupBy, setGroupBy] = useState<GroupByField>('none')
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(EMPTY_SET)
   const [factsOpen, setFactsOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
 
   const { data, isLoading, error } = useServersQuery()
+  const { deleteServer } = useServerMutations()
   const servers = useMemo<ServerResponse[]>(() => data?.servers ?? [], [data])
 
   const selectedServer = useMemo(
@@ -50,6 +55,17 @@ export function ServerPage() {
     setFactsOpen(true)
   }, [])
 
+  const handleRemove = useCallback(() => {
+    if (selectedId === null) return
+    deleteServer.mutate(selectedId, {
+      onSuccess: () => setSelectedId(null),
+    })
+  }, [selectedId, deleteServer])
+
+  const handleServerAdded = useCallback((server: ServerResponse) => {
+    setSelectedId(server.id)
+  }, [])
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -65,6 +81,10 @@ export function ServerPage() {
             </p>
           </div>
         </div>
+        <Button onClick={() => setAddOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Server
+        </Button>
       </div>
 
       {/* Main panel */}
@@ -105,7 +125,11 @@ export function ServerPage() {
             {/* Right detail panel */}
             <div className="flex-1 p-6 bg-gradient-to-b from-white to-gray-50 overflow-y-auto">
               {selectedServer ? (
-                <ServerDetail server={selectedServer} onShowFacts={handleShowFacts} />
+                <ServerDetail
+                  server={selectedServer}
+                  onShowFacts={handleShowFacts}
+                  onRemove={handleRemove}
+                />
               ) : (
                 <div className="text-center py-16 text-gray-400">
                   <Server className="h-10 w-10 mx-auto mb-3 opacity-30" />
@@ -122,6 +146,13 @@ export function ServerPage() {
         open={factsOpen}
         onOpenChange={setFactsOpen}
         server={selectedServer}
+      />
+
+      {/* Add Server Dialog */}
+      <AddServerDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onServerAdded={handleServerAdded}
       />
     </div>
   )

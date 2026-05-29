@@ -1,6 +1,18 @@
 'use client'
 
-import { FileJson, HardDrive, Server } from 'lucide-react'
+import { useState } from 'react'
+import { FileJson, HardDrive, Server, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 import type { ServerResponse } from '../types'
 
@@ -15,6 +27,7 @@ interface MountEntry {
 interface ServerDetailProps {
   server: ServerResponse
   onShowFacts: () => void
+  onRemove: () => void
 }
 
 function formatBytes(bytes: number): string {
@@ -36,7 +49,8 @@ function FactRow({ label, value }: { label: string; value: string | number | nul
   )
 }
 
-export function ServerDetail({ server, onShowFacts }: ServerDetailProps) {
+export function ServerDetail({ server, onShowFacts, onRemove }: ServerDetailProps) {
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const facts = server.ansible_facts
   const ansibleFacts = facts?.ansible_facts as Record<string, unknown> | undefined
   const rawFacts = facts?.facts as Record<string, unknown> | undefined
@@ -126,7 +140,42 @@ export function ServerDetail({ server, onShowFacts }: ServerDetailProps) {
             </div>
           </div>
         )}
+
+        {/* Remove Server */}
+        <div className="pt-2 border-t border-gray-200">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setConfirmOpen(true)}
+            className="w-full"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Remove Server
+          </Button>
+        </div>
       </div>
+
+      {/* Confirm removal dialog */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove server?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{server.hostname}</strong> and all its data
+              from the database. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onRemove}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
