@@ -1,4 +1,4 @@
-import { ClientsPage } from '@/components/features/network/clients/clients-page'
+import { ClientsPage } from '@/components/features/server-clients/clients/clients-page'
 
 export default function Page() {
   return <ClientsPage />

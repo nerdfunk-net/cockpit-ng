@@ -142,7 +142,13 @@ const navigationSections: NavSection[] = [
         children: [{ label: 'Ping', href: '/tools/ping', icon: Wifi }],
       },
       { label: 'Compliance Check', href: '/compliance', icon: CheckCircle },
+    ],
+  },
+  {
+    title: 'Server & Clients',
+    items: [
       { label: 'Clients', href: '/clients', icon: Users },
+      { label: 'Server', href: '/server-clients/server', icon: Server },
     ],
   },
   {

@@ -25,6 +25,7 @@ import { useCsvImport } from './hooks/use-csv-import'
 import type { FormDefaults } from './hooks/use-csv-import'
 import { useDeviceImport } from './hooks/use-device-import'
 import { useValidateDevice } from './hooks/use-validate-device'
+import { useAnsibleFacts } from './hooks/use-ansible-facts'
 
 // Components
 import {
@@ -45,6 +46,7 @@ import {
   ValidationErrorModal,
   HelpModal,
   ValidationSummaryModal,
+  AnsibleAgentSelectorModal,
 } from './dialogs'
 import { buildLocationHierarchy, formatDeviceSubmissionData } from './utils'
 import {
@@ -156,6 +158,7 @@ export function AddDevicePage() {
   } = useVirtualChassisQuery()
   const { data: vcDetail } = useVirtualChassisDetailQuery(vcManager.selectedVcId)
   const propertiesModal = usePropertiesModal()
+  const ansibleFacts = useAnsibleFacts(form)
 
   // Keep selectedVirtualChassisId in form state so Zod can see it during validation.
   // When VC is selected, clear interfaces so the interfaceSchema field validations don't
@@ -435,6 +438,8 @@ export function AddDevicePage() {
         onOpenHelp={() => setShowHelpModal(true)}
         onUseDefaults={handleUseDefaults}
         hasDefaults={!!dropdownData.nautobotDefaults}
+        onGatherFacts={ansibleFacts.handleGatherFacts}
+        isGatheringFacts={ansibleFacts.isLoadingAgents || ansibleFacts.isSendingCommand}
       />
 
       <form onSubmit={formHandleSubmit(onSubmit, onInvalid)} className="space-y-6">
@@ -589,6 +594,14 @@ export function AddDevicePage() {
       />
 
       <HelpModal open={showHelpModal} onOpenChange={setShowHelpModal} />
+
+      <AnsibleAgentSelectorModal
+        open={ansibleFacts.showAgentModal}
+        agents={ansibleFacts.ansibleAgents}
+        isSending={ansibleFacts.isSendingCommand}
+        onConfirm={ansibleFacts.handleAgentSelected}
+        onClose={ansibleFacts.handleCloseModal}
+      />
 
       <ValidationSummaryModal
         open={showValidationSummary}

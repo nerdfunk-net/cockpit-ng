@@ -1,6 +1,6 @@
 'use client'
 
-import { Server, FileSpreadsheet, HelpCircle, Wand2 } from 'lucide-react'
+import { Server, FileSpreadsheet, HelpCircle, Wand2, Bot, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface PageHeaderProps {
@@ -9,6 +9,8 @@ interface PageHeaderProps {
   onOpenHelp: () => void
   onUseDefaults?: () => void
   hasDefaults?: boolean
+  onGatherFacts?: () => void
+  isGatheringFacts?: boolean
 }
 
 export function PageHeader({
@@ -17,6 +19,8 @@ export function PageHeader({
   onOpenHelp,
   onUseDefaults,
   hasDefaults,
+  onGatherFacts,
+  isGatheringFacts,
 }: PageHeaderProps) {
   return (
     <div className="flex items-center justify-between">
@@ -41,6 +45,22 @@ export function PageHeader({
           <FileSpreadsheet className="h-4 w-4 mr-2" />
           Import from CSV
         </Button>
+        {onGatherFacts && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={onGatherFacts}
+            disabled={isLoading || isGatheringFacts}
+            title="Gather facts via Ansible"
+          >
+            {isGatheringFacts ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Bot className="h-4 w-4" />
+            )}
+          </Button>
+        )}
         {onUseDefaults && (
           <Button
             type="button"
