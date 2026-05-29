@@ -321,6 +321,10 @@ def seed_permissions(verbose: bool = True):
         ("network.netmiko", "execute", "Execute Netmiko commands"),
         ("network.ping", "execute", "Execute network ping operations"),
         ("network.clients", "read", "View collected client data (ARP/MAC/hostname)"),
+        # Server & Clients permissions
+        ("servers", "read", "View managed servers and their Ansible facts"),
+        ("servers", "write", "Create/update managed servers"),
+        ("servers", "delete", "Delete managed servers"),
         # Snapshot permissions
         ("snapshots", "read", "View network snapshots"),
         ("snapshots", "write", "Create/execute network snapshots"),
@@ -482,6 +486,9 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         # Network
         "network.templates:read",
         "network.clients:read",
+        # Servers
+        "servers:read",
+        "servers:write",
         # Snapshots
         "snapshots:read",
         "snapshots:write",
@@ -548,6 +555,10 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "network.netmiko:execute",
         "network.ping:execute",
         "network.clients:read",
+        # Servers
+        "servers:read",
+        "servers:write",
+        "servers:delete",
         # Snapshots (full access)
         "snapshots:read",
         "snapshots:write",

@@ -206,3 +206,4 @@ apscheduler_jobs.db
 /.claude
 config/oidc_providers.yaml
 scripts/docker_ansible_image/airgap-artifacts/
+doc/ansible_facts.json

@@ -27,6 +27,7 @@ from core.models.snapshots import (
     SnapshotResult,
 )
 from core.models.templates import Template, TemplateVersion
+from core.models.servers import Server
 from core.models.users import User, UserProfile
 
 __all__ = [
@@ -88,4 +89,6 @@ __all__ = [
     "ClientIpAddress",
     "ClientMacAddress",
     "ClientHostname",
+    # Servers
+    "Server",
 ]

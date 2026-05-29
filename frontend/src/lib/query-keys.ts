@@ -428,4 +428,11 @@ export const queryKeys = {
     // Importable templates
     importable: () => [...queryKeys.templates.all, 'importable'] as const,
   },
+
+  // Servers
+  servers: {
+    all: ['servers'] as const,
+    list: () => [...queryKeys.servers.all, 'list'] as const,
+    detail: (id: number) => [...queryKeys.servers.all, 'detail', id] as const,
+  },
 }

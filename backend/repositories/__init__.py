@@ -20,6 +20,7 @@ from .jobs.job_schedule_repository import JobScheduleRepository
 from .jobs.job_template_repository import JobTemplateRepository
 from .settings.credentials_repository import CredentialsRepository
 from .git.git_repository_repository import GitRepositoryRepository
+from .servers.servers_repository import ServersRepository
 from .settings.template_repository import TemplateRepository
 
 __all__ = [
@@ -37,4 +38,5 @@ __all__ = [
     "RegexPatternRepository",
     "LoginCredentialRepository",
     "SNMPMappingRepository",
+    "ServersRepository",
 ]

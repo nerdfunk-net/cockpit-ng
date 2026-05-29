@@ -1,10 +1,58 @@
 'use client'
 
-import { Server } from 'lucide-react'
+import { Loader2, Server } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
+
+import { useServersQuery } from '@/hooks/queries/use-servers-query'
+import { AnsibleFactsModal } from './dialogs/ansible-facts-modal'
+import { ServerDetail } from './components/server-detail'
+import { ServerTree } from './components/server-tree'
+import type { GroupByField, ServerResponse } from './types'
+
+const EMPTY_SET = new Set<string>()
 
 export function ServerPage() {
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [groupBy, setGroupBy] = useState<GroupByField>('none')
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(EMPTY_SET)
+  const [factsOpen, setFactsOpen] = useState(false)
+
+  const { data, isLoading, error } = useServersQuery()
+  const servers = useMemo<ServerResponse[]>(() => data?.servers ?? [], [data])
+
+  const selectedServer = useMemo(
+    () => servers.find((s) => s.id === selectedId) ?? null,
+    [servers, selectedId]
+  )
+
+  const handleGroupByChange = useCallback((value: GroupByField) => {
+    setGroupBy(value)
+    setExpandedGroups(new Set<string>())
+  }, [])
+
+  const handleToggleGroup = useCallback((name: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(name)) {
+        next.delete(name)
+      } else {
+        next.add(name)
+      }
+      return next
+    })
+  }, [])
+
+  const handleSelectServer = useCallback((id: number) => {
+    setSelectedId(id)
+  }, [])
+
+  const handleShowFacts = useCallback(() => {
+    setFactsOpen(true)
+  }, [])
+
   return (
     <div className="space-y-6">
+      {/* Page header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="bg-blue-100 p-2 rounded-lg">
@@ -12,25 +60,69 @@ export function ServerPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Server</h1>
-            <p className="text-muted-foreground mt-2">Server management — coming soon.</p>
+            <p className="text-muted-foreground mt-2">
+              Managed servers and their Ansible facts
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+      {/* Main panel */}
+      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <Server className="h-4 w-4" />
-            <span className="text-sm font-medium">Server Overview</span>
+            <span className="text-sm font-medium">Server Inventory</span>
+          </div>
+          <div className="text-xs text-blue-100">
+            {servers.length} server{servers.length !== 1 ? 's' : ''}
           </div>
         </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
-          <div className="text-center py-12 text-gray-500">
-            <p className="text-lg font-medium">Server management is not yet available</p>
-            <p className="text-sm mt-1">This feature is under development and will be available in a future release.</p>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-        </div>
+        ) : error ? (
+          <div className="p-6 text-center text-sm text-red-600">
+            Failed to load servers. Please try again.
+          </div>
+        ) : (
+          <div className="flex" style={{ minHeight: '520px' }}>
+            {/* Left tree panel */}
+            <div className="w-64 border-r border-gray-200 shrink-0 bg-gray-50">
+              <ServerTree
+                servers={servers}
+                groupBy={groupBy}
+                selectedId={selectedId}
+                expandedGroups={expandedGroups}
+                onGroupByChange={handleGroupByChange}
+                onSelectServer={handleSelectServer}
+                onToggleGroup={handleToggleGroup}
+              />
+            </div>
+
+            {/* Right detail panel */}
+            <div className="flex-1 p-6 bg-gradient-to-b from-white to-gray-50 overflow-y-auto">
+              {selectedServer ? (
+                <ServerDetail server={selectedServer} onShowFacts={handleShowFacts} />
+              ) : (
+                <div className="text-center py-16 text-gray-400">
+                  <Server className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">Select a server from the list to view details</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Ansible Facts Modal */}
+      <AnsibleFactsModal
+        open={factsOpen}
+        onOpenChange={setFactsOpen}
+        server={selectedServer}
+      />
     </div>
   )
 }

@@ -72,6 +72,14 @@ def build_inventory_service() -> InventoryService:
     )
 
 
+def build_servers_service():
+    """Create a new ServersService instance."""
+    from repositories.servers.servers_repository import ServersRepository
+    from services.servers.servers_service import ServersService
+
+    return ServersService(repository=ServersRepository())
+
+
 def build_device_query_service() -> DeviceQueryService:
     """Create a new DeviceQueryService instance."""
     from services.nautobot.devices.query import DeviceQueryService

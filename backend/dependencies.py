@@ -327,3 +327,8 @@ def get_job_schedule_service():
 def get_job_run_service():
     """Provide a JobRunService instance."""
     return service_factory.build_job_run_service()
+
+
+def get_servers_service():
+    """Provide a ServersService instance."""
+    return service_factory.build_servers_service()

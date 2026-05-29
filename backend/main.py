@@ -118,6 +118,9 @@ from routers.settings import (
     common_router as settings_router,
 )
 
+# Servers router
+from routers.servers import servers_router
+
 # Tools routers package (schema management, RBAC seeding, baseline, certificates)
 from routers.tools import certificates_router, tools_router
 
@@ -244,6 +247,7 @@ app.include_router(tools_router)
 app.include_router(cockpit_agent_router)
 app.include_router(agents_deploy_router)
 app.include_router(clients_router)
+app.include_router(servers_router)
 app.include_router(logs_router)
 app.include_router(health_router)
 
