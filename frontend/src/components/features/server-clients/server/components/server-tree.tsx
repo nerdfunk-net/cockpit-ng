@@ -28,7 +28,19 @@ const GROUP_BY_OPTIONS: { value: GroupByField; label: string }[] = [
   { value: 'distribution_release', label: 'OS Release' },
   { value: 'distribution_version', label: 'OS Version' },
   { value: 'contact', label: 'Contact' },
+  { value: 'is_virtual', label: 'Virtual Machine' },
 ]
+
+function getGroupKey(server: ServerResponse, groupBy: GroupByField): string {
+  if (groupBy === 'is_virtual') {
+    return server.is_virtual ? 'Virtual Machine' : 'Physical'
+  }
+  if (groupBy === 'location') {
+    return server.location?.name ?? 'Uncategorized'
+  }
+  type StringGroupBy = 'distribution_release' | 'distribution_version' | 'contact'
+  return (server[groupBy as StringGroupBy] as string | null) ?? 'Uncategorized'
+}
 
 export function ServerTree({
   servers,
@@ -45,7 +57,7 @@ export function ServerTree({
     }
     const map = new Map<string, ServerResponse[]>()
     for (const server of servers) {
-      const key = (server[groupBy] as string | null) ?? 'Uncategorized'
+      const key = getGroupKey(server, groupBy)
       const existing = map.get(key) ?? []
       map.set(key, [...existing, server])
     }

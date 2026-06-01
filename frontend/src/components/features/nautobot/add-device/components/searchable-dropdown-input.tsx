@@ -2,15 +2,9 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import type { SearchableDropdownState } from '../hooks/use-searchable-dropdown'
 
-/**
- * ESLint False Positive Suppression
- *
- * ESLint incorrectly flags dropdownState properties (displayValue, showDropdown, filteredItems)
- * as refs because they're in the same object as containerRef.
- *
- * Reality: Only containerRef is a ref. All other properties are state values or memoized values
- * that are perfectly safe to use during render. See use-searchable-dropdown.ts for implementation.
- */
+// react-hooks/refs fires false positives on all dropdownState.* accesses because the rule
+// tracks the whole object once it sees it connected to a ref= prop. Only setContainerRef is
+// ref-related; the rest (displayValue, showDropdown, filteredItems, …) are plain state values.
 /* eslint-disable react-hooks/refs */
 
 interface SearchableDropdownInputProps<T> {
@@ -41,7 +35,7 @@ export function SearchableDropdownInput<T>({
       <Label htmlFor={id} className="text-xs font-medium">
         {label} {required && <span className="text-destructive">*</span>}
       </Label>
-      <div className="relative" ref={dropdownState.containerRef}>
+      <div className="relative" ref={dropdownState.setContainerRef}>
         <Input
           id={id}
           placeholder={placeholder}

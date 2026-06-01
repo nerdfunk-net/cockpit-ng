@@ -15,6 +15,9 @@ class ServersService:
         return self._repo.get_by_id(server_id)
 
     def create(self, **kwargs: Any) -> Server:
+        if kwargs.get('is_virtual') is None:
+            facts = kwargs.get('ansible_facts') or {}
+            kwargs['is_virtual'] = facts.get('ansible_virtualization_role') == 'guest'
         return self._repo.create(**kwargs)
 
     def update(self, server_id: int, **kwargs: Any) -> Optional[Server]:

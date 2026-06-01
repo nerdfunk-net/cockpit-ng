@@ -68,7 +68,7 @@ export interface LocationItem {
   display?: string
   parent?: {
     id: string
-    name: string
+    name?: string
   }
   hierarchicalPath?: string
 }

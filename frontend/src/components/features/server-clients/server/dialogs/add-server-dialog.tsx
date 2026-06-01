@@ -65,11 +65,12 @@ function countRealMounts(mounts: Array<{ device?: string; fstype?: string }>): n
 
 function parseAnsibleFacts(output: unknown) {
   const raw = output as Record<string, unknown> | null
-  const f = (raw?.facts as Record<string, unknown> | undefined)
-    ?.ansible_facts as Record<string, unknown> | undefined ?? {}
+  const rawFacts = raw?.facts as Record<string, unknown> | undefined
+  const f = rawFacts?.ansible_facts as Record<string, unknown> | undefined ?? {}
 
   const defaultIpv4 = f.default_ipv4 as Record<string, string> | undefined
   const mounts = (f.mounts as Array<{ device?: string; fstype?: string }>) ?? []
+  const virtualizationRole = rawFacts?.ansible_virtualization_role as string | undefined
 
   return {
     hostname: (f.fqdn as string) ?? (f.hostname as string) ?? '',
@@ -82,7 +83,8 @@ function parseAnsibleFacts(output: unknown) {
     primary_ipv4: defaultIpv4?.address ?? '',
     primary_interface: defaultIpv4?.interface ?? '',
     disk_count: countRealMounts(mounts),
-    ansible_facts: (raw?.facts as Record<string, unknown>) ?? null,
+    is_virtual: virtualizationRole === 'guest',
+    ansible_facts: rawFacts ?? null,
     location: null,
     contact: null,
     nautobot_uuid: null,

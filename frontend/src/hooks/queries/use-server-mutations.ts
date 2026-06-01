@@ -2,11 +2,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
-import type { ServerResponse } from '@/components/features/server-clients/server/types'
+import type { SelectedInterface, ServerLocation, ServerResponse } from '@/components/features/server-clients/server/types'
 
 interface CreateServerPayload {
   hostname: string
-  location?: string | null
+  location?: ServerLocation | null
   primary_ipv4?: string | null
   primary_interface?: string | null
   os_family?: string | null
@@ -18,7 +18,27 @@ interface CreateServerPayload {
   distribution_version?: string | null
   contact?: string | null
   nautobot_uuid?: string | null
+  is_virtual?: boolean | null
   ansible_facts?: Record<string, unknown> | null
+}
+
+interface UpdateServerPayload {
+  hostname?: string
+  location?: ServerLocation | null
+  primary_ipv4?: string | null
+  primary_interface?: string | null
+  os_family?: string | null
+  processor_count?: number | null
+  memtotal_mb?: number | null
+  disk_count?: number | null
+  architecture?: string | null
+  distribution_release?: string | null
+  distribution_version?: string | null
+  contact?: string | null
+  nautobot_uuid?: string | null
+  is_virtual?: boolean | null
+  ansible_facts?: Record<string, unknown> | null
+  selected_interfaces?: SelectedInterface[] | null
 }
 
 export function useServerMutations() {
@@ -44,6 +64,24 @@ export function useServerMutations() {
     },
   })
 
+  const updateServer = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: UpdateServerPayload }): Promise<ServerResponse> =>
+      apiCall<ServerResponse>(`servers/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.servers.list() })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to update server',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+
   const deleteServer = useMutation({
     mutationFn: async (id: number): Promise<void> =>
       apiCall<void>(`servers/${id}`, { method: 'DELETE' }),
@@ -60,5 +98,5 @@ export function useServerMutations() {
     },
   })
 
-  return { createServer, deleteServer }
+  return { createServer, updateServer, deleteServer }
 }

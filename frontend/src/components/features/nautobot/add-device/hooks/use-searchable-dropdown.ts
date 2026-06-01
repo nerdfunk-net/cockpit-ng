@@ -8,7 +8,7 @@ export interface SearchableDropdownState<T> {
   setShowDropdown: (show: boolean) => void
   selectItem: (item: T) => void
   selectedItem: T | null
-  containerRef: React.RefObject<HTMLDivElement | null>
+  setContainerRef: (el: HTMLDivElement | null) => void
   displayValue: string
 }
 
@@ -32,7 +32,10 @@ export function useSearchableDropdown<T extends { id: string }>(
 
   const [searchQuery, setSearchQuery] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const setContainerRef = useCallback((el: HTMLDivElement | null) => {
+    containerRef.current = el
+  }, [])
 
   // Filter items based on search
   const filteredItems = useMemo(() => {
@@ -108,10 +111,6 @@ export function useSearchableDropdown<T extends { id: string }>(
     }
   }, [searchQuery, selectedItem, onSelect, showDropdown])
 
-  // CRITICAL: Memoize return object to prevent infinite loops
-  // containerRef is NOT included in deps because refs are stable references
-  // ESLint incorrectly flags the entire object as refs - this is a false positive
-  // Only containerRef is a ref; all other properties are state/memoized values
   return useMemo(
     () => ({
       searchQuery,
@@ -121,11 +120,9 @@ export function useSearchableDropdown<T extends { id: string }>(
       setShowDropdown,
       selectItem,
       selectedItem,
-      containerRef, // Stable ref, safe to include without dep
+      setContainerRef,
       displayValue,
     }),
-    // Intentionally excluding containerRef from deps - refs don't change
-
-    [searchQuery, filteredItems, showDropdown, selectItem, selectedItem, displayValue]
+    [searchQuery, filteredItems, showDropdown, selectItem, selectedItem, displayValue, setContainerRef]
   )
 }

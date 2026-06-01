@@ -343,7 +343,7 @@ export function ConditionTreeBuilder({
                   <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
                     {locations
                       .filter(loc =>
-                        loc.hierarchicalPath
+                        (loc.hierarchicalPath ?? loc.name)
                           .toLowerCase()
                           .includes(locationSearchValue.toLowerCase())
                       )
@@ -352,7 +352,7 @@ export function ConditionTreeBuilder({
                           key={location.id}
                           className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                           onClick={() => {
-                            setLocationSearchValue(location.hierarchicalPath)
+                            setLocationSearchValue(location.hierarchicalPath ?? location.name)
                             setCurrentValue(location.name)
                             setShowLocationDropdown(false)
                           }}

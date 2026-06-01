@@ -48,7 +48,7 @@ export interface FieldOption {
 export interface LocationItem {
   id: string
   name: string
-  hierarchicalPath: string
+  hierarchicalPath?: string
   parent?: { id: string }
 }
 

@@ -1,7 +1,22 @@
+export interface ServerLocation {
+  id: string
+  name: string
+  hierarchical_path?: string | null
+}
+
+export interface SelectedInterface {
+  name: string
+  address?: string
+  netmask?: string
+  broadcast?: string
+  network?: string
+  prefix?: string
+}
+
 export interface ServerResponse {
   id: number
   hostname: string
-  location: string | null
+  location: ServerLocation | null
   primary_ipv4: string | null
   primary_interface: string | null
   os_family: string | null
@@ -13,7 +28,9 @@ export interface ServerResponse {
   distribution_version: string | null
   contact: string | null
   nautobot_uuid: string | null
+  is_virtual: boolean
   ansible_facts: Record<string, unknown> | null
+  selected_interfaces: SelectedInterface[] | null
   created_at: string | null
   updated_at: string | null
 }
@@ -29,6 +46,7 @@ export type GroupByField =
   | 'distribution_release'
   | 'distribution_version'
   | 'contact'
+  | 'is_virtual'
 
 export interface ServerGroup {
   name: string

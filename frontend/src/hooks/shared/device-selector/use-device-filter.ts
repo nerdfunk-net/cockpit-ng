@@ -89,7 +89,7 @@ export function useDeviceFilter() {
     })
 
     return [...locationsData].sort((a, b) =>
-      a.hierarchicalPath.localeCompare(b.hierarchicalPath)
+      (a.hierarchicalPath ?? a.name).localeCompare(b.hierarchicalPath ?? b.name)
     )
   }, [locationsData])
 
