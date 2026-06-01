@@ -6,9 +6,22 @@
 /* eslint-disable react-hooks/refs */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FileJson, HardDrive, Network, Pencil, Server, Settings2, Trash2 } from 'lucide-react'
+import {
+  FileJson,
+  HardDrive,
+  Loader2,
+  Network,
+  Pencil,
+  FileSearch,
+  RefreshCw,
+  Server,
+  Settings2,
+  Trash2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +39,9 @@ import { useServerMutations } from '@/hooks/queries/use-server-mutations'
 
 import { InterfacesDialog } from '../dialogs/interfaces-dialog'
 import { ClusterRow } from './cluster-row'
+import { useRefreshServerFacts } from '../hooks/use-refresh-server-facts'
+import { useRemoveServer } from '../hooks/use-remove-server'
+import { useUpdateServerToNautobot } from '../hooks/use-update-server-to-nautobot'
 import { NautobotUuidRow } from './nautobot-uuid-row'
 import type { SelectedInterface, ServerLocation, ServerResponse } from '../types'
 
@@ -40,7 +56,7 @@ interface MountEntry {
 interface ServerDetailProps {
   server: ServerResponse
   onShowFacts: () => void
-  onRemove: () => void
+  onRemoved: () => void
 }
 
 function formatBytes(bytes: number): string {
@@ -169,9 +185,41 @@ function LocationRow({ server }: { server: ServerResponse }) {
   )
 }
 
-export function ServerDetail({ server, onShowFacts, onRemove }: ServerDetailProps) {
+export function ServerDetail({ server, onShowFacts, onRemoved }: ServerDetailProps) {
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [alsoRemoveFromNautobot, setAlsoRemoveFromNautobot] = useState(false)
   const [interfacesOpen, setInterfacesOpen] = useState(false)
+  const {
+    updateServerInNautobot,
+    isPending: isUpdatingNautobot,
+    canUpdate,
+    defaultsLoading,
+    deviceDropdownsLoading,
+  } = useUpdateServerToNautobot(server)
+  const {
+    removeServer,
+    isPending: isRemoving,
+    hasNautobotLink,
+    nautobotResourceLabel,
+  } = useRemoveServer(server, onRemoved)
+  const { refreshFacts, isRefreshing, canRefreshFacts } = useRefreshServerFacts(server)
+
+  const handleConfirmOpenChange = useCallback((open: boolean) => {
+    setConfirmOpen(open)
+    if (!open) {
+      setAlsoRemoveFromNautobot(false)
+    }
+  }, [])
+
+  const handleConfirmRemove = useCallback(async () => {
+    try {
+      await removeServer(alsoRemoveFromNautobot)
+      setConfirmOpen(false)
+      setAlsoRemoveFromNautobot(false)
+    } catch {
+      // Error toast shown by useRemoveServer; keep dialog open
+    }
+  }, [alsoRemoveFromNautobot, removeServer])
   const facts = server.ansible_facts
   const ansibleFacts = facts?.ansible_facts as Record<string, unknown> | undefined
   const rawFacts = facts?.facts as Record<string, unknown> | undefined
@@ -309,17 +357,70 @@ export function ServerDetail({ server, onShowFacts, onRemove }: ServerDetailProp
           )}
         </div>
 
-        {/* Remove Server */}
-        <div className="pt-2 border-t border-gray-200">
+        {/* Actions */}
+        <div className="pt-2 border-t border-gray-200 flex justify-between items-center gap-2">
           <Button
-            variant="destructive"
+            variant="outline"
             size="sm"
-            onClick={() => setConfirmOpen(true)}
-            className="w-full"
+            className="h-8"
+            disabled={!canRefreshFacts || isRefreshing || isRemoving}
+            title={
+              canRefreshFacts
+                ? 'Re-gather Ansible facts using stored connection settings'
+                : 'No stored Ansible connection settings for this server'
+            }
+            onClick={() => void refreshFacts()}
           >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Remove Server
+            {isRefreshing ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                Gathering…
+              </>
+            ) : (
+              <>
+                <FileSearch className="h-3.5 w-3.5 mr-1.5" />
+                Get Facts
+              </>
+            )}
           </Button>
+          <div className="flex items-center gap-2">
+            {canUpdate ? (
+              <Button
+                variant="default"
+                size="sm"
+                className="h-8"
+                disabled={
+                  isUpdatingNautobot ||
+                  isRefreshing ||
+                  defaultsLoading ||
+                  (!server.is_virtual && deviceDropdownsLoading)
+                }
+                onClick={() => void updateServerInNautobot()}
+              >
+                {isUpdatingNautobot ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    Updating…
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                    Update Server
+                  </>
+                )}
+              </Button>
+            ) : null}
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setConfirmOpen(true)}
+              disabled={isRemoving || isRefreshing}
+              className="h-8 px-3"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+              Remove Server
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -331,22 +432,52 @@ export function ServerDetail({ server, onShowFacts, onRemove }: ServerDetailProp
       />
 
       {/* Confirm removal dialog */}
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialog open={confirmOpen} onOpenChange={handleConfirmOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove server?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete <strong>{server.hostname}</strong> and all its data
-              from the database. This action cannot be undone.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  This will permanently delete <strong>{server.hostname}</strong> and all its
+                  data from Cockpit. This action cannot be undone.
+                </p>
+                {hasNautobotLink ? (
+                  <div className="flex items-start gap-2 rounded-md border border-border p-3">
+                    <Checkbox
+                      id="also-remove-nautobot"
+                      checked={alsoRemoveFromNautobot}
+                      onCheckedChange={checked =>
+                        setAlsoRemoveFromNautobot(checked === true)
+                      }
+                      disabled={isRemoving}
+                    />
+                    <Label
+                      htmlFor="also-remove-nautobot"
+                      className="cursor-pointer font-normal leading-snug"
+                    >
+                      Also remove this {nautobotResourceLabel} from Nautobot
+                    </Label>
+                  </div>
+                ) : null}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={onRemove}
+              onClick={handleConfirmRemove}
+              disabled={isRemoving}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Remove
+              {isRemoving ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                  Removing…
+                </>
+              ) : (
+                'Remove'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

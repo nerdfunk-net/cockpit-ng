@@ -45,6 +45,7 @@ class InterfaceManagerService:
         device_id: str,
         interfaces: List[Dict[str, Any]],
         add_prefixes_automatically: bool = False,
+        sync_interfaces: bool = False,
     ) -> InterfaceUpdateResult:
         """
         Create or update multiple interfaces for a device.
@@ -69,13 +70,27 @@ class InterfaceManagerService:
             device_id,
         )
 
-        created_interfaces = []
-        updated_interfaces = []
-        failed_interfaces = []
+        created_interfaces: List[str] = []
+        updated_interfaces: List[str] = []
+        failed_interfaces: List[str] = []
         ip_address_map = {}
         primary_ipv4_id = None
         warnings = []
         cleaned_interfaces: Set[str] = set()
+        interfaces_deleted = 0
+
+        desired_names = {
+            (iface.get("name") or "").strip()
+            for iface in interfaces
+            if (iface.get("name") or "").strip()
+        }
+
+        if sync_interfaces:
+            interfaces_deleted = await self._delete_orphan_device_interfaces(
+                device_id=device_id,
+                desired_names=desired_names,
+                warnings=warnings,
+            )
 
         # Step 1: Create IP addresses first
         ip_address_map = await self._create_ip_addresses(
@@ -91,7 +106,7 @@ class InterfaceManagerService:
         for interface in interfaces:
             try:
                 logger.info("\n--- Processing interface: %s ---", interface["name"])
-                interface_id = await self._create_or_update_interface(
+                interface_id, was_updated = await self._create_or_update_interface(
                     device_id=device_id,
                     interface=interface,
                     warnings=warnings,
@@ -99,16 +114,12 @@ class InterfaceManagerService:
                 logger.info("Interface ID returned: %s", interface_id)
 
                 if interface_id:
-                    if (
-                        interface["name"] in updated_interfaces
-                        or interface["name"] in created_interfaces
-                    ):
-                        # Already tracked
-                        pass
-                    else:
-                        # Check if it was created or updated
-                        # (This will be handled by _create_or_update_interface)
-                        pass
+                    iface_name = interface["name"]
+                    if was_updated:
+                        if iface_name not in updated_interfaces:
+                            updated_interfaces.append(iface_name)
+                    elif iface_name not in created_interfaces:
+                        created_interfaces.append(iface_name)
 
                     # Clean existing IP assignments (once per interface)
                     if interface_id not in cleaned_interfaces:
@@ -184,13 +195,6 @@ class InterfaceManagerService:
                                         ip_address,
                                     )
 
-                    # Track success
-                    if (
-                        interface["name"] not in created_interfaces
-                        and interface["name"] not in updated_interfaces
-                    ):
-                        created_interfaces.append(interface["name"])
-
             except Exception as e:
                 error_msg = str(e)
                 failed_interfaces.append(interface["name"])
@@ -213,10 +217,48 @@ class InterfaceManagerService:
             interfaces_created=len(created_interfaces),
             interfaces_updated=len(updated_interfaces),
             interfaces_failed=len(failed_interfaces),
+            interfaces_deleted=interfaces_deleted,
             ip_addresses_created=len(ip_address_map),
             primary_ip4_id=primary_ipv4_id,
             warnings=warnings,
         )
+
+    async def _delete_orphan_device_interfaces(
+        self,
+        device_id: str,
+        desired_names: Set[str],
+        warnings: List[str],
+    ) -> int:
+        """Delete device interfaces whose names are not in desired_names."""
+        deleted = 0
+        endpoint = "dcim/interfaces/?device_id=%s&limit=1000" % device_id
+        try:
+            response = await self.nautobot.rest_request(endpoint=endpoint, method="GET")
+        except Exception as exc:
+            warnings.append(f"Failed to list device interfaces for sync: {exc}")
+            return 0
+
+        for existing in response.get("results", []) if response else []:
+            name = (existing.get("name") or "").strip()
+            interface_id = existing.get("id")
+            if not name or not interface_id or name in desired_names:
+                continue
+            try:
+                await self._clean_interface_ips(
+                    interface_id=interface_id,
+                    interface_name=name,
+                    warnings=warnings,
+                )
+                await self.nautobot.rest_request(
+                    endpoint="dcim/interfaces/%s/" % interface_id,
+                    method="DELETE",
+                )
+                deleted += 1
+                logger.info("Deleted orphan device interface %s", name)
+            except Exception as exc:
+                warnings.append(f"Failed to delete interface {name}: {exc}")
+
+        return deleted
 
     async def _create_ip_addresses(
         self,
@@ -350,7 +392,7 @@ class InterfaceManagerService:
         device_id: str,
         interface: Dict[str, Any],
         warnings: List[str],
-    ) -> Optional[str]:
+    ) -> tuple[Optional[str], bool]:
         """
         Create or update a single interface.
 
@@ -360,7 +402,7 @@ class InterfaceManagerService:
             warnings: List to append warnings to
 
         Returns:
-            Interface UUID if successful, None otherwise
+            Tuple of (interface UUID if successful, was_updated flag)
         """
         # Validate required fields before hitting Nautobot
         # Nautobot interface type slugs are always lowercase (e.g. "virtual", "1000base-t")
@@ -373,7 +415,7 @@ class InterfaceManagerService:
             logger.warning(
                 "Interface '%s' has no type set, skipping creation", interface["name"]
             )
-            return None
+            return None, False
 
         # Resolve status to UUID — use "or" fallback so empty string also defaults to "active"
         interface_status = interface.get("status") or "active"
@@ -381,14 +423,13 @@ class InterfaceManagerService:
             interface_status, "dcim.interface"
         )
 
-        interface_payload = {
+        interface_payload: Dict[str, Any] = {
             "name": interface["name"],
             "device": device_id,
             "type": interface_type,
             "status": interface_status_id,
         }
 
-        # Add optional properties
         optional_fields = [
             "enabled",
             "mgmt_only",
@@ -401,9 +442,34 @@ class InterfaceManagerService:
             if field in interface and interface[field] is not None:
                 interface_payload[field] = interface[field]
 
+        existing_id = await self.common.resolve_interface_by_name(
+            device_id=device_id,
+            interface_name=interface["name"],
+        )
+        if existing_id:
+            patch_payload = {
+                k: v
+                for k, v in interface_payload.items()
+                if k not in ("name", "device")
+            }
+            try:
+                await self.nautobot.rest_request(
+                    endpoint="dcim/interfaces/%s/" % existing_id,
+                    method="PATCH",
+                    data=patch_payload,
+                )
+                logger.info(
+                    "Updated interface %s with ID: %s", interface["name"], existing_id
+                )
+                return existing_id, True
+            except Exception as patch_error:
+                warnings.append(
+                    f"Interface {interface['name']}: Failed to update: {patch_error}"
+                )
+                return existing_id, True
+
         logger.debug("Creating interface with payload: %s", interface_payload)
 
-        # Try to create the interface
         try:
             interface_response = await self.nautobot.rest_request(
                 endpoint="dcim/interfaces/",
@@ -416,26 +482,34 @@ class InterfaceManagerService:
                 logger.info(
                     "Created interface %s with ID: %s", interface["name"], interface_id
                 )
-                return interface_id
+                return interface_id, False
 
         except Exception as create_error:
-            # Check if interface already exists
             if "must make a unique set" in str(create_error).lower():
                 interface_id = await self.common.resolve_interface_by_name(
                     device_id=device_id,
                     interface_name=interface["name"],
                 )
                 if interface_id:
-                    logger.info(
-                        "Found existing interface %s with ID: %s",
-                        interface["name"],
-                        interface_id,
-                    )
-                    return interface_id
-                else:
-                    warnings.append(
-                        f"Interface {interface['name']}: Interface exists but could not be found"
-                    )
+                    patch_payload = {
+                        k: v
+                        for k, v in interface_payload.items()
+                        if k not in ("name", "device")
+                    }
+                    try:
+                        await self.nautobot.rest_request(
+                            endpoint="dcim/interfaces/%s/" % interface_id,
+                            method="PATCH",
+                            data=patch_payload,
+                        )
+                    except Exception as patch_error:
+                        warnings.append(
+                            f"Interface {interface['name']}: Failed to patch: {patch_error}"
+                        )
+                    return interface_id, True
+                warnings.append(
+                    f"Interface {interface['name']}: Interface exists but could not be found"
+                )
             else:
                 logger.error(
                     "Failed to create interface '%s': %s",
@@ -446,7 +520,7 @@ class InterfaceManagerService:
                     f"Interface {interface['name']}: Failed to create interface: {str(create_error)}"
                 )
 
-        return None
+        return None, False
 
     async def _clean_interface_ips(
         self,

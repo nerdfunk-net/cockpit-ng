@@ -543,6 +543,7 @@ async def update_device(
         # Extract prefix configuration
         add_prefix = update_data.pop("add_prefix", True)
         default_prefix_length = update_data.pop("default_prefix_length", "/24")
+        sync_interfaces = update_data.pop("sync_interfaces", False)
 
         # Handle rack assignment clearing: reintroduce explicit None values so
         # they are sent as JSON null to Nautobot (model_dump strips None values)
@@ -568,6 +569,7 @@ async def update_device(
             interfaces=interfaces,
             add_prefix=add_prefix,
             default_prefix_length=default_prefix_length,
+            sync_interfaces=sync_interfaces,
         )
 
         return result

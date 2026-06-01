@@ -18,6 +18,15 @@ export interface SelectedInterface {
   prefix?: string
 }
 
+/** Parameters used to gather Ansible facts (password is not stored; use credential_id). */
+export interface AnsibleCredentials {
+  target: string
+  agent_id: string
+  use_sshkey: boolean
+  ansible_user: string
+  credential_id?: number | null
+}
+
 export interface ServerResponse {
   id: number
   hostname: string
@@ -36,6 +45,7 @@ export interface ServerResponse {
   nautobot_uuid: string | null
   is_virtual: boolean
   ansible_facts: Record<string, unknown> | null
+  ansible_credentials: AnsibleCredentials | null
   selected_interfaces: SelectedInterface[] | null
   created_at: string | null
   updated_at: string | null

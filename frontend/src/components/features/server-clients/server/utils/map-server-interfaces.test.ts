@@ -42,6 +42,7 @@ function baseServer(overrides: Partial<ServerResponse> = EMPTY_SERVER_OVERRIDES)
     nautobot_uuid: null,
     is_virtual: true,
     ansible_facts: null,
+    ansible_credentials: null,
     selected_interfaces: [
       { name: 'eth0', address: '192.168.1.10', prefix: '24' },
       { name: 'eth1', address: '10.0.0.5' },

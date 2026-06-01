@@ -2,7 +2,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
+import type { DeviceUpdatePayload } from '@/components/features/server-clients/server/utils/build-nautobot-payload'
 import type { DeviceSubmissionData, DeviceSubmissionResult } from '../../types'
+
+interface DeviceUpdateResult {
+  success: boolean
+  message: string
+  messageType: 'success' | 'error' | 'warning'
+}
 
 export function useDeviceMutations() {
   const { apiCall } = useApi()
@@ -105,5 +112,115 @@ export function useDeviceMutations() {
     },
   })
 
-  return { createDevice }
+  const updateDevice = useMutation({
+    mutationFn: async ({
+      deviceId,
+      data,
+    }: {
+      deviceId: string
+      data: DeviceUpdatePayload
+    }): Promise<DeviceUpdateResult> => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await apiCall<any>(`nautobot/devices/${deviceId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        })
+
+        const statusMessages: string[] = [
+          response.message || 'Device updated successfully',
+        ]
+        let hasWarnings = false
+
+        if (response.warnings?.length) {
+          response.warnings.forEach((warning: string) => {
+            statusMessages.push(`⚠ ${warning}`)
+          })
+          hasWarnings = true
+        }
+
+        return {
+          success: true,
+          message: statusMessages.join('\n'),
+          messageType: hasWarnings ? 'warning' : 'success',
+        }
+      } catch (error) {
+        let errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        const jsonMatch = errorMessage.match(/API Error \d+: (.+)/)
+        if (jsonMatch?.[1]) {
+          try {
+            const parsed = JSON.parse(jsonMatch[1])
+            if (parsed.detail) {
+              errorMessage = parsed.detail
+            }
+          } catch {
+            // keep original
+          }
+        }
+        return {
+          success: false,
+          message: errorMessage,
+          messageType: 'error',
+        }
+      }
+    },
+    onSuccess: result => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.nautobot.all })
+        toast({
+          title: result.messageType === 'warning' ? 'Partial Success' : 'Success',
+          description: result.message,
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: result.message,
+          variant: 'destructive',
+        })
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+
+  const deleteDevice = useMutation({
+    mutationFn: async (deviceId: string): Promise<{ success: boolean; message: string }> => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await apiCall<any>(`nautobot/devices/${deviceId}`, {
+          method: 'DELETE',
+        })
+        return {
+          success: true,
+          message: response.message || 'Device deleted from Nautobot',
+        }
+      } catch (error) {
+        let errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        const jsonMatch = errorMessage.match(/API Error \d+: (.+)/)
+        if (jsonMatch?.[1]) {
+          try {
+            const parsed = JSON.parse(jsonMatch[1])
+            if (parsed.detail) {
+              errorMessage = parsed.detail
+            }
+          } catch {
+            // keep original
+          }
+        }
+        return { success: false, message: errorMessage }
+      }
+    },
+    onSuccess: result => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.nautobot.all })
+      }
+    },
+  })
+
+  return { createDevice, updateDevice, deleteDevice }
 }

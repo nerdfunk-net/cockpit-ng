@@ -143,6 +143,9 @@ class InterfaceUpdateResult(BaseModel):
     interfaces_failed: int = Field(
         default=0, description="Number of interface operations that failed"
     )
+    interfaces_deleted: int = Field(
+        default=0, description="Number of interfaces deleted during sync"
+    )
     ip_addresses_created: int = Field(
         default=0, description="Number of IP addresses created"
     )

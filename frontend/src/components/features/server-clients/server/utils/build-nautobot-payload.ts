@@ -64,6 +64,69 @@ export function buildVmPayload(
   return payload
 }
 
+/** VM update payload (no hostname; cluster from server row). */
+export type VmUpdatePayload = Omit<VMFormValues, 'name' | 'clusterGroup'> & {
+  sync_interfaces: boolean
+}
+
+export function buildVmUpdatePayload(
+  server: ServerResponse,
+  defaults: DefaultsFields,
+  softwareVersionId?: string
+): VmUpdatePayload {
+  const clusterId = server.cluster?.id
+  if (!clusterId) {
+    throw new Error('Cluster is not set on this server.')
+  }
+  const full = buildVmPayload(server, defaults, clusterId, softwareVersionId)
+  const { name: _name, clusterGroup: _clusterGroup, ...rest } = full
+  return {
+    ...rest,
+    sync_interfaces: true,
+  }
+}
+
+/** Device update payload (no hostname or device_type). */
+export type DeviceUpdatePayload = {
+  role?: string
+  status?: string
+  location?: string
+  platform?: string
+  software_version?: string
+  interfaces: DeviceSubmissionData['interfaces']
+  add_prefix: boolean
+  default_prefix_length: string
+  sync_interfaces: boolean
+}
+
+export function buildDeviceUpdatePayload(
+  server: ServerResponse,
+  defaults: DefaultsFields,
+  interfaceType: string,
+  softwareVersionId?: string
+): DeviceUpdatePayload {
+  const locationId = server.location?.id ?? defaults.location
+  const interfaces = filterValidNautobotInterfaces(
+    mapServerInterfacesForDevice({
+      server,
+      defaults,
+      interfaceType,
+    })
+  )
+
+  return {
+    role: defaults.device_role,
+    status: defaults.device_status,
+    location: locationId,
+    platform: resolvePlatform(defaults.platform),
+    software_version: softwareVersionId,
+    interfaces,
+    add_prefix: true,
+    default_prefix_length: '/24',
+    sync_interfaces: true,
+  }
+}
+
 export function buildDevicePayload(
   server: ServerResponse,
   defaults: DefaultsFields,

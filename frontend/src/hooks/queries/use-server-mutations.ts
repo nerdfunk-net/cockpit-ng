@@ -4,6 +4,7 @@ import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
 import type {
+  AnsibleCredentials,
   SelectedInterface,
   ServerCluster,
   ServerLocation,
@@ -26,6 +27,7 @@ interface CreateServerPayload {
   nautobot_uuid?: string | null
   is_virtual?: boolean | null
   ansible_facts?: Record<string, unknown> | null
+  ansible_credentials?: AnsibleCredentials | null
 }
 
 interface UpdateServerPayload {
@@ -44,6 +46,7 @@ interface UpdateServerPayload {
   nautobot_uuid?: string | null
   is_virtual?: boolean | null
   ansible_facts?: Record<string, unknown> | null
+  ansible_credentials?: AnsibleCredentials | null
   selected_interfaces?: SelectedInterface[] | null
   cluster?: ServerCluster | null
 }
@@ -94,7 +97,6 @@ export function useServerMutations() {
       apiCall<void>(`servers/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.servers.list() })
-      toast({ title: 'Server removed', description: 'The server was deleted.' })
     },
     onError: (error: Error) => {
       toast({

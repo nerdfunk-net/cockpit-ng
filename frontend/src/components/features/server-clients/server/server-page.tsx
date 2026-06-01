@@ -5,7 +5,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 
 import { useServersQuery } from '@/hooks/queries/use-servers-query'
-import { useServerMutations } from '@/hooks/queries/use-server-mutations'
 import { AnsibleFactsModal } from './dialogs/ansible-facts-modal'
 import { AddServerDialog } from './dialogs/add-server-dialog'
 import { ServerDetail } from './components/server-detail'
@@ -22,7 +21,6 @@ export function ServerPage() {
   const [addOpen, setAddOpen] = useState(false)
 
   const { data, isLoading, error } = useServersQuery()
-  const { deleteServer } = useServerMutations()
   const servers = useMemo<ServerResponse[]>(() => data?.servers ?? [], [data])
 
   const selectedServer = useMemo(
@@ -55,12 +53,9 @@ export function ServerPage() {
     setFactsOpen(true)
   }, [])
 
-  const handleRemove = useCallback(() => {
-    if (selectedId === null) return
-    deleteServer.mutate(selectedId, {
-      onSuccess: () => setSelectedId(null),
-    })
-  }, [selectedId, deleteServer])
+  const handleServerRemoved = useCallback(() => {
+    setSelectedId(null)
+  }, [])
 
   const handleServerAdded = useCallback((server: ServerResponse) => {
     setSelectedId(server.id)
@@ -128,7 +123,7 @@ export function ServerPage() {
                 <ServerDetail
                   server={selectedServer}
                   onShowFacts={handleShowFacts}
-                  onRemove={handleRemove}
+                  onRemoved={handleServerRemoved}
                 />
               ) : (
                 <div className="text-center py-16 text-gray-400">

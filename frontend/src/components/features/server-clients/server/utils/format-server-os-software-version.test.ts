@@ -26,6 +26,7 @@ function server(overrides: Partial<ServerResponse> = EMPTY_OVERRIDES): ServerRes
     nautobot_uuid: null,
     is_virtual: true,
     ansible_facts: null,
+    ansible_credentials: null,
     selected_interfaces: null,
     created_at: null,
     updated_at: null,

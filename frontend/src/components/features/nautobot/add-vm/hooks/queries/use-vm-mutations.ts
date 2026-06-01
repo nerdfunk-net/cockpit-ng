@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
+import type { VmUpdatePayload } from '@/components/features/server-clients/server/utils/build-nautobot-payload'
 import type { VMFormValues } from '../use-vm-form'
 
 interface VMCreationResult {
@@ -152,5 +153,99 @@ export function useVMMutations() {
     },
   })
 
-  return { createVM }
+  const updateVM = useMutation({
+    mutationFn: async ({
+      vmId,
+      data,
+    }: {
+      vmId: string
+      data: VmUpdatePayload
+    }): Promise<VMCreationResult> => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await apiCall<any>(
+          `nautobot/virtualization/virtual-machines/${vmId}`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+          }
+        )
+
+        const statusMessages: string[] = [response.message || 'Virtual machine updated']
+        let hasWarnings = false
+
+        if (response.warnings?.length) {
+          response.warnings.forEach((warning: string) => {
+            statusMessages.push(`⚠ ${warning}`)
+          })
+          hasWarnings = true
+        }
+
+        return {
+          success: true,
+          message: statusMessages.join('\n'),
+          messageType: hasWarnings ? 'warning' : 'success',
+          vmId: response.virtual_machine?.id ?? vmId,
+          warnings: response.warnings,
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: `Failed to update VM: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          messageType: 'error',
+        }
+      }
+    },
+    onSuccess: result => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.nautobot.all })
+        toast({
+          title: result.messageType === 'warning' ? 'Partial Success' : 'Success',
+          description: result.message,
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: result.message,
+          variant: 'destructive',
+        })
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+
+  const deleteVM = useMutation({
+    mutationFn: async (vmId: string): Promise<{ success: boolean; message: string }> => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await apiCall<any>(
+          `nautobot/virtualization/virtual-machines/${vmId}`,
+          { method: 'DELETE' }
+        )
+        return {
+          success: true,
+          message: response.message || 'Virtual machine deleted from Nautobot',
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message:
+            error instanceof Error ? error.message : 'Failed to delete virtual machine',
+        }
+      }
+    },
+    onSuccess: result => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.nautobot.all })
+      }
+    },
+  })
+
+  return { createVM, updateVM, deleteVM }
 }

@@ -26,7 +26,8 @@ import { useToast } from '@/hooks/use-toast'
 import { useSshCredentialsQuery, type SshCredential } from '@/hooks/queries/use-ssh-credentials-query'
 import { useServerMutations } from '@/hooks/queries/use-server-mutations'
 import type { Agent } from '@/components/features/settings/connections/agents/types'
-import type { ServerResponse } from '../types'
+import { parseAnsibleFacts } from '../utils/parse-ansible-facts'
+import type { AnsibleCredentials, ServerResponse } from '../types'
 
 const EMPTY_AGENTS: Agent[] = []
 
@@ -49,45 +50,6 @@ interface CredentialPasswordResponse {
 }
 
 const EMPTY_CREDENTIALS: SshCredential[] = []
-
-const VIRTUAL_FS = new Set([
-  'tmpfs', 'proc', 'sysfs', 'devtmpfs', 'cgroup', 'cgroup2',
-  'devpts', 'hugetlbfs', 'mqueue', 'securityfs', 'fusectl', 'pstore',
-])
-
-function countRealMounts(mounts: Array<{ device?: string; fstype?: string }>): number {
-  return mounts.filter(
-    (m) => m.device?.startsWith('/dev/') && !VIRTUAL_FS.has(m.fstype ?? '')
-  ).length
-}
-
-function parseAnsibleFacts(output: unknown) {
-  const raw = output as Record<string, unknown> | null
-  const rawFacts = raw?.facts as Record<string, unknown> | undefined
-  const f = rawFacts?.ansible_facts as Record<string, unknown> | undefined ?? {}
-
-  const defaultIpv4 = f.default_ipv4 as Record<string, string> | undefined
-  const mounts = (f.mounts as Array<{ device?: string; fstype?: string }>) ?? []
-  const virtualizationRole = rawFacts?.ansible_virtualization_role as string | undefined
-
-  return {
-    hostname: (f.fqdn as string) ?? (f.hostname as string) ?? '',
-    os_family: (f.os_family as string) ?? '',
-    processor_count: (f.processor_count as number) ?? null,
-    memtotal_mb: (f.memtotal_mb as number) ?? null,
-    architecture: (f.architecture as string) ?? '',
-    distribution_release: (f.distribution_release as string) ?? '',
-    distribution_version: (f.distribution_version as string) ?? '',
-    primary_ipv4: defaultIpv4?.address ?? '',
-    primary_interface: defaultIpv4?.interface ?? '',
-    disk_count: countRealMounts(mounts),
-    is_virtual: virtualizationRole === 'guest',
-    ansible_facts: rawFacts ?? null,
-    location: null,
-    contact: null,
-    nautobot_uuid: null,
-  }
-}
 
 export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServerDialogProps) {
   const { apiCall } = useApi()
@@ -187,7 +149,22 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
         return
       }
 
-      const serverData = parseAnsibleFacts(result.output)
+      const target = hostname.trim()
+      const ansibleCredentials: AnsibleCredentials = {
+        target,
+        agent_id: selectedAgentId,
+        use_sshkey: useSSHKey,
+        ansible_user: ansibleUser,
+        credential_id: useSSHKey ? null : selectedCredential?.id ?? null,
+      }
+
+      const serverData = {
+        ...parseAnsibleFacts(result.output),
+        location: null,
+        contact: null,
+        nautobot_uuid: null,
+        ansible_credentials: ansibleCredentials,
+      }
       const saved = await createServer.mutateAsync(serverData)
 
       toast({ title: 'Server added', description: saved.hostname })

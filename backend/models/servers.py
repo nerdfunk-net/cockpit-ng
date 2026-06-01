@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic.networks import IPvAnyAddress
 
 _ANSIBLE_FACTS_MAX_BYTES = 512 * 1024  # 512 KB
@@ -29,6 +29,21 @@ class ServerCluster(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class AnsibleCredentials(BaseModel):
+    """Parameters used to gather Ansible facts (passwords are not stored)."""
+
+    target: str = Field(..., min_length=1, description="Hostname or IP used for SSH")
+    agent_id: str = Field(..., min_length=1, description="Cockpit agent ID")
+    use_sshkey: bool = Field(..., description="True when SSH key auth was used")
+    ansible_user: str = Field(..., min_length=1, description="SSH username")
+    credential_id: Optional[int] = Field(
+        None,
+        description="Login credential ID when password auth was used (password fetched at runtime)",
+    )
+
+    model_config = {"from_attributes": True}
+
+
 class ServerResponse(BaseModel):
     id: int
     hostname: str
@@ -47,6 +62,7 @@ class ServerResponse(BaseModel):
     nautobot_uuid: Optional[str] = None
     is_virtual: bool = False
     ansible_facts: Optional[Dict[str, Any]] = None
+    ansible_credentials: Optional[AnsibleCredentials] = None
     selected_interfaces: Optional[List[Dict[str, Any]]] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -70,6 +86,18 @@ class CreateServerRequest(BaseModel):
     nautobot_uuid: Optional[str] = Field(None, max_length=36)
     is_virtual: Optional[bool] = None
     ansible_facts: Optional[Dict[str, Any]] = None
+    ansible_credentials: Optional[AnsibleCredentials] = None
+
+    @model_validator(mode="after")
+    def validate_ansible_credentials_auth(self) -> "CreateServerRequest":
+        creds = self.ansible_credentials
+        if creds is None:
+            return self
+        if creds.use_sshkey and creds.credential_id is not None:
+            raise ValueError("credential_id must not be set when use_sshkey is true")
+        if not creds.use_sshkey and creds.credential_id is None:
+            raise ValueError("credential_id is required when use_sshkey is false")
+        return self
 
     @field_validator("primary_ipv4", mode="before")
     @classmethod
@@ -120,6 +148,7 @@ class UpdateServerRequest(BaseModel):
     nautobot_uuid: Optional[str] = Field(None, max_length=36)
     is_virtual: Optional[bool] = None
     ansible_facts: Optional[Dict[str, Any]] = None
+    ansible_credentials: Optional[AnsibleCredentials] = None
     selected_interfaces: Optional[List[Dict[str, Any]]] = None
     cluster: Optional[ServerCluster] = None
 

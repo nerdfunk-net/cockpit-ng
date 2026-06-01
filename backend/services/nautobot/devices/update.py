@@ -57,6 +57,7 @@ class DeviceUpdateService:
         default_prefix_length: str = "/24",
         matching_strategy: str = "exact",
         rack_location: Optional[str] = None,
+        sync_interfaces: bool = False,
     ) -> Dict[str, Any]:
         """
         Update a single device.
@@ -235,6 +236,7 @@ class DeviceUpdateService:
                         device_id=device_id,
                         interfaces=interfaces,
                         add_prefixes_automatically=add_prefix,
+                        sync_interfaces=sync_interfaces,
                     )
                 )
                 interfaces_created = interface_result.interfaces_created

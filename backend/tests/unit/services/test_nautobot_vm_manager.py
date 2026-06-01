@@ -171,6 +171,112 @@ async def test_create_virtual_interface_builds_vlan_payload() -> None:
 @pytest.mark.asyncio
 @pytest.mark.unit
 @pytest.mark.nautobot
+async def test_update_virtual_machine_patches_fields() -> None:
+    """VM update PATCHes only provided fields."""
+    mock_nb = MagicMock()
+    mock_nb.rest_request = AsyncMock(return_value={"id": VM_ID})
+    manager = VirtualMachineManager(mock_nb)
+
+    await manager.update_virtual_machine(
+        VM_ID,
+        cluster_id=CLUSTER_ID,
+        vcpus=8,
+        memory=16384,
+    )
+
+    mock_nb.rest_request.assert_awaited_once_with(
+        endpoint=f"virtualization/virtual-machines/{VM_ID}/",
+        method="PATCH",
+        data={
+            "cluster": {"id": CLUSTER_ID},
+            "vcpus": 8,
+            "memory": 16384,
+        },
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.nautobot
+async def test_list_virtual_interfaces() -> None:
+    """List virtual interfaces filters by VM id."""
+    mock_nb = MagicMock()
+    mock_nb.rest_request = AsyncMock(
+        return_value={"results": [{"id": VIF_ID, "name": "eth0"}]}
+    )
+    manager = VirtualMachineManager(mock_nb)
+
+    results = await manager.list_virtual_interfaces(VM_ID)
+
+    assert len(results) == 1
+    mock_nb.rest_request.assert_awaited_once_with(
+        endpoint=f"virtualization/interfaces/?virtual_machine_id={VM_ID}&limit=1000",
+        method="GET",
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.nautobot
+async def test_delete_virtual_interface_cleans_ips_first() -> None:
+    """Deleting a VM interface removes IP assignments then DELETEs interface."""
+    mock_nb = MagicMock()
+    mock_nb.rest_request = AsyncMock(
+        side_effect=[
+            {"count": 1, "results": [{"id": "assign-1"}]},
+            None,
+            None,
+        ]
+    )
+    manager = VirtualMachineManager(mock_nb)
+
+    await manager.delete_virtual_interface(VIF_ID)
+
+    assert mock_nb.rest_request.await_args_list[0] == call(
+        endpoint=f"ipam/ip-address-to-interface/?vm_interface={VIF_ID}&limit=1000",
+        method="GET",
+    )
+    assert mock_nb.rest_request.await_args_list[1] == call(
+        endpoint="ipam/ip-address-to-interface/assign-1/",
+        method="DELETE",
+    )
+    assert mock_nb.rest_request.await_args_list[2] == call(
+        endpoint=f"virtualization/interfaces/{VIF_ID}/",
+        method="DELETE",
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.nautobot
+async def test_delete_virtual_machine_deletes_interfaces_then_vm() -> None:
+    """VM deletion removes interfaces first, then the VM."""
+    mock_nb = MagicMock()
+    mock_nb.rest_request = AsyncMock(
+        side_effect=[
+            {"results": [{"id": VIF_ID, "name": "eth0"}]},
+            {"count": 0, "results": []},
+            None,
+            None,
+        ]
+    )
+    manager = VirtualMachineManager(mock_nb)
+
+    await manager.delete_virtual_machine(VM_ID)
+
+    assert mock_nb.rest_request.await_args_list[0] == call(
+        endpoint=f"virtualization/interfaces/?virtual_machine_id={VM_ID}&limit=1000",
+        method="GET",
+    )
+    assert mock_nb.rest_request.await_args_list[-1] == call(
+        endpoint=f"virtualization/virtual-machines/{VM_ID}/",
+        method="DELETE",
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.nautobot
 async def test_create_virtual_machine_wraps_nautobot_api_error() -> None:
     """Nautobot API errors are wrapped with VM context."""
     mock_nb = MagicMock()

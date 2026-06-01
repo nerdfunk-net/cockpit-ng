@@ -193,6 +193,8 @@ class UpdateDeviceRequest(BaseModel):
     default_prefix_length: str = "/24"
     # Interfaces array
     interfaces: Optional[list[InterfaceData]] = None
+    # When True, delete device interfaces not present in the interfaces list
+    sync_interfaces: bool = False
 
 
 # Virtualization models
@@ -286,6 +288,46 @@ class AddVirtualMachineRequest(BaseModel):
         "interfaceName",
         "primaryIpv4",
         "namespace",
+        mode="before",
+    )
+    @classmethod
+    def convert_empty_string_to_none(cls, v: Optional[str]) -> Optional[str]:
+        """Convert empty strings to None for optional string fields."""
+        if v is None or (isinstance(v, str) and v.strip() == ""):
+            return None
+        return v
+
+
+class UpdateVirtualMachineRequest(BaseModel):
+    """Request model for updating an existing virtual machine in Nautobot.
+
+    All fields are optional; only provided fields are updated.
+    VM identity comes from the path parameter (not ``name``).
+    """
+
+    status: Optional[str] = None  # Status UUID
+    cluster: Optional[str] = None  # Cluster UUID
+    role: Optional[str] = None  # Role UUID
+    clusterGroup: Optional[str] = None  # Informational, not sent to Nautobot
+    platform: Optional[str] = None  # Platform UUID
+    vcpus: Optional[int] = None
+    memory: Optional[int] = None  # Memory in MB
+    disk: Optional[int] = None  # Disk size in GB
+    softwareVersion: Optional[str] = None  # Software version UUID
+    softwareImageFile: Optional[str] = None  # Software image file UUID
+    tags: Optional[list[str]] = None  # List of tag UUIDs
+    customFieldValues: Optional[dict[str, str]] = None
+    interfaces: Optional[list[InterfaceData]] = None
+    sync_interfaces: bool = True
+
+    @field_validator(
+        "role",
+        "clusterGroup",
+        "platform",
+        "softwareVersion",
+        "softwareImageFile",
+        "status",
+        "cluster",
         mode="before",
     )
     @classmethod
