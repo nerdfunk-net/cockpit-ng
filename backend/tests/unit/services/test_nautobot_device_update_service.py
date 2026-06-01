@@ -185,6 +185,7 @@ async def test_update_device_processes_interfaces_without_device_field_updates()
             {"name": "Loopback0", "type": "virtual", "ip_address": "10.0.0.2/32"}
         ],
         add_prefixes_automatically=True,
+        sync_interfaces=False,
     )
 
 

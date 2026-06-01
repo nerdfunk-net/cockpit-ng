@@ -4,14 +4,17 @@
 
 This directory contains the test suite for the Cockpit-NG backend application. All tests use **comprehensive mocking** to eliminate dependencies on external services (Nautobot, CheckMK), enabling fast, reliable test execution in any environment.
 
-**Current Status: ✅ 167 passing tests, 0 failures, 0 skipped**
+**Current Status: ✅ Full suite: **1,387** tests collected (`pytest tests/`). **1,158** are marked `unit` and run offline with mocks when integration env vars are unset.
+
+**Recently added**: Server inventory (SERVER & CLIENTS / Server UI) — **47** unit tests across service, Pydantic models, and API router.
 
 ## Test Statistics
 
-- **Total Tests**: 167
-- **Execution Time**: ~0.7 seconds
-- **Pass Rate**: 100%
-- **External Dependencies**: None (all mocked)
+- **Total Tests**: 1,387 (1,158 `unit`, remainder `integration` / `postgres` / other markers)
+- **Server inventory tests**: 47 (`test_servers_service`, `test_servers_models`, `test_servers_router`)
+- **Execution Time**: Unit-only runs typically complete in seconds (full suite with coverage is longer)
+- **Pass Rate**: 100% when run in a correctly configured environment
+- **External Dependencies**: None for unit tests (all mocked or dependency-injected fakes)
 
 ## Test Files
 
@@ -385,6 +388,68 @@ def _downtime_request(hostname: str, comment: str = "Maintenance") -> SimpleName
 
 ---
 
+### 6. Server Inventory Tests (47 tests)
+
+Offline unit tests for the **Server** feature (`/api/servers`), used by the frontend Server page (`server-page.tsx`). Ansible fact gathering and Nautobot device/VM sync use other APIs; these tests cover the Cockpit server registry (PostgreSQL `servers` table).
+
+| File | Tests | Layer |
+|------|-------|--------|
+| `unit/services/test_servers_service.py` | 18 | `ServersService` |
+| `unit/models/test_servers_models.py` | 14 | Pydantic request/response schemas |
+| `unit/core/test_servers_router.py` | 15 | FastAPI `/api/servers` routes |
+
+#### `test_servers_service.py` (18 tests)
+
+**What is tested:**
+- Repository delegation: `list_summaries`, `count_all`, `get_by_id`, `get_all`, `delete`
+- **create** — field passthrough; `is_virtual` inferred from `ansible_facts.ansible_virtualization_role == "guest"` when omitted; explicit `is_virtual` wins over facts
+- **update** — `exclude_unset` fields only; not-found returns `None`
+- **get_grouped** — group by `location` (JSON `name`), scalar fields (`contact`, `distribution_release`), `Uncategorized`, sorted keys, invalid `group_by` raises `ValueError`
+
+**How it is tested:**
+- Injected `MagicMock` repository (same pattern as `test_client_data_service.py`)
+- `SimpleNamespace` stand-ins for `Server` ORM rows
+
+```python
+def _make_service() -> tuple[ServersService, MagicMock]:
+    mock_repo = MagicMock()
+    return ServersService(repository=mock_repo), mock_repo
+```
+
+#### `test_servers_models.py` (14 tests)
+
+**What is tested:**
+- **CreateServerRequest** — hostname, `primary_ipv4`, `nautobot_uuid`, `ansible_facts` size cap (512 KB), `AnsibleCredentials` (SSH key vs password + `credential_id` rules)
+- **UpdateServerRequest** — partial updates, `cluster`, `selected_interfaces`
+- **ListServersResponse** — `servers`, `total`, `total_all`
+
+#### `test_servers_router.py` (15 tests)
+
+**What is tested:**
+- **GET** `/api/servers` — summaries, `?q=` search, `total` / `total_all`, deprecated `group_by` validation (400), sanitized 5xx
+- **GET** `/api/servers/{id}` — 200 with `ansible_facts`, 404
+- **POST** `/api/servers` — 201, 422 validation (invalid IP)
+- **PUT** `/api/servers/{id}` — 200, 404
+- **DELETE** `/api/servers/{id}` — 204, 404
+- **403** when RBAC denies `servers:read`
+
+**How it is tested:**
+- `TestClient` + `app.dependency_overrides` for `verify_token` and `get_servers_service`
+- `patch("service_factory.build_rbac_service")` for permission checks (same pattern as `test_router_5xx_sanitization.py`)
+
+```bash
+# Run server inventory tests only
+python -m pytest tests/unit/services/test_servers_service.py \
+  tests/unit/models/test_servers_models.py \
+  tests/unit/core/test_servers_router.py -v -m unit
+```
+
+**Not covered here (by design):**
+- `ServersRepository.list_summaries` SQL / `JSONB` — requires PostgreSQL (`TEST_DATABASE_URL`); SQLite cannot compile `JSONB` columns
+- Nautobot add/update/delete and Cockpit Agent `setup` — separate routers and frontend utilities (`parse-ansible-facts.ts` has its own Vitest tests)
+
+---
+
 ### Fixtures (`conftest.py`)
 
 The test suite uses centralized fixtures for consistent test setup:
@@ -489,6 +554,13 @@ python -m pytest tests/unit/services/test_checkmk_*.py -v -m "unit"
 python -m pytest tests/ -v
 ```
 
+### Run Server Inventory Tests
+```bash
+python -m pytest tests/unit/services/test_servers_service.py \
+  tests/unit/models/test_servers_models.py \
+  tests/unit/core/test_servers_router.py -v -m unit
+```
+
 ### Run Specific Test File
 ```bash
 python -m pytest tests/test_device_common_service.py -v
@@ -530,6 +602,11 @@ tests/
 │   ├── __init__.py                     # Exports FakeCheckMKClient + constants
 │   └── fake_checkmk_client.py          # Stateful in-memory CheckMK simulation
 ├── unit/
+│   ├── core/
+│   │   ├── test_router_5xx_sanitization.py
+│   │   └── test_servers_router.py          # Server API routes (15 tests)
+│   ├── models/
+│   │   └── test_servers_models.py          # Server Pydantic schemas (14 tests)
 │   └── services/
 │       ├── test_ansible_inventory_service.py
 │       ├── test_checkmk_activation_service.py
@@ -539,7 +616,9 @@ tests/
 │       ├── test_checkmk_host_service.py
 │       ├── test_checkmk_monitoring_service.py
 │       ├── test_checkmk_problems_service.py
-│       └── test_checkmk_tag_group_service.py
+│       ├── test_checkmk_tag_group_service.py
+│       ├── test_servers_service.py         # ServersService (18 tests)
+│       └── ...                             # additional service test modules
 ├── integration/
 │   └── workflows/
 │       └── test_nb2cmk_sync_workflow.py
@@ -809,18 +888,20 @@ pytest -m "not integration"
 ## Future Enhancements
 
 Potential areas for expansion:
-1. Additional repository layer tests (with in-memory database)
-2. More edge case coverage for device creation workflows
-3. Performance testing for bulk operations
-4. Contract testing for external API integrations
-5. Mutation testing to verify test quality
-6. ✅ **COMPLETED**: Integration tests with real Nautobot instance
+1. `ServersRepository` PostgreSQL integration tests (`list_summaries` search escaping, `JSONB` columns) when `TEST_DATABASE_URL` is set
+2. Additional repository layer tests (with in-memory database)
+3. More edge case coverage for device creation workflows
+4. Performance testing for bulk operations
+5. Contract testing for external API integrations
+6. Mutation testing to verify test quality
+7. ✅ **COMPLETED**: Integration tests with real Nautobot instance
 
 ---
 
-**Last Updated**: 2026-05-10
-**Test Suite Version**: 1.4
-**Total Tests**: 167 passing unit tests + 32 integration tests (26 ansible-inventory + 6 device operations)
+**Last Updated**: 2026-06-01
+**Test Suite Version**: 1.5
+**Total Tests**: 1,387 collected (1,158 `unit`) + integration suites (ansible-inventory baseline, device operations, repository PG tests when configured)
+**Server inventory**: 47 unit tests (`test_servers_service`, `test_servers_models`, `test_servers_router`)
 **Integration Test Suites**:
 - Ansible Inventory (26 tests) - Baseline data validation with logical operations
 - Device Operations (6 tests) - Add Device and Bulk Edit workflows
