@@ -1,7 +1,7 @@
 'use client'
 
 import { Loader2, Plus, Server } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 
 import { useServersQuery } from '@/hooks/queries/use-servers-query'
@@ -15,6 +15,7 @@ const EMPTY_SET = new Set<string>()
 
 export function ServerPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [nameFilter, setNameFilter] = useState('')
   const [groupBy, setGroupBy] = useState<GroupByField>('none')
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(EMPTY_SET)
   const [factsOpen, setFactsOpen] = useState(false)
@@ -23,10 +24,23 @@ export function ServerPage() {
   const { data, isLoading, error } = useServersQuery()
   const servers = useMemo<ServerResponse[]>(() => data?.servers ?? [], [data])
 
+  const filteredServers = useMemo(() => {
+    const query = nameFilter.trim().toLowerCase()
+    if (!query) return servers
+    return servers.filter((s) => s.hostname.toLowerCase().includes(query))
+  }, [servers, nameFilter])
+
   const selectedServer = useMemo(
     () => servers.find((s) => s.id === selectedId) ?? null,
     [servers, selectedId]
   )
+
+  useEffect(() => {
+    if (selectedId == null) return
+    if (!filteredServers.some((s) => s.id === selectedId)) {
+      setSelectedId(null)
+    }
+  }, [filteredServers, selectedId])
 
   const handleGroupByChange = useCallback((value: GroupByField) => {
     setGroupBy(value)
@@ -90,7 +104,9 @@ export function ServerPage() {
             <span className="text-sm font-medium">Server Inventory</span>
           </div>
           <div className="text-xs text-blue-100">
-            {servers.length} server{servers.length !== 1 ? 's' : ''}
+            {nameFilter.trim()
+              ? `${filteredServers.length} of ${servers.length} servers`
+              : `${servers.length} server${servers.length !== 1 ? 's' : ''}`}
           </div>
         </div>
 
@@ -107,7 +123,9 @@ export function ServerPage() {
             {/* Left tree panel */}
             <div className="w-64 border-r border-gray-200 shrink-0 bg-gray-50">
               <ServerTree
-                servers={servers}
+                servers={filteredServers}
+                nameFilter={nameFilter}
+                onNameFilterChange={setNameFilter}
                 groupBy={groupBy}
                 selectedId={selectedId}
                 expandedGroups={expandedGroups}

@@ -1,8 +1,9 @@
 'use client'
 
-import { ChevronDown, ChevronRight, FolderOpen, Server } from 'lucide-react'
+import { ChevronDown, ChevronRight, FolderOpen, Search, Server } from 'lucide-react'
 import { useMemo } from 'react'
 
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -14,6 +15,8 @@ import type { GroupByField, ServerResponse } from '../types'
 
 interface ServerTreeProps {
   servers: ServerResponse[]
+  nameFilter: string
+  onNameFilterChange: (value: string) => void
   groupBy: GroupByField
   selectedId: number | null
   expandedGroups: Set<string>
@@ -48,6 +51,8 @@ function getGroupKey(server: ServerResponse, groupBy: GroupByField): string {
 
 export function ServerTree({
   servers,
+  nameFilter,
+  onNameFilterChange,
   groupBy,
   selectedId,
   expandedGroups,
@@ -55,6 +60,8 @@ export function ServerTree({
   onSelectServer,
   onToggleGroup,
 }: ServerTreeProps) {
+  const isFiltering = nameFilter.trim().length > 0
+
   const groups = useMemo(() => {
     if (groupBy === 'none') {
       return [{ name: '/', servers }]
@@ -72,8 +79,18 @@ export function ServerTree({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Group-by selector */}
-      <div className="p-3 border-b border-gray-200">
+      <div className="p-3 border-b border-gray-200 space-y-2">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <Input
+            type="search"
+            placeholder="Search by name…"
+            value={nameFilter}
+            onChange={(e) => onNameFilterChange(e.target.value)}
+            className="pl-7 h-8 text-xs"
+            aria-label="Filter servers by name"
+          />
+        </div>
         <Select value={groupBy} onValueChange={(v) => onGroupByChange(v as GroupByField)}>
           <SelectTrigger className="w-full h-8 text-xs">
             <SelectValue placeholder="Group by…" />
@@ -116,7 +133,7 @@ export function ServerTree({
               </button>
             )}
 
-            {(groupBy === 'none' || expandedGroups.has(group.name)) &&
+            {(groupBy === 'none' || expandedGroups.has(group.name) || isFiltering) &&
               group.servers.map((server) => (
                 <button
                   key={server.id}
@@ -137,7 +154,9 @@ export function ServerTree({
         ))}
 
         {servers.length === 0 && (
-          <p className="px-4 py-6 text-xs text-gray-400 text-center">No servers found</p>
+          <p className="px-4 py-6 text-xs text-gray-400 text-center">
+            {isFiltering ? 'No servers match your search' : 'No servers found'}
+          </p>
         )}
       </div>
     </div>
