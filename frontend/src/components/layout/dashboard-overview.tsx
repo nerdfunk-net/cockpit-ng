@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/hooks/use-api'
@@ -61,28 +61,6 @@ export default function DashboardOverview() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  useEffect(() => {
-    loadDashboardData()
-    loadCheckmkData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const loadCheckmkData = async () => {
-    try {
-      setCheckmkLoading(true)
-      setCheckmkError(null)
-      const data = await apiCall<CheckMKStats>('checkmk/stats')
-      setCheckmkStats(data)
-    } catch (error) {
-      console.error('Error fetching CheckMK stats:', error)
-      setCheckmkError(
-        error instanceof Error ? error.message : 'Failed to load CheckMK stats'
-      )
-    } finally {
-      setCheckmkLoading(false)
-    }
-  }
-
   const getCachedStats = (): DashboardStats | null => {
     try {
       const cached = localStorage.getItem(CACHE_KEY)
@@ -122,31 +100,54 @@ export default function DashboardOverview() {
     }
   }
 
-  const loadDashboardData = async (force = false) => {
-    // Check cache first unless forced refresh
-    if (!force) {
-      const cachedStats = getCachedStats()
-      if (cachedStats) {
-        setStats(cachedStats)
-        setLoadingState('success')
-        return
-      }
-    }
-
-    setLoadingState('loading')
-    setCacheInfo('🔄 Loading fresh data...')
-
+  const loadCheckmkData = useCallback(async () => {
     try {
-      const data = await apiCall<DashboardStats>('nautobot/stats')
-      setStats(data)
-      cacheStats(data)
-      setLoadingState('success')
+      setCheckmkLoading(true)
+      setCheckmkError(null)
+      const data = await apiCall<CheckMKStats>('checkmk/stats')
+      setCheckmkStats(data)
     } catch (error) {
-      console.error('Failed to load dashboard stats:', error)
-      setLoadingState('error')
-      setCacheInfo('❌ Failed to load data')
+      console.error('Error fetching CheckMK stats:', error)
+      setCheckmkError(
+        error instanceof Error ? error.message : 'Failed to load CheckMK stats'
+      )
+    } finally {
+      setCheckmkLoading(false)
     }
-  }
+  }, [apiCall])
+
+  const loadDashboardData = useCallback(
+    async (force = false) => {
+      if (!force) {
+        const cachedStats = getCachedStats()
+        if (cachedStats) {
+          setStats(cachedStats)
+          setLoadingState('success')
+          return
+        }
+      }
+
+      setLoadingState('loading')
+      setCacheInfo('🔄 Loading fresh data...')
+
+      try {
+        const data = await apiCall<DashboardStats>('nautobot/stats')
+        setStats(data)
+        cacheStats(data)
+        setLoadingState('success')
+      } catch (error) {
+        console.error('Failed to load dashboard stats:', error)
+        setLoadingState('error')
+        setCacheInfo('❌ Failed to load data')
+      }
+    },
+    [apiCall]
+  )
+
+  useEffect(() => {
+    void loadDashboardData()
+    void loadCheckmkData()
+  }, [loadDashboardData, loadCheckmkData])
 
   const refreshData = () => {
     localStorage.removeItem(CACHE_KEY)

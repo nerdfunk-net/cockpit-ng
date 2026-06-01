@@ -3,8 +3,10 @@
 import { Loader2, Plus, Server } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
-
+import { useDebounce } from '@/hooks/use-debounce'
+import { useServerQuery } from '@/hooks/queries/use-server-query'
 import { useServersQuery } from '@/hooks/queries/use-servers-query'
+
 import { AnsibleFactsModal } from './dialogs/ansible-facts-modal'
 import { AddServerDialog } from './dialogs/add-server-dialog'
 import { ServerDetail } from './components/server-detail'
@@ -16,31 +18,32 @@ const EMPTY_SET = new Set<string>()
 export function ServerPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [nameFilter, setNameFilter] = useState('')
-  const [groupBy, setGroupBy] = useState<GroupByField>('none')
+  const [groupBy, setGroupBy] = useState<GroupByField>('location')
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(EMPTY_SET)
   const [factsOpen, setFactsOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
 
-  const { data, isLoading, error } = useServersQuery()
-  const servers = useMemo<ServerResponse[]>(() => data?.servers ?? [], [data])
+  const debouncedSearch = useDebounce(nameFilter, 300)
+  const { data, isLoading, isFetching, error } = useServersQuery({
+    search: debouncedSearch,
+  })
+  const servers = useMemo(() => data?.servers ?? [], [data])
+  const totalAll = data?.total_all ?? servers.length
+  const isSearchPending =
+    nameFilter.trim() !== debouncedSearch.trim() && nameFilter.trim().length > 0
 
-  const filteredServers = useMemo(() => {
-    const query = nameFilter.trim().toLowerCase()
-    if (!query) return servers
-    return servers.filter((s) => s.hostname.toLowerCase().includes(query))
-  }, [servers, nameFilter])
-
-  const selectedServer = useMemo(
-    () => servers.find((s) => s.id === selectedId) ?? null,
-    [servers, selectedId]
-  )
+  const {
+    data: selectedServer,
+    isLoading: isDetailLoading,
+    error: detailError,
+  } = useServerQuery(selectedId)
 
   useEffect(() => {
     if (selectedId == null) return
-    if (!filteredServers.some((s) => s.id === selectedId)) {
+    if (!servers.some((s) => s.id === selectedId)) {
       setSelectedId(null)
     }
-  }, [filteredServers, selectedId])
+  }, [servers, selectedId])
 
   const handleGroupByChange = useCallback((value: GroupByField) => {
     setGroupBy(value)
@@ -75,6 +78,14 @@ export function ServerPage() {
     setSelectedId(server.id)
   }, [])
 
+  const isFiltering = debouncedSearch.trim().length > 0
+  const headerCountLabel = useMemo(() => {
+    if (isFiltering) {
+      return `${data?.total ?? servers.length} of ${totalAll} servers`
+    }
+    return `${totalAll} server${totalAll !== 1 ? 's' : ''}`
+  }, [isFiltering, data?.total, servers.length, totalAll])
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -103,11 +114,7 @@ export function ServerPage() {
             <Server className="h-4 w-4" />
             <span className="text-sm font-medium">Server Inventory</span>
           </div>
-          <div className="text-xs text-blue-100">
-            {nameFilter.trim()
-              ? `${filteredServers.length} of ${servers.length} servers`
-              : `${servers.length} server${servers.length !== 1 ? 's' : ''}`}
-          </div>
+          <div className="text-xs text-blue-100">{headerCountLabel}</div>
         </div>
 
         {isLoading ? (
@@ -121,9 +128,10 @@ export function ServerPage() {
         ) : (
           <div className="flex min-h-[520px]">
             {/* Left tree panel */}
-            <div className="w-64 border-r border-gray-200 shrink-0 bg-gray-50">
+            <div className="w-64 border-r border-gray-200 shrink-0 bg-gray-50 flex flex-col min-h-[520px]">
               <ServerTree
-                servers={filteredServers}
+                servers={servers}
+                isSearching={isSearchPending || (isFetching && isFiltering)}
                 nameFilter={nameFilter}
                 onNameFilterChange={setNameFilter}
                 groupBy={groupBy}
@@ -137,7 +145,15 @@ export function ServerPage() {
 
             {/* Right detail panel */}
             <div className="flex-1 p-6 bg-gradient-to-b from-white to-gray-50 overflow-y-auto">
-              {selectedServer ? (
+              {selectedId != null && isDetailLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : detailError ? (
+                <div className="text-center py-16 text-sm text-red-600">
+                  Failed to load server details. Please try again.
+                </div>
+              ) : selectedServer ? (
                 <ServerDetail
                   server={selectedServer}
                   onShowFacts={handleShowFacts}
@@ -158,7 +174,7 @@ export function ServerPage() {
       <AnsibleFactsModal
         open={factsOpen}
         onOpenChange={setFactsOpen}
-        server={selectedServer}
+        server={selectedServer ?? null}
       />
 
       {/* Add Server Dialog */}

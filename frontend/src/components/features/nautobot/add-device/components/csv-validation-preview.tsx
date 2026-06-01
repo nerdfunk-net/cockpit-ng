@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -39,7 +39,15 @@ export function CSVValidationPreview({
   >([])
   const [isCheckingConflicts, setIsCheckingConflicts] = useState(false)
   const [ipConflicts, setIpConflicts] = useState<Set<string>>(new Set())
+  const [excludedDeviceNames, setExcludedDeviceNames] = useState<Set<string>>(
+    () => new Set()
+  )
   const { apiCall } = useApi()
+
+  const displayDevices = useMemo(
+    () => parseResult.devices.filter((d) => !excludedDeviceNames.has(d.name)),
+    [parseResult.devices, excludedDeviceNames]
+  )
 
   const errorCount = parseResult.validationErrors.filter(
     e => e.severity === 'error'
@@ -132,10 +140,9 @@ export function CSVValidationPreview({
       setIpCheckResults(assignedIPs)
 
       if (assignedIPs.length > 0) {
-        const devicesToRemove = new Set(assignedIPs.map(r => r.device))
-        parseResult.devices = parseResult.devices.filter(
-          d => !devicesToRemove.has(d.name)
-        )
+        setExcludedDeviceNames(new Set(assignedIPs.map((r) => r.device)))
+      } else {
+        setExcludedDeviceNames(new Set())
       }
     } catch (error) {
       console.error('Error checking IPs:', error)
@@ -204,7 +211,7 @@ export function CSVValidationPreview({
       {/* Summary Stats + Action Buttons */}
       <div className="flex items-center gap-4 text-sm">
         <span className="font-medium">
-          {parseResult.devices.length} device(s) found
+          {displayDevices.length} device(s) found
         </span>
         <span className="text-muted-foreground">
           from {parseResult.rowCount} row(s)
@@ -329,7 +336,7 @@ export function CSVValidationPreview({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {parseResult.devices.slice(0, 10).map(device => {
+            {displayDevices.slice(0, 10).map(device => {
               const hasConflict = ipConflicts.has(device.name)
               return (
                 <TableRow
@@ -365,9 +372,9 @@ export function CSVValidationPreview({
             })}
           </TableBody>
         </Table>
-        {parseResult.devices.length > 10 && (
+        {displayDevices.length > 10 && (
           <div className="px-4 py-2 text-xs text-muted-foreground bg-muted/50">
-            Showing 10 of {parseResult.devices.length} devices
+            Showing 10 of {displayDevices.length} devices
           </div>
         )}
       </div>

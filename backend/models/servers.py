@@ -44,6 +44,21 @@ class AnsibleCredentials(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ServerSummaryResponse(BaseModel):
+    """Lightweight server row for inventory lists (excludes large JSON blobs)."""
+
+    id: int
+    hostname: str
+    location: Optional[ServerLocation] = None
+    cluster: Optional[ServerCluster] = None
+    distribution_release: Optional[str] = None
+    distribution_version: Optional[str] = None
+    contact: Optional[str] = None
+    is_virtual: bool = False
+
+    model_config = {"from_attributes": True}
+
+
 class ServerResponse(BaseModel):
     id: int
     hostname: str
@@ -186,5 +201,6 @@ class UpdateServerRequest(BaseModel):
 
 
 class ListServersResponse(BaseModel):
-    servers: List[ServerResponse]
+    servers: List[ServerSummaryResponse]
     total: int
+    total_all: int

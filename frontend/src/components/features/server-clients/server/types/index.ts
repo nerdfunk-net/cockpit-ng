@@ -27,6 +27,18 @@ export interface AnsibleCredentials {
   credential_id?: number | null
 }
 
+/** Lightweight server row from GET /api/servers (no ansible_facts). */
+export interface ServerSummaryResponse {
+  id: number
+  hostname: string
+  location: ServerLocation | null
+  cluster: ServerCluster | null
+  distribution_release: string | null
+  distribution_version: string | null
+  contact: string | null
+  is_virtual: boolean
+}
+
 export interface ServerResponse {
   id: number
   hostname: string
@@ -52,8 +64,9 @@ export interface ServerResponse {
 }
 
 export interface ListServersResponse {
-  servers: ServerResponse[]
+  servers: ServerSummaryResponse[]
   total: number
+  total_all: number
 }
 
 export type GroupByField =
@@ -67,5 +80,5 @@ export type GroupByField =
 
 export interface ServerGroup {
   name: string
-  servers: ServerResponse[]
+  servers: ServerSummaryResponse[]
 }

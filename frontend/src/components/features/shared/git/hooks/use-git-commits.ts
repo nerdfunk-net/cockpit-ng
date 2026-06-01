@@ -13,9 +13,10 @@ export function useGitCommits(repoId: number | null, branch: string) {
   const [error, setError] = useState<string | null>(null)
   const { apiCall } = useApi()
 
-  // Use ref to avoid recreating loadCommits when apiCall changes
   const apiCallRef = useRef(apiCall)
-  apiCallRef.current = apiCall
+  useEffect(() => {
+    apiCallRef.current = apiCall
+  }, [apiCall])
 
   const loadCommits = useCallback(async () => {
     if (!repoId || !branch) {

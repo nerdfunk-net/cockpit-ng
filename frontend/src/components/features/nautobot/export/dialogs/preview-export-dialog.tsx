@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Eye, Copy, Check, Loader2 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { DeviceInfo } from '@/components/shared/device-selector'
 import { useApi } from '@/hooks/use-api'
 
@@ -44,15 +44,7 @@ export function PreviewExportDialog({
   const [previewDevices, setPreviewDevices] = useState<unknown[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch full device data when dialog opens
-  useEffect(() => {
-    if (show && devices.length > 0) {
-      fetchPreviewData()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [show, devices, properties])
-
-  const fetchPreviewData = async () => {
+  const fetchPreviewData = useCallback(async () => {
     setIsLoading(true)
     setError(null)
 
@@ -91,7 +83,13 @@ export function PreviewExportDialog({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [apiCall, devices, properties, format, csvOptions])
+
+  useEffect(() => {
+    if (show && devices.length > 0) {
+      void fetchPreviewData()
+    }
+  }, [show, devices.length, fetchPreviewData])
 
   const generatePreview = (): string => {
     // Return the backend-generated preview content

@@ -86,6 +86,7 @@ export function GitImportDialog({
     defaultValues: DEFAULT_VALUES,
   })
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch is required for dependent fields
   const selectedRepoId = form.watch('repositoryId')
   const selectedFile = form.watch('filePath')
 

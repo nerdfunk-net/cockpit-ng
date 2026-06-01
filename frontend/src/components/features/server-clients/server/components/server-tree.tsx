@@ -1,7 +1,14 @@
 'use client'
 
-import { ChevronDown, ChevronRight, FolderOpen, Search, Server } from 'lucide-react'
-import { useMemo } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import {
+  ChevronDown,
+  ChevronRight,
+  FolderOpen,
+  Search,
+  Server,
+} from 'lucide-react'
+import { useMemo, useRef } from 'react'
 
 import { Input } from '@/components/ui/input'
 import {
@@ -11,10 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { GroupByField, ServerResponse } from '../types'
+import {
+  buildServerTreeRows,
+  getServerTreeRowHeight,
+  type ServerTreeRow,
+} from '../utils/build-server-tree-rows'
+import type { GroupByField, ServerSummaryResponse } from '../types'
 
 interface ServerTreeProps {
-  servers: ServerResponse[]
+  servers: ServerSummaryResponse[]
+  isSearching: boolean
   nameFilter: string
   onNameFilterChange: (value: string) => void
   groupBy: GroupByField
@@ -35,22 +48,71 @@ const GROUP_BY_OPTIONS: { value: GroupByField; label: string }[] = [
   { value: 'is_virtual', label: 'Virtual Machine' },
 ]
 
-function getGroupKey(server: ServerResponse, groupBy: GroupByField): string {
-  if (groupBy === 'is_virtual') {
-    return server.is_virtual ? 'Virtual Machine' : 'Physical'
+function TreeRowContent({
+  row,
+  selectedId,
+  expandedGroups,
+  expandAllGroups,
+  onSelectServer,
+  onToggleGroup,
+}: {
+  row: ServerTreeRow
+  selectedId: number | null
+  expandedGroups: Set<string>
+  expandAllGroups: boolean
+  onSelectServer: (id: number) => void
+  onToggleGroup: (name: string) => void
+}) {
+  if (row.type === 'root') {
+    return (
+      <div className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider h-full">
+        <FolderOpen className="h-3 w-3" />
+        <span>/</span>
+      </div>
+    )
   }
-  if (groupBy === 'location') {
-    return server.location?.name ?? 'Uncategorized'
+
+  if (row.type === 'group') {
+    return (
+      <button
+        type="button"
+        onClick={() => onToggleGroup(row.name)}
+        className="flex items-center gap-1 w-full px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors h-full"
+      >
+        {expandedGroups.has(row.name) || expandAllGroups ? (
+          <ChevronDown className="h-3 w-3 shrink-0 text-gray-400" />
+        ) : (
+          <ChevronRight className="h-3 w-3 shrink-0 text-gray-400" />
+        )}
+        <FolderOpen className="h-3.5 w-3.5 shrink-0 text-blue-400" />
+        <span className="truncate font-medium">{row.name}</span>
+        <span className="ml-auto text-xs text-gray-400 shrink-0">{row.count}</span>
+      </button>
+    )
   }
-  if (groupBy === 'cluster') {
-    return server.cluster?.name ?? 'No cluster'
-  }
-  type StringGroupBy = 'distribution_release' | 'distribution_version' | 'contact'
-  return (server[groupBy as StringGroupBy] as string | null) ?? 'Uncategorized'
+
+  const { server, indented } = row
+  return (
+    <button
+      type="button"
+      onClick={() => onSelectServer(server.id)}
+      className={`flex items-center gap-1.5 w-full px-2 py-1.5 text-sm rounded transition-colors h-full ${
+        indented ? 'pl-7' : 'pl-4'
+      } ${
+        selectedId === server.id
+          ? 'bg-blue-100 text-blue-800 font-medium'
+          : 'text-gray-700 hover:bg-gray-100'
+      }`}
+    >
+      <Server className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+      <span className="truncate text-xs">{server.hostname}</span>
+    </button>
+  )
 }
 
 export function ServerTree({
   servers,
+  isSearching,
   nameFilter,
   onNameFilterChange,
   groupBy,
@@ -61,25 +123,31 @@ export function ServerTree({
   onToggleGroup,
 }: ServerTreeProps) {
   const isFiltering = nameFilter.trim().length > 0
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-  const groups = useMemo(() => {
-    if (groupBy === 'none') {
-      return [{ name: '/', servers }]
-    }
-    const map = new Map<string, ServerResponse[]>()
-    for (const server of servers) {
-      const key = getGroupKey(server, groupBy)
-      const existing = map.get(key) ?? []
-      map.set(key, [...existing, server])
-    }
-    return Array.from(map.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([name, srvs]) => ({ name, servers: srvs }))
-  }, [servers, groupBy])
+  const rows = useMemo(
+    () =>
+      buildServerTreeRows(
+        servers,
+        groupBy,
+        expandedGroups,
+        isFiltering
+      ),
+    [servers, groupBy, expandedGroups, isFiltering]
+  )
+
+  // TanStack Virtual is intentionally incompatible with React Compiler memoization.
+  // eslint-disable-next-line react-hooks/incompatible-library -- windowed list rendering
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) => getServerTreeRowHeight(rows[index]!),
+    overscan: 12,
+  })
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-gray-200 space-y-2">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="p-3 border-b border-gray-200 space-y-2 shrink-0">
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
           <Input
@@ -105,58 +173,44 @@ export function ServerTree({
         </Select>
       </div>
 
-      {/* Tree */}
-      <div className="flex-1 overflow-y-auto p-2">
-        {/* Root node */}
-        <div className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          <FolderOpen className="h-3 w-3" />
-          <span>/</span>
-        </div>
-
-        {groups.map((group) => (
-          <div key={group.name}>
-            {groupBy !== 'none' && (
-              <button
-                onClick={() => onToggleGroup(group.name)}
-                className="flex items-center gap-1 w-full px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-              >
-                {expandedGroups.has(group.name) ? (
-                  <ChevronDown className="h-3 w-3 shrink-0 text-gray-400" />
-                ) : (
-                  <ChevronRight className="h-3 w-3 shrink-0 text-gray-400" />
-                )}
-                <FolderOpen className="h-3.5 w-3.5 shrink-0 text-blue-400" />
-                <span className="truncate font-medium">{group.name}</span>
-                <span className="ml-auto text-xs text-gray-400 shrink-0">
-                  {group.servers.length}
-                </span>
-              </button>
-            )}
-
-            {(groupBy === 'none' || expandedGroups.has(group.name) || isFiltering) &&
-              group.servers.map((server) => (
-                <button
-                  key={server.id}
-                  onClick={() => onSelectServer(server.id)}
-                  className={`flex items-center gap-1.5 w-full px-2 py-1.5 text-sm rounded transition-colors ${
-                    groupBy !== 'none' ? 'pl-7' : 'pl-4'
-                  } ${
-                    selectedId === server.id
-                      ? 'bg-blue-100 text-blue-800 font-medium'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Server className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                  <span className="truncate text-xs">{server.hostname}</span>
-                </button>
-              ))}
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto p-2">
+        {isSearching && servers.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
           </div>
-        ))}
-
-        {servers.length === 0 && (
+        ) : rows.length <= 1 && servers.length === 0 ? (
           <p className="px-4 py-6 text-xs text-gray-400 text-center">
             {isFiltering ? 'No servers match your search' : 'No servers found'}
           </p>
+        ) : (
+          <div
+            className="relative w-full"
+            style={{ height: `${virtualizer.getTotalSize()}px` }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const row = rows[virtualRow.index]!
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  className="absolute left-0 top-0 w-full"
+                  style={{
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <TreeRowContent
+                    row={row}
+                    selectedId={selectedId}
+                    expandedGroups={expandedGroups}
+                    expandAllGroups={isFiltering}
+                    onSelectServer={onSelectServer}
+                    onToggleGroup={onToggleGroup}
+                  />
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
     </div>

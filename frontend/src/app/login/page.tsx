@@ -147,8 +147,8 @@ export default function LoginPage() {
         if (data.provider_id) {
           sessionStorage.setItem('oidc_provider_id', data.provider_id)
         }
-        // Redirect to OIDC provider
-        window.location.href = data.authorization_url
+        // Redirect to OIDC provider (full page navigation)
+        globalThis.location.assign(data.authorization_url)
       } else {
         throw new Error('No authorization URL received')
       }

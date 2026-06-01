@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { useApi } from '@/hooks/use-api'
 import { Network, AlertTriangle, Loader2 } from 'lucide-react'
@@ -31,12 +31,7 @@ export default function DashboardIPAddressesStats({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshTrigger])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -48,7 +43,11 @@ export default function DashboardIPAddressesStats({
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiCall])
+
+  useEffect(() => {
+    void loadData()
+  }, [loadData, refreshTrigger])
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleString()
 

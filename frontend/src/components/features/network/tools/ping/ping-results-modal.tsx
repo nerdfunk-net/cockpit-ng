@@ -118,13 +118,15 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
   }, [polling, fetchTaskStatus])
 
   // Calculate progress percentage
+  const progressCurrent = progress?.current
+  const progressTotal = progress?.total
   const progressPercentage = useMemo(() => {
     if (taskStatus === 'SUCCESS') return 100
-    if (progress?.total && progress?.current) {
-      return Math.round((progress.current / progress.total) * 100)
+    if (progressTotal && progressCurrent) {
+      return Math.round((progressCurrent / progressTotal) * 100)
     }
     return 0
-  }, [taskStatus, progress])
+  }, [taskStatus, progressCurrent, progressTotal])
 
   return (
     <Dialog open={true} onOpenChange={onClose}>

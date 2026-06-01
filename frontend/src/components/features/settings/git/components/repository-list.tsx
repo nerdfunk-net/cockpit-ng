@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, GitBranch, Github } from 'lucide-react'
+import { FolderGit, GitBranch, RefreshCw } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -71,7 +71,7 @@ export function RepositoryList({
           </div>
         ) : repositories.length === 0 ? (
           <div className="text-center py-8">
-            <Github className="h-12 w-12 mx-auto text-gray-400" />
+            <FolderGit className="h-12 w-12 mx-auto text-gray-400" />
             <p className="text-gray-500 mt-2">No repositories found</p>
             <p className="text-sm text-gray-400">Add a repository to get started</p>
           </div>

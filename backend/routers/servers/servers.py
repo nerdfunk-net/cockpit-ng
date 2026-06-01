@@ -21,6 +21,7 @@ from models.servers import (
     CreateServerRequest,
     ListServersResponse,
     ServerResponse,
+    ServerSummaryResponse,
     UpdateServerRequest,
 )
 from services.servers.servers_service import _ALLOWED_GROUP_BY, ServersService
@@ -32,23 +33,33 @@ router = APIRouter(prefix="/api/servers", tags=["servers"])
 
 @router.get("", response_model=ListServersResponse)
 async def list_servers(
+    q: Optional[str] = Query(
+        None,
+        min_length=1,
+        max_length=255,
+        description="Filter hostnames (case-insensitive substring match)",
+    ),
     group_by: Optional[str] = Query(
-        None, description="Group servers by field (location, distribution_release, …)"
+        None,
+        description="Deprecated: grouping is handled client-side",
     ),
     _: dict = Depends(require_permission("servers", "read")),
     service: ServersService = Depends(get_servers_service),
 ) -> ListServersResponse:
-    """Return all servers, optionally grouped by a field value."""
+    """Return server summaries for inventory lists (excludes ansible_facts)."""
     if group_by is not None and group_by not in _ALLOWED_GROUP_BY:
         raise HTTPException(
             status_code=400,
             detail=f"Invalid group_by value. Allowed: {sorted(_ALLOWED_GROUP_BY)}",
         )
     try:
-        servers = service.get_all()
+        search = q.strip() if q else None
+        servers = service.list_summaries(search=search)
+        total_all = service.count_all()
         return ListServersResponse(
-            servers=[ServerResponse.model_validate(s) for s in servers],
+            servers=[ServerSummaryResponse.model_validate(s) for s in servers],
             total=len(servers),
+            total_all=total_all,
         )
     except Exception as exc:
         raise_internal_server_error(logger, "Failed to list servers", exc)

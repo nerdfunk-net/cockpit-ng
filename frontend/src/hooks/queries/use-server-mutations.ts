@@ -62,8 +62,9 @@ export function useServerMutations() {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.servers.list() })
+    onSuccess: (server) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.servers.all })
+      queryClient.setQueryData(queryKeys.servers.detail(server.id), server)
     },
     onError: (error: Error) => {
       toast({
@@ -80,8 +81,9 @@ export function useServerMutations() {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.servers.list() })
+    onSuccess: (server) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.servers.all })
+      queryClient.setQueryData(queryKeys.servers.detail(server.id), server)
     },
     onError: (error: Error) => {
       toast({
@@ -95,8 +97,9 @@ export function useServerMutations() {
   const deleteServer = useMutation({
     mutationFn: async (id: number): Promise<void> =>
       apiCall<void>(`servers/${id}`, { method: 'DELETE' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.servers.list() })
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.servers.all })
+      queryClient.removeQueries({ queryKey: queryKeys.servers.detail(id) })
     },
     onError: (error: Error) => {
       toast({

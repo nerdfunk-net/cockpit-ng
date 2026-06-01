@@ -24,9 +24,10 @@ export function useGitBranches(
   const { apiCall } = useApi()
   const { onBranchChange } = options
 
-  // Use ref to avoid recreating loadBranches when apiCall changes
   const apiCallRef = useRef(apiCall)
-  apiCallRef.current = apiCall
+  useEffect(() => {
+    apiCallRef.current = apiCall
+  }, [apiCall])
 
   const loadBranches = useCallback(async () => {
     if (!repoId) {

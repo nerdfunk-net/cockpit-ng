@@ -54,14 +54,6 @@ export function CustomFieldsModal({
 }: CustomFieldsModalProps) {
   const { apiCall } = useApi()
 
-  // Load custom fields when modal opens
-  useEffect(() => {
-    if (open && customFields.length === 0) {
-      loadCustomFields()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
-
   const loadCustomFields = useCallback(async () => {
     setIsLoadingCustomFields(true)
     try {
@@ -102,6 +94,12 @@ export function CustomFieldsModal({
       setIsLoadingCustomFields(false)
     }
   }, [apiCall, setCustomFields, setCustomFieldChoices, setIsLoadingCustomFields])
+
+  useEffect(() => {
+    if (open && customFields.length === 0) {
+      void loadCustomFields()
+    }
+  }, [open, customFields.length, loadCustomFields])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

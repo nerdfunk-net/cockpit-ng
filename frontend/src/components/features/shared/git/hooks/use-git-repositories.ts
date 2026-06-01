@@ -14,9 +14,10 @@ export function useGitRepositories() {
   const [error, setError] = useState<string | null>(null)
   const { apiCall } = useApi()
 
-  // Use ref to avoid recreating loadRepositories when apiCall changes
   const apiCallRef = useRef(apiCall)
-  apiCallRef.current = apiCall
+  useEffect(() => {
+    apiCallRef.current = apiCall
+  }, [apiCall])
 
   const loadRepositories = useCallback(async () => {
     setLoading(true)

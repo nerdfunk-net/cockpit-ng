@@ -434,7 +434,10 @@ export const queryKeys = {
   // Servers
   servers: {
     all: ['servers'] as const,
-    list: () => [...queryKeys.servers.all, 'list'] as const,
+    list: (filters?: { q?: string }) =>
+      filters?.q
+        ? ([...queryKeys.servers.all, 'list', filters] as const)
+        : ([...queryKeys.servers.all, 'list'] as const),
     detail: (id: number) => [...queryKeys.servers.all, 'detail', id] as const,
   },
 

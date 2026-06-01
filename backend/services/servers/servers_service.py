@@ -18,6 +18,12 @@ class ServersService:
     def get_all(self) -> List[Server]:
         return self._repo.get_all()
 
+    def list_summaries(self, search: Optional[str] = None) -> List[Server]:
+        return self._repo.list_summaries(search=search)
+
+    def count_all(self) -> int:
+        return self._repo.count_all()
+
     def get_by_id(self, server_id: int) -> Optional[Server]:
         return self._repo.get_by_id(server_id)
 

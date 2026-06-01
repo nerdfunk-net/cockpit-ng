@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
@@ -32,12 +32,7 @@ export default function DashboardCheckmkSyncStatus({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshTrigger])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -51,7 +46,11 @@ export default function DashboardCheckmkSyncStatus({
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiCall])
+
+  useEffect(() => {
+    void loadData()
+  }, [loadData, refreshTrigger])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)

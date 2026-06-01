@@ -43,14 +43,6 @@ export function TagsModal({
 }: TagsModalProps) {
   const { apiCall } = useApi()
 
-  // Load tags when modal opens
-  useEffect(() => {
-    if (open && availableTags.length === 0) {
-      loadTags()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
-
   const loadTags = useCallback(async () => {
     setIsLoadingTags(true)
     try {
@@ -67,6 +59,12 @@ export function TagsModal({
       setIsLoadingTags(false)
     }
   }, [apiCall, setAvailableTags, setIsLoadingTags])
+
+  useEffect(() => {
+    if (open && availableTags.length === 0) {
+      void loadTags()
+    }
+  }, [open, availableTags.length, loadTags])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
