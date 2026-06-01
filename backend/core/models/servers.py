@@ -13,6 +13,7 @@ class Server(Base):
     id = Column(Integer, primary_key=True, index=True)
     hostname = Column(String(255), nullable=False, index=True)
     location = Column(JSON, nullable=True)
+    cluster = Column(JSON, nullable=True)
     primary_ipv4 = Column(String(50), nullable=True)
     primary_interface = Column(String(100), nullable=True)
     os_family = Column(String(100), nullable=True)

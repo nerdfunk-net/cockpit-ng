@@ -2,7 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
-import type { SelectedInterface, ServerLocation, ServerResponse } from '@/components/features/server-clients/server/types'
+import type {
+  SelectedInterface,
+  ServerCluster,
+  ServerLocation,
+  ServerResponse,
+} from '@/components/features/server-clients/server/types'
 
 interface CreateServerPayload {
   hostname: string
@@ -39,6 +44,7 @@ interface UpdateServerPayload {
   is_virtual?: boolean | null
   ansible_facts?: Record<string, unknown> | null
   selected_interfaces?: SelectedInterface[] | null
+  cluster?: ServerCluster | null
 }
 
 export function useServerMutations() {

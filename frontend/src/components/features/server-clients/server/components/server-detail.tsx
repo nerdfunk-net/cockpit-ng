@@ -25,6 +25,7 @@ import { useSearchableDropdown } from '@/components/features/nautobot/add-device
 import { useServerMutations } from '@/hooks/queries/use-server-mutations'
 
 import { InterfacesDialog } from '../dialogs/interfaces-dialog'
+import { ClusterRow } from './cluster-row'
 import { NautobotUuidRow } from './nautobot-uuid-row'
 import type { SelectedInterface, ServerLocation, ServerResponse } from '../types'
 
@@ -210,6 +211,7 @@ export function ServerDetail({ server, onShowFacts, onRemove }: ServerDetailProp
         <div className="grid grid-cols-2 gap-x-8 gap-y-4">
           <FactRow label="Hostname" value={server.hostname} />
           <FactRow label="Virtual Machine" value={server.is_virtual ? 'Yes' : 'No'} />
+          {server.is_virtual ? <ClusterRow server={server} /> : null}
           <FactRow label="Primary IPv4" value={server.primary_ipv4} />
           <FactRow label="Interface" value={server.primary_interface} />
           <FactRow label="OS Family" value={server.os_family} />

@@ -12,10 +12,18 @@ class ServerLocation(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ServerCluster(BaseModel):
+    id: str
+    name: str
+
+    model_config = {"from_attributes": True}
+
+
 class ServerResponse(BaseModel):
     id: int
     hostname: str
     location: Optional[ServerLocation] = None
+    cluster: Optional[ServerCluster] = None
     primary_ipv4: Optional[str] = None
     primary_interface: Optional[str] = None
     os_family: Optional[str] = None
@@ -71,6 +79,7 @@ class UpdateServerRequest(BaseModel):
     is_virtual: Optional[bool] = None
     ansible_facts: Optional[Dict[str, Any]] = None
     selected_interfaces: Optional[List[Dict[str, Any]]] = None
+    cluster: Optional[ServerCluster] = None
 
 
 class ListServersResponse(BaseModel):

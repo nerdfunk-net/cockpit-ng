@@ -4,6 +4,11 @@ export interface ServerLocation {
   hierarchical_path?: string | null
 }
 
+export interface ServerCluster {
+  id: string
+  name: string
+}
+
 export interface SelectedInterface {
   name: string
   address?: string
@@ -17,6 +22,7 @@ export interface ServerResponse {
   id: number
   hostname: string
   location: ServerLocation | null
+  cluster: ServerCluster | null
   primary_ipv4: string | null
   primary_interface: string | null
   os_family: string | null
@@ -43,6 +49,7 @@ export interface ListServersResponse {
 export type GroupByField =
   | 'none'
   | 'location'
+  | 'cluster'
   | 'distribution_release'
   | 'distribution_version'
   | 'contact'

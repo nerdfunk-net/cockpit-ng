@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildVmPayload,
   buildDevicePayload,
+  resolveServerSoftwareVersionId,
   validateServerDefaultsForVm,
   validateServerDefaultsForDevice,
 } from './build-nautobot-payload'
@@ -29,6 +30,7 @@ function server(overrides: Partial<ServerResponse> = EMPTY_SERVER_OVERRIDES): Se
     id: 1,
     hostname: 'web01',
     location: { id: 'loc-server', name: 'DC1' },
+    cluster: null,
     primary_ipv4: null,
     primary_interface: null,
     os_family: 'Linux',
@@ -53,6 +55,22 @@ function server(overrides: Partial<ServerResponse> = EMPTY_SERVER_OVERRIDES): Se
   }
 }
 
+describe('resolveServerSoftwareVersionId', () => {
+  it('resolves software version UUID from OS fields', () => {
+    const id = resolveServerSoftwareVersionId(
+      server({
+        is_virtual: true,
+        os_family: 'Debian',
+        distribution_release: 'noble',
+        distribution_version: '24.04',
+      }),
+      FULL_DEFAULTS,
+      [{ id: 'sv-1', version: 'Debian noble / 24.04' }]
+    )
+    expect(id).toBe('sv-1')
+  })
+})
+
 describe('buildVmPayload', () => {
   it('builds VM payload from server and defaults', () => {
     const payload = buildVmPayload(server({ is_virtual: true }), FULL_DEFAULTS, 'cluster-1')
@@ -69,6 +87,16 @@ describe('buildVmPayload', () => {
     expect(payload.interfaces).toHaveLength(1)
   })
 
+  it('includes software version when provided', () => {
+    const payload = buildVmPayload(
+      server({ is_virtual: true }),
+      FULL_DEFAULTS,
+      'cluster-1',
+      'sv-1'
+    )
+    expect(payload.softwareVersion).toBe('sv-1')
+  })
+
   it('omits platform when set to detect', () => {
     const payload = buildVmPayload(
       server({ is_virtual: true }),
@@ -80,6 +108,11 @@ describe('buildVmPayload', () => {
 })
 
 describe('buildDevicePayload', () => {
+  it('includes software_version when provided', () => {
+    const payload = buildDevicePayload(server(), FULL_DEFAULTS, 'dt-1', 'virtual', 'sv-1')
+    expect(payload.software_version).toBe('sv-1')
+  })
+
   it('prefers server location over defaults', () => {
     const payload = buildDevicePayload(server(), FULL_DEFAULTS, 'dt-1', 'virtual')
     expect(payload.location).toBe('loc-server')

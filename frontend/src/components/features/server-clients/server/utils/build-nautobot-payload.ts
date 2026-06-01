@@ -9,16 +9,30 @@ import {
   mapServerInterfaces,
   mapServerInterfacesForDevice,
 } from './map-server-interfaces'
+import { formatServerOsSoftwareVersionLabel } from './format-server-os-software-version'
+import { resolveSoftwareVersionId } from './resolve-software-version-id'
+import type { SoftwareVersion } from '@/components/features/nautobot/add-device/types'
 
 function resolvePlatform(platform: string | undefined): string | undefined {
   if (!platform?.trim() || platform === 'detect') return undefined
   return platform
 }
 
+export function resolveServerSoftwareVersionId(
+  server: ServerResponse,
+  defaults: DefaultsFields,
+  softwareVersions: SoftwareVersion[]
+): string | undefined {
+  const label = formatServerOsSoftwareVersionLabel(server)
+  if (!label) return undefined
+  return resolveSoftwareVersionId(label, softwareVersions, resolvePlatform(defaults.platform))
+}
+
 export function buildVmPayload(
   server: ServerResponse,
   defaults: DefaultsFields,
-  clusterId: string
+  clusterId: string,
+  softwareVersionId?: string
 ): VMFormValues {
   const mounts = extractServerMounts(server)
   const disk = computeDiskGbFromMounts(mounts)
@@ -33,7 +47,7 @@ export function buildVmPayload(
     role: defaults.device_role || undefined,
     clusterGroup: undefined,
     platform: resolvePlatform(defaults.platform),
-    softwareVersion: undefined,
+    softwareVersion: softwareVersionId,
     softwareImageFile: undefined,
     vcpus:
       server.processor_count != null && server.processor_count > 0
@@ -54,7 +68,8 @@ export function buildDevicePayload(
   server: ServerResponse,
   defaults: DefaultsFields,
   deviceTypeId: string,
-  interfaceType: string
+  interfaceType: string,
+  softwareVersionId?: string
 ): DeviceSubmissionData {
   const locationId = server.location?.id ?? defaults.location
   const interfaces = filterValidNautobotInterfaces(
@@ -72,6 +87,7 @@ export function buildDevicePayload(
     location: locationId,
     device_type: deviceTypeId,
     platform: resolvePlatform(defaults.platform),
+    software_version: softwareVersionId,
     interfaces,
     add_prefix: true,
     default_prefix_length: '/24',

@@ -7,14 +7,18 @@ import { useServerDefaultsQuery } from '@/components/features/settings/common/ho
 import { useVMMutations } from '@/components/features/nautobot/add-vm/hooks/queries/use-vm-mutations'
 import { useDeviceMutations } from '@/components/features/nautobot/add-device/hooks/queries/use-device-mutations'
 import { useNautobotDropdownsQuery } from '@/components/features/nautobot/add-device/hooks/queries/use-nautobot-dropdowns-query'
+import { useSoftwareVersionsQuery } from '@/components/features/nautobot/add-vm/hooks/queries/use-software-versions-query'
 import { resolveVirtualInterfaceType } from '../utils/resolve-virtual-interface-type'
 import {
   buildDevicePayload,
   buildVmPayload,
+  resolveServerSoftwareVersionId,
   validateServerDefaultsForDevice,
   validateServerDefaultsForVm,
 } from '../utils/build-nautobot-payload'
-import type { ServerResponse } from '../types'
+import type { ServerCluster, ServerResponse } from '../types'
+
+const EMPTY_SOFTWARE_VERSIONS: never[] = []
 
 export function useAddServerToNautobot(server: ServerResponse) {
   const { toast } = useToast()
@@ -25,6 +29,7 @@ export function useAddServerToNautobot(server: ServerResponse) {
   const { data: deviceDropdowns, isLoading: deviceDropdownsLoading } = useNautobotDropdownsQuery({
     enabled: !server.is_virtual,
   })
+  const { data: softwareVersions = EMPTY_SOFTWARE_VERSIONS } = useSoftwareVersionsQuery({})
 
   const [vmDialogOpen, setVmDialogOpen] = useState(false)
   const [deviceDialogOpen, setDeviceDialogOpen] = useState(false)
@@ -83,36 +88,51 @@ export function useAddServerToNautobot(server: ServerResponse) {
     return true
   }, [defaults, server, toast, virtualInterfaceType])
 
-  const openAddDialog = useCallback(() => {
-    if (!validateBeforeOpen()) return
-    if (server.is_virtual) {
-      setVmDialogOpen(true)
-    } else {
-      setDeviceDialogOpen(true)
-    }
-  }, [server.is_virtual, validateBeforeOpen])
-
   const addVirtualServer = useCallback(
-    async (clusterId: string) => {
+    async (cluster: ServerCluster) => {
       if (!defaults) return
-      const payload = buildVmPayload(server, defaults, clusterId)
+      const softwareVersionId = resolveServerSoftwareVersionId(server, defaults, softwareVersions)
+      const payload = buildVmPayload(server, defaults, cluster.id, softwareVersionId)
       const result = await createVM.mutateAsync(payload)
       if (!result.success || !result.vmId) {
         throw new Error(result.message || 'Failed to create virtual machine')
       }
       await updateServer.mutateAsync({
         id: server.id,
-        data: { nautobot_uuid: result.vmId },
+        data: {
+          nautobot_uuid: result.vmId,
+          cluster,
+        },
       })
       setVmDialogOpen(false)
     },
-    [createVM, defaults, server, updateServer]
+    [createVM, defaults, server, softwareVersions, updateServer]
   )
+
+  const openAddDialog = useCallback(() => {
+    if (!validateBeforeOpen()) return
+    if (server.is_virtual) {
+      if (server.cluster?.id) {
+        void addVirtualServer(server.cluster)
+      } else {
+        setVmDialogOpen(true)
+      }
+    } else {
+      setDeviceDialogOpen(true)
+    }
+  }, [server, validateBeforeOpen, addVirtualServer])
 
   const addBareMetalServer = useCallback(
     async (deviceTypeId: string) => {
       if (!defaults || !virtualInterfaceType) return
-      const payload = buildDevicePayload(server, defaults, deviceTypeId, virtualInterfaceType)
+      const softwareVersionId = resolveServerSoftwareVersionId(server, defaults, softwareVersions)
+      const payload = buildDevicePayload(
+        server,
+        defaults,
+        deviceTypeId,
+        virtualInterfaceType,
+        softwareVersionId
+      )
       const result = await createDevice.mutateAsync(payload)
       if (!result.success || !result.deviceId) {
         throw new Error(result.message || 'Failed to create device')
@@ -123,7 +143,7 @@ export function useAddServerToNautobot(server: ServerResponse) {
       })
       setDeviceDialogOpen(false)
     },
-    [createDevice, defaults, server, updateServer, virtualInterfaceType]
+    [createDevice, defaults, server, softwareVersions, updateServer, virtualInterfaceType]
   )
 
   return {

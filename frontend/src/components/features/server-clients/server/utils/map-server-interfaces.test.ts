@@ -28,6 +28,7 @@ function baseServer(overrides: Partial<ServerResponse> = EMPTY_SERVER_OVERRIDES)
     id: 1,
     hostname: 'srv01.example.com',
     location: null,
+    cluster: null,
     primary_ipv4: '192.168.1.10',
     primary_interface: 'eth0',
     os_family: 'Linux',

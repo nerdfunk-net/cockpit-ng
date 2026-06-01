@@ -25,6 +25,7 @@ interface ServerTreeProps {
 const GROUP_BY_OPTIONS: { value: GroupByField; label: string }[] = [
   { value: 'none', label: 'No grouping' },
   { value: 'location', label: 'Location' },
+  { value: 'cluster', label: 'Cluster' },
   { value: 'distribution_release', label: 'OS Release' },
   { value: 'distribution_version', label: 'OS Version' },
   { value: 'contact', label: 'Contact' },
@@ -37,6 +38,9 @@ function getGroupKey(server: ServerResponse, groupBy: GroupByField): string {
   }
   if (groupBy === 'location') {
     return server.location?.name ?? 'Uncategorized'
+  }
+  if (groupBy === 'cluster') {
+    return server.cluster?.name ?? 'No cluster'
   }
   type StringGroupBy = 'distribution_release' | 'distribution_version' | 'contact'
   return (server[groupBy as StringGroupBy] as string | null) ?? 'Uncategorized'
