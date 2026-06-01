@@ -23,17 +23,25 @@ class JobScheduleRepository(BaseRepository[JobSchedule]):
 
         session = get_db_session()
         try:
-            return session.query(self.model).filter(self.model.job_identifier == job_identifier).first()
+            return (
+                session.query(self.model)
+                .filter(self.model.job_identifier == job_identifier)
+                .first()
+            )
         finally:
             session.close()
 
-    def get_user_schedules(self, user_id: int, is_active: Optional[bool] = None) -> List[JobSchedule]:
+    def get_user_schedules(
+        self, user_id: int, is_active: Optional[bool] = None
+    ) -> List[JobSchedule]:
         """Get all job schedules accessible by a user (global + their private jobs)"""
         from core.database import get_db_session
 
         session = get_db_session()
         try:
-            query = session.query(self.model).filter(or_(self.model.user_id == user_id, self.model.is_global))
+            query = session.query(self.model).filter(
+                or_(self.model.user_id == user_id, self.model.is_global)
+            )
 
             if is_active is not None:
                 query = query.filter(self.model.is_active == is_active)
@@ -43,7 +51,9 @@ class JobScheduleRepository(BaseRepository[JobSchedule]):
         finally:
             session.close()
 
-    def get_global_schedules(self, is_active: Optional[bool] = None) -> List[JobSchedule]:
+    def get_global_schedules(
+        self, is_active: Optional[bool] = None
+    ) -> List[JobSchedule]:
         """Get all global job schedules"""
         from core.database import get_db_session
 
@@ -65,7 +75,12 @@ class JobScheduleRepository(BaseRepository[JobSchedule]):
 
         session = get_db_session()
         try:
-            return session.query(self.model).filter(self.model.is_active).order_by(self.model.created_at.desc()).all()
+            return (
+                session.query(self.model)
+                .filter(self.model.is_active)
+                .order_by(self.model.created_at.desc())
+                .all()
+            )
         finally:
             session.close()
 
@@ -83,7 +98,9 @@ class JobScheduleRepository(BaseRepository[JobSchedule]):
             query = session.query(self.model)
 
             if user_id is not None:
-                query = query.filter(or_(self.model.user_id == user_id, self.model.is_global))
+                query = query.filter(
+                    or_(self.model.user_id == user_id, self.model.is_global)
+                )
 
             if is_global is not None:
                 query = query.filter(self.model.is_global == is_global)

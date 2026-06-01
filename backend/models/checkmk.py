@@ -35,7 +35,9 @@ class CheckMKTestConnectionResponse(BaseModel):
     success: bool = Field(..., description="Whether the connection was successful")
     message: str = Field(..., description="Connection result message")
     checkmk_url: Optional[str] = Field(None, description="CheckMK server URL")
-    connection_source: Optional[str] = Field(None, description="Source of connection settings")
+    connection_source: Optional[str] = Field(
+        None, description="Source of connection settings"
+    )
 
 
 # Host Management Models
@@ -46,8 +48,12 @@ class CheckMKHost(BaseModel):
 
     host_name: str = Field(..., description="Host name")
     folder: str = Field(default="/", description="Folder path")
-    attributes: Dict[str, Any] = Field(default_factory=dict, description="Host attributes")
-    effective_attributes: Optional[Dict[str, Any]] = Field(None, description="Effective attributes")
+    attributes: Dict[str, Any] = Field(
+        default_factory=dict, description="Host attributes"
+    )
+    effective_attributes: Optional[Dict[str, Any]] = Field(
+        None, description="Effective attributes"
+    )
 
 
 class CheckMKHostCreateRequest(BaseModel):
@@ -55,7 +61,9 @@ class CheckMKHostCreateRequest(BaseModel):
 
     host_name: str = Field(..., description="Host name")
     folder: str = Field(default="/", description="Folder path")
-    attributes: Dict[str, Any] = Field(default_factory=dict, description="Host attributes")
+    attributes: Dict[str, Any] = Field(
+        default_factory=dict, description="Host attributes"
+    )
     bake_agent: bool = Field(default=False, description="Bake agent after creation")
     start_discovery: bool = Field(
         default=True,
@@ -88,13 +96,17 @@ class CheckMKHostRenameRequest(BaseModel):
 class CheckMKBulkHostCreateRequest(BaseModel):
     """Request model for bulk host creation"""
 
-    entries: List[CheckMKHostCreateRequest] = Field(..., description="List of hosts to create")
+    entries: List[CheckMKHostCreateRequest] = Field(
+        ..., description="List of hosts to create"
+    )
 
 
 class CheckMKBulkHostUpdateRequest(BaseModel):
     """Request model for bulk host updates"""
 
-    entries: Dict[str, CheckMKHostUpdateRequest] = Field(..., description="Hosts to update (hostname -> update data)")
+    entries: Dict[str, CheckMKHostUpdateRequest] = Field(
+        ..., description="Hosts to update (hostname -> update data)"
+    )
 
 
 class CheckMKBulkHostDeleteRequest(BaseModel):
@@ -177,10 +189,18 @@ class CheckMKDiscoveryPhaseUpdateRequest(BaseModel):
 class CheckMKBulkDiscoveryOptions(BaseModel):
     """Options for bulk discovery"""
 
-    monitor_undecided_services: bool = Field(default=True, description="Monitor undecided services")
-    remove_vanished_services: bool = Field(default=True, description="Remove vanished services")
-    update_service_labels: bool = Field(default=True, description="Update service labels")
-    update_service_parameters: bool = Field(default=True, description="Update service parameters")
+    monitor_undecided_services: bool = Field(
+        default=True, description="Monitor undecided services"
+    )
+    remove_vanished_services: bool = Field(
+        default=True, description="Remove vanished services"
+    )
+    update_service_labels: bool = Field(
+        default=True, description="Update service labels"
+    )
+    update_service_parameters: bool = Field(
+        default=True, description="Update service parameters"
+    )
     update_host_labels: bool = Field(default=True, description="Update host labels")
 
 
@@ -192,9 +212,15 @@ class CheckMKBulkDiscoveryRequest(BaseModel):
         default_factory=CheckMKBulkDiscoveryOptions,
         description="Discovery options for the bulk discovery",
     )
-    do_full_scan: bool = Field(default=True, description="Whether to perform a full scan")
-    bulk_size: int = Field(default=10, description="Number of hosts to be handled at once")
-    ignore_errors: bool = Field(default=True, description="Whether to ignore errors in single check plug-ins")
+    do_full_scan: bool = Field(
+        default=True, description="Whether to perform a full scan"
+    )
+    bulk_size: int = Field(
+        default=10, description="Number of hosts to be handled at once"
+    )
+    ignore_errors: bool = Field(
+        default=True, description="Whether to ignore errors in single check plug-ins"
+    )
 
 
 # Problem Management Models
@@ -235,7 +261,9 @@ class CheckMKCommentRequest(BaseModel):
     """Request model for adding comments"""
 
     host_name: str = Field(..., description="Host name")
-    service_description: Optional[str] = Field(None, description="Service description (for service comments)")
+    service_description: Optional[str] = Field(
+        None, description="Service description (for service comments)"
+    )
     comment: str = Field(..., description="Comment text")
     persistent: bool = Field(default=False, description="Persistent comment")
 
@@ -247,7 +275,9 @@ class CheckMKActivateChangesRequest(BaseModel):
     """Request model for activating changes"""
 
     sites: Optional[List[str]] = Field(None, description="Sites to activate changes on")
-    force_foreign_changes: bool = Field(default=True, description="Force foreign changes")
+    force_foreign_changes: bool = Field(
+        default=True, description="Force foreign changes"
+    )
     redirect: bool = Field(default=False, description="Redirect after activation")
     etag: str = Field(
         default="*",
@@ -355,7 +385,9 @@ class CheckMKFolder(BaseModel):
     title: str = Field(..., description="Folder title")
     parent: str = Field(..., description="Parent folder path")
     path: str = Field(..., description="Full folder path")
-    attributes: Dict[str, Any] = Field(default_factory=dict, description="Folder attributes")
+    attributes: Dict[str, Any] = Field(
+        default_factory=dict, description="Folder attributes"
+    )
     hosts: Optional[List[str]] = Field(None, description="List of host names in folder")
 
 
@@ -365,15 +397,21 @@ class CheckMKFolderCreateRequest(BaseModel):
     name: str = Field(..., description="Folder name")
     title: str = Field(..., description="Folder title")
     parent: str = Field(default="/", description="Parent folder path")
-    attributes: Dict[str, Any] = Field(default_factory=dict, description="Folder attributes")
+    attributes: Dict[str, Any] = Field(
+        default_factory=dict, description="Folder attributes"
+    )
 
 
 class CheckMKFolderUpdateRequest(BaseModel):
     """Request model for updating a folder"""
 
     title: Optional[str] = Field(None, description="Folder title")
-    attributes: Optional[Dict[str, Any]] = Field(None, description="Folder attributes to update")
-    remove_attributes: Optional[List[str]] = Field(None, description="Attributes to remove")
+    attributes: Optional[Dict[str, Any]] = Field(
+        None, description="Folder attributes to update"
+    )
+    remove_attributes: Optional[List[str]] = Field(
+        None, description="Attributes to remove"
+    )
 
 
 class CheckMKFolderMoveRequest(BaseModel):
@@ -432,14 +470,18 @@ class CheckMKHostTagGroupUpdateRequest(BaseModel):
     title: Optional[str] = Field(None, description="Tag group title")
     topic: Optional[str] = Field(None, description="Tag group topic")
     help: Optional[str] = Field(None, description="Tag group help text")
-    tags: Optional[List[CheckMKHostTag]] = Field(None, description="List of tags in the group")
+    tags: Optional[List[CheckMKHostTag]] = Field(
+        None, description="List of tags in the group"
+    )
     repair: Optional[bool] = Field(False, description="Repair affected hosts")
 
 
 class CheckMKHostTagGroupListResponse(BaseModel):
     """Response model for host tag group list"""
 
-    tag_groups: List[CheckMKHostTagGroup] = Field(..., description="List of host tag groups")
+    tag_groups: List[CheckMKHostTagGroup] = Field(
+        ..., description="List of host tag groups"
+    )
     total: int = Field(..., description="Total number of host tag groups")
 
 
@@ -455,7 +497,9 @@ class CheckMKHostGroupUpdateRequest(BaseModel):
 class CheckMKHostGroupBulkUpdateRequest(BaseModel):
     """Request model for bulk host group updates"""
 
-    entries: List[Dict[str, Any]] = Field(..., description="Host group updates with name and attributes")
+    entries: List[Dict[str, Any]] = Field(
+        ..., description="Host group updates with name and attributes"
+    )
 
 
 class CheckMKHostGroupBulkDeleteRequest(BaseModel):

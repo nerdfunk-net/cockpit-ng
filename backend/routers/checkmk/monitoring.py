@@ -29,7 +29,9 @@ async def get_all_monitored_hosts(
         columns = request.columns if request else None
         query = request.query if request else None
         result = await service.get_all_monitored_hosts(columns=columns, query=query)
-        return CheckMKOperationResponse(success=True, message="Retrieved monitored hosts successfully", data=result)
+        return CheckMKOperationResponse(
+            success=True, message="Retrieved monitored hosts successfully", data=result
+        )
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
@@ -59,7 +61,9 @@ async def get_monitored_host(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to get monitored host {hostname}", e)
+        raise_internal_server_error(
+            logger, f"Failed to get monitored host {hostname}", e
+        )
 
 
 @router.get("/hosts/{hostname}/services", response_model=CheckMKOperationResponse)
@@ -84,7 +88,9 @@ async def get_host_services(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to get services for host {hostname}", e)
+        raise_internal_server_error(
+            logger, f"Failed to get services for host {hostname}", e
+        )
 
 
 @router.post(
@@ -101,7 +107,9 @@ async def show_service(
     """Show specific service details."""
     try:
         columns = request.columns if request else None
-        result = await monitoring_service.show_service(hostname, service, columns=columns)
+        result = await monitoring_service.show_service(
+            hostname, service, columns=columns
+        )
         return CheckMKOperationResponse(
             success=True,
             message=f"Retrieved service {service} details for host {hostname} successfully",

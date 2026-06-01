@@ -103,7 +103,9 @@ async def get_or_create_manufacturer(nautobot, name: str) -> str:
     return manufacturer_id
 
 
-async def get_or_create_device_type(nautobot, model: str, manufacturer_id: str) -> tuple[str, bool]:
+async def get_or_create_device_type(
+    nautobot, model: str, manufacturer_id: str
+) -> tuple[str, bool]:
     """
     Return (device_type_id, was_created) for the named model and manufacturer.
     Creates the device type if it doesn't already exist.
@@ -165,11 +167,19 @@ async def get_form_resource_ids(nautobot) -> dict:
     )
 
     # Platform is optional; resolve only if it exists
-    platform_result = await nautobot.graphql_query(f'query {{ platforms(name: "{PLATFORM_NAME}") {{ id }} }}')
-    platform_id = platform_result["data"]["platforms"][0]["id"] if platform_result["data"]["platforms"] else None
+    platform_result = await nautobot.graphql_query(
+        f'query {{ platforms(name: "{PLATFORM_NAME}") {{ id }} }}'
+    )
+    platform_id = (
+        platform_result["data"]["platforms"][0]["id"]
+        if platform_result["data"]["platforms"]
+        else None
+    )
 
     manufacturer_id = await get_or_create_manufacturer(nautobot, MANUFACTURER_NAME)
-    device_type_id, device_type_created = await get_or_create_device_type(nautobot, DEVICE_TYPE_MODEL, manufacturer_id)
+    device_type_id, device_type_created = await get_or_create_device_type(
+        nautobot, DEVICE_TYPE_MODEL, manufacturer_id
+    )
 
     return {
         "role_id": role_id,
@@ -208,7 +218,9 @@ async def cleanup_test_device(real_nautobot_service):
     # Cleanup devices
     for device_id in created_device_ids:
         try:
-            await real_nautobot_service.rest_request(endpoint=f"dcim/devices/{device_id}/", method="DELETE")
+            await real_nautobot_service.rest_request(
+                endpoint=f"dcim/devices/{device_id}/", method="DELETE"
+            )
             logger.info("✓ Deleted test device %s", device_id)
         except Exception as exc:
             logger.warning("Could not delete device %s: %s", device_id, exc)
@@ -216,7 +228,9 @@ async def cleanup_test_device(real_nautobot_service):
     # Cleanup auto-created prefixes
     for prefix_id in created_prefix_ids:
         try:
-            await real_nautobot_service.rest_request(endpoint=f"ipam/prefixes/{prefix_id}/", method="DELETE")
+            await real_nautobot_service.rest_request(
+                endpoint=f"ipam/prefixes/{prefix_id}/", method="DELETE"
+            )
             logger.info("✓ Deleted auto-created prefix %s", prefix_id)
         except Exception as exc:
             logger.warning("Could not delete prefix %s: %s", prefix_id, exc)
@@ -332,7 +346,9 @@ class TestAddDeviceFormData:
             device_ids.append(result["device_id"])
 
         # --- Top-level success -----------------------------------------------
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
         assert result["device_id"] is not None, "device_id must be returned"
 
         # --- Workflow steps ---------------------------------------------------
@@ -440,9 +456,9 @@ class TestAddDeviceFormData:
             await device_creation_service.create_device_with_interfaces(request)
 
         error = str(exc_info.value).lower()
-        assert any(kw in error for kw in ["already exists", "duplicate", "unique", "name"]), (
-            f"Expected 'duplicate' error, got: {exc_info.value}"
-        )
+        assert any(
+            kw in error for kw in ["already exists", "duplicate", "unique", "name"]
+        ), f"Expected 'duplicate' error, got: {exc_info.value}"
 
         logger.info("✓ Duplicate device name correctly rejected: %s", exc_info.value)
 
@@ -494,7 +510,9 @@ class TestAddDeviceFormData:
         if result.get("device_id"):
             device_ids.append(result["device_id"])
 
-        assert result["success"] is True, f"Expected success, got: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Expected success, got: {result.get('message')}"
+        )
 
         # Verify interface type via GraphQL
         query = f"""
@@ -562,7 +580,9 @@ class TestAddDeviceFormData:
         assert ids["manufacturer_id"], "manufacturer_id must be resolved"
         # platform_id may be None if Cisco IOS isn't in the test Nautobot
         if ids["platform_id"] is None:
-            logger.warning("Platform '%s' not found – tests will run without it", PLATFORM_NAME)
+            logger.warning(
+                "Platform '%s' not found – tests will run without it", PLATFORM_NAME
+            )
 
         logger.info(
             "✓ All resource IDs resolved: %s",
@@ -594,7 +614,9 @@ class TestAddDeviceFormData:
         pre_check = await real_nautobot_service.graphql_query(
             f'query {{ prefixes(prefix: "{AUTO_PREFIX_NO_PREFIX}") {{ id }} }}'
         )
-        assert pre_check["data"]["prefixes"] == [], f"Test requires {AUTO_PREFIX_NO_PREFIX} to be absent from Nautobot"
+        assert pre_check["data"]["prefixes"] == [], (
+            f"Test requires {AUTO_PREFIX_NO_PREFIX} to be absent from Nautobot"
+        )
 
         request = AddDeviceRequest(
             name=f"{DEVICE_NAME}-no-prefix",

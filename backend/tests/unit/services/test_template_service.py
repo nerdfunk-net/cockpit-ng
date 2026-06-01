@@ -73,7 +73,9 @@ def test_create_template_creates_record_and_initial_version() -> None:
     version_repo.get_max_version_number.return_value = 0
 
     with (
-        patch("services.templates.template_service.TemplateRepository", return_value=repo),
+        patch(
+            "services.templates.template_service.TemplateRepository", return_value=repo
+        ),
         patch(
             "services.templates.template_service.TemplateVersionRepository",
             return_value=version_repo,
@@ -95,7 +97,10 @@ def test_create_template_creates_record_and_initial_version() -> None:
     create_kwargs = repo.create.call_args.kwargs
     assert create_kwargs["variables"] == json.dumps({"hostname": "r1"})
     assert create_kwargs["tags"] == json.dumps(["network"])
-    assert create_kwargs["content_hash"] == hashlib.sha256(b"hostname {{ hostname }}").hexdigest()
+    assert (
+        create_kwargs["content_hash"]
+        == hashlib.sha256(b"hostname {{ hostname }}").hexdigest()
+    )
     version_repo.create.assert_called_once_with(
         template_id=42,
         version_number=1,
@@ -112,11 +117,15 @@ def test_create_template_duplicate_name_raises() -> None:
     repo.get_by_name.return_value = _template_obj()
 
     with (
-        patch("services.templates.template_service.TemplateRepository", return_value=repo),
+        patch(
+            "services.templates.template_service.TemplateRepository", return_value=repo
+        ),
         patch("services.templates.template_service.TemplateVersionRepository"),
     ):
         with pytest.raises(ValueError, match="already exists"):
-            TemplateService().create_template({"name": "router_config", "source": "file"})
+            TemplateService().create_template(
+                {"name": "router_config", "source": "file"}
+            )
 
 
 @pytest.mark.unit
@@ -125,7 +134,9 @@ def test_get_template_returns_model_as_dict() -> None:
     repo = MagicMock()
     repo.get_by_id.return_value = _template_obj()
 
-    with patch("services.templates.template_service.TemplateRepository", return_value=repo):
+    with patch(
+        "services.templates.template_service.TemplateRepository", return_value=repo
+    ):
         result = TemplateService().get_template(1)
 
     assert result is not None
@@ -141,11 +152,17 @@ def test_list_templates_filters_through_repository() -> None:
     repo = MagicMock()
     repo.list_templates.return_value = [
         _template_obj(id=1, name="global-template", scope="global"),
-        _template_obj(id=2, name="private-template", scope="private", created_by="alice"),
+        _template_obj(
+            id=2, name="private-template", scope="private", created_by="alice"
+        ),
     ]
 
-    with patch("services.templates.template_service.TemplateRepository", return_value=repo):
-        result = TemplateService().list_templates(category="netmiko", source="webeditor", username="alice")
+    with patch(
+        "services.templates.template_service.TemplateRepository", return_value=repo
+    ):
+        result = TemplateService().list_templates(
+            category="netmiko", source="webeditor", username="alice"
+        )
 
     repo.list_templates.assert_called_once_with(
         category="netmiko",
@@ -173,7 +190,9 @@ def test_update_template_creates_new_version_when_content_changes() -> None:
     version_repo.get_max_version_number.return_value = 2
 
     with (
-        patch("services.templates.template_service.TemplateRepository", return_value=repo),
+        patch(
+            "services.templates.template_service.TemplateRepository", return_value=repo
+        ),
         patch(
             "services.templates.template_service.TemplateVersionRepository",
             return_value=version_repo,
@@ -204,7 +223,9 @@ def test_delete_template_soft_and_hard_delete() -> None:
     """Soft delete deactivates while hard delete removes the row."""
     repo = MagicMock()
 
-    with patch("services.templates.template_service.TemplateRepository", return_value=repo):
+    with patch(
+        "services.templates.template_service.TemplateRepository", return_value=repo
+    ):
         service = TemplateService()
         assert service.delete_template(1) is True
         assert service.delete_template(2, hard_delete=True) is True
@@ -217,8 +238,12 @@ def test_delete_template_soft_and_hard_delete() -> None:
 def test_render_template_with_context() -> None:
     """Jinja variables are substituted using the provided context."""
     service = TemplateService()
-    service.get_template_by_name = MagicMock(return_value={"id": 1, "name": "ssh_config"})
-    service.get_template_content = MagicMock(return_value="hostname {{ hostname }}\nip {{ ip_address }}")
+    service.get_template_by_name = MagicMock(
+        return_value={"id": 1, "name": "ssh_config"}
+    )
+    service.get_template_content = MagicMock(
+        return_value="hostname {{ hostname }}\nip {{ ip_address }}"
+    )
 
     rendered = service.render_template(
         "ssh_config",
@@ -275,7 +300,9 @@ def test_health_check_returns_counts() -> None:
     repo.get_total_count.return_value = 4
     repo.get_categories_count.return_value = 2
 
-    with patch("services.templates.template_service.TemplateRepository", return_value=repo):
+    with patch(
+        "services.templates.template_service.TemplateRepository", return_value=repo
+    ):
         result = TemplateService().health_check()
 
     assert result == {
@@ -298,7 +325,9 @@ def test_mark_git_templates_sync_metadata_updates_only_allowed_git_templates() -
         _template_obj(id=4, source="git", scope="private", created_by="alice"),
     ]
 
-    with patch("services.templates.template_service.TemplateRepository", return_value=repo):
+    with patch(
+        "services.templates.template_service.TemplateRepository", return_value=repo
+    ):
         TemplateService().mark_git_templates_sync_metadata(
             [1, 2, 3, 4],
             sync_status="synced",
@@ -307,4 +336,6 @@ def test_mark_git_templates_sync_metadata_updates_only_allowed_git_templates() -
 
     updated_ids = [call.args[0] for call in repo.update.call_args_list]
     assert updated_ids == [1, 4]
-    assert all(call.kwargs["sync_status"] == "synced" for call in repo.update.call_args_list)
+    assert all(
+        call.kwargs["sync_status"] == "synced" for call in repo.update.call_args_list
+    )

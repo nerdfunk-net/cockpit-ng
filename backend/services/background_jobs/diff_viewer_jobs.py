@@ -155,19 +155,27 @@ def get_diff_between_nb_checkmk_task(self) -> Dict[str, Any]:
                 # Device in both systems
                 cmk_host = cmk_lookup[name_lower]
                 processed_cmk_names.add(name_lower)
-                diff_device = _build_diff_device(display_name, "both", nb_device=nb_device, cmk_host=cmk_host)
+                diff_device = _build_diff_device(
+                    display_name, "both", nb_device=nb_device, cmk_host=cmk_host
+                )
                 all_devices.append(diff_device)
             else:
                 # Nautobot only
-                diff_device = _build_diff_device(display_name, "nautobot", nb_device=nb_device)
+                diff_device = _build_diff_device(
+                    display_name, "nautobot", nb_device=nb_device
+                )
                 all_devices.append(diff_device)
                 nautobot_only.append(diff_device)
 
         # Process CheckMK-only hosts
         for name_lower, cmk_host in cmk_lookup.items():
             if name_lower not in processed_cmk_names:
-                display_name = cmk_host.get("id", "") or cmk_host.get("host_name", name_lower)
-                diff_device = _build_diff_device(display_name, "checkmk", cmk_host=cmk_host)
+                display_name = cmk_host.get("id", "") or cmk_host.get(
+                    "host_name", name_lower
+                )
+                diff_device = _build_diff_device(
+                    display_name, "checkmk", cmk_host=cmk_host
+                )
                 all_devices.append(diff_device)
                 checkmk_only.append(diff_device)
 

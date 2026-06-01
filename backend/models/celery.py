@@ -122,7 +122,9 @@ class BulkOnboardDevicesRequest(BaseModel):
 
     devices: List[BulkOnboardDeviceConfig]
     default_config: Dict  # Default values for missing device-specific fields
-    parallel_jobs: Optional[int] = 1  # Number of parallel jobs to create (default: 1 = sequential)
+    parallel_jobs: Optional[int] = (
+        1  # Number of parallel jobs to create (default: 1 = sequential)
+    )
 
 
 # ============================================================================
@@ -172,16 +174,24 @@ class UpdateDevicesRequest(BaseModel):
     csv_options: Optional[Dict[str, str]] = None
     dry_run: bool = False
     tags_mode: str = "replace"  # How to handle tags: "replace" or "merge"
-    column_mapping: Optional[Dict[str, str]] = None  # Maps CSV column names to Nautobot field names
+    column_mapping: Optional[Dict[str, str]] = (
+        None  # Maps CSV column names to Nautobot field names
+    )
     selected_columns: Optional[List[str]] = (
         None  # List of CSV columns to update (if None, all non-excluded columns are updated)
     )
-    primary_key_column: Optional[str] = None  # CSV column used to look up devices (default: "name")
-    matching_strategy: str = "exact"  # Name matching strategy: "exact", "contains", "starts_with"
+    primary_key_column: Optional[str] = (
+        None  # CSV column used to look up devices (default: "name")
+    )
+    matching_strategy: str = (
+        "exact"  # Name matching strategy: "exact", "contains", "starts_with"
+    )
     name_transform: Optional[NameTransformConfig] = (
         None  # Optional transform applied to the CSV name value before lookup
     )
-    rack_location_column: Optional[str] = None  # CSV column providing location name for rack UUID disambiguation
+    rack_location_column: Optional[str] = (
+        None  # CSV column providing location name for rack UUID disambiguation
+    )
 
 
 class UpdateDevicesJSONRequest(BaseModel):
@@ -207,7 +217,9 @@ class UpdateIPPrefixesRequest(BaseModel):
     dry_run: bool = False
     ignore_uuid: bool = True  # Default: use prefix+namespace lookup instead of UUID
     tags_mode: str = "replace"  # How to handle tags: "replace" or "merge"
-    column_mapping: Optional[Dict[str, str]] = None  # Maps lookup fields to CSV column names
+    column_mapping: Optional[Dict[str, str]] = (
+        None  # Maps lookup fields to CSV column names
+    )
     selected_columns: Optional[List[str]] = (
         None  # List of CSV columns to update (if None, all non-excluded columns are updated)
     )
@@ -221,7 +233,9 @@ class UpdateIPAddressesRequest(BaseModel):
     dry_run: bool = False
     ignore_uuid: bool = True  # Default: use address+namespace lookup instead of UUID
     tags_mode: str = "replace"  # How to handle tags: "replace" or "merge"
-    column_mapping: Optional[Dict[str, str]] = None  # Maps lookup fields to CSV column names
+    column_mapping: Optional[Dict[str, str]] = (
+        None  # Maps lookup fields to CSV column names
+    )
     selected_columns: Optional[List[str]] = (
         None  # List of CSV columns to update (if None, all non-excluded columns are updated)
     )
@@ -282,7 +296,9 @@ class DeployAgentRequest(BaseModel):
     path: Optional[str] = None
     inventory_id: Optional[int] = None
     activate_after_deploy: Optional[bool] = None  # If None, read from template
-    template_entries: Optional[List[DeployTemplateEntryRequest]] = None  # Multi-template entries
+    template_entries: Optional[List[DeployTemplateEntryRequest]] = (
+        None  # Multi-template entries
+    )
 
 
 # ============================================================================
@@ -324,8 +340,12 @@ class IPAddressesTaskRequest(BaseModel):
     action: str  # "list" or "delete"
     filter_field: str  # e.g. "cf_last_scan", "address", "status"
     filter_value: str  # e.g. "2026-02-19"
-    filter_type: Optional[str] = None  # e.g. "lte", "lt", "gte", "gt", "contains", or None for equality
-    include_null: bool = False  # When True, also include IPs where filter_field is null (never set)
+    filter_type: Optional[str] = (
+        None  # e.g. "lte", "lt", "gte", "gt", "contains", or None for equality
+    )
+    include_null: bool = (
+        False  # When True, also include IPs where filter_field is null (never set)
+    )
 
 
 class CsvImportRequest(BaseModel):
@@ -341,7 +361,9 @@ class CsvImportRequest(BaseModel):
     column_mapping: Optional[Dict[str, Optional[str]]] = None
     template_id: Optional[int] = None
     dry_run: bool = False
-    file_filter: Optional[str] = None  # glob pattern; if set, process all matching files instead of file_path
+    file_filter: Optional[str] = (
+        None  # glob pattern; if set, process all matching files instead of file_path
+    )
 
 
 class CsvExportRequest(BaseModel):

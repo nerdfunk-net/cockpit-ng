@@ -37,7 +37,9 @@ async def get_nautobot_device_statuses(
 ):
     """Get Nautobot device statuses."""
     try:
-        result = await nautobot_service.rest_request("extras/statuses/?content_types=dcim.device")
+        result = await nautobot_service.rest_request(
+            "extras/statuses/?content_types=dcim.device"
+        )
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch device statuses: ", e)
@@ -50,7 +52,9 @@ async def get_nautobot_interface_statuses(
 ):
     """Get Nautobot interface statuses."""
     try:
-        result = await nautobot_service.rest_request("extras/statuses/?content_types=dcim.interface")
+        result = await nautobot_service.rest_request(
+            "extras/statuses/?content_types=dcim.interface"
+        )
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch interface statuses: ", e)
@@ -63,7 +67,9 @@ async def get_nautobot_ipaddress_statuses(
 ):
     """Get Nautobot IP address statuses."""
     try:
-        result = await nautobot_service.rest_request("extras/statuses/?content_types=ipam.ipaddress")
+        result = await nautobot_service.rest_request(
+            "extras/statuses/?content_types=ipam.ipaddress"
+        )
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch IP address statuses: ", e)
@@ -76,7 +82,9 @@ async def get_nautobot_prefix_statuses(
 ):
     """Get Nautobot prefix statuses."""
     try:
-        result = await nautobot_service.rest_request("extras/statuses/?content_types=ipam.prefix")
+        result = await nautobot_service.rest_request(
+            "extras/statuses/?content_types=ipam.prefix"
+        )
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch prefix statuses: ", e)
@@ -89,7 +97,9 @@ async def get_nautobot_vm_statuses(
 ):
     """Get Nautobot virtual machine statuses."""
     try:
-        result = await nautobot_service.rest_request("extras/statuses/?content_types=virtualization.virtualmachine")
+        result = await nautobot_service.rest_request(
+            "extras/statuses/?content_types=virtualization.virtualmachine"
+        )
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch VM statuses: ", e)

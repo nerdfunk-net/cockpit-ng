@@ -272,7 +272,9 @@ class TestGenerateAuthorizationUrl:
         config = _fake_oidc_config()
         with patch(_PATCH_SETTINGS) as mock_sm:
             mock_sm.get_oidc_provider.return_value = _fake_provider(client_id="orig")
-            url = svc.generate_authorization_url("my-provider", config, state="s", client_id_override="override-id")
+            url = svc.generate_authorization_url(
+                "my-provider", config, state="s", client_id_override="override-id"
+            )
 
         assert "override-id" in url
         assert "orig" not in url
@@ -573,7 +575,9 @@ class TestProvisionOrGetUser:
             patch(_PATCH_SETTINGS) as mock_sm,
             patch(self._PATCH_GET, return_value=None),
         ):
-            mock_sm.get_oidc_provider.return_value = _fake_provider(auto_provision=False)
+            mock_sm.get_oidc_provider.return_value = _fake_provider(
+                auto_provision=False
+            )
             with pytest.raises(HTTPException) as exc_info:
                 await svc.provision_or_get_user("my-provider", user_data)
 
@@ -585,6 +589,8 @@ class TestProvisionOrGetUser:
         with patch(_PATCH_SETTINGS) as mock_sm:
             mock_sm.get_oidc_provider.return_value = None
             with pytest.raises(HTTPException) as exc_info:
-                await svc.provision_or_get_user("ghost", {"username": "alice", "sub": "s"})
+                await svc.provision_or_get_user(
+                    "ghost", {"username": "alice", "sub": "s"}
+                )
 
         assert exc_info.value.status_code == 404

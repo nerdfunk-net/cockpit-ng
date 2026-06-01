@@ -28,9 +28,13 @@ class SshAuthenticator:
         parser_templates: Optional[List[Tuple[int, str]]] = None,
     ) -> Optional[Dict[str, str]]:
         """Basic SSH login with Cisco/Linux detection and optional TextFSM parsing."""
-        return await asyncio.to_thread(self._login_and_detect, ip, username, password, parser_templates or [])
+        return await asyncio.to_thread(
+            self._login_and_detect, ip, username, password, parser_templates or []
+        )
 
-    async def authenticate_linux(self, ip: str, username: str, password: str) -> Optional[Dict[str, str]]:
+    async def authenticate_linux(
+        self, ip: str, username: str, password: str
+    ) -> Optional[Dict[str, str]]:
         """Paramiko-based Linux server detection via uname commands."""
         return await asyncio.to_thread(self._uname_check, ip, username, password)
 
@@ -105,7 +109,9 @@ class SshAuthenticator:
             logger.info("'show version' failed on %s: %s", ip, e)
             return None
 
-    def _try_linux(self, client: paramiko.SSHClient, ip: str) -> Optional[Dict[str, str]]:
+    def _try_linux(
+        self, client: paramiko.SSHClient, ip: str
+    ) -> Optional[Dict[str, str]]:
         try:
             logger.info("Trying Linux commands on %s", ip)
             hostname = self._exec_and_read(client, "hostname", ip)
@@ -131,7 +137,9 @@ class SshAuthenticator:
             logger.info("Linux commands failed on %s: %s", ip, e)
             return None
 
-    def _exec_and_read(self, client: paramiko.SSHClient, cmd: str, ip: str) -> Optional[str]:
+    def _exec_and_read(
+        self, client: paramiko.SSHClient, cmd: str, ip: str
+    ) -> Optional[str]:
         try:
             logger.info("Executing '%s' command on %s", cmd, ip)
             _, stdout, stderr = client.exec_command(cmd, timeout=5)
@@ -163,18 +171,28 @@ class SshAuthenticator:
                     fsm = textfsm.TextFSM(io.StringIO(tmpl))
                     for row in fsm.ParseText(output):
                         record = {h.lower(): row[i] for i, h in enumerate(fsm.header)}
-                        hn = record.get("hostname") or record.get("host") or record.get("device")
+                        hn = (
+                            record.get("hostname")
+                            or record.get("host")
+                            or record.get("device")
+                        )
                         if hn and hn.strip():
                             return hn.strip()
                 except Exception as e:
-                    logger.debug("TextFSM parse failed for template %s on %s: %s", tid, ip, e)
+                    logger.debug(
+                        "TextFSM parse failed for template %s on %s: %s", tid, ip, e
+                    )
 
         for line in output.split("\n"):
             if "uptime is" in line.lower():
                 parts = line.strip().split()
                 if parts:
                     return parts[0]
-            elif line.strip() and not line.startswith(" ") and "version" not in line.lower():
+            elif (
+                line.strip()
+                and not line.startswith(" ")
+                and "version" not in line.lower()
+            ):
                 return line.strip()
         return None
 
@@ -189,14 +207,20 @@ class SshAuthenticator:
                     fsm = textfsm.TextFSM(io.StringIO(tmpl))
                     for row in fsm.ParseText(output):
                         record = {h.lower(): row[i] for i, h in enumerate(fsm.header)}
-                        plat = record.get("platform") or record.get("version") or record.get("os")
+                        plat = (
+                            record.get("platform")
+                            or record.get("version")
+                            or record.get("os")
+                        )
                         if plat and plat.strip():
                             return plat.strip()
                 except Exception:
                     pass
         return "cisco-unknown"
 
-    def _uname_check(self, ip: str, username: str, password: str) -> Optional[Dict[str, str]]:
+    def _uname_check(
+        self, ip: str, username: str, password: str
+    ) -> Optional[Dict[str, str]]:
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:

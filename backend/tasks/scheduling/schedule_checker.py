@@ -62,7 +62,9 @@ def check_job_schedules_task() -> Dict[str, Any]:
                 # Get the template for this schedule
                 template_id = schedule.get("job_template_id")
                 if not template_id:
-                    logger.warning("Schedule %s has no template_id, skipping", schedule["id"])
+                    logger.warning(
+                        "Schedule %s has no template_id, skipping", schedule["id"]
+                    )
                     continue
 
                 template = _template_svc.get_job_template(template_id)
@@ -78,7 +80,9 @@ def check_job_schedules_task() -> Dict[str, Any]:
                 dispatch_job.delay(
                     schedule_id=schedule["id"],
                     template_id=template_id,
-                    job_name=schedule.get("job_identifier", f"schedule-{schedule['id']}"),
+                    job_name=schedule.get(
+                        "job_identifier", f"schedule-{schedule['id']}"
+                    ),
                     job_type=template.get("job_type"),
                     credential_id=schedule.get("credential_id"),
                     job_parameters=schedule.get("job_parameters"),

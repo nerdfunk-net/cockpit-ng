@@ -106,11 +106,15 @@ def get_queue_metrics() -> dict[str, Any]:
                         workers_consuming.append(worker_name)
 
             active_count = sum(
-                len(tasks) for worker_name, tasks in active_tasks.items() if worker_name in workers_consuming
+                len(tasks)
+                for worker_name, tasks in active_tasks.items()
+                if worker_name in workers_consuming
             )
 
             routed_tasks = [
-                pattern for pattern, route_config in task_routes.items() if route_config.get("queue") == queue_name
+                pattern
+                for pattern, route_config in task_routes.items()
+                if route_config.get("queue") == queue_name
             ]
 
             queues.append(
@@ -198,12 +202,18 @@ def purge_all_queues(*, username: str = "unknown") -> dict[str, Any]:
                         routing_key=queue_config.get("routing_key", queue_name),
                     )
                     purged_count = queue_obj(conn.channel()).purge()
-                    purged_queues.append({"queue": queue_name, "purged_tasks": purged_count or 0})
+                    purged_queues.append(
+                        {"queue": queue_name, "purged_tasks": purged_count or 0}
+                    )
                     total_purged += purged_count or 0
-                    logger.info("Purged %s task(s) from queue '%s'", purged_count, queue_name)
+                    logger.info(
+                        "Purged %s task(s) from queue '%s'", purged_count, queue_name
+                    )
                 except Exception as exc:
                     logger.error("Error purging queue %s: %s", queue_name, exc)
-                    purged_queues.append({"queue": queue_name, "purged_tasks": 0, "error": str(exc)})
+                    purged_queues.append(
+                        {"queue": queue_name, "purged_tasks": 0, "error": str(exc)}
+                    )
 
         logger.info(
             "Purged total of %s task(s) from all queues by user %s",

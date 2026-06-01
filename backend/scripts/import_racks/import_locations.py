@@ -30,7 +30,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import yaml
 
 # Allow imports from the backend root
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +54,12 @@ class LocationImporter:
         # Lookup tables built from config
         self._import_map: Dict[str, str] = {}  # csv_column -> nautobot_type
         self._nautobot_to_csv: Dict[str, str] = {}  # nautobot_type -> csv_column
-        self._dependency_map: Dict[str, Optional[str]] = {}  # nautobot_type -> parent_nautobot_type
-        self._mapping_lookup: Dict[str, Dict[str, Dict[str, Any]]] = {}  # csv_col -> {csv_val -> {nautobot, parent?}}
+        self._dependency_map: Dict[
+            str, Optional[str]
+        ] = {}  # nautobot_type -> parent_nautobot_type
+        self._mapping_lookup: Dict[
+            str, Dict[str, Dict[str, Any]]
+        ] = {}  # csv_col -> {csv_val -> {nautobot, parent?}}
 
         self._build_lookups()
 
@@ -64,10 +70,14 @@ class LocationImporter:
             self._import_map[csv_col] = nb_type
             self._nautobot_to_csv[nb_type] = csv_col
 
-        self._rack_location_type: Optional[str] = None  # nautobot type that holds the rack
+        self._rack_location_type: Optional[str] = (
+            None  # nautobot type that holds the rack
+        )
         for dep in self.config.get("dependencies", []):
             parent = dep.get("parent")
-            self._dependency_map[dep["name"]] = parent if parent and parent != "null" else None
+            self._dependency_map[dep["name"]] = (
+                parent if parent and parent != "null" else None
+            )
             if "location" in dep:
                 self._rack_location_type = dep["location"]
 
@@ -151,14 +161,18 @@ class LocationImporter:
                 self.status_cache[status["name"]] = status["id"]
                 self.status_cache[status["name"].lower()] = status["id"]
 
-        return self.status_cache.get(status_name) or self.status_cache.get(status_name.lower())
+        return self.status_cache.get(status_name) or self.status_cache.get(
+            status_name.lower()
+        )
 
     async def resolve_location_type_id(self, nb_type_name: str) -> Optional[str]:
         """Resolve a location type name to its UUID, with caching."""
         if nb_type_name in self.location_type_cache:
             return self.location_type_cache[nb_type_name]
 
-        response = await self.nautobot.rest_request(f"dcim/location-types/?name={nb_type_name}", method="GET")
+        response = await self.nautobot.rest_request(
+            f"dcim/location-types/?name={nb_type_name}", method="GET"
+        )
         if response.get("count", 0) > 0:
             lt_id = response["results"][0]["id"]
             self.location_type_cache[nb_type_name] = lt_id
@@ -172,7 +186,9 @@ class LocationImporter:
         if location_name in self.location_cache:
             return self.location_cache[location_name]
 
-        response = await self.nautobot.rest_request(f"dcim/locations/?name={location_name}", method="GET")
+        response = await self.nautobot.rest_request(
+            f"dcim/locations/?name={location_name}", method="GET"
+        )
         if response.get("count", 0) > 0:
             loc_id = response["results"][0]["id"]
             self.location_cache[location_name] = loc_id
@@ -180,7 +196,9 @@ class LocationImporter:
 
         return None
 
-    async def create_location(self, name: str, nautobot_type: str, parent_name: Optional[str] = None) -> Optional[str]:
+    async def create_location(
+        self, name: str, nautobot_type: str, parent_name: Optional[str] = None
+    ) -> Optional[str]:
         """Create a location in Nautobot. Returns the location ID (new or existing)."""
         existing_id = await self.resolve_location_id(name)
         if existing_id:
@@ -215,7 +233,9 @@ class LocationImporter:
                     name,
                 )
 
-        result = await self.nautobot.rest_request("dcim/locations/", method="POST", data=payload)
+        result = await self.nautobot.rest_request(
+            "dcim/locations/", method="POST", data=payload
+        )
         loc_id = result.get("id")
         if loc_id:
             self.location_cache[name] = loc_id
@@ -227,7 +247,9 @@ class LocationImporter:
         """Extract integer rack width from a value like '19 inches' or 19."""
         return int(str(width_value).split()[0])
 
-    async def resolve_rack_id(self, rack_name: str, location_name: str) -> Optional[str]:
+    async def resolve_rack_id(
+        self, rack_name: str, location_name: str
+    ) -> Optional[str]:
         """Check whether a rack with this name and location already exists in Nautobot."""
         response = await self.nautobot.rest_request(
             f"dcim/racks/?name={rack_name}&location={location_name}", method="GET"
@@ -236,11 +258,15 @@ class LocationImporter:
             return response["results"][0]["id"]
         return None
 
-    async def create_rack(self, name: str, location_name: str, defaults: Dict[str, Any]) -> Optional[str]:
+    async def create_rack(
+        self, name: str, location_name: str, defaults: Dict[str, Any]
+    ) -> Optional[str]:
         """Create a rack in Nautobot. Returns its ID, or None on failure."""
         location_id = await self.resolve_location_id(location_name)
         if not location_id:
-            logger.error("Cannot create rack '%s': location '%s' not found", name, location_name)
+            logger.error(
+                "Cannot create rack '%s': location '%s' not found", name, location_name
+            )
             return None
 
         status_name = defaults.get("Status", "Active")
@@ -259,7 +285,9 @@ class LocationImporter:
         if "height" in defaults:
             payload["u_height"] = int(defaults["height"])
 
-        result = await self.nautobot.rest_request("dcim/racks/", method="POST", data=payload)
+        result = await self.nautobot.rest_request(
+            "dcim/racks/", method="POST", data=payload
+        )
         rack_id = result.get("id")
         if rack_id:
             logger.debug("Created rack '%s' at location '%s'", name, location_name)
@@ -281,7 +309,9 @@ class LocationImporter:
             rack_location_csv_col = location_col
         else:
             if not self._rack_location_type:
-                logger.warning("No 'location' defined for Rack in dependencies; skipping rack import")
+                logger.warning(
+                    "No 'location' defined for Rack in dependencies; skipping rack import"
+                )
                 return {"created": 0, "skipped": 0, "errors": 0}
 
             rack_location_csv_col = self._nautobot_to_csv.get(self._rack_location_type)
@@ -364,7 +394,9 @@ class LocationImporter:
                         stats["skipped"] += 1
                         continue
 
-                    loc_id = await self.create_location(location_name, nb_type, parent_name)
+                    loc_id = await self.create_location(
+                        location_name, nb_type, parent_name
+                    )
                     if loc_id:
                         stats["created"] += 1
                         parent_info = f" -> {parent_name}" if parent_name else ""
@@ -384,7 +416,9 @@ class LocationImporter:
         for key in stats:
             stats[key] += rack_stats[key]
 
-        print(f"\nDone. Created: {stats['created']}, Skipped: {stats['skipped']}, Errors: {stats['errors']}")
+        print(
+            f"\nDone. Created: {stats['created']}, Skipped: {stats['skipped']}, Errors: {stats['errors']}"
+        )
         return stats
 
 

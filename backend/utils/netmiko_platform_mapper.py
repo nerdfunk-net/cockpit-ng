@@ -63,7 +63,9 @@ class NetmikoPlatformMapper:
             'cisco_ios'
         """
         if not platform:
-            logger.warning("Platform is None or empty, defaulting to %s", cls.DEFAULT_DEVICE_TYPE)
+            logger.warning(
+                "Platform is None or empty, defaulting to %s", cls.DEFAULT_DEVICE_TYPE
+            )
             return cls.DEFAULT_DEVICE_TYPE
 
         platform_lower = platform.lower().strip()
@@ -71,11 +73,15 @@ class NetmikoPlatformMapper:
         # Check each mapping key
         for key, device_type in cls.PLATFORM_MAP.items():
             if key in platform_lower:
-                logger.debug("Mapped platform '%s' to Netmiko type '%s'", platform, device_type)
+                logger.debug(
+                    "Mapped platform '%s' to Netmiko type '%s'", platform, device_type
+                )
                 return device_type
 
         # No match found - use default
-        logger.warning("Unknown platform '%s', defaulting to %s", platform, cls.DEFAULT_DEVICE_TYPE)
+        logger.warning(
+            "Unknown platform '%s', defaulting to %s", platform, cls.DEFAULT_DEVICE_TYPE
+        )
         return cls.DEFAULT_DEVICE_TYPE
 
     @classmethod

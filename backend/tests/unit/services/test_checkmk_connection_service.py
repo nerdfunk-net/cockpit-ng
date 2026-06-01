@@ -106,7 +106,9 @@ async def test_test_connection_success():
     mock_client.get_version.return_value = {"versions": {"checkmk": "2.3.0"}}
 
     with patch(_PATCH_CMK_CLIENT, return_value=mock_client):
-        success, message = await CheckMKConnectionService().test_connection("https://cmk.local", "prod", "user", "pass")
+        success, message = await CheckMKConnectionService().test_connection(
+            "https://cmk.local", "prod", "user", "pass"
+        )
 
     assert success is True
     assert "2.3.0" in message
@@ -121,7 +123,9 @@ async def test_test_connection_ping_fails():
     mock_client.test_connection.return_value = False
 
     with patch(_PATCH_CMK_CLIENT, return_value=mock_client):
-        success, message = await CheckMKConnectionService().test_connection("https://cmk.local", "prod", "user", "pass")
+        success, message = await CheckMKConnectionService().test_connection(
+            "https://cmk.local", "prod", "user", "pass"
+        )
 
     assert success is False
     assert message  # non-empty message
@@ -133,7 +137,9 @@ async def test_test_connection_ping_fails():
 async def test_test_connection_auth_error_401():
     """HTTP 401 → False with authentication-related message."""
     mock_client = MagicMock()
-    mock_client.test_connection.side_effect = CheckMKAPIError("Unauthorized", status_code=401)
+    mock_client.test_connection.side_effect = CheckMKAPIError(
+        "Unauthorized", status_code=401
+    )
 
     with patch(_PATCH_CMK_CLIENT, return_value=mock_client):
         success, message = await CheckMKConnectionService().test_connection(
@@ -150,7 +156,9 @@ async def test_test_connection_auth_error_401():
 async def test_test_connection_not_found_404():
     """HTTP 404 → False with URL-related message."""
     mock_client = MagicMock()
-    mock_client.test_connection.side_effect = CheckMKAPIError("Not found", status_code=404)
+    mock_client.test_connection.side_effect = CheckMKAPIError(
+        "Not found", status_code=404
+    )
 
     with patch(_PATCH_CMK_CLIENT, return_value=mock_client):
         success, message = await CheckMKConnectionService().test_connection(
@@ -167,10 +175,14 @@ async def test_test_connection_not_found_404():
 async def test_test_connection_ssl_error():
     """SSL-related exception → False with SSL message."""
     mock_client = MagicMock()
-    mock_client.test_connection.side_effect = Exception("SSL certificate verification failed")
+    mock_client.test_connection.side_effect = Exception(
+        "SSL certificate verification failed"
+    )
 
     with patch(_PATCH_CMK_CLIENT, return_value=mock_client):
-        success, message = await CheckMKConnectionService().test_connection("https://cmk.local", "prod", "user", "pass")
+        success, message = await CheckMKConnectionService().test_connection(
+            "https://cmk.local", "prod", "user", "pass"
+        )
 
     assert success is False
     assert "ssl" in message.lower()
@@ -185,7 +197,9 @@ async def test_test_connection_timeout_error():
     mock_client.test_connection.side_effect = Exception("Connection timed out")
 
     with patch(_PATCH_CMK_CLIENT, return_value=mock_client):
-        success, message = await CheckMKConnectionService().test_connection("https://cmk.local", "prod", "user", "pass")
+        success, message = await CheckMKConnectionService().test_connection(
+            "https://cmk.local", "prod", "user", "pass"
+        )
 
     assert success is False
     assert "timeout" in message.lower()
@@ -210,7 +224,9 @@ async def test_test_connection_from_settings_success():
 
     with patch(_PATCH_CONFIG, return_value=fake_config):
         svc = CheckMKConnectionService()
-        svc.test_connection = AsyncMock(return_value=(True, "Connection successful! CheckMK version: 2.3.0"))
+        svc.test_connection = AsyncMock(
+            return_value=(True, "Connection successful! CheckMK version: 2.3.0")
+        )
         result = await svc.test_connection_from_settings()
 
     assert result["success"] is True

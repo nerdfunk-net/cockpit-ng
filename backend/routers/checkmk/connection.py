@@ -148,4 +148,6 @@ async def get_host_inventory(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to get inventory for {hostname}", e)
+        raise_internal_server_error(
+            logger, f"Failed to get inventory for {hostname}", e
+        )

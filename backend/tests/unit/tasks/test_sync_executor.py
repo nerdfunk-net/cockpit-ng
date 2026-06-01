@@ -18,7 +18,9 @@ from tasks.execution.sync_executor import _sync_one_device, execute_sync_devices
 async def test_sync_one_device_skips_devices_without_primary_ip() -> None:
     """Devices without an IPv4 address are skipped before CheckMK writes."""
     service = MagicMock()
-    service.get_device_normalized = AsyncMock(return_value={"internal": {"hostname": "router-01"}, "attributes": {}})
+    service.get_device_normalized = AsyncMock(
+        return_value={"internal": {"hostname": "router-01"}, "attributes": {}}
+    )
 
     result = await _sync_one_device(service, "dev-1")
 
@@ -38,8 +40,12 @@ async def test_sync_one_device_falls_back_to_add_on_not_found() -> None:
             "attributes": {"ipaddress": "10.0.0.1"},
         }
     )
-    service.update_device_in_checkmk = AsyncMock(side_effect=RuntimeError("404 not found"))
-    service.add_device_to_checkmk = AsyncMock(return_value=SimpleNamespace(hostname="router-01", message="Added"))
+    service.update_device_in_checkmk = AsyncMock(
+        side_effect=RuntimeError("404 not found")
+    )
+    service.add_device_to_checkmk = AsyncMock(
+        return_value=SimpleNamespace(hostname="router-01", message="Added")
+    )
 
     result = await _sync_one_device(service, "dev-1")
 
@@ -49,7 +55,9 @@ async def test_sync_one_device_falls_back_to_add_on_not_found() -> None:
 
 
 @pytest.mark.unit
-def test_execute_sync_devices_syncs_targets_and_skips_activation_when_disabled() -> None:
+def test_execute_sync_devices_syncs_targets_and_skips_activation_when_disabled() -> (
+    None
+):
     """Explicit target devices are synced and activation respects template settings."""
     config = MagicMock()
     nb2cmk = MagicMock()
@@ -59,7 +67,9 @@ def test_execute_sync_devices_syncs_targets_and_skips_activation_when_disabled()
             "attributes": {"ipaddress": "10.0.0.1"},
         }
     )
-    nb2cmk.update_device_in_checkmk = AsyncMock(return_value=SimpleNamespace(hostname="router-01", message="Updated"))
+    nb2cmk.update_device_in_checkmk = AsyncMock(
+        return_value=SimpleNamespace(hostname="router-01", message="Updated")
+    )
 
     with (
         patch("service_factory.build_checkmk_config_service", return_value=config),

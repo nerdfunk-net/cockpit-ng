@@ -31,7 +31,9 @@ class CheckMKHostGroupService:
 
     async def update_host_group(self, name: str, alias: str) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        return await asyncio.to_thread(lambda: client.update_host_group(name, alias=alias))
+        return await asyncio.to_thread(
+            lambda: client.update_host_group(name, alias=alias)
+        )
 
     async def delete_host_group(self, name: str) -> None:
         client = CheckMKClientFactory.build_client_from_settings()

@@ -280,11 +280,15 @@ class TestImportFromNautobotCsv:
         _SENTINELS = {"NULL", "NoObject", "null"}
 
         for positional, keyword in import_svc.import_device.call_args_list:
-            device_data = positional[0] if positional else keyword.get("device_data", {})
+            device_data = (
+                positional[0] if positional else keyword.get("device_data", {})
+            )
             # Sentinel values must not appear as top-level string fields
             for field_value in device_data.values():
                 if isinstance(field_value, str):
-                    assert field_value not in _SENTINELS, f"Sentinel value '{field_value}' found in device payload"
+                    assert field_value not in _SENTINELS, (
+                        f"Sentinel value '{field_value}' found in device payload"
+                    )
 
 
 # ---------------------------------------------------------------------------
@@ -404,10 +408,14 @@ class TestImportFromCockpitCsv:
 
             ip_interfaces = [i for i in interface_config if i.get("ip_address")]
             primary_interfaces = [i for i in ip_interfaces if i.get("is_primary_ipv4")]
-            non_primary_interfaces = [i for i in ip_interfaces if not i.get("is_primary_ipv4")]
+            non_primary_interfaces = [
+                i for i in ip_interfaces if not i.get("is_primary_ipv4")
+            ]
 
             # Exactly one interface is designated as primary
-            assert len(primary_interfaces) == 1, "Exactly one interface should have is_primary_ipv4=True"
+            assert len(primary_interfaces) == 1, (
+                "Exactly one interface should have is_primary_ipv4=True"
+            )
             assert primary_interfaces[0]["name"] == "Ethernet0/0"
 
             # The second IP-bearing interface must not be primary

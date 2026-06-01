@@ -105,8 +105,12 @@ class BackupStatusService:
         devices_list = list(device_status.values())
         return BackupCheckResponse(
             total_devices=len(devices_list),
-            devices_with_successful_backup=sum(1 for d in devices_list if d["last_backup_success"]),
-            devices_with_failed_backup=sum(1 for d in devices_list if not d["last_backup_success"]),
+            devices_with_successful_backup=sum(
+                1 for d in devices_list if d["last_backup_success"]
+            ),
+            devices_with_failed_backup=sum(
+                1 for d in devices_list if not d["last_backup_success"]
+            ),
             devices_never_backed_up=0,
             devices=devices_list,
         )

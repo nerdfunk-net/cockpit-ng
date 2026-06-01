@@ -17,16 +17,22 @@ from services.checkmk.exceptions import CheckMKAPIError
 from services.checkmk.tag_group_service import CheckMKTagGroupService
 from tests.mocks import TAG_GROUP_AGENT_ID, FakeCheckMKClient
 
-_PATCH_TARGET = "services.checkmk.tag_group_service.CheckMKClientFactory.build_client_from_settings"
+_PATCH_TARGET = (
+    "services.checkmk.tag_group_service.CheckMKClientFactory.build_client_from_settings"
+)
 
 
-def _create_request(group_id: str, title: str, tags: list | None = None) -> SimpleNamespace:
+def _create_request(
+    group_id: str, title: str, tags: list | None = None
+) -> SimpleNamespace:
     tag_mocks = []
     for t in tags or []:
         m = MagicMock()
         m.dict.return_value = t
         tag_mocks.append(m)
-    return SimpleNamespace(id=group_id, title=title, tags=tag_mocks, topic=None, help=None)
+    return SimpleNamespace(
+        id=group_id, title=title, tags=tag_mocks, topic=None, help=None
+    )
 
 
 def _update_request(title: str, tags: list | None = None) -> SimpleNamespace:
@@ -35,7 +41,9 @@ def _update_request(title: str, tags: list | None = None) -> SimpleNamespace:
         m = MagicMock()
         m.dict.return_value = t
         tag_mocks.append(m)
-    return SimpleNamespace(title=title, tags=tag_mocks or None, topic=None, help=None, repair=False)
+    return SimpleNamespace(
+        title=title, tags=tag_mocks or None, topic=None, help=None, repair=False
+    )
 
 
 # ── GET /tag_groups ────────────────────────────────────────────────────────────
@@ -96,7 +104,9 @@ async def test_create_host_tag_group_stores_it():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKTagGroupService()
-        await svc.create_host_tag_group(_create_request("environment", "Environment", tags))
+        await svc.create_host_tag_group(
+            _create_request("environment", "Environment", tags)
+        )
 
     assert "environment" in fake._tag_groups
     assert fake._tag_groups["environment"]["title"] == "Environment"
@@ -112,7 +122,9 @@ async def test_create_host_tag_group_duplicate_raises():
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKTagGroupService()
         with pytest.raises(CheckMKAPIError):
-            await svc.create_host_tag_group(_create_request(TAG_GROUP_AGENT_ID, "Duplicate"))
+            await svc.create_host_tag_group(
+                _create_request(TAG_GROUP_AGENT_ID, "Duplicate")
+            )
 
 
 # ── PUT /tag_groups/{id} ───────────────────────────────────────────────────────
@@ -127,7 +139,9 @@ async def test_update_host_tag_group_title():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKTagGroupService()
-        await svc.update_host_tag_group(TAG_GROUP_AGENT_ID, _update_request("Agent (Updated)"))
+        await svc.update_host_tag_group(
+            TAG_GROUP_AGENT_ID, _update_request("Agent (Updated)")
+        )
 
     assert fake._tag_groups[TAG_GROUP_AGENT_ID]["title"] == "Agent (Updated)"
 

@@ -102,7 +102,9 @@ class InventoryExportService:
                     device.name,
                     device.id,
                 )
-                device_details = await device_query_service.get_device_details(device.id, use_cache=True)
+                device_details = await device_query_service.get_device_details(
+                    device.id, use_cache=True
+                )
 
                 if device_details.get("location"):
                     location_name = device_details["location"].get("name")
@@ -114,12 +116,16 @@ class InventoryExportService:
                     if tag_name:
                         tags_set.add(tag_name)
 
-                for field_key, field_value in (device_details.get("_custom_field_data") or {}).items():
+                for field_key, field_value in (
+                    device_details.get("_custom_field_data") or {}
+                ).items():
                     if field_value is not None:
                         if field_key not in custom_fields_dict:
                             custom_fields_dict[field_key] = set()
                         if isinstance(field_value, list):
-                            custom_fields_dict[field_key].update(str(v) for v in field_value if v)
+                            custom_fields_dict[field_key].update(
+                                str(v) for v in field_value if v
+                            )
                         else:
                             custom_fields_dict[field_key].add(str(field_value))
 
@@ -134,7 +140,9 @@ class InventoryExportService:
                         roles_set.add(role_name)
 
             except Exception as e:
-                logger.error("Error analyzing device %s (%s): %s", device.name, device.id, e)
+                logger.error(
+                    "Error analyzing device %s (%s): %s", device.name, device.id, e
+                )
 
         logger.info(
             "Analysis complete: %s locations, %s tags, %s custom field types, %s statuses, %s roles",
@@ -148,7 +156,9 @@ class InventoryExportService:
         return {
             "locations": sorted(locations_set),
             "tags": sorted(tags_set),
-            "custom_fields": {key: sorted(values) for key, values in custom_fields_dict.items()},
+            "custom_fields": {
+                key: sorted(values) for key, values in custom_fields_dict.items()
+            },
             "statuses": sorted(statuses_set),
             "roles": sorted(roles_set),
             "device_count": len(devices),

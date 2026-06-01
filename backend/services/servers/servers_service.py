@@ -6,7 +6,9 @@ from repositories.servers.servers_repository import ServersRepository
 if TYPE_CHECKING:
     from models.servers import CreateServerRequest, UpdateServerRequest
 
-_ALLOWED_GROUP_BY = frozenset({"location", "distribution_release", "distribution_version", "contact"})
+_ALLOWED_GROUP_BY = frozenset(
+    {"location", "distribution_release", "distribution_version", "contact"}
+)
 
 
 class ServersService:

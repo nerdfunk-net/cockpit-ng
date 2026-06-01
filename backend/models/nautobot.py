@@ -84,7 +84,9 @@ class InterfaceData(BaseModel):
     name: Optional[str] = None  # Interface name (required for actual creation)
     type: Optional[str] = None  # Required for physical devices, not used for VMs
     status: Optional[str] = None  # Interface status (required for actual creation)
-    ip_addresses: list[IpAddressData] = []  # Multiple IP addresses per interface (optional)
+    ip_addresses: list[
+        IpAddressData
+    ] = []  # Multiple IP addresses per interface (optional)
     # Optional properties
     enabled: Optional[bool] = None
     mgmt_only: Optional[bool] = None
@@ -101,7 +103,9 @@ class InterfaceData(BaseModel):
 
     @field_validator("tagged_vlans", mode="before")
     @classmethod
-    def convert_tagged_vlans_to_string(cls, v: Optional[Union[str, list[str]]]) -> Optional[str]:
+    def convert_tagged_vlans_to_string(
+        cls, v: Optional[Union[str, list[str]]]
+    ) -> Optional[str]:
         """Convert tagged_vlans array to comma-separated string."""
         if v is None:
             return None
@@ -111,7 +115,9 @@ class InterfaceData(BaseModel):
 
     @field_validator("tags", mode="before")
     @classmethod
-    def convert_tags_to_string(cls, v: Optional[Union[str, list[str]]]) -> Optional[str]:
+    def convert_tags_to_string(
+        cls, v: Optional[Union[str, list[str]]]
+    ) -> Optional[str]:
         """Convert tags array to comma-separated string."""
         if v is None:
             return None
@@ -242,7 +248,9 @@ class AddVirtualMachineRequest(BaseModel):
 
     # Optional VM configuration
     role: Optional[str] = None  # Role UUID
-    clusterGroup: Optional[str] = None  # Cluster Group UUID (informational, not used in creation)
+    clusterGroup: Optional[str] = (
+        None  # Cluster Group UUID (informational, not used in creation)
+    )
     platform: Optional[str] = None  # Platform UUID
     vcpus: Optional[int] = None
     memory: Optional[int] = None  # Memory in MB
@@ -265,7 +273,9 @@ class AddVirtualMachineRequest(BaseModel):
     # DEPRECATED: Use 'interfaces' array instead
     interfaceName: Optional[str] = None
     primaryIpv4: Optional[str] = None  # IPv4 address (e.g., "10.0.0.1/24")
-    namespace: Optional[str] = None  # Namespace UUID (defaults to "Global" if not provided)
+    namespace: Optional[str] = (
+        None  # Namespace UUID (defaults to "Global" if not provided)
+    )
 
     @field_validator(
         "role",
@@ -491,7 +501,9 @@ class ScanStartRequest(BaseModel):
     @classmethod
     def validate_discovery_mode(cls, v: str) -> str:
         if v not in ["napalm", "ssh-login", "netmiko"]:
-            raise ValueError("discovery_mode must be 'napalm', 'ssh-login', or 'netmiko'")
+            raise ValueError(
+                "discovery_mode must be 'napalm', 'ssh-login', or 'netmiko'"
+            )
         return v
 
     @field_validator("ping_mode")

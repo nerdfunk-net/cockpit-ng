@@ -6,7 +6,9 @@ logger = logging.getLogger(__name__)
 
 class _ActivationMixin:
     def get_pending_changes(self) -> Dict:
-        response = self._make_request("GET", "domain-types/activation_run/collections/pending_changes")
+        response = self._make_request(
+            "GET", "domain-types/activation_run/collections/pending_changes"
+        )
         return self._handle_response(response)
 
     def activate_changes(
@@ -45,5 +47,7 @@ class _ActivationMixin:
         return self._handle_response(response)
 
     def get_running_activations(self) -> Dict:
-        response = self._make_request("GET", "domain-types/activation_run/collections/running")
+        response = self._make_request(
+            "GET", "domain-types/activation_run/collections/running"
+        )
         return self._handle_response(response)

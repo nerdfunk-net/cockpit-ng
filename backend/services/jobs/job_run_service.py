@@ -67,7 +67,9 @@ class JobRunService:
             return self._to_dict(job_run)
         return None
 
-    def get_job_runs_by_celery_ids(self, celery_task_ids: List[str]) -> List[Dict[str, Any]]:
+    def get_job_runs_by_celery_ids(
+        self, celery_task_ids: List[str]
+    ) -> List[Dict[str, Any]]:
         job_runs = self._repo.get_by_celery_task_ids(celery_task_ids)
         return [self._to_dict(job_run) for job_run in job_runs]
 
@@ -121,18 +123,24 @@ class JobRunService:
         runs = self._repo.get_runs_since(since=since, status=status, job_type=job_type)
         return [self._to_dict(run) for run in runs]
 
-    def get_schedule_runs(self, schedule_id: int, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_schedule_runs(
+        self, schedule_id: int, limit: int = 50
+    ) -> List[Dict[str, Any]]:
         runs = self._repo.get_by_schedule(schedule_id, limit=limit)
         return [self._to_dict(run) for run in runs]
 
-    def mark_started(self, run_id: int, celery_task_id: str) -> Optional[Dict[str, Any]]:
+    def mark_started(
+        self, run_id: int, celery_task_id: str
+    ) -> Optional[Dict[str, Any]]:
         job_run = self._repo.mark_started(run_id, celery_task_id)
         if job_run:
             logger.info("Job run %s started (task: %s)", run_id, celery_task_id)
             return self._to_dict(job_run)
         return None
 
-    def mark_completed(self, run_id: int, result: Optional[Dict] = None) -> Optional[Dict[str, Any]]:
+    def mark_completed(
+        self, run_id: int, result: Optional[Dict] = None
+    ) -> Optional[Dict[str, Any]]:
         result_json = json.dumps(result) if result else None
         job_run = self._repo.mark_completed(run_id, result=result_json)
         if job_run:

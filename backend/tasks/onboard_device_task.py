@@ -16,7 +16,9 @@ def _trigger_nautobot_onboarding(**kwargs):
 
 def _wait_for_job_completion(task_instance, job_id: str, max_wait: int = 120):
     """Compatibility wrapper used by bulk onboarding."""
-    return _onboarding_service._wait_for_job_completion(task_instance, job_id, max_wait=max_wait)
+    return _onboarding_service._wait_for_job_completion(
+        task_instance, job_id, max_wait=max_wait
+    )
 
 
 def _process_single_device(**kwargs):

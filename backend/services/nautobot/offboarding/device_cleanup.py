@@ -40,7 +40,9 @@ class DeviceCleanupManager:
         self._invalidate_device_cache(device_id)
         return result
 
-    async def update_device(self, device_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_device(
+        self, device_id: str, payload: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Update device attributes in Nautobot."""
         try:
             updated_device = await self._nb.rest_request(
@@ -90,5 +92,7 @@ class DeviceCleanupManager:
     def _update_device_cache(self, device_id: str, device_data: Dict[str, Any]) -> None:
         """Set device cache entries and invalidate list cache."""
         self._cache.set(get_device_cache_key(device_id), device_data, DEVICE_CACHE_TTL)
-        self._cache.set(get_device_details_cache_key(device_id), device_data, DEVICE_CACHE_TTL)
+        self._cache.set(
+            get_device_details_cache_key(device_id), device_data, DEVICE_CACHE_TTL
+        )
         self._cache.delete(get_device_list_cache_key())

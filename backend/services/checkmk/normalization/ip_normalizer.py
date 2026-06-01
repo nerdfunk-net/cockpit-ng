@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 class IPNormalizer:
     """Handles IP address processing and validation."""
 
-    def process_ip_address(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def process_ip_address(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process and set IP address attribute.
 
         Args:
@@ -23,7 +25,9 @@ class IPNormalizer:
         if primary_ip4 and primary_ip4.get("address"):
             ip_address = primary_ip4.get("address")
             # Remove CIDR notation (e.g., "192.168.1.1/24" becomes "192.168.1.1")
-            extensions.attributes["ipaddress"] = ip_address.split("/")[0] if "/" in ip_address else ip_address
+            extensions.attributes["ipaddress"] = (
+                ip_address.split("/")[0] if "/" in ip_address else ip_address
+            )
         else:
             extensions.attributes["ipaddress"] = ""
 
@@ -97,4 +101,6 @@ class IPNormalizer:
                     continue
 
         except ipaddress.AddressValueError:
-            logger.warning("Invalid device IP address for additional_attributes: %s", device_ip)
+            logger.warning(
+                "Invalid device IP address for additional_attributes: %s", device_ip
+            )

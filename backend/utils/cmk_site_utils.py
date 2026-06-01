@@ -14,7 +14,9 @@ from utils.cmk_folder_utils import parse_folder_value
 logger = logging.getLogger(__name__)
 
 
-def get_monitored_site(device_data: Dict[str, Any], checkmk_config: Optional[Dict[str, Any]] = None) -> str:
+def get_monitored_site(
+    device_data: Dict[str, Any], checkmk_config: Optional[Dict[str, Any]] = None
+) -> str:
     """Get the correct CheckMK site for a device based on configuration rules.
 
     Priority order: by_name > by_nautobot > by_ip > by_location > default
@@ -31,7 +33,11 @@ def get_monitored_site(device_data: Dict[str, Any], checkmk_config: Optional[Dic
         site_config = config.get("monitored_site", {})
 
         device_name = device_data.get("name", "")
-        device_location = device_data.get("location", {}).get("name", "") if device_data.get("location") else ""
+        device_location = (
+            device_data.get("location", {}).get("name", "")
+            if device_data.get("location")
+            else ""
+        )
         device_ip = _extract_device_ip(device_data)
 
         # 1. Check by_name (highest priority)
@@ -74,7 +80,11 @@ def get_monitored_site(device_data: Dict[str, Any], checkmk_config: Optional[Dic
 
         # 4. Check by_location (fourth priority)
         by_location_config = site_config.get("by_location", {})
-        if device_location and by_location_config and device_location in by_location_config:
+        if (
+            device_location
+            and by_location_config
+            and device_location in by_location_config
+        ):
             logger.debug(
                 "Found site for device '%s' by location '%s': %s",
                 device_name,
@@ -116,7 +126,9 @@ def get_device_site_from_normalized_data(normalized_data: Dict[str, Any]) -> str
         return config_service.get_default_site()
 
 
-def get_device_folder(device_data: Dict[str, Any], checkmk_config: Optional[Dict[str, Any]] = None) -> str:
+def get_device_folder(
+    device_data: Dict[str, Any], checkmk_config: Optional[Dict[str, Any]] = None
+) -> str:
     """Get the correct CheckMK folder for a device based on configuration rules.
 
     Priority order: by_name > by_ip > by_location > default
@@ -136,11 +148,19 @@ def get_device_folder(device_data: Dict[str, Any], checkmk_config: Optional[Dict
         folders_config = config.get("folders", {})
 
         device_name = device_data.get("name", "")
-        device_location = device_data.get("location", {}).get("name", "") if device_data.get("location") else ""
+        device_location = (
+            device_data.get("location", {}).get("name", "")
+            if device_data.get("location")
+            else ""
+        )
         device_ip = _extract_device_ip(device_data)
 
         # Extract device role
-        device_role = device_data.get("role", {}).get("name", "").lower() if device_data.get("role") else ""
+        device_role = (
+            device_data.get("role", {}).get("name", "").lower()
+            if device_data.get("role")
+            else ""
+        )
 
         # Determine which role configuration to use
         if device_role and device_role in folders_config:
@@ -170,7 +190,11 @@ def get_device_folder(device_data: Dict[str, Any], checkmk_config: Optional[Dict
 
         # 3. Check by_location (third priority)
         by_location_config = role_config.get("by_location", {})
-        if device_location and by_location_config and device_location in by_location_config:
+        if (
+            device_location
+            and by_location_config
+            and device_location in by_location_config
+        ):
             folder_template = by_location_config[device_location]
             folder = parse_folder_value(folder_template, device_data)
             return folder.replace("//", "/")
@@ -250,7 +274,9 @@ def _match_ip_to_folder(device_ip: str, by_ip_config: Dict[str, str]) -> Optiona
                 if device_ip_obj in network:
                     return folder_template
             except ipaddress.AddressValueError:
-                logger.warning("Invalid CIDR network in folder config: %s", cidr_network)
+                logger.warning(
+                    "Invalid CIDR network in folder config: %s", cidr_network
+                )
                 continue
 
     except ipaddress.AddressValueError:

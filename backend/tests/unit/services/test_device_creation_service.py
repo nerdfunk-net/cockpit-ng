@@ -50,8 +50,12 @@ def make_request_with_uuids(**overrides) -> AddDeviceRequest:
 def make_interface(name: str = "Loopback0", ip: str | None = None) -> InterfaceData:
     ip_addresses = []
     if ip:
-        ip_addresses.append(IpAddressData(address=ip, namespace="Global", is_primary=True))
-    return InterfaceData(name=name, type="virtual", status="active", ip_addresses=ip_addresses)
+        ip_addresses.append(
+            IpAddressData(address=ip, namespace="Global", is_primary=True)
+        )
+    return InterfaceData(
+        name=name, type="virtual", status="active", ip_addresses=ip_addresses
+    )
 
 
 @pytest.fixture
@@ -86,7 +90,9 @@ async def test_create_basic_device_success(creation_service, fake_nb):
 @pytest.mark.unit
 async def test_create_device_stores_correct_name(creation_service, fake_nb):
     """Created device should have the requested name."""
-    result = await creation_service.create_device_with_interfaces(make_request(name="core-switch-99"))
+    result = await creation_service.create_device_with_interfaces(
+        make_request(name="core-switch-99")
+    )
 
     assert result["success"] is True
     device = fake_nb._devices[result["device_id"]]
@@ -110,9 +116,13 @@ async def test_create_device_resolves_names_to_uuids(creation_service, fake_nb):
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_create_device_with_uuid_fields_skips_resolution(creation_service, fake_nb):
+async def test_create_device_with_uuid_fields_skips_resolution(
+    creation_service, fake_nb
+):
     """Fields that are already valid UUIDs must be passed through unchanged."""
-    result = await creation_service.create_device_with_interfaces(make_request_with_uuids())
+    result = await creation_service.create_device_with_interfaces(
+        make_request_with_uuids()
+    )
 
     assert result["success"] is True
     assert result["device_id"] in fake_nb._devices
@@ -122,7 +132,9 @@ async def test_create_device_with_uuid_fields_skips_resolution(creation_service,
 @pytest.mark.unit
 async def test_create_device_with_platform(creation_service, fake_nb):
     """Optional platform field should be resolved and stored."""
-    result = await creation_service.create_device_with_interfaces(make_request(platform="cisco_ios"))
+    result = await creation_service.create_device_with_interfaces(
+        make_request(platform="cisco_ios")
+    )
 
     assert result["success"] is True
     device = fake_nb._devices[result["device_id"]]
@@ -133,7 +145,9 @@ async def test_create_device_with_platform(creation_service, fake_nb):
 @pytest.mark.unit
 async def test_create_device_with_loopback_interface(creation_service, fake_nb):
     """A request with one interface + IP should create the device, interface, and IP."""
-    request = make_request_with_uuids(interfaces=[make_interface("Loopback0", "192.168.1.1/24")])
+    request = make_request_with_uuids(
+        interfaces=[make_interface("Loopback0", "192.168.1.1/24")]
+    )
 
     result = await creation_service.create_device_with_interfaces(request)
 
@@ -165,7 +179,9 @@ async def test_create_device_with_multiple_interfaces(creation_service, fake_nb)
 @pytest.mark.unit
 async def test_create_device_primary_ip_assigned(creation_service, fake_nb):
     """Interface marked is_primary=True should cause primary IP to be assigned on the device."""
-    request = make_request_with_uuids(interfaces=[make_interface("Loopback0", "10.10.10.1/32")])
+    request = make_request_with_uuids(
+        interfaces=[make_interface("Loopback0", "10.10.10.1/32")]
+    )
 
     result = await creation_service.create_device_with_interfaces(request)
 
@@ -177,7 +193,9 @@ async def test_create_device_primary_ip_assigned(creation_service, fake_nb):
 @pytest.mark.unit
 async def test_create_device_without_interfaces_succeeds(creation_service, fake_nb):
     """A request with no interfaces should succeed with interfaces_created=0."""
-    result = await creation_service.create_device_with_interfaces(make_request_with_uuids(interfaces=[]))
+    result = await creation_service.create_device_with_interfaces(
+        make_request_with_uuids(interfaces=[])
+    )
 
     assert result["success"] is True
     assert result["summary"]["interfaces_created"] == 0
@@ -188,7 +206,9 @@ async def test_create_device_without_interfaces_succeeds(creation_service, fake_
 @pytest.mark.unit
 async def test_create_device_dry_run_no_writes(creation_service, fake_nb):
     """dry_run=True must validate but must NOT create any resources."""
-    result = await creation_service.create_device_with_interfaces(make_request_with_uuids(dry_run=True))
+    result = await creation_service.create_device_with_interfaces(
+        make_request_with_uuids(dry_run=True)
+    )
 
     assert result["dry_run"] is True
     assert len(fake_nb._devices) == 0
@@ -200,7 +220,9 @@ async def test_create_device_dry_run_no_writes(creation_service, fake_nb):
 @pytest.mark.unit
 async def test_create_device_dry_run_passes_when_valid(creation_service, fake_nb):
     """dry_run on a valid request should succeed (no errors)."""
-    result = await creation_service.create_device_with_interfaces(make_request_with_uuids(dry_run=True))
+    result = await creation_service.create_device_with_interfaces(
+        make_request_with_uuids(dry_run=True)
+    )
 
     assert result["dry_run"] is True
     assert result["success"] is True
@@ -209,7 +231,9 @@ async def test_create_device_dry_run_passes_when_valid(creation_service, fake_nb
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_create_device_dry_run_detects_missing_device_type(creation_service, fake_nb):
+async def test_create_device_dry_run_detects_missing_device_type(
+    creation_service, fake_nb
+):
     """dry_run should report error when device_type UUID does not exist."""
     request = make_request_with_uuids(
         dry_run=True,

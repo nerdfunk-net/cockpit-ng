@@ -52,7 +52,9 @@ async def submit_test_task(
     from tasks import test_tasks
 
     task = test_tasks.test_task.delay(message=request.message)
-    return TaskResponse(task_id=task.id, status="queued", message=f"Test task submitted: {task.id}")
+    return TaskResponse(
+        task_id=task.id, status="queued", message=f"Test task submitted: {task.id}"
+    )
 
 
 @router.post("/test/progress", response_model=TaskResponse)
@@ -418,7 +420,9 @@ async def trigger_cleanup(
     from tasks.periodic_tasks import cleanup_celery_data_task
 
     task = cleanup_celery_data_task.delay()
-    return TaskResponse(task_id=task.id, status="queued", message=f"Cleanup task triggered: {task.id}")
+    return TaskResponse(
+        task_id=task.id, status="queued", message=f"Cleanup task triggered: {task.id}"
+    )
 
 
 @router.get("/cleanup/stats")

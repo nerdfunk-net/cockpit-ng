@@ -1,5 +1,5 @@
 [tool.ruff]
-line-length = 120
+line-length = 88
 target-version = "py39"
 exclude = [
     "migrations/",
@@ -21,7 +21,7 @@ ignore = [
     "UP045",
     # raise ... from exc inside except — 100+ locations, tracked separately
     "B904",
-    # Line-length violations are reported but not enforced beyond 120
+    # Line-length violations reported by E501 are handled by ruff format
     "E501",
     # %-style format strings — 113 locations, migrate to f-strings separately
     "UP031",

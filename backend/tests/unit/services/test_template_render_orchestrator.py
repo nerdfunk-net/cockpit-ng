@@ -10,7 +10,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from models.templates import AdvancedTemplateRenderRequest, TemplateExecuteAndSyncRequest
+from models.templates import (
+    AdvancedTemplateRenderRequest,
+    TemplateExecuteAndSyncRequest,
+)
 from services.templates.render_orchestrator import (
     TemplateRenderOrchestrator,
     _extract_template_variables,
@@ -128,7 +131,10 @@ async def test_advanced_render_agent_adds_inventory_snmp_mapping_and_path() -> N
     persistence.get_inventory.return_value = {"conditions": [{"field": "role"}]}
 
     with (
-        patch("service_factory.build_inventory_persistence_service", return_value=persistence),
+        patch(
+            "service_factory.build_inventory_persistence_service",
+            return_value=persistence,
+        ),
         patch(
             "utils.inventory_converter.convert_saved_inventory_to_operations",
             return_value=[{"operation": "role"}],
@@ -171,7 +177,9 @@ async def test_advanced_render_agent_records_inventory_warning() -> None:
         )
 
     assert result.rendered_content == "hello world"
-    assert result.warnings == ["Failed to fetch inventory devices: inventory unavailable"]
+    assert result.warnings == [
+        "Failed to fetch inventory devices: inventory unavailable"
+    ]
 
 
 @pytest.mark.asyncio
@@ -263,7 +271,9 @@ async def test_execute_and_sync_returns_parse_errors_without_queueing() -> None:
 @pytest.mark.unit
 def test_extract_template_variables_deduplicates_and_sorts() -> None:
     """Variable extraction returns unique dotted variable names."""
-    result = _extract_template_variables("{{ device.name }} {{ hostname }} {{ device.name }}")
+    result = _extract_template_variables(
+        "{{ device.name }} {{ hostname }} {{ device.name }}"
+    )
 
     assert result == ["device.name", "hostname"]
 
@@ -271,7 +281,9 @@ def test_extract_template_variables_deduplicates_and_sorts() -> None:
 @pytest.mark.unit
 def test_parse_rendered_output_supports_yaml_and_text() -> None:
     """Rendered YAML and key-value text output are parsed into update dictionaries."""
-    yaml_result, yaml_errors = _parse_rendered_output("status: Active\n", DEVICE_ID, "yaml")
+    yaml_result, yaml_errors = _parse_rendered_output(
+        "status: Active\n", DEVICE_ID, "yaml"
+    )
     text_result, text_errors = _parse_rendered_output(
         "status=Active\nplatform=cisco_ios",
         DEVICE_ID,

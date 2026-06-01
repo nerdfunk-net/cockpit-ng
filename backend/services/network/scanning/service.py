@@ -90,7 +90,9 @@ class ScanService:
 
     def _purge_expired(self) -> None:
         now = time.time()
-        expired = [jid for jid, j in self._jobs.items() if now - j.created > JOB_TTL_SECONDS]
+        expired = [
+            jid for jid, j in self._jobs.items() if now - j.created > JOB_TTL_SECONDS
+        ]
         for jid in expired:
             self._jobs.pop(jid, None)
             logger.info("Purged expired scan job: %s", jid)
@@ -102,7 +104,9 @@ class ScanService:
     # Scan execution
     # ------------------------------------------------------------------
 
-    async def _run_scan(self, job: ScanJob, targets: List[str], parser_template_ids: List[int]) -> None:
+    async def _run_scan(
+        self, job: ScanJob, targets: List[str], parser_template_ids: List[int]
+    ) -> None:
         semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
 
         try:
@@ -117,7 +121,9 @@ class ScanService:
 
         async def worker(ip: str) -> None:
             async with semaphore:
-                await self._process_ip(job, ip, credentials, parser_templates, alive_ips)
+                await self._process_ip(
+                    job, ip, credentials, parser_templates, alive_ips
+                )
 
         try:
             await asyncio.gather(*[worker(ip) for ip in targets])
@@ -134,7 +140,9 @@ class ScanService:
                 job.auth_failed,
             )
 
-    def _load_parser_templates(self, parser_template_ids: List[int]) -> List[Tuple[int, str]]:
+    def _load_parser_templates(
+        self, parser_template_ids: List[int]
+    ) -> List[Tuple[int, str]]:
         templates: List[Tuple[int, str]] = []
         logger.info("Processing parser_template_ids: %s", parser_template_ids)
 
@@ -228,7 +236,9 @@ class ScanService:
             try:
                 password = self._creds.get_decrypted_password(cred_id)
             except Exception as e:
-                logger.error("Failed to decrypt password for credential %s: %s", cred_id, e)
+                logger.error(
+                    "Failed to decrypt password for credential %s: %s", cred_id, e
+                )
                 continue
 
             result = await authenticate(

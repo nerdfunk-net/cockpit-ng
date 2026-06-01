@@ -48,7 +48,9 @@ class BaseResolver:
             '550e8400-e29b-41d4-a716-446655440000'
         """
         try:
-            logger.debug("Resolving %s by %s='%s'", resource_type, field_name, field_value)
+            logger.debug(
+                "Resolving %s by %s='%s'", resource_type, field_name, field_value
+            )
 
             # Build GraphQL query dynamically
             query = f"""
@@ -58,18 +60,24 @@ class BaseResolver:
               }}
             }}
             """
-            variables = {"value": [field_value] if isinstance(field_value, str) else field_value}
+            variables = {
+                "value": [field_value] if isinstance(field_value, str) else field_value
+            }
 
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error("GraphQL error resolving %s: %s", resource_type, result["errors"])
+                logger.error(
+                    "GraphQL error resolving %s: %s", resource_type, result["errors"]
+                )
                 return None
 
             resources = result.get("data", {}).get(resource_type, [])
             if resources and len(resources) > 0:
                 resolved_value = resources[0].get(return_field)
-                logger.debug("Resolved %s '%s' -> %s", resource_type, field_value, resolved_value)
+                logger.debug(
+                    "Resolved %s '%s' -> %s", resource_type, field_value, resolved_value
+                )
                 return resolved_value
 
             logger.debug("%s not found: %s", resource_type.capitalize(), field_value)

@@ -113,7 +113,9 @@ def test_tree_to_operations_not_group():
                 "type": "group",
                 "logic": "NOT",
                 "internalLogic": "AND",
-                "items": [{"field": "status", "operator": "equals", "value": "retired"}],
+                "items": [
+                    {"field": "status", "operator": "equals", "value": "retired"}
+                ],
             }
         ],
     }

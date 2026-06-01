@@ -124,7 +124,9 @@ async def test_git_connection(
     try:
         from connection_tester import connection_tester
 
-        success, message = await connection_tester.test_git_connection(test_request.dict())
+        success, message = await connection_tester.test_git_connection(
+            test_request.dict()
+        )
 
         return {
             "success": success,

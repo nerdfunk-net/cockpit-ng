@@ -70,7 +70,9 @@ async def acknowledge_service_problem(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, "Failed to acknowledge service problem: ", e)
+        raise_internal_server_error(
+            logger, "Failed to acknowledge service problem: ", e
+        )
 
 
 @router.delete("/acknowledge/{ack_id}", response_model=CheckMKOperationResponse)
@@ -82,13 +84,17 @@ async def delete_acknowledgment(
     """Delete acknowledgment."""
     try:
         await service.delete_acknowledgment(ack_id)
-        return CheckMKOperationResponse(success=True, message=f"Deleted acknowledgment {ack_id} successfully")
+        return CheckMKOperationResponse(
+            success=True, message=f"Deleted acknowledgment {ack_id} successfully"
+        )
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to delete acknowledgment {ack_id}", e)
+        raise_internal_server_error(
+            logger, f"Failed to delete acknowledgment {ack_id}", e
+        )
 
 
 @router.post("/downtime/host", response_model=CheckMKOperationResponse)
@@ -137,7 +143,9 @@ async def add_host_comment(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to add comment to host {request.host_name}", e)
+        raise_internal_server_error(
+            logger, f"Failed to add comment to host {request.host_name}", e
+        )
 
 
 @router.post("/comments/service", response_model=CheckMKOperationResponse)

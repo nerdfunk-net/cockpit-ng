@@ -15,7 +15,9 @@ class NB2CMKSync(Base):
     devices_processed = Column(Integer, default=0)
     devices_succeeded = Column(Integer, default=0)
     devices_failed = Column(Integer, default=0)
-    started_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    started_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     completed_at = Column(DateTime(timezone=True))
 
     __table_args__ = (
@@ -30,7 +32,9 @@ class NB2CMKJob(Base):
     __tablename__ = "nb2cmk_jobs"
 
     job_id = Column(String(255), primary_key=True)
-    status = Column(String(50), nullable=False)  # pending, running, completed, failed, cancelled
+    status = Column(
+        String(50), nullable=False
+    )  # pending, running, completed, failed, cancelled
     created_at = Column(DateTime(timezone=True), nullable=False)
     started_at = Column(DateTime(timezone=True))
     completed_at = Column(DateTime(timezone=True))
@@ -41,7 +45,9 @@ class NB2CMKJob(Base):
     error_message = Column(Text)
 
     # Relationship to job results
-    results = relationship("NB2CMKJobResult", back_populates="job", cascade="all, delete-orphan")
+    results = relationship(
+        "NB2CMKJobResult", back_populates="job", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         Index("idx_nb2cmk_jobs_created_at", "created_at"),

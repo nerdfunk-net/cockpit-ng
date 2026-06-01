@@ -37,15 +37,22 @@ class ComplianceService:
         return [self._regex_to_dict(p) for p in self._regex_repo.get_all()]
 
     def get_regex_patterns_by_type(self, pattern_type: str) -> List[Dict[str, Any]]:
-        return [self._regex_to_dict(p) for p in self._regex_repo.get_by_type(pattern_type, is_active=True)]
+        return [
+            self._regex_to_dict(p)
+            for p in self._regex_repo.get_by_type(pattern_type, is_active=True)
+        ]
 
     def get_regex_pattern_by_id(self, pattern_id: int) -> Optional[Dict[str, Any]]:
         p = self._regex_repo.get_by_id(pattern_id)
         return self._regex_to_dict(p) if p else None
 
-    def create_regex_pattern(self, pattern: str, pattern_type: str, description: Optional[str] = None) -> int:
+    def create_regex_pattern(
+        self, pattern: str, pattern_type: str, description: Optional[str] = None
+    ) -> int:
         if pattern_type not in ("must_match", "must_not_match"):
-            raise ValueError("Invalid pattern_type. Must be 'must_match' or 'must_not_match'")
+            raise ValueError(
+                "Invalid pattern_type. Must be 'must_match' or 'must_not_match'"
+            )
         new = self._regex_repo.create(
             pattern=pattern,
             description=description,
@@ -79,7 +86,9 @@ class ComplianceService:
     # Login Credentials
     # -------------------------------------------------------------------------
 
-    def get_all_login_credentials(self, decrypt_passwords: bool = False) -> List[Dict[str, Any]]:
+    def get_all_login_credentials(
+        self, decrypt_passwords: bool = False
+    ) -> List[Dict[str, Any]]:
         creds = self._login_repo.get_all()
         result = []
         for cred in creds:
@@ -147,24 +156,36 @@ class ComplianceService:
     # SNMP Mappings
     # -------------------------------------------------------------------------
 
-    def get_all_snmp_mappings(self, decrypt_passwords: bool = False) -> List[Dict[str, Any]]:
+    def get_all_snmp_mappings(
+        self, decrypt_passwords: bool = False
+    ) -> List[Dict[str, Any]]:
         result = []
         for mapping in self._snmp_repo.get_all():
             d = self._snmp_to_dict(mapping, decrypt_passwords=decrypt_passwords)
             if not decrypt_passwords:
-                d["snmp_v3_auth_password"] = "********" if mapping.snmp_v3_auth_password_encrypted else None
-                d["snmp_v3_priv_password"] = "********" if mapping.snmp_v3_priv_password_encrypted else None
+                d["snmp_v3_auth_password"] = (
+                    "********" if mapping.snmp_v3_auth_password_encrypted else None
+                )
+                d["snmp_v3_priv_password"] = (
+                    "********" if mapping.snmp_v3_priv_password_encrypted else None
+                )
             result.append(d)
         return result
 
-    def get_snmp_mapping_by_id(self, mapping_id: int, decrypt_passwords: bool = False) -> Optional[Dict[str, Any]]:
+    def get_snmp_mapping_by_id(
+        self, mapping_id: int, decrypt_passwords: bool = False
+    ) -> Optional[Dict[str, Any]]:
         mapping = self._snmp_repo.get_by_id(mapping_id)
         if not mapping:
             return None
         d = self._snmp_to_dict(mapping, decrypt_passwords=decrypt_passwords)
         if not decrypt_passwords:
-            d["snmp_v3_auth_password"] = "********" if mapping.snmp_v3_auth_password_encrypted else None
-            d["snmp_v3_priv_password"] = "********" if mapping.snmp_v3_priv_password_encrypted else None
+            d["snmp_v3_auth_password"] = (
+                "********" if mapping.snmp_v3_auth_password_encrypted else None
+            )
+            d["snmp_v3_priv_password"] = (
+                "********" if mapping.snmp_v3_priv_password_encrypted else None
+            )
         return d
 
     def get_snmp_mapping_by_name(self, name: str) -> Optional[Dict[str, Any]]:
@@ -172,8 +193,12 @@ class ComplianceService:
         if not mapping:
             return None
         d = self._snmp_to_dict(mapping, decrypt_passwords=False)
-        d["snmp_v3_auth_password"] = "********" if mapping.snmp_v3_auth_password_encrypted else None
-        d["snmp_v3_priv_password"] = "********" if mapping.snmp_v3_priv_password_encrypted else None
+        d["snmp_v3_auth_password"] = (
+            "********" if mapping.snmp_v3_auth_password_encrypted else None
+        )
+        d["snmp_v3_priv_password"] = (
+            "********" if mapping.snmp_v3_priv_password_encrypted else None
+        )
         return d
 
     def create_snmp_mapping(
@@ -197,11 +222,15 @@ class ComplianceService:
             snmp_v3_user=snmp_v3_user,
             snmp_v3_auth_protocol=snmp_v3_auth_protocol,
             snmp_v3_auth_password_encrypted=(
-                self._encryption.encrypt(snmp_v3_auth_password) if snmp_v3_auth_password else None
+                self._encryption.encrypt(snmp_v3_auth_password)
+                if snmp_v3_auth_password
+                else None
             ),
             snmp_v3_priv_protocol=snmp_v3_priv_protocol,
             snmp_v3_priv_password_encrypted=(
-                self._encryption.encrypt(snmp_v3_priv_password) if snmp_v3_priv_password else None
+                self._encryption.encrypt(snmp_v3_priv_password)
+                if snmp_v3_priv_password
+                else None
             ),
             description=description,
             is_active=True,
@@ -236,11 +265,15 @@ class ComplianceService:
         if snmp_v3_auth_protocol is not None:
             data["snmp_v3_auth_protocol"] = snmp_v3_auth_protocol
         if snmp_v3_auth_password is not None:
-            data["snmp_v3_auth_password_encrypted"] = self._encryption.encrypt(snmp_v3_auth_password)
+            data["snmp_v3_auth_password_encrypted"] = self._encryption.encrypt(
+                snmp_v3_auth_password
+            )
         if snmp_v3_priv_protocol is not None:
             data["snmp_v3_priv_protocol"] = snmp_v3_priv_protocol
         if snmp_v3_priv_password is not None:
-            data["snmp_v3_priv_password_encrypted"] = self._encryption.encrypt(snmp_v3_priv_password)
+            data["snmp_v3_priv_password_encrypted"] = self._encryption.encrypt(
+                snmp_v3_priv_password
+            )
         if description is not None:
             data["description"] = description
         if is_active is not None:
@@ -284,15 +317,31 @@ class ComplianceService:
                 version_str = snmp_config.get("version", "v2c")
                 if version_str not in ("v1", "v2c", "v3"):
                     type_field = snmp_config.get("type", "")
-                    version_str = "v3" if "v3" in type_field else "v2c" if "v2c" in type_field else "v2c"
+                    version_str = (
+                        "v3"
+                        if "v3" in type_field
+                        else "v2c"
+                        if "v2c" in type_field
+                        else "v2c"
+                    )
 
                 snmp_community = snmp_config.get("community") or None
-                description = snmp_config.get("description", f"Imported from CheckMK: {snmp_id}")
+                description = snmp_config.get(
+                    "description", f"Imported from CheckMK: {snmp_id}"
+                )
                 snmp_v3_user = snmp_config.get("username") or None
                 auth_protocol = snmp_config.get("auth_protocol") or None
                 auth_password = snmp_config.get("auth_password") or None
-                priv_protocol = snmp_config.get("privacy_protocol") or snmp_config.get("priv_protocol") or None
-                priv_password = snmp_config.get("privacy_password") or snmp_config.get("priv_password") or None
+                priv_protocol = (
+                    snmp_config.get("privacy_protocol")
+                    or snmp_config.get("priv_protocol")
+                    or None
+                )
+                priv_password = (
+                    snmp_config.get("privacy_password")
+                    or snmp_config.get("priv_password")
+                    or None
+                )
 
                 self.create_snmp_mapping(
                     name=snmp_id,
@@ -327,11 +376,17 @@ class ComplianceService:
             "description": pattern.description,
             "pattern_type": pattern.pattern_type,
             "is_active": pattern.is_active,
-            "created_at": pattern.created_at.isoformat() if pattern.created_at else None,
-            "updated_at": pattern.updated_at.isoformat() if pattern.updated_at else None,
+            "created_at": pattern.created_at.isoformat()
+            if pattern.created_at
+            else None,
+            "updated_at": pattern.updated_at.isoformat()
+            if pattern.updated_at
+            else None,
         }
 
-    def _login_cred_to_dict(self, cred, decrypt_password: bool = False) -> Dict[str, Any]:
+    def _login_cred_to_dict(
+        self, cred, decrypt_password: bool = False
+    ) -> Dict[str, Any]:
         result: Dict[str, Any] = {
             "id": cred.id,
             "name": cred.name,
@@ -356,12 +411,20 @@ class ComplianceService:
             "snmp_v3_priv_protocol": mapping.snmp_v3_priv_protocol,
             "description": mapping.description,
             "is_active": mapping.is_active,
-            "created_at": mapping.created_at.isoformat() if mapping.created_at else None,
-            "updated_at": mapping.updated_at.isoformat() if mapping.updated_at else None,
+            "created_at": mapping.created_at.isoformat()
+            if mapping.created_at
+            else None,
+            "updated_at": mapping.updated_at.isoformat()
+            if mapping.updated_at
+            else None,
         }
         if decrypt_passwords:
             if mapping.snmp_v3_auth_password_encrypted:
-                result["snmp_v3_auth_password"] = self._encryption.decrypt(mapping.snmp_v3_auth_password_encrypted)
+                result["snmp_v3_auth_password"] = self._encryption.decrypt(
+                    mapping.snmp_v3_auth_password_encrypted
+                )
             if mapping.snmp_v3_priv_password_encrypted:
-                result["snmp_v3_priv_password"] = self._encryption.decrypt(mapping.snmp_v3_priv_password_encrypted)
+                result["snmp_v3_priv_password"] = self._encryption.decrypt(
+                    mapping.snmp_v3_priv_password_encrypted
+                )
         return result

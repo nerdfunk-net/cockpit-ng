@@ -62,7 +62,13 @@ def test_client_data_executor_returns_noop_when_all_collect_flags_false() -> Non
 def test_parse_arp_and_mac_textfsm_rows() -> None:
     """TextFSM rows are normalized for client-data repository inserts."""
     arp_rows = _parse_arp_output(
-        [{"ip_address": "10.0.0.10", "mac_address": "AABB.CC00.0100", "interface": "Gi0/1"}],
+        [
+            {
+                "ip_address": "10.0.0.10",
+                "mac_address": "AABB.CC00.0100",
+                "interface": "Gi0/1",
+            }
+        ],
         "switch-01",
         "10.0.0.1",
         "session-1",
@@ -122,7 +128,9 @@ def test_resolve_hostnames_skips_unresolved_ips() -> None:
             return ("host10.example.com", [], [ip])
         raise socket.herror("not found")
 
-    with patch("tasks.execution.client_data_executor.socket.gethostbyaddr", fake_gethostbyaddr):
+    with patch(
+        "tasks.execution.client_data_executor.socket.gethostbyaddr", fake_gethostbyaddr
+    ):
         result = _resolve_hostnames(
             {"10.0.0.10", "10.0.0.11"},
             "switch-01",

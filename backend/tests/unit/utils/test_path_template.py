@@ -94,7 +94,9 @@ def test_replace_template_variables_nested():
 def test_replace_template_variables_multi_level_nested():
     """Multi-level nested variable is replaced."""
     device = {"location": {"parent": {"name": "USA"}}}
-    result = replace_template_variables("{location.parent.name}/{location.parent.name}.cfg", device)
+    result = replace_template_variables(
+        "{location.parent.name}/{location.parent.name}.cfg", device
+    )
     assert result == "USA/USA.cfg"
 
 

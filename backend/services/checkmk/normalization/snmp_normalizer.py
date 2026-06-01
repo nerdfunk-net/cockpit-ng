@@ -16,7 +16,9 @@ class SNMPNormalizer:
 
         self._config = service_factory.build_checkmk_config_service()
 
-    def process_snmp_config(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def process_snmp_config(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process SNMP community mapping from custom fields.
 
         Args:
@@ -37,7 +39,9 @@ class SNMPNormalizer:
                 snmp_version = snmp_config.get("version")
 
                 # Convert version to string for comparison (YAML may parse unquoted numbers as int)
-                snmp_version_str = str(snmp_version) if snmp_version is not None else None
+                snmp_version_str = (
+                    str(snmp_version) if snmp_version is not None else None
+                )
 
                 # Handle SNMPv2/v1 (community-based)
                 if snmp_version_str in ["v1", "v2", "1", "2"]:
@@ -61,7 +65,9 @@ class SNMPNormalizer:
                         "auth_protocol": snmp_config.get("auth_protocol_long", ""),
                         "security_name": snmp_config.get("username", ""),
                         "auth_password": snmp_config.get("auth_password", ""),
-                        "privacy_protocol": snmp_config.get("privacy_protocol_long", ""),
+                        "privacy_protocol": snmp_config.get(
+                            "privacy_protocol_long", ""
+                        ),
                         "privacy_password": snmp_config.get("privacy_password", ""),
                     }
 
@@ -88,7 +94,9 @@ class SNMPNormalizer:
                     extensions.attributes["tag_agent"] = "no-agent"
             else:
                 extensions.attributes["tag_agent"] = "no-agent"
-                logger.warning("SNMP credentials key '%s' not found in mapping", snmp_credentials)
+                logger.warning(
+                    "SNMP credentials key '%s' not found in mapping", snmp_credentials
+                )
 
         except Exception as e:
             logger.error("Error processing SNMP configuration: %s", e)

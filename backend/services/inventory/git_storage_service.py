@@ -147,13 +147,17 @@ class InventoryGitStorage:
                         SavedInventory(
                             name=data["name"],
                             description=data.get("description"),
-                            conditions=[SavedInventoryCondition(**c) for c in data["conditions"]],
+                            conditions=[
+                                SavedInventoryCondition(**c) for c in data["conditions"]
+                            ],
                             created_at=data.get("created_at"),
                             updated_at=data.get("updated_at"),
                         )
                     )
                 except Exception as e:
-                    logger.warning("Error reading inventory file %s: %s", inventory_file, e)
+                    logger.warning(
+                        "Error reading inventory file %s: %s", inventory_file, e
+                    )
 
             logger.info("Found %s inventories", len(inventories))
             return inventories
@@ -162,7 +166,9 @@ class InventoryGitStorage:
             logger.error("Error listing inventories: %s", e)
             raise
 
-    async def load_inventory(self, name: str, repository_id: int) -> Optional[SavedInventory]:
+    async def load_inventory(
+        self, name: str, repository_id: int
+    ) -> Optional[SavedInventory]:
         """Load a single inventory by name from the git repository."""
         import service_factory
         from services.git.repository_service import (
@@ -173,7 +179,9 @@ class InventoryGitStorage:
         git_auth_service = service_factory.build_git_auth_service()
 
         try:
-            logger.info("Loading inventory '%s' from repository %s", name, repository_id)
+            logger.info(
+                "Loading inventory '%s' from repository %s", name, repository_id
+            )
 
             git_manager = GitRepositoryManager()
             repository = git_manager.get_repository(repository_id)
@@ -212,7 +220,10 @@ class InventoryGitStorage:
     @staticmethod
     def _check_https_credentials(repository: Dict[str, Any], git_auth_service) -> None:
         """Raise ValueError if an HTTPS repository lacks configured credentials."""
-        if repository.get("url", "").startswith("https://") and repository.get("auth_type") != "ssh_key":
+        if (
+            repository.get("url", "").startswith("https://")
+            and repository.get("auth_type") != "ssh_key"
+        ):
             _, token, _ = git_auth_service.resolve_credentials(repository)
             if not token:
                 raise ValueError(

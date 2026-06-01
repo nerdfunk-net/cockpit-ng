@@ -46,7 +46,9 @@ from typing import Any, Dict, List, Optional
 import yaml
 
 # Allow imports from the backend root
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 logger = logging.getLogger(__name__)
 
@@ -122,16 +124,24 @@ class Locations2CheckMKSyncer:
         return result
 
     @staticmethod
-    def _apply_nautobot_filter(locations: List[Dict[str, Any]], filter_dict: Dict[str, str]) -> List[Dict[str, Any]]:
+    def _apply_nautobot_filter(
+        locations: List[Dict[str, Any]], filter_dict: Dict[str, str]
+    ) -> List[Dict[str, Any]]:
         """Filter a list of locations according to parsed filter conditions."""
         result = locations
         if "location_type" in filter_dict:
             target = filter_dict["location_type"].lower()
-            result = [loc for loc in result if (loc.get("location_type") or {}).get("name", "").lower() == target]
+            result = [
+                loc
+                for loc in result
+                if (loc.get("location_type") or {}).get("name", "").lower() == target
+            ]
         return result
 
     @staticmethod
-    def _build_full_location(loc_id: str, locations_map: Dict[str, Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def _build_full_location(
+        loc_id: str, locations_map: Dict[str, Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
         """Recursively build a nested location dict with a complete parent chain.
 
         _resolve_location_type_filter expects device_data["location"]["parent"]["parent"]...
@@ -147,7 +157,9 @@ class Locations2CheckMKSyncer:
         }
         parent_ref = loc.get("parent")
         if parent_ref and parent_ref.get("id"):
-            result["parent"] = Locations2CheckMKSyncer._build_full_location(parent_ref["id"], locations_map)
+            result["parent"] = Locations2CheckMKSyncer._build_full_location(
+                parent_ref["id"], locations_map
+            )
         return result
 
     @staticmethod
@@ -169,7 +181,9 @@ class Locations2CheckMKSyncer:
         seen_ids: set = set()
         tags: List[Dict[str, str]] = []
         for loc in target_locations:
-            full_loc = Locations2CheckMKSyncer._build_full_location(loc["id"], locations_map)
+            full_loc = Locations2CheckMKSyncer._build_full_location(
+                loc["id"], locations_map
+            )
             ctx = {"location": full_loc}
 
             title = parse_folder_value(value_template, ctx).strip()
@@ -223,17 +237,26 @@ class Locations2CheckMKSyncer:
         if self.nautobot_filter:
             filter_dict = self._parse_nautobot_filter(self.nautobot_filter)
             target_locations = self._apply_nautobot_filter(all_locations, filter_dict)
-            print("Filter '%s' matched %d locations" % (self.nautobot_filter, len(target_locations)))
+            print(
+                "Filter '%s' matched %d locations"
+                % (self.nautobot_filter, len(target_locations))
+            )
         elif self.location_type:
             target_locations = [
                 loc
                 for loc in all_locations
-                if (loc.get("location_type") or {}).get("name", "").lower() == self.location_type.lower()
+                if (loc.get("location_type") or {}).get("name", "").lower()
+                == self.location_type.lower()
             ]
-            print("Found %d locations of type '%s'" % (len(target_locations), self.location_type))
+            print(
+                "Found %d locations of type '%s'"
+                % (len(target_locations), self.location_type)
+            )
         else:
             target_locations = all_locations
-            print("No filter configured — syncing all %d locations" % len(all_locations))
+            print(
+                "No filter configured — syncing all %d locations" % len(all_locations)
+            )
 
         existing = self._get_existing_tag_group()
 
@@ -292,7 +315,8 @@ async def async_main(args: argparse.Namespace) -> None:
     except ImportError as exc:
         print(
             "ERROR: Could not import backend modules: %s\n"
-            "Make sure you are running from the backend/ directory with the venv active." % exc,
+            "Make sure you are running from the backend/ directory with the venv active."
+            % exc,
             file=sys.stderr,
         )
         sys.exit(1)
@@ -316,7 +340,10 @@ async def async_main(args: argparse.Namespace) -> None:
             print("Activation initiated.")
 
         dry_label = "  [DRY RUN]" if args.dry_run else ""
-        print("\nDone%s. Added: %d, Skipped: %d" % (dry_label, stats["added"], stats["skipped"]))
+        print(
+            "\nDone%s. Added: %d, Skipped: %d"
+            % (dry_label, stats["added"], stats["skipped"])
+        )
     finally:
         await nautobot.shutdown()
 
@@ -383,7 +410,8 @@ def main() -> None:
     if "location_type" in config_data and "nautobot_filter" not in config_data:
         print(
             "WARNING: 'location_type' is deprecated. "
-            "Use 'nautobot_filter: \"location_type=%s\"' instead." % config_data["location_type"]
+            "Use 'nautobot_filter: \"location_type=%s\"' instead."
+            % config_data["location_type"]
         )
 
     args.config_data = config_data

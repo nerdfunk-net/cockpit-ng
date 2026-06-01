@@ -42,7 +42,9 @@ def test_log_event_multiple_kwargs():
     """All supplied kwargs reach the repository."""
     svc, mock_repo = _make_service()
     svc.log_event(action="create", username="bob", resource="device", severity="info")
-    mock_repo.create_log.assert_called_once_with(action="create", username="bob", resource="device", severity="info")
+    mock_repo.create_log.assert_called_once_with(
+        action="create", username="bob", resource="device", severity="info"
+    )
 
 
 @pytest.mark.unit

@@ -95,7 +95,11 @@ def execute_deploy_agent(
 
         deployment_service = AgentDeploymentService()
 
-        if deploy_templates and isinstance(deploy_templates, list) and len(deploy_templates) > 0:
+        if (
+            deploy_templates
+            and isinstance(deploy_templates, list)
+            and len(deploy_templates) > 0
+        ):
             # Multi-template deployment
             logger.info("Multi-template deployment: %s entries", len(deploy_templates))
 
@@ -106,11 +110,17 @@ def execute_deploy_agent(
             if inventory_name and template.get("inventory_source") == "inventory":
                 import service_factory
 
-                persistence_service = service_factory.build_inventory_persistence_service()
-                inv = persistence_service.get_inventory_by_name(inventory_name, "celery_scheduler")
+                persistence_service = (
+                    service_factory.build_inventory_persistence_service()
+                )
+                inv = persistence_service.get_inventory_by_name(
+                    inventory_name, "celery_scheduler"
+                )
                 if inv:
                     inventory_id = inv.get("id")
-                    logger.info("Resolved inventory '%s' to ID %s", inventory_name, inventory_id)
+                    logger.info(
+                        "Resolved inventory '%s' to ID %s", inventory_name, inventory_id
+                    )
 
             # For entries without their own inventory_id, use the resolved one
             for entry in deploy_templates:
@@ -145,7 +155,9 @@ def execute_deploy_agent(
             logger.info("Activate after deploy: %s", activate_after_deploy)
             logger.info(
                 "Deploy custom variables: %s",
-                list(deploy_custom_variables.keys()) if deploy_custom_variables else "none",
+                list(deploy_custom_variables.keys())
+                if deploy_custom_variables
+                else "none",
             )
 
             if not deploy_template_id:
@@ -160,11 +172,17 @@ def execute_deploy_agent(
             if inventory_name and template.get("inventory_source") == "inventory":
                 import service_factory
 
-                persistence_service = service_factory.build_inventory_persistence_service()
-                inv = persistence_service.get_inventory_by_name(inventory_name, "celery_scheduler")
+                persistence_service = (
+                    service_factory.build_inventory_persistence_service()
+                )
+                inv = persistence_service.get_inventory_by_name(
+                    inventory_name, "celery_scheduler"
+                )
                 if inv:
                     inventory_id = inv.get("id")
-                    logger.info("Resolved inventory '%s' to ID %s", inventory_name, inventory_id)
+                    logger.info(
+                        "Resolved inventory '%s' to ID %s", inventory_name, inventory_id
+                    )
 
             return asyncio.run(
                 deployment_service.deploy(

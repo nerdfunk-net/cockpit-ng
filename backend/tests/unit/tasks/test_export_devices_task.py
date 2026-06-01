@@ -20,7 +20,10 @@ def test_export_devices_rejects_empty_inputs() -> None:
         no_properties = export_devices_task.run(["dev-1"], [])
 
     assert no_devices == {"success": False, "error": "No devices specified for export"}
-    assert no_properties == {"success": False, "error": "No properties specified for export"}
+    assert no_properties == {
+        "success": False,
+        "error": "No properties specified for export",
+    }
 
 
 @pytest.mark.unit
@@ -93,7 +96,9 @@ def test_export_devices_returns_error_when_nautobot_returns_no_devices() -> None
 def test_export_devices_rejects_unsupported_format(tmp_path) -> None:
     """Unsupported export formats are rejected after successful data fetch."""
     nautobot = MagicMock()
-    nautobot.graphql_query = AsyncMock(return_value={"data": {"devices": [{"id": "dev-1", "name": "router-01"}]}})
+    nautobot.graphql_query = AsyncMock(
+        return_value={"data": {"devices": [{"id": "dev-1", "name": "router-01"}]}}
+    )
 
     with (
         patch("service_factory.build_nautobot_service", return_value=nautobot),

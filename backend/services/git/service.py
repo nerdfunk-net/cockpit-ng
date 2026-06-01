@@ -163,7 +163,11 @@ class GitService:
         repo_dir = self.get_repo_path(repository)
         repo_dir.mkdir(parents=True, exist_ok=True)
 
-        expected_url_norm = self._auth.normalize_url(repository["url"]) if repository.get("url") else None
+        expected_url_norm = (
+            self._auth.normalize_url(repository["url"])
+            if repository.get("url")
+            else None
+        )
 
         try:
             repo = Repo(repo_dir)
@@ -187,7 +191,9 @@ class GitService:
         except Exception:
             return self._clone_fresh(repository, repo_dir)
 
-    def clone(self, repository: Dict, target_path: Optional[Union[str, Path]] = None) -> Repo:
+    def clone(
+        self, repository: Dict, target_path: Optional[Union[str, Path]] = None
+    ) -> Repo:
         """Clone a repository to a specific path.
 
         Args:
@@ -478,7 +484,9 @@ class GitService:
             with set_git_author(repository, repo):
                 commit = repo.index.commit(message)
 
-            logger.info("Created commit %s with %s files", commit.hexsha[:8], len(changed_files))
+            logger.info(
+                "Created commit %s with %s files", commit.hexsha[:8], len(changed_files)
+            )
 
             return CommitResult(
                 success=True,
@@ -646,7 +654,9 @@ class GitService:
                 message=f"Fetch failed: {str(e)}",
             )
 
-    def get_status(self, repository: Dict, repo: Optional[Repo] = None) -> Dict[str, Any]:
+    def get_status(
+        self, repository: Dict, repo: Optional[Repo] = None
+    ) -> Dict[str, Any]:
         """Get comprehensive repository status.
 
         Args:
@@ -698,7 +708,11 @@ class GitService:
             status["is_dirty"] = repo.is_dirty()
             status["untracked_files"] = repo.untracked_files
             status["modified_files"] = [item.a_path for item in repo.index.diff(None)]
-            status["staged_files"] = [item.a_path for item in repo.index.diff("HEAD")] if repo.head.is_valid() else []
+            status["staged_files"] = (
+                [item.a_path for item in repo.index.diff("HEAD")]
+                if repo.head.is_valid()
+                else []
+            )
 
         except InvalidGitRepositoryError:
             status["is_git_repo"] = False

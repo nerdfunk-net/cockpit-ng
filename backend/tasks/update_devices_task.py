@@ -156,7 +156,9 @@ def update_devices_task(
             identifier = device_id or device_name or ip_address or f"device-{idx}"
 
             try:
-                logger.info("Processing device %s/%s: %s", idx, total_devices, identifier)
+                logger.info(
+                    "Processing device %s/%s: %s", idx, total_devices, identifier
+                )
 
                 # Update progress
                 progress = 10 + int((idx / total_devices) * 80)
@@ -174,7 +176,9 @@ def update_devices_task(
 
                 # Prepare data for service
                 logger.info("Raw device_data before prepare: %s", device_data)
-                device_identifier, update_data, interface_config, interfaces = _prepare_device_data(device_data)
+                device_identifier, update_data, interface_config, interfaces = (
+                    _prepare_device_data(device_data)
+                )
                 logger.info(
                     "After prepare - interfaces (%s total):",
                     len(interfaces) if interfaces else 0,
@@ -212,7 +216,9 @@ def update_devices_task(
                     if interface_config:
                         logger.info("[DRY RUN] Interface config: %s", interface_config)
                     if interfaces:
-                        logger.info("[DRY RUN] Interfaces: %s interface(s)", len(interfaces))
+                        logger.info(
+                            "[DRY RUN] Interfaces: %s interface(s)", len(interfaces)
+                        )
 
                     successes.append(
                         {
@@ -285,7 +291,9 @@ def update_devices_task(
                                 extra_data=extra_data,
                             )
                         except Exception as audit_error:
-                            logger.warning("Failed to create audit log: %s", audit_error)
+                            logger.warning(
+                                "Failed to create audit log: %s", audit_error
+                            )
 
             except Exception as e:
                 error_msg = str(e)
@@ -429,7 +437,11 @@ def _prepare_device_data(
 
     # Build update data (exclude identifier, interface fields, and interfaces array)
     excluded_fields = set(identifier_fields + interface_fields + ["interfaces"])
-    update_data = {k: v for k, v in device_data.items() if k not in excluded_fields and v is not None}
+    update_data = {
+        k: v
+        for k, v in device_data.items()
+        if k not in excluded_fields and v is not None
+    }
 
     # Build interface config if present (for legacy primary_ip4 updates)
     interface_config = None

@@ -52,7 +52,9 @@ ROLE_FIREWALL_ID = "60000000-0000-0000-0000-000000000003"
 MFR_CISCO_ID = "70000000-0000-0000-0000-000000000001"
 MFR_JUNIPER_ID = "70000000-0000-0000-0000-000000000002"
 
-_UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+_UUID_RE = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
 
 
 def _new_uuid() -> str:
@@ -171,7 +173,9 @@ class FakeNautobotService:
     ) -> tuple[bool, str]:
         return True, "Connection successful"
 
-    async def graphql_query(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def graphql_query(
+        self, query: str, variables: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         variables = variables or {}
 
         if "GetDeviceByNameContains" in query:
@@ -246,13 +250,19 @@ class FakeNautobotService:
         names = variables.get("name", [])
         if isinstance(names, str):
             names = [names]
-        devices = [{"id": d["id"], "name": d["name"]} for d in self._devices.values() if d.get("name") in names]
+        devices = [
+            {"id": d["id"], "name": d["name"]}
+            for d in self._devices.values()
+            if d.get("name") in names
+        ]
         return {"data": {"devices": devices}}
 
     def _gql_device_by_name_contains(self, variables: dict) -> dict:
         search = str(variables.get("name") or "").lower()
         devices = [
-            {"id": d["id"], "name": d["name"]} for d in self._devices.values() if search in d.get("name", "").lower()
+            {"id": d["id"], "name": d["name"]}
+            for d in self._devices.values()
+            if search in d.get("name", "").lower()
         ]
         return {"data": {"devices": devices}}
 
@@ -280,7 +290,9 @@ class FakeNautobotService:
             if not dt:
                 continue
             if mfr_filter:
-                if dt["manufacturer"]["name"].lower() not in [m.lower() for m in mfr_filter]:
+                if dt["manufacturer"]["name"].lower() not in [
+                    m.lower() for m in mfr_filter
+                ]:
                     continue
             results.append(
                 {
@@ -336,7 +348,11 @@ class FakeNautobotService:
                 ip_host = ip.get("address", "").split("/")[0]
                 if ip_host != host and ip.get("address") != addr:
                     continue
-                if ns_filter and ip.get("namespace_id") and ip["namespace_id"] != ns_filter:
+                if (
+                    ns_filter
+                    and ip.get("namespace_id")
+                    and ip["namespace_id"] != ns_filter
+                ):
                     continue
                 results.append({"id": ip["id"], "address": ip.get("address", addr)})
         return {"data": {"ip_addresses": results}}
@@ -345,14 +361,24 @@ class FakeNautobotService:
         names = variables.get("name", [])
         if isinstance(names, str):
             names = [names]
-        results = [{"id": r["id"], "name": r["name"]} for n in names for r in [self._roles.get(n.lower())] if r]
+        results = [
+            {"id": r["id"], "name": r["name"]}
+            for n in names
+            for r in [self._roles.get(n.lower())]
+            if r
+        ]
         return {"data": {"roles": results}}
 
     def _gql_platform(self, variables: dict) -> dict:
         names = variables.get("name", [])
         if isinstance(names, str):
             names = [names]
-        results = [{"id": p["id"], "name": p["name"]} for n in names for p in [self._platforms.get(n.lower())] if p]
+        results = [
+            {"id": p["id"], "name": p["name"]}
+            for n in names
+            for p in [self._platforms.get(n.lower())]
+            if p
+        ]
         return {"data": {"platforms": results}}
 
     def _gql_location(self, variables: dict) -> dict:
@@ -360,7 +386,10 @@ class FakeNautobotService:
         if isinstance(names, str):
             names = [names]
         results = [
-            {"id": loc["id"], "name": loc["name"]} for n in names for loc in [self._locations.get(n.lower())] if loc
+            {"id": loc["id"], "name": loc["name"]}
+            for n in names
+            for loc in [self._locations.get(n.lower())]
+            if loc
         ]
         return {"data": {"locations": results}}
 
@@ -369,7 +398,10 @@ class FakeNautobotService:
         if isinstance(names, str):
             names = [names]
         results = [
-            {"id": ns["id"], "name": ns["name"]} for n in names for ns in [self._namespaces.get(n.lower())] if ns
+            {"id": ns["id"], "name": ns["name"]}
+            for n in names
+            for ns in [self._namespaces.get(n.lower())]
+            if ns
         ]
         return {"data": {"namespaces": results}}
 
@@ -384,7 +416,8 @@ class FakeNautobotService:
         results = [
             {"id": iface["id"], "name": iface["name"]}
             for iface in self._interfaces.values()
-            if (not device_ids or iface.get("device_id") in device_ids) and (not names or iface.get("name") in names)
+            if (not device_ids or iface.get("device_id") in device_ids)
+            and (not names or iface.get("name") in names)
         ]
         return {"data": {"interfaces": results}}
 
@@ -407,7 +440,9 @@ class FakeNautobotService:
                     continue
                 for ip_obj in iface.get("ip_addresses", []):
                     if ip_obj.get("address") in ip_filters:
-                        matching_ifaces.append({"id": iface["id"], "name": iface["name"]})
+                        matching_ifaces.append(
+                            {"id": iface["id"], "name": iface["name"]}
+                        )
                         break
             devices.append(
                 {
@@ -490,7 +525,12 @@ class FakeNautobotService:
         if params.get("name"):
             results = [d for d in results if d.get("name") == params["name"]]
         if params.get("virtual_chassis"):
-            results = [d for d in results if (d.get("virtual_chassis") or {}).get("id") == params["virtual_chassis"]]
+            results = [
+                d
+                for d in results
+                if (d.get("virtual_chassis") or {}).get("id")
+                == params["virtual_chassis"]
+            ]
         limit = int(params.get("limit", 200))
         return self._count_list_response(results[:limit])
 
@@ -561,11 +601,18 @@ class FakeNautobotService:
             target = params["address"]
             host = target.split("/")[0]
             results = [
-                ip for ip in results if ip.get("address") == target or ip.get("address", "").split("/")[0] == host
+                ip
+                for ip in results
+                if ip.get("address") == target
+                or ip.get("address", "").split("/")[0] == host
             ]
         if params.get("namespace"):
             ns = params["namespace"]
-            results = [ip for ip in results if ip.get("namespace_id") == ns or ip.get("namespace") == ns]
+            results = [
+                ip
+                for ip in results
+                if ip.get("namespace_id") == ns or ip.get("namespace") == ns
+            ]
         return self._count_list_response(results)
 
     def _ip_detail(self, ip_id: str, method: str, data: dict) -> dict:
@@ -592,7 +639,9 @@ class FakeNautobotService:
 
         results = list(self._ip_iface_assocs.values())
         if params.get("ip_address"):
-            results = [a for a in results if a.get("ip_address") == params["ip_address"]]
+            results = [
+                a for a in results if a.get("ip_address") == params["ip_address"]
+            ]
         if params.get("interface"):
             results = [a for a in results if a.get("interface") == params["interface"]]
         if params.get("vm_interface"):
@@ -600,7 +649,10 @@ class FakeNautobotService:
                 a
                 for a in results
                 if a.get("vm_interface") == params["vm_interface"]
-                or (isinstance(a.get("vm_interface"), dict) and a["vm_interface"].get("id") == params["vm_interface"])
+                or (
+                    isinstance(a.get("vm_interface"), dict)
+                    and a["vm_interface"].get("id") == params["vm_interface"]
+                )
             ]
         return self._count_list_response(results)
 
@@ -657,7 +709,9 @@ class FakeNautobotService:
 
     def _device_type_endpoint(self, resource_id: str | None, params: dict) -> dict:
         if resource_id:
-            dt = next((v for v in self._device_types.values() if v["id"] == resource_id), None)
+            dt = next(
+                (v for v in self._device_types.values() if v["id"] == resource_id), None
+            )
             if dt is None:
                 raise NautobotNotFoundError(f"Device type {resource_id} not found")
             return dict(dt)
@@ -670,7 +724,9 @@ class FakeNautobotService:
 
     def _platform_endpoint(self, resource_id: str | None, params: dict) -> dict:
         if resource_id:
-            p = next((v for v in self._platforms.values() if v["id"] == resource_id), None)
+            p = next(
+                (v for v in self._platforms.values() if v["id"] == resource_id), None
+            )
             if p is None:
                 raise NautobotNotFoundError(f"Platform {resource_id} not found")
             return dict(p)
@@ -689,11 +745,17 @@ class FakeNautobotService:
 
     def _raise_simulated_error(self, error_type: str, endpoint: str) -> None:
         if error_type == "duplicate":
-            raise NautobotAPIError(f"A device with this name already exists (simulated duplicate at {endpoint})")
+            raise NautobotAPIError(
+                f"A device with this name already exists (simulated duplicate at {endpoint})"
+            )
         if error_type == "not_found":
             raise NautobotNotFoundError(f"Resource not found: {endpoint}")
         if error_type == "missing_prefix":
-            raise NautobotAPIError("No suitable parent Prefix exists in namespace (simulated)")
+            raise NautobotAPIError(
+                "No suitable parent Prefix exists in namespace (simulated)"
+            )
         if error_type == "duplicate_netmask":
-            raise NautobotAPIError("IP address with this Parent and Host already exists (simulated)")
+            raise NautobotAPIError(
+                "IP address with this Parent and Host already exists (simulated)"
+            )
         raise NautobotAPIError(f"Simulated error '{error_type}' for {endpoint}")

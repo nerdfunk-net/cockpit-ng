@@ -78,10 +78,14 @@ class InventoryQueryService:
                 raw_list = self._cache_service.get(_BULK_CACHE_KEY)
                 if raw_list:
                     devices = [self._parse_device_from_cache(d) for d in raw_list]
-                    logger.info("Cache hit for '%s': %s devices", _BULK_CACHE_KEY, len(devices))
+                    logger.info(
+                        "Cache hit for '%s': %s devices", _BULK_CACHE_KEY, len(devices)
+                    )
                     self._devices_cache = devices
                     return devices
-                logger.info("Cache miss for '%s', falling back to Nautobot API", _BULK_CACHE_KEY)
+                logger.info(
+                    "Cache miss for '%s', falling back to Nautobot API", _BULK_CACHE_KEY
+                )
             except Exception as exc:
                 logger.warning(
                     "Redis read failed for '%s', falling back to Nautobot API: %s",
@@ -111,7 +115,9 @@ class InventoryQueryService:
         try:
             import service_factory
 
-            nautobot_metadata_service = service_factory.build_nautobot_metadata_service()
+            nautobot_metadata_service = (
+                service_factory.build_nautobot_metadata_service()
+            )
 
             logger.info("Fetching custom field types from Nautobot")
 
@@ -121,13 +127,21 @@ class InventoryQueryService:
             for field in custom_fields:
                 field_key = field.get("key")
                 field_type_dict = field.get("type", {})
-                field_type_value = field_type_dict.get("value") if isinstance(field_type_dict, dict) else None
+                field_type_value = (
+                    field_type_dict.get("value")
+                    if isinstance(field_type_dict, dict)
+                    else None
+                )
 
                 if field_key and field_type_value:
                     type_mapping[field_key] = field_type_value
-                    logger.info("Custom field '%s' has type '%s'", field_key, field_type_value)
+                    logger.info(
+                        "Custom field '%s' has type '%s'", field_key, field_type_value
+                    )
 
-            logger.info("Loaded %s custom field types: %s", len(type_mapping), type_mapping)
+            logger.info(
+                "Loaded %s custom field types: %s", len(type_mapping), type_mapping
+            )
 
             self._custom_field_types_cache = type_mapping
             return type_mapping
@@ -193,7 +207,9 @@ class InventoryQueryService:
     # Cache-first query methods
     # ------------------------------------------------------------------
 
-    async def _query_devices_by_name(self, name_filter: str, use_contains: bool = False) -> List[DeviceInfo]:
+    async def _query_devices_by_name(
+        self, name_filter: str, use_contains: bool = False
+    ) -> List[DeviceInfo]:
         """Filter devices by name using the bulk cache."""
         if not name_filter or name_filter.strip() == "":
             logger.warning("Empty name_filter provided, returning empty result")
@@ -215,7 +231,9 @@ class InventoryQueryService:
         )
         return result
 
-    async def _query_devices_by_role(self, role_filter: str, use_negation: bool = False) -> List[DeviceInfo]:
+    async def _query_devices_by_role(
+        self, role_filter: str, use_negation: bool = False
+    ) -> List[DeviceInfo]:
         """Filter devices by role using the bulk cache."""
         if not role_filter or role_filter.strip() == "":
             logger.warning("Empty role_filter provided, returning empty result")
@@ -304,7 +322,9 @@ class InventoryQueryService:
         )
         return result
 
-    async def _query_devices_by_platform(self, platform_filter: str) -> List[DeviceInfo]:
+    async def _query_devices_by_platform(
+        self, platform_filter: str
+    ) -> List[DeviceInfo]:
         """Filter devices by platform using the bulk cache."""
         if not platform_filter or platform_filter.strip() == "":
             logger.warning("Empty platform_filter provided, returning empty result")
@@ -312,10 +332,14 @@ class InventoryQueryService:
 
         all_devices = await self._get_all_devices_cached()
         result = [d for d in all_devices if d.platform == platform_filter]
-        logger.info("Cache filter platform='%s': %s devices", platform_filter, len(result))
+        logger.info(
+            "Cache filter platform='%s': %s devices", platform_filter, len(result)
+        )
         return result
 
-    async def _query_devices_by_has_primary(self, has_primary_filter: str) -> List[DeviceInfo]:
+    async def _query_devices_by_has_primary(
+        self, has_primary_filter: str
+    ) -> List[DeviceInfo]:
         """Filter devices by whether they have a primary IP using the bulk cache."""
         has_primary_bool = has_primary_filter.lower() == "true"
 
@@ -326,7 +350,9 @@ class InventoryQueryService:
         else:
             result = [d for d in all_devices if not d.primary_ip4]
 
-        logger.info("Cache filter has_primary=%s: %s devices", has_primary_bool, len(result))
+        logger.info(
+            "Cache filter has_primary=%s: %s devices", has_primary_bool, len(result)
+        )
         return result
 
     # ------------------------------------------------------------------
@@ -607,9 +633,14 @@ class InventoryQueryService:
             if (
                 not custom_field_name
                 or not custom_field_value
-                or (isinstance(custom_field_value, str) and custom_field_value.strip() == "")
+                or (
+                    isinstance(custom_field_value, str)
+                    and custom_field_value.strip() == ""
+                )
             ):
-                logger.warning("Empty custom_field_name or custom_field_value provided, returning empty result")
+                logger.warning(
+                    "Empty custom_field_name or custom_field_value provided, returning empty result"
+                )
                 return []
 
             custom_field_types = await self._get_custom_field_types()
@@ -721,26 +752,34 @@ class InventoryQueryService:
             result = await nautobot_service.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error("GraphQL errors in custom field query: %s", result["errors"])
+                logger.error(
+                    "GraphQL errors in custom field query: %s", result["errors"]
+                )
                 return []
 
             return self._parse_device_data(result.get("data", {}).get("devices", []))
 
         except Exception as e:
-            logger.error("Error querying devices by custom field '%s': %s", custom_field_name, e)
+            logger.error(
+                "Error querying devices by custom field '%s': %s", custom_field_name, e
+            )
             return []
 
     # ------------------------------------------------------------------
     # Shared parser
     # ------------------------------------------------------------------
 
-    def _parse_device_data(self, devices_data: List[Dict[str, Any]]) -> List[DeviceInfo]:
+    def _parse_device_data(
+        self, devices_data: List[Dict[str, Any]]
+    ) -> List[DeviceInfo]:
         """Parse GraphQL device data (nested dicts) into DeviceInfo objects."""
         devices = []
 
         for device_data in devices_data:
             primary_ip = None
-            if device_data.get("primary_ip4") and device_data["primary_ip4"].get("address"):
+            if device_data.get("primary_ip4") and device_data["primary_ip4"].get(
+                "address"
+            ):
                 primary_ip = device_data["primary_ip4"]["address"]
 
             status = None
@@ -748,7 +787,9 @@ class InventoryQueryService:
                 status = device_data["status"]["name"]
 
             device_type = None
-            if device_data.get("device_type") and device_data["device_type"].get("model"):
+            if device_data.get("device_type") and device_data["device_type"].get(
+                "model"
+            ):
                 device_type = device_data["device_type"]["model"]
 
             manufacturer = None
@@ -773,7 +814,11 @@ class InventoryQueryService:
 
             tags = []
             if device_data.get("tags"):
-                tags = [tag.get("name", "") for tag in device_data["tags"] if tag.get("name")]
+                tags = [
+                    tag.get("name", "")
+                    for tag in device_data["tags"]
+                    if tag.get("name")
+                ]
 
             device = DeviceInfo(
                 id=device_data.get("id", ""),

@@ -75,7 +75,9 @@ class ConfigService:
                     self._snmp_mapping = yaml.safe_load(f) or {}
                 logger.info("Loaded SNMP mapping configuration from %s", config_path)
             except FileNotFoundError:
-                logger.error("SNMP mapping configuration file not found: %s", config_path)
+                logger.error(
+                    "SNMP mapping configuration file not found: %s", config_path
+                )
                 raise
             except yaml.YAMLError as e:
                 logger.error("Error parsing SNMP mapping configuration YAML: %s", e)

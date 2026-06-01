@@ -115,7 +115,11 @@ def _build_add_request(
     serial: str,
 ) -> AddDeviceRequest:
     """Build an AddDeviceRequest for a copy of *device* with a single serial."""
-    custom_fields = {k: v for k, v in (device.get("_custom_field_data") or {}).items() if v is not None}
+    custom_fields = {
+        k: v
+        for k, v in (device.get("_custom_field_data") or {}).items()
+        if v is not None
+    }
     tags = [t["id"] for t in (device.get("tags") or [])]
     rack = device.get("rack") or {}
 
@@ -304,7 +308,9 @@ async def process_stacks(
 
             add_request = _build_add_request(device, new_name, serial)
             try:
-                response = await creation_service.create_device_with_interfaces(add_request)
+                response = await creation_service.create_device_with_interfaces(
+                    add_request
+                )
                 if response.get("summary", {}).get("device_created"):
                     created_names.append(new_name)
                     logger.info("Created device %s (serial: %s)", new_name, serial)
@@ -350,7 +356,9 @@ async def process_stacks(
             if fetched:
                 all_members.append(fetched[0])
             else:
-                logger.warning("Could not find device by name '%s' after creation", name)
+                logger.warning(
+                    "Could not find device by name '%s' after creation", name
+                )
 
         if not all_members:
             results.append(
@@ -406,7 +414,9 @@ async def process_stacks(
                     device_id=device_id,
                     device_name=device_name,
                     success=True,
-                    message=(f"Split into {len(all_members)} devices and created Virtual Chassis '{canon_name}'"),
+                    message=(
+                        f"Split into {len(all_members)} devices and created Virtual Chassis '{canon_name}'"
+                    ),
                     created_devices=created_names,
                     virtual_chassis_id=vc_id,
                     virtual_chassis_name=canon_name,

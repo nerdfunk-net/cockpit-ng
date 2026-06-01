@@ -44,7 +44,9 @@ async def trigger_deploy_agent(
     }
 
     if request.template_entries:
-        task_kwargs["template_entries"] = [e.model_dump() for e in request.template_entries]
+        task_kwargs["template_entries"] = [
+            e.model_dump() for e in request.template_entries
+        ]
         task_description = f"{len(request.template_entries)} templates"
     else:
         task_kwargs["template_id"] = request.template_id

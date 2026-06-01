@@ -39,7 +39,9 @@ class DeviceManager:
         self.device_resolver = device_resolver
         self.network_resolver = network_resolver
 
-    async def get_device_details(self, device_id: str, depth: int = 0) -> Dict[str, Any]:
+    async def get_device_details(
+        self, device_id: str, depth: int = 0
+    ) -> Dict[str, Any]:
         """
         Fetch device details from Nautobot.
 
@@ -64,7 +66,9 @@ class DeviceManager:
         logger.debug("Retrieved device data: %s", device_data.get("name", device_id))
         return device_data
 
-    async def extract_primary_ip_address(self, device_data: Dict[str, Any]) -> Optional[str]:
+    async def extract_primary_ip_address(
+        self, device_data: Dict[str, Any]
+    ) -> Optional[str]:
         """
         Extract primary IPv4 address from device data.
 
@@ -105,7 +109,9 @@ class DeviceManager:
                     method="GET",
                 )
                 current_primary_ip4 = ip_details.get("address")
-                logger.info("Current primary_ip4 (from UUID lookup): %s", current_primary_ip4)
+                logger.info(
+                    "Current primary_ip4 (from UUID lookup): %s", current_primary_ip4
+                )
                 return current_primary_ip4
             except NautobotAPIError as e:
                 logger.warning("Could not fetch IP details: %s", e)
@@ -115,7 +121,9 @@ class DeviceManager:
             logger.warning("Unexpected primary_ip4 type: %s", type(primary_ip4_field))
             return None
 
-    async def assign_primary_ip_to_device(self, device_id: str, ip_address_id: str) -> bool:
+    async def assign_primary_ip_to_device(
+        self, device_id: str, ip_address_id: str
+    ) -> bool:
         """
         Assign primary IPv4 address to a device.
 
@@ -127,7 +135,9 @@ class DeviceManager:
             True if successful, False otherwise
         """
         try:
-            logger.info("Assigning primary IPv4 %s to device %s", ip_address_id, device_id)
+            logger.info(
+                "Assigning primary IPv4 %s to device %s", ip_address_id, device_id
+            )
 
             endpoint = f"dcim/devices/{device_id}/"
             await self.nautobot.rest_request(
@@ -140,7 +150,9 @@ class DeviceManager:
             return True
 
         except NautobotAPIError as e:
-            logger.error("Failed to assign primary IPv4 to device %s: %s", device_id, str(e))
+            logger.error(
+                "Failed to assign primary IPv4 to device %s: %s", device_id, str(e)
+            )
             return False
 
     async def verify_device_updates(

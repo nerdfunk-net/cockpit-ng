@@ -65,7 +65,9 @@ async def get_oidc_providers():
 
         return OIDCProvidersResponse(
             providers=providers_list,
-            allow_traditional_login=settings_manager.get_oidc_global_settings().get("allow_traditional_login", True),
+            allow_traditional_login=settings_manager.get_oidc_global_settings().get(
+                "allow_traditional_login", True
+            ),
         )
 
     except Exception as e:
@@ -100,7 +102,9 @@ async def oidc_login(
         state_with_provider = f"{provider_id}:{state}"
 
         # Generate authorization URL
-        auth_url = oidc_service.generate_authorization_url(provider_id, config, state_with_provider, redirect_uri)
+        auth_url = oidc_service.generate_authorization_url(
+            provider_id, config, state_with_provider, redirect_uri
+        )
 
         return {
             "authorization_url": auth_url,
@@ -111,7 +115,9 @@ async def oidc_login(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("OIDC login initiation failed for provider '%s': %s", provider_id, e)
+        logger.error(
+            "OIDC login initiation failed for provider '%s': %s", provider_id, e
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to initiate OIDC login with provider '{provider_id}'",
@@ -172,7 +178,9 @@ async def oidc_test_login(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("OIDC test login initiation failed for provider '%s': %s", provider_id, e)
+        logger.error(
+            "OIDC test login initiation failed for provider '%s': %s", provider_id, e
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to initiate OIDC test login with provider '{provider_id}'",
@@ -232,7 +240,9 @@ async def oidc_callback(
 
         # Provision or get existing user
         logger.debug("[OIDC Debug] Provisioning or retrieving user...")
-        user, is_new_user = await oidc_service.provision_or_get_user(provider_id, user_data)
+        user, is_new_user = await oidc_service.provision_or_get_user(
+            provider_id, user_data
+        )
 
         # Check if user is inactive (new users awaiting approval)
         if not user.get("is_active", True):
@@ -322,7 +332,9 @@ async def oidc_callback(
             "email": user_with_roles.get("email"),
             "role": primary_role,  # Legacy field for compatibility
             "roles": role_names,  # New RBAC roles array
-            "permissions": user_with_roles.get("permissions", []),  # New RBAC permissions
+            "permissions": user_with_roles.get(
+                "permissions", []
+            ),  # New RBAC permissions
             "debug": user_with_roles.get("debug", False),
         }
 
@@ -446,12 +458,18 @@ async def get_oidc_debug_info(oidc_service=Depends(get_oidc_service)):
                         ca_cert_file = Path(ca_cert_path)
                         if not ca_cert_file.is_absolute():
                             # Relative to project root (backend parent directory)
-                            ca_cert_file = Path(__file__).parent.parent.parent / ca_cert_path
+                            ca_cert_file = (
+                                Path(__file__).parent.parent.parent / ca_cert_path
+                            )
 
                         ca_cert_exists = ca_cert_file.exists()
                         if not ca_cert_exists:
-                            issues.append(f"CA certificate file not found: {ca_cert_path}")
-                            status_level = "warning" if status_level == "ok" else status_level
+                            issues.append(
+                                f"CA certificate file not found: {ca_cert_path}"
+                            )
+                            status_level = (
+                                "warning" if status_level == "ok" else status_level
+                            )
 
                     # Get scopes from provider config (default to standard OIDC scopes)
                     scopes = provider.get("scopes", ["openid", "profile", "email"])
@@ -497,7 +515,9 @@ async def get_oidc_debug_info(oidc_service=Depends(get_oidc_service)):
 
         return {
             "oidc_enabled": oidc_enabled,
-            "allow_traditional_login": global_settings.get("allow_traditional_login", True),
+            "allow_traditional_login": global_settings.get(
+                "allow_traditional_login", True
+            ),
             "providers": providers_debug,
             "global_config": {
                 "default_role": global_settings.get("default_role", "user"),
@@ -508,4 +528,6 @@ async def get_oidc_debug_info(oidc_service=Depends(get_oidc_service)):
         }
 
     except Exception as e:
-        raise_internal_server_error(logger, "Failed to retrieve OIDC debug information: ", e)
+        raise_internal_server_error(
+            logger, "Failed to retrieve OIDC debug information: ", e
+        )

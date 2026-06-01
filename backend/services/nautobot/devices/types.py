@@ -33,7 +33,9 @@ class DeviceIdentifier(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         """Validate that at least one identifier is provided."""
         if not any([self.id, self.name, self.ip_address]):
-            raise ValueError("At least one identifier must be provided: id, name, or ip_address")
+            raise ValueError(
+                "At least one identifier must be provided: id, name, or ip_address"
+            )
 
 
 class InterfaceConfig(BaseModel):
@@ -71,16 +73,26 @@ class InterfaceSpec(BaseModel):
     name: str = Field(..., description="Interface name")
     type: str = Field(..., description="Interface type (e.g., '1000base-t', 'virtual')")
     status: str = Field(default="active", description="Interface status")
-    ip_address: Optional[str] = Field(None, description="IP address with prefix (e.g., '192.168.1.1/24')")
-    namespace: Optional[str] = Field(default="Global", description="IP namespace (required if ip_address provided)")
-    is_primary_ipv4: bool = Field(default=False, description="Set this IP as primary IPv4 for the device")
+    ip_address: Optional[str] = Field(
+        None, description="IP address with prefix (e.g., '192.168.1.1/24')"
+    )
+    namespace: Optional[str] = Field(
+        default="Global", description="IP namespace (required if ip_address provided)"
+    )
+    is_primary_ipv4: bool = Field(
+        default=False, description="Set this IP as primary IPv4 for the device"
+    )
     enabled: Optional[bool] = Field(None, description="Interface enabled state")
-    mgmt_only: Optional[bool] = Field(None, description="Mark interface as management only")
+    mgmt_only: Optional[bool] = Field(
+        None, description="Mark interface as management only"
+    )
     description: Optional[str] = Field(None, description="Interface description")
     mac_address: Optional[str] = Field(None, description="MAC address")
     mtu: Optional[int] = Field(None, description="MTU size")
     mode: Optional[str] = Field(None, description="Interface mode")
-    ip_role: Optional[str] = Field(None, description="IP address role (e.g., 'Secondary', 'Anycast')")
+    ip_role: Optional[str] = Field(
+        None, description="IP address role (e.g., 'Secondary', 'Anycast')"
+    )
 
     @field_validator("namespace")
     @classmethod
@@ -98,11 +110,21 @@ class DeviceUpdateResult(BaseModel):
     device_id: Optional[str] = Field(None, description="Device UUID")
     device_name: str = Field(..., description="Device name")
     message: str = Field(..., description="Human-readable status message")
-    updated_fields: list[str] = Field(default_factory=list, description="List of fields that were updated")
-    warnings: list[str] = Field(default_factory=list, description="List of warning messages")
-    interfaces_created: int = Field(default=0, description="Number of interfaces created")
-    interfaces_updated: int = Field(default=0, description="Number of interfaces updated")
-    interfaces_failed: int = Field(default=0, description="Number of interface operations that failed")
+    updated_fields: list[str] = Field(
+        default_factory=list, description="List of fields that were updated"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="List of warning messages"
+    )
+    interfaces_created: int = Field(
+        default=0, description="Number of interfaces created"
+    )
+    interfaces_updated: int = Field(
+        default=0, description="Number of interfaces updated"
+    )
+    interfaces_failed: int = Field(
+        default=0, description="Number of interface operations that failed"
+    )
     details: Dict[str, Any] = Field(
         default_factory=dict,
         description="Detailed information about the update (before/after/changes)",
@@ -112,9 +134,19 @@ class DeviceUpdateResult(BaseModel):
 class InterfaceUpdateResult(BaseModel):
     """Result of interface update operations."""
 
-    interfaces_created: int = Field(default=0, description="Number of interfaces created")
-    interfaces_updated: int = Field(default=0, description="Number of interfaces updated")
-    interfaces_failed: int = Field(default=0, description="Number of interface operations that failed")
-    ip_addresses_created: int = Field(default=0, description="Number of IP addresses created")
+    interfaces_created: int = Field(
+        default=0, description="Number of interfaces created"
+    )
+    interfaces_updated: int = Field(
+        default=0, description="Number of interfaces updated"
+    )
+    interfaces_failed: int = Field(
+        default=0, description="Number of interface operations that failed"
+    )
+    ip_addresses_created: int = Field(
+        default=0, description="Number of IP addresses created"
+    )
     primary_ip4_id: Optional[str] = Field(None, description="Primary IPv4 ID if set")
-    warnings: list[str] = Field(default_factory=list, description="List of warning messages")
+    warnings: list[str] = Field(
+        default_factory=list, description="List of warning messages"
+    )

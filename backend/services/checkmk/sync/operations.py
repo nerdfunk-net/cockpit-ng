@@ -87,8 +87,12 @@ class DeviceSyncOperations:
 
                 # Ensure folder exists before creating host
                 if folder and folder != "/":
-                    logger.info("Ensuring folder '%s' exists before creating host", folder)
-                    folder_created = await self._folder.create_path(folder, device_site, {})
+                    logger.info(
+                        "Ensuring folder '%s' exists before creating host", folder
+                    )
+                    folder_created = await self._folder.create_path(
+                        folder, device_site, {}
+                    )
                     if not folder_created:
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
@@ -99,7 +103,9 @@ class DeviceSyncOperations:
                 # Convert folder path format: CheckMK uses ~ instead of /
                 # First normalize double slashes, then convert / to ~
                 normalized_folder = folder.replace("//", "/") if folder else "/"
-                checkmk_folder = normalized_folder.replace("/", "~") if normalized_folder else "~"
+                checkmk_folder = (
+                    normalized_folder.replace("/", "~") if normalized_folder else "~"
+                )
                 logger.info(
                     "Converted folder path from '%s' to '%s' for CheckMK client",
                     folder,
@@ -122,8 +128,12 @@ class DeviceSyncOperations:
 
                 # Start service discovery with tabula_rasa mode to add services
                 try:
-                    logger.info("Starting service discovery (tabula_rasa) for host %s", hostname)
-                    discovery_result = client.start_service_discovery(hostname, mode="tabula_rasa")
+                    logger.info(
+                        "Starting service discovery (tabula_rasa) for host %s", hostname
+                    )
+                    discovery_result = client.start_service_discovery(
+                        hostname, mode="tabula_rasa"
+                    )
                     logger.info(
                         "Service discovery started for host %s: %s",
                         hostname,
@@ -164,7 +174,9 @@ class DeviceSyncOperations:
                     if "title" in e.response_data:
                         error_detail["title"] = e.response_data["title"]
                     if "validation_summary" in e.response_data:
-                        error_detail["validation_summary"] = e.response_data["validation_summary"]
+                        error_detail["validation_summary"] = e.response_data[
+                            "validation_summary"
+                        ]
                     if "request" in e.response_data:
                         error_detail["request"] = e.response_data["request"]
 
@@ -173,7 +185,9 @@ class DeviceSyncOperations:
                     detail=json.dumps(error_detail),
                 )
 
-            logger.info("Successfully added device %s (%s) to CheckMK", device_id, hostname)
+            logger.info(
+                "Successfully added device %s (%s) to CheckMK", device_id, hostname
+            )
 
             return DeviceOperationResult(
                 success=True,
@@ -265,7 +279,9 @@ class DeviceSyncOperations:
 
             if folder_changed:
                 # Ensure the new folder path exists
-                path_created = await self._folder.create_path(new_folder_normalized, device_site, {})
+                path_created = await self._folder.create_path(
+                    new_folder_normalized, device_site, {}
+                )
 
                 if not path_created:
                     raise HTTPException(
@@ -275,8 +291,16 @@ class DeviceSyncOperations:
 
                 # Convert folder path format: CheckMK uses ~ instead of /
                 # First normalize double slashes, then convert / to ~
-                normalized_new_folder = new_folder_normalized.replace("//", "/") if new_folder_normalized else "/"
-                checkmk_new_folder = normalized_new_folder.replace("/", "~") if normalized_new_folder else "~"
+                normalized_new_folder = (
+                    new_folder_normalized.replace("//", "/")
+                    if new_folder_normalized
+                    else "/"
+                )
+                checkmk_new_folder = (
+                    normalized_new_folder.replace("/", "~")
+                    if normalized_new_folder
+                    else "~"
+                )
                 logger.info(
                     "Converted new folder path from '%s' to '%s' for CheckMK client",
                     new_folder_normalized,
@@ -299,7 +323,9 @@ class DeviceSyncOperations:
                             detail=f"Cannot move host '{hostname}' - CheckMK changes may need to be activated first. Please activate pending changes in CheckMK and try again.",
                         )
                     else:
-                        logger.error("CheckMK API error moving host %s: %s", hostname, e)
+                        logger.error(
+                            "CheckMK API error moving host %s: %s", hostname, e
+                        )
                         raise HTTPException(
                             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f"CheckMK API error moving host: {e}",
@@ -327,7 +353,9 @@ class DeviceSyncOperations:
                     if "title" in e.response_data:
                         error_detail["title"] = e.response_data["title"]
                     if "validation_summary" in e.response_data:
-                        error_detail["validation_summary"] = e.response_data["validation_summary"]
+                        error_detail["validation_summary"] = e.response_data[
+                            "validation_summary"
+                        ]
                     if "request" in e.response_data:
                         error_detail["request"] = e.response_data["request"]
 
@@ -336,7 +364,9 @@ class DeviceSyncOperations:
                     detail=json.dumps(error_detail),
                 )
 
-            logger.info("Successfully updated device %s (%s) in CheckMK", device_id, hostname)
+            logger.info(
+                "Successfully updated device %s (%s) in CheckMK", device_id, hostname
+            )
 
             return DeviceUpdateResult(
                 success=True,

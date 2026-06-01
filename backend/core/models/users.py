@@ -17,7 +17,9 @@ class User(Base):
     debug = Column(Boolean, nullable=False, default=False)
     is_active = Column(Boolean, nullable=False, default=True)
     last_login = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -26,8 +28,12 @@ class User(Base):
     )
 
     # Relationships
-    user_roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
-    user_permissions = relationship("UserPermission", back_populates="user", cascade="all, delete-orphan")
+    user_roles = relationship(
+        "UserRole", back_populates="user", cascade="all, delete-orphan"
+    )
+    user_permissions = relationship(
+        "UserPermission", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class UserProfile(Base):
@@ -39,7 +45,9 @@ class UserProfile(Base):
     email = Column(String(255))
     debug_mode = Column(Boolean, nullable=False, default=False)
     api_key = Column(String(255))
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

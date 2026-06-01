@@ -31,7 +31,9 @@ async def get_all_host_tag_groups(
     """Get all host tag groups."""
     try:
         result = await service.get_all_host_tag_groups()
-        return CheckMKHostTagGroupListResponse(tag_groups=result["tag_groups"], total=result["total"])
+        return CheckMKHostTagGroupListResponse(
+            tag_groups=result["tag_groups"], total=result["total"]
+        )
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
@@ -81,7 +83,9 @@ async def create_host_tag_group(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to create host tag group {request.id}", e)
+        raise_internal_server_error(
+            logger, f"Failed to create host tag group {request.id}", e
+        )
 
 
 @router.put("/host-tag-groups/{name}", response_model=CheckMKOperationResponse)
@@ -104,7 +108,9 @@ async def update_host_tag_group(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to update host tag group {name}", e)
+        raise_internal_server_error(
+            logger, f"Failed to update host tag group {name}", e
+        )
 
 
 @router.delete("/host-tag-groups/{name}", response_model=CheckMKOperationResponse)
@@ -118,10 +124,14 @@ async def delete_host_tag_group(
     """Delete host tag group."""
     try:
         await service.delete_host_tag_group(name, repair=repair, mode=mode)
-        return CheckMKOperationResponse(success=True, message=f"Deleted host tag group {name} successfully")
+        return CheckMKOperationResponse(
+            success=True, message=f"Deleted host tag group {name} successfully"
+        )
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to delete host tag group {name}", e)
+        raise_internal_server_error(
+            logger, f"Failed to delete host tag group {name}", e
+        )

@@ -198,7 +198,13 @@ async def get_telegraf_config(
     try:
         from pathlib import Path
 
-        config_path = Path(__file__).parent.parent.parent / "config" / "tig" / "telegraf" / "telegraf.conf"
+        config_path = (
+            Path(__file__).parent.parent.parent
+            / "config"
+            / "tig"
+            / "telegraf"
+            / "telegraf.conf"
+        )
 
         if not config_path.exists():
             return {
@@ -240,7 +246,13 @@ async def save_telegraf_config(
 
         content = file_content.get("content", "")
 
-        config_path = Path(__file__).parent.parent.parent / "config" / "tig" / "telegraf" / "telegraf.conf"
+        config_path = (
+            Path(__file__).parent.parent.parent
+            / "config"
+            / "tig"
+            / "telegraf"
+            / "telegraf.conf"
+        )
 
         config_path.parent.mkdir(parents=True, exist_ok=True)
 

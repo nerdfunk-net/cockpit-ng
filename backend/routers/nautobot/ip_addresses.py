@@ -83,7 +83,9 @@ async def get_ipam_ip_addresses(
 
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
-        logger.info("Retrieved %s IP addresses from Nautobot IPAM", result.get("count", 0))
+        logger.info(
+            "Retrieved %s IP addresses from Nautobot IPAM", result.get("count", 0)
+        )
         return result
 
     except Exception as e:
@@ -469,7 +471,9 @@ async def get_ipam_ip_addresses_detailed(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, "Failed to retrieve detailed IP address information: ", e)
+        raise_internal_server_error(
+            logger, "Failed to retrieve detailed IP address information: ", e
+        )
 
 
 @router.get("/{ip_address_id}", summary="🔶 REST: Get IP Address")
@@ -539,9 +543,13 @@ async def create_ipam_ip_address(
             )
 
         endpoint = "ipam/ip-addresses/"
-        result = await nautobot_service.rest_request(endpoint, method="POST", data=ip_address_data)
+        result = await nautobot_service.rest_request(
+            endpoint, method="POST", data=ip_address_data
+        )
 
-        logger.info("Created IP address %s in Nautobot IPAM", ip_address_data.get("address"))
+        logger.info(
+            "Created IP address %s in Nautobot IPAM", ip_address_data.get("address")
+        )
 
         audit_log.log_event(
             username=current_user.get("sub"),
@@ -595,7 +603,9 @@ async def update_ipam_ip_address(
         endpoint = f"ipam/ip-addresses/{ip_address_id}/"
 
         # Use PATCH for partial updates
-        result = await nautobot_service.rest_request(endpoint, method="PATCH", data=ip_address_data)
+        result = await nautobot_service.rest_request(
+            endpoint, method="PATCH", data=ip_address_data
+        )
 
         logger.info("Updated IP address %s in Nautobot IPAM", ip_address_id)
 

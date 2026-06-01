@@ -28,7 +28,9 @@ def svc(tmpl_repo: FakeJobTemplateRepository) -> JobTemplateService:
     return service
 
 
-def _create_backup(svc: JobTemplateService, name: str = "nightly-backup", user_id: int = 1) -> dict:
+def _create_backup(
+    svc: JobTemplateService, name: str = "nightly-backup", user_id: int = 1
+) -> dict:
     """Helper: create a minimal backup job template."""
     return svc.create_job_template(
         name=name,
@@ -87,7 +89,9 @@ class TestCreateJobTemplate:
         )
         assert result["user_id"] == 42
 
-    def test_json_fields_are_serialized_and_deserialized(self, svc: JobTemplateService) -> None:
+    def test_json_fields_are_serialized_and_deserialized(
+        self, svc: JobTemplateService
+    ) -> None:
         variables = {"region": "eu-west", "timeout": 30}
         result = svc.create_job_template(
             name="deploy-template",
@@ -163,7 +167,9 @@ class TestListJobTemplates:
         assert "global" in names
         assert "mine" in names
 
-    def test_list_user_templates_excludes_other_private(self, svc: JobTemplateService) -> None:
+    def test_list_user_templates_excludes_other_private(
+        self, svc: JobTemplateService
+    ) -> None:
         svc.create_job_template("alice-job", "backup", 1, "alice")
         svc.create_job_template("bob-job", "backup", 2, "bob")
 
@@ -220,7 +226,9 @@ class TestUpdateJobTemplate:
     def test_update_deploy_custom_variables(self, svc: JobTemplateService) -> None:
         created = _create_backup(svc)
         new_vars = {"env": "prod"}
-        updated = svc.update_job_template(created["id"], deploy_custom_variables=new_vars)
+        updated = svc.update_job_template(
+            created["id"], deploy_custom_variables=new_vars
+        )
         assert updated["deploy_custom_variables"] == new_vars
 
     def test_no_op_update_returns_current(self, svc: JobTemplateService) -> None:

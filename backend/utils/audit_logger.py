@@ -67,7 +67,9 @@ def log_device_onboarding(
         )
         logger.info("Audit log created successfully for device %s", device_name)
     except Exception as e:
-        logger.error("Failed to create device onboarding audit log: %s", e, exc_info=True)
+        logger.error(
+            "Failed to create device onboarding audit log: %s", e, exc_info=True
+        )
 
 
 def log_checkmk_sync_event(

@@ -53,7 +53,9 @@ def test_execute_run_commands_happy_path_sends_rendered_commands() -> None:
         }
     )
     render_service = MagicMock()
-    render_service.render_template = AsyncMock(return_value={"rendered_content": "show version\nshow ip int brief"})
+    render_service.render_template = AsyncMock(
+        return_value={"rendered_content": "show version\nshow ip int brief"}
+    )
     netmiko = MagicMock()
     netmiko._connect_and_execute.return_value = {
         "success": True,
@@ -64,8 +66,13 @@ def test_execute_run_commands_happy_path_sends_rendered_commands() -> None:
         patch("service_factory.build_credentials_service", return_value=credentials),
         patch("service_factory.build_template_service", return_value=templates),
         patch("service_factory.build_nautobot_service", return_value=nautobot),
-        patch("services.network.automation.render.RenderService", return_value=render_service),
-        patch("services.network.automation.netmiko.NetmikoService", return_value=netmiko),
+        patch(
+            "services.network.automation.render.RenderService",
+            return_value=render_service,
+        ),
+        patch(
+            "services.network.automation.netmiko.NetmikoService", return_value=netmiko
+        ),
     ):
         result = execute_run_commands(
             schedule_id=None,
@@ -115,4 +122,7 @@ def test_execute_run_commands_records_device_fetch_failure() -> None:
 
     assert result["success"] is False
     assert result["failed_count"] == 1
-    assert result["failed_devices"][0]["error"] == "Failed to fetch device data from Nautobot"
+    assert (
+        result["failed_devices"][0]["error"]
+        == "Failed to fetch device data from Nautobot"
+    )

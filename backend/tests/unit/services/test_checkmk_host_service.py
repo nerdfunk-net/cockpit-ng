@@ -17,7 +17,9 @@ from tests.mocks import FakeCheckMKClient
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-_PATCH_TARGET = "services.checkmk.host_service.CheckMKClientFactory.build_client_from_settings"
+_PATCH_TARGET = (
+    "services.checkmk.host_service.CheckMKClientFactory.build_client_from_settings"
+)
 
 
 def _service_with(fake: FakeCheckMKClient) -> CheckMKHostService:
@@ -172,7 +174,9 @@ async def test_create_host_with_start_discovery():
 @pytest.mark.checkmk
 async def test_create_host_discovery_failure_does_not_block():
     """If discovery fails, the host is still created and a warning is recorded."""
-    fake = FakeCheckMKClient(error_on={("start_service_discovery", "fragile-host"): 500})
+    fake = FakeCheckMKClient(
+        error_on={("start_service_discovery", "fragile-host"): 500}
+    )
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKHostService()

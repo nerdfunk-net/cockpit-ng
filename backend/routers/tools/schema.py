@@ -132,7 +132,9 @@ async def create_tests_baseline() -> Dict[str, Any]:
 
     except FileNotFoundError as e:
         logger.error("Baseline directory not found: %s", e)
-        raise HTTPException(status_code=404, detail=f"Baseline directory not found: {str(e)}")
+        raise HTTPException(
+            status_code=404, detail=f"Baseline directory not found: {str(e)}"
+        )
     except ValueError as e:
         logger.error("Invalid baseline data: %s", e)
         raise HTTPException(status_code=400, detail=f"Invalid baseline data: {str(e)}")

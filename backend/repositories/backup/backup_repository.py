@@ -129,7 +129,9 @@ class BackupRepository:
 
                 devices = sorted(devices, key=backup_sort_key, reverse=reverse)
             elif sort_by == "name":
-                devices = sorted(devices, key=lambda d: d.get("name", "").lower(), reverse=reverse)
+                devices = sorted(
+                    devices, key=lambda d: d.get("name", "").lower(), reverse=reverse
+                )
 
         # Get total count before pagination
         total_count = len(devices)
@@ -139,7 +141,9 @@ class BackupRepository:
 
         return paginated_devices, total_count
 
-    def get_backup_history(self, db: Session, device_id: str, limit: int = 50) -> List[dict]:
+    def get_backup_history(
+        self, db: Session, device_id: str, limit: int = 50
+    ) -> List[dict]:
         """
         Get backup history for a device from Git repository.
 
@@ -228,9 +232,15 @@ class BackupRepository:
             data = {}
 
         roles = sorted({r["name"] for r in data.get("roles", []) if r.get("name")})
-        locations = sorted({loc["name"] for loc in data.get("locations", []) if loc.get("name")})
-        device_types = sorted({dt["model"] for dt in data.get("device_types", []) if dt.get("model")})
-        statuses = sorted({s["name"] for s in data.get("statuses", []) if s.get("name")})
+        locations = sorted(
+            {loc["name"] for loc in data.get("locations", []) if loc.get("name")}
+        )
+        device_types = sorted(
+            {dt["model"] for dt in data.get("device_types", []) if dt.get("model")}
+        )
+        statuses = sorted(
+            {s["name"] for s in data.get("statuses", []) if s.get("name")}
+        )
 
         return {
             "roles": roles,

@@ -11,7 +11,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from core.safe_http_errors import raise_internal_server_error
-from dependencies import get_device_creation_service, get_device_query_service, get_nautobot_service
+from dependencies import (
+    get_device_creation_service,
+    get_device_query_service,
+    get_nautobot_service,
+)
 from models.nautobot import (
     AddDeviceRequest,
     CheckIPRequest,
@@ -66,7 +70,9 @@ def _extract_nautobot_error_detail(error_msg: str) -> str:
     return error_msg
 
 
-router = APIRouter(tags=["nautobot-devices"])  # No prefix - endpoints define their own paths
+router = APIRouter(
+    tags=["nautobot-devices"]
+)  # No prefix - endpoints define their own paths
 
 
 @router.get("/test")
@@ -394,7 +400,9 @@ def onboard_device(
                 "device_status": request.status_id,
                 "interface_status": request.interface_status_id,
                 "ip_address_status": request.ip_address_status_id,
-                "platform": None if request.platform_id == "detect" else request.platform_id,
+                "platform": None
+                if request.platform_id == "detect"
+                else request.platform_id,
                 "port": request.port,
                 "timeout": request.timeout,
                 "update_devices_without_primary_ip": False,
@@ -425,7 +433,8 @@ def onboard_device(
                 "success": True,
                 "message": f"Device onboarding job started successfully for {request.ip_address}",
                 "job_id": job_id,
-                "job_status": result.get("job_result", {}).get("status") or result.get("status", "pending"),
+                "job_status": result.get("job_result", {}).get("status")
+                or result.get("status", "pending"),
                 "device_data": request.dict(),
                 "nautobot_response": result,
             }
@@ -433,7 +442,9 @@ def onboard_device(
             error_detail = "Unknown error"
             try:
                 error_response = response.json()
-                error_detail = error_response.get("detail", error_response.get("message", str(error_response)))
+                error_detail = error_response.get(
+                    "detail", error_response.get("message", str(error_response))
+                )
             except (ValueError, KeyError, TypeError):
                 error_detail = response.text or f"HTTP {response.status_code}"
 
@@ -611,7 +622,9 @@ def sync_network_data(
                 "ip_address_status": request.data.get("ip_address_status"),
                 "namespace": request.data.get("namespace"),
                 "sync_cables": request.data.get("sync_cables", False),
-                "sync_software_version": request.data.get("sync_software_version", False),
+                "sync_software_version": request.data.get(
+                    "sync_software_version", False
+                ),
                 "sync_vlans": request.data.get("sync_vlans", False),
                 "sync_vrfs": request.data.get("sync_vrfs", False),
             }
@@ -634,14 +647,17 @@ def sync_network_data(
                 "success": True,
                 "message": "Network data sync job started successfully",
                 "job_id": result.get("job_result", {}).get("id") or result.get("id"),
-                "job_status": result.get("job_result", {}).get("status") or result.get("status", "pending"),
+                "job_status": result.get("job_result", {}).get("status")
+                or result.get("status", "pending"),
                 "nautobot_response": result,
             }
         else:
             error_detail = "Unknown error"
             try:
                 error_response = response.json()
-                error_detail = error_response.get("detail", error_response.get("message", str(error_response)))
+                error_detail = error_response.get(
+                    "detail", error_response.get("message", str(error_response))
+                )
             except (ValueError, KeyError, TypeError):
                 error_detail = response.text or f"HTTP {response.status_code}"
 

@@ -26,13 +26,17 @@ class _HostsMixin:
 
         params = {k: v for k, v in params.items() if v is not None}
 
-        response = self._make_request("GET", "domain-types/host_config/collections/all", params=params)
+        response = self._make_request(
+            "GET", "domain-types/host_config/collections/all", params=params
+        )
         return self._handle_response(response)
 
     def get_host(self, hostname: str, effective_attributes: bool = False) -> Dict:
         params = {"effective_attributes": effective_attributes}
 
-        response = self._make_request("GET", f"objects/host_config/{hostname}", params=params)
+        response = self._make_request(
+            "GET", f"objects/host_config/{hostname}", params=params
+        )
         result = self._handle_response(response)
 
         logger.debug("[CHECKMK API] get_host(%s) full response:", hostname)
@@ -72,7 +76,9 @@ class _HostsMixin:
 
         json_data = {"attributes": attributes}
 
-        response = self._make_request("PUT", f"objects/host_config/{hostname}", json_data=json_data, etag=etag)
+        response = self._make_request(
+            "PUT", f"objects/host_config/{hostname}", json_data=json_data, etag=etag
+        )
         return self._handle_response(response, request_body=json_data)
 
     def delete_host(self, hostname: str) -> bool:

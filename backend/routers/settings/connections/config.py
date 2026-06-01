@@ -59,7 +59,9 @@ async def validate_yaml_content(
             error_line = mark.line + 1  # +1 because line numbers are 0-based
             error_column = mark.column + 1  # +1 because columns are 0-based
 
-        logger.info("YAML validation failed for user: %s - %s", current_user, error_message)
+        logger.info(
+            "YAML validation failed for user: %s - %s", current_user, error_message
+        )
         return {
             "success": True,
             "valid": False,
@@ -101,7 +103,9 @@ async def read_config_file(
             with open(config_file, encoding="utf-8") as f:
                 content = f.read()
 
-            logger.info("Successfully read config file: %s by user: %s", filename, current_user)
+            logger.info(
+                "Successfully read config file: %s by user: %s", filename, current_user
+            )
             return {
                 "success": True,
                 "data": content,
@@ -149,7 +153,9 @@ async def write_config_file(
 
             # Reload config cache to ensure changes are picked up by services
             config_service.reload_config()
-            logger.info("Successfully wrote config file: %s by user: %s", filename, current_user)
+            logger.info(
+                "Successfully wrote config file: %s by user: %s", filename, current_user
+            )
             return {"success": True, "message": f"Successfully saved {filename}"}
 
         except Exception as e:

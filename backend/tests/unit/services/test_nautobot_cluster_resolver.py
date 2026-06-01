@@ -22,7 +22,9 @@ GROUP_ID = "ad000000-0000-0000-0006-000000000001"
 async def test_get_all_cluster_groups_returns_groups() -> None:
     """Cluster groups are extracted from GraphQL data."""
     mock_nb = MagicMock()
-    mock_nb.graphql_query = AsyncMock(return_value={"data": {"cluster_groups": [{"id": GROUP_ID, "name": "prod"}]}})
+    mock_nb.graphql_query = AsyncMock(
+        return_value={"data": {"cluster_groups": [{"id": GROUP_ID, "name": "prod"}]}}
+    )
     resolver = ClusterResolver(mock_nb)
 
     result = await resolver.get_all_cluster_groups()

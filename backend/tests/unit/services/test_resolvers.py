@@ -277,7 +277,9 @@ class TestNetworkResolver:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_resolve_interface_by_name_not_found(self, resolver):
-        result = await resolver.resolve_interface_by_name(DEVICE_ID, "GigabitEthernet9/0")
+        result = await resolver.resolve_interface_by_name(
+            DEVICE_ID, "GigabitEthernet9/0"
+        )
         assert result is None
 
     @pytest.mark.asyncio

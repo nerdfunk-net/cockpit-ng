@@ -57,7 +57,9 @@ class TemplateRepository(BaseRepository[Template]):
                 query = query.filter(
                     or_(
                         Template.scope == "global",
-                        and_(Template.scope == "private", Template.created_by == username),
+                        and_(
+                            Template.scope == "private", Template.created_by == username
+                        ),
                     )
                 )
             else:
@@ -100,7 +102,9 @@ class TemplateRepository(BaseRepository[Template]):
                 query = query.filter(
                     or_(
                         Template.scope == "global",
-                        and_(Template.scope == "private", Template.created_by == username),
+                        and_(
+                            Template.scope == "private", Template.created_by == username
+                        ),
                     )
                 )
             else:
@@ -147,7 +151,11 @@ class TemplateRepository(BaseRepository[Template]):
         """Count active templates."""
         session = get_db_session()
         try:
-            return session.query(func.count(Template.id)).filter(Template.is_active).scalar()
+            return (
+                session.query(func.count(Template.id))
+                .filter(Template.is_active)
+                .scalar()
+            )
         finally:
             session.close()
 

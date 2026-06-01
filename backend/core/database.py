@@ -136,7 +136,9 @@ def init_db():
         else:
             logger.info("Database schema is up to date - no migrations needed")
 
-        logger.info("Database initialized successfully (%s tables)", len(Base.metadata.tables))
+        logger.info(
+            "Database initialized successfully (%s tables)", len(Base.metadata.tables)
+        )
     except Exception as e:
         logger.error("Error initializing database: %s", e)
         raise

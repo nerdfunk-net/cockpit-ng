@@ -18,11 +18,17 @@ class CreateInventoryRequest(BaseModel):
 
     name: str = Field(..., description="Inventory name")
     description: Optional[str] = Field(None, description="Inventory description")
-    conditions: List[dict] = Field(..., description="List of logical conditions or tree structure")
-    template_category: Optional[str] = Field(None, description="Template category (optional)")
+    conditions: List[dict] = Field(
+        ..., description="List of logical conditions or tree structure"
+    )
+    template_category: Optional[str] = Field(
+        None, description="Template category (optional)"
+    )
     template_name: Optional[str] = Field(None, description="Template name (optional)")
     scope: str = Field(default="global", description="Scope: 'global' or 'private'")
-    group_path: Optional[str] = Field(None, description="Slash-separated group path, e.g. 'group_a/sub_b'")
+    group_path: Optional[str] = Field(
+        None, description="Slash-separated group path, e.g. 'group_a/sub_b'"
+    )
 
 
 class UpdateInventoryRequest(BaseModel):
@@ -30,11 +36,15 @@ class UpdateInventoryRequest(BaseModel):
 
     name: Optional[str] = Field(None, description="Inventory name")
     description: Optional[str] = Field(None, description="Inventory description")
-    conditions: Optional[List[dict]] = Field(None, description="List of logical conditions or tree structure")
+    conditions: Optional[List[dict]] = Field(
+        None, description="List of logical conditions or tree structure"
+    )
     template_category: Optional[str] = Field(None, description="Template category")
     template_name: Optional[str] = Field(None, description="Template name")
     scope: Optional[str] = Field(None, description="Scope: 'global' or 'private'")
-    group_path: Optional[str] = Field(None, description="Slash-separated group path; null moves to root")
+    group_path: Optional[str] = Field(
+        None, description="Slash-separated group path; null moves to root"
+    )
 
 
 class InventoryResponse(BaseModel):
@@ -103,14 +113,18 @@ LogicalOperation.model_rebuild()
 class InventoryPreviewRequest(BaseModel):
     """Request for previewing inventory based on logical operations."""
 
-    operations: List[LogicalOperation] = Field(..., description="List of logical operations")
+    operations: List[LogicalOperation] = Field(
+        ..., description="List of logical operations"
+    )
 
 
 class DeviceInfo(BaseModel):
     """Device information for inventory."""
 
     id: str = Field(..., description="Device UUID")
-    name: Optional[str] = Field(None, description="Device name (can be None for unnamed devices)")
+    name: Optional[str] = Field(
+        None, description="Device name (can be None for unnamed devices)"
+    )
     serial: Optional[str] = Field(None, description="Device serial number")
     location: Optional[str] = Field(None, description="Device location")
     role: Optional[str] = Field(None, description="Device role")
@@ -125,15 +139,21 @@ class DeviceInfo(BaseModel):
 class InventoryPreviewResponse(BaseModel):
     """Response for inventory preview."""
 
-    devices: List[DeviceInfo] = Field(..., description="List of devices matching criteria")
+    devices: List[DeviceInfo] = Field(
+        ..., description="List of devices matching criteria"
+    )
     total_count: int = Field(..., description="Total number of devices")
-    operations_executed: int = Field(..., description="Number of GraphQL operations executed")
+    operations_executed: int = Field(
+        ..., description="Number of GraphQL operations executed"
+    )
 
 
 class InventoryGenerateRequest(BaseModel):
     """Request for generating final Ansible inventory."""
 
-    operations: List[LogicalOperation] = Field(..., description="List of logical operations")
+    operations: List[LogicalOperation] = Field(
+        ..., description="List of logical operations"
+    )
     template_name: str = Field(..., description="Name of the Jinja2 template to use")
     template_category: str = Field(..., description="Category of the Jinja2 template")
 
@@ -160,7 +180,9 @@ class SavedInventory(BaseModel):
 
     name: str = Field(..., description="Inventory name")
     description: Optional[str] = Field(None, description="Inventory description")
-    conditions: List[dict] = Field(..., description="List of logical conditions or tree structure")
+    conditions: List[dict] = Field(
+        ..., description="List of logical conditions or tree structure"
+    )
     created_at: Optional[str] = Field(None, description="Creation timestamp")
     updated_at: Optional[str] = Field(None, description="Last update timestamp")
 
@@ -170,7 +192,9 @@ class SaveInventoryRequest(BaseModel):
 
     name: str = Field(..., description="Inventory name")
     description: Optional[str] = Field(None, description="Inventory description")
-    conditions: List[SavedInventoryCondition] = Field(..., description="List of logical conditions")
+    conditions: List[SavedInventoryCondition] = Field(
+        ..., description="List of logical conditions"
+    )
     repository_id: int = Field(..., description="Git repository ID to save to")
 
 
@@ -185,28 +209,40 @@ class SaveInventoryResponse(BaseModel):
 class GitInventoryListResponse(BaseModel):
     """Response with list of git-backed saved inventories."""
 
-    inventories: List[SavedInventory] = Field(..., description="List of saved inventories")
+    inventories: List[SavedInventory] = Field(
+        ..., description="List of saved inventories"
+    )
     total: int = Field(..., description="Total number of inventories")
 
 
 class InventoryAnalysisResponse(BaseModel):
     """Response for inventory analysis with distinct values."""
 
-    locations: List[str] = Field(default_factory=list, description="Distinct list of location names")
-    tags: List[str] = Field(default_factory=list, description="Distinct list of tag names")
+    locations: List[str] = Field(
+        default_factory=list, description="Distinct list of location names"
+    )
+    tags: List[str] = Field(
+        default_factory=list, description="Distinct list of tag names"
+    )
     custom_fields: dict[str, List[str]] = Field(
         default_factory=dict,
         description="Dictionary of custom field names to distinct value lists",
     )
-    statuses: List[str] = Field(default_factory=list, description="Distinct list of status names")
-    roles: List[str] = Field(default_factory=list, description="Distinct list of role names")
+    statuses: List[str] = Field(
+        default_factory=list, description="Distinct list of status names"
+    )
+    roles: List[str] = Field(
+        default_factory=list, description="Distinct list of role names"
+    )
     device_count: int = Field(..., description="Total number of devices analyzed")
 
 
 class RenameGroupRequest(BaseModel):
     """Request body for bulk-renaming a group path."""
 
-    old_path: str = Field(..., description="Current group path to rename (must not be empty/root)")
+    old_path: str = Field(
+        ..., description="Current group path to rename (must not be empty/root)"
+    )
     new_name: str = Field(..., description="New name for the last segment only")
 
 

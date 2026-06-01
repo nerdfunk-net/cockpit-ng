@@ -59,7 +59,9 @@ class RenderService:
             user_variables = {}
 
         # Get the appropriate renderer for this category
-        renderer = self.category_renderers.get(category.lower(), self.render_generic_template)
+        renderer = self.category_renderers.get(
+            category.lower(), self.render_generic_template
+        )
 
         try:
             return await renderer(
@@ -113,15 +115,21 @@ class RenderService:
                 logger.error(error_msg)
                 raise ValueError(error_msg)
         elif use_nautobot_context and not device_id:
-            warnings.append("use_nautobot_context is True but no device_id provided. Nautobot context will be empty.")
+            warnings.append(
+                "use_nautobot_context is True but no device_id provided. Nautobot context will be empty."
+            )
             context["nautobot"] = {}
 
         # Execute pre-run command if provided
         if pre_run_command and pre_run_command.strip():
             if not device_id:
-                raise ValueError("pre_run_command requires a device_id to execute against")
+                raise ValueError(
+                    "pre_run_command requires a device_id to execute against"
+                )
             if not credential_id:
-                raise ValueError("pre_run_command requires credential_id for device authentication")
+                raise ValueError(
+                    "pre_run_command requires credential_id for device authentication"
+                )
 
             try:
                 pre_run_result = await self._execute_pre_run_command(
@@ -134,7 +142,9 @@ class RenderService:
                 context["pre_run_parsed"] = pre_run_result.get("parsed_output", [])
 
                 if pre_run_result.get("parse_error"):
-                    warnings.append(f"TextFSM parsing not available: {pre_run_result['parse_error']}")
+                    warnings.append(
+                        f"TextFSM parsing not available: {pre_run_result['parse_error']}"
+                    )
 
                 logger.info(
                     "Pre-run command executed successfully. Raw length: %s, Parsed records: %s",
@@ -288,11 +298,15 @@ class RenderService:
                 primary_ip = ip_data.split("/")[0]
 
         if not primary_ip:
-            raise ValueError(f"Device {nautobot_device.get('name', device_id)} has no primary IPv4 address")
+            raise ValueError(
+                f"Device {nautobot_device.get('name', device_id)} has no primary IPv4 address"
+            )
 
         # Get platform/device type for Netmiko
         platform = nautobot_device.get("platform", {})
-        platform_name = platform.get("name", "") if isinstance(platform, dict) else str(platform)
+        platform_name = (
+            platform.get("name", "") if isinstance(platform, dict) else str(platform)
+        )
 
         # Map Nautobot platform to Netmiko device type
         device_type = self._map_platform_to_netmiko(platform_name)
@@ -344,7 +358,9 @@ class RenderService:
                     else:
                         # TextFSM didn't parse, output is raw string
                         result["raw_output"] = parsed_output
-                        result["parse_error"] = "No TextFSM template found for this command/platform"
+                        result["parse_error"] = (
+                            "No TextFSM template found for this command/platform"
+                        )
 
                 except Exception as parse_err:
                     logger.warning("TextFSM parsing failed: %s", parse_err)

@@ -19,7 +19,9 @@ from typing import List, Optional
 logger = logging.getLogger(__name__)
 
 
-async def resolve_inventory_to_device_ids(inventory_name: str, username: str) -> Optional[List[str]]:
+async def resolve_inventory_to_device_ids(
+    inventory_name: str, username: str
+) -> Optional[List[str]]:
     """
     Resolve a saved inventory name to a list of device IDs.
 
@@ -80,15 +82,21 @@ async def resolve_inventory_to_device_ids(inventory_name: str, username: str) ->
         # Extract device IDs (UUIDs)
         device_ids = [device.id for device in devices]
 
-        logger.info("Resolved %s devices from inventory '%s'", len(device_ids), inventory_name)
+        logger.info(
+            "Resolved %s devices from inventory '%s'", len(device_ids), inventory_name
+        )
         return device_ids
 
     except Exception as e:
-        logger.error("Error resolving inventory '%s': %s", inventory_name, e, exc_info=True)
+        logger.error(
+            "Error resolving inventory '%s': %s", inventory_name, e, exc_info=True
+        )
         return None
 
 
-def resolve_inventory_to_device_ids_sync(inventory_name: str, username: str) -> Optional[List[str]]:
+def resolve_inventory_to_device_ids_sync(
+    inventory_name: str, username: str
+) -> Optional[List[str]]:
     """
     Synchronous wrapper for resolve_inventory_to_device_ids().
 

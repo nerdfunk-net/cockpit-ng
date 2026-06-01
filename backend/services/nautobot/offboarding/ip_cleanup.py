@@ -60,7 +60,9 @@ class IPCleanupManager:
                             "interface": interface_name,
                         }
                     )
-                    results["removed_items"].append(f"Interface IP: {ip_address} (interface: {interface_name})")
+                    results["removed_items"].append(
+                        f"Interface IP: {ip_address} (interface: {interface_name})"
+                    )
                     logger.info(
                         "Removed interface IP %s from interface %s",
                         ip_address,
@@ -75,9 +77,7 @@ class IPCleanupManager:
                         exc.detail,
                     )
                 except Exception as exc:
-                    error_msg = (
-                        f"Failed to remove interface IP {ip_address} from interface {interface_name}: {str(exc)}"
-                    )
+                    error_msg = f"Failed to remove interface IP {ip_address} from interface {interface_name}: {str(exc)}"
                     results["errors"].append(error_msg)
                     logger.error(error_msg)
 
@@ -117,10 +117,14 @@ class IPCleanupManager:
             logger.warning("Primary IP found but has no valid ID")
             return
 
-        already_removed = any(ip_info.get("ip_id") == primary_ip_id for ip_info in interface_ips_removed)
+        already_removed = any(
+            ip_info.get("ip_id") == primary_ip_id for ip_info in interface_ips_removed
+        )
 
         if already_removed:
-            results["skipped_items"].append(f"Primary IP {primary_ip_address} already removed with interface IPs")
+            results["skipped_items"].append(
+                f"Primary IP {primary_ip_address} already removed with interface IPs"
+            )
             logger.info(
                 "Primary IP %s was already removed as interface IP",
                 primary_ip_address,

@@ -77,7 +77,9 @@ class IPManager:
 
         # Check if IP already exists
         ip_search_endpoint = f"ipam/ip-addresses/?address={ip_address}&namespace={namespace_id}&format=json"
-        ip_result = await self.nautobot.rest_request(endpoint=ip_search_endpoint, method="GET")
+        ip_result = await self.nautobot.rest_request(
+            endpoint=ip_search_endpoint, method="GET"
+        )
 
         if ip_result and ip_result.get("count", 0) > 0:
             existing_ip = ip_result["results"][0]
@@ -88,7 +90,9 @@ class IPManager:
         logger.info("Creating new IP address: %s", ip_address)
 
         # Resolve status to UUID
-        status_id = await self.metadata_resolver.resolve_status_id(status_name, content_type="ipam.ipaddress")
+        status_id = await self.metadata_resolver.resolve_status_id(
+            status_name, content_type="ipam.ipaddress"
+        )
 
         ip_create_data = {
             "address": ip_address,
@@ -112,7 +116,10 @@ class IPManager:
             error_message = str(e)
 
             # Check if error is due to duplicate IP with different netmask
-            if "IP address with this Parent and Host already exists" in error_message and use_assigned_ip_if_exists:
+            if (
+                "IP address with this Parent and Host already exists" in error_message
+                and use_assigned_ip_if_exists
+            ):
                 logger.warning(
                     "IP creation failed: IP %s already exists with different netmask. Attempting to find existing IP...",
                     ip_address,
@@ -123,12 +130,16 @@ class IPManager:
                     ip_obj = ipaddress.ip_interface(ip_address)
                     host_ip = str(ip_obj.ip)
 
-                    logger.info("Searching for existing IP with host address: %s", host_ip)
+                    logger.info(
+                        "Searching for existing IP with host address: %s", host_ip
+                    )
 
                     # Search for IP by host address (without netmask) in the namespace
                     # Nautobot's address filter accepts IP without netmask and returns all IPs with that host
                     ip_search_endpoint = f"ipam/ip-addresses/?address={host_ip}&namespace={namespace_id}&format=json"
-                    existing_ip_result = await self.nautobot.rest_request(endpoint=ip_search_endpoint, method="GET")
+                    existing_ip_result = await self.nautobot.rest_request(
+                        endpoint=ip_search_endpoint, method="GET"
+                    )
 
                     if existing_ip_result and existing_ip_result.get("count", 0) > 0:
                         # Found at least one IP with this host address
@@ -151,7 +162,9 @@ class IPManager:
                         return existing_ip["id"]
                     else:
                         logger.error("Could not find existing IP for host %s", host_ip)
-                        raise NautobotAPIError(f"IP {host_ip} reported as duplicate but not found in namespace")
+                        raise NautobotAPIError(
+                            f"IP {host_ip} reported as duplicate but not found in namespace"
+                        )
 
                 except (ValueError, NautobotAPIError, KeyError) as lookup_error:
                     logger.error(
@@ -180,7 +193,9 @@ class IPManager:
                         # Import here to avoid circular dependency
                         from .prefix_manager import PrefixManager
 
-                        prefix_manager = PrefixManager(self.nautobot, self.network_resolver, self.metadata_resolver)
+                        prefix_manager = PrefixManager(
+                            self.nautobot, self.network_resolver, self.metadata_resolver
+                        )
 
                         # Create the prefix using ensure_prefix_exists
                         # Use the namespace_id directly since we already have it as UUID
@@ -205,7 +220,9 @@ class IPManager:
                         )
 
                         ip_id = ip_create_result["id"]
-                        logger.info("Created IP address after prefix creation: %s", ip_id)
+                        logger.info(
+                            "Created IP address after prefix creation: %s", ip_id
+                        )
                         return ip_id
 
                     except (ValueError, NautobotAPIError) as prefix_error:
@@ -232,7 +249,9 @@ class IPManager:
                 # Re-raise the original error if not a handled error type
                 raise
 
-    async def assign_ip_to_interface(self, ip_id: str, interface_id: str, is_primary: bool = False) -> dict:
+    async def assign_ip_to_interface(
+        self, ip_id: str, interface_id: str, is_primary: bool = False
+    ) -> dict:
         """
         Assign IP address to interface using IP-to-Interface association.
 
@@ -251,7 +270,9 @@ class IPManager:
 
         # Check if association already exists
         check_endpoint = f"ipam/ip-address-to-interface/?ip_address={ip_id}&interface={interface_id}&format=json"
-        existing_associations = await self.nautobot.rest_request(endpoint=check_endpoint, method="GET")
+        existing_associations = await self.nautobot.rest_request(
+            endpoint=check_endpoint, method="GET"
+        )
 
         if existing_associations and existing_associations.get("count", 0) > 0:
             logger.info("IP-to-Interface association already exists")

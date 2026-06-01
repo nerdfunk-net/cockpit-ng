@@ -150,7 +150,9 @@ async def trigger_sync_devices_to_checkmk(
             detail="device_ids list cannot be empty",
         )
 
-    task = sync_devices_to_checkmk_task.delay(request.device_ids, request.activate_changes_after_sync)
+    task = sync_devices_to_checkmk_task.delay(
+        request.device_ids, request.activate_changes_after_sync
+    )
     job_id = f"sync_devices_{task.id}"
 
     try:

@@ -59,7 +59,9 @@ async def assign_ip_address_to_interface(
             )
 
         endpoint = "ipam/ip-address-to-interface/"
-        result = await nautobot_service.rest_request(endpoint, method="POST", data=assignment_data)
+        result = await nautobot_service.rest_request(
+            endpoint, method="POST", data=assignment_data
+        )
 
         logger.info(
             "Assigned IP address %s to interface %s",
@@ -84,4 +86,6 @@ async def assign_ip_address_to_interface(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, "Failed to assign IP address to interface: ", e)
+        raise_internal_server_error(
+            logger, "Failed to assign IP address to interface: ", e
+        )

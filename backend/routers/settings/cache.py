@@ -47,7 +47,9 @@ async def cache_stats(
 
 @router.get("/entries")
 async def cache_entries(
-    include_expired: bool = Query(False, description="Include expired entries in the response"),
+    include_expired: bool = Query(
+        False, description="Include expired entries in the response"
+    ),
     current_user: dict = Depends(require_permission("settings.cache", "write")),
     cache_service=Depends(get_cache_service),
 ):

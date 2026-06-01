@@ -36,10 +36,14 @@ class TestBaselineService:
             "devices": {},
         }
         self.status_cache: Dict[str, str] = {}  # Cache for status name -> UUID mapping
-        self.custom_field_cache: Dict[str, str] = {}  # Cache for custom field key -> UUID mapping
+        self.custom_field_cache: Dict[
+            str, str
+        ] = {}  # Cache for custom field key -> UUID mapping
         self.common = DeviceCommonService(nb)
 
-    async def load_baseline_files(self, directory: str = "../contributing-data/tests_baseline") -> List[Dict[str, Any]]:
+    async def load_baseline_files(
+        self, directory: str = "../contributing-data/tests_baseline"
+    ) -> List[Dict[str, Any]]:
         """
         Load all YAML files from the baseline directory.
 
@@ -53,7 +57,9 @@ class TestBaselineService:
         if not baseline_dir.exists():
             raise FileNotFoundError(f"Baseline directory not found: {directory}")
 
-        yaml_files = list(baseline_dir.glob("*.yaml")) + list(baseline_dir.glob("*.yml"))
+        yaml_files = list(baseline_dir.glob("*.yaml")) + list(
+            baseline_dir.glob("*.yml")
+        )
 
         if not yaml_files:
             raise ValueError(f"No YAML files found in {directory}")
@@ -85,7 +91,9 @@ class TestBaselineService:
 
         # Fetch all statuses from Nautobot
         try:
-            response = await self.nautobot.rest_request("extras/statuses/", method="GET")
+            response = await self.nautobot.rest_request(
+                "extras/statuses/", method="GET"
+            )
 
             # Cache all statuses
             if "results" in response:
@@ -109,17 +117,23 @@ class TestBaselineService:
             logger.error("Error fetching statuses from Nautobot: %s", e)
             return None
 
-    async def create_location_types(self, location_types: List[Dict[str, Any]]) -> Dict[str, str]:
+    async def create_location_types(
+        self, location_types: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
         """Create location types in Nautobot with parent-child relationships."""
         created = {}
 
         # Sort location types to create parent types first (those without parent field)
-        sorted_types = sorted(location_types, key=lambda x: 0 if not x.get("parent") else 1)
+        sorted_types = sorted(
+            location_types, key=lambda x: 0 if not x.get("parent") else 1
+        )
 
         for lt in sorted_types:
             try:
                 # Check if already exists
-                response = await self.nautobot.rest_request(f"dcim/location-types/?name={lt['name']}", method="GET")
+                response = await self.nautobot.rest_request(
+                    f"dcim/location-types/?name={lt['name']}", method="GET"
+                )
 
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
@@ -153,7 +167,9 @@ class TestBaselineService:
                             lt["name"],
                         )
 
-                result = await self.nautobot.rest_request("dcim/location-types/", method="POST", data=payload)
+                result = await self.nautobot.rest_request(
+                    "dcim/location-types/", method="POST", data=payload
+                )
 
                 created[lt["name"]] = result["id"]
                 logger.info("Created location type: %s", lt["name"])
@@ -171,7 +187,9 @@ class TestBaselineService:
         for location in locations:
             try:
                 # Check if already exists
-                response = await self.nautobot.rest_request(f"dcim/locations/?name={location['name']}", method="GET")
+                response = await self.nautobot.rest_request(
+                    f"dcim/locations/?name={location['name']}", method="GET"
+                )
 
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
@@ -201,7 +219,9 @@ class TestBaselineService:
 
                 # Resolve location type
                 if "location_types" in location:
-                    lt_id = self.created_resources["location_types"].get(location["location_types"])
+                    lt_id = self.created_resources["location_types"].get(
+                        location["location_types"]
+                    )
                     if lt_id:
                         payload["location_type"] = {"id": lt_id}
 
@@ -212,7 +232,9 @@ class TestBaselineService:
                     if parent_id:
                         payload["parent"] = {"id": parent_id}
 
-                result = await self.nautobot.rest_request("dcim/locations/", method="POST", data=payload)
+                result = await self.nautobot.rest_request(
+                    "dcim/locations/", method="POST", data=payload
+                )
 
                 created[location["name"]] = result["id"]
                 logger.info("Created location: %s", location["name"])
@@ -230,7 +252,9 @@ class TestBaselineService:
         for role in roles:
             try:
                 # Check if already exists
-                response = await self.nautobot.rest_request(f"extras/roles/?name={role['name']}", method="GET")
+                response = await self.nautobot.rest_request(
+                    f"extras/roles/?name={role['name']}", method="GET"
+                )
 
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
@@ -245,7 +269,9 @@ class TestBaselineService:
                     "content_types": role.get("content_types", ["dcim.device"]),
                 }
 
-                result = await self.nautobot.rest_request("extras/roles/", method="POST", data=payload)
+                result = await self.nautobot.rest_request(
+                    "extras/roles/", method="POST", data=payload
+                )
 
                 created[role["name"]] = result["id"]
                 logger.info("Created role: %s", role["name"])
@@ -275,7 +301,9 @@ class TestBaselineService:
         for tag in tags:
             try:
                 # Check if already exists
-                response = await self.nautobot.rest_request(f"extras/tags/?name={tag['name']}", method="GET")
+                response = await self.nautobot.rest_request(
+                    f"extras/tags/?name={tag['name']}", method="GET"
+                )
 
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
@@ -298,7 +326,9 @@ class TestBaselineService:
                 if "content_types" in tag:
                     payload["content_types"] = tag["content_types"]
 
-                result = await self.nautobot.rest_request("extras/tags/", method="POST", data=payload)
+                result = await self.nautobot.rest_request(
+                    "extras/tags/", method="POST", data=payload
+                )
 
                 created[tag["name"]] = result["id"]
                 logger.info("Created tag: %s", tag["name"])
@@ -309,7 +339,9 @@ class TestBaselineService:
 
         return created
 
-    async def create_manufacturers(self, manufacturers: List[Dict[str, Any]]) -> Dict[str, str]:
+    async def create_manufacturers(
+        self, manufacturers: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
         """Create manufacturers in Nautobot."""
         created = {}
 
@@ -323,7 +355,9 @@ class TestBaselineService:
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
                     created[manufacturer["name"]] = existing["id"]
-                    logger.info("Manufacturer '%s' already exists", manufacturer["name"])
+                    logger.info(
+                        "Manufacturer '%s' already exists", manufacturer["name"]
+                    )
                     continue
 
                 # Create new manufacturer
@@ -334,13 +368,17 @@ class TestBaselineService:
                 if "description" in manufacturer:
                     payload["description"] = manufacturer["description"]
 
-                result = await self.nautobot.rest_request("dcim/manufacturers/", method="POST", data=payload)
+                result = await self.nautobot.rest_request(
+                    "dcim/manufacturers/", method="POST", data=payload
+                )
 
                 created[manufacturer["name"]] = result["id"]
                 logger.info("Created manufacturer: %s", manufacturer["name"])
 
             except Exception as e:
-                logger.error("Error creating manufacturer '%s': %s", manufacturer["name"], e)
+                logger.error(
+                    "Error creating manufacturer '%s': %s", manufacturer["name"], e
+                )
                 raise
 
         return created
@@ -352,7 +390,9 @@ class TestBaselineService:
         for platform in platforms:
             try:
                 # Check if already exists
-                response = await self.nautobot.rest_request(f"dcim/platforms/?name={platform['name']}", method="GET")
+                response = await self.nautobot.rest_request(
+                    f"dcim/platforms/?name={platform['name']}", method="GET"
+                )
 
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
@@ -373,11 +413,15 @@ class TestBaselineService:
 
                 # Resolve manufacturer
                 if "manufacturer" in platform:
-                    mfr_id = self.created_resources["manufacturers"].get(platform["manufacturer"])
+                    mfr_id = self.created_resources["manufacturers"].get(
+                        platform["manufacturer"]
+                    )
                     if mfr_id:
                         payload["manufacturer"] = {"id": mfr_id}
 
-                result = await self.nautobot.rest_request("dcim/platforms/", method="POST", data=payload)
+                result = await self.nautobot.rest_request(
+                    "dcim/platforms/", method="POST", data=payload
+                )
 
                 created[platform["name"]] = result["id"]
                 logger.info("Created platform: %s", platform["name"])
@@ -388,7 +432,9 @@ class TestBaselineService:
 
         return created
 
-    async def create_device_types(self, device_types: List[Dict[str, Any]]) -> Dict[str, str]:
+    async def create_device_types(
+        self, device_types: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
         """Create device types in Nautobot."""
         created = {}
 
@@ -406,7 +452,9 @@ class TestBaselineService:
                     continue
 
                 # Resolve manufacturer
-                mfr_id = self.created_resources["manufacturers"].get(device_type["manufacturer"])
+                mfr_id = self.created_resources["manufacturers"].get(
+                    device_type["manufacturer"]
+                )
                 if not mfr_id:
                     logger.error(
                         "Manufacturer '%s' not found for device type '%s'",
@@ -424,7 +472,9 @@ class TestBaselineService:
                 if "description" in device_type:
                     payload["description"] = device_type["description"]
 
-                result = await self.nautobot.rest_request("dcim/device-types/", method="POST", data=payload)
+                result = await self.nautobot.rest_request(
+                    "dcim/device-types/", method="POST", data=payload
+                )
 
                 created[device_type["model"]] = result["id"]
                 logger.info("Created device type: %s", device_type["model"])
@@ -469,12 +519,16 @@ class TestBaselineService:
                 logger.info("Prefix '%s' ensured with ID: %s", prefix_cidr, prefix_id)
 
             except Exception as e:
-                logger.error("Error creating prefix '%s': %s", prefix.get("prefix", "unknown"), e)
+                logger.error(
+                    "Error creating prefix '%s': %s", prefix.get("prefix", "unknown"), e
+                )
                 raise
 
         return created
 
-    async def create_custom_fields(self, custom_fields_data: Dict[str, List[Dict[str, Any]]]) -> Dict[str, str]:
+    async def create_custom_fields(
+        self, custom_fields_data: Dict[str, List[Dict[str, Any]]]
+    ) -> Dict[str, str]:
         """
         Create custom fields in Nautobot.
 
@@ -500,7 +554,9 @@ class TestBaselineService:
 
                 # Check if custom field already exists by fetching all and filtering client-side
                 # (Nautobot API doesn't support filtering by key parameter)
-                response = await self.nautobot.rest_request("extras/custom-fields/", method="GET")
+                response = await self.nautobot.rest_request(
+                    "extras/custom-fields/", method="GET"
+                )
 
                 # Filter client-side by key
                 existing = None
@@ -520,7 +576,9 @@ class TestBaselineService:
                 payload = {
                     "label": field_config.get("label", field_key),
                     "key": key,
-                    "type": field_config["type"],  # Required: select, multi-select, text, etc.
+                    "type": field_config[
+                        "type"
+                    ],  # Required: select, multi-select, text, etc.
                     "content_types": field_config["content_types"],  # Required
                 }
 
@@ -556,11 +614,15 @@ class TestBaselineService:
                     payload["advanced_ui"] = field_config["advanced_ui"]
 
                 # Create the custom field
-                result = await self.nautobot.rest_request("extras/custom-fields/", method="POST", data=payload)
+                result = await self.nautobot.rest_request(
+                    "extras/custom-fields/", method="POST", data=payload
+                )
 
                 created[field_key] = result["id"]
                 self.custom_field_cache[key] = result["id"]
-                logger.info("Created custom field: %s (type: %s)", key, field_config["type"])
+                logger.info(
+                    "Created custom field: %s (type: %s)", key, field_config["type"]
+                )
 
             except Exception as e:
                 logger.error("Error creating custom field '%s': %s", field_key, e)
@@ -568,7 +630,9 @@ class TestBaselineService:
 
         return created
 
-    async def create_custom_field_choices(self, choices_data: Dict[str, List[Dict[str, Any]]]) -> Dict[str, int]:
+    async def create_custom_field_choices(
+        self, choices_data: Dict[str, List[Dict[str, Any]]]
+    ) -> Dict[str, int]:
         """
         Create custom field choices in Nautobot.
 
@@ -582,7 +646,9 @@ class TestBaselineService:
 
         for field_key, choices in choices_data.items():
             if not choices or not isinstance(choices, list):
-                logger.warning("Custom field choices for '%s' has invalid configuration", field_key)
+                logger.warning(
+                    "Custom field choices for '%s' has invalid configuration", field_key
+                )
                 continue
 
             # Get the custom field UUID from cache
@@ -593,7 +659,9 @@ class TestBaselineService:
                 custom_field_id = self.custom_field_cache.get(field_key)
 
             if not custom_field_id:
-                logger.error("Custom field '%s' not found. Cannot create choices.", field_key)
+                logger.error(
+                    "Custom field '%s' not found. Cannot create choices.", field_key
+                )
                 continue
 
             created_count = 0
@@ -634,10 +702,14 @@ class TestBaselineService:
                     if "weight" in choice:
                         payload["weight"] = choice["weight"]
                     else:
-                        payload["weight"] = (idx + 1) * 100  # Auto-increment: 100, 200, 300...
+                        payload["weight"] = (
+                            idx + 1
+                        ) * 100  # Auto-increment: 100, 200, 300...
 
                     # Create the choice
-                    await self.nautobot.rest_request("extras/custom-field-choices/", method="POST", data=payload)
+                    await self.nautobot.rest_request(
+                        "extras/custom-field-choices/", method="POST", data=payload
+                    )
 
                     created_count += 1
                     logger.info(
@@ -657,7 +729,9 @@ class TestBaselineService:
                     continue
 
             created_counts[field_key] = created_count
-            logger.info("Created %s choices for custom field '%s'", created_count, field_key)
+            logger.info(
+                "Created %s choices for custom field '%s'", created_count, field_key
+            )
 
         return created_counts
 
@@ -688,7 +762,11 @@ class TestBaselineService:
 
                 # Handle roles (import service expects singular 'role')
                 if "roles" in device and device["roles"]:
-                    role_name = device["roles"][0] if isinstance(device["roles"], list) else device["roles"]
+                    role_name = (
+                        device["roles"][0]
+                        if isinstance(device["roles"], list)
+                        else device["roles"]
+                    )
                     device_data["role"] = role_name
                 elif "role" in device:
                     device_data["role"] = device["role"]
@@ -766,7 +844,9 @@ class TestBaselineService:
                     logger.info("Device '%s' already exists, skipped", device_name)
 
             except Exception as e:
-                logger.error("Error creating device '%s': %s", device.get("name", "unknown"), e)
+                logger.error(
+                    "Error creating device '%s': %s", device.get("name", "unknown"), e
+                )
                 raise
 
         return created
@@ -818,61 +898,93 @@ class TestBaselineService:
 
             # 1. Location Types (no dependencies)
             if merged_data["location_types"]:
-                self.created_resources["location_types"] = await self.create_location_types(
-                    merged_data["location_types"]
+                self.created_resources[
+                    "location_types"
+                ] = await self.create_location_types(merged_data["location_types"])
+                summary["created"]["location_types"] = len(
+                    self.created_resources["location_types"]
                 )
-                summary["created"]["location_types"] = len(self.created_resources["location_types"])
 
             # 2. Locations (depends on location types and parent locations)
             if merged_data["location"]:
-                self.created_resources["locations"] = await self.create_locations(merged_data["location"])
-                summary["created"]["locations"] = len(self.created_resources["locations"])
+                self.created_resources["locations"] = await self.create_locations(
+                    merged_data["location"]
+                )
+                summary["created"]["locations"] = len(
+                    self.created_resources["locations"]
+                )
 
             # 3. Roles (no dependencies)
             if merged_data["roles"]:
-                self.created_resources["roles"] = await self.create_roles(merged_data["roles"])
+                self.created_resources["roles"] = await self.create_roles(
+                    merged_data["roles"]
+                )
                 summary["created"]["roles"] = len(self.created_resources["roles"])
 
             # 4. Tags (no dependencies)
             if merged_data["tags"]:
-                self.created_resources["tags"] = await self.create_tags(merged_data["tags"])
+                self.created_resources["tags"] = await self.create_tags(
+                    merged_data["tags"]
+                )
                 summary["created"]["tags"] = len(self.created_resources["tags"])
 
             # 5. Manufacturers (no dependencies)
             if merged_data["manufacturers"]:
-                self.created_resources["manufacturers"] = await self.create_manufacturers(merged_data["manufacturers"])
-                summary["created"]["manufacturers"] = len(self.created_resources["manufacturers"])
+                self.created_resources[
+                    "manufacturers"
+                ] = await self.create_manufacturers(merged_data["manufacturers"])
+                summary["created"]["manufacturers"] = len(
+                    self.created_resources["manufacturers"]
+                )
 
             # 6. Platforms (depends on manufacturers)
             if merged_data["platforms"]:
-                self.created_resources["platforms"] = await self.create_platforms(merged_data["platforms"])
-                summary["created"]["platforms"] = len(self.created_resources["platforms"])
+                self.created_resources["platforms"] = await self.create_platforms(
+                    merged_data["platforms"]
+                )
+                summary["created"]["platforms"] = len(
+                    self.created_resources["platforms"]
+                )
 
             # 7. Device Types (depends on manufacturers)
             if merged_data["device_types"]:
-                self.created_resources["device_types"] = await self.create_device_types(merged_data["device_types"])
-                summary["created"]["device_types"] = len(self.created_resources["device_types"])
+                self.created_resources["device_types"] = await self.create_device_types(
+                    merged_data["device_types"]
+                )
+                summary["created"]["device_types"] = len(
+                    self.created_resources["device_types"]
+                )
 
             # 8. Prefixes (no dependencies, but should be created before devices)
             if merged_data["prefixes"]:
-                self.created_resources["prefixes"] = await self.create_prefixes(merged_data["prefixes"])
+                self.created_resources["prefixes"] = await self.create_prefixes(
+                    merged_data["prefixes"]
+                )
                 summary["created"]["prefixes"] = len(self.created_resources["prefixes"])
 
             # 9. Custom Fields (no dependencies, but should be created before custom field choices)
             if merged_data["custom_fields"]:
-                self.created_resources["custom_fields"] = await self.create_custom_fields(merged_data["custom_fields"])
-                summary["created"]["custom_fields"] = len(self.created_resources["custom_fields"])
+                self.created_resources[
+                    "custom_fields"
+                ] = await self.create_custom_fields(merged_data["custom_fields"])
+                summary["created"]["custom_fields"] = len(
+                    self.created_resources["custom_fields"]
+                )
 
             # 10. Custom Field Choices (depends on custom fields)
             if merged_data["custom_field_choices"]:
-                choice_counts = await self.create_custom_field_choices(merged_data["custom_field_choices"])
+                choice_counts = await self.create_custom_field_choices(
+                    merged_data["custom_field_choices"]
+                )
                 # Sum up all the choice counts
                 total_choices = sum(choice_counts.values())
                 summary["created"]["custom_field_choices"] = total_choices
 
             # 11. Devices (depends on device types, locations, platforms, roles, tags, prefixes, and custom fields)
             if merged_data["devices"]:
-                self.created_resources["devices"] = await self.create_devices(merged_data["devices"])
+                self.created_resources["devices"] = await self.create_devices(
+                    merged_data["devices"]
+                )
                 summary["created"]["devices"] = len(self.created_resources["devices"])
 
             logger.info("Baseline creation complete: %s", summary)

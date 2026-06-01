@@ -40,13 +40,17 @@ class TemplateService:
 
             existing = repo.get_by_name(template_data["name"], active_only=True)
             if existing:
-                raise ValueError(f"Template with name '{template_data['name']}' already exists")
+                raise ValueError(
+                    f"Template with name '{template_data['name']}' already exists"
+                )
 
             variables_json = json.dumps(template_data.get("variables", {}))
             tags_json = json.dumps(template_data.get("tags", []))
 
             content = template_data.get("content", "")
-            content_hash = hashlib.sha256(content.encode()).hexdigest() if content else None
+            content_hash = (
+                hashlib.sha256(content.encode()).hexdigest() if content else None
+            )
 
             template = repo.create(
                 name=template_data["name"],
@@ -73,9 +77,13 @@ class TemplateService:
             template_id = template.id
 
             if content:
-                self._create_template_version_obj(version_repo, template_id, content, content_hash, "Initial version")
+                self._create_template_version_obj(
+                    version_repo, template_id, content, content_hash, "Initial version"
+                )
 
-            logger.info("Template '%s' created with ID %s", template_data["name"], template_id)
+            logger.info(
+                "Template '%s' created with ID %s", template_data["name"], template_id
+            )
             return template_id
 
         except ValueError as e:
@@ -179,11 +187,15 @@ class TemplateService:
                 current.get("scope"),
             )
 
-            variables_json = json.dumps(template_data.get("variables", current.get("variables", {})))
+            variables_json = json.dumps(
+                template_data.get("variables", current.get("variables", {}))
+            )
             tags_json = json.dumps(template_data.get("tags", current.get("tags", [])))
 
             content = template_data.get("content", current.get("content", ""))
-            content_hash = hashlib.sha256(content.encode()).hexdigest() if content else None
+            content_hash = (
+                hashlib.sha256(content.encode()).hexdigest() if content else None
+            )
 
             content_changed = content_hash != current.get("content_hash")
 
@@ -196,7 +208,9 @@ class TemplateService:
 
             update_kwargs = {
                 "name": template_data.get("name", current["name"]),
-                "template_type": template_data.get("template_type", current["template_type"]),
+                "template_type": template_data.get(
+                    "template_type", current["template_type"]
+                ),
                 "category": template_data.get("category", current["category"]),
                 "description": template_data.get("description", current["description"]),
                 "content": content,
@@ -207,11 +221,21 @@ class TemplateService:
                 "use_nautobot_context": template_data.get(
                     "use_nautobot_context", current.get("use_nautobot_context", False)
                 ),
-                "pass_snmp_mapping": template_data.get("pass_snmp_mapping", current.get("pass_snmp_mapping", False)),
-                "inventory_id": template_data.get("inventory_id", current.get("inventory_id")),
-                "pre_run_command": template_data.get("pre_run_command", current.get("pre_run_command")),
-                "credential_id": template_data.get("credential_id", current.get("credential_id")),
-                "execution_mode": template_data.get("execution_mode", current.get("execution_mode", "run_on_device")),
+                "pass_snmp_mapping": template_data.get(
+                    "pass_snmp_mapping", current.get("pass_snmp_mapping", False)
+                ),
+                "inventory_id": template_data.get(
+                    "inventory_id", current.get("inventory_id")
+                ),
+                "pre_run_command": template_data.get(
+                    "pre_run_command", current.get("pre_run_command")
+                ),
+                "credential_id": template_data.get(
+                    "credential_id", current.get("credential_id")
+                ),
+                "execution_mode": template_data.get(
+                    "execution_mode", current.get("execution_mode", "run_on_device")
+                ),
                 "file_path": template_data.get("file_path", current.get("file_path")),
                 "scope": new_scope,
             }
@@ -273,7 +297,9 @@ class TemplateService:
             logger.error("Error getting template content for %s: %s", template_id, e)
             return None
 
-    def render_template(self, template_name: str, category: str, data: Dict[str, Any]) -> str:
+    def render_template(
+        self, template_name: str, category: str, data: Dict[str, Any]
+    ) -> str:
         """Render a template using Jinja2 with provided data."""
         try:
             from jinja2 import BaseLoader, Environment
@@ -281,11 +307,15 @@ class TemplateService:
             template = self.get_template_by_name(template_name)
             if not template:
                 templates = self.list_templates(category=category if category else None)
-                matching_templates = [t for t in templates if t["name"] == template_name]
+                matching_templates = [
+                    t for t in templates if t["name"] == template_name
+                ]
                 if matching_templates:
                     template = matching_templates[0]
                 else:
-                    raise ValueError(f"Template '{template_name}' not found in category '{category}'")
+                    raise ValueError(
+                        f"Template '{template_name}' not found in category '{category}'"
+                    )
 
             content = self.get_template_content(template["id"])
             if not content:
@@ -322,7 +352,9 @@ class TemplateService:
             logger.error("Error getting template versions for %s: %s", template_id, e)
             return []
 
-    def search_templates(self, query: str, search_content: bool = False, username: str = None) -> List[Dict[str, Any]]:
+    def search_templates(
+        self, query: str, search_content: bool = False, username: str = None
+    ) -> List[Dict[str, Any]]:
         """Search templates by name, description, category, or content.
 
         Respects scope and ownership — returns global templates and user's
@@ -330,7 +362,9 @@ class TemplateService:
         """
         try:
             repo = TemplateRepository()
-            templates = repo.search_templates(query_text=query, search_content=search_content, username=username)
+            templates = repo.search_templates(
+                query_text=query, search_content=search_content, username=username
+            )
             return [self._model_to_dict(t) for t in templates]
 
         except Exception as e:
@@ -390,7 +424,9 @@ class TemplateService:
                         continue
                 repo.update(tid, last_sync=now, sync_status=sync_status)
             except Exception as exc:
-                logger.warning("Could not update sync metadata for template %s: %s", tid, exc)
+                logger.warning(
+                    "Could not update sync metadata for template %s: %s", tid, exc
+                )
 
     # ------------------------------------------------------------------
     # Private helpers
@@ -420,8 +456,12 @@ class TemplateService:
             "file_path": template.file_path,
             "last_sync": template.last_sync.isoformat() if template.last_sync else None,
             "sync_status": template.sync_status,
-            "created_at": (template.created_at.isoformat() if template.created_at else None),
-            "updated_at": (template.updated_at.isoformat() if template.updated_at else None),
+            "created_at": (
+                template.created_at.isoformat() if template.created_at else None
+            ),
+            "updated_at": (
+                template.updated_at.isoformat() if template.updated_at else None
+            ),
         }
 
         if template.variables:
@@ -450,7 +490,9 @@ class TemplateService:
             "version_number": version.version_number,
             "content": version.content,
             "content_hash": version.content_hash,
-            "created_at": (version.created_at.isoformat() if version.created_at else None),
+            "created_at": (
+                version.created_at.isoformat() if version.created_at else None
+            ),
             "created_by": version.created_by,
             "change_notes": version.change_notes,
         }

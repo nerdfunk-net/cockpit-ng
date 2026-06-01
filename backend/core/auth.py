@@ -27,7 +27,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
 
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.secret_key, algorithm=settings.algorithm
+    )
     return encoded_jwt
 
 
@@ -81,7 +83,9 @@ def verify_admin_token(user_info: dict = Depends(verify_token)) -> dict:
     # flags set beyond PERMISSIONS_ADMIN.
     user_permissions = user_info["permissions"]
     if (user_permissions & PERMISSIONS_ADMIN) != PERMISSIONS_ADMIN:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
+        )
 
     return user_info
 

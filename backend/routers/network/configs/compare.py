@@ -27,7 +27,9 @@ async def compare_files(
     """Compare two files from a Git repository."""
     try:
         if not file_comparison.repo_id:
-            raise HTTPException(status_code=400, detail="Repository ID is required for file comparison")
+            raise HTTPException(
+                status_code=400, detail="Repository ID is required for file comparison"
+            )
 
         from services.git.shared_utils import get_git_repo_by_id
 
@@ -35,7 +37,9 @@ async def compare_files(
         try:
             repo = get_git_repo_by_id(file_comparison.repo_id)
         except Exception as e:
-            raise HTTPException(status_code=404, detail=f"Git repository not found: {e}")
+            raise HTTPException(
+                status_code=404, detail=f"Git repository not found: {e}"
+            )
 
         # Initialize result with proper structure for frontend
         file1_content = ""
@@ -102,13 +106,17 @@ async def compare_files(
                             "type": "delete",
                         }
                     )
-                    right_lines.append({"line_number": None, "content": "", "type": "empty"})
+                    right_lines.append(
+                        {"line_number": None, "content": "", "type": "empty"}
+                    )
                     left_line_num += 1
 
             elif tag == "insert":
                 # Lines only in right file (added)
                 for j in range(j1, j2):
-                    left_lines.append({"line_number": None, "content": "", "type": "empty"})
+                    left_lines.append(
+                        {"line_number": None, "content": "", "type": "empty"}
+                    )
                     right_lines.append(
                         {
                             "line_number": right_line_num,
@@ -132,7 +140,9 @@ async def compare_files(
                         )
                         left_line_num += 1
                     else:
-                        left_lines.append({"line_number": None, "content": "", "type": "empty"})
+                        left_lines.append(
+                            {"line_number": None, "content": "", "type": "empty"}
+                        )
 
                     if k < (j2 - j1):
                         right_lines.append(
@@ -144,7 +154,9 @@ async def compare_files(
                         )
                         right_line_num += 1
                     else:
-                        right_lines.append({"line_number": None, "content": "", "type": "empty"})
+                        right_lines.append(
+                            {"line_number": None, "content": "", "type": "empty"}
+                        )
 
         # Generate diff
         diff_content = ""

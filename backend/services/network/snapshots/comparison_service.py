@@ -24,7 +24,9 @@ class SnapshotComparisonService:
     def __init__(self):
         self.snapshot_repo = SnapshotRepository()
 
-    def _deep_diff(self, data1: Any, data2: Any, path: str = "") -> Optional[Dict[str, Any]]:
+    def _deep_diff(
+        self, data1: Any, data2: Any, path: str = ""
+    ) -> Optional[Dict[str, Any]]:
         """
         Perform deep comparison of two data structures.
 
@@ -99,7 +101,9 @@ class SnapshotComparisonService:
                 }
             return None
 
-    def _compare_device_results(self, result1: Optional[Any], result2: Optional[Any]) -> DeviceComparisonResult:
+    def _compare_device_results(
+        self, result1: Optional[Any], result2: Optional[Any]
+    ) -> DeviceComparisonResult:
         """
         Compare snapshot results for a single device.
 
@@ -110,7 +114,13 @@ class SnapshotComparisonService:
         Returns:
             Device comparison result
         """
-        device_name = result1.device_name if result1 else result2.device_name if result2 else "unknown"
+        device_name = (
+            result1.device_name
+            if result1
+            else result2.device_name
+            if result2
+            else "unknown"
+        )
 
         # Handle missing results
         if not result1:
@@ -200,7 +210,9 @@ class SnapshotComparisonService:
             commands=command_diffs,
         )
 
-    def compare_snapshots(self, request: SnapshotCompareRequest) -> SnapshotCompareResponse:
+    def compare_snapshots(
+        self, request: SnapshotCompareRequest
+    ) -> SnapshotCompareResponse:
         """
         Compare two snapshots.
 
@@ -223,13 +235,27 @@ class SnapshotComparisonService:
             raise ValueError(f"Snapshot {request.snapshot_id_2} not found")
 
         # Get all results for both snapshots
-        results1 = {r.device_name: r for r in self.snapshot_repo.get_results_by_snapshot(snapshot1.id)}
-        results2 = {r.device_name: r for r in self.snapshot_repo.get_results_by_snapshot(snapshot2.id)}
+        results1 = {
+            r.device_name: r
+            for r in self.snapshot_repo.get_results_by_snapshot(snapshot1.id)
+        }
+        results2 = {
+            r.device_name: r
+            for r in self.snapshot_repo.get_results_by_snapshot(snapshot2.id)
+        }
 
         # Apply device filter if provided
         if request.device_filter:
-            filtered_results1 = {name: results1[name] for name in request.device_filter if name in results1}
-            filtered_results2 = {name: results2[name] for name in request.device_filter if name in results2}
+            filtered_results1 = {
+                name: results1[name]
+                for name in request.device_filter
+                if name in results1
+            }
+            filtered_results2 = {
+                name: results2[name]
+                for name in request.device_filter
+                if name in results2
+            }
             results1 = filtered_results1
             results2 = filtered_results2
 
@@ -249,9 +275,15 @@ class SnapshotComparisonService:
         summary = {
             "total_devices": len(device_comparisons),
             "same_count": sum(1 for d in device_comparisons if d.status == "same"),
-            "different_count": sum(1 for d in device_comparisons if d.status == "different"),
-            "missing_in_snapshot1": sum(1 for d in device_comparisons if d.status == "missing_in_snapshot1"),
-            "missing_in_snapshot2": sum(1 for d in device_comparisons if d.status == "missing_in_snapshot2"),
+            "different_count": sum(
+                1 for d in device_comparisons if d.status == "different"
+            ),
+            "missing_in_snapshot1": sum(
+                1 for d in device_comparisons if d.status == "missing_in_snapshot1"
+            ),
+            "missing_in_snapshot2": sum(
+                1 for d in device_comparisons if d.status == "missing_in_snapshot2"
+            ),
         }
 
         return SnapshotCompareResponse(

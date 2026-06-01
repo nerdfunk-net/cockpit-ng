@@ -50,7 +50,9 @@ class OIDCService:
 
         ca_cert_path = provider_config.get("ca_cert_path")
         if not ca_cert_path:
-            logger.debug("No custom CA certificate configured for provider '%s'", provider_id)
+            logger.debug(
+                "No custom CA certificate configured for provider '%s'", provider_id
+            )
             return None
 
         # Resolve the CA certificate path
@@ -80,10 +82,14 @@ class OIDCService:
             )
             return ssl_context
         except Exception as e:
-            logger.error("Failed to load CA certificate for provider '%s': %s", provider_id, e)
+            logger.error(
+                "Failed to load CA certificate for provider '%s': %s", provider_id, e
+            )
             return None
 
-    def _sanitize_token_response(self, token_response: Dict[str, Any]) -> Dict[str, Any]:
+    def _sanitize_token_response(
+        self, token_response: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Sanitize token response for logging by masking sensitive tokens."""
         sanitized = token_response.copy()
 
@@ -141,7 +147,9 @@ class OIDCService:
             client_kwargs = {"timeout": 10.0}
             if ssl_context:
                 client_kwargs["verify"] = ssl_context
-                logger.debug("Using custom CA certificate for provider '%s'", provider_id)
+                logger.debug(
+                    "Using custom CA certificate for provider '%s'", provider_id
+                )
 
             async with httpx.AsyncClient(**client_kwargs) as client:
                 response = await client.get(discovery_url)
@@ -158,13 +166,17 @@ class OIDCService:
             return config
 
         except httpx.HTTPError as e:
-            logger.error("Failed to fetch OIDC configuration for '%s': %s", provider_id, e)
+            logger.error(
+                "Failed to fetch OIDC configuration for '%s': %s", provider_id, e
+            )
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Unable to connect to OIDC provider '{provider_id}'",
             )
         except Exception as e:
-            logger.error("Error parsing OIDC configuration for '%s': %s", provider_id, e)
+            logger.error(
+                "Error parsing OIDC configuration for '%s': %s", provider_id, e
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Invalid OIDC provider configuration for '{provider_id}'",
@@ -194,14 +206,22 @@ class OIDCService:
             )
 
         # Use provider-specific settings or overrides (for testing)
-        client_id = client_id_override if client_id_override else provider_config.get("client_id")
+        client_id = (
+            client_id_override
+            if client_id_override
+            else provider_config.get("client_id")
+        )
         if not client_id:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"OIDC provider '{provider_id}' missing required 'client_id' in configuration",
             )
 
-        scopes = scopes_override if scopes_override else provider_config.get("scopes", ["openid", "profile", "email"])
+        scopes = (
+            scopes_override
+            if scopes_override
+            else provider_config.get("scopes", ["openid", "profile", "email"])
+        )
         response_type = response_type_override if response_type_override else "code"
 
         # Use provider redirect_uri or raise error if not specified
@@ -222,11 +242,17 @@ class OIDCService:
                 provider_id,
             )
             if client_id_override:
-                logger.info("[OIDC Test] - client_id overridden: %s", client_id_override)
+                logger.info(
+                    "[OIDC Test] - client_id overridden: %s", client_id_override
+                )
             if scopes_override:
-                logger.info("[OIDC Test] - scopes overridden: %s", ", ".join(scopes_override))
+                logger.info(
+                    "[OIDC Test] - scopes overridden: %s", ", ".join(scopes_override)
+                )
             if response_type_override:
-                logger.info("[OIDC Test] - response_type overridden: %s", response_type_override)
+                logger.info(
+                    "[OIDC Test] - response_type overridden: %s", response_type_override
+                )
 
         params = {
             "client_id": client_id,
@@ -237,7 +263,10 @@ class OIDCService:
         }
 
         # Build query string
-        query_params = "&".join(f"{k}={httpx.URL('').copy_with(params={k: v}).params[k]}" for k, v in params.items())
+        query_params = "&".join(
+            f"{k}={httpx.URL('').copy_with(params={k: v}).params[k]}"
+            for k, v in params.items()
+        )
         return f"{config.authorization_endpoint}?{query_params}"
 
     async def exchange_code_for_tokens(
@@ -291,8 +320,12 @@ class OIDCService:
         if "client_secret" in sanitized_request:
             sanitized_request["client_secret"] = "***MASKED***"
         if "code" in sanitized_request and len(sanitized_request["code"]) > 20:
-            sanitized_request["code"] = f"{sanitized_request['code'][:10]}...{sanitized_request['code'][-10:]}"
-        logger.debug("Token request to provider '%s': %s", provider_id, sanitized_request)
+            sanitized_request["code"] = (
+                f"{sanitized_request['code'][:10]}...{sanitized_request['code'][-10:]}"
+            )
+        logger.debug(
+            "Token request to provider '%s': %s", provider_id, sanitized_request
+        )
         logger.debug("Token endpoint URL: %s", config.token_endpoint)
 
         try:
@@ -351,7 +384,8 @@ class OIDCService:
         if (
             provider_id in self._jwks_caches
             and provider_id in self._jwks_cache_times
-            and datetime.now(timezone.utc) - self._jwks_cache_times[provider_id] < self._jwks_cache_ttl
+            and datetime.now(timezone.utc) - self._jwks_cache_times[provider_id]
+            < self._jwks_cache_ttl
         ):
             return self._jwks_caches[provider_id]
 
@@ -455,13 +489,17 @@ class OIDCService:
             return claims
 
         except JWTError as e:
-            logger.error("ID token verification failed for provider '%s': %s", provider_id, e)
+            logger.error(
+                "ID token verification failed for provider '%s': %s", provider_id, e
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Invalid ID token from provider '{provider_id}'",
             )
 
-    async def get_user_info(self, provider_id: str, access_token: str) -> Dict[str, Any]:
+    async def get_user_info(
+        self, provider_id: str, access_token: str
+    ) -> Dict[str, Any]:
         """Fetch user information from the userinfo endpoint."""
         config = await self.get_oidc_config(provider_id)
 
@@ -483,13 +521,17 @@ class OIDCService:
                 return response.json()
 
         except httpx.HTTPError as e:
-            logger.error("Failed to fetch user info from provider '%s': %s", provider_id, e)
+            logger.error(
+                "Failed to fetch user info from provider '%s': %s", provider_id, e
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Failed to fetch user information from provider '{provider_id}'",
             )
 
-    def extract_user_data(self, provider_id: str, claims: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_user_data(
+        self, provider_id: str, claims: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Extract user data from OIDC claims using provider-specific claim mappings."""
         logger.debug(
             "[OIDC Debug] Extracting user data from claims for provider '%s'",
@@ -558,7 +600,9 @@ class OIDCService:
             "provider_id": provider_id,
         }
 
-    async def provision_or_get_user(self, provider_id: str, user_data: Dict[str, Any]) -> tuple[Dict[str, Any], bool]:
+    async def provision_or_get_user(
+        self, provider_id: str, user_data: Dict[str, Any]
+    ) -> tuple[Dict[str, Any], bool]:
         """Provision a new user or get existing user from OIDC data.
 
         Returns:
@@ -603,7 +647,10 @@ class OIDCService:
             updates = {}
             if user_data.get("email") and user.get("email") != user_data["email"]:
                 updates["email"] = user_data["email"]
-            if user_data.get("realname") and user.get("realname") != user_data["realname"]:
+            if (
+                user_data.get("realname")
+                and user.get("realname") != user_data["realname"]
+            ):
                 updates["realname"] = user_data["realname"]
 
             if updates:
@@ -642,7 +689,9 @@ class OIDCService:
 
             # Get default role from provider config or use 'user'
             default_role_str = provider_config.get("default_role", "user")
-            default_role = UserRole.user if default_role_str == "user" else UserRole.admin
+            default_role = (
+                UserRole.user if default_role_str == "user" else UserRole.admin
+            )
 
             # Create new user as INACTIVE - requires admin approval
             user = create_user(
@@ -663,7 +712,9 @@ class OIDCService:
             return user, True  # Return True to indicate new user
 
         except Exception as e:
-            logger.error("Failed to provision OIDC user from provider '%s': %s", provider_id, e)
+            logger.error(
+                "Failed to provision OIDC user from provider '%s': %s", provider_id, e
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to provision user account from provider '{provider_id}'",

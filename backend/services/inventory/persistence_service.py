@@ -33,7 +33,10 @@ class InventoryPersistenceService:
 
     def _assert_access(self, inventory: dict, username: str) -> None:
         """Raise PermissionError if user cannot access a private inventory."""
-        if inventory.get("scope") == "private" and inventory.get("created_by") != username:
+        if (
+            inventory.get("scope") == "private"
+            and inventory.get("created_by") != username
+        ):
             raise PermissionError(f"Access denied to inventory {inventory['id']}")
 
     # ------------------------------------------------------------------
@@ -57,7 +60,9 @@ class InventoryPersistenceService:
                 inventory_data["name"], inventory_data["created_by"], active_only=True
             )
             if existing:
-                raise ValueError(f"Inventory with name '{inventory_data['name']}' already exists for this user")
+                raise ValueError(
+                    f"Inventory with name '{inventory_data['name']}' already exists for this user"
+                )
 
             conditions_json = json.dumps(inventory_data["conditions"])
 
@@ -115,7 +120,9 @@ class InventoryPersistenceService:
             logger.error("Error getting inventory %s: %s", inventory_id, e)
             return None
 
-    def get_inventory_by_name(self, name: str, username: str) -> Optional[Dict[str, Any]]:
+    def get_inventory_by_name(
+        self, name: str, username: str
+    ) -> Optional[Dict[str, Any]]:
         """Get an inventory by name for a specific user."""
         try:
             inventory = self.repository.get_by_name(name, username, active_only=True)
@@ -208,7 +215,9 @@ class InventoryPersistenceService:
         new_path = "/".join(segments)
 
         if new_path == old_path:
-            logger.info("rename_group: old_path == new_path ('%s'), skipping update", old_path)
+            logger.info(
+                "rename_group: old_path == new_path ('%s'), skipping update", old_path
+            )
             return {"updated_count": 0, "new_path": new_path}
 
         try:
@@ -225,7 +234,9 @@ class InventoryPersistenceService:
             logger.error("Error renaming group '%s': %s", old_path, e)
             raise
 
-    def update_inventory(self, inventory_id: int, inventory_data: Dict[str, Any], username: str) -> bool:
+    def update_inventory(
+        self, inventory_id: int, inventory_data: Dict[str, Any], username: str
+    ) -> bool:
         """Update an existing inventory."""
         try:
             current_obj = self.repository.get_by_id(inventory_id)
@@ -238,17 +249,28 @@ class InventoryPersistenceService:
             current = self._model_to_dict(current_obj)
 
             conditions_json = (
-                json.dumps(inventory_data["conditions"]) if "conditions" in inventory_data else current_obj.conditions
+                json.dumps(inventory_data["conditions"])
+                if "conditions" in inventory_data
+                else current_obj.conditions
             )
 
             update_kwargs = {
                 "name": inventory_data.get("name", current["name"]),
-                "description": inventory_data.get("description", current["description"]),
+                "description": inventory_data.get(
+                    "description", current["description"]
+                ),
                 "conditions": conditions_json,
-                "template_category": inventory_data.get("template_category", current["template_category"]),
-                "template_name": inventory_data.get("template_name", current["template_name"]),
+                "template_category": inventory_data.get(
+                    "template_category", current["template_category"]
+                ),
+                "template_name": inventory_data.get(
+                    "template_name", current["template_name"]
+                ),
                 "scope": inventory_data.get("scope", current["scope"]),
-                "group_path": inventory_data.get("group_path", current.get("group_path")) or None,
+                "group_path": inventory_data.get(
+                    "group_path", current.get("group_path")
+                )
+                or None,
             }
 
             self.repository.update(inventory_id, **update_kwargs)
@@ -259,7 +281,9 @@ class InventoryPersistenceService:
             logger.error("Error updating inventory %s: %s", inventory_id, e)
             raise
 
-    def delete_inventory(self, inventory_id: int, username: str, hard_delete: bool = True) -> bool:
+    def delete_inventory(
+        self, inventory_id: int, username: str, hard_delete: bool = True
+    ) -> bool:
         """Delete an inventory (hard delete by default)."""
         try:
             inventory = self.repository.get_by_id(inventory_id)
@@ -286,7 +310,9 @@ class InventoryPersistenceService:
             logger.error("Error deleting inventory %s: %s", inventory_id, e)
             raise
 
-    def delete_inventory_by_name(self, name: str, username: str, hard_delete: bool = True) -> bool:
+    def delete_inventory_by_name(
+        self, name: str, username: str, hard_delete: bool = True
+    ) -> bool:
         """Delete an inventory by name (hard delete by default)."""
         try:
             inventory = self.repository.get_by_name(name, username, active_only=False)
@@ -299,10 +325,14 @@ class InventoryPersistenceService:
             logger.error("Error deleting inventory by name '%s': %s", name, e)
             raise
 
-    def search_inventories(self, query: str, username: str, active_only: bool = True) -> List[Dict[str, Any]]:
+    def search_inventories(
+        self, query: str, username: str, active_only: bool = True
+    ) -> List[Dict[str, Any]]:
         """Search inventories by name or description."""
         try:
-            inventories = self.repository.search_inventories(query, username, active_only)
+            inventories = self.repository.search_inventories(
+                query, username, active_only
+            )
             return [self._model_to_dict(inv) for inv in inventories]
 
         except Exception as e:
@@ -340,15 +370,21 @@ class InventoryPersistenceService:
             "group_path": inventory.group_path,
             "created_by": inventory.created_by,
             "is_active": bool(inventory.is_active),
-            "created_at": (inventory.created_at.isoformat() if inventory.created_at else None),
-            "updated_at": (inventory.updated_at.isoformat() if inventory.updated_at else None),
+            "created_at": (
+                inventory.created_at.isoformat() if inventory.created_at else None
+            ),
+            "updated_at": (
+                inventory.updated_at.isoformat() if inventory.updated_at else None
+            ),
         }
 
         if inventory.conditions:
             try:
                 result["conditions"] = json.loads(inventory.conditions)
             except json.JSONDecodeError:
-                logger.error("Failed to parse conditions for inventory %s", inventory.id)
+                logger.error(
+                    "Failed to parse conditions for inventory %s", inventory.id
+                )
                 result["conditions"] = []
         else:
             result["conditions"] = []

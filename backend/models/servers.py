@@ -98,7 +98,9 @@ class CreateServerRequest(BaseModel):
             return v
         size = len(json.dumps(v).encode())
         if size > _ANSIBLE_FACTS_MAX_BYTES:
-            raise ValueError(f"ansible_facts exceeds maximum allowed size of {_ANSIBLE_FACTS_MAX_BYTES // 1024} KB")
+            raise ValueError(
+                f"ansible_facts exceeds maximum allowed size of {_ANSIBLE_FACTS_MAX_BYTES // 1024} KB"
+            )
         return v
 
 
@@ -148,7 +150,9 @@ class UpdateServerRequest(BaseModel):
             return v
         size = len(json.dumps(v).encode())
         if size > _ANSIBLE_FACTS_MAX_BYTES:
-            raise ValueError(f"ansible_facts exceeds maximum allowed size of {_ANSIBLE_FACTS_MAX_BYTES // 1024} KB")
+            raise ValueError(
+                f"ansible_facts exceeds maximum allowed size of {_ANSIBLE_FACTS_MAX_BYTES // 1024} KB"
+            )
         return v
 
 

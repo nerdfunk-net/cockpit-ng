@@ -53,7 +53,9 @@ class CheckMKConnectionService:
                 if client.test_connection():
                     try:
                         version_info = client.get_version()
-                        version = version_info.get("versions", {}).get("checkmk", "Unknown")
+                        version = version_info.get("versions", {}).get(
+                            "checkmk", "Unknown"
+                        )
                         return (
                             True,
                             f"Connection successful! CheckMK version: {version}",
@@ -161,7 +163,9 @@ class CheckMKConnectionService:
         import requests
 
         config = get_checkmk_config()
-        inventory_url = f"{config.protocol}://{config.host}/{config.site}/check_mk/host_inv_api.py"
+        inventory_url = (
+            f"{config.protocol}://{config.host}/{config.site}/check_mk/host_inv_api.py"
+        )
 
         def _fetch():
             return requests.get(
@@ -176,7 +180,9 @@ class CheckMKConnectionService:
         try:
             response = await asyncio.to_thread(_fetch)
         except Exception as e:
-            raise CheckMKClientError(f"Failed to connect to CheckMK inventory API: {str(e)}") from e
+            raise CheckMKClientError(
+                f"Failed to connect to CheckMK inventory API: {str(e)}"
+            ) from e
 
         if response.status_code == 404:
             raise HostNotFoundError(f"Inventory data not found for host '{hostname}'")

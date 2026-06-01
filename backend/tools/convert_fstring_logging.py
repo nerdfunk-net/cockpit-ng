@@ -463,7 +463,9 @@ def _extract_fstring(src: str, pos: int) -> Optional[tuple[str, str, int]]:
 # ---------------------------------------------------------------------------
 
 
-def _transform_log_call(src: str, call_start: int, open_paren: int) -> Optional[tuple[str, int]]:
+def _transform_log_call(
+    src: str, call_start: int, open_paren: int
+) -> Optional[tuple[str, int]]:
     """Try to transform the logging call that starts with '(' at *open_paren*.
 
     Returns (replacement_source_fragment, end_of_call_pos) on success,
@@ -572,10 +574,18 @@ def convert_source(src: str) -> tuple[str, int, int]:
         if transform is None:
             # Check whether there was actually an f-string here to skip
             paren_end = _find_balanced_paren_end(src, open_paren)
-            args_peek = src[open_paren + 1 : paren_end].lstrip() if paren_end != -1 else ""
+            args_peek = (
+                src[open_paren + 1 : paren_end].lstrip() if paren_end != -1 else ""
+            )
             if _FSTRING_PREFIX_RE.match(args_peek):
                 skipped += 1
-            result.append(src[call_start : paren_end if paren_end != -1 else call_start + len(m.group(0))])
+            result.append(
+                src[
+                    call_start : paren_end
+                    if paren_end != -1
+                    else call_start + len(m.group(0))
+                ]
+            )
             pos = paren_end if paren_end != -1 else call_start + len(m.group(0))
         else:
             new_call, call_end = transform
@@ -615,7 +625,9 @@ def process_file(
     new_src, conversions, skipped = convert_source(original)
 
     if skipped and verbose:
-        print(f"  ⚠  {path}: {skipped} complex f-string(s) skipped (manual review needed)")
+        print(
+            f"  ⚠  {path}: {skipped} complex f-string(s) skipped (manual review needed)"
+        )
 
     stats.skipped_complex += skipped
 

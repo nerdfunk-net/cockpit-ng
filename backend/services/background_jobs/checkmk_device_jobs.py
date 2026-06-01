@@ -78,7 +78,9 @@ def add_device_to_checkmk_task(self, device_id: str) -> Dict[str, Any]:
         # Execute the add operation
         result = asyncio.run(nb2cmk_service.add_device_to_checkmk(device_id))
 
-        logger.info("Successfully added device %s (%s) to CheckMK", device_id, result.hostname)
+        logger.info(
+            "Successfully added device %s (%s) to CheckMK", device_id, result.hostname
+        )
 
         return {
             "status": "completed",
@@ -160,7 +162,9 @@ def update_device_in_checkmk_task(self, device_id: str) -> Dict[str, Any]:
         # Execute the update operation
         result = asyncio.run(nb2cmk_service.update_device_in_checkmk(device_id))
 
-        logger.info("Successfully updated device %s (%s) in CheckMK", device_id, result.hostname)
+        logger.info(
+            "Successfully updated device %s (%s) in CheckMK", device_id, result.hostname
+        )
 
         return {
             "status": "completed",
@@ -224,7 +228,9 @@ def sync_devices_to_checkmk_task(
     job_run_id = None
 
     try:
-        logger.info("Starting sync_devices_to_checkmk task for %s devices", len(device_ids))
+        logger.info(
+            "Starting sync_devices_to_checkmk task for %s devices", len(device_ids)
+        )
 
         # Force reload configuration files to ensure we use the latest SNMP mapping
         # and other config changes without requiring Celery worker restart
@@ -246,7 +252,9 @@ def sync_devices_to_checkmk_task(
         # Create job in NB2CMK database for tracking device results
         nb2cmk_db_service.create_job(username="manual_sync", job_id=job_id)
         nb2cmk_db_service.update_job_status(job_id, NB2CMKJobStatus.RUNNING)
-        nb2cmk_db_service.update_job_progress(job_id, 0, total_devices, "Starting device sync...")
+        nb2cmk_db_service.update_job_progress(
+            job_id, 0, total_devices, "Starting device sync..."
+        )
 
         # Also create job run entry for Jobs/Views app visibility
         job_run = _jrs.create_job_run(
@@ -291,7 +299,9 @@ def sync_devices_to_checkmk_task(
                 )
 
                 # One asyncio.run per device: try update, fall back to add.
-                operation, result = asyncio.run(_update_or_add_in_checkmk(nb2cmk_service, device_id))
+                operation, result = asyncio.run(
+                    _update_or_add_in_checkmk(nb2cmk_service, device_id)
+                )
                 success_count += 1
 
                 device_name = getattr(result, "hostname", device_id)
@@ -335,13 +345,17 @@ def sync_devices_to_checkmk_task(
                 device_name = device_id  # Default fallback to UUID
                 try:
                     # Attempt to fetch device name from Nautobot
-                    normalized_data = asyncio.run(nb2cmk_service.get_device_normalized(device_id))
+                    normalized_data = asyncio.run(
+                        nb2cmk_service.get_device_normalized(device_id)
+                    )
                     internal_data = normalized_data.get("internal", {})
                     hostname = internal_data.get("hostname")
                     if hostname:
                         device_name = hostname
                 except Exception as name_error:
-                    logger.warning("Could not fetch device name for %s: %s", device_id, name_error)
+                    logger.warning(
+                        "Could not fetch device name for %s: %s", device_id, name_error
+                    )
 
                 # Extract detailed error information if available
                 error_detail = str(e)
@@ -364,7 +378,9 @@ def sync_devices_to_checkmk_task(
                         if "title" in cmk_error.response_data:
                             error_info["title"] = cmk_error.response_data["title"]
                         if "validation_summary" in cmk_error.response_data:
-                            error_info["validation_summary"] = cmk_error.response_data["validation_summary"]
+                            error_info["validation_summary"] = cmk_error.response_data[
+                                "validation_summary"
+                            ]
                         if "request" in cmk_error.response_data:
                             error_info["request"] = cmk_error.response_data["request"]
 
@@ -378,7 +394,10 @@ def sync_devices_to_checkmk_task(
                             # Try to parse as JSON - if it's already a properly formatted error dict, use it
                             detail_dict = json.loads(detail)
                             # Check if it already has structured error information (from base.py)
-                            if any(key in detail_dict for key in ["fields", "title", "error"]):
+                            if any(
+                                key in detail_dict
+                                for key in ["fields", "title", "error"]
+                            ):
                                 # Already properly structured, use it directly as dict
                                 error_detail = detail_dict
                             else:
@@ -406,11 +425,16 @@ def sync_devices_to_checkmk_task(
                     # Generic exception - keep as string
                     error_detail = str(e)
 
-                if isinstance(error_detail, dict) and "validation_summary" in error_detail:
+                if (
+                    isinstance(error_detail, dict)
+                    and "validation_summary" in error_detail
+                ):
                     logger.error(
                         "Attribute validation errors for device %s:\n%s",
                         device_name,
-                        "\n".join(f"  - {msg}" for msg in error_detail["validation_summary"]),
+                        "\n".join(
+                            f"  - {msg}" for msg in error_detail["validation_summary"]
+                        ),
                     )
 
                 # Store failure result in database with detailed error
@@ -438,7 +462,9 @@ def sync_devices_to_checkmk_task(
                     }
                 )
 
-        logger.info("Sync task completed: %s succeeded, %s failed", success_count, failed_count)
+        logger.info(
+            "Sync task completed: %s succeeded, %s failed", success_count, failed_count
+        )
 
         # Activate CheckMK changes if requested and at least one device was synced successfully
         activation_result = None
@@ -531,7 +557,9 @@ def sync_devices_to_checkmk_task(
 
         # Mark job as failed in NB2CMK database
         try:
-            nb2cmk_db_service.update_job_status(job_id, NB2CMKJobStatus.FAILED, error_message=str(e))
+            nb2cmk_db_service.update_job_status(
+                job_id, NB2CMKJobStatus.FAILED, error_message=str(e)
+            )
         except Exception as db_error:
             logger.error("Failed to update job status in database: %s", db_error)
 
@@ -570,7 +598,9 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
     from services.checkmk.client import CheckMKClient
 
     db_settings = settings_manager.get_checkmk_settings()
-    if not db_settings or not all(key in db_settings for key in ["url", "site", "username", "password"]):
+    if not db_settings or not all(
+        key in db_settings for key in ["url", "site", "username", "password"]
+    ):
         return {
             "success": False,
             "message": "CheckMK settings not configured",

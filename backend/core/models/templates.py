@@ -21,8 +21,12 @@ class Template(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False, index=True)
-    source = Column(String(50), nullable=False, index=True)  # 'git', 'file', 'webeditor'
-    template_type = Column(String(50), nullable=False, default="jinja2")  # 'jinja2', 'text', 'yaml', 'json', 'textfsm'
+    source = Column(
+        String(50), nullable=False, index=True
+    )  # 'git', 'file', 'webeditor'
+    template_type = Column(
+        String(50), nullable=False, default="jinja2"
+    )  # 'jinja2', 'text', 'yaml', 'json', 'textfsm'
     category = Column(String(255), index=True)
     description = Column(Text)
 
@@ -43,8 +47,12 @@ class Template(Base):
     inventory_id = Column(
         Integer, ForeignKey("inventories.id", ondelete="SET NULL"), nullable=True
     )  # ID of saved inventory to use for agent templates
-    pre_run_command = Column(Text)  # Command to execute before rendering (output available as context)
-    credential_id = Column(Integer)  # ID of stored credential to use for pre-run command execution
+    pre_run_command = Column(
+        Text
+    )  # Command to execute before rendering (output available as context)
+    credential_id = Column(
+        Integer
+    )  # ID of stored credential to use for pre-run command execution
     execution_mode = Column(
         String(50), default="run_on_device", nullable=False
     )  # 'run_on_device', 'write_to_file', 'sync_to_nautobot'
@@ -54,7 +62,9 @@ class Template(Base):
 
     # Ownership and scope
     created_by = Column(String(255), index=True)
-    scope = Column(String(50), default="global", nullable=False, index=True)  # 'global', 'private'
+    scope = Column(
+        String(50), default="global", nullable=False, index=True
+    )  # 'global', 'private'
 
     # Status
     is_active = Column(Boolean, default=True, nullable=False, index=True)
@@ -62,7 +72,9 @@ class Template(Base):
     sync_status = Column(String(255))
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -71,7 +83,9 @@ class Template(Base):
     )
 
     # Relationship to versions
-    versions = relationship("TemplateVersion", back_populates="template", cascade="all, delete-orphan")
+    versions = relationship(
+        "TemplateVersion", back_populates="template", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         Index(
@@ -98,7 +112,9 @@ class TemplateVersion(Base):
     version_number = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
     content_hash = Column(String(64), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     created_by = Column(String(255))
     change_notes = Column(Text)
 

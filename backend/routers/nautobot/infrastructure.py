@@ -39,7 +39,9 @@ async def get_nautobot_secret_groups(
         result = await nautobot_service.graphql_query(query)
 
         if "errors" in result:
-            logger.warning("GraphQL errors fetching secret groups: %s", result["errors"])
+            logger.warning(
+                "GraphQL errors fetching secret groups: %s", result["errors"]
+            )
             return []
 
         return result["data"]["secrets_groups"]
@@ -148,7 +150,9 @@ async def get_interface_types(
             return cached
 
         # Cache miss; fetch from Nautobot using OPTIONS request
-        result = await nautobot_service.rest_request(endpoint="dcim/interfaces/", method="OPTIONS")
+        result = await nautobot_service.rest_request(
+            endpoint="dcim/interfaces/", method="OPTIONS"
+        )
 
         # Debug: log the full response structure
         logger.info("OPTIONS response keys: %s", result.keys() if result else "None")
@@ -156,12 +160,16 @@ async def get_interface_types(
             actions = result.get("actions", {})
             logger.info("actions keys: %s", actions.keys())
             post_actions = actions.get("POST", {})
-            logger.info("POST actions keys: %s", post_actions.keys() if post_actions else "None")
+            logger.info(
+                "POST actions keys: %s", post_actions.keys() if post_actions else "None"
+            )
             if "type" in post_actions:
                 type_field = post_actions.get("type", {})
                 logger.info(
                     "type field keys: %s",
-                    type_field.keys() if isinstance(type_field, dict) else type(type_field),
+                    type_field.keys()
+                    if isinstance(type_field, dict)
+                    else type(type_field),
                 )
                 choices = type_field.get("choices", [])
                 logger.info(
@@ -170,7 +178,9 @@ async def get_interface_types(
                     len(choices) if choices else 0,
                 )
                 if choices and len(choices) > 0:
-                    logger.info("first choice: %s, type: %s", choices[0], type(choices[0]))
+                    logger.info(
+                        "first choice: %s, type: %s", choices[0], type(choices[0])
+                    )
 
         # Extract type choices from the OPTIONS response
         interface_types = []
@@ -186,7 +196,9 @@ async def get_interface_types(
                 if isinstance(choice, dict):
                     value = choice.get("value", "")
                     # Nautobot uses 'display' not 'display_name'
-                    display_name = choice.get("display") or choice.get("display_name", "")
+                    display_name = choice.get("display") or choice.get(
+                        "display_name", ""
+                    )
                 elif isinstance(choice, (list, tuple)) and len(choice) >= 2:
                     # Some APIs return choices as [value, display_name] tuples
                     value = choice[0]
@@ -195,7 +207,9 @@ async def get_interface_types(
                     continue
 
                 if value and display_name:
-                    interface_types.append({"value": value, "display_name": display_name})
+                    interface_types.append(
+                        {"value": value, "display_name": display_name}
+                    )
 
         ttl = int(settings_manager.get_cache_settings().get("ttl_seconds", 600))
         cache_service.set(cache_key, interface_types, ttl)

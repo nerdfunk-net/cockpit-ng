@@ -18,7 +18,9 @@ from core.safe_http_errors import raise_internal_server_error
 logger = logging.getLogger(__name__)
 
 
-def handle_errors(operation: str, error_status: int = status.HTTP_500_INTERNAL_SERVER_ERROR):
+def handle_errors(
+    operation: str, error_status: int = status.HTTP_500_INTERNAL_SERVER_ERROR
+):
     """
     General-purpose decorator for consistent FastAPI endpoint error handling.
 

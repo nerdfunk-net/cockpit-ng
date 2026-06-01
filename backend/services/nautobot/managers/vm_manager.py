@@ -29,7 +29,9 @@ class VirtualMachineManager:
         """
         self.nautobot = nautobot_service
 
-    async def assign_ip_to_virtual_interface(self, ip_address_id: str, virtual_interface_id: str) -> bool:
+    async def assign_ip_to_virtual_interface(
+        self, ip_address_id: str, virtual_interface_id: str
+    ) -> bool:
         """
         Assign an IP address to a virtual interface.
 
@@ -52,9 +54,12 @@ class VirtualMachineManager:
         )
 
         # Check if assignment already exists
-        check_endpoint = "ipam/ip-address-to-interface/?ip_address=%s&vm_interface=%s" % (
-            ip_address_id,
-            virtual_interface_id,
+        check_endpoint = (
+            "ipam/ip-address-to-interface/?ip_address=%s&vm_interface=%s"
+            % (
+                ip_address_id,
+                virtual_interface_id,
+            )
         )
 
         existing_assignment = await self.nautobot.rest_request(
@@ -80,7 +85,9 @@ class VirtualMachineManager:
                 data=payload,
             )
 
-            logger.info("Assigned IP to virtual interface, assignment ID: %s", result.get("id"))
+            logger.info(
+                "Assigned IP to virtual interface, assignment ID: %s", result.get("id")
+            )
             return True
 
         except NautobotAPIError as e:
@@ -89,7 +96,9 @@ class VirtualMachineManager:
                 virtual_interface_id,
                 str(e),
             )
-            raise NautobotAPIError(f"Failed to assign IP to virtual interface: {str(e)}")
+            raise NautobotAPIError(
+                f"Failed to assign IP to virtual interface: {str(e)}"
+            )
 
     async def assign_primary_ip_to_vm(self, vm_id: str, ip_address_id: str) -> bool:
         """
@@ -191,7 +200,9 @@ class VirtualMachineManager:
             vm_data["software_version"] = {"id": software_version_id}
 
         if software_image_file_ids:
-            vm_data["software_image_files"] = [{"id": img_id} for img_id in software_image_file_ids]
+            vm_data["software_image_files"] = [
+                {"id": img_id} for img_id in software_image_file_ids
+            ]
 
         if tags:
             vm_data["tags"] = [{"id": tag_id} for tag_id in tags]
@@ -200,7 +211,9 @@ class VirtualMachineManager:
             vm_data["custom_fields"] = custom_fields
 
         try:
-            result = await self.nautobot.rest_request("virtualization/virtual-machines/", method="POST", data=vm_data)
+            result = await self.nautobot.rest_request(
+                "virtualization/virtual-machines/", method="POST", data=vm_data
+            )
 
             logger.info("Created VM '%s' with ID %s", name, result.get("id"))
             return result
@@ -245,7 +258,9 @@ class VirtualMachineManager:
         Raises:
             Exception: If interface creation fails
         """
-        logger.info("Creating virtual interface '%s' for VM %s", name, virtual_machine_id)
+        logger.info(
+            "Creating virtual interface '%s' for VM %s", name, virtual_machine_id
+        )
 
         # Build the interface data payload according to Nautobot's REST API schema
         interface_data: Dict[str, Any] = {
@@ -272,15 +287,21 @@ class VirtualMachineManager:
             interface_data["untagged_vlan"] = {"id": untagged_vlan_id}
 
         if tagged_vlan_ids:
-            interface_data["tagged_vlans"] = [{"id": vlan_id} for vlan_id in tagged_vlan_ids]
+            interface_data["tagged_vlans"] = [
+                {"id": vlan_id} for vlan_id in tagged_vlan_ids
+            ]
 
         if tags:
             interface_data["tags"] = [{"id": tag_id} for tag_id in tags]
 
         try:
-            result = await self.nautobot.rest_request("virtualization/interfaces/", method="POST", data=interface_data)
+            result = await self.nautobot.rest_request(
+                "virtualization/interfaces/", method="POST", data=interface_data
+            )
 
-            logger.info("Created virtual interface '%s' with ID %s", name, result.get("id"))
+            logger.info(
+                "Created virtual interface '%s' with ID %s", name, result.get("id")
+            )
             return result
 
         except NautobotAPIError as e:

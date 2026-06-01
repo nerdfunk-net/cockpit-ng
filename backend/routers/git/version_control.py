@@ -33,7 +33,9 @@ async def get_branches(
         branches = []
 
         for branch in repo.branches:
-            branches.append({"name": branch.name, "current": branch.name == current_branch})
+            branches.append(
+                {"name": branch.name, "current": branch.name == current_branch}
+            )
 
         return branches
     except (InvalidGitRepositoryError, GitCommandError) as e:
@@ -96,7 +98,9 @@ async def get_commits(
 
         # Store in cache
         if cache_cfg.get("enabled", True):
-            cache_service.set(cache_key, commits, int(cache_cfg.get("ttl_seconds", 600)))
+            cache_service.set(
+                cache_key, commits, int(cache_cfg.get("ttl_seconds", 600))
+            )
 
         return commits
 
@@ -132,12 +136,16 @@ async def compare_commits(
 
         # Get file content from both commits
         try:
-            file_content1 = (commit_obj1.tree / file_path).data_stream.read().decode("utf-8")
+            file_content1 = (
+                (commit_obj1.tree / file_path).data_stream.read().decode("utf-8")
+            )
         except KeyError:
             file_content1 = ""
 
         try:
-            file_content2 = (commit_obj2.tree / file_path).data_stream.read().decode("utf-8")
+            file_content2 = (
+                (commit_obj2.tree / file_path).data_stream.read().decode("utf-8")
+            )
         except KeyError:
             file_content2 = ""
 
@@ -151,8 +159,16 @@ async def compare_commits(
             diff_lines.append(line.rstrip("\n"))
 
         # Calculate stats
-        additions = sum(1 for line in diff_lines if line.startswith("+") and not line.startswith("+++"))
-        deletions = sum(1 for line in diff_lines if line.startswith("-") and not line.startswith("---"))
+        additions = sum(
+            1
+            for line in diff_lines
+            if line.startswith("+") and not line.startswith("+++")
+        )
+        deletions = sum(
+            1
+            for line in diff_lines
+            if line.startswith("-") and not line.startswith("---")
+        )
 
         # Prepare full file content for comparison display
         file1_lines = []

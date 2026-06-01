@@ -60,7 +60,9 @@ async def test_device_ids(real_nautobot_service):
     for device_id in created_device_ids:
         try:
             logger.info("Cleaning up test device: %s", device_id)
-            await real_nautobot_service.rest_request(endpoint=f"dcim/devices/{device_id}/", method="DELETE")
+            await real_nautobot_service.rest_request(
+                endpoint=f"dcim/devices/{device_id}/", method="DELETE"
+            )
             logger.info("✓ Successfully deleted test device: %s", device_id)
         except Exception as e:
             logger.warning("Failed to cleanup device %s: %s", device_id, e)
@@ -96,8 +98,12 @@ async def baseline_device_ids(real_nautobot_service):
         device_ids["lab-100"] = {
             "id": device["id"],
             "name": device["name"],
-            "original_primary_ip4": device.get("primary_ip4", {}).get("address") if device.get("primary_ip4") else None,
-            "original_primary_ip4_id": device.get("primary_ip4", {}).get("id") if device.get("primary_ip4") else None,
+            "original_primary_ip4": device.get("primary_ip4", {}).get("address")
+            if device.get("primary_ip4")
+            else None,
+            "original_primary_ip4_id": device.get("primary_ip4", {}).get("id")
+            if device.get("primary_ip4")
+            else None,
         }
 
     # Get server-20
@@ -121,8 +127,12 @@ async def baseline_device_ids(real_nautobot_service):
             "id": device["id"],
             "name": device["name"],
             "original_serial": device.get("serial"),
-            "original_primary_ip4": device.get("primary_ip4", {}).get("address") if device.get("primary_ip4") else None,
-            "original_primary_ip4_id": device.get("primary_ip4", {}).get("id") if device.get("primary_ip4") else None,
+            "original_primary_ip4": device.get("primary_ip4", {}).get("address")
+            if device.get("primary_ip4")
+            else None,
+            "original_primary_ip4_id": device.get("primary_ip4", {}).get("id")
+            if device.get("primary_ip4")
+            else None,
         }
 
     yield device_ids
@@ -212,7 +222,9 @@ async def get_required_ids(nautobot: NautobotService) -> Dict[str, str]:
     }
     """
     result = await nautobot.graphql_query(platform_query)
-    platform_id = result["data"]["platforms"][0]["id"] if result["data"]["platforms"] else None
+    platform_id = (
+        result["data"]["platforms"][0]["id"] if result["data"]["platforms"] else None
+    )
 
     # Get Active status
     status_query = """
@@ -259,7 +271,9 @@ class TestAddDevice:
     """Test adding a new device to Nautobot."""
 
     @pytest.mark.asyncio
-    async def test_add_device_with_interfaces(self, real_nautobot_service, device_creation_service, test_device_ids):
+    async def test_add_device_with_interfaces(
+        self, real_nautobot_service, device_creation_service, test_device_ids
+    ):
         """
         Test adding a new device with multiple interfaces.
 
@@ -308,7 +322,9 @@ class TestAddDevice:
             test_device_ids.append(result["device_id"])
 
         # Verify success
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
         assert result["device_id"] is not None
 
         # Verify workflow steps
@@ -413,7 +429,9 @@ class TestAddDevice:
             test_device_ids.append(result["device_id"])
 
         # Verify success
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
         assert result["device_id"] is not None
 
         # Verify prefix was created in Nautobot
@@ -461,7 +479,9 @@ class TestAddDevice:
         # Cleanup: Delete the auto-created prefix
         try:
             prefix_id = prefixes[0]["id"]
-            await real_nautobot_service.rest_request(endpoint=f"ipam/prefixes/{prefix_id}/", method="DELETE")
+            await real_nautobot_service.rest_request(
+                endpoint=f"ipam/prefixes/{prefix_id}/", method="DELETE"
+            )
             logger.info("✓ Cleaned up auto-created prefix")
         except Exception as e:
             logger.warning("Failed to cleanup prefix: %s", e)
@@ -497,7 +517,9 @@ class TestAddDevice:
         # Generate unique device name using timestamp to avoid collisions
         import time
 
-        unique_suffix = int(time.time() * 1000) % 1000000  # Use milliseconds for uniqueness
+        unique_suffix = (
+            int(time.time() * 1000) % 1000000
+        )  # Use milliseconds for uniqueness
         device_name = f"test-device-no-prefix-{unique_suffix}"
 
         # Clean up any existing device with this name (from failed previous runs)
@@ -516,7 +538,9 @@ class TestAddDevice:
                     "Cleaning up existing device %s from previous test run",
                     device["id"],
                 )
-                await real_nautobot_service.rest_request(endpoint=f"dcim/devices/{device['id']}/", method="DELETE")
+                await real_nautobot_service.rest_request(
+                    endpoint=f"dcim/devices/{device['id']}/", method="DELETE"
+                )
         except Exception as e:
             logger.warning("Could not cleanup existing device: %s", e)
 
@@ -553,9 +577,9 @@ class TestAddDevice:
 
         # Verify the exception message mentions the missing prefix
         error_message = str(exc_info.value).lower()
-        assert any(keyword in error_message for keyword in ["prefix", "parent", "network"]), (
-            f"Error should mention missing prefix. Got: {exc_info.value}"
-        )
+        assert any(
+            keyword in error_message for keyword in ["prefix", "parent", "network"]
+        ), f"Error should mention missing prefix. Got: {exc_info.value}"
 
         # Verify the exception mentions that automatic prefix creation is disabled
         assert any(
@@ -564,12 +588,16 @@ class TestAddDevice:
                 "create the parent prefix manually",
                 "enable automatic prefix creation",
             ]
-        ), f"Error should mention manual prefix creation or enabling automatic creation. Got: {exc_info.value}"
+        ), (
+            f"Error should mention manual prefix creation or enabling automatic creation. Got: {exc_info.value}"
+        )
 
         # Verify prefix was NOT created
         prefix_result = await real_nautobot_service.graphql_query(prefix_query)
         prefixes = prefix_result["data"]["prefixes"]
-        assert len(prefixes) == 0, "Prefix should not have been created when add_prefix=False"
+        assert len(prefixes) == 0, (
+            "Prefix should not have been created when add_prefix=False"
+        )
 
         # Note: The device may have been created before the IP creation failed.
         # We need to find and clean it up manually since the normal fixture won't track it.
@@ -593,7 +621,9 @@ class TestAddDevice:
         except Exception as e:
             logger.warning("Could not check for orphaned device: %s", e)
 
-        logger.info("✓ Device creation correctly raised exception when add_prefix=False and parent prefix missing")
+        logger.info(
+            "✓ Device creation correctly raised exception when add_prefix=False and parent prefix missing"
+        )
 
 
 # =============================================================================
@@ -607,7 +637,9 @@ class TestBulkEdit:
     """Test bulk editing/updating devices in Nautobot."""
 
     @pytest.mark.asyncio
-    async def test_update_device_serial_number(self, real_nautobot_service, device_update_service, baseline_device_ids):
+    async def test_update_device_serial_number(
+        self, real_nautobot_service, device_update_service, baseline_device_ids
+    ):
         """
         Test updating a device's serial number.
 
@@ -623,12 +655,20 @@ class TestBulkEdit:
         )
 
         # Verify success
-        assert result["success"] is True, f"Serial update failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Serial update failed: {result.get('message')}"
+        )
         assert "serial" in result["updated_fields"]
 
         # Verify changes
-        assert result["details"]["changes"]["serial"]["from"] == device_info["original_serial"]
-        assert result["details"]["changes"]["serial"]["to"] == "INTEGRATION-TEST-SERIAL-001"
+        assert (
+            result["details"]["changes"]["serial"]["from"]
+            == device_info["original_serial"]
+        )
+        assert (
+            result["details"]["changes"]["serial"]["to"]
+            == "INTEGRATION-TEST-SERIAL-001"
+        )
 
         # Verify device in Nautobot
         device_query = f"""
@@ -639,7 +679,9 @@ class TestBulkEdit:
         }}
         """
         device_result = await real_nautobot_service.graphql_query(device_query)
-        assert device_result["data"]["device"]["serial"] == "INTEGRATION-TEST-SERIAL-001"
+        assert (
+            device_result["data"]["device"]["serial"] == "INTEGRATION-TEST-SERIAL-001"
+        )
 
         logger.info("✓ Serial number updated successfully")
 
@@ -729,7 +771,9 @@ class TestBulkEdit:
 
         # First, ensure device has a primary IP with an interface
         # (baseline devices should already have this)
-        assert device_info["original_primary_ip4"] is not None, "Baseline device should have primary IP"
+        assert device_info["original_primary_ip4"] is not None, (
+            "Baseline device should have primary IP"
+        )
 
         # Get the current interface name by finding interface with primary IP
         # We'll get all interfaces and find the one with the primary IP
@@ -759,7 +803,9 @@ class TestBulkEdit:
                 break
 
         if not original_interface_name:
-            pytest.skip(f"Device {device_info['name']} doesn't have interface with primary IP, skipping test")
+            pytest.skip(
+                f"Device {device_info['name']} doesn't have interface with primary IP, skipping test"
+            )
 
         # Update primary IP WITHOUT creating new interface
         # Use baseline prefix 192.168.178.x (IP 130 to avoid conflicts)
@@ -856,7 +902,9 @@ class TestBulkEdit:
 
             if existing_ip.get("interfaces"):
                 # IP is assigned to interface, delete it and recreate
-                logger.info("IP %s exists and is assigned, deleting it", existing_unassigned_ip)
+                logger.info(
+                    "IP %s exists and is assigned, deleting it", existing_unassigned_ip
+                )
                 await real_nautobot_service.rest_request(
                     endpoint=f"ipam/ip-addresses/{created_ip_id}/", method="DELETE"
                 )
@@ -908,12 +956,14 @@ class TestBulkEdit:
         ip_result = await real_nautobot_service.graphql_query(ip_query)
         ip_data = ip_result["data"]["ip_address"]
         assert ip_data["address"] == existing_unassigned_ip
-        assert ip_data.get("interfaces") is None or len(ip_data.get("interfaces", [])) == 0, (
-            "IP should not be assigned yet"
-        )
+        assert (
+            ip_data.get("interfaces") is None or len(ip_data.get("interfaces", [])) == 0
+        ), "IP should not be assigned yet"
 
         # Step 2: Update device to use this existing unassigned IP
-        logger.info("Updating device %s to use existing unassigned IP", device_info["name"])
+        logger.info(
+            "Updating device %s to use existing unassigned IP", device_info["name"]
+        )
         result = await device_update_service.update_device(
             device_identifier={"id": device_info["id"]},
             update_data={
@@ -956,7 +1006,9 @@ class TestBulkEdit:
 
         # Verify primary IP is set to the existing unassigned IP
         assert device["primary_ip4"]["address"] == existing_unassigned_ip
-        assert device["primary_ip4"]["id"] == created_ip_id, "Should use the existing IP, not create a new one"
+        assert device["primary_ip4"]["id"] == created_ip_id, (
+            "Should use the existing IP, not create a new one"
+        )
 
         # Verify interface was created and has the IP
         assert len(device["interfaces"]) == 1
@@ -986,9 +1038,10 @@ class TestBulkEdit:
         ip_check_result = await real_nautobot_service.graphql_query(ip_check_query)
         ip_check_data = ip_check_result["data"]["ip_address"]
 
-        assert ip_check_data.get("interfaces") is not None and len(ip_check_data["interfaces"]) > 0, (
-            "IP should now be assigned to interface"
-        )
+        assert (
+            ip_check_data.get("interfaces") is not None
+            and len(ip_check_data["interfaces"]) > 0
+        ), "IP should now be assigned to interface"
         interface_data = ip_check_data["interfaces"][0]
         assert interface_data["name"] == "Loopback131"
         assert interface_data["device"]["id"] == device_info["id"]
@@ -1021,9 +1074,10 @@ class TestDeviceOperationsEdgeCases:
             )
 
         error_message = str(exc_info.value).lower()
-        assert any(keyword in error_message for keyword in ["not found", "failed", "no device matches", "404"]), (
-            f"Unexpected error message: {exc_info.value}"
-        )
+        assert any(
+            keyword in error_message
+            for keyword in ["not found", "failed", "no device matches", "404"]
+        ), f"Unexpected error message: {exc_info.value}"
 
         logger.info("✓ Non-existent device update rejected as expected")
 
@@ -1039,7 +1093,9 @@ class TestAddDeviceWithTagsAndCustomFields:
     """Test adding devices with tags and custom fields."""
 
     @pytest.mark.asyncio
-    async def test_add_device_with_tags(self, real_nautobot_service, device_creation_service, test_device_ids):
+    async def test_add_device_with_tags(
+        self, real_nautobot_service, device_creation_service, test_device_ids
+    ):
         """
         Test adding a device with tags.
 
@@ -1119,12 +1175,16 @@ class TestAddDeviceWithTagsAndCustomFields:
         # Verify tags were assigned
         device_tag_ids = [tag["id"] for tag in device["tags"]]
         for tag_id in tag_ids:
-            assert tag_id in device_tag_ids, f"Tag {tag_id} should be assigned to device"
+            assert tag_id in device_tag_ids, (
+                f"Tag {tag_id} should be assigned to device"
+            )
 
         logger.info("✓ Device created with %s tags", len(device["tags"]))
 
     @pytest.mark.asyncio
-    async def test_add_device_with_custom_fields(self, real_nautobot_service, device_creation_service, test_device_ids):
+    async def test_add_device_with_custom_fields(
+        self, real_nautobot_service, device_creation_service, test_device_ids
+    ):
         """
         Test adding a device with custom fields.
 
@@ -1293,7 +1353,9 @@ class TestAddDeviceWithTagsAndCustomFields:
         assert custom_fields.get("net") == "netB"
         assert custom_fields.get("checkmk_site") == "siteB"
 
-        logger.info("✓ Device created with full metadata (tags + custom fields + asset_tag)")
+        logger.info(
+            "✓ Device created with full metadata (tags + custom fields + asset_tag)"
+        )
 
 
 # =============================================================================
@@ -1424,7 +1486,11 @@ class TestAddDeviceWithMultipleInterfaces:
         assert "Loopback0" in interface_names
 
         # Verify mgmt_only flag on management interface
-        mgmt_interface = next(iface for iface in device["interfaces"] if iface["name"] == "GigabitEthernet0/0")
+        mgmt_interface = next(
+            iface
+            for iface in device["interfaces"]
+            if iface["name"] == "GigabitEthernet0/0"
+        )
         assert mgmt_interface["mgmt_only"] is True
 
         logger.info("✓ Device created with 3 interfaces")

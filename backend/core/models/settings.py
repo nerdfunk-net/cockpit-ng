@@ -22,7 +22,9 @@ class Setting(Base):
     value = Column(Text)
     value_type = Column(String(50), nullable=False, default="string")
     description = Column(Text)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -43,7 +45,9 @@ class NautobotSetting(Base):
     token = Column(String(500), nullable=False)
     timeout = Column(Integer, nullable=False, default=30)
     verify_ssl = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -65,7 +69,9 @@ class GitSetting(Base):
     config_path = Column(String(500), nullable=False, default="configs/")
     sync_interval = Column(Integer, nullable=False, default=15)
     verify_ssl = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -85,7 +91,9 @@ class CheckMKSetting(Base):
     username = Column(String(255), nullable=False)
     password = Column(String(500), nullable=False)
     verify_ssl = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -100,7 +108,9 @@ class AgentsSetting(Base):
     __tablename__ = "agents_settings"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    deployment_method = Column(String(50), nullable=False, default="local")  # local, sftp, git
+    deployment_method = Column(
+        String(50), nullable=False, default="local"
+    )  # local, sftp, git
     # Local deployment
     local_root_path = Column(String(1000))
     # SFTP deployment
@@ -115,7 +125,9 @@ class AgentsSetting(Base):
     git_repository_id = Column(Integer)
     # Agents array
     agents = Column(JSON, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -133,14 +145,18 @@ class CacheSetting(Base):
     enabled = Column(Boolean, nullable=False, default=True)
     ttl_seconds = Column(Integer, nullable=False, default=600)
     prefetch_on_startup = Column(Boolean, nullable=False, default=True)
-    refresh_interval_minutes = Column(Integer, nullable=False, default=15)  # DEPRECATED: No longer used
+    refresh_interval_minutes = Column(
+        Integer, nullable=False, default=15
+    )  # DEPRECATED: No longer used
     max_commits = Column(Integer, nullable=False, default=500)
     prefetch_items = Column(Text)  # JSON string
     # Cache task intervals (in minutes) - 0 means disabled
     devices_cache_interval_minutes = Column(Integer, nullable=False, default=60)
     locations_cache_interval_minutes = Column(Integer, nullable=False, default=10)
     git_commits_cache_interval_minutes = Column(Integer, nullable=False, default=15)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -166,7 +182,9 @@ class NetworkDefault(Base):
     secret_group = Column(String(255))
     csv_delimiter = Column(String(10), default=",")
     csv_quote_char = Column(String(10), default='"')
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -192,7 +210,9 @@ class ServerDefault(Base):
     secret_group = Column(String(255))
     csv_delimiter = Column(String(10), default=",")
     csv_quote_char = Column(String(10), default='"')
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -211,18 +231,28 @@ class CelerySetting(Base):
     max_workers = Column(Integer, nullable=False, default=4)
     # Cleanup settings
     cleanup_enabled = Column(Boolean, nullable=False, default=True)
-    cleanup_interval_hours = Column(Integer, nullable=False, default=6)  # Run cleanup every 6 hours
-    cleanup_age_hours = Column(Integer, nullable=False, default=24)  # Remove data older than 24 hours
+    cleanup_interval_hours = Column(
+        Integer, nullable=False, default=6
+    )  # Run cleanup every 6 hours
+    cleanup_age_hours = Column(
+        Integer, nullable=False, default=24
+    )  # Remove data older than 24 hours
     # Client data cleanup settings
     client_data_cleanup_enabled = Column(Boolean, nullable=False, default=True)
-    client_data_cleanup_interval_hours = Column(Integer, nullable=False, default=24)  # Run cleanup every 24 hours
-    client_data_cleanup_age_hours = Column(Integer, nullable=False, default=168)  # Remove client data older than 7 days
+    client_data_cleanup_interval_hours = Column(
+        Integer, nullable=False, default=24
+    )  # Run cleanup every 24 hours
+    client_data_cleanup_age_hours = Column(
+        Integer, nullable=False, default=168
+    )  # Remove client data older than 7 days
     # Result expiry
     result_expires_hours = Column(Integer, nullable=False, default=24)
     # Queue configuration - stores list of configured queues as JSON
     # Format: [{"name": "backup", "description": "Backup queue for device configs"}, ...]
     queues = Column(Text, nullable=True)  # JSON array of queue objects
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

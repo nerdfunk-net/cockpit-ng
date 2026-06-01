@@ -137,7 +137,9 @@ class CsvImportService:
                     dirs[:] = [d for d in dirs if d != ".git"]
                     for f in files:
                         rel = os.path.relpath(os.path.join(root, f), repo_dir_resolved)
-                        if fnmatch.fnmatch(f, file_filter) or fnmatch.fnmatch(rel, file_filter):
+                        if fnmatch.fnmatch(f, file_filter) or fnmatch.fnmatch(
+                            rel, file_filter
+                        ):
                             files_to_process.append(rel)
                 files_to_process.sort()
                 if not files_to_process:
@@ -206,7 +208,9 @@ class CsvImportService:
                 abs_file_resolved = os.path.realpath(abs_file)
 
                 if not abs_file_resolved.startswith(repo_dir_resolved):
-                    logger.error("Security error: file path is outside repository: %s", fp)
+                    logger.error(
+                        "Security error: file path is outside repository: %s", fp
+                    )
                     failures.append(
                         {
                             "file": fp,
@@ -217,7 +221,9 @@ class CsvImportService:
 
                 if not os.path.exists(abs_file_resolved):
                     logger.error("CSV file not found: %s", fp)
-                    failures.append({"file": fp, "error": "CSV file not found: %s" % fp})
+                    failures.append(
+                        {"file": fp, "error": "CSV file not found: %s" % fp}
+                    )
                     continue
 
                 task_context.update_state(
@@ -225,7 +231,8 @@ class CsvImportService:
                     meta={
                         "current": int((file_idx - 1) / total_files * 90),
                         "total": 100,
-                        "status": "Parsing file %s/%s: %s" % (file_idx, total_files, fp),
+                        "status": "Parsing file %s/%s: %s"
+                        % (file_idx, total_files, fp),
                     },
                 )
 
@@ -249,7 +256,9 @@ class CsvImportService:
                     )
                     rows = list(reader)
                 except Exception as e:
-                    failures.append({"file": fp, "error": "Failed to parse CSV: %s" % str(e)})
+                    failures.append(
+                        {"file": fp, "error": "Failed to parse CSV: %s" % str(e)}
+                    )
                     continue
 
                 if not rows:
@@ -462,10 +471,14 @@ class CsvImportService:
         """Create or update a single Nautobot object based on whether it already exists."""
         if import_type == "devices":
             if iface_config is None:
-                nautobot_data, iface_config = self._extract_interface_config(nautobot_data)
+                nautobot_data, iface_config = self._extract_interface_config(
+                    nautobot_data
+                )
 
             if ctx.add_prefixes and ctx.default_prefix_length:
-                iface_config = self._apply_default_prefix_length(iface_config, ctx.default_prefix_length)
+                iface_config = self._apply_default_prefix_length(
+                    iface_config, ctx.default_prefix_length
+                )
 
             if existing_id:
                 if not update_existing:
@@ -537,7 +550,9 @@ class CsvImportService:
                     )
                     new_id = result.get("device_id")
                     logger.info("Created device %s (id=%s)", identifier, new_id)
-                    ctx.created.append({"file": fp, "row": idx, "identifier": identifier, "id": new_id})
+                    ctx.created.append(
+                        {"file": fp, "row": idx, "identifier": identifier, "id": new_id}
+                    )
         else:
             if existing_id:
                 if not update_existing:
@@ -571,7 +586,11 @@ class CsvImportService:
                     )
                 else:
                     endpoint = "%s%s/" % (_ENDPOINT_MAP[import_type], existing_id)
-                    asyncio.run(ctx.nautobot_service.rest_request(endpoint, method="PATCH", data=nautobot_data))
+                    asyncio.run(
+                        ctx.nautobot_service.rest_request(
+                            endpoint, method="PATCH", data=nautobot_data
+                        )
+                    )
                     logger.info("Updated %s %s", import_type, identifier)
                     ctx.updated.append(
                         {
@@ -602,8 +621,12 @@ class CsvImportService:
                         )
                     )
                     new_id = result.get("id") if isinstance(result, dict) else None
-                    logger.info("Created %s %s (id=%s)", import_type, identifier, new_id)
-                    ctx.created.append({"file": fp, "row": idx, "identifier": identifier, "id": new_id})
+                    logger.info(
+                        "Created %s %s (id=%s)", import_type, identifier, new_id
+                    )
+                    ctx.created.append(
+                        {"file": fp, "row": idx, "identifier": identifier, "id": new_id}
+                    )
 
     def _process_cockpit_rows(
         self,
@@ -756,7 +779,9 @@ class CsvImportService:
         return device_data, [iface]
 
     @staticmethod
-    def _apply_column_mapping(row: dict[str, str], col_map: dict[str, str | None]) -> dict[str, Any]:
+    def _apply_column_mapping(
+        row: dict[str, str], col_map: dict[str, str | None]
+    ) -> dict[str, Any]:
         """Build Nautobot payload from a CSV row by applying column_mapping."""
         nautobot_data: dict[str, Any] = {}
         custom_fields: dict[str, Any] = {}
@@ -800,10 +825,16 @@ class CsvImportService:
             iface = iface.copy()
             if "ip_addresses" in iface:
                 iface["ip_addresses"] = [
-                    {**ip, "address": ip["address"] + suffix} if ip.get("address") and "/" not in ip["address"] else ip
+                    {**ip, "address": ip["address"] + suffix}
+                    if ip.get("address") and "/" not in ip["address"]
+                    else ip
                     for ip in iface["ip_addresses"]
                 ]
-            elif "ip_address" in iface and iface["ip_address"] and "/" not in iface["ip_address"]:
+            elif (
+                "ip_address" in iface
+                and iface["ip_address"]
+                and "/" not in iface["ip_address"]
+            ):
                 iface["ip_address"] = iface["ip_address"] + suffix
             patched.append(iface)
         return patched
@@ -820,7 +851,9 @@ class CsvImportService:
         """Look up an existing Nautobot object by primary key value."""
         try:
             if import_type == "devices":
-                result = await nautobot_service.graphql_query(_GRAPHQL_QUERY_DEVICES, {"name": [pk_value]})
+                result = await nautobot_service.graphql_query(
+                    _GRAPHQL_QUERY_DEVICES, {"name": [pk_value]}
+                )
                 devices = result.get("data", {}).get("devices", [])
                 if devices:
                     return devices[0]["id"]
@@ -844,7 +877,9 @@ class CsvImportService:
                 return None
 
             elif import_type == "ip-addresses":
-                result = await nautobot_service.graphql_query(_GRAPHQL_QUERY_IP_ADDRESSES, {"address": [pk_value]})
+                result = await nautobot_service.graphql_query(
+                    _GRAPHQL_QUERY_IP_ADDRESSES, {"address": [pk_value]}
+                )
                 addresses = result.get("data", {}).get("ip_addresses", [])
                 if addresses:
                     return addresses[0]["id"]

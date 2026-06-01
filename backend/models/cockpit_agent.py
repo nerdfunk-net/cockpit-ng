@@ -25,8 +25,12 @@ class CommandRequest(BaseModel):
     """Request to send command to agent"""
 
     agent_id: str = Field(..., description="Agent hostname/ID")
-    command: str = Field(..., description="Command name (echo, git_pull, docker_restart)")
-    params: Dict[str, Any] = Field(default_factory=dict, description="Command parameters")
+    command: str = Field(
+        ..., description="Command name (echo, git_pull, docker_restart)"
+    )
+    params: Dict[str, Any] = Field(
+        default_factory=dict, description="Command parameters"
+    )
     timeout: Optional[int] = Field(
         default=None,
         description=(
@@ -95,7 +99,9 @@ class AgentListResponse(BaseModel):
 class PingRequest(BaseModel):
     """Request to ping devices from an inventory via a cockpit agent"""
 
-    inventory_id: int = Field(..., description="Saved inventory ID to resolve devices from")
+    inventory_id: int = Field(
+        ..., description="Saved inventory ID to resolve devices from"
+    )
 
 
 class PingIpResult(BaseModel):

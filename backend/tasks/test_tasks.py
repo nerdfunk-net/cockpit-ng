@@ -89,7 +89,9 @@ def debug_wait_task(self, duration: int = 60, job_run_id: int = None) -> dict:
 
     _jrs = service_factory.build_job_run_service()
 
-    logger.info("DEBUG wait task started (duration=%ss, job_run_id=%s)", duration, job_run_id)
+    logger.info(
+        "DEBUG wait task started (duration=%ss, job_run_id=%s)", duration, job_run_id
+    )
 
     try:
         if job_run_id:

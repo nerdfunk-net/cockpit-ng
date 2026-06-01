@@ -63,7 +63,9 @@ def tree_to_operations(tree_data: Dict[str, Any]) -> List[LogicalOperation]:
 
     internal_logic = tree_data.get("internalLogic", "AND")
 
-    logger.info("Converting tree with %s items, internal logic: %s", len(items), internal_logic)
+    logger.info(
+        "Converting tree with %s items, internal logic: %s", len(items), internal_logic
+    )
 
     # Convert all items
     regular_items = []
@@ -73,7 +75,11 @@ def tree_to_operations(tree_data: Dict[str, Any]) -> List[LogicalOperation]:
         converted = _convert_item(item)
 
         # Check if this is a NOT group
-        if isinstance(item, dict) and item.get("type") == "group" and item.get("logic") == "NOT":
+        if (
+            isinstance(item, dict)
+            and item.get("type") == "group"
+            and item.get("logic") == "NOT"
+        ):
             # Mark as NOT operation
             converted.operation_type = "NOT"
             not_items.append(converted)

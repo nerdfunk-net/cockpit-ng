@@ -30,7 +30,9 @@ async def get_pending_changes(
     """Get pending configuration changes."""
     try:
         result = await service.get_pending_changes()
-        return CheckMKOperationResponse(success=True, message="Retrieved pending changes successfully", data=result)
+        return CheckMKOperationResponse(
+            success=True, message="Retrieved pending changes successfully", data=result
+        )
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
@@ -81,7 +83,9 @@ async def activate_changes_with_etag(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to activate changes with ETag {etag}", e)
+        raise_internal_server_error(
+            logger, f"Failed to activate changes with ETag {etag}", e
+        )
 
 
 # Static path MUST come before parameterised path (fixes main.py route ordering bug)
@@ -135,7 +139,9 @@ async def get_activation_status(
         )
 
 
-@router.post("/activation/{activation_id}/wait", response_model=CheckMKOperationResponse)
+@router.post(
+    "/activation/{activation_id}/wait", response_model=CheckMKOperationResponse
+)
 async def wait_for_activation_completion(
     activation_id: str,
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
@@ -154,4 +160,6 @@ async def wait_for_activation_completion(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to wait for activation {activation_id}", e)
+        raise_internal_server_error(
+            logger, f"Failed to wait for activation {activation_id}", e
+        )

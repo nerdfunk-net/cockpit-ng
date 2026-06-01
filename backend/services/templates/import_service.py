@@ -74,7 +74,9 @@ class TemplateImportService:
 
         for yaml_path in request.yaml_file_paths or []:
             try:
-                template_data = self._build_template_data_from_yaml(yaml_path, request.default_category, username)
+                template_data = self._build_template_data_from_yaml(
+                    yaml_path, request.default_category, username
+                )
             except Exception as exc:
                 failed.append(yaml_path)
                 errors[yaml_path] = str(exc)

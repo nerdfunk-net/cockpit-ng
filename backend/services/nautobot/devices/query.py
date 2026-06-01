@@ -294,7 +294,9 @@ class DeviceQueryService:
                 if cached_result is not None:
                     logger.debug("Cache hit for devices list: %s", cache_key)
                     return cached_result
-            return await self._query_by_name_and_location(name_ic, location_id, limit, offset, cache_key)
+            return await self._query_by_name_and_location(
+                name_ic, location_id, limit, offset, cache_key
+            )
 
         # Check cache first (legacy filter_type/filter_value path)
         cache_key = get_device_list_cache_key(filter_type, filter_value, limit, offset)
@@ -310,15 +312,25 @@ class DeviceQueryService:
         # Route to appropriate query method based on filter type
         if filter_type and filter_value:
             if filter_type == "name":
-                return await self._query_by_name(filter_value, limit, offset, cache_key, use_contains=False)
+                return await self._query_by_name(
+                    filter_value, limit, offset, cache_key, use_contains=False
+                )
             elif filter_type == "name__ic":
-                return await self._query_by_name(filter_value, limit, offset, cache_key, use_contains=True)
+                return await self._query_by_name(
+                    filter_value, limit, offset, cache_key, use_contains=True
+                )
             elif filter_type == "location":
-                return await self._query_by_location(filter_value, limit, offset, cache_key)
+                return await self._query_by_location(
+                    filter_value, limit, offset, cache_key
+                )
             elif filter_type == "prefix":
-                return await self._query_by_prefix(filter_value, limit, offset, cache_key)
+                return await self._query_by_prefix(
+                    filter_value, limit, offset, cache_key
+                )
             elif filter_type == "ip_addresses":
-                return await self._query_by_ip_addresses(filter_value, limit, offset, cache_key)
+                return await self._query_by_ip_addresses(
+                    filter_value, limit, offset, cache_key
+                )
 
         # No filter - return all devices
         return await self._query_all_devices(limit, offset, cache_key)
@@ -353,9 +365,13 @@ class DeviceQueryService:
           }}
         }}
         """
-        count_result = await self._nb.graphql_query(count_query, {"name_filter": [name_filter]})
+        count_result = await self._nb.graphql_query(
+            count_query, {"name_filter": [name_filter]}
+        )
         if "errors" in count_result:
-            raise NautobotAPIError(f"GraphQL errors in count query: {count_result['errors']}")
+            raise NautobotAPIError(
+                f"GraphQL errors in count query: {count_result['errors']}"
+            )
         total_count = len(count_result["data"]["devices"])
 
         # Get paginated data
@@ -630,7 +646,9 @@ class DeviceQueryService:
             """
             count_result = await self._nb.graphql_query(count_query, {})
             if "errors" in count_result:
-                raise NautobotAPIError(f"GraphQL errors in count query: {count_result['errors']}")
+                raise NautobotAPIError(
+                    f"GraphQL errors in count query: {count_result['errors']}"
+                )
             total_count = len(count_result["data"]["devices"])
 
         return self._build_response(devices, total_count, limit, offset, cache_key)

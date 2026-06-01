@@ -159,7 +159,9 @@ class FakeCheckMKClient:
         name = folder_id.split("~")[-1]
         self._folders[folder_id] = _folder_envelope(name, title, parent)
 
-    def seed_monitored_host(self, hostname: str, attributes: dict | None = None) -> None:
+    def seed_monitored_host(
+        self, hostname: str, attributes: dict | None = None
+    ) -> None:
         """Pre-populate a monitored host (live monitoring, not config)."""
         self._monitored_hosts[hostname] = {
             "host_name": hostname,
@@ -190,7 +192,9 @@ class FakeCheckMKClient:
     def _check_error(self, method: str, key: Any = None) -> None:
         status = self._error_on.get((method, key)) or self._error_on.get((method, "*"))
         if status is not None:
-            raise CheckMKAPIError(f"Simulated error on {method}({key})", status_code=status)
+            raise CheckMKAPIError(
+                f"Simulated error on {method}({key})", status_code=status
+            )
 
     def _log(self, method: str, *args: Any) -> None:
         self.call_log.append((method, args))
@@ -239,7 +243,9 @@ class FakeCheckMKClient:
         self._pending_changes.append({"type": "create_host", "hostname": hostname})
         return envelope
 
-    def update_host(self, hostname: str, attributes: dict, etag: str | None = None) -> dict:
+    def update_host(
+        self, hostname: str, attributes: dict, etag: str | None = None
+    ) -> dict:
         self._log("update_host", hostname)
         self._check_error("update_host", hostname)
         if hostname not in self._hosts:
@@ -287,7 +293,9 @@ class FakeCheckMKClient:
             if hostname not in self._hosts:
                 envelope = _host_envelope(hostname, attributes, folder)
                 self._hosts[hostname] = envelope
-                self._pending_changes.append({"type": "create_host", "hostname": hostname})
+                self._pending_changes.append(
+                    {"type": "create_host", "hostname": hostname}
+                )
                 results.append(envelope)
         return {"value": results}
 
@@ -296,7 +304,9 @@ class FakeCheckMKClient:
         for h in hosts:
             hostname = h.get("host_name")
             if hostname and hostname in self._hosts:
-                self._hosts[hostname]["extensions"]["attributes"].update(h.get("attributes", {}))
+                self._hosts[hostname]["extensions"]["attributes"].update(
+                    h.get("attributes", {})
+                )
         return {"value": []}
 
     def bulk_delete_hosts(self, hostnames: list[str]) -> dict:
@@ -341,12 +351,16 @@ class FakeCheckMKClient:
     def get_folder_etag(self, folder_path: str) -> str:
         return '"fake-folder-etag"'
 
-    def create_folder(self, name: str, title: str, parent: str = "~", attributes: dict | None = None) -> dict:
+    def create_folder(
+        self, name: str, title: str, parent: str = "~", attributes: dict | None = None
+    ) -> dict:
         self._log("create_folder", name)
         self._check_error("create_folder", name)
         folder_id = (parent.rstrip("~") + "~" + name) if parent != "~" else ("~" + name)
         if folder_id in self._folders:
-            raise CheckMKAPIError(f"Folder '{name}' already exists in '{parent}'", status_code=400)
+            raise CheckMKAPIError(
+                f"Folder '{name}' already exists in '{parent}'", status_code=400
+            )
         envelope = _folder_envelope(name, title, parent)
         envelope["id"] = folder_id
         self._folders[folder_id] = envelope
@@ -382,7 +396,9 @@ class FakeCheckMKClient:
         del self._folders[folder_path]
         return True
 
-    def move_folder(self, folder_path: str, destination: str, etag: str | None = None) -> dict:
+    def move_folder(
+        self, folder_path: str, destination: str, etag: str | None = None
+    ) -> dict:
         self._log("move_folder", folder_path)
         self._check_error("move_folder", folder_path)
         if folder_path not in self._folders:
@@ -403,7 +419,9 @@ class FakeCheckMKClient:
         self._log("get_host_group", group_name)
         self._check_error("get_host_group", group_name)
         if group_name not in self._host_groups:
-            raise CheckMKAPIError(f"Host group '{group_name}' not found", status_code=404)
+            raise CheckMKAPIError(
+                f"Host group '{group_name}' not found", status_code=404
+            )
         return self._host_groups[group_name]
 
     def get_host_group_etag(self, name: str) -> str:
@@ -413,12 +431,16 @@ class FakeCheckMKClient:
         self._log("create_host_group", name)
         self._check_error("create_host_group", name)
         if name in self._host_groups:
-            raise CheckMKAPIError(f"Host group '{name}' already exists", status_code=400)
+            raise CheckMKAPIError(
+                f"Host group '{name}' already exists", status_code=400
+            )
         group = {"name": name, "alias": alias or name}
         self._host_groups[name] = group
         return group
 
-    def update_host_group(self, name: str, alias: str | None = None, etag: str | None = None) -> dict:
+    def update_host_group(
+        self, name: str, alias: str | None = None, etag: str | None = None
+    ) -> dict:
         self._log("update_host_group", name)
         self._check_error("update_host_group", name)
         if name not in self._host_groups:
@@ -522,7 +544,9 @@ class FakeCheckMKClient:
             group["help"] = help
         return group
 
-    def delete_host_tag_group(self, name: str, repair: bool = False, mode: str | None = None) -> bool:
+    def delete_host_tag_group(
+        self, name: str, repair: bool = False, mode: str | None = None
+    ) -> bool:
         self._log("delete_host_tag_group", name)
         self._check_error("delete_host_tag_group", name)
         if name not in self._tag_groups:
@@ -596,12 +620,16 @@ class FakeCheckMKClient:
     def get_activation_status(self, activation_id: str) -> dict:
         self._log("get_activation_status", activation_id)
         if activation_id not in self._activations:
-            raise CheckMKAPIError(f"Activation '{activation_id}' not found", status_code=404)
+            raise CheckMKAPIError(
+                f"Activation '{activation_id}' not found", status_code=404
+            )
         return self._activations[activation_id]
 
     def wait_for_activation_completion(self, activation_id: str) -> dict:
         self._log("wait_for_activation_completion", activation_id)
-        return self._activations.get(activation_id, {"id": activation_id, "status": "completed"})
+        return self._activations.get(
+            activation_id, {"id": activation_id, "status": "completed"}
+        )
 
     def get_running_activations(self) -> dict:
         self._log("get_running_activations")
@@ -612,7 +640,9 @@ class FakeCheckMKClient:
     # Monitoring (live data)
     # =========================================================================
 
-    def get_all_monitored_hosts(self, columns: list[str] | None = None, query: str | None = None) -> dict:
+    def get_all_monitored_hosts(
+        self, columns: list[str] | None = None, query: str | None = None
+    ) -> dict:
         self._log("get_all_monitored_hosts")
         self._check_error("get_all_monitored_hosts")
         # Merge seeded monitored hosts with config hosts
@@ -632,7 +662,9 @@ class FakeCheckMKClient:
         }
         return {"value": list(monitored.values())}
 
-    def get_monitored_host(self, hostname: str, columns: list[str] | None = None) -> dict:
+    def get_monitored_host(
+        self, hostname: str, columns: list[str] | None = None
+    ) -> dict:
         self._log("get_monitored_host", hostname)
         self._check_error("get_monitored_host", hostname)
         if hostname in self._monitored_hosts:
@@ -734,7 +766,9 @@ class FakeCheckMKClient:
         self._downtimes[hostname] = downtime
         return {"success": True, "hostname": hostname}
 
-    def add_host_comment(self, hostname: str, comment: str = "", persistent: bool = False) -> dict:
+    def add_host_comment(
+        self, hostname: str, comment: str = "", persistent: bool = False
+    ) -> dict:
         self._log("add_host_comment", hostname)
         self._check_error("add_host_comment", hostname)
         entry = {"hostname": hostname, "comment": comment, "persistent": persistent}

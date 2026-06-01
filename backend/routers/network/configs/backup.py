@@ -32,15 +32,21 @@ class BulkBackupTrigger(BaseModel):
     device_ids: list[str]
 
 
-@router.get("/devices", dependencies=[Depends(require_permission("network.backup", "read"))])
+@router.get(
+    "/devices", dependencies=[Depends(require_permission("network.backup", "read"))]
+)
 async def get_backup_devices(
     name: Optional[str] = Query(None, description="Filter by device name"),
     role: Optional[str] = Query(None, description="Filter by role"),
     location: Optional[str] = Query(None, description="Filter by location"),
     device_type: Optional[str] = Query(None, description="Filter by device type"),
     status: Optional[str] = Query(None, description="Filter by status"),
-    last_backup_date: Optional[str] = Query(None, description="Filter by last backup date"),
-    date_comparison: Optional[str] = Query(None, description="Date comparison operator (lte, lt)"),
+    last_backup_date: Optional[str] = Query(
+        None, description="Filter by last backup date"
+    ),
+    date_comparison: Optional[str] = Query(
+        None, description="Date comparison operator (lte, lt)"
+    ),
     sort_by: Optional[str] = Query(None, description="Column to sort by"),
     sort_order: str = Query("asc", description="Sort order (asc, desc)"),
     limit: int = Query(50, ge=1, le=200, description="Page size"),
@@ -88,7 +94,9 @@ async def get_backup_devices(
         pagination = {"limit": limit, "offset": offset}
         sorting = {"column": sort_by, "order": sort_order}
 
-        result = await backup_service.get_devices_for_backup(db, filters, pagination, sorting)
+        result = await backup_service.get_devices_for_backup(
+            db, filters, pagination, sorting
+        )
 
         return result
 
@@ -96,7 +104,9 @@ async def get_backup_devices(
         raise_internal_server_error(logger, "Internal error", e)
 
 
-@router.post("/trigger", dependencies=[Depends(require_permission("network.backup", "write"))])
+@router.post(
+    "/trigger", dependencies=[Depends(require_permission("network.backup", "write"))]
+)
 async def trigger_backup(
     payload: BackupTrigger,
     db: Session = Depends(get_db),
@@ -119,7 +129,9 @@ async def trigger_backup(
         - device_id: Device ID that was backed up
     """
     try:
-        result = await backup_service.trigger_device_backup(db, payload.device_id, user["user_id"])
+        result = await backup_service.trigger_device_backup(
+            db, payload.device_id, user["user_id"]
+        )
         return result
 
     except ValueError as e:
@@ -157,7 +169,9 @@ async def trigger_bulk_backup(
         if not payload.device_ids:
             raise HTTPException(status_code=400, detail="No device IDs provided")
 
-        result = await backup_service.trigger_bulk_backup(db, payload.device_ids, user["user_id"])
+        result = await backup_service.trigger_bulk_backup(
+            db, payload.device_ids, user["user_id"]
+        )
         return result
 
     except ValueError as e:
@@ -255,7 +269,9 @@ async def download_backup(
         return Response(
             content=content,
             media_type="text/plain",
-            headers={"Content-Disposition": f"attachment; filename={device_id}_backup_{backup_id[:8]}.txt"},
+            headers={
+                "Content-Disposition": f"attachment; filename={device_id}_backup_{backup_id[:8]}.txt"
+            },
         )
 
     except ValueError as e:
@@ -292,7 +308,9 @@ async def restore_backup(
         - message: Status message
     """
     try:
-        result = await backup_service.restore_backup(db, device_id, backup_id, user["user_id"])
+        result = await backup_service.restore_backup(
+            db, device_id, backup_id, user["user_id"]
+        )
         return result
 
     except ValueError as e:

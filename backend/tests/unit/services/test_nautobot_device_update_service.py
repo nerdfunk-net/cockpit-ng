@@ -38,7 +38,9 @@ def _service_with_mocked_facades() -> DeviceUpdateService:
     svc = DeviceUpdateService(FakeNautobotService())
     svc.common = MagicMock()
     svc.common.resolve_device_id = AsyncMock(return_value=DEVICE_ID)
-    svc.common.get_device_details = AsyncMock(side_effect=[_device(), _device(status=STATUS_ACTIVE_ID)])
+    svc.common.get_device_details = AsyncMock(
+        side_effect=[_device(), _device(status=STATUS_ACTIVE_ID)]
+    )
     svc.common.extract_primary_ip_address = AsyncMock(return_value="10.0.0.1/24")
     svc.common.verify_device_updates = AsyncMock(return_value=(True, []))
     svc.interface_manager = MagicMock()
@@ -85,7 +87,9 @@ async def test_resolve_device_id_fetches_name_when_identifier_is_ip() -> None:
     )
     svc = DeviceUpdateService(fake)
 
-    result = await svc._resolve_device_id({"ip_address": "10.0.0.1/24"}, matching_strategy="exact")
+    result = await svc._resolve_device_id(
+        {"ip_address": "10.0.0.1/24"}, matching_strategy="exact"
+    )
 
     assert result == (DEVICE_ID, "router-from-ip")
 
@@ -158,7 +162,9 @@ async def test_update_device_returns_noop_when_no_fields_or_interfaces() -> None
 @pytest.mark.asyncio
 @pytest.mark.unit
 @pytest.mark.nautobot
-async def test_update_device_processes_interfaces_without_device_field_updates() -> None:
+async def test_update_device_processes_interfaces_without_device_field_updates() -> (
+    None
+):
     """Interfaces are still processed when no device properties change."""
     svc = _service_with_mocked_facades()
     svc.validate_update_data = AsyncMock(return_value=({}, None))
@@ -166,14 +172,18 @@ async def test_update_device_processes_interfaces_without_device_field_updates()
     result = await svc.update_device(
         {"name": "router-01"},
         {},
-        interfaces=[{"name": "Loopback0", "type": "virtual", "ip_address": "10.0.0.2/32"}],
+        interfaces=[
+            {"name": "Loopback0", "type": "virtual", "ip_address": "10.0.0.2/32"}
+        ],
     )
 
     assert result["success"] is True
     assert result["interfaces_created"] == 1
     svc.interface_manager.update_device_interfaces.assert_awaited_once_with(
         device_id=DEVICE_ID,
-        interfaces=[{"name": "Loopback0", "type": "virtual", "ip_address": "10.0.0.2/32"}],
+        interfaces=[
+            {"name": "Loopback0", "type": "virtual", "ip_address": "10.0.0.2/32"}
+        ],
         add_prefixes_automatically=True,
     )
 
@@ -184,7 +194,9 @@ async def test_update_device_processes_interfaces_without_device_field_updates()
 async def test_update_device_adds_verification_warning_on_mismatch() -> None:
     """Verification mismatches are surfaced as warnings in the result."""
     svc = _service_with_mocked_facades()
-    svc.validate_update_data = AsyncMock(return_value=({"status": STATUS_ACTIVE_ID}, None))
+    svc.validate_update_data = AsyncMock(
+        return_value=({"status": STATUS_ACTIVE_ID}, None)
+    )
     svc._update_device_properties = AsyncMock(return_value=["status"])
     svc.common.verify_device_updates = AsyncMock(
         return_value=(

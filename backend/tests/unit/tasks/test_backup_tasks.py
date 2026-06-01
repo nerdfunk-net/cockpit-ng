@@ -22,7 +22,9 @@ def _backup_result(device_id: str = "dev-1", error: str | None = None) -> MagicM
     result = MagicMock()
     result.error = error
     result.to_dict.return_value = (
-        {"device_id": device_id, "error": error} if error else {"device_id": device_id, "hostname": "router-01"}
+        {"device_id": device_id, "error": error}
+        if error
+        else {"device_id": device_id, "hostname": "router-01"}
     )
     return result
 
@@ -46,7 +48,9 @@ def test_backup_single_device_task_delegates_to_service() -> None:
 
     assert result == {"device_id": "dev-1", "hostname": "router-01"}
     backup_service.backup_single_device.assert_called_once()
-    assert backup_service.backup_single_device.call_args.kwargs["repo_dir"] == Path("/tmp/repo")
+    assert backup_service.backup_single_device.call_args.kwargs["repo_dir"] == Path(
+        "/tmp/repo"
+    )
 
 
 @pytest.mark.unit
@@ -76,7 +80,12 @@ def test_backup_devices_task_sequential_success_commits_and_prepares_result(
     tmp_path,
 ) -> None:
     """Sequential backup path backs up devices, commits, and returns service result."""
-    repository = {"id": 1, "name": "configs", "url": "git@example/repo.git", "branch": "main"}
+    repository = {
+        "id": 1,
+        "name": "configs",
+        "url": "git@example/repo.git",
+        "branch": "main",
+    }
     credential = {"name": "ssh", "username": "admin", "password": "secret"}
     git_repo = SimpleNamespace(
         active_branch="main",
@@ -124,7 +133,9 @@ def test_backup_devices_task_sequential_success_commits_and_prepares_result(
 
 
 @pytest.mark.unit
-def test_finalize_backup_task_commits_successes_and_marks_job_complete(tmp_path) -> None:
+def test_finalize_backup_task_commits_successes_and_marks_job_complete(
+    tmp_path,
+) -> None:
     """Finalize task commits backed-up devices and updates the tracked job run."""
     git_service = MagicMock()
     git_service.commit_and_push.return_value = SimpleNamespace(

@@ -26,7 +26,9 @@ VIF_ID = "ac000000-0000-0000-0002-000000000001"
 async def test_assign_ip_to_virtual_interface_skips_existing_assignment() -> None:
     """An existing VM interface IP assignment is not recreated."""
     mock_nb = MagicMock()
-    mock_nb.rest_request = AsyncMock(return_value={"count": 1, "results": [{"id": "assoc"}]})
+    mock_nb.rest_request = AsyncMock(
+        return_value={"count": 1, "results": [{"id": "assoc"}]}
+    )
     manager = VirtualMachineManager(mock_nb)
 
     result = await manager.assign_ip_to_virtual_interface(IP_ID, VIF_ID)

@@ -41,7 +41,9 @@ def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
         )
 
         # Update task state
-        self.update_state(state="PROGRESS", meta={"status": "Fetching devices from Nautobot..."})
+        self.update_state(
+            state="PROGRESS", meta={"status": "Fetching devices from Nautobot..."}
+        )
 
         # GraphQL query for all devices
         query = """
@@ -141,7 +143,9 @@ def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
 
                 # Update progress every 50 devices or on last device
                 if (i + 1) % 50 == 0 or i == total_devices - 1:
-                    progress_msg = format_progress_message(cached_count, total_devices, "Cached")
+                    progress_msg = format_progress_message(
+                        cached_count, total_devices, "Cached"
+                    )
                     self.update_state(
                         state="PROGRESS",
                         meta={
@@ -173,7 +177,9 @@ def cache_all_devices_task(self, job_run_id: int = None) -> Dict[str, Any]:
                 len(lightweight_devices),
             )
         except Exception as e:
-            logger.error("Task %s: Failed to cache bulk collection: %s", self.request.id, e)
+            logger.error(
+                "Task %s: Failed to cache bulk collection: %s", self.request.id, e
+            )
 
         # Determine final status
         if failed_count == 0:
@@ -252,7 +258,9 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
         cache_service = service_factory.build_cache_service()
         from services.background_jobs.base import safe_graphql_query
 
-        self.update_state(state="PROGRESS", meta={"status": f"Fetching device {device_id}..."})
+        self.update_state(
+            state="PROGRESS", meta={"status": f"Fetching device {device_id}..."}
+        )
 
         # GraphQL query for single device
         query = """
@@ -300,7 +308,9 @@ def cache_single_device_task(self, device_id: str) -> Dict[str, Any]:
         cache_key = f"nautobot:devices:{device_id}"
         cache_service.set(cache_key, device, 3600)  # 1 hour TTL
 
-        logger.info("Successfully cached device %s (ID: %s)", device.get("name"), device_id)
+        logger.info(
+            "Successfully cached device %s (ID: %s)", device.get("name"), device_id
+        )
 
         return {
             "status": "completed",

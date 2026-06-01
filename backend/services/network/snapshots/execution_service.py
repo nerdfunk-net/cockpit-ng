@@ -51,7 +51,9 @@ class SnapshotExecutionService:
             Rendered path
         """
         # Start with device name and timestamp
-        device_name = device.get("name", "unknown") if isinstance(device, dict) else str(device)
+        device_name = (
+            device.get("name", "unknown") if isinstance(device, dict) else str(device)
+        )
         rendered = path_template.replace("{device_name}", device_name)
         rendered = rendered.replace("{timestamp}", timestamp)
 
@@ -60,7 +62,11 @@ class SnapshotExecutionService:
             rendered = rendered.replace("{template_name}", template_name)
 
         # Handle custom fields
-        if isinstance(device, dict) and "custom_fields" in device and device["custom_fields"]:
+        if (
+            isinstance(device, dict)
+            and "custom_fields" in device
+            and device["custom_fields"]
+        ):
             for key, value in device["custom_fields"].items():
                 placeholder = f"{{custom_field.{key}}}"
                 if placeholder in rendered:
@@ -131,7 +137,9 @@ class SnapshotExecutionService:
             logger.error("Failed to save to Git: %s", e, exc_info=True)
             return None
 
-    async def execute_snapshot(self, request: SnapshotExecuteRequest, username: str) -> SnapshotResponse:
+    async def execute_snapshot(
+        self, request: SnapshotExecuteRequest, username: str
+    ) -> SnapshotResponse:
         """
         Execute a snapshot on multiple devices.
 
@@ -152,7 +160,9 @@ class SnapshotExecutionService:
 
         # Validate credentials
         if not request.credential_id and (not request.username or not request.password):
-            raise ValueError("Either credential_id or both username and password must be provided")
+            raise ValueError(
+                "Either credential_id or both username and password must be provided"
+            )
 
         # Get credentials
         if request.credential_id is not None:
@@ -160,18 +170,28 @@ class SnapshotExecutionService:
             try:
                 cred_svc = service_factory.build_credentials_service()
                 # Get credential details - include both general and private credentials
-                general_creds = cred_svc.list_credentials(include_expired=False, source="general")
-                private_creds = cred_svc.list_credentials(include_expired=False, source="private")
+                general_creds = cred_svc.list_credentials(
+                    include_expired=False, source="general"
+                )
+                private_creds = cred_svc.list_credentials(
+                    include_expired=False, source="private"
+                )
                 user_private = [c for c in private_creds if c.get("owner") == username]
                 credentials = general_creds + user_private
 
-                credential = next((c for c in credentials if c["id"] == request.credential_id), None)
+                credential = next(
+                    (c for c in credentials if c["id"] == request.credential_id), None
+                )
 
                 if not credential:
-                    raise ValueError(f"Credential with ID {request.credential_id} not found or not accessible")
+                    raise ValueError(
+                        f"Credential with ID {request.credential_id} not found or not accessible"
+                    )
 
                 if credential["type"] != "ssh":
-                    raise ValueError(f"Credential must be of type 'ssh', got '{credential['type']}'")
+                    raise ValueError(
+                        f"Credential must be of type 'ssh', got '{credential['type']}'"
+                    )
 
                 # Get decrypted password
                 cred_username = credential["username"]
@@ -210,14 +230,22 @@ class SnapshotExecutionService:
         # Create result records for each device
         device_results = []
         for device in request.devices:
-            device_name = device.get("name", "unknown") if isinstance(device, dict) else str(device)
+            device_name = (
+                device.get("name", "unknown")
+                if isinstance(device, dict)
+                else str(device)
+            )
 
             # Extract IP safely
-            primary_ip4 = device.get("primary_ip4") if isinstance(device, dict) else None
+            primary_ip4 = (
+                device.get("primary_ip4") if isinstance(device, dict) else None
+            )
             if isinstance(primary_ip4, dict):
                 device_ip = primary_ip4.get("address", "").split("/")[0]
             elif isinstance(primary_ip4, str):
-                device_ip = primary_ip4.split("/")[0] if "/" in primary_ip4 else primary_ip4
+                device_ip = (
+                    primary_ip4.split("/")[0] if "/" in primary_ip4 else primary_ip4
+                )
             else:
                 device_ip = ""
 
@@ -316,7 +344,9 @@ class SnapshotExecutionService:
                     json_content = json.dumps(snapshot_data, indent=2, default=str)
 
                     # Render file path
-                    file_path = self._render_path(request.snapshot_path, device, timestamp, template_name)
+                    file_path = self._render_path(
+                        request.snapshot_path, device, timestamp, template_name
+                    )
 
                     # Save to Git
                     commit_hash = self._save_to_git(
@@ -385,7 +415,9 @@ class SnapshotExecutionService:
             return SnapshotResponse.from_orm(snapshot)
         return None
 
-    def list_snapshots(self, username: Optional[str] = None, limit: int = 100) -> List[SnapshotResponse]:
+    def list_snapshots(
+        self, username: Optional[str] = None, limit: int = 100
+    ) -> List[SnapshotResponse]:
         """List snapshots with optional filtering."""
         snapshots = self.snapshot_repo.get_all(executed_by=username, limit=limit)
         # Use ListResponse to avoid loading all results
@@ -427,7 +459,9 @@ class SnapshotExecutionService:
         # Get all results with file paths
         results = snapshot.results
         if not results:
-            logger.warning("Snapshot %s has no results, deleting from DB only", snapshot_id)
+            logger.warning(
+                "Snapshot %s has no results, deleting from DB only", snapshot_id
+            )
             return self.snapshot_repo.delete_snapshot(snapshot_id)
 
         # Get git repository
@@ -467,10 +501,14 @@ class SnapshotExecutionService:
                     try:
                         repo.index.remove([str(file_path)])
                     except Exception as e:
-                        logger.warning("Could not remove %s from git index: %s", file_path, e)
+                        logger.warning(
+                            "Could not remove %s from git index: %s", file_path, e
+                        )
 
                 # Commit and push (use add_all to catch any remaining changes)
-                commit_message = f"Delete snapshot: {snapshot.name} ({len(files_to_delete)} files)"
+                commit_message = (
+                    f"Delete snapshot: {snapshot.name} ({len(files_to_delete)} files)"
+                )
                 self._git.commit_and_push(
                     repository=repo_data,
                     message=commit_message,

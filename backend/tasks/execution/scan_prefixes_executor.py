@@ -74,7 +74,9 @@ def execute_scan_prefixes(
         interval_ms = template.get("scan_interval_ms") or 10
         scan_max_ips = template.get("scan_max_ips")
 
-        logger.info("Scanning prefixes with %s=%s", custom_field_name, custom_field_value)
+        logger.info(
+            "Scanning prefixes with %s=%s", custom_field_name, custom_field_value
+        )
         logger.info(
             "Scan options: resolve_dns=%s, ping_count=%s, timeout=%sms, retries=%s, interval=%sms, max_ips=%s",
             resolve_dns,

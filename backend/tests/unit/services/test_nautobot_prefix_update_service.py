@@ -134,7 +134,9 @@ def test_find_prefix_by_prefix_and_namespace_returns_first_match() -> None:
     )
     svc = PrefixUpdateService()
 
-    prefix_id, prefix_data = svc._find_prefix_by_prefix_and_namespace_graphql(mock_nb, "10.0.0.0/24", "Global")
+    prefix_id, prefix_data = svc._find_prefix_by_prefix_and_namespace_graphql(
+        mock_nb, "10.0.0.0/24", "Global"
+    )
 
     assert prefix_id == PREFIX_ID
     assert prefix_data["prefix"] == "10.0.0.0/24"
@@ -240,7 +242,9 @@ def test_run_update_skips_rows_without_update_fields() -> None:
 
     with (
         patch("service_factory.build_nautobot_service", return_value=mock_nb),
-        patch("service_factory.build_job_run_service", side_effect=RuntimeError("unused")),
+        patch(
+            "service_factory.build_job_run_service", side_effect=RuntimeError("unused")
+        ),
     ):
         result = svc.run_update(
             task_context=_task(),

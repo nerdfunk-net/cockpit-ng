@@ -83,7 +83,9 @@ async def update_template(
     """
     service = SnapshotTemplateService()
     try:
-        updated = service.update_template(template_id, template, current_user["username"])
+        updated = service.update_template(
+            template_id, template, current_user["username"]
+        )
         if not updated:
             raise HTTPException(status_code=404, detail="Template not found")
         return updated

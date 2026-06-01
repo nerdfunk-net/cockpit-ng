@@ -28,7 +28,9 @@ class Server(Base):
     is_virtual = Column(Boolean, nullable=False, server_default="false", default=False)
     ansible_facts = Column(JSONB, nullable=True)
     selected_interfaces = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

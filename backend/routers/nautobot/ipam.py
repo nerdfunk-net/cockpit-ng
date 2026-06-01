@@ -262,7 +262,8 @@ async def get_vlans(
             vlans = [
                 vlan
                 for vlan in all_vlans
-                if vlan.get("location") is None or vlan.get("location", {}).get("name") == location
+                if vlan.get("location") is None
+                or vlan.get("location", {}).get("name") == location
             ]
         else:
             # Standard behavior: use GraphQL filter

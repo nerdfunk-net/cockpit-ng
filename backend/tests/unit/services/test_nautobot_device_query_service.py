@@ -27,7 +27,9 @@ def _device(device_id: str = DEVICE_ID, name: str = "router-01") -> dict:
     }
 
 
-def _service(mock_nautobot: MagicMock | None = None, mock_cache: MagicMock | None = None) -> DeviceQueryService:
+def _service(
+    mock_nautobot: MagicMock | None = None, mock_cache: MagicMock | None = None
+) -> DeviceQueryService:
     if mock_nautobot is None:
         mock_nautobot = MagicMock()
         mock_nautobot.graphql_query = AsyncMock()
@@ -100,7 +102,9 @@ async def test_get_device_details_not_found_raises_value_error() -> None:
 async def test_get_devices_all_paginated_builds_navigation_links() -> None:
     """Paginated all-device queries include total count and next URL."""
     first_page = [_device(name="router-01")]
-    all_devices = first_page + [_device("aa000000-0000-0000-0003-000000000002", "router-02")]
+    all_devices = first_page + [
+        _device("aa000000-0000-0000-0003-000000000002", "router-02")
+    ]
     mock_nb = MagicMock()
     mock_nb.graphql_query = AsyncMock(
         side_effect=[
@@ -111,7 +115,9 @@ async def test_get_devices_all_paginated_builds_navigation_links() -> None:
     svc = _service(mock_nb)
 
     with (
-        patch("services.nautobot.devices.query.get_cached_device_list", return_value=None),
+        patch(
+            "services.nautobot.devices.query.get_cached_device_list", return_value=None
+        ),
         patch("services.nautobot.devices.query.cache_device_list") as cache_list,
     ):
         result = await svc.get_devices(limit=1, offset=0, reload=True)
@@ -139,7 +145,9 @@ async def test_get_devices_name_filter_uses_count_then_data_query() -> None:
     svc = _service(mock_nb)
 
     with (
-        patch("services.nautobot.devices.query.get_cached_device_list", return_value=None),
+        patch(
+            "services.nautobot.devices.query.get_cached_device_list", return_value=None
+        ),
         patch("services.nautobot.devices.query.cache_device_list"),
     ):
         result = await svc.get_devices(filter_type="name", filter_value="core-router")
@@ -157,11 +165,15 @@ async def test_get_devices_location_filter_flattens_location_devices() -> None:
     """Location filtering flattens devices from matching locations."""
     device = _device(name="switch-01")
     mock_nb = MagicMock()
-    mock_nb.graphql_query = AsyncMock(return_value={"data": {"locations": [{"name": "DC1", "devices": [device]}]}})
+    mock_nb.graphql_query = AsyncMock(
+        return_value={"data": {"locations": [{"name": "DC1", "devices": [device]}]}}
+    )
     svc = _service(mock_nb)
 
     with (
-        patch("services.nautobot.devices.query.get_cached_device_list", return_value=None),
+        patch(
+            "services.nautobot.devices.query.get_cached_device_list", return_value=None
+        ),
         patch("services.nautobot.devices.query.cache_device_list"),
     ):
         result = await svc.get_devices(filter_type="location", filter_value="DC1")
@@ -180,7 +192,9 @@ async def test_get_devices_graphql_errors_raise_nautobot_api_error() -> None:
     svc = _service(mock_nb)
 
     with (
-        patch("services.nautobot.devices.query.get_cached_device_list", return_value=None),
+        patch(
+            "services.nautobot.devices.query.get_cached_device_list", return_value=None
+        ),
         patch("services.nautobot.devices.query.cache_device_list"),
         pytest.raises(NautobotAPIError, match="GraphQL errors"),
     ):

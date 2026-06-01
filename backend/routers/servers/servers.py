@@ -32,7 +32,9 @@ router = APIRouter(prefix="/api/servers", tags=["servers"])
 
 @router.get("", response_model=ListServersResponse)
 async def list_servers(
-    group_by: Optional[str] = Query(None, description="Group servers by field (location, distribution_release, …)"),
+    group_by: Optional[str] = Query(
+        None, description="Group servers by field (location, distribution_release, …)"
+    ),
     _: dict = Depends(require_permission("servers", "read")),
     service: ServersService = Depends(get_servers_service),
 ) -> ListServersResponse:

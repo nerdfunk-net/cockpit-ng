@@ -12,7 +12,9 @@ from typing import List, Optional
 logger = logging.getLogger(__name__)
 
 
-def get_target_devices(template: dict, job_parameters: Optional[dict] = None) -> Optional[List]:
+def get_target_devices(
+    template: dict, job_parameters: Optional[dict] = None
+) -> Optional[List]:
     """
     Get target devices based on template's inventory source.
 
@@ -42,7 +44,9 @@ def get_target_devices(template: dict, job_parameters: Optional[dict] = None) ->
             from utils.inventory_resolver import resolve_inventory_to_device_ids_sync
 
             # Note: We need to get the username from the template context
-            username = template.get("created_by", "admin")  # Fallback to admin if not specified
+            username = template.get(
+                "created_by", "admin"
+            )  # Fallback to admin if not specified
 
             # Use shared inventory resolver (synchronous version for Celery tasks)
             device_ids = resolve_inventory_to_device_ids_sync(inventory_name, username)
@@ -55,11 +59,15 @@ def get_target_devices(template: dict, job_parameters: Optional[dict] = None) ->
                 )
                 return None
 
-            logger.info("Loaded %s devices from inventory '%s'", len(device_ids), inventory_name)
+            logger.info(
+                "Loaded %s devices from inventory '%s'", len(device_ids), inventory_name
+            )
             return device_ids
 
         except Exception as e:
-            logger.error("Error loading inventory '%s': %s", inventory_name, e, exc_info=True)
+            logger.error(
+                "Error loading inventory '%s': %s", inventory_name, e, exc_info=True
+            )
             return None
 
     return None

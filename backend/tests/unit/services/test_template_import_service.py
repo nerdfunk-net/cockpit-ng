@@ -139,7 +139,9 @@ def test_import_yaml_bulk_records_descriptor_errors(tmp_path) -> None:
     service = TemplateImportService(MagicMock())
 
     result = service.import_templates(
-        TemplateImportRequest(source_type="yaml_bulk", yaml_file_paths=[str(descriptor)]),
+        TemplateImportRequest(
+            source_type="yaml_bulk", yaml_file_paths=[str(descriptor)]
+        ),
         username="alice",
     )
 

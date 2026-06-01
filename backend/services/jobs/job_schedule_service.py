@@ -84,7 +84,9 @@ class JobScheduleService:
         is_global: Optional[bool] = None,
         is_active: Optional[bool] = None,
     ) -> List[Dict[str, Any]]:
-        schedules = self._repo.get_with_filters(user_id=user_id, is_global=is_global, is_active=is_active)
+        schedules = self._repo.get_with_filters(
+            user_id=user_id, is_global=is_global, is_active=is_active
+        )
         return [self._to_dict(s) for s in schedules]
 
     def update_job_schedule(
@@ -142,9 +144,15 @@ class JobScheduleService:
 
         if schedule_changed or active_changed:
             merged = {
-                "schedule_type": update_data.get("schedule_type", current.get("schedule_type")),
-                "cron_expression": update_data.get("cron_expression", current.get("cron_expression")),
-                "interval_minutes": update_data.get("interval_minutes", current.get("interval_minutes")),
+                "schedule_type": update_data.get(
+                    "schedule_type", current.get("schedule_type")
+                ),
+                "cron_expression": update_data.get(
+                    "cron_expression", current.get("cron_expression")
+                ),
+                "interval_minutes": update_data.get(
+                    "interval_minutes", current.get("interval_minutes")
+                ),
                 "start_time": update_data.get("start_time", current.get("start_time")),
                 "start_date": update_data.get("start_date", current.get("start_date")),
             }
@@ -230,7 +238,9 @@ class JobScheduleService:
         return self.get_job_schedule(job_id)
 
     @staticmethod
-    def calculate_next_run(schedule: Dict[str, Any], base_time: Optional[datetime] = None) -> Optional[datetime]:
+    def calculate_next_run(
+        schedule: Dict[str, Any], base_time: Optional[datetime] = None
+    ) -> Optional[datetime]:
         if base_time is None:
             base_time = datetime.now(timezone.utc)
 
@@ -244,7 +254,9 @@ class JobScheduleService:
                 cron = croniter(schedule["cron_expression"], base_time)
                 return cron.get_next(datetime)
             except (ValueError, KeyError) as e:
-                logger.error("Invalid cron expression: %s: %s", schedule["cron_expression"], e)
+                logger.error(
+                    "Invalid cron expression: %s: %s", schedule["cron_expression"], e
+                )
                 return None
 
         elif schedule_type == "interval":
@@ -252,13 +264,17 @@ class JobScheduleService:
             return base_time + timedelta(minutes=interval_minutes)
 
         elif schedule_type == "hourly":
-            return base_time.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+            return base_time.replace(minute=0, second=0, microsecond=0) + timedelta(
+                hours=1
+            )
 
         elif schedule_type == "daily":
             start_time = schedule.get("start_time", "00:00")
             try:
                 hour, minute = map(int, start_time.split(":"))
-                next_run = base_time.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                next_run = base_time.replace(
+                    hour=hour, minute=minute, second=0, microsecond=0
+                )
                 if next_run <= base_time:
                     next_run += timedelta(days=1)
                 return next_run
@@ -269,7 +285,9 @@ class JobScheduleService:
             start_time = schedule.get("start_time", "00:00")
             try:
                 hour, minute = map(int, start_time.split(":"))
-                next_run = base_time.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                next_run = base_time.replace(
+                    hour=hour, minute=minute, second=0, microsecond=0
+                )
                 next_run += timedelta(days=7)
                 return next_run
             except (ValueError, AttributeError):
@@ -327,9 +345,15 @@ class JobScheduleService:
             "is_global": schedule.is_global,
             "user_id": schedule.user_id,
             "credential_id": schedule.credential_id,
-            "job_parameters": json.loads(schedule.job_parameters) if schedule.job_parameters else None,
-            "created_at": schedule.created_at.isoformat() if schedule.created_at else None,
-            "updated_at": schedule.updated_at.isoformat() if schedule.updated_at else None,
+            "job_parameters": json.loads(schedule.job_parameters)
+            if schedule.job_parameters
+            else None,
+            "created_at": schedule.created_at.isoformat()
+            if schedule.created_at
+            else None,
+            "updated_at": schedule.updated_at.isoformat()
+            if schedule.updated_at
+            else None,
             "last_run": schedule.last_run.isoformat() if schedule.last_run else None,
             "next_run": schedule.next_run.isoformat() if schedule.next_run else None,
         }

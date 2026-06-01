@@ -21,7 +21,9 @@ from tasks.execution.deploy_agent_executor import execute_deploy_agent
 
 # Patch targets for AgentDeploymentService dependencies
 _PATCH_GIT_SVC = "service_factory.build_git_service"
-_PATCH_TEMPLATE_SVC = "service_factory.build_template_service"  # correct name (after fix)
+_PATCH_TEMPLATE_SVC = (
+    "service_factory.build_template_service"  # correct name (after fix)
+)
 _PATCH_RENDER_SVC = "service_factory.build_agent_template_render_service"
 _PATCH_SCHEDULE_SVC = "service_factory.build_job_schedule_service"
 _PATCH_TEMPLATE_JOB_SVC = "service_factory.build_job_template_service"
@@ -95,7 +97,11 @@ def test_execute_deploy_agent_single_template_success():
         patch(_PATCH_TEMPLATE_JOB_SVC, return_value=MagicMock()),
         patch(_PATCH_GIT_REPO),
         patch(_PATCH_AGENTS_REPO),
-        patch(_PATCH_DEPLOY, new_callable=AsyncMock, return_value={"success": True, "committed": True}),
+        patch(
+            _PATCH_DEPLOY,
+            new_callable=AsyncMock,
+            return_value={"success": True, "committed": True},
+        ),
     ):
         result = execute_deploy_agent(
             schedule_id=34,

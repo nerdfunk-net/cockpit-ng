@@ -158,7 +158,9 @@ class SnapshotRepository:
         """
         db = get_db_session()
         try:
-            result = db.query(SnapshotResult).filter(SnapshotResult.id == result_id).first()
+            result = (
+                db.query(SnapshotResult).filter(SnapshotResult.id == result_id).first()
+            )
             if result:
                 result.status = status
                 if git_file_path is not None:
@@ -213,11 +215,18 @@ class SnapshotRepository:
         """
         db = get_db_session()
         try:
-            return db.query(Snapshot).options(joinedload(Snapshot.results)).filter(Snapshot.id == snapshot_id).first()
+            return (
+                db.query(Snapshot)
+                .options(joinedload(Snapshot.results))
+                .filter(Snapshot.id == snapshot_id)
+                .first()
+            )
         finally:
             db.close()
 
-    def get_all(self, executed_by: Optional[str] = None, limit: Optional[int] = None) -> List[Snapshot]:
+    def get_all(
+        self, executed_by: Optional[str] = None, limit: Optional[int] = None
+    ) -> List[Snapshot]:
         """
         Get all snapshots with optional filtering.
 
@@ -254,7 +263,9 @@ class SnapshotRepository:
         """
         db = get_db_session()
         try:
-            return db.query(SnapshotResult).filter(SnapshotResult.id == result_id).first()
+            return (
+                db.query(SnapshotResult).filter(SnapshotResult.id == result_id).first()
+            )
         finally:
             db.close()
 
@@ -270,11 +281,17 @@ class SnapshotRepository:
         """
         db = get_db_session()
         try:
-            return db.query(SnapshotResult).filter(SnapshotResult.snapshot_id == snapshot_id).all()
+            return (
+                db.query(SnapshotResult)
+                .filter(SnapshotResult.snapshot_id == snapshot_id)
+                .all()
+            )
         finally:
             db.close()
 
-    def get_result_by_device(self, snapshot_id: int, device_name: str) -> Optional[SnapshotResult]:
+    def get_result_by_device(
+        self, snapshot_id: int, device_name: str
+    ) -> Optional[SnapshotResult]:
         """
         Get result for a specific device in a snapshot.
 
@@ -315,7 +332,9 @@ class SnapshotRepository:
                 return False
 
             # Delete results first (foreign key constraint)
-            db.query(SnapshotResult).filter(SnapshotResult.snapshot_id == snapshot_id).delete()
+            db.query(SnapshotResult).filter(
+                SnapshotResult.snapshot_id == snapshot_id
+            ).delete()
 
             # Delete snapshot
             db.delete(snapshot)

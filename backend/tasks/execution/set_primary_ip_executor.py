@@ -62,7 +62,9 @@ def execute_set_primary_ip(
     params = job_parameters or {}
     tmpl = template or {}
 
-    strategy = params.get("set_primary_ip_strategy") or tmpl.get("set_primary_ip_strategy")
+    strategy = params.get("set_primary_ip_strategy") or tmpl.get(
+        "set_primary_ip_strategy"
+    )
     if not strategy:
         return {"success": False, "error": "No set_primary_ip_strategy provided"}
 
@@ -104,24 +106,36 @@ def _execute_ip_reachable(
     3. Ping all IPs via the selected Cockpit Agent.
     4. For each device with exactly 1 reachable IP, set it as primary in Nautobot.
     """
-    agent_id = params.get("set_primary_ip_agent_id") or tmpl.get("set_primary_ip_agent_id")
+    agent_id = params.get("set_primary_ip_agent_id") or tmpl.get(
+        "set_primary_ip_agent_id"
+    )
     if not agent_id:
         return {"success": False, "error": "No set_primary_ip_agent_id provided"}
 
     start_ms = int(time.time() * 1000)
 
     # Resolve devices from inventory
-    inventory_name: Optional[str] = params.get("inventory_name") or tmpl.get("inventory_name")
+    inventory_name: Optional[str] = params.get("inventory_name") or tmpl.get(
+        "inventory_name"
+    )
     inventory_id: Optional[int] = params.get("inventory_id")
 
-    if not inventory_id and inventory_name and tmpl.get("inventory_source") == "inventory":
+    if (
+        not inventory_id
+        and inventory_name
+        and tmpl.get("inventory_source") == "inventory"
+    ):
         import service_factory
 
         persistence_service = service_factory.build_inventory_persistence_service()
-        inv = persistence_service.get_inventory_by_name(inventory_name, "celery_scheduler")
+        inv = persistence_service.get_inventory_by_name(
+            inventory_name, "celery_scheduler"
+        )
         if inv:
             inventory_id = inv.get("id")
-            logger.info("Resolved inventory '%s' to ID %s", inventory_name, inventory_id)
+            logger.info(
+                "Resolved inventory '%s' to ID %s", inventory_name, inventory_id
+            )
 
     if not inventory_id:
         return {
@@ -133,7 +147,9 @@ def _execute_ip_reachable(
         # device_records: List[{device_name, device_id, ip_objects: [{id, address}]}]
         device_records = asyncio.run(_resolve_devices_with_ip_ids(inventory_id))
     except Exception as exc:
-        logger.error("Failed to resolve inventory %s: %s", inventory_id, exc, exc_info=True)
+        logger.error(
+            "Failed to resolve inventory %s: %s", inventory_id, exc, exc_info=True
+        )
         return {"success": False, "error": f"Failed to resolve inventory: {exc}"}
 
     if not device_records:
@@ -147,7 +163,10 @@ def _execute_ip_reachable(
         {
             "device_name": r["device_name"],
             "device_id": r["device_id"],
-            "ip_addresses": [{"address": obj["address"].split("/")[0], "uuid": obj["id"]} for obj in r["ip_objects"]],
+            "ip_addresses": [
+                {"address": obj["address"].split("/")[0], "uuid": obj["id"]}
+                for obj in r["ip_objects"]
+            ],
         }
         for r in device_records
     ]
@@ -290,9 +309,13 @@ def _execute_ip_reachable(
             continue
 
         try:
-            success = asyncio.run(device_svc.assign_primary_ip_to_device(device_id, ip_uuid))
+            success = asyncio.run(
+                device_svc.assign_primary_ip_to_device(device_id, ip_uuid)
+            )
         except Exception as exc:
-            logger.error("Failed to assign primary IP for device '%s': %s", device_name, exc)
+            logger.error(
+                "Failed to assign primary IP for device '%s': %s", device_name, exc
+            )
             success = False
 
         if success:
@@ -363,7 +386,9 @@ async def _resolve_devices_with_ip_ids(inventory_id: int) -> List[dict]:
         if not device.name:
             continue
         try:
-            result = await nautobot_svc.graphql_query(_DEVICE_IPS_QUERY, {"name": device.name})
+            result = await nautobot_svc.graphql_query(
+                _DEVICE_IPS_QUERY, {"name": device.name}
+            )
             ip_objects = _extract_ip_objects(result, device.name)
         except Exception as exc:
             logger.warning("Failed to fetch IPs for device '%s': %s", device.name, exc)

@@ -105,7 +105,9 @@ def init_worker_process(**kwargs):
         )
 
         # Recreate session factory with new engine
-        database.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=database.engine)
+        database.SessionLocal = sessionmaker(
+            autocommit=False, autoflush=False, bind=database.engine
+        )
 
         # Note: We don't test the connection here because:
         # 1. pool_pre_ping=True will verify connections before use
@@ -113,7 +115,9 @@ def init_worker_process(**kwargs):
         # 3. The first task that uses the DB will validate the connection
         # 4. Lazy connection creation avoids immediate psycopg2 calls after fork
 
-        logger.info("[Worker Init] Database engine initialized successfully for PID=%s", pid)
+        logger.info(
+            "[Worker Init] Database engine initialized successfully for PID=%s", pid
+        )
 
     except Exception as e:
         logger.error("[Worker Init] Failed to initialize database engine: %s", e)
@@ -174,7 +178,9 @@ def init_worker(**kwargs):
     # CRITICAL: Dispose of any database connections in parent process
     # before forking to avoid connection sharing
     if hasattr(database, "engine") and database.engine is not None:
-        logger.info("[Worker Main] Disposing database engine in parent process before forking")
+        logger.info(
+            "[Worker Main] Disposing database engine in parent process before forking"
+        )
         try:
             database.engine.dispose(close=False)
             database.engine = None
@@ -188,7 +194,9 @@ def init_worker(**kwargs):
         except Exception as e:
             logger.warning("[Worker Main] Error resetting session factory: %s", e)
 
-    logger.info("[Worker Main] Worker child processes will initialize their own database engines")
+    logger.info(
+        "[Worker Main] Worker child processes will initialize their own database engines"
+    )
 
 
 @signals.worker_ready.connect

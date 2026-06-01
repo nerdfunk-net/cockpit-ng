@@ -73,7 +73,9 @@ def test_build_checkmk_folder_path_multiple_parts():
 @pytest.mark.unit
 def test_build_checkmk_folder_path_three_levels():
     """Three-level path encoded correctly."""
-    assert build_checkmk_folder_path(["dc1", "access", "floor1"]) == "~dc1~access~floor1"
+    assert (
+        build_checkmk_folder_path(["dc1", "access", "floor1"]) == "~dc1~access~floor1"
+    )
 
 
 # ── split_checkmk_folder_path ──────────────────────────────────────────────────

@@ -22,7 +22,9 @@ from core.models.client_data import ClientHostname, ClientIpAddress, ClientMacAd
 def _require_pg_url() -> str:
     url = os.environ.get("TEST_DATABASE_URL")
     if not url:
-        pytest.skip("PostgreSQL repository tests require TEST_DATABASE_URL (postgresql+psycopg2://...).")
+        pytest.skip(
+            "PostgreSQL repository tests require TEST_DATABASE_URL (postgresql+psycopg2://...)."
+        )
     return url
 
 
@@ -51,7 +53,9 @@ def postgres_engine_client_data(postgres_engine_integration):
 def _truncate_client_data_tables(postgres_engine_client_data):
     with postgres_engine_client_data.begin() as conn:
         conn.execute(
-            text("TRUNCATE TABLE client_hostnames, client_mac_addresses, client_ip_addresses RESTART IDENTITY CASCADE")
+            text(
+                "TRUNCATE TABLE client_hostnames, client_mac_addresses, client_ip_addresses RESTART IDENTITY CASCADE"
+            )
         )
     yield
 
@@ -72,11 +76,15 @@ def client_data_repository_pg(postgres_engine_client_data, monkeypatch):
 def _job_runs_table_present(postgres_engine_integration):
     insp = inspect(postgres_engine_integration)
     if not insp.has_table("job_runs"):
-        pytest.skip("Table job_runs is missing; apply migrations (init_db) on TEST_DATABASE_URL.")
+        pytest.skip(
+            "Table job_runs is missing; apply migrations (init_db) on TEST_DATABASE_URL."
+        )
 
 
 @pytest.fixture
-def job_run_repository_pg(postgres_engine_integration, _job_runs_table_present, monkeypatch):
+def job_run_repository_pg(
+    postgres_engine_integration, _job_runs_table_present, monkeypatch
+):
     """``JobRunRepository`` using sessions from the shared test engine."""
     import core.database as db_mod
 

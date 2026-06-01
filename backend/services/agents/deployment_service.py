@@ -39,7 +39,9 @@ class AgentDeploymentService:
         """Load and validate agent settings; raise ValueError if not found."""
         agents_settings = self.agents_repository.get_settings()
         if not agents_settings or not agents_settings.agents:
-            raise ValueError("No agents configured. Please configure agents in agent settings.")
+            raise ValueError(
+                "No agents configured. Please configure agents in agent settings."
+            )
         for a in agents_settings.agents:
             if a.get("agent_id") == agent_id:
                 return a
@@ -52,7 +54,9 @@ class AgentDeploymentService:
         """Load Git repository record for the agent; raise ValueError if missing."""
         agent_git_repo_id = agent.get("git_repository_id")
         if not agent_git_repo_id:
-            raise ValueError(f"No git repository configured for agent '{agent.get('name')}'")
+            raise ValueError(
+                f"No git repository configured for agent '{agent.get('name')}'"
+            )
         git_repository = self.git_repo_repository.get_by_id(agent_git_repo_id)
         if not git_repository:
             raise ValueError(f"Git repository with ID {agent_git_repo_id} not found")
@@ -257,8 +261,8 @@ class AgentDeploymentService:
             self._update_progress(task_context, 0, "Initializing agent deployment...")
 
             try:
-                agent, agent_name, repo_dict, repo, repo_path, git_repository = self._setup_deployment(
-                    agent_id, task_context
+                agent, agent_name, repo_dict, repo, repo_path, git_repository = (
+                    self._setup_deployment(agent_id, task_context)
                 )
             except (ValueError, GitCommandError) as e:
                 logger.error("Deployment setup failed: %s", e)
@@ -276,7 +280,9 @@ class AgentDeploymentService:
                     template_name,
                     rendered_content,
                     file_path,
-                ) = await self._render_template(template_id, path, inventory_id, custom_variables, username)
+                ) = await self._render_template(
+                    template_id, path, inventory_id, custom_variables, username
+                )
             except (ValueError, Exception) as e:
                 logger.error("Template rendering failed: %s", e, exc_info=True)
                 return {
@@ -335,11 +341,13 @@ class AgentDeploymentService:
         git commit/push and optional activation.
         """
         try:
-            self._update_progress(task_context, 0, "Initializing multi-template deployment...")
+            self._update_progress(
+                task_context, 0, "Initializing multi-template deployment..."
+            )
 
             try:
-                agent, agent_name, repo_dict, repo, repo_path, git_repository = self._setup_deployment(
-                    agent_id, task_context
+                agent, agent_name, repo_dict, repo, repo_path, git_repository = (
+                    self._setup_deployment(agent_id, task_context)
                 )
             except (ValueError, GitCommandError) as e:
                 logger.error("Deployment setup failed: %s", e)
@@ -419,7 +427,9 @@ class AgentDeploymentService:
                 }
 
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            commit_message = f"Deploy {agent_name} - {success_count} templates - {current_date}"
+            commit_message = (
+                f"Deploy {agent_name} - {success_count} templates - {current_date}"
+            )
 
             return self._commit_and_finalize(
                 repo_dict=repo_dict,
@@ -475,12 +485,18 @@ class AgentDeploymentService:
 
         # Check if agent has cockpit agent_id configured
         if not cockpit_agent_id:
-            logger.warning("⚠ Cannot activate agent - no agent_id configured in agent settings")
-            result["activation_warning"] = "Agent has no agent_id configured for remote activation"
+            logger.warning(
+                "⚠ Cannot activate agent - no agent_id configured in agent settings"
+            )
+            result["activation_warning"] = (
+                "Agent has no agent_id configured for remote activation"
+            )
             result["message"] = " (activation skipped: no agent_id configured)"
             return result
 
-        self._update_progress(task_context, 90, "Pulling latest configuration from git...")
+        self._update_progress(
+            task_context, 90, "Pulling latest configuration from git..."
+        )
 
         try:
             # Import service and get DB session
@@ -544,12 +560,20 @@ class AgentDeploymentService:
                     result["activation_output"] = (
                         f"Git pull: {git_pull_result.get('output', 'success')}\nDocker restart: {restart_result.get('output', 'success')}"
                     )
-                    result["message"] = " and agent activated successfully (git pull + docker restart)"
+                    result["message"] = (
+                        " and agent activated successfully (git pull + docker restart)"
+                    )
                 elif restart_result.get("status") == "timeout":
-                    logger.warning("⚠ Docker restart timed out (config was pulled successfully)")
+                    logger.warning(
+                        "⚠ Docker restart timed out (config was pulled successfully)"
+                    )
                     result["activated"] = False
-                    result["activation_warning"] = "Docker restart timed out after 60s (git pull succeeded)"
-                    result["message"] = " (docker restart timed out, but git pull succeeded)"
+                    result["activation_warning"] = (
+                        "Docker restart timed out after 60s (git pull succeeded)"
+                    )
+                    result["message"] = (
+                        " (docker restart timed out, but git pull succeeded)"
+                    )
                 else:
                     logger.warning(
                         "⚠ Docker restart failed: %s (config was pulled successfully)",
@@ -567,7 +591,9 @@ class AgentDeploymentService:
                 db.close()
 
         except Exception as e:
-            logger.error("⚠ Agent activation failed with exception: %s", e, exc_info=True)
+            logger.error(
+                "⚠ Agent activation failed with exception: %s", e, exc_info=True
+            )
             result["activated"] = False
             result["activation_warning"] = str(e)
             result["message"] = f" (activation failed: {str(e)})"

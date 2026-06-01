@@ -32,7 +32,9 @@ def _sid() -> str:
 
 @pytest.mark.integration
 class TestGetDeviceNamesPg:
-    def test_includes_l2_only_device_from_latest_session(self, client_data_repository_pg: ClientDataRepository) -> None:
+    def test_includes_l2_only_device_from_latest_session(
+        self, client_data_repository_pg: ClientDataRepository
+    ) -> None:
         """Latest session is chosen by max(collected_at) across MAC+IP tables."""
         s_old = _sid()
         s_new = _sid()
@@ -145,11 +147,15 @@ class TestDeleteOldSessionsPg:
 
         with postgres_engine_client_data.connect() as conn:
             left_a = conn.execute(
-                text("SELECT COUNT(*) FROM client_mac_addresses WHERE session_id = :sid"),
+                text(
+                    "SELECT COUNT(*) FROM client_mac_addresses WHERE session_id = :sid"
+                ),
                 {"sid": s_a},
             ).scalar()
             left_b = conn.execute(
-                text("SELECT COUNT(*) FROM client_mac_addresses WHERE session_id = :sid"),
+                text(
+                    "SELECT COUNT(*) FROM client_mac_addresses WHERE session_id = :sid"
+                ),
                 {"sid": s_b},
             ).scalar()
         assert left_a == 0
@@ -161,7 +167,9 @@ class TestDeleteOldSessionsPg:
 
 @pytest.mark.integration
 class TestGetClientHistoryPg:
-    def test_ip_history_distinct_on_session_and_device(self, client_data_repository_pg: ClientDataRepository) -> None:
+    def test_ip_history_distinct_on_session_and_device(
+        self, client_data_repository_pg: ClientDataRepository
+    ) -> None:
         s1, s2 = _sid(), _sid()
         repo = client_data_repository_pg
         mac = "aaaa.bbbb.cc20"
@@ -215,7 +223,9 @@ class TestGetClientHistoryPg:
         assert len(hist) == 2
         assert {row["port"] for row in hist} == {"p1", "p2"}
 
-    def test_mac_history_includes_ip_from_same_session(self, client_data_repository_pg: ClientDataRepository) -> None:
+    def test_mac_history_includes_ip_from_same_session(
+        self, client_data_repository_pg: ClientDataRepository
+    ) -> None:
         sid = _sid()
         mac = "aaaa.bbbb.cc30"
         repo = client_data_repository_pg
@@ -251,7 +261,9 @@ class TestGetClientHistoryPg:
         assert len(hist) == 1
         assert hist[0]["ip_address"] == "192.0.2.99"
 
-    def test_hostname_history(self, client_data_repository_pg: ClientDataRepository) -> None:
+    def test_hostname_history(
+        self, client_data_repository_pg: ClientDataRepository
+    ) -> None:
         s1, s2 = _sid(), _sid()
         repo = client_data_repository_pg
 

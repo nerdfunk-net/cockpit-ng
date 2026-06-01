@@ -34,7 +34,9 @@ class InventoryMetadataService:
 
             nautobot_service = service_factory.build_nautobot_service()
 
-            response = await nautobot_service.rest_request("extras/custom-fields/?content_types=dcim.device")
+            response = await nautobot_service.rest_request(
+                "extras/custom-fields/?content_types=dcim.device"
+            )
             if not response or "results" not in response:
                 logger.error("Invalid REST response for custom fields")
                 return []
@@ -49,7 +51,11 @@ class InventoryMetadataService:
 
                 field_type = field.get("type", "text")
                 if isinstance(field_type, dict):
-                    field_type = field_type.get("value") or field_type.get("label") or str(field_type)
+                    field_type = (
+                        field_type.get("value")
+                        or field_type.get("label")
+                        or str(field_type)
+                    )
 
                 transformed_fields.append(
                     {
@@ -60,7 +66,9 @@ class InventoryMetadataService:
                 )
 
             self._custom_fields_cache = transformed_fields
-            logger.info("Retrieved %s custom fields for devices", len(transformed_fields))
+            logger.info(
+                "Retrieved %s custom fields for devices", len(transformed_fields)
+            )
             return self._custom_fields_cache
 
         except Exception as e:
@@ -98,7 +106,9 @@ class InventoryMetadataService:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    async def _get_custom_field_values(self, field_name: str, nautobot_service) -> List[Dict[str, str]]:
+    async def _get_custom_field_values(
+        self, field_name: str, nautobot_service
+    ) -> List[Dict[str, str]]:
         cf_key = field_name[3:]  # strip "cf_"
         custom_fields = await self.get_custom_fields()
         cf_info = next((cf for cf in custom_fields if cf.get("name") == cf_key), None)
@@ -126,7 +136,9 @@ class InventoryMetadataService:
                     )
                     return values
             except Exception as e:
-                logger.error("Error fetching choices for custom field '%s': %s", cf_key, e)
+                logger.error(
+                    "Error fetching choices for custom field '%s': %s", cf_key, e
+                )
                 return []
 
         logger.info(
@@ -150,7 +162,9 @@ class InventoryMetadataService:
         logger.info("Retrieved %s custom field options", len(values))
         return values
 
-    async def _get_standard_field_values(self, field_name: str, nautobot_service) -> List[Dict[str, str]]:
+    async def _get_standard_field_values(
+        self, field_name: str, nautobot_service
+    ) -> List[Dict[str, str]]:
         endpoint_map = {
             "location": "dcim/locations/?limit=0",
             "role": "extras/roles/?content_types=dcim.device&limit=0",

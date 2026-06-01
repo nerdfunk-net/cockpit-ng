@@ -100,7 +100,9 @@ async def trigger_bulk_onboard_devices(
             job_run_id = job_run.get("id")
             if job_run_id:
                 _jrs.mark_started(job_run_id, task.id)
-                logger.info("Created job run %s for bulk onboard task %s", job_run_id, task.id)
+                logger.info(
+                    "Created job run %s for bulk onboard task %s", job_run_id, task.id
+                )
         except Exception as exc:
             logger.warning("Failed to create job run entry: %s", exc)
 
@@ -150,7 +152,9 @@ async def trigger_bulk_onboard_devices(
                     task.id,
                 )
         except Exception as exc:
-            logger.warning("Failed to create job run entry for batch %s: %s", batch_num + 1, exc)
+            logger.warning(
+                "Failed to create job run entry for batch %s: %s", batch_num + 1, exc
+            )
 
     return TaskResponse(
         task_id=",".join(task_ids),

@@ -9,10 +9,14 @@ class GitRepository(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), unique=True, nullable=False)
-    category = Column(String(50), nullable=False)  # configs, templates, onboarding, inventory
+    category = Column(
+        String(50), nullable=False
+    )  # configs, templates, onboarding, inventory
     url = Column(String(1000), nullable=False)
     branch = Column(String(255), nullable=False, default="main")
-    auth_type = Column(String(50), nullable=False, default="token")  # token, ssh_key, none
+    auth_type = Column(
+        String(50), nullable=False, default="token"
+    )  # token, ssh_key, none
     credential_name = Column(String(255))
     path = Column(String(1000))
     verify_ssl = Column(Boolean, nullable=False, default=True)
@@ -22,7 +26,9 @@ class GitRepository(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     last_sync = Column(DateTime(timezone=True))
     sync_status = Column(String(255))
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

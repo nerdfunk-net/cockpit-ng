@@ -47,9 +47,13 @@ class OffboardingService:
         results = make_result(device_id)
 
         if request.virtual_chassis_action == "remove_all":
-            await self._offboard_entire_chassis(device_id, request, current_user, results)
+            await self._offboard_entire_chassis(
+                device_id, request, current_user, results
+            )
         else:
-            await self._offboard_single_device(device_id, request, current_user, results)
+            await self._offboard_single_device(
+                device_id, request, current_user, results
+            )
 
         self._build_summary(results)
         device_details = results.get("_device_details") or {}
@@ -84,9 +88,13 @@ class OffboardingService:
                 await self._vc_manager.delete_virtual_chassis(vc_id)
                 results["removed_items"].append(f"Virtual chassis: {vc_id}")
             except HTTPException as exc:
-                results["errors"].append(f"Failed to delete virtual chassis: {exc.detail}")
+                results["errors"].append(
+                    f"Failed to delete virtual chassis: {exc.detail}"
+                )
                 results["success"] = False
-                logger.error("Failed to delete virtual chassis %s: %s", vc_id, exc.detail)
+                logger.error(
+                    "Failed to delete virtual chassis %s: %s", vc_id, exc.detail
+                )
                 return
 
         # 2. Offboard every member device
@@ -106,7 +114,9 @@ class OffboardingService:
             except HTTPException as exc:
                 results["errors"].append(exc.detail)
                 results["success"] = False
-                logger.error("Failed to remove chassis member %s: %s", member_id, exc.detail)
+                logger.error(
+                    "Failed to remove chassis member %s: %s", member_id, exc.detail
+                )
                 continue
 
             if request.remove_interface_ips:
@@ -122,14 +132,20 @@ class OffboardingService:
                         member_cleanup_details = self._exclude_ip_from_device_details(
                             member_cleanup_details, member_primary_ip4["id"]
                         )
-                ips_removed = await self._ip_cleanup.remove_interface_ips(member_id, member_cleanup_details, results)
+                ips_removed = await self._ip_cleanup.remove_interface_ips(
+                    member_id, member_cleanup_details, results
+                )
             else:
                 ips_removed = []
 
-            await self._ip_cleanup.remove_primary_ip(member_id, member_details, ips_removed, request, results)
+            await self._ip_cleanup.remove_primary_ip(
+                member_id, member_details, ips_removed, request, results
+            )
 
             if request.remove_from_checkmk:
-                await self._checkmk_cleanup.remove_host(member_details, current_user, results)
+                await self._checkmk_cleanup.remove_host(
+                    member_details, current_user, results
+                )
 
     async def _offboard_single_device(
         self,
@@ -149,9 +165,15 @@ class OffboardingService:
             and bool(request.virtual_chassis_id)
             and bool(request.new_master_id)
         )
-        primary_ip_data = device_details.get("primary_ip4") if is_vc_master_reassignment else None
-        primary_ip_id: Optional[str] = primary_ip_data.get("id") if primary_ip_data else None
-        primary_ip_address: Optional[str] = primary_ip_data.get("address") if primary_ip_data else None
+        primary_ip_data = (
+            device_details.get("primary_ip4") if is_vc_master_reassignment else None
+        )
+        primary_ip_id: Optional[str] = (
+            primary_ip_data.get("id") if primary_ip_data else None
+        )
+        primary_ip_address: Optional[str] = (
+            primary_ip_data.get("address") if primary_ip_data else None
+        )
 
         # 2. If this device is the VC master, reassign before deletion
         if is_vc_master_reassignment:
@@ -162,8 +184,12 @@ class OffboardingService:
                 device_id,
             )
             try:
-                await self._vc_manager.update_master(request.virtual_chassis_id, request.new_master_id)
-                results["removed_items"].append(f"Virtual chassis master reassigned to {request.new_master_id}")
+                await self._vc_manager.update_master(
+                    request.virtual_chassis_id, request.new_master_id
+                )
+                results["removed_items"].append(
+                    f"Virtual chassis master reassigned to {request.new_master_id}"
+                )
             except HTTPException as exc:
                 results["errors"].append(f"Failed to reassign VC master: {exc.detail}")
                 results["success"] = False
@@ -202,7 +228,9 @@ class OffboardingService:
         if request.remove_interface_ips:
             cleanup_details = device_details
             if transferred_ip_id:
-                cleanup_details = self._exclude_ip_from_device_details(cleanup_details, transferred_ip_id)
+                cleanup_details = self._exclude_ip_from_device_details(
+                    cleanup_details, transferred_ip_id
+                )
             if not request.remove_primary_ip:
                 primary_ip4 = device_details.get("primary_ip4")
                 if primary_ip4 and primary_ip4.get("id"):
@@ -210,24 +238,36 @@ class OffboardingService:
                         "Excluding primary IP %s from interface cleanup (user chose to keep it)",
                         primary_ip4.get("address"),
                     )
-                    cleanup_details = self._exclude_ip_from_device_details(cleanup_details, primary_ip4["id"])
-            interface_ips_removed = await self._ip_cleanup.remove_interface_ips(device_id, cleanup_details, results)
+                    cleanup_details = self._exclude_ip_from_device_details(
+                        cleanup_details, primary_ip4["id"]
+                    )
+            interface_ips_removed = await self._ip_cleanup.remove_interface_ips(
+                device_id, cleanup_details, results
+            )
         else:
             results["skipped_items"].append("Interface IP removal was not requested")
             logger.info("Interface IP removal skipped (not requested)")
 
         # 6. Primary IP
         if transferred_ip_id:
-            results["skipped_items"].append(f"Primary IP {primary_ip_address} transferred to new VC master")
+            results["skipped_items"].append(
+                f"Primary IP {primary_ip_address} transferred to new VC master"
+            )
         else:
-            await self._ip_cleanup.remove_primary_ip(device_id, device_details, interface_ips_removed, request, results)
+            await self._ip_cleanup.remove_primary_ip(
+                device_id, device_details, interface_ips_removed, request, results
+            )
 
         # 7. CheckMK
         if request.remove_from_checkmk:
             try:
-                await self._checkmk_cleanup.remove_host(device_details, current_user, results)
+                await self._checkmk_cleanup.remove_host(
+                    device_details, current_user, results
+                )
             except Exception as exc:
-                logger.warning("CheckMK removal failed (Nautobot cleanup continues): %s", exc)
+                logger.warning(
+                    "CheckMK removal failed (Nautobot cleanup continues): %s", exc
+                )
                 results["errors"].append(f"CheckMK removal failed: {exc}")
         else:
             results["skipped_items"].append("CheckMK removal was not requested")
@@ -263,7 +303,9 @@ class OffboardingService:
                 new_master_id,
             )
         except HTTPException as exc:
-            results["errors"].append(f"Failed to transfer IP {ip_address} to new master: {exc.detail}")
+            results["errors"].append(
+                f"Failed to transfer IP {ip_address} to new master: {exc.detail}"
+            )
             results["success"] = False
             logger.error(
                 "Failed to transfer IP %s to new master %s: %s",
@@ -290,7 +332,9 @@ class OffboardingService:
         except NautobotAPIError as exc:
             results["errors"].append(f"Failed to rename device to {new_name!r}: {exc}")
             results["success"] = False
-            logger.error("Failed to rename device %s to %s: %s", device_id, new_name, exc)
+            logger.error(
+                "Failed to rename device %s to %s: %s", device_id, new_name, exc
+            )
 
     @staticmethod
     def _exclude_ip_from_device_details(
@@ -302,7 +346,11 @@ class OffboardingService:
         updated_interfaces = [
             {
                 **iface,
-                "ip_addresses": [ip for ip in (iface.get("ip_addresses") or []) if ip.get("id") != ip_id],
+                "ip_addresses": [
+                    ip
+                    for ip in (iface.get("ip_addresses") or [])
+                    if ip.get("id") != ip_id
+                ],
             }
             for iface in interfaces
         ]
@@ -333,7 +381,9 @@ class OffboardingService:
                 detail=str(exc),
             ) from exc
         except Exception as exc:
-            logger.error("Error fetching device details for %s: %s", device_id, str(exc))
+            logger.error(
+                "Error fetching device details for %s: %s", device_id, str(exc)
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to fetch device details: {str(exc)}",
@@ -350,7 +400,9 @@ class OffboardingService:
                 f"Offboarding partially completed: {removed_count} items removed, {error_count} errors occurred"
             )
         else:
-            results["summary"] = f"Offboarding completed successfully: {removed_count} items removed"
+            results["summary"] = (
+                f"Offboarding completed successfully: {removed_count} items removed"
+            )
 
         logger.info(
             "Offboard process completed for device %s: %s",

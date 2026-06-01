@@ -48,7 +48,9 @@ def main():
 
     # Check if admin user exists
     try:
-        admin_user = conn.execute("SELECT id, username FROM users WHERE username = 'admin'").fetchone()
+        admin_user = conn.execute(
+            "SELECT id, username FROM users WHERE username = 'admin'"
+        ).fetchone()
 
         if not admin_user:
             print("Error: Admin user not found in database.")

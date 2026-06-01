@@ -147,7 +147,10 @@ class AgentTemplateRenderService:
                             # Use device name (hostname) as key for user-friendly Jinja2 templates
                             device_details[device.name] = device_data
                         except Exception as e:
-                            warning_msg = "Failed to fetch details for device %s: %s" % (device.id, str(e))
+                            warning_msg = (
+                                "Failed to fetch details for device %s: %s"
+                                % (device.id, str(e))
+                            )
                             logger.warning(warning_msg)
                             warnings.append(warning_msg)
 
@@ -188,7 +191,8 @@ class AgentTemplateRenderService:
         except UndefinedError as e:
             available_vars = list(context.keys())
             raise ValueError(
-                "Undefined variable in template: %s. Available variables: %s" % (str(e), ", ".join(available_vars))
+                "Undefined variable in template: %s. Available variables: %s"
+                % (str(e), ", ".join(available_vars))
             )
         except TemplateError as e:
             raise ValueError("Template syntax error: %s" % str(e))
@@ -236,7 +240,9 @@ class AgentTemplateRenderService:
                 if var_type == "custom":
                     populated[var_name] = self._populate_custom_variable(var_def)
                 elif var_type == "nautobot":
-                    populated[var_name] = await self._populate_nautobot_variable(var_def)
+                    populated[var_name] = await self._populate_nautobot_variable(
+                        var_def
+                    )
                 elif var_type == "yaml":
                     populated[var_name] = await self._populate_yaml_variable(var_def)
                 elif var_type == "inventory":
@@ -255,7 +261,10 @@ class AgentTemplateRenderService:
                     )
                     populated[var_name] = self._populate_custom_variable(var_def)
             except Exception as e:
-                raise ValueError("Failed to populate variable '%s' (type=%s): %s" % (var_name, var_type, str(e)))
+                raise ValueError(
+                    "Failed to populate variable '%s' (type=%s): %s"
+                    % (var_name, var_type, str(e))
+                )
 
         return populated
 
@@ -312,11 +321,15 @@ class AgentTemplateRenderService:
             return await nautobot_metadata_service.get_device_custom_fields()
 
         elif source == "statuses":
-            result = await nautobot_service.rest_request("extras/statuses/?content_types=dcim.device")
+            result = await nautobot_service.rest_request(
+                "extras/statuses/?content_types=dcim.device"
+            )
             return result.get("results", [])
 
         elif source == "roles":
-            result = await nautobot_service.rest_request("extras/roles/?content_types=dcim.device&limit=0")
+            result = await nautobot_service.rest_request(
+                "extras/roles/?content_types=dcim.device&limit=0"
+            )
             return result.get("results", [])
 
         elif source == "namespaces":
@@ -365,7 +378,9 @@ class AgentTemplateRenderService:
             raise ValueError("Git repository directory not found: %s" % str(repo_path))
 
         # Construct and validate file path (prevent path traversal)
-        full_path = os.path.realpath(os.path.join(str(repo_path), file_path.lstrip("/")))
+        full_path = os.path.realpath(
+            os.path.join(str(repo_path), file_path.lstrip("/"))
+        )
         repo_real = os.path.realpath(str(repo_path))
         if not full_path.startswith(repo_real):
             raise ValueError("Invalid file path: path traversal detected")
@@ -412,7 +427,9 @@ class AgentTemplateRenderService:
                 "inventory variable missing 'inventory_id' in metadata and no override_inventory_id provided"
             )
         if not data_type:
-            raise ValueError("inventory variable missing 'inventory_data_type' in metadata")
+            raise ValueError(
+                "inventory variable missing 'inventory_data_type' in metadata"
+            )
 
         if not username:
             raise ValueError("username is required to access inventory data")
@@ -461,7 +478,8 @@ class AgentTemplateRenderService:
         if result is None:
             raise ValueError(
                 "Unknown inventory_data_type: '%s'. "
-                "Valid types: locations, tags, custom_fields, statuses, roles" % data_type
+                "Valid types: locations, tags, custom_fields, statuses, roles"
+                % data_type
             )
 
         logger.debug(

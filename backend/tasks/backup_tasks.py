@@ -93,7 +93,9 @@ def finalize_backup_task(
             )
 
             git_commit_status.files_changed = result.files_changed
-            git_commit_status.commit_hash = result.commit_sha[:8] if result.commit_sha else None
+            git_commit_status.commit_hash = (
+                result.commit_sha[:8] if result.commit_sha else None
+            )
             git_commit_status.committed = result.commit_sha is not None
             git_commit_status.pushed = result.pushed
 
@@ -153,7 +155,9 @@ def finalize_backup_task(
             _jrs.mark_completed(job_run_id, result=final_result)
             logger.info("✓ Updated job_run %s with detailed results", job_run_id)
         except Exception as e:
-            logger.error("Failed to update job_run %s: %s", job_run_id, e, exc_info=True)
+            logger.error(
+                "Failed to update job_run %s: %s", job_run_id, e, exc_info=True
+            )
 
     return final_result
 
@@ -335,7 +339,9 @@ def backup_devices_task(
 
         # Get Git credentials for repository (for logging purposes)
         logger.info("Resolving Git repository credentials...")
-        git_username, git_token, git_ssh_key_path = git_auth_service.resolve_credentials(dict(repository))
+        git_username, git_token, git_ssh_key_path = (
+            git_auth_service.resolve_credentials(dict(repository))
+        )
         logger.info("  - Git username: %s", git_username or "none")
         logger.info("  - Git token: %s", "*" * 10 if git_token else "none")
         logger.info("  - SSH key: %s", "configured" if git_ssh_key_path else "none")
@@ -348,7 +354,9 @@ def backup_devices_task(
             git_repo = git_service.open_or_clone(dict(repository))
 
             git_status.repository_existed = repo_dir.exists()
-            git_status.operation = "opened" if git_status.repository_existed else "cloned"
+            git_status.operation = (
+                "opened" if git_status.repository_existed else "cloned"
+            )
 
             logger.info("✓ Repository ready at %s", repo_dir)
             logger.info("  - Current branch: %s", git_repo.active_branch)
@@ -510,7 +518,9 @@ def backup_devices_task(
                 )
 
                 git_commit_status.files_changed = result.files_changed
-                git_commit_status.commit_hash = result.commit_sha[:8] if result.commit_sha else None
+                git_commit_status.commit_hash = (
+                    result.commit_sha[:8] if result.commit_sha else None
+                )
                 git_commit_status.committed = result.commit_sha is not None
                 git_commit_status.pushed = result.pushed
 
@@ -524,7 +534,9 @@ def backup_devices_task(
                     logger.error("✗ %s", result.message)
                     raise GitCommandError("commit_and_push", 1, result.message.encode())
             else:
-                logger.warning("⚠ No devices backed up successfully - skipping Git commit")
+                logger.warning(
+                    "⚠ No devices backed up successfully - skipping Git commit"
+                )
 
         except GitCommandError as e:
             logger.error("✗ Failed to commit/push: %s", e)
@@ -576,7 +588,9 @@ def backup_devices_task(
         return {
             "success": False,
             "error": str(e),
-            "git_status": git_status.model_dump() if isinstance(git_status, GitStatus) else git_status,
+            "git_status": git_status.model_dump()
+            if isinstance(git_status, GitStatus)
+            else git_status,
             "credential_info": credential_info.model_dump()
             if isinstance(credential_info, CredentialInfo)
             else credential_info,

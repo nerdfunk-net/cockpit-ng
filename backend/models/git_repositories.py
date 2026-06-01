@@ -41,11 +41,17 @@ class GitRepositoryRequest(BaseModel):
         default=GitAuthType.TOKEN,
         description="Authentication type (none, token, ssh_key, generic)",
     )
-    credential_name: Optional[str] = Field(None, description="Name of stored credential to use (token or ssh_key)")
+    credential_name: Optional[str] = Field(
+        None, description="Name of stored credential to use (token or ssh_key)"
+    )
     path: Optional[str] = Field(None, description="Path within repository")
     verify_ssl: bool = Field(default=True, description="Verify SSL certificates")
-    git_author_name: Optional[str] = Field(None, description="Git author name for commits")
-    git_author_email: Optional[str] = Field(None, description="Git author email for commits")
+    git_author_name: Optional[str] = Field(
+        None, description="Git author name for commits"
+    )
+    git_author_email: Optional[str] = Field(
+        None, description="Git author email for commits"
+    )
     description: Optional[str] = Field(None, description="Repository description")
     is_active: bool = Field(default=True, description="Repository is active")
 
@@ -90,12 +96,20 @@ class GitRepositoryUpdateRequest(BaseModel):
     category: Optional[GitCategory] = Field(None, description="Repository category")
     url: Optional[str] = Field(None, description="Repository URL")
     branch: Optional[str] = Field(None, description="Default branch")
-    auth_type: Optional[GitAuthType] = Field(None, description="Authentication type (none, token, ssh_key, generic)")
-    credential_name: Optional[str] = Field(None, description="Name of stored credential to use (token or ssh_key)")
+    auth_type: Optional[GitAuthType] = Field(
+        None, description="Authentication type (none, token, ssh_key, generic)"
+    )
+    credential_name: Optional[str] = Field(
+        None, description="Name of stored credential to use (token or ssh_key)"
+    )
     path: Optional[str] = Field(None, description="Path within repository")
     verify_ssl: Optional[bool] = Field(None, description="Verify SSL certificates")
-    git_author_name: Optional[str] = Field(None, description="Git author name for commits")
-    git_author_email: Optional[str] = Field(None, description="Git author email for commits")
+    git_author_name: Optional[str] = Field(
+        None, description="Git author name for commits"
+    )
+    git_author_email: Optional[str] = Field(
+        None, description="Git author email for commits"
+    )
     description: Optional[str] = Field(None, description="Repository description")
     is_active: Optional[bool] = Field(None, description="Repository is active")
 
@@ -123,7 +137,9 @@ class GitConnectionTestResponse(BaseModel):
 class GitSyncRequest(BaseModel):
     """Git repository sync request model."""
 
-    repository_id: Optional[int] = Field(None, description="Specific repository ID to sync, or None for all")
+    repository_id: Optional[int] = Field(
+        None, description="Specific repository ID to sync, or None for all"
+    )
 
 
 class GitSyncResponse(BaseModel):

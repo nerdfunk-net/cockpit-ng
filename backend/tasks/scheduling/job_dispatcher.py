@@ -134,7 +134,9 @@ def dispatch_job(
 
     except Exception as e:
         error_msg = str(e)
-        logger.error("Job dispatch failed for %s: %s", job_name, error_msg, exc_info=True)
+        logger.error(
+            "Job dispatch failed for %s: %s", job_name, error_msg, exc_info=True
+        )
 
         # Update job run if we created one
         if job_run:

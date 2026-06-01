@@ -330,7 +330,9 @@ async def nautobot_graphql_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, "Nautobot GraphQL compatibility query failed", e)
+        raise_internal_server_error(
+            logger, "Nautobot GraphQL compatibility query failed", e
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -387,7 +389,9 @@ async def _startup_services():
     try:
         import service_factory
 
-        exported_keys = service_factory.build_credentials_service().export_ssh_keys_to_filesystem()
+        exported_keys = (
+            service_factory.build_credentials_service().export_ssh_keys_to_filesystem()
+        )
         if exported_keys:
             logger.info("Exported %s SSH keys to ./data/ssh_keys/", len(exported_keys))
         else:
@@ -410,9 +414,13 @@ async def _startup_services():
     try:
         import service_factory
 
-        result = service_factory.build_job_schedule_service().initialize_schedule_next_runs()
+        result = (
+            service_factory.build_job_schedule_service().initialize_schedule_next_runs()
+        )
         if result["initialized_count"] > 0:
-            logger.info("Initialized next_run for %s job schedules", result["initialized_count"])
+            logger.info(
+                "Initialized next_run for %s job schedules", result["initialized_count"]
+            )
     except Exception as e:
         logger.error("Failed to initialize job schedule next_runs: %s", e)
 
@@ -439,7 +447,9 @@ async def _startup_services():
                 logger.debug("Startup cache: prefetch_commits_once() starting")
                 selected_id = settings_manager.get_selected_git_repository()
                 if not selected_id:
-                    logger.warning("Startup cache: No repository selected; skipping commits prefetch")
+                    logger.warning(
+                        "Startup cache: No repository selected; skipping commits prefetch"
+                    )
                     return
 
                 repo = get_git_repo_by_id(selected_id)
@@ -447,16 +457,22 @@ async def _startup_services():
                 try:
                     branch_name = repo.active_branch.name
                 except Exception:
-                    logger.warning("Startup cache: No active branch detected; skipping commits prefetch")
+                    logger.warning(
+                        "Startup cache: No active branch detected; skipping commits prefetch"
+                    )
                     return
 
                 # Skip if repo has no valid HEAD
                 try:
                     if not repo.head.is_valid():
-                        logger.debug("Startup cache: Repository has no commits yet; nothing to prefetch")
+                        logger.debug(
+                            "Startup cache: Repository has no commits yet; nothing to prefetch"
+                        )
                         return
                 except Exception:
-                    logger.debug("Startup cache: Unable to validate HEAD; skipping prefetch")
+                    logger.debug(
+                        "Startup cache: Unable to validate HEAD; skipping prefetch"
+                    )
                     return
 
                 # Build commits payload similar to /api/git/commits

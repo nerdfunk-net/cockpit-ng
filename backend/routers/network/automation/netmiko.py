@@ -12,7 +12,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from core.safe_http_errors import raise_internal_server_error
-from dependencies import get_device_query_service, get_nautobot_service, get_netmiko_service
+from dependencies import (
+    get_device_query_service,
+    get_nautobot_service,
+    get_netmiko_service,
+)
 from models.netmiko import (
     CommandExecutionResponse,
     CommandResult,
@@ -27,7 +31,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/netmiko", tags=["netmiko"])
 
 
-def _load_template(template_manager, request: TemplateExecutionRequest) -> Tuple[str, Optional[str], Optional[int]]:
+def _load_template(
+    template_manager, request: TemplateExecutionRequest
+) -> Tuple[str, Optional[str], Optional[int]]:
     """
     Load template content from DB or use inline content from request.
 
@@ -64,9 +70,13 @@ async def execute_commands(
 ) -> CommandExecutionResponse:
     """Execute commands on multiple network devices using Netmiko."""
     if not request.devices:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No devices provided")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No devices provided"
+        )
     if not request.commands:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No commands provided")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No commands provided"
+        )
 
     if request.use_textfsm and request.enable_mode:
         logger.warning(
@@ -155,7 +165,9 @@ async def cancel_execution(
         Cancellation confirmation
     """
     try:
-        logger.info("Cancel request from user %s for session %s", current_user, session_id)
+        logger.info(
+            "Cancel request from user %s for session %s", current_user, session_id
+        )
         netmiko_service.cancel_session(session_id)
         return {
             "success": True,
@@ -180,14 +192,18 @@ async def execute_template(
     template_manager = service_factory.build_template_service()
 
     if not request.device_ids:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No devices provided")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No devices provided"
+        )
     if not request.template_id and not request.template_content:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Either template_id or template_content must be provided",
         )
 
-    template_content, pre_run_command, template_credential_id = _load_template(template_manager, request)
+    template_content, pre_run_command, template_credential_id = _load_template(
+        template_manager, request
+    )
 
     username, password = None, None
     if not request.dry_run:
@@ -221,7 +237,9 @@ async def execute_template(
     netmiko_service.unregister_session(session_id)
 
     summary = {**counters, "total": len(request.device_ids)}
-    return TemplateExecutionResponse(session_id=session_id, results=results, summary=summary)
+    return TemplateExecutionResponse(
+        session_id=session_id, results=results, summary=summary
+    )
 
 
 @router.get("/health")

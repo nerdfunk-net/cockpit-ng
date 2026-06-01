@@ -35,7 +35,9 @@ class InventoryEvaluator:
             "has_primary": query_service._query_devices_by_has_primary,
         }
 
-    async def _execute_operation(self, operation: LogicalOperation) -> tuple[Set[str], int, Dict[str, DeviceInfo]]:
+    async def _execute_operation(
+        self, operation: LogicalOperation
+    ) -> tuple[Set[str], int, Dict[str, DeviceInfo]]:
         """
         Execute a single logical operation.
 
@@ -75,8 +77,12 @@ class InventoryEvaluator:
 
         # Execute nested operations
         for i, nested_op in enumerate(operation.nested_operations):
-            logger.info("  Executing nested operation %s: type=%s", i, nested_op.operation_type)
-            nested_result, nested_count, nested_data = await self._execute_operation(nested_op)
+            logger.info(
+                "  Executing nested operation %s: type=%s", i, nested_op.operation_type
+            )
+            nested_result, nested_count, nested_data = await self._execute_operation(
+                nested_op
+            )
             operations_count += nested_count
             all_devices_data.update(nested_data)
             logger.info(
@@ -133,7 +139,9 @@ class InventoryEvaluator:
             # For NOT operations, return the devices that match the conditions
             # The actual NOT logic will be applied in the main preview_inventory method
             if condition_results:
-                result = self._union_sets(condition_results)  # Get all devices that match the NOT conditions
+                result = self._union_sets(
+                    condition_results
+                )  # Get all devices that match the NOT conditions
             else:
                 result = set()
             logger.info("  NOT operation devices to exclude: %s devices", len(result))
@@ -148,7 +156,9 @@ class InventoryEvaluator:
         )
         return result, operations_count, all_devices_data
 
-    async def _execute_condition(self, condition: LogicalCondition) -> tuple[Set[str], int, Dict[str, DeviceInfo]]:
+    async def _execute_condition(
+        self, condition: LogicalCondition
+    ) -> tuple[Set[str], int, Dict[str, DeviceInfo]]:
         """
         Execute a single condition by calling the appropriate GraphQL query.
 
@@ -170,7 +180,9 @@ class InventoryEvaluator:
 
             # Handle ip_prefix — operator is the GraphQL filter type (within_include/within/exact)
             if condition.field == "ip_prefix":
-                devices_data = await self.query_service._query_devices_by_ip_prefix(condition.value, condition.operator)
+                devices_data = await self.query_service._query_devices_by_ip_prefix(
+                    condition.value, condition.operator
+                )
                 device_ids = {device.id for device in devices_data}
                 devices_dict = {device.id: device for device in devices_data}
                 return device_ids, 1, devices_dict
@@ -223,7 +235,9 @@ class InventoryEvaluator:
 
             # Special handling for device_type with not_equals - use GraphQL device_type__n filter
             if condition.field == "device_type" and condition.operator == "not_equals":
-                devices_data = await self.query_service._query_devices_by_devicetype(condition.value, use_negation=True)
+                devices_data = await self.query_service._query_devices_by_devicetype(
+                    condition.value, use_negation=True
+                )
                 device_ids = {device.id for device in devices_data}
                 devices_dict = {device.id: device for device in devices_data}
                 logger.info(
@@ -253,7 +267,9 @@ class InventoryEvaluator:
 
             # Special handling for role with not_equals - use GraphQL role__n filter
             if condition.field == "role" and condition.operator == "not_equals":
-                devices_data = await self.query_service._query_devices_by_role(condition.value, use_negation=True)
+                devices_data = await self.query_service._query_devices_by_role(
+                    condition.value, use_negation=True
+                )
                 device_ids = {device.id for device in devices_data}
                 devices_dict = {device.id: device for device in devices_data}
                 logger.info(

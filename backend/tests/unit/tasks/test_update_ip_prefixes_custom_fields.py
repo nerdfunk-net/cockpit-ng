@@ -275,7 +275,9 @@ class TestTagsHandling:
             ]
         }
 
-        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="merge")
+        result = _prepare_prefix_update_data(
+            row, headers, existing_prefix, tags_mode="merge"
+        )
 
         # Should contain both existing and new tags
         assert set(result["tags"]) == {
@@ -299,7 +301,9 @@ class TestTagsHandling:
             ]
         }
 
-        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="merge")
+        result = _prepare_prefix_update_data(
+            row, headers, existing_prefix, tags_mode="merge"
+        )
 
         # Should deduplicate
         assert set(result["tags"]) == {"production", "core", "monitoring"}
@@ -319,7 +323,9 @@ class TestTagsHandling:
             ]
         }
 
-        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="replace")
+        result = _prepare_prefix_update_data(
+            row, headers, existing_prefix, tags_mode="replace"
+        )
 
         # Should only have CSV tags
         assert set(result["tags"]) == {"new-tag", "another-tag"}
@@ -340,7 +346,9 @@ class TestTagsHandling:
             ]
         }
 
-        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="replace")
+        result = _prepare_prefix_update_data(
+            row, headers, existing_prefix, tags_mode="replace"
+        )
 
         # Should have empty tags array to clear existing tags
         assert "tags" in result
@@ -362,7 +370,9 @@ class TestTagsHandling:
             ]
         }
 
-        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="merge")
+        result = _prepare_prefix_update_data(
+            row, headers, existing_prefix, tags_mode="merge"
+        )
 
         # Should NOT have tags field (skip empty value in merge mode)
         assert "tags" not in result
@@ -377,7 +387,9 @@ class TestTagsHandling:
         headers = list(row.keys())
         existing_prefix = {"tags": [{"name": "existing-tag"}]}
 
-        result = _prepare_prefix_update_data(row, headers, existing_prefix, tags_mode="replace")
+        result = _prepare_prefix_update_data(
+            row, headers, existing_prefix, tags_mode="replace"
+        )
 
         # Should have empty tags array
         assert result["tags"] == []

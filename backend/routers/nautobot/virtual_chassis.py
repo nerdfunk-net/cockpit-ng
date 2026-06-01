@@ -52,7 +52,9 @@ async def list_virtual_chassis(
         result = await nautobot_service.graphql_query(query)
         return result["data"]["virtual_chassis"]
     except NautobotAPIError as exc:
-        raise_internal_server_error(logger, "Failed to list virtual chassis (Nautobot API error)", exc)
+        raise_internal_server_error(
+            logger, "Failed to list virtual chassis (Nautobot API error)", exc
+        )
     except Exception as exc:
         raise_internal_server_error(logger, "Failed to list virtual chassis", exc)
 

@@ -31,7 +31,9 @@ class TagNormalizer:
         self.ip_normalizer = ip_normalizer
         self._config = service_factory.build_checkmk_config_service()
 
-    def process_additional_attributes(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def process_additional_attributes(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process additional attributes configuration.
 
         Args:
@@ -60,13 +62,17 @@ class TagNormalizer:
             # 2. Check by_ip (second priority, can add more attributes)
             by_ip_config = additional_attributes_config.get("by_ip", {})
             if device_ip and by_ip_config:
-                self.ip_normalizer.process_ip_based_attributes(device_ip, by_ip_config, extensions)
+                self.ip_normalizer.process_ip_based_attributes(
+                    device_ip, by_ip_config, extensions
+                )
 
         except Exception as e:
             logger.error("Error processing additional_attributes for device: %s", e)
             # Don't fail the whole process, just log the error
 
-    def process_cf2htg_mappings(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def process_cf2htg_mappings(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process Custom Field to Host Tag Group mappings.
 
         Args:
@@ -97,7 +103,9 @@ class TagNormalizer:
             logger.error("Error processing cf2htg mappings for device: %s", e)
             # Don't fail the whole process, just log the error
 
-    def process_tags2htg_mappings(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def process_tags2htg_mappings(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process Tags to Host Tag Group mappings.
 
         Args:
@@ -112,7 +120,11 @@ class TagNormalizer:
             if tags2htg_config and device_data.get("tags"):
                 device_tags = device_data.get("tags", [])
                 # Convert tags list to set of tag names for efficient lookup
-                device_tag_names = {tag.get("name") for tag in device_tags if isinstance(tag, dict) and tag.get("name")}
+                device_tag_names = {
+                    tag.get("name")
+                    for tag in device_tags
+                    if isinstance(tag, dict) and tag.get("name")
+                }
 
                 for tag_name, host_tag_group_name in tags2htg_config.items():
                     tag_key = f"tag_{host_tag_group_name}"
@@ -137,7 +149,9 @@ class TagNormalizer:
             logger.error("Error processing tags2htg mappings for device: %s", e)
             # Don't fail the whole process, just log the error
 
-    def process_attr2htg_mappings(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
+    def process_attr2htg_mappings(
+        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+    ) -> None:
         """Process Attribute to Host Tag Group mappings.
 
         Maps Nautobot core attributes (like status, role, location) to CheckMK host tag groups.
@@ -169,9 +183,16 @@ class TagNormalizer:
                                 filter_method = filter_method.strip()
                                 filter_value = filter_value.strip()
                                 if filter_method == "location_type":
-                                    attr_value = _resolve_location_type_filter(device_data, field_path, filter_value)
+                                    attr_value = _resolve_location_type_filter(
+                                        device_data, field_path, filter_value
+                                    )
                                     if not attr_value:
-                                        attr_value = _resolve_plain_field(device_data, field_path) or None
+                                        attr_value = (
+                                            _resolve_plain_field(
+                                                device_data, field_path
+                                            )
+                                            or None
+                                        )
                                         logger.info(
                                             "attr2htg '%s': location_type filter '%s' found no match, "
                                             "falling back to base field '%s': %s",
@@ -194,7 +215,9 @@ class TagNormalizer:
                                 )
                                 continue
                         else:
-                            attr_value = self.field_normalizer.extract_field_value(device_data, nautobot_attr)
+                            attr_value = self.field_normalizer.extract_field_value(
+                                device_data, nautobot_attr
+                            )
 
                         if attr_value is not None and attr_value != "":
                             # Handle nested objects (extract name if it's a dict)

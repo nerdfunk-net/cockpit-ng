@@ -42,8 +42,14 @@ def test_trigger_nautobot_onboarding_posts_expected_job_payload() -> None:
             "utils.nautobot_helpers.get_nautobot_config",
             return_value=("https://nautobot.example", "token"),
         ),
-        patch("utils.nautobot_helpers.get_nautobot_headers", return_value={"Authorization": "Token token"}),
-        patch("services.nautobot.onboarding.onboarding_service.requests.post", return_value=response) as post,
+        patch(
+            "utils.nautobot_helpers.get_nautobot_headers",
+            return_value={"Authorization": "Token token"},
+        ),
+        patch(
+            "services.nautobot.onboarding.onboarding_service.requests.post",
+            return_value=response,
+        ) as post,
     ):
         job_id, job_url = svc._trigger_nautobot_onboarding(
             ip_address="10.0.0.1",
@@ -114,7 +120,10 @@ def test_wait_for_job_completion_returns_success_on_completed_status() -> None:
             "services.nautobot.onboarding.onboarding_service.requests.get",
             return_value=_response({"status": {"value": "completed"}}),
         ),
-        patch("services.nautobot.onboarding.onboarding_service.time.time", side_effect=[0, 1, 1]),
+        patch(
+            "services.nautobot.onboarding.onboarding_service.time.time",
+            side_effect=[0, 1, 1],
+        ),
         patch("services.nautobot.onboarding.onboarding_service.time.sleep") as sleep,
     ):
         result = svc._wait_for_job_completion(_task(), JOB_ID, max_wait=30)
@@ -138,7 +147,10 @@ def test_wait_for_job_completion_times_out() -> None:
             "services.nautobot.onboarding.onboarding_service.requests.get",
             return_value=_response({"status": {"value": "running"}}),
         ),
-        patch("services.nautobot.onboarding.onboarding_service.time.time", side_effect=[0, 1, 1, 4]),
+        patch(
+            "services.nautobot.onboarding.onboarding_service.time.time",
+            side_effect=[0, 1, 1, 4],
+        ),
         patch("services.nautobot.onboarding.onboarding_service.time.sleep"),
     ):
         success, message = svc._wait_for_job_completion(_task(), JOB_ID, max_wait=3)
@@ -223,8 +235,12 @@ def test_process_single_device_runs_optional_updates_and_sync() -> None:
     svc = DeviceOnboardingService()
     svc._get_device_id_from_ip = MagicMock(return_value=(DEVICE_ID, "router-01"))
     svc._update_device_tags = MagicMock(return_value={"success": True, "type": "tags"})
-    svc._update_device_custom_fields = MagicMock(return_value={"success": True, "type": "custom_fields"})
-    svc._sync_network_data = MagicMock(return_value={"success": True, "job_id": "sync-1"})
+    svc._update_device_custom_fields = MagicMock(
+        return_value={"success": True, "type": "custom_fields"}
+    )
+    svc._sync_network_data = MagicMock(
+        return_value={"success": True, "job_id": "sync-1"}
+    )
 
     with patch("utils.audit_logger.log_device_onboarding") as audit:
         result = svc._process_single_device(
@@ -259,7 +275,11 @@ def test_onboard_returns_partial_success_for_mixed_device_results() -> None:
     svc._process_single_device = MagicMock(
         side_effect=[
             {"success": True, "device_name": "router-01"},
-            {"success": False, "error": "lookup failed", "stage": "device_lookup_failed"},
+            {
+                "success": False,
+                "error": "lookup failed",
+                "stage": "device_lookup_failed",
+            },
         ]
     )
 

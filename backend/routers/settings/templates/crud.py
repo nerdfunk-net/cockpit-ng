@@ -37,7 +37,9 @@ async def list_templates(
         username = current_user.get("username")
 
         if search:
-            templates = template_manager.search_templates(search, search_content=True, username=username)
+            templates = template_manager.search_templates(
+                search, search_content=True, username=username
+            )
         else:
             templates = template_manager.list_templates(
                 category=category,
@@ -47,7 +49,9 @@ async def list_templates(
             )
 
         template_responses = [TemplateResponse(**t) for t in templates]
-        return TemplateListResponse(templates=template_responses, total=len(template_responses))
+        return TemplateListResponse(
+            templates=template_responses, total=len(template_responses)
+        )
 
     except Exception as exc:
         raise_internal_server_error(logger, "Failed to list templates", exc)

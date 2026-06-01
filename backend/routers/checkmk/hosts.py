@@ -90,7 +90,9 @@ async def create_host_v2(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to create host {request.host_name}", e)
+        raise_internal_server_error(
+            logger, f"Failed to create host {request.host_name}", e
+        )
 
 
 @router.post("/hosts/bulk-create", response_model=CheckMKOperationResponse)
@@ -185,7 +187,9 @@ async def create_host(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to create host {request.host_name}", e)
+        raise_internal_server_error(
+            logger, f"Failed to create host {request.host_name}", e
+        )
 
 
 @router.get("/hosts/{hostname}", response_model=CheckMKOperationResponse)
@@ -198,7 +202,9 @@ async def get_host(
     """Get specific host configuration."""
     try:
         result = await service.get_host(hostname, effective_attributes)
-        return CheckMKOperationResponse(success=True, message=f"Host {hostname} retrieved successfully", data=result)
+        return CheckMKOperationResponse(
+            success=True, message=f"Host {hostname} retrieved successfully", data=result
+        )
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HostNotFoundError as e:
@@ -227,7 +233,9 @@ async def update_host(
     """Update existing host configuration."""
     try:
         result = await service.update_host(hostname, request.attributes)
-        return CheckMKOperationResponse(success=True, message=f"Host {hostname} updated successfully", data=result)
+        return CheckMKOperationResponse(
+            success=True, message=f"Host {hostname} updated successfully", data=result
+        )
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
@@ -245,7 +253,9 @@ async def delete_host(
     """Delete host from CheckMK."""
     try:
         result = await service.delete_host(hostname)
-        return CheckMKOperationResponse(success=result["success"], message=result["message"])
+        return CheckMKOperationResponse(
+            success=result["success"], message=result["message"]
+        )
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
@@ -276,7 +286,9 @@ async def move_host(
                 detail=f"Cannot move host '{hostname}' - CheckMK changes need to be activated first",
             )
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST if e.status_code == 400 else status.HTTP_502_BAD_GATEWAY,
+            status_code=status.HTTP_400_BAD_REQUEST
+            if e.status_code == 400
+            else status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to move host '{hostname}': {str(e)}",
         )
     except CheckMKClientError as e:

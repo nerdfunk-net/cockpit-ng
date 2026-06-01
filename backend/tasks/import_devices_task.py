@@ -148,7 +148,9 @@ def import_devices_from_csv_task(
             device_name = row.get("name", f"row-{idx}")
 
             try:
-                logger.info("Processing device %s/%s: %s", idx, total_devices, device_name)
+                logger.info(
+                    "Processing device %s/%s: %s", idx, total_devices, device_name
+                )
 
                 # Update progress
                 progress = 10 + int((idx / total_devices) * 80)
@@ -165,13 +167,17 @@ def import_devices_from_csv_task(
                 )
 
                 # Prepare data for service
-                device_data, interface_config = _prepare_device_data(row, headers, create_interfaces)
+                device_data, interface_config = _prepare_device_data(
+                    row, headers, create_interfaces
+                )
 
                 # Import device using service
                 logger.info("Importing device %s", device_name)
                 logger.debug("Device data: %s", device_data)
                 if interface_config:
-                    logger.debug("Interface config: %s interface(s)", len(interface_config))
+                    logger.debug(
+                        "Interface config: %s interface(s)", len(interface_config)
+                    )
 
                 # Service now raises exceptions on failure instead of returning error dict
                 result = asyncio.run(
@@ -208,7 +214,9 @@ def import_devices_from_csv_task(
                             "reason": "Device already exists",
                         }
                     )
-                    logger.info("Device %s already exists, skipped", result["device_name"])
+                    logger.info(
+                        "Device %s already exists, skipped", result["device_name"]
+                    )
 
             except Exception as e:
                 error_msg = str(e)
@@ -392,15 +400,23 @@ def _prepare_device_data(
                     "ip_address": interface_ip,
                     "namespace": row.get("ip_namespace", "").strip() or "Global",
                     "is_primary_ipv4": True,  # First interface is primary
-                    "enabled": row.get("interface_enabled", "").strip().lower() not in ["false", "0", "no"],
-                    "mgmt_only": row.get("interface_mgmt_only", "").strip().lower() in ["true", "1", "yes"],
+                    "enabled": row.get("interface_enabled", "").strip().lower()
+                    not in ["false", "0", "no"],
+                    "mgmt_only": row.get("interface_mgmt_only", "").strip().lower()
+                    in ["true", "1", "yes"],
                     "description": row.get("interface_description", "").strip(),
                     "mac_address": row.get("interface_mac_address", "").strip(),
-                    "mtu": int(row.get("interface_mtu")) if row.get("interface_mtu", "").strip().isdigit() else None,
+                    "mtu": int(row.get("interface_mtu"))
+                    if row.get("interface_mtu", "").strip().isdigit()
+                    else None,
                 }
             ]
 
             # Remove None values and empty strings
-            interface_config[0] = {k: v for k, v in interface_config[0].items() if v is not None and v != ""}
+            interface_config[0] = {
+                k: v
+                for k, v in interface_config[0].items()
+                if v is not None and v != ""
+            }
 
     return device_data, interface_config

@@ -11,7 +11,9 @@ from typing import Any, Dict
 logger = logging.getLogger(__name__)
 
 
-def _resolve_location_type_filter(device_data: Dict[str, Any], field_path: str, filter_value: str) -> str:
+def _resolve_location_type_filter(
+    device_data: Dict[str, Any], field_path: str, filter_value: str
+) -> str:
     """Find the first location in the hierarchy matching location_type and return its field.
 
     Traverses device.location → .parent → .parent.parent → ...
@@ -42,7 +44,9 @@ def _resolve_location_type_filter(device_data: Dict[str, Any], field_path: str, 
 
     while location and isinstance(location, dict):
         location_type = location.get("location_type") or {}
-        type_name = location_type.get("name", "") if isinstance(location_type, dict) else ""
+        type_name = (
+            location_type.get("name", "") if isinstance(location_type, dict) else ""
+        )
         if type_name.lower() == filter_lower:
             value = location.get(target_field, "")
             logger.debug(
@@ -112,7 +116,9 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
                 filter_method = filter_method.strip()
                 filter_value = filter_value.strip()
                 if filter_method == "location_type":
-                    actual_value = _resolve_location_type_filter(device_data, field_part.strip(), filter_value)
+                    actual_value = _resolve_location_type_filter(
+                        device_data, field_part.strip(), filter_value
+                    )
                     if not actual_value:
                         # Fallback: resolve the base field without the modifier
                         logger.debug(
@@ -120,7 +126,9 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
                             filter_value,
                             field_part.strip(),
                         )
-                        actual_value = _resolve_plain_field(device_data, field_part.strip())
+                        actual_value = _resolve_plain_field(
+                            device_data, field_part.strip()
+                        )
                 else:
                     logger.warning(
                         "parse_folder_value: unsupported filter method '%s' in variable '%s'",
@@ -181,7 +189,9 @@ def parse_folder_value(folder_template: str, device_data: Dict[str, Any]) -> str
         folder_path = folder_path.replace(f"{{{var}}}", str(actual_value))
 
         if not actual_value:
-            logger.debug("parse_folder_value: Variable '%s' resolved to empty value", var)
+            logger.debug(
+                "parse_folder_value: Variable '%s' resolved to empty value", var
+            )
 
     logger.debug("parse_folder_value: Final folder path: '%s'", folder_path)
     return folder_path
@@ -239,7 +249,9 @@ def split_checkmk_folder_path(folder_path: str) -> list[str]:
     logger.debug("split_checkmk_folder_path: Input path: '%s'", folder_path)
 
     if not folder_path or folder_path in ["/", "~"]:
-        logger.debug("split_checkmk_folder_path: Path is empty or root, returning empty list")
+        logger.debug(
+            "split_checkmk_folder_path: Path is empty or root, returning empty list"
+        )
         return []
 
     # Remove leading ~ if present and split by ~

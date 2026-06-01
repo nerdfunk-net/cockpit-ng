@@ -147,7 +147,11 @@ def _run_csv_export(
         )
 
         if "primary_ip4" in properties:
-            all_devices = [d for d in all_devices if d.get("primary_ip4") and d["primary_ip4"].get("address")]
+            all_devices = [
+                d
+                for d in all_devices
+                if d.get("primary_ip4") and d["primary_ip4"].get("address")
+            ]
 
         filtered_devices = _filter_device_properties(all_devices, properties)
 
@@ -257,7 +261,9 @@ def _run_csv_export(
             "properties_count": len(properties),
             "file_path": file_path,
             "file_size_bytes": len(csv_content),
-            "commit_sha": commit_result.commit_sha[:8] if commit_result.commit_sha else None,
+            "commit_sha": commit_result.commit_sha[:8]
+            if commit_result.commit_sha
+            else None,
             "pushed": getattr(commit_result, "pushed", False),
         }
 

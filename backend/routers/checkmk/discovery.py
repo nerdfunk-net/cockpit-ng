@@ -23,7 +23,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkmk"])
 
 
-@router.get("/service-discovery/host/{hostname}", response_model=CheckMKOperationResponse)
+@router.get(
+    "/service-discovery/host/{hostname}", response_model=CheckMKOperationResponse
+)
 async def get_service_discovery(
     hostname: str,
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
@@ -50,7 +52,9 @@ async def get_service_discovery(
         )
 
 
-@router.post("/service-discovery/host/{hostname}/start", response_model=CheckMKOperationResponse)
+@router.post(
+    "/service-discovery/host/{hostname}/start", response_model=CheckMKOperationResponse
+)
 async def start_service_discovery(
     hostname: str,
     request: CheckMKServiceDiscoveryRequest = CheckMKServiceDiscoveryRequest(),
@@ -78,7 +82,9 @@ async def start_service_discovery(
         )
 
 
-@router.post("/service-discovery/host/{hostname}/wait", response_model=CheckMKOperationResponse)
+@router.post(
+    "/service-discovery/host/{hostname}/wait", response_model=CheckMKOperationResponse
+)
 async def wait_for_service_discovery(
     hostname: str,
     current_user: dict = Depends(require_permission("checkmk.devices", "write")),
@@ -117,7 +123,9 @@ async def update_discovery_phase(
 ):
     """Update discovery phase for a host."""
     try:
-        result = await service.update_discovery_phase(hostname, request.phase, request.services)
+        result = await service.update_discovery_phase(
+            hostname, request.phase, request.services
+        )
         return CheckMKOperationResponse(
             success=True,
             message=f"Updated discovery phase for host {hostname} successfully",
@@ -128,7 +136,9 @@ async def update_discovery_phase(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to update discovery phase for host {hostname}", e)
+        raise_internal_server_error(
+            logger, f"Failed to update discovery phase for host {hostname}", e
+        )
 
 
 @router.post("/service-discovery/bulk", response_model=CheckMKOperationResponse)

@@ -41,7 +41,9 @@ def run_tests(test_type: str = "all", coverage: bool = True):
     if result.returncode == 0:
         print("\n✅ All tests passed!")
         if coverage:
-            print(f"\n📊 Coverage report: {Path(__file__).parent / 'htmlcov' / 'index.html'}")
+            print(
+                f"\n📊 Coverage report: {Path(__file__).parent / 'htmlcov' / 'index.html'}"
+            )
     else:
         print("\n❌ Some tests failed!")
         sys.exit(1)

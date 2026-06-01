@@ -89,7 +89,9 @@ def bulk_onboard_devices_task(
 
     # Default configuration
     onboarding_timeout = default_config.get("onboarding_timeout", 120)
-    sync_options = default_config.get("sync_options", ["cables", "software", "vlans", "vrfs"])
+    sync_options = default_config.get(
+        "sync_options", ["cables", "software", "vlans", "vrfs"]
+    )
 
     # Process results
     device_results = []
@@ -122,17 +124,23 @@ def bulk_onboard_devices_task(
             # Merge device config with defaults (device-specific values take precedence)
             merged_config = {
                 "ip_address": ip_address,
-                "location_id": device.get("location_id") or default_config.get("location_id", ""),
-                "namespace_id": device.get("namespace_id") or default_config.get("namespace_id", ""),
+                "location_id": device.get("location_id")
+                or default_config.get("location_id", ""),
+                "namespace_id": device.get("namespace_id")
+                or default_config.get("namespace_id", ""),
                 "role_id": device.get("role_id") or default_config.get("role_id", ""),
-                "status_id": device.get("status_id") or default_config.get("status_id", ""),
+                "status_id": device.get("status_id")
+                or default_config.get("status_id", ""),
                 "interface_status_id": device.get("interface_status_id")
                 or default_config.get("interface_status_id", ""),
                 "ip_address_status_id": device.get("ip_address_status_id")
                 or default_config.get("ip_address_status_id", ""),
-                "prefix_status_id": device.get("prefix_status_id") or default_config.get("prefix_status_id", ""),
-                "secret_groups_id": device.get("secret_groups_id") or default_config.get("secret_groups_id", ""),
-                "platform_id": device.get("platform_id") or default_config.get("platform_id", "detect"),
+                "prefix_status_id": device.get("prefix_status_id")
+                or default_config.get("prefix_status_id", ""),
+                "secret_groups_id": device.get("secret_groups_id")
+                or default_config.get("secret_groups_id", ""),
+                "platform_id": device.get("platform_id")
+                or default_config.get("platform_id", "detect"),
                 "port": device.get("port") or default_config.get("port", 22),
                 "timeout": device.get("timeout") or default_config.get("timeout", 30),
                 "tags": device.get("tags"),
@@ -155,10 +163,14 @@ def bulk_onboard_devices_task(
                     missing_fields.append(field)
 
             if missing_fields:
-                raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
+                raise ValueError(
+                    f"Missing required fields: {', '.join(missing_fields)}"
+                )
 
             # Call onboarding directly using helper functions
-            logger.info("Processing device %s/%s: %s", device_num, device_count, ip_address)
+            logger.info(
+                "Processing device %s/%s: %s", device_num, device_count, ip_address
+            )
 
             # Step 1: Trigger Nautobot onboarding job for this single device
             self.update_state(
@@ -191,7 +203,9 @@ def bulk_onboard_devices_task(
                 timeout=merged_config["timeout"],
             )
 
-            logger.info("Nautobot onboarding job started for %s: %s", ip_address, job_id)
+            logger.info(
+                "Nautobot onboarding job started for %s: %s", ip_address, job_id
+            )
 
             # Step 2: Wait for job completion (pass self for progress updates)
             self.update_state(
@@ -211,7 +225,9 @@ def bulk_onboard_devices_task(
                 },
             )
 
-            job_success, job_result = _wait_for_job_completion(self, job_id, max_wait=onboarding_timeout)
+            job_success, job_result = _wait_for_job_completion(
+                self, job_id, max_wait=onboarding_timeout
+            )
 
             if not job_success:
                 error_msg = f"Onboarding job failed or timed out: {job_result}"
@@ -289,7 +305,9 @@ def bulk_onboard_devices_task(
         except Exception as e:
             failed_count += 1
             error_msg = str(e)
-            logger.error("Error processing device %s: %s", ip_address, error_msg, exc_info=True)
+            logger.error(
+                "Error processing device %s: %s", ip_address, error_msg, exc_info=True
+            )
             device_results.append(
                 {
                     "ip_address": ip_address,

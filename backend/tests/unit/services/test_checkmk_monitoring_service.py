@@ -96,7 +96,9 @@ async def test_get_host_services_returns_list():
     """Getting host services returns a list of service entries."""
     fake = FakeCheckMKClient()
     fake.seed_host("router1", {})
-    fake.seed_host_services("router1", [{"description": "CPU load"}, {"description": "Memory"}])
+    fake.seed_host_services(
+        "router1", [{"description": "CPU load"}, {"description": "Memory"}]
+    )
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKMonitoringService()
@@ -150,6 +152,8 @@ async def test_show_service_query_with_columns():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKMonitoringService()
-        result = await svc.show_service("router1", "Memory", columns=["state", "description"])
+        result = await svc.show_service(
+            "router1", "Memory", columns=["state", "description"]
+        )
 
     assert "id" in result

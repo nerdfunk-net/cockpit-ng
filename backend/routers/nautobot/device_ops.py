@@ -49,7 +49,9 @@ async def check_virtual_chassis_status(
     return await vc_manager.get_status(device_id)
 
 
-@router.get("/devices/{device_id}/details", summary="🔷 GraphQL: Get Detailed Device Info")
+@router.get(
+    "/devices/{device_id}/details", summary="🔷 GraphQL: Get Detailed Device Info"
+)
 async def get_device_details(
     device_id: str,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
@@ -97,7 +99,9 @@ async def delete_device(
     """Delete a device from Nautobot."""
     try:
         # Use REST API to delete the device
-        await nautobot_service.rest_request(f"dcim/devices/{device_id}/", method="DELETE")
+        await nautobot_service.rest_request(
+            f"dcim/devices/{device_id}/", method="DELETE"
+        )
 
         # Clear device from cache
         cache_key = f"nautobot:devices:{device_id}"

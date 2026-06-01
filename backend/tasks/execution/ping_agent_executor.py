@@ -59,7 +59,9 @@ def execute_ping_agent(
         try:
             devices = asyncio.run(_resolve_devices_from_inventory(inventory_id))
         except Exception as exc:
-            logger.error("Failed to resolve inventory %s: %s", inventory_id, exc, exc_info=True)
+            logger.error(
+                "Failed to resolve inventory %s: %s", inventory_id, exc, exc_info=True
+            )
             return {"success": False, "error": f"Failed to resolve inventory: {exc}"}
 
     if not devices:
@@ -170,7 +172,9 @@ async def _resolve_devices_from_inventory(inventory_id: int) -> List[dict]:
         if not device.name:
             continue
         try:
-            result = await nautobot_svc.graphql_query(_DEVICE_IPS_QUERY, {"name": device.name})
+            result = await nautobot_svc.graphql_query(
+                _DEVICE_IPS_QUERY, {"name": device.name}
+            )
             ip_addresses = _extract_ip_addresses(result, device.name)
         except Exception as exc:
             logger.warning("Failed to fetch IPs for device '%s': %s", device.name, exc)

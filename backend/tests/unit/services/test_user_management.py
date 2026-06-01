@@ -376,7 +376,9 @@ class TestBulkOperations:
         with patch(_PATCH_TARGET, return_value=svc):
             u1 = um.create_user("u1", "User 1", "pw1234")
             u2 = um.create_user("u2", "User 2", "pw1234")
-            count, errors = um.bulk_update_permissions([u1["id"], u2["id"]], PERMISSIONS_ADMIN)
+            count, errors = um.bulk_update_permissions(
+                [u1["id"], u2["id"]], PERMISSIONS_ADMIN
+            )
 
         assert count == 2
         assert errors == []

@@ -31,28 +31,44 @@ class DeployTemplateEntry(BaseModel):
     """A single template entry in a multi-template deployment."""
 
     template_id: int = Field(..., description="ID of the agent template to deploy")
-    inventory_id: Optional[int] = Field(None, description="Inventory ID for this template's rendering context")
+    inventory_id: Optional[int] = Field(
+        None, description="Inventory ID for this template's rendering context"
+    )
     path: Optional[str] = Field(
         None,
         max_length=500,
         description="Deployment file path (overrides template default)",
     )
-    custom_variables: Optional[Dict[str, Any]] = Field(None, description="User variable overrides for this template")
+    custom_variables: Optional[Dict[str, Any]] = Field(
+        None, description="User variable overrides for this template"
+    )
 
 
 class JobTemplateBase(BaseModel):
     """Base model for job templates"""
 
-    name: str = Field(..., min_length=1, max_length=255, description="Name of the job template")
-    job_type: JobTemplateType = Field(..., description="Type of job this template represents")
-    description: Optional[str] = Field(None, max_length=1000, description="Description of what this template does")
-    config_repository_id: Optional[int] = Field(None, description="Git repository ID for configuration (type=config)")
-    inventory_source: InventorySource = Field("all", description="Whether to use all devices or a stored inventory")
+    name: str = Field(
+        ..., min_length=1, max_length=255, description="Name of the job template"
+    )
+    job_type: JobTemplateType = Field(
+        ..., description="Type of job this template represents"
+    )
+    description: Optional[str] = Field(
+        None, max_length=1000, description="Description of what this template does"
+    )
+    config_repository_id: Optional[int] = Field(
+        None, description="Git repository ID for configuration (type=config)"
+    )
+    inventory_source: InventorySource = Field(
+        "all", description="Whether to use all devices or a stored inventory"
+    )
     inventory_repository_id: Optional[int] = Field(
         None,
         description="Git repository ID for inventory (when inventory_source='inventory')",
     )
-    inventory_name: Optional[str] = Field(None, description="Name of the stored inventory to use")
+    inventory_name: Optional[str] = Field(
+        None, description="Name of the stored inventory to use"
+    )
     command_template_name: Optional[str] = Field(
         None,
         description="Name of the command template to execute (for run_commands type)",

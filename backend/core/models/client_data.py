@@ -14,7 +14,9 @@ class ClientIpAddress(Base):
     __tablename__ = "client_ip_addresses"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(String(36), nullable=False)  # UUID of the collection run — cross-table join key
+    session_id = Column(
+        String(36), nullable=False
+    )  # UUID of the collection run — cross-table join key
     ip_address = Column(String(45), nullable=False)  # IPv4 or IPv6
     mac_address = Column(
         String(20), nullable=True
@@ -22,7 +24,9 @@ class ClientIpAddress(Base):
     interface = Column(String(255), nullable=True)  # ARP interface
     device_name = Column(String(255), nullable=False)  # source network device name
     device_ip = Column(String(45), nullable=True)  # primary IP of the source device
-    collected_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    collected_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     __table_args__ = (
         Index("idx_client_ip_session", "session_id"),
@@ -41,12 +45,16 @@ class ClientMacAddress(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String(36), nullable=False)
-    mac_address = Column(String(20), nullable=False)  # dotted-quad format — join key to ClientIpAddress
+    mac_address = Column(
+        String(20), nullable=False
+    )  # dotted-quad format — join key to ClientIpAddress
     vlan = Column(String(20), nullable=True)
     port = Column(String(255), nullable=True)  # switch port / destination port
     device_name = Column(String(255), nullable=False)  # source network device name
     device_ip = Column(String(45), nullable=True)  # primary IP of the source device
-    collected_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    collected_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     __table_args__ = (
         Index("idx_client_mac_session", "session_id"),
@@ -65,11 +73,15 @@ class ClientHostname(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String(36), nullable=False)
-    ip_address = Column(String(45), nullable=False)  # join key to ClientIpAddress.ip_address
+    ip_address = Column(
+        String(45), nullable=False
+    )  # join key to ClientIpAddress.ip_address
     hostname = Column(String(255), nullable=False)  # DNS-resolved name
     device_name = Column(String(255), nullable=False)  # source network device name
     device_ip = Column(String(45), nullable=True)  # primary IP of the source device
-    collected_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    collected_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     __table_args__ = (
         Index("idx_client_hostname_session", "session_id"),

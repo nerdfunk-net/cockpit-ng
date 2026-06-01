@@ -99,7 +99,10 @@ class InterfaceManagerService:
                 logger.info("Interface ID returned: %s", interface_id)
 
                 if interface_id:
-                    if interface["name"] in updated_interfaces or interface["name"] in created_interfaces:
+                    if (
+                        interface["name"] in updated_interfaces
+                        or interface["name"] in created_interfaces
+                    ):
                         # Already tracked
                         pass
                     else:
@@ -109,7 +112,9 @@ class InterfaceManagerService:
 
                     # Clean existing IP assignments (once per interface)
                     if interface_id not in cleaned_interfaces:
-                        logger.info("Cleaning existing IPs from interface %s", interface["name"])
+                        logger.info(
+                            "Cleaning existing IPs from interface %s", interface["name"]
+                        )
                         await self._clean_interface_ips(
                             interface_id=interface_id,
                             interface_name=interface["name"],
@@ -180,14 +185,21 @@ class InterfaceManagerService:
                                     )
 
                     # Track success
-                    if interface["name"] not in created_interfaces and interface["name"] not in updated_interfaces:
+                    if (
+                        interface["name"] not in created_interfaces
+                        and interface["name"] not in updated_interfaces
+                    ):
                         created_interfaces.append(interface["name"])
 
             except Exception as e:
                 error_msg = str(e)
                 failed_interfaces.append(interface["name"])
-                warnings.append(f"Interface {interface['name']}: Failed to process interface: {error_msg}")
-                logger.error("Error processing interface %s: %s", interface["name"], error_msg)
+                warnings.append(
+                    f"Interface {interface['name']}: Failed to process interface: {error_msg}"
+                )
+                logger.error(
+                    "Error processing interface %s: %s", interface["name"], error_msg
+                )
 
         # Step 3: Set primary IPv4 if found
         if primary_ipv4_id:
@@ -267,7 +279,9 @@ class InterfaceManagerService:
                     continue
 
                 # Get namespace from IP data or fall back to interface level
-                namespace = ip_data.get("namespace") or interface.get("namespace", "Global")
+                namespace = ip_data.get("namespace") or interface.get(
+                    "namespace", "Global"
+                )
                 status = interface.get("status", "active")
                 ip_role = ip_data.get("ip_role")
 
@@ -318,7 +332,10 @@ class InterfaceManagerService:
                     )
                     # If this is a missing prefix error and add_prefixes_automatically is False,
                     # the exception should propagate to stop the device creation
-                    if "No suitable parent prefix" in str(e) and not add_prefixes_automatically:
+                    if (
+                        "No suitable parent prefix" in str(e)
+                        and not add_prefixes_automatically
+                    ):
                         raise
 
         logger.info("\n" + "=" * 80)
@@ -350,13 +367,19 @@ class InterfaceManagerService:
         # Frontend may store the display name (e.g. "Virtual") — normalize to lowercase slug
         interface_type = (interface.get("type") or "").strip().lower()
         if not interface_type:
-            warnings.append(f"Interface {interface['name']}: 'type' is required but was not provided — skipping")
-            logger.warning("Interface '%s' has no type set, skipping creation", interface["name"])
+            warnings.append(
+                f"Interface {interface['name']}: 'type' is required but was not provided — skipping"
+            )
+            logger.warning(
+                "Interface '%s' has no type set, skipping creation", interface["name"]
+            )
             return None
 
         # Resolve status to UUID — use "or" fallback so empty string also defaults to "active"
         interface_status = interface.get("status") or "active"
-        interface_status_id = await self.common.resolve_status_id(interface_status, "dcim.interface")
+        interface_status_id = await self.common.resolve_status_id(
+            interface_status, "dcim.interface"
+        )
 
         interface_payload = {
             "name": interface["name"],
@@ -390,7 +413,9 @@ class InterfaceManagerService:
 
             if interface_response and "id" in interface_response:
                 interface_id = interface_response["id"]
-                logger.info("Created interface %s with ID: %s", interface["name"], interface_id)
+                logger.info(
+                    "Created interface %s with ID: %s", interface["name"], interface_id
+                )
                 return interface_id
 
         except Exception as create_error:
@@ -408,14 +433,18 @@ class InterfaceManagerService:
                     )
                     return interface_id
                 else:
-                    warnings.append(f"Interface {interface['name']}: Interface exists but could not be found")
+                    warnings.append(
+                        f"Interface {interface['name']}: Interface exists but could not be found"
+                    )
             else:
                 logger.error(
                     "Failed to create interface '%s': %s",
                     interface["name"],
                     str(create_error),
                 )
-                warnings.append(f"Interface {interface['name']}: Failed to create interface: {str(create_error)}")
+                warnings.append(
+                    f"Interface {interface['name']}: Failed to create interface: {str(create_error)}"
+                )
 
         return None
 
@@ -434,7 +463,9 @@ class InterfaceManagerService:
             warnings: List to append warnings to
         """
         try:
-            existing_assignments_endpoint = "ipam/ip-address-to-interface/?interface=%s&format=json" % interface_id
+            existing_assignments_endpoint = (
+                "ipam/ip-address-to-interface/?interface=%s&format=json" % interface_id
+            )
             existing_assignments = await self.nautobot.rest_request(
                 endpoint=existing_assignments_endpoint, method="GET"
             )
@@ -463,7 +494,9 @@ class InterfaceManagerService:
                         )
 
         except Exception as e:
-            warnings.append(f"Interface {interface_name}: Failed to check existing IP assignments: {str(e)}")
+            warnings.append(
+                f"Interface {interface_name}: Failed to check existing IP assignments: {str(e)}"
+            )
 
     async def _assign_ip_to_interface(
         self,
@@ -508,11 +541,16 @@ class InterfaceManagerService:
 
         try:
             # Check if assignment already exists
-            check_assignment_endpoint = "ipam/ip-address-to-interface/?ip_address=%s&interface=%s&format=json" % (
-                ip_id,
-                interface_id,
+            check_assignment_endpoint = (
+                "ipam/ip-address-to-interface/?ip_address=%s&interface=%s&format=json"
+                % (
+                    ip_id,
+                    interface_id,
+                )
             )
-            existing_assignment = await self.nautobot.rest_request(endpoint=check_assignment_endpoint, method="GET")
+            existing_assignment = await self.nautobot.rest_request(
+                endpoint=check_assignment_endpoint, method="GET"
+            )
 
             if existing_assignment and existing_assignment.get("count", 0) > 0:
                 logger.info(
@@ -549,7 +587,9 @@ class InterfaceManagerService:
                 ip_address,
                 interface_id,
             )
-            warnings.append(f"Interface {interface['name']}: Failed to assign IP address: {str(e)}")
+            warnings.append(
+                f"Interface {interface['name']}: Failed to assign IP address: {str(e)}"
+            )
             return None
 
     async def _set_primary_ipv4(

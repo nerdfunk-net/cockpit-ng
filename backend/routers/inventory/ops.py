@@ -35,7 +35,9 @@ router = APIRouter(prefix="/api/inventory", tags=["inventory"])
 @router.get("/get-all-groups", response_model=GroupsResponse)
 async def get_all_groups(
     current_user: dict = Depends(require_permission("general.inventory", "read")),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> GroupsResponse:
     """Return all unique inventory group paths (including ancestor paths) accessible to the user."""
     try:
@@ -58,7 +60,9 @@ async def get_all_groups(
 async def rename_group(
     request: RenameGroupRequest,
     current_user: dict = Depends(require_permission("general.inventory", "write")),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> RenameGroupResponse:
     """Bulk-rename a group path across all matching inventories.
 
@@ -101,7 +105,9 @@ async def preview_inventory(
 
         if not request.operations:
             logger.debug("No operations provided, returning empty result")
-            return InventoryPreviewResponse(devices=[], total_count=0, operations_executed=0)
+            return InventoryPreviewResponse(
+                devices=[], total_count=0, operations_executed=0
+            )
 
         for i, operation in enumerate(request.operations):
             logger.debug(
@@ -120,7 +126,9 @@ async def preview_inventory(
                     condition.value,
                 )
 
-        devices, operations_count = await inventory_service.preview_inventory(request.operations)
+        devices, operations_count = await inventory_service.preview_inventory(
+            request.operations
+        )
 
         logger.debug(
             "Preview completed: %s devices found, %s operations executed",
@@ -213,7 +221,9 @@ async def resolve_inventory_to_devices(
     inventory_id: int,
     current_user: dict = Depends(require_permission("general.inventory", "read")),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> dict:
     """Resolve a saved inventory to a list of device IDs by inventory ID."""
     try:
@@ -250,7 +260,9 @@ async def resolve_inventory_to_devices(
         devices, _ = await inventory_service.preview_inventory(operations)
         device_ids = [device.id for device in devices]
 
-        logger.info("Resolved %s devices from inventory ID %s", len(device_ids), inventory_id)
+        logger.info(
+            "Resolved %s devices from inventory ID %s", len(device_ids), inventory_id
+        )
 
         return {
             "device_ids": device_ids,
@@ -267,7 +279,9 @@ async def resolve_inventory_to_devices(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error resolving inventory '%s': %s", inventory_id, e, exc_info=True)
+        logger.error(
+            "Error resolving inventory '%s': %s", inventory_id, e, exc_info=True
+        )
         raise_internal_server_error(
             logger,
             "Failed to resolve inventory",
@@ -282,7 +296,9 @@ async def resolve_inventory_to_devices_detailed(
     current_user: dict = Depends(require_permission("general.inventory", "read")),
     inventory_service: InventoryService = Depends(get_inventory_service),
     device_query_service: DeviceQueryService = Depends(get_device_query_service),
-    persistence: InventoryPersistenceService = Depends(get_inventory_persistence_service),
+    persistence: InventoryPersistenceService = Depends(
+        get_inventory_persistence_service
+    ),
 ) -> dict:
     """Resolve a saved inventory to detailed device information by inventory ID."""
     try:
@@ -295,7 +311,9 @@ async def resolve_inventory_to_devices_detailed(
 
         from utils.inventory_converter import convert_saved_inventory_to_operations
 
-        logger.info("Resolving detailed inventory ID %s for user '%s'", inventory_id, username)
+        logger.info(
+            "Resolving detailed inventory ID %s for user '%s'", inventory_id, username
+        )
 
         inventory = persistence.get_inventory(inventory_id, username=username)
 
@@ -372,7 +390,9 @@ async def resolve_inventory_to_devices_detailed(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error resolving detailed inventory %s: %s", inventory_id, e, exc_info=True)
+        logger.error(
+            "Error resolving detailed inventory %s: %s", inventory_id, e, exc_info=True
+        )
         raise_internal_server_error(
             logger,
             "Failed to resolve detailed inventory",

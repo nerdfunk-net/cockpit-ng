@@ -29,7 +29,9 @@ class GitConnectionService:
     def __init__(self):
         self._auth = GitAuthenticationService()
 
-    def test_connection(self, test_request: GitConnectionTestRequest) -> GitConnectionTestResponse:
+    def test_connection(
+        self, test_request: GitConnectionTestRequest
+    ) -> GitConnectionTestResponse:
         """Test git repository connection by attempting a shallow clone.
 
         Args:
@@ -62,7 +64,9 @@ class GitConnectionService:
                 test_path = Path(temp_dir) / "test_repo"
 
                 # Get authentication type
-                auth_type = test_request.auth_type.value if test_request.auth_type else "token"
+                auth_type = (
+                    test_request.auth_type.value if test_request.auth_type else "token"
+                )
                 logger.debug("Resolved auth_type to: %s", auth_type)
 
                 # Create a temporary repository dict for credential resolution
@@ -77,7 +81,9 @@ class GitConnectionService:
 
                 # Resolve credentials using authentication service
                 logger.info("Resolving credentials for auth_type: %s", auth_type)
-                resolved_username, resolved_token, ssh_key_path = self._auth.resolve_credentials(temp_repo)
+                resolved_username, resolved_token, ssh_key_path = (
+                    self._auth.resolve_credentials(temp_repo)
+                )
 
                 # Log resolved credentials (without exposing secrets)
                 logger.info("Credential resolution results:")
@@ -85,8 +91,12 @@ class GitConnectionService:
                     "  - Username: %s",
                     resolved_username if resolved_username else "None",
                 )
-                logger.info("  - Token/Password: %s", "<present>" if resolved_token else "None")
-                logger.info("  - SSH Key Path: %s", ssh_key_path if ssh_key_path else "None")
+                logger.info(
+                    "  - Token/Password: %s", "<present>" if resolved_token else "None"
+                )
+                logger.info(
+                    "  - SSH Key Path: %s", ssh_key_path if ssh_key_path else "None"
+                )
 
                 # Validate credential resolution
                 validation_result = self._validate_credentials(
@@ -207,7 +217,9 @@ class GitConnectionService:
         if auth_type in ["token", "generic"] and resolved_username and resolved_token:
             logger.info("Adding %s authentication to URL", auth_type)
             # Add authentication to URL using the service
-            clone_url = self._auth.build_auth_url(clone_url, resolved_username, resolved_token)
+            clone_url = self._auth.build_auth_url(
+                clone_url, resolved_username, resolved_token
+            )
             logger.debug("Authentication added to URL (credentials hidden)")
         else:
             logger.info(
@@ -263,8 +275,12 @@ class GitConnectionService:
         ]
 
         logger.info("Executing git clone command...")
-        logger.debug("Command: git clone --depth 1 --branch %s <url> %s", branch, test_path)
-        logger.debug("Environment SSH_COMMAND: %s", env.get("GIT_SSH_COMMAND", "not set"))
+        logger.debug(
+            "Command: git clone --depth 1 --branch %s <url> %s", branch, test_path
+        )
+        logger.debug(
+            "Environment SSH_COMMAND: %s", env.get("GIT_SSH_COMMAND", "not set")
+        )
 
         # Execute clone with timeout
         result = subprocess.run(
@@ -292,7 +308,9 @@ class GitConnectionService:
                 },
             )
         else:
-            logger.warning("Git connection test failed for %s: %s", test_request.url, result.stderr)
+            logger.warning(
+                "Git connection test failed for %s: %s", test_request.url, result.stderr
+            )
             return GitConnectionTestResponse(
                 success=False,
                 message=f"Git connection failed: {result.stderr}",

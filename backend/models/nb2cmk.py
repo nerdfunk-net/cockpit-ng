@@ -25,17 +25,27 @@ class DeviceExtensions(BaseModel):
     """Device configuration extensions for CheckMK."""
 
     folder: str = Field(description="CheckMK folder path for the device")
-    attributes: Dict[str, Any] = Field(default_factory=dict, description="Device attributes for CheckMK")
-    internal: Dict[str, Any] = Field(default_factory=dict, description="Internal data not used for comparison")
+    attributes: Dict[str, Any] = Field(
+        default_factory=dict, description="Device attributes for CheckMK"
+    )
+    internal: Dict[str, Any] = Field(
+        default_factory=dict, description="Internal data not used for comparison"
+    )
 
 
 class DeviceComparison(BaseModel):
     """Result of comparing Nautobot and CheckMK device configurations."""
 
-    result: str = Field(description="Comparison result: 'equal', 'diff', 'host_not_found', or 'error'")
+    result: str = Field(
+        description="Comparison result: 'equal', 'diff', 'host_not_found', or 'error'"
+    )
     diff: str = Field(default="", description="Description of differences found")
-    normalized_config: Dict[str, Any] = Field(default_factory=dict, description="Normalized Nautobot configuration")
-    checkmk_config: Optional[Dict[str, Any]] = Field(default=None, description="CheckMK configuration")
+    normalized_config: Dict[str, Any] = Field(
+        default_factory=dict, description="Normalized Nautobot configuration"
+    )
+    checkmk_config: Optional[Dict[str, Any]] = Field(
+        default=None, description="CheckMK configuration"
+    )
     ignored_attributes: List[str] = Field(
         default_factory=list, description="List of ignored attributes during comparison"
     )
@@ -52,9 +62,13 @@ class DeviceList(BaseModel):
 class DeviceListWithStatus(BaseModel):
     """List of devices with CheckMK comparison status."""
 
-    devices: List[Dict[str, Any]] = Field(description="List of device data with CheckMK status")
+    devices: List[Dict[str, Any]] = Field(
+        description="List of device data with CheckMK status"
+    )
     total: int = Field(description="Total number of devices")
-    ignored_attributes: List[str] = Field(description="List of ignored attributes during comparison")
+    ignored_attributes: List[str] = Field(
+        description="List of ignored attributes during comparison"
+    )
     message: str = Field(description="Status message")
 
 
@@ -67,7 +81,9 @@ class DeviceOperationResult(BaseModel):
     hostname: str = Field(description="Device hostname")
     site: str = Field(description="CheckMK site used")
     folder: str = Field(description="CheckMK folder path")
-    checkmk_response: Optional[Dict[str, Any]] = Field(default=None, description="Response from CheckMK API")
+    checkmk_response: Optional[Dict[str, Any]] = Field(
+        default=None, description="Response from CheckMK API"
+    )
 
 
 class DeviceUpdateResult(DeviceOperationResult):
@@ -102,9 +118,15 @@ class JobProgressResponse(BaseModel):
     total_devices: int = Field(description="Total number of devices to process")
     progress_message: str = Field(description="Current progress message")
     created_at: datetime = Field(description="Job creation timestamp")
-    started_at: Optional[datetime] = Field(default=None, description="Job start timestamp")
-    completed_at: Optional[datetime] = Field(default=None, description="Job completion timestamp")
-    error_message: Optional[str] = Field(default=None, description="Error message if job failed")
+    started_at: Optional[datetime] = Field(
+        default=None, description="Job start timestamp"
+    )
+    completed_at: Optional[datetime] = Field(
+        default=None, description="Job completion timestamp"
+    )
+    error_message: Optional[str] = Field(
+        default=None, description="Error message if job failed"
+    )
 
 
 class JobResultsResponse(BaseModel):
@@ -112,6 +134,8 @@ class JobResultsResponse(BaseModel):
 
     job_id: str = Field(description="Job identifier")
     status: JobStatus = Field(description="Job status when results were retrieved")
-    devices: List[Dict[str, Any]] = Field(description="List of device data with CheckMK status")
+    devices: List[Dict[str, Any]] = Field(
+        description="List of device data with CheckMK status"
+    )
     total: int = Field(description="Total number of devices")
     message: str = Field(description="Status message")

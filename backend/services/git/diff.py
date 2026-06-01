@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 class GitDiffService:
     """Service for performing git diff operations."""
 
-    def unified_diff(self, lines1: List[str], lines2: List[str], n: int = 3) -> List[str]:
+    def unified_diff(
+        self, lines1: List[str], lines2: List[str], n: int = 3
+    ) -> List[str]:
         """Generate unified diff between two sets of lines.
 
         Args:
@@ -46,12 +48,22 @@ class GitDiffService:
         Returns:
             DiffStats with additions and deletions count
         """
-        additions = sum(1 for line in diff_lines if line.startswith("+") and not line.startswith("+++"))
-        deletions = sum(1 for line in diff_lines if line.startswith("-") and not line.startswith("---"))
+        additions = sum(
+            1
+            for line in diff_lines
+            if line.startswith("+") and not line.startswith("+++")
+        )
+        deletions = sum(
+            1
+            for line in diff_lines
+            if line.startswith("-") and not line.startswith("---")
+        )
 
         return DiffStats(additions=additions, deletions=deletions)
 
-    def line_by_line_diff(self, content1: str, content2: str) -> Tuple[List[DiffLine], DiffStats]:
+    def line_by_line_diff(
+        self, content1: str, content2: str
+    ) -> Tuple[List[DiffLine], DiffStats]:
         """Generate line-by-line diff with metadata.
 
         Args:
@@ -81,10 +93,14 @@ class GitDiffService:
                 continue
             elif line.startswith("+"):
                 line_number += 1
-                parsed_lines.append(DiffLine(line_number=line_number, type="add", content=line[1:]))
+                parsed_lines.append(
+                    DiffLine(line_number=line_number, type="add", content=line[1:])
+                )
             elif line.startswith("-"):
                 line_number += 1
-                parsed_lines.append(DiffLine(line_number=line_number, type="remove", content=line[1:]))
+                parsed_lines.append(
+                    DiffLine(line_number=line_number, type="remove", content=line[1:])
+                )
             else:
                 line_number += 1
                 parsed_lines.append(
@@ -97,7 +113,9 @@ class GitDiffService:
 
         return parsed_lines, stats
 
-    def compare_file_versions(self, repo: Repo, file_path: str, commit1: str, commit2: str) -> DiffResult:
+    def compare_file_versions(
+        self, repo: Repo, file_path: str, commit1: str, commit2: str
+    ) -> DiffResult:
         """Compare a file between two commits in the same repository.
 
         Args:
@@ -115,13 +133,17 @@ class GitDiffService:
             commit2_obj = repo.commit(commit2)
 
             try:
-                content1 = commit1_obj.tree[file_path].data_stream.read().decode("utf-8")
+                content1 = (
+                    commit1_obj.tree[file_path].data_stream.read().decode("utf-8")
+                )
             except KeyError:
                 content1 = ""
                 logger.warning("File %s not found in commit %s", file_path, commit1)
 
             try:
-                content2 = commit2_obj.tree[file_path].data_stream.read().decode("utf-8")
+                content2 = (
+                    commit2_obj.tree[file_path].data_stream.read().decode("utf-8")
+                )
             except KeyError:
                 content2 = ""
                 logger.warning("File %s not found in commit %s", file_path, commit2)
@@ -133,7 +155,9 @@ class GitDiffService:
             diff_lines = self.unified_diff(lines1, lines2)
             line_by_line, stats = self.line_by_line_diff(content1, content2)
 
-            return DiffResult(diff_lines=diff_lines, line_by_line=line_by_line, stats=stats)
+            return DiffResult(
+                diff_lines=diff_lines, line_by_line=line_by_line, stats=stats
+            )
 
         except Exception as e:
             logger.error("Error comparing file versions: %s", e)
@@ -165,16 +189,24 @@ class GitDiffService:
             commit2_obj = repo2.commit(commit2)
 
             try:
-                content1 = commit1_obj.tree[file_path].data_stream.read().decode("utf-8")
+                content1 = (
+                    commit1_obj.tree[file_path].data_stream.read().decode("utf-8")
+                )
             except KeyError:
                 content1 = ""
-                logger.warning("File %s not found in repo1 at commit %s", file_path, commit1)
+                logger.warning(
+                    "File %s not found in repo1 at commit %s", file_path, commit1
+                )
 
             try:
-                content2 = commit2_obj.tree[file_path].data_stream.read().decode("utf-8")
+                content2 = (
+                    commit2_obj.tree[file_path].data_stream.read().decode("utf-8")
+                )
             except KeyError:
                 content2 = ""
-                logger.warning("File %s not found in repo2 at commit %s", file_path, commit2)
+                logger.warning(
+                    "File %s not found in repo2 at commit %s", file_path, commit2
+                )
 
             # Generate diff
             lines1 = content1.splitlines(keepends=True)
@@ -183,7 +215,9 @@ class GitDiffService:
             diff_lines = self.unified_diff(lines1, lines2)
             line_by_line, stats = self.line_by_line_diff(content1, content2)
 
-            return DiffResult(diff_lines=diff_lines, line_by_line=line_by_line, stats=stats)
+            return DiffResult(
+                diff_lines=diff_lines, line_by_line=line_by_line, stats=stats
+            )
 
         except Exception as e:
             logger.error("Error comparing files across repos: %s", e)

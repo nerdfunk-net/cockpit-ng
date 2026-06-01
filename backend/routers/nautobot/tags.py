@@ -37,7 +37,9 @@ async def get_nautobot_device_tags(
 ):
     """Get Nautobot tags specifically for dcim.device content type."""
     try:
-        result = await nautobot_service.rest_request("extras/tags/?content_types=dcim.device")
+        result = await nautobot_service.rest_request(
+            "extras/tags/?content_types=dcim.device"
+        )
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch device tags: ", e)
@@ -50,7 +52,9 @@ async def get_nautobot_vm_tags(
 ):
     """Get Nautobot tags specifically for virtualization.virtualmachine content type."""
     try:
-        result = await nautobot_service.rest_request("extras/tags/?content_types=virtualization.virtualmachine")
+        result = await nautobot_service.rest_request(
+            "extras/tags/?content_types=virtualization.virtualmachine"
+        )
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch VM tags: ", e)
@@ -63,7 +67,9 @@ async def get_nautobot_ip_address_tags(
 ):
     """Get Nautobot tags specifically for ipam.ipaddress content type."""
     try:
-        result = await nautobot_service.rest_request("extras/tags/?content_types=ipam.ipaddress")
+        result = await nautobot_service.rest_request(
+            "extras/tags/?content_types=ipam.ipaddress"
+        )
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch IP address tags: ", e)
@@ -117,6 +123,10 @@ async def get_nautobot_custom_field_choices(
 ):
     """Get Nautobot custom field choices for a specific custom field."""
     try:
-        return await nautobot_metadata_service.get_custom_field_choices(custom_field_name)
+        return await nautobot_metadata_service.get_custom_field_choices(
+            custom_field_name
+        )
     except Exception as e:
-        raise_internal_server_error(logger, f"Failed to fetch custom field choices for {custom_field_name}", e)
+        raise_internal_server_error(
+            logger, f"Failed to fetch custom field choices for {custom_field_name}", e
+        )

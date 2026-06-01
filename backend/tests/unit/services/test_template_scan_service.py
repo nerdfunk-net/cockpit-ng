@@ -75,7 +75,9 @@ def test_scan_import_directory_skips_invalid_yaml_documents(tmp_path) -> None:
 
 
 @pytest.mark.unit
-def test_scan_import_directory_returns_defaults_for_minimal_descriptor(tmp_path) -> None:
+def test_scan_import_directory_returns_defaults_for_minimal_descriptor(
+    tmp_path,
+) -> None:
     """Minimal descriptors use filename-derived and default metadata."""
     descriptor = tmp_path / "minimal.yaml"
     descriptor.write_text("name: minimal\n", encoding="utf-8")

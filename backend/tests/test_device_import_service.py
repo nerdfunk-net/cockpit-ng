@@ -39,7 +39,9 @@ def mock_common_service():
     # Validation methods
     service.validate_required_fields = MagicMock()
     service._is_valid_uuid = MagicMock(return_value=False)
-    service.normalize_tags = MagicMock(side_effect=lambda x: x if isinstance(x, list) else [x])
+    service.normalize_tags = MagicMock(
+        side_effect=lambda x: x if isinstance(x, list) else [x]
+    )
     # Interface/IP helpers
     service.ensure_ip_address_exists = AsyncMock(return_value="ip-uuid-123")
     service.assign_ip_to_interface = AsyncMock()
@@ -83,7 +85,9 @@ class TestValidation:
     """Tests for validate_import_data method."""
 
     @pytest.mark.asyncio
-    async def test_validate_import_data_success(self, import_service, mock_common_service):
+    async def test_validate_import_data_success(
+        self, import_service, mock_common_service
+    ):
         """Test successful validation with all required fields."""
         device_data = {
             "name": "test-device",
@@ -108,7 +112,9 @@ class TestValidation:
         assert result["tags"] == ["production", "core"]
 
     @pytest.mark.asyncio
-    async def test_validate_import_data_missing_required(self, import_service, mock_common_service):
+    async def test_validate_import_data_missing_required(
+        self, import_service, mock_common_service
+    ):
         """Test validation fails with missing required field."""
         device_data = {
             "name": "test-device",
@@ -123,7 +129,9 @@ class TestValidation:
             await import_service.validate_import_data(device_data)
 
     @pytest.mark.asyncio
-    async def test_validate_import_data_with_uuids(self, import_service, mock_common_service):
+    async def test_validate_import_data_with_uuids(
+        self, import_service, mock_common_service
+    ):
         """Test validation with UUIDs instead of names."""
         mock_common_service._is_valid_uuid.return_value = True
 
@@ -147,7 +155,9 @@ class TestValidation:
         mock_common_service.resolve_location_id.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_validate_import_data_default_status(self, import_service, mock_common_service):
+    async def test_validate_import_data_default_status(
+        self, import_service, mock_common_service
+    ):
         """Test status defaults to 'active' if not provided."""
         device_data = {
             "name": "test-device",
@@ -160,11 +170,15 @@ class TestValidation:
         result = await import_service.validate_import_data(device_data)
 
         # Should resolve "active" status
-        mock_common_service.resolve_status_id.assert_called_with("active", "dcim.device")
+        mock_common_service.resolve_status_id.assert_called_with(
+            "active", "dcim.device"
+        )
         assert result["status"] == "status-uuid"
 
     @pytest.mark.asyncio
-    async def test_validate_import_data_platform_not_found(self, import_service, mock_common_service):
+    async def test_validate_import_data_platform_not_found(
+        self, import_service, mock_common_service
+    ):
         """Test validation continues if optional platform not found."""
         mock_common_service.resolve_platform_id.return_value = None
 
@@ -223,7 +237,9 @@ class TestDeviceCreation:
         )
 
     @pytest.mark.asyncio
-    async def test_create_device_already_exists_skip(self, import_service, mock_nautobot_service, mock_common_service):
+    async def test_create_device_already_exists_skip(
+        self, import_service, mock_nautobot_service, mock_common_service
+    ):
         """Test device already exists with skip_if_exists=True."""
         validated_data = {
             "name": "test-device",
@@ -250,7 +266,9 @@ class TestDeviceCreation:
         assert was_created is False
 
         # Should call resolve to find existing device
-        mock_common_service.resolve_device_by_name.assert_called_once_with("test-device")
+        mock_common_service.resolve_device_by_name.assert_called_once_with(
+            "test-device"
+        )
 
     @pytest.mark.asyncio
     async def test_create_device_already_exists_no_skip(
@@ -265,14 +283,18 @@ class TestDeviceCreation:
             "status": "status-uuid",
         }
 
-        mock_nautobot_service.rest_request.side_effect = Exception("Device with this name already exists")
+        mock_nautobot_service.rest_request.side_effect = Exception(
+            "Device with this name already exists"
+        )
         mock_common_service.is_duplicate_error.return_value = True
 
         with pytest.raises(Exception, match="already exists"):
             await import_service._create_device(validated_data, skip_if_exists=False)
 
     @pytest.mark.asyncio
-    async def test_create_device_no_id_returned(self, import_service, mock_nautobot_service):
+    async def test_create_device_no_id_returned(
+        self, import_service, mock_nautobot_service
+    ):
         """Test error when no device ID returned."""
         validated_data = {"name": "test-device"}
 
@@ -291,7 +313,9 @@ class TestInterfaceCreation:
     """Tests for _create_device_interfaces method."""
 
     @pytest.mark.asyncio
-    async def test_create_interfaces_success(self, import_service, mock_interface_manager):
+    async def test_create_interfaces_success(
+        self, import_service, mock_interface_manager
+    ):
         """Test successful interface creation via InterfaceManagerService."""
         interface_config = [
             {
@@ -327,7 +351,9 @@ class TestInterfaceCreation:
         assert primary_ip == "ip-uuid-123"
 
     @pytest.mark.asyncio
-    async def test_create_interfaces_with_lag(self, import_service, mock_interface_manager):
+    async def test_create_interfaces_with_lag(
+        self, import_service, mock_interface_manager
+    ):
         """Test interface creation with LAG dependency passes config to InterfaceManagerService."""
         interface_config = [
             {
@@ -345,13 +371,15 @@ class TestInterfaceCreation:
         ]
 
         # Configure mock to return 2 interfaces created
-        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
-            interfaces_created=2,
-            interfaces_updated=0,
-            interfaces_failed=0,
-            ip_addresses_created=0,
-            primary_ip4_id=None,
-            warnings=[],
+        mock_interface_manager.update_device_interfaces.return_value = (
+            InterfaceUpdateResult(
+                interfaces_created=2,
+                interfaces_updated=0,
+                interfaces_failed=0,
+                ip_addresses_created=0,
+                primary_ip4_id=None,
+                warnings=[],
+            )
         )
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
@@ -372,7 +400,9 @@ class TestInterfaceCreation:
         assert all(iface["success"] is True for iface in created_interfaces)
 
     @pytest.mark.asyncio
-    async def test_create_interfaces_missing_name(self, import_service, mock_interface_manager):
+    async def test_create_interfaces_missing_name(
+        self, import_service, mock_interface_manager
+    ):
         """Test interface creation with missing name reports failure from InterfaceManagerService."""
         interface_config = [
             {
@@ -383,13 +413,15 @@ class TestInterfaceCreation:
         ]
 
         # Mock InterfaceManagerService returning a failure with warning
-        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
-            interfaces_created=0,
-            interfaces_updated=0,
-            interfaces_failed=1,
-            ip_addresses_created=0,
-            primary_ip4_id=None,
-            warnings=["Interface creation Failed: Missing interface name"],
+        mock_interface_manager.update_device_interfaces.return_value = (
+            InterfaceUpdateResult(
+                interfaces_created=0,
+                interfaces_updated=0,
+                interfaces_failed=1,
+                ip_addresses_created=0,
+                primary_ip4_id=None,
+                warnings=["Interface creation Failed: Missing interface name"],
+            )
         )
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
@@ -404,7 +436,9 @@ class TestInterfaceCreation:
         assert "Failed" in created_interfaces[0]["error"]
 
     @pytest.mark.asyncio
-    async def test_create_interfaces_ip_assignment_fails(self, import_service, mock_interface_manager):
+    async def test_create_interfaces_ip_assignment_fails(
+        self, import_service, mock_interface_manager
+    ):
         """Test interface creation succeeds but IP assignment fails."""
         interface_config = [
             {
@@ -417,13 +451,15 @@ class TestInterfaceCreation:
         ]
 
         # Mock InterfaceManagerService: interface created but IP assignment failed
-        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
-            interfaces_created=1,
-            interfaces_updated=0,
-            interfaces_failed=0,
-            ip_addresses_created=0,  # IP creation failed
-            primary_ip4_id=None,
-            warnings=["IP assignment failed for Loopback0"],
+        mock_interface_manager.update_device_interfaces.return_value = (
+            InterfaceUpdateResult(
+                interfaces_created=1,
+                interfaces_updated=0,
+                interfaces_failed=0,
+                ip_addresses_created=0,  # IP creation failed
+                primary_ip4_id=None,
+                warnings=["IP assignment failed for Loopback0"],
+            )
         )
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
@@ -438,7 +474,9 @@ class TestInterfaceCreation:
         assert primary_ip is None
 
     @pytest.mark.asyncio
-    async def test_create_interfaces_primary_ipv4_selection(self, import_service, mock_interface_manager):
+    async def test_create_interfaces_primary_ipv4_selection(
+        self, import_service, mock_interface_manager
+    ):
         """Test primary IPv4 selection is returned from InterfaceManagerService."""
         interface_config = [
             {
@@ -460,13 +498,15 @@ class TestInterfaceCreation:
         ]
 
         # Mock InterfaceManagerService returning the primary IP from marked interface
-        mock_interface_manager.update_device_interfaces.return_value = InterfaceUpdateResult(
-            interfaces_created=2,
-            interfaces_updated=0,
-            interfaces_failed=0,
-            ip_addresses_created=2,
-            primary_ip4_id="ip-uuid-2",  # The marked primary IP
-            warnings=[],
+        mock_interface_manager.update_device_interfaces.return_value = (
+            InterfaceUpdateResult(
+                interfaces_created=2,
+                interfaces_updated=0,
+                interfaces_failed=0,
+                ip_addresses_created=2,
+                primary_ip4_id="ip-uuid-2",  # The marked primary IP
+                warnings=[],
+            )
         )
 
         created_interfaces, primary_ip = await import_service._create_device_interfaces(
@@ -494,7 +534,9 @@ class TestImportDeviceIntegration:
     """Integration tests for complete import_device workflow."""
 
     @pytest.mark.asyncio
-    async def test_import_device_full_workflow(self, import_service, mock_nautobot_service, mock_interface_manager):
+    async def test_import_device_full_workflow(
+        self, import_service, mock_nautobot_service, mock_interface_manager
+    ):
         """Test complete device import workflow."""
         device_data = {
             "name": "test-device",
@@ -543,7 +585,9 @@ class TestImportDeviceIntegration:
         mock_interface_manager.update_device_interfaces.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_import_device_already_exists_skip(self, import_service, mock_nautobot_service, mock_common_service):
+    async def test_import_device_already_exists_skip(
+        self, import_service, mock_nautobot_service, mock_common_service
+    ):
         """Test import with skip_if_exists when device exists."""
         device_data = {
             "name": "test-device",
@@ -573,7 +617,9 @@ class TestImportDeviceIntegration:
         assert len(result["warnings"]) > 0
 
     @pytest.mark.asyncio
-    async def test_import_device_validation_fails(self, import_service, mock_common_service):
+    async def test_import_device_validation_fails(
+        self, import_service, mock_common_service
+    ):
         """Test import fails gracefully on validation error."""
         device_data = {
             "name": "test-device",
@@ -595,7 +641,9 @@ class TestImportDeviceIntegration:
         assert result["device_id"] is None
 
     @pytest.mark.asyncio
-    async def test_import_device_no_interfaces(self, import_service, mock_nautobot_service, mock_common_service):
+    async def test_import_device_no_interfaces(
+        self, import_service, mock_nautobot_service, mock_common_service
+    ):
         """Test import device without interfaces."""
         device_data = {
             "name": "test-device",

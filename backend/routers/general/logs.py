@@ -32,11 +32,17 @@ async def get_event_types(
 async def get_audit_logs(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=200, description="Items per page"),
-    severity: Optional[str] = Query(None, description="Filter by severity (info/warning/error/critical)"),
+    severity: Optional[str] = Query(
+        None, description="Filter by severity (info/warning/error/critical)"
+    ),
     event_type: Optional[str] = Query(None, description="Filter by event type"),
     username: Optional[str] = Query(None, description="Filter by username"),
-    start_date: Optional[datetime] = Query(None, description="Filter by start date (ISO format)"),
-    end_date: Optional[datetime] = Query(None, description="Filter by end date (ISO format)"),
+    start_date: Optional[datetime] = Query(
+        None, description="Filter by start date (ISO format)"
+    ),
+    end_date: Optional[datetime] = Query(
+        None, description="Filter by end date (ISO format)"
+    ),
     search: Optional[str] = Query(None, description="Search in message field"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("general.logs", "read")),
@@ -59,7 +65,12 @@ async def get_audit_logs(
 
     total = query.count()
 
-    items = query.order_by(AuditLog.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    items = (
+        query.order_by(AuditLog.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     return AuditLogsResponse(
         items=[AuditLogItem.model_validate(item) for item in items],

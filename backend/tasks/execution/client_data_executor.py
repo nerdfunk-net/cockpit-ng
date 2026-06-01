@@ -62,9 +62,15 @@ def execute_get_client_data(
     params = job_parameters or {}
     tmpl = template or {}
 
-    collect_ip_address = params.get("collect_ip_address", tmpl.get("collect_ip_address", True))
-    collect_mac_address = params.get("collect_mac_address", tmpl.get("collect_mac_address", True))
-    collect_hostname = params.get("collect_hostname", tmpl.get("collect_hostname", True))
+    collect_ip_address = params.get(
+        "collect_ip_address", tmpl.get("collect_ip_address", True)
+    )
+    collect_mac_address = params.get(
+        "collect_mac_address", tmpl.get("collect_mac_address", True)
+    )
+    collect_hostname = params.get(
+        "collect_hostname", tmpl.get("collect_hostname", True)
+    )
     parallel_tasks = max(
         1,
         min(50, int(params.get("parallel_tasks", tmpl.get("parallel_tasks", 1)) or 1)),
@@ -89,7 +95,9 @@ def execute_get_client_data(
             collect_hostname,
         )
         logger.info("Parallel tasks: %s", parallel_tasks)
-        logger.info("Target devices: %s", len(target_devices) if target_devices else "all")
+        logger.info(
+            "Target devices: %s", len(target_devices) if target_devices else "all"
+        )
 
         task_context.update_state(
             state="PROGRESS",
@@ -217,7 +225,9 @@ def execute_get_client_data(
         # -------------------------------------------------------------------------
         # Per-device collection — sequential or parallel based on parallel_tasks
         # -------------------------------------------------------------------------
-        def _collect_device(device_id: str, idx: int) -> Tuple[str, bool, List[dict], List[dict], List[dict]]:
+        def _collect_device(
+            device_id: str, idx: int
+        ) -> Tuple[str, bool, List[dict], List[dict], List[dict]]:
             """Collect data from a single device. Returns (device_name, success, arp, mac, hostname)."""
             import asyncio as _asyncio
 
@@ -243,9 +253,15 @@ def execute_get_client_data(
                       }
                     }
                 """
-                device_data = _asyncio.run(_nautobot.graphql_query(query, {"deviceId": device_id}))
+                device_data = _asyncio.run(
+                    _nautobot.graphql_query(query, {"deviceId": device_id})
+                )
 
-                if not device_data or "data" not in device_data or not device_data["data"].get("device"):
+                if (
+                    not device_data
+                    or "data" not in device_data
+                    or not device_data["data"].get("device")
+                ):
                     logger.warning(
                         "[%s/%s] Device %s not found in Nautobot",
                         idx,
@@ -258,7 +274,11 @@ def execute_get_client_data(
                 device_name = device.get("name", device_id)
 
                 primary_ip4 = device.get("primary_ip4") or {}
-                host_ip = primary_ip4.get("host") or (primary_ip4.get("address", "").split("/")[0]) or ""
+                host_ip = (
+                    primary_ip4.get("host")
+                    or (primary_ip4.get("address", "").split("/")[0])
+                    or ""
+                )
 
                 platform_obj = device.get("platform") or {}
                 platform_slug = platform_obj.get("network_driver") or ""
@@ -291,7 +311,9 @@ def execute_get_client_data(
                 )
 
                 if not results:
-                    logger.warning("[%s/%s] No results for %s", idx, total_devices, device_name)
+                    logger.warning(
+                        "[%s/%s] No results for %s", idx, total_devices, device_name
+                    )
                     return device_name, False, [], [], []
 
                 device_result = results[0]
@@ -332,8 +354,12 @@ def execute_get_client_data(
                     )
 
                 if collect_hostname and arp_rows:
-                    unique_ips = {r["ip_address"] for r in arp_rows if r.get("ip_address")}
-                    hostname_rows = _resolve_hostnames(unique_ips, device_name, host_ip, session_id)
+                    unique_ips = {
+                        r["ip_address"] for r in arp_rows if r.get("ip_address")
+                    }
+                    hostname_rows = _resolve_hostnames(
+                        unique_ips, device_name, host_ip, session_id
+                    )
 
                 logger.info(
                     "[%s/%s] ✓ %s — ARP: %s, MAC: %s",
@@ -366,7 +392,9 @@ def execute_get_client_data(
                 }
                 for future in as_completed(future_map):
                     completed += 1
-                    device_name, success, arp_rows, mac_rows, hostname_rows = future.result()
+                    device_name, success, arp_rows, mac_rows, hostname_rows = (
+                        future.result()
+                    )
                     if success:
                         all_arp_rows.extend(arp_rows)
                         all_mac_rows.extend(mac_rows)
@@ -386,7 +414,9 @@ def execute_get_client_data(
         else:
             logger.info("Using sequential execution (parallel_tasks=1)")
             for idx, device_id in enumerate(device_ids, 1):
-                device_name, success, arp_rows, mac_rows, hostname_rows = _collect_device(device_id, idx)
+                device_name, success, arp_rows, mac_rows, hostname_rows = (
+                    _collect_device(device_id, idx)
+                )
                 if success:
                     all_arp_rows.extend(arp_rows)
                     all_mac_rows.extend(mac_rows)
