@@ -589,7 +589,7 @@ async def create_virtual_machine(
         )
 
         audit_log.log_event(
-            username=current_user.get("sub"),
+            username=current_user.get("username") or "unknown",
             user_id=current_user.get("user_id"),
             event_type="nautobot-vm-created",
             message=f"Virtual machine '{vm_request.name}' created in Nautobot",

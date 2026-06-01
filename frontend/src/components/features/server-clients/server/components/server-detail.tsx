@@ -25,6 +25,7 @@ import { useSearchableDropdown } from '@/components/features/nautobot/add-device
 import { useServerMutations } from '@/hooks/queries/use-server-mutations'
 
 import { InterfacesDialog } from '../dialogs/interfaces-dialog'
+import { NautobotUuidRow } from './nautobot-uuid-row'
 import type { SelectedInterface, ServerLocation, ServerResponse } from '../types'
 
 interface MountEntry {
@@ -219,7 +220,7 @@ export function ServerDetail({ server, onShowFacts, onRemove }: ServerDetailProp
           <FactRow label="Disks" value={server.disk_count} />
           <LocationRow server={server} />
           <FactRow label="Contact" value={server.contact} />
-          <FactRow label="Nautobot UUID" value={server.nautobot_uuid} />
+          <NautobotUuidRow server={server} />
         </div>
 
         {/* Mounts table */}
