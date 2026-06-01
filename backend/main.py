@@ -111,6 +111,8 @@ from routers.settings import (
     credentials_router,
     git_settings_router,
     nautobot_settings_router,
+    network_defaults_router,
+    server_defaults_router,
     rbac_router,
     templates_router,
 )
@@ -211,6 +213,8 @@ app.include_router(backup_router)  # Configuration backup management
 app.include_router(config_router)
 app.include_router(settings_router)
 app.include_router(nautobot_settings_router)
+app.include_router(network_defaults_router)
+app.include_router(server_defaults_router)
 app.include_router(git_settings_router)
 app.include_router(checkmk_settings_router)
 app.include_router(agents_settings_router)

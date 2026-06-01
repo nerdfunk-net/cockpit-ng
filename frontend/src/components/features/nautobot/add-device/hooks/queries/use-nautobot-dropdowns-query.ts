@@ -59,7 +59,7 @@ export function useNautobotDropdownsQuery(
         apiCall<DropdownOption[]>('nautobot/namespaces', { method: 'GET' }),
         apiCall<DropdownOption[]>('nautobot/roles/ipaddress', { method: 'GET' }),
         apiCall<{ success: boolean; data: NautobotDefaults }>(
-          'settings/nautobot/defaults',
+          'settings/network/defaults',
           { method: 'GET' }
         )
           .then(res => (res.success && res.data ? res.data : null))

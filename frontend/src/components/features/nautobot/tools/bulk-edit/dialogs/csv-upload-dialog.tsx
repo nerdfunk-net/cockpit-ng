@@ -67,7 +67,7 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
             csv_delimiter?: string
             csv_quote_char?: string
           }
-        }>('settings/nautobot/defaults', {
+        }>('settings/network/defaults', {
           method: 'GET',
         })
 

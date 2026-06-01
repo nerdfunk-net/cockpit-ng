@@ -12,11 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from core.auth import require_permission
 from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_audit_log_service
-from models.settings import (
-    ConnectionTestRequest,
-    NautobotDefaultsRequest,
-    NautobotSettingsRequest,
-)
+from models.settings import ConnectionTestRequest, NautobotSettingsRequest
 from services.audit.audit_log_service import AuditLogService
 
 logger = logging.getLogger(__name__)
@@ -151,54 +147,3 @@ async def test_nautobot_connection(
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-
-@router.get("/nautobot/defaults")
-async def get_nautobot_defaults(
-    current_user: dict = Depends(require_permission("settings.nautobot", "read")),
-):
-    """Get Nautobot default settings."""
-    try:
-        from services.settings.manager import SettingsManager
-
-        settings_manager = SettingsManager()
-
-        defaults = settings_manager.get_nautobot_defaults()
-
-        return {"success": True, "data": defaults}
-
-    except Exception as e:
-        logger.error("Error getting Nautobot defaults: %s", e, exc_info=True)
-        return {
-            "success": False,
-            "message": f"Failed to retrieve Nautobot defaults: {str(e)}",
-        }
-
-
-@router.post("/nautobot/defaults")
-async def update_nautobot_defaults(
-    defaults_request: NautobotDefaultsRequest,
-    current_user: dict = Depends(require_permission("settings.nautobot", "write")),
-):
-    """Update Nautobot default settings."""
-    try:
-        from services.settings.manager import SettingsManager
-
-        settings_manager = SettingsManager()
-
-        success = settings_manager.update_nautobot_defaults(defaults_request.dict())
-
-        if success:
-            return {
-                "success": True,
-                "message": "Nautobot defaults updated successfully",
-                "data": settings_manager.get_nautobot_defaults(),
-            }
-        else:
-            return {"success": False, "message": "Failed to update Nautobot defaults"}
-
-    except Exception as e:
-        logger.error("Error updating Nautobot defaults: %s", e)
-        return {
-            "success": False,
-            "message": f"Failed to update Nautobot defaults: {str(e)}",
-        }

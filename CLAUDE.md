@@ -100,7 +100,7 @@ export default function MyFeatureRoute() {
   - `nb2cmk.py` - `NB2CMKJob`, `NB2CMKJobResult`, `NB2CMKSync`
   - `rack.py` - `RackDeviceMapping`
   - `rbac.py` - `Permission`, `Role`, `RolePermission`, `UserPermission`, `UserRole`
-  - `settings.py` - `AgentsSetting`, `CacheSetting`, `CelerySetting`, `CheckMKSetting`, `GitSetting`, `NautobotDefault`, `NautobotSetting`, `Setting`, `SettingsMetadata`
+  - `settings.py` - `AgentsSetting`, `CacheSetting`, `CelerySetting`, `CheckMKSetting`, `GitSetting`, `NetworkDefault`, `ServerDefault`, `NautobotSetting`, `Setting`, `SettingsMetadata`
   - `snapshots.py` - `Snapshot`, `SnapshotCommand`, `SnapshotCommandTemplate`, `SnapshotResult`
   - `templates.py` - `Template`, `TemplateVersion`
   - `users.py` - `User`, `UserProfile`
@@ -172,7 +172,7 @@ fetch('/api/proxy/users', {
 ## Database Schema (Key Tables)
 
 **Users & RBAC:** `users`, `user_profiles`, `roles`, `permissions`, `role_permissions`, `user_roles`, `user_permissions`
-**Settings:** `settings`, `settings_metadata`, `nautobot_settings`, `nautobot_defaults`, `checkmk_settings`, `git_settings`, `celery_settings`, `agents_settings`, `cache_settings`
+**Settings:** `settings`, `settings_metadata`, `nautobot_settings`, `network_defaults`, `server_defaults`, `checkmk_settings`, `git_settings`, `celery_settings`, `agents_settings`, `cache_settings`
 **Credentials:** `credentials`, `login_credentials`, `snmp_mapping`
 **Jobs:** `jobs`, `job_templates`, `job_schedules`, `job_runs`
 **Git:** `git_repositories`, `templates`, `template_versions`

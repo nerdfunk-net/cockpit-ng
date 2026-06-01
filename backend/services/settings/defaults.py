@@ -11,7 +11,8 @@ __all__ = [
     "CheckMKSettings",
     "CacheSettings",
     "CelerySettings",
-    "NautobotDefaults",
+    "NetworkDefaults",
+    "ServerDefaults",
     "AgentsSettings",
 ]
 
@@ -111,7 +112,22 @@ class CelerySettings:
 
 
 @dataclass
-class NautobotDefaults:
+class NetworkDefaults:
+    location: str = ""
+    platform: str = ""
+    interface_status: str = ""
+    device_status: str = ""
+    ip_address_status: str = ""
+    ip_prefix_status: str = ""
+    namespace: str = ""
+    device_role: str = ""
+    secret_group: str = ""
+    csv_delimiter: str = ","
+    csv_quote_char: str = '"'
+
+
+@dataclass
+class ServerDefaults:
     location: str = ""
     platform: str = ""
     interface_status: str = ""

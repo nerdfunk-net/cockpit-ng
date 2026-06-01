@@ -146,8 +146,24 @@ class GitTestRequest(BaseModel):
     verify_ssl: bool = True
 
 
-class NautobotDefaultsRequest(BaseModel):
-    """Nautobot defaults settings request model."""
+class NetworkDefaultsRequest(BaseModel):
+    """Network defaults settings request model."""
+
+    location: Optional[str] = None
+    platform: Optional[str] = None
+    interface_status: Optional[str] = None
+    device_status: Optional[str] = None
+    ip_address_status: Optional[str] = None
+    ip_prefix_status: Optional[str] = None
+    namespace: Optional[str] = None
+    device_role: Optional[str] = None
+    secret_group: Optional[str] = None
+    csv_delimiter: Optional[str] = ","
+    csv_quote_char: Optional[str] = '"'
+
+
+class ServerDefaultsRequest(BaseModel):
+    """Server defaults settings request model."""
 
     location: Optional[str] = None
     platform: Optional[str] = None

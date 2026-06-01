@@ -71,7 +71,7 @@ def check_ip_task(
                 logger.info(
                     "CSV settings not found in main settings, checking defaults..."
                 )
-                defaults = settings_manager.get_nautobot_defaults()
+                defaults = settings_manager.get_network_defaults()
                 delimiter = delimiter or (
                     defaults.get("csv_delimiter", ",") if defaults else ","
                 )

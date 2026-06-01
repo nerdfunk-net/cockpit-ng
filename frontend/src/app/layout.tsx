@@ -32,7 +32,7 @@ export default function RootLayout({
   // Use React DevTools and browser console for debugging instead
 
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <head>
         {/* Load local fonts for air-gapped environments */}
         {/* eslint-disable-next-line @next/next/no-css-tags */}

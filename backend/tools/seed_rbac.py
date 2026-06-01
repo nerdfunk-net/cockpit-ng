@@ -293,6 +293,8 @@ def seed_permissions(verbose: bool = True):
         ("nautobot.csv_updates", "execute", "Execute CSV update operations"),
         ("settings.nautobot", "read", "View Nautobot settings"),
         ("settings.nautobot", "write", "Modify Nautobot settings"),
+        ("settings.server", "read", "View server default settings"),
+        ("settings.server", "write", "Modify server default settings"),
         # CheckMK permissions
         ("checkmk.devices", "read", "View CheckMK devices"),
         ("checkmk.devices", "write", "Create/update CheckMK devices"),
@@ -464,6 +466,8 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "nautobot.csv_updates:read",
         "nautobot.csv_updates:execute",
         "settings.nautobot:read",
+        "settings.server:read",
+        "settings.server:write",
         # CheckMK
         "checkmk.devices:read",
         "checkmk.devices:write",
@@ -574,6 +578,8 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "settings.credentials:read",
         "settings.templates:read",
         "settings.nautobot:read",
+        "settings.server:read",
+        "settings.server:write",
         # Jobs
         "jobs:read",
         "jobs:execute",

@@ -15,10 +15,13 @@ from services.settings.defaults import (
     CelerySettings,
     CheckMKSettings,
     GitSettings,
-    NautobotDefaults,
+    NetworkDefaults,
     NautobotSettings,
+    ServerDefaults,
 )
 from services.settings.git_service import GitSettingsService
+from services.settings.network_defaults_service import NetworkDefaultsService
+from services.settings.server_defaults_service import ServerDefaultsService
 from services.settings.nautobot_service import NautobotSettingsService
 from services.settings.oidc_service import OidcService
 from services.settings.system_service import SystemSettingsService
@@ -42,7 +45,9 @@ class SettingsManager:
         except ImportError:
             nautobot_default = NautobotSettings()
 
-        self._nautobot = NautobotSettingsService(nautobot_default, NautobotDefaults())
+        self._nautobot = NautobotSettingsService(nautobot_default)
+        self._network_defaults = NetworkDefaultsService(NetworkDefaults())
+        self._server_defaults = ServerDefaultsService(ServerDefaults())
         self._git = GitSettingsService(GitSettings())
         self._checkmk = CheckMKSettingsService(CheckMKSettings())
         self._cache = CacheSettingsService(CacheSettings())
@@ -59,11 +64,17 @@ class SettingsManager:
     def update_nautobot_settings(self, settings: Dict[str, Any]) -> bool:
         return self._nautobot.update(settings)
 
-    def get_nautobot_defaults(self) -> Dict[str, Any]:
-        return self._nautobot.get_defaults()
+    def get_network_defaults(self) -> Dict[str, Any]:
+        return self._network_defaults.get()
 
-    def update_nautobot_defaults(self, defaults: Dict[str, Any]) -> bool:
-        return self._nautobot.update_defaults(defaults)
+    def update_network_defaults(self, defaults: Dict[str, Any]) -> bool:
+        return self._network_defaults.update(defaults)
+
+    def get_server_defaults(self) -> Dict[str, Any]:
+        return self._server_defaults.get()
+
+    def update_server_defaults(self, defaults: Dict[str, Any]) -> bool:
+        return self._server_defaults.update(defaults)
 
     # --- Git ---
 

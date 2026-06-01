@@ -165,10 +165,38 @@ class CacheSetting(Base):
     )
 
 
-class NautobotDefault(Base):
-    """Default values for Nautobot device creation."""
+class NetworkDefault(Base):
+    """Default values for network device and IP creation in Nautobot."""
 
-    __tablename__ = "nautobot_defaults"
+    __tablename__ = "network_defaults"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    location = Column(String(255))
+    platform = Column(String(255))
+    interface_status = Column(String(255))
+    device_status = Column(String(255))
+    ip_address_status = Column(String(255))
+    ip_prefix_status = Column(String(255))
+    namespace = Column(String(255))
+    device_role = Column(String(255))
+    secret_group = Column(String(255))
+    csv_delimiter = Column(String(10), default=",")
+    csv_quote_char = Column(String(10), default='"')
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class ServerDefault(Base):
+    """Default values for server device and IP creation in Nautobot."""
+
+    __tablename__ = "server_defaults"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     location = Column(String(255))

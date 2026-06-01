@@ -415,7 +415,7 @@ export function DeviceSyncDialog({
           interface_status?: string
           namespace?: string
         }
-      }>('settings/nautobot/defaults')
+      }>('settings/network/defaults')
 
       if (response?.data) {
         const defaults = response.data

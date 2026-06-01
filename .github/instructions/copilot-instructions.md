@@ -79,7 +79,8 @@ The application uses a single PostgreSQL database with comprehensive table organ
 - `git_settings` - Git repository settings for configs
 - `cache_settings` - Cache configuration and intervals
 - `celery_settings` - Celery worker and task queue settings
-- `nautobot_defaults` - Default values for Nautobot device creation
+- `network_defaults` - Default values for network device/IP creation in Nautobot
+- `server_defaults` - Default values for server device/IP creation in Nautobot
 - `device_offboarding_settings` - Device offboarding workflow settings
 - `settings_metadata` - Settings versioning and metadata
 

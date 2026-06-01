@@ -129,7 +129,6 @@ export const queryKeys = {
         : ([...queryKeys.nautobot.all, 'software-versions'] as const),
     interfaceTypes: () => [...queryKeys.nautobot.all, 'interface-types'] as const,
     namespaces: () => [...queryKeys.nautobot.all, 'namespaces'] as const,
-    defaults: () => [...queryKeys.nautobot.all, 'defaults'] as const,
 
     // Dynamic data (short cache or no cache)
     tags: (contentType: string) =>
@@ -330,13 +329,16 @@ export const queryKeys = {
   commonSettings: {
     all: ['commonSettings'] as const,
     snmpMapping: () => [...queryKeys.commonSettings.all, 'snmpMapping'] as const,
+    networkDefaults: () =>
+      [...queryKeys.commonSettings.all, 'networkDefaults'] as const,
+    serverDefaults: () =>
+      [...queryKeys.commonSettings.all, 'serverDefaults'] as const,
   },
 
   // Nautobot Settings
   nautobotSettings: {
     all: ['nautobotSettings'] as const,
     settings: () => [...queryKeys.nautobotSettings.all, 'settings'] as const,
-    defaults: () => [...queryKeys.nautobotSettings.all, 'defaults'] as const,
     offboarding: () => [...queryKeys.nautobotSettings.all, 'offboarding'] as const,
     options: () => [...queryKeys.nautobotSettings.all, 'options'] as const,
     customFields: () => [...queryKeys.nautobotSettings.all, 'customFields'] as const,

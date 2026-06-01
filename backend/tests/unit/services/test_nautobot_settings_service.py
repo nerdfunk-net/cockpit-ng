@@ -1,8 +1,4 @@
-"""Unit tests for services/settings/nautobot_service.py.
-
-All tests run offline — NautobotSettingRepository and NautobotDefaultRepository
-are patched per call.
-"""
+"""Unit tests for services/settings/nautobot_service.py."""
 
 from __future__ import annotations
 
@@ -10,29 +6,20 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from services.settings.defaults import NautobotSettings
 from services.settings.nautobot_service import NautobotSettingsService
-from services.settings.defaults import NautobotDefaults, NautobotSettings
 
 _PATCH_SETTING_REPO = "services.settings.nautobot_service.NautobotSettingRepository"
-_PATCH_DEFAULT_REPO = "services.settings.nautobot_service.NautobotDefaultRepository"
 
 _DEFAULT_SETTINGS = NautobotSettings()
-_DEFAULT_NB_DEFAULTS = NautobotDefaults()
 
 
 def _make_service() -> NautobotSettingsService:
-    return NautobotSettingsService(
-        default=_DEFAULT_SETTINGS,
-        default_nautobot_defaults=_DEFAULT_NB_DEFAULTS,
-    )
-
-
-# ── get ────────────────────────────────────────────────────────────────────────
+    return NautobotSettingsService(default=_DEFAULT_SETTINGS)
 
 
 @pytest.mark.unit
 def test_get_returns_db_values_when_settings_exist():
-    """get() returns database row values when settings exist."""
     mock_settings = MagicMock(
         url="http://nautobot.local",
         token="abc123",
@@ -53,7 +40,6 @@ def test_get_returns_db_values_when_settings_exist():
 
 @pytest.mark.unit
 def test_get_returns_defaults_when_no_settings():
-    """get() falls back to defaults when no DB row exists."""
     mock_repo = MagicMock()
     mock_repo.get_settings.return_value = None
 
@@ -66,7 +52,6 @@ def test_get_returns_defaults_when_no_settings():
 
 @pytest.mark.unit
 def test_get_returns_defaults_on_exception():
-    """get() returns defaults when the repository raises."""
     mock_repo = MagicMock()
     mock_repo.get_settings.side_effect = RuntimeError("DB offline")
 
@@ -76,12 +61,8 @@ def test_get_returns_defaults_on_exception():
     assert "url" in result
 
 
-# ── update ─────────────────────────────────────────────────────────────────────
-
-
 @pytest.mark.unit
 def test_update_calls_repo_update_when_existing():
-    """update() calls repo.update when a settings row already exists."""
     existing = MagicMock(id=1)
     mock_repo = MagicMock()
     mock_repo.get_settings.return_value = existing
@@ -96,7 +77,6 @@ def test_update_calls_repo_update_when_existing():
 
 @pytest.mark.unit
 def test_update_calls_repo_create_when_no_existing():
-    """update() calls repo.create when no settings row exists yet."""
     mock_repo = MagicMock()
     mock_repo.get_settings.return_value = None
 
@@ -110,94 +90,10 @@ def test_update_calls_repo_create_when_no_existing():
 
 @pytest.mark.unit
 def test_update_returns_false_on_exception():
-    """update() returns False when the repository raises."""
     mock_repo = MagicMock()
     mock_repo.get_settings.side_effect = Exception("DB error")
 
     with patch(_PATCH_SETTING_REPO, return_value=mock_repo):
         result = _make_service().update({})
-
-    assert result is False
-
-
-# ── get_defaults ───────────────────────────────────────────────────────────────
-
-
-@pytest.mark.unit
-def test_get_defaults_returns_db_values_when_exist():
-    """get_defaults() returns database row values when defaults exist."""
-    mock_settings = MagicMock(
-        location="NYC",
-        platform="ios",
-        interface_status="active",
-        device_status="active",
-        ip_address_status="active",
-        ip_prefix_status="active",
-        namespace="Global",
-        device_role="router",
-        secret_group="default",
-        csv_delimiter=",",
-        csv_quote_char='"',
-    )
-    mock_repo = MagicMock()
-    mock_repo.get_defaults.return_value = mock_settings
-
-    with patch(_PATCH_DEFAULT_REPO, return_value=mock_repo):
-        result = _make_service().get_defaults()
-
-    assert result["location"] == "NYC"
-    assert result["platform"] == "ios"
-    assert result["namespace"] == "Global"
-
-
-@pytest.mark.unit
-def test_get_defaults_falls_back_when_none():
-    """get_defaults() falls back to defaults when no row exists."""
-    mock_repo = MagicMock()
-    mock_repo.get_defaults.return_value = None
-
-    with patch(_PATCH_DEFAULT_REPO, return_value=mock_repo):
-        result = _make_service().get_defaults()
-
-    assert "location" in result
-    assert result["csv_delimiter"] == ","
-
-
-@pytest.mark.unit
-def test_update_defaults_creates_when_no_existing():
-    """update_defaults() calls repo.create when no row exists."""
-    mock_repo = MagicMock()
-    mock_repo.get_defaults.return_value = None
-
-    with patch(_PATCH_DEFAULT_REPO, return_value=mock_repo):
-        result = _make_service().update_defaults({"location": "Berlin"})
-
-    assert result is True
-    mock_repo.create.assert_called_once()
-
-
-@pytest.mark.unit
-def test_update_defaults_updates_when_existing():
-    """update_defaults() calls repo.update when a row already exists."""
-    existing = MagicMock(id=1)
-    mock_repo = MagicMock()
-    mock_repo.get_defaults.return_value = existing
-
-    with patch(_PATCH_DEFAULT_REPO, return_value=mock_repo):
-        result = _make_service().update_defaults({"location": "Paris"})
-
-    assert result is True
-    mock_repo.update.assert_called_once()
-    mock_repo.create.assert_not_called()
-
-
-@pytest.mark.unit
-def test_update_defaults_returns_false_on_exception():
-    """update_defaults() returns False when the repository raises."""
-    mock_repo = MagicMock()
-    mock_repo.get_defaults.side_effect = RuntimeError("DB error")
-
-    with patch(_PATCH_DEFAULT_REPO, return_value=mock_repo):
-        result = _make_service().update_defaults({})
 
     assert result is False

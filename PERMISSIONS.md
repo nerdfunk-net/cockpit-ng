@@ -65,6 +65,8 @@ Every permission follows the pattern:
 | `nautobot.csv_updates:execute` | Execute CSV update operations |
 | `settings.nautobot:read` | View Nautobot connection settings |
 | `settings.nautobot:write` | Modify Nautobot connection settings |
+| `settings.server:read` | View server default settings (Common → Server Defaults) |
+| `settings.server:write` | Modify server default settings |
 
 ### CheckMK Integration
 

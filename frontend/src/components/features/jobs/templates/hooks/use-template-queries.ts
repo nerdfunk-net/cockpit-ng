@@ -361,10 +361,10 @@ export function useNautobotDefaults(options: UseQueryOptions = DEFAULT_OPTIONS) 
   const { enabled = true } = options
 
   return useQuery({
-    queryKey: queryKeys.nautobotSettings.defaults(),
+    queryKey: queryKeys.commonSettings.networkDefaults(),
     queryFn: async () => {
       const response = await apiCall<{ success: boolean; data: NautobotDefaults }>(
-        '/api/settings/nautobot/defaults',
+        'settings/network/defaults',
         { method: 'GET' }
       )
       return response?.data || null

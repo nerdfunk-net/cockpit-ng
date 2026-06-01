@@ -12,7 +12,8 @@ from core.models import (
     CelerySetting,
     CheckMKSetting,
     GitSetting,
-    NautobotDefault,
+    NetworkDefault,
+    ServerDefault,
     NautobotSetting,
     SettingsMetadata,
 )
@@ -111,17 +112,32 @@ class CelerySettingRepository(BaseRepository[CelerySetting]):
             session.close()
 
 
-class NautobotDefaultRepository(BaseRepository[NautobotDefault]):
-    """Repository for Nautobot defaults."""
+class NetworkDefaultRepository(BaseRepository[NetworkDefault]):
+    """Repository for network defaults."""
 
     def __init__(self):
-        super().__init__(NautobotDefault)
+        super().__init__(NetworkDefault)
 
-    def get_defaults(self) -> Optional[NautobotDefault]:
-        """Get the first (and should be only) Nautobot defaults record."""
+    def get_defaults(self) -> Optional[NetworkDefault]:
+        """Get the first (and should be only) network defaults record."""
         session = get_db_session()
         try:
-            return session.query(NautobotDefault).first()
+            return session.query(NetworkDefault).first()
+        finally:
+            session.close()
+
+
+class ServerDefaultRepository(BaseRepository[ServerDefault]):
+    """Repository for server defaults."""
+
+    def __init__(self):
+        super().__init__(ServerDefault)
+
+    def get_defaults(self) -> Optional[ServerDefault]:
+        """Get the first (and should be only) server defaults record."""
+        session = get_db_session()
+        try:
+            return session.query(ServerDefault).first()
         finally:
             session.close()
 

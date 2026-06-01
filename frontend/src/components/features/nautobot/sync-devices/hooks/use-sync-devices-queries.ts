@@ -66,12 +66,12 @@ export function useNautobotDefaultsQuery() {
   const { apiCall } = useApi()
 
   return useQuery({
-    queryKey: queryKeys.nautobot.defaults(),
+    queryKey: queryKeys.commonSettings.networkDefaults(),
     queryFn: async () => {
       const response = await apiCall<{
         success: boolean
         data?: NautobotDefaults
-      }>('settings/nautobot/defaults')
+      }>('settings/network/defaults')
       return response?.data ?? null
     },
     staleTime: 5 * 60 * 1000,

@@ -10,7 +10,9 @@ import {
   Loader2,
   CheckCircle,
   RotateCcw,
+  Database,
   Network,
+  Server,
   Settings,
   Download,
   HelpCircle,
@@ -20,6 +22,8 @@ import { useSnmpMutations } from './hooks/use-snmp-mutations'
 import { SnmpValidationDialog } from './dialogs/snmp-validation-dialog'
 import { SnmpHelpDialog } from './dialogs/snmp-help-dialog'
 import { GitImportDialog } from './dialogs/git-import-dialog'
+import { NetworkDefaultsTab } from './tabs/network-defaults-tab'
+import { ServerDefaultsTab } from './tabs/server-defaults-tab'
 import type { ValidationError } from './types'
 import { SNMP_FILE_NAME, EMPTY_STRING } from './utils/constants'
 
@@ -91,10 +95,18 @@ export default function CommonSettingsForm() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-1 w-full max-w-xs">
+        <TabsList className="grid grid-cols-3 w-full max-w-2xl">
           <TabsTrigger value="snmp-mapping" className="flex items-center space-x-2">
             <Network className="h-4 w-4" />
             <span>SNMP Mapping</span>
+          </TabsTrigger>
+          <TabsTrigger value="network-defaults" className="flex items-center space-x-2">
+            <Database className="h-4 w-4" />
+            <span>Network Defaults</span>
+          </TabsTrigger>
+          <TabsTrigger value="server-defaults" className="flex items-center space-x-2">
+            <Server className="h-4 w-4" />
+            <span>Server Defaults</span>
           </TabsTrigger>
         </TabsList>
 
@@ -202,6 +214,14 @@ export default function CommonSettingsForm() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="network-defaults" className="space-y-6">
+          <NetworkDefaultsTab />
+        </TabsContent>
+
+        <TabsContent value="server-defaults" className="space-y-6">
+          <ServerDefaultsTab />
         </TabsContent>
       </Tabs>
 

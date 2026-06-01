@@ -64,7 +64,7 @@ export function useOnboardingData() {
         apiCall<DropdownOption[]>('nautobot/statuses/prefix'),
         apiCall<DropdownOption[]>('nautobot/secret-groups'),
         apiCall<{ success: boolean; data: NautobotDefaults }>(
-          'settings/nautobot/defaults'
+          'settings/network/defaults'
         ),
       ])
 
