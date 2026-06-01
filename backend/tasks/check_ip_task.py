@@ -22,9 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 @celery_app.task(bind=True)
-def check_ip_task(
-    self, csv_content: str, delimiter: str = None, quote_char: str = None
-) -> Dict[str, Any]:
+def check_ip_task(self, csv_content: str, delimiter: str = None, quote_char: str = None) -> Dict[str, Any]:
     """
     Compare CSV device list with Nautobot devices.
 
@@ -68,16 +66,10 @@ def check_ip_task(
 
             # If not found in main settings, try defaults
             if not delimiter or not quote_char:
-                logger.info(
-                    "CSV settings not found in main settings, checking defaults..."
-                )
+                logger.info("CSV settings not found in main settings, checking defaults...")
                 defaults = settings_manager.get_network_defaults()
-                delimiter = delimiter or (
-                    defaults.get("csv_delimiter", ",") if defaults else ","
-                )
-                quote_char = quote_char or (
-                    defaults.get("csv_quote_char", '"') if defaults else '"'
-                )
+                delimiter = delimiter or (defaults.get("csv_delimiter", ",") if defaults else ",")
+                quote_char = quote_char or (defaults.get("csv_quote_char", '"') if defaults else '"')
                 logger.info(
                     "Using defaults - delimiter: '%s', quote_char: '%s'",
                     delimiter,
@@ -94,9 +86,7 @@ def check_ip_task(
         logger.info("CSV content preview (first 200 chars): %s", csv_content[:200])
 
         # Parse CSV content with configured settings
-        csv_reader = csv.DictReader(
-            io.StringIO(csv_content), delimiter=delimiter, quotechar=quote_char
-        )
+        csv_reader = csv.DictReader(io.StringIO(csv_content), delimiter=delimiter, quotechar=quote_char)
         csv_devices = []
 
         # Log detected CSV columns for debugging
@@ -145,9 +135,7 @@ def check_ip_task(
                 # Call the service directly (same as the /api/nautobot/devices endpoint)
                 # Handle async call in sync Celery task
                 response_data = asyncio.run(
-                    device_query_service.get_devices(
-                        limit=limit, offset=offset, filter_type=None, filter_value=None
-                    )
+                    device_query_service.get_devices(limit=limit, offset=offset, filter_type=None, filter_value=None)
                 )
 
                 devices_batch = response_data.get("devices", [])
@@ -175,9 +163,7 @@ def check_ip_task(
                             ip_address = primary_ip
 
                         if ip_address:  # Only add if we have a valid IP
-                            nautobot_devices.append(
-                                {"name": device["name"], "ip_address": ip_address}
-                            )
+                            nautobot_devices.append({"name": device["name"], "ip_address": ip_address})
 
                 total_loaded += len(devices_batch)
                 logger.info("Loaded %s devices from device_query_service", total_loaded)
@@ -209,9 +195,7 @@ def check_ip_task(
                     "error": f"Failed to load devices from device service: {str(e)}",
                 }
 
-        logger.info(
-            "Total devices loaded from device_query_service: %s", len(nautobot_devices)
-        )
+        logger.info("Total devices loaded from device_query_service: %s", len(nautobot_devices))
 
         # Log first few Nautobot devices for debugging
         if nautobot_devices:
@@ -225,9 +209,7 @@ def check_ip_task(
             if ip:
                 nautobot_lookup[ip] = device["name"]
 
-        logger.info(
-            "Nautobot IP lookup keys: %s", list(nautobot_lookup.keys())[:10]
-        )  # First 10 IPs
+        logger.info("Nautobot IP lookup keys: %s", list(nautobot_lookup.keys())[:10])  # First 10 IPs
 
         # Compare CSV devices with Nautobot devices
         results = []
@@ -307,9 +289,7 @@ def check_ip_task(
                     )
 
             except Exception as e:
-                logger.error(
-                    "Error comparing device %s (%s): %s", csv_name, csv_ip, str(e)
-                )
+                logger.error("Error comparing device %s (%s): %s", csv_name, csv_ip, str(e))
                 results.append(
                     {
                         "ip_address": csv_ip,
@@ -322,9 +302,7 @@ def check_ip_task(
         # Calculate statistics
         match_count = sum(1 for r in results if r["status"] == "match")
         mismatch_count = sum(1 for r in results if r["status"] == "name_mismatch")
-        partial_mismatch_count = sum(
-            1 for r in results if r["status"] == "name_partial_mismatch"
-        )
+        partial_mismatch_count = sum(1 for r in results if r["status"] == "name_partial_mismatch")
         not_found_count = sum(1 for r in results if r["status"] == "ip_not_found")
         error_count = sum(1 for r in results if r["status"] == "error")
 

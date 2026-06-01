@@ -24,12 +24,8 @@ class CheckMKCleanupManager:
         device_name = device_details.get("name")
 
         if not device_name:
-            results["skipped_items"].append(
-                "CheckMK removal skipped: No device name found"
-            )
-            logger.warning(
-                "CheckMK removal skipped: No device name found in device details"
-            )
+            results["skipped_items"].append("CheckMK removal skipped: No device name found")
+            logger.warning("CheckMK removal skipped: No device name found in device details")
             return
 
         try:
@@ -49,8 +45,6 @@ class CheckMKCleanupManager:
                 str(exc),
             )
         except Exception as exc:
-            error_msg = (
-                f"Failed to remove device {device_name} from CheckMK: {str(exc)}"
-            )
+            error_msg = f"Failed to remove device {device_name} from CheckMK: {str(exc)}"
             results["errors"].append(error_msg)
             logger.error(error_msg)

@@ -95,13 +95,9 @@ class SchemaManager:
         # Generate warnings
         warnings = []
         if not migration_system_active:
-            warnings.append(
-                "Migration system not initialized. Versioned migrations haven't run yet."
-            )
+            warnings.append("Migration system not initialized. Versioned migrations haven't run yet.")
         elif is_up_to_date and len(applied_migrations) == 0:
-            warnings.append(
-                "No versioned migrations have been applied, but schema appears current."
-            )
+            warnings.append("No versioned migrations have been applied, but schema appears current.")
         elif not is_up_to_date:
             warnings.append(
                 "Schema differences detected. Consider creating a versioned migration instead of using this tool. "
@@ -115,16 +111,12 @@ class SchemaManager:
             "migration_system": {
                 "active": migration_system_active,
                 "applied_migrations_count": len(applied_migrations),
-                "last_migration": applied_migrations[-1]
-                if applied_migrations
-                else None,
+                "last_migration": applied_migrations[-1] if applied_migrations else None,
             },
             "warnings": warnings,
         }
 
-    def _check_columns(
-        self, table_name: str, table: Table, missing_columns: List[Dict[str, str]]
-    ):
+    def _check_columns(self, table_name: str, table: Table, missing_columns: List[Dict[str, str]]):
         """Check for missing columns in a specific table."""
         existing_columns_info = self.inspector.get_columns(table_name)
         existing_column_names = {col["name"] for col in existing_columns_info}
@@ -193,9 +185,7 @@ class SchemaManager:
                             # Generate SQL type string from SQLAlchemy type
                             # This is a basic implementation and might need refinement for complex types
                             type_compiler = self.engine.dialect.type_compiler
-                            type_str = type_compiler.process(
-                                column_obj.type, type_expression=column_obj
-                            )
+                            type_str = type_compiler.process(column_obj.type, type_expression=column_obj)
 
                             # Build ALTER TABLE statement
                             sql = f"ALTER TABLE {table_name} ADD COLUMN {column_name} {type_str}"
@@ -206,9 +196,7 @@ class SchemaManager:
 
                                 # If adding NOT NULL column to table with data, we need a default
                                 if column_obj.default:
-                                    default_val = self._get_default_value_sql(
-                                        column_obj
-                                    )
+                                    default_val = self._get_default_value_sql(column_obj)
                                     if default_val is not None:
                                         sql += f" DEFAULT {default_val}"
 
@@ -220,9 +208,7 @@ class SchemaManager:
 
                             logger.info("Executing: %s", sql)
                             conn.execute(text(sql))
-                            changes_applied.append(
-                                f"Added column: {table_name}.{column_name}"
-                            )
+                            changes_applied.append(f"Added column: {table_name}.{column_name}")
 
                         except Exception as e:
                             error_msg = f"Failed to add column {table_name}.{column_name}: {str(e)}"
@@ -233,9 +219,7 @@ class SchemaManager:
 
             return {
                 "success": len(errors) == 0,
-                "message": "Migration completed"
-                if len(errors) == 0
-                else "Migration completed with errors",
+                "message": "Migration completed" if len(errors) == 0 else "Migration completed with errors",
                 "changes": changes_applied,
                 "errors": errors,
                 "warnings": warnings,

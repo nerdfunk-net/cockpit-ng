@@ -34,9 +34,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/virtualization", tags=["nautobot-virtualization"])
 
 
-@router.get(
-    "/clusters", response_model=list[Cluster], summary="🔷 GraphQL: List Clusters"
-)
+@router.get("/clusters", response_model=list[Cluster], summary="🔷 GraphQL: List Clusters")
 async def get_clusters(
     group: str | None = None,
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),
@@ -220,9 +218,7 @@ async def create_virtual_machine(
         vm_manager = VirtualMachineManager(nautobot_service)
 
         # Handle software image file (convert single ID to list if provided)
-        software_image_file_ids = (
-            [vm_request.softwareImageFile] if vm_request.softwareImageFile else None
-        )
+        software_image_file_ids = [vm_request.softwareImageFile] if vm_request.softwareImageFile else None
 
         logger.debug("Calling create_virtual_machine...")
         vm_result = await vm_manager.create_virtual_machine(
@@ -273,9 +269,7 @@ async def create_virtual_machine(
 
         if use_new_format:
             # NEW FORMAT: Process interfaces array
-            logger.debug(
-                "Processing %s interfaces (new format)", len(vm_request.interfaces)
-            )
+            logger.debug("Processing %s interfaces (new format)", len(vm_request.interfaces))
 
             for idx, interface_data in enumerate(vm_request.interfaces):
                 try:
@@ -292,27 +286,19 @@ async def create_virtual_machine(
                         name=interface_data.name,
                         virtual_machine_id=vm_id,
                         status_id=interface_data.status,
-                        enabled=interface_data.enabled
-                        if interface_data.enabled is not None
-                        else True,
+                        enabled=interface_data.enabled if interface_data.enabled is not None else True,
                         mac_address=interface_data.mac_address,
                         mtu=interface_data.mtu,
                         description=interface_data.description,
                         mode=interface_data.mode,
                         untagged_vlan_id=interface_data.untagged_vlan,
-                        tagged_vlan_ids=interface_data.tagged_vlans.split(",")
-                        if interface_data.tagged_vlans
-                        else None,
-                        tags=interface_data.tags.split(",")
-                        if interface_data.tags
-                        else None,
+                        tagged_vlan_ids=interface_data.tagged_vlans.split(",") if interface_data.tagged_vlans else None,
+                        tags=interface_data.tags.split(",") if interface_data.tags else None,
                     )
 
                     interface_id = interface_result.get("id")
                     if not interface_id:
-                        raise Exception(
-                            f"Interface '{interface_data.name}' created but no ID returned"
-                        )
+                        raise Exception(f"Interface '{interface_data.name}' created but no ID returned")
 
                     logger.debug(
                         "Interface '%s' created with ID: %s",
@@ -328,10 +314,7 @@ async def create_virtual_machine(
                     )
 
                     # Process IP addresses for this interface (skip if none provided)
-                    if (
-                        interface_data.ip_addresses
-                        and len(interface_data.ip_addresses) > 0
-                    ):
+                    if interface_data.ip_addresses and len(interface_data.ip_addresses) > 0:
                         logger.debug(
                             "Processing %s IP address(es) for interface '%s'",
                             len(interface_data.ip_addresses),
@@ -352,17 +335,13 @@ async def create_virtual_machine(
                                 )
 
                                 # Create or get the IP address
-                                logger.debug(
-                                    "Creating/ensuring IP address exists in Nautobot..."
-                                )
+                                logger.debug("Creating/ensuring IP address exists in Nautobot...")
 
                                 # Prepare additional IP creation kwargs
                                 ip_kwargs = {}
                                 if ip_data.ip_role:
                                     ip_kwargs["role"] = {"id": ip_data.ip_role}
-                                    logger.debug(
-                                        "Including IP role: %s", ip_data.ip_role
-                                    )
+                                    logger.debug("Including IP role: %s", ip_data.ip_role)
 
                                 ip_id = await ip_manager.ensure_ip_address_exists(
                                     ip_address=ip_data.address,
@@ -408,9 +387,7 @@ async def create_virtual_machine(
                             except Exception as ip_error:
                                 logger.error("")
                                 logger.error("=" * 60)
-                                logger.error(
-                                    "❌ FAILED TO PROCESS IP: %s", ip_data.address
-                                )
+                                logger.error("❌ FAILED TO PROCESS IP: %s", ip_data.address)
                                 logger.error("=" * 60)
                                 logger.error("  Error: %s", ip_error)
                                 logger.error("=" * 60)
@@ -436,9 +413,7 @@ async def create_virtual_machine(
 
         elif use_legacy_format:
             # LEGACY FORMAT: Single interface with single IP
-            logger.debug(
-                "Creating interface (legacy format): %s", vm_request.interfaceName
-            )
+            logger.debug("Creating interface (legacy format): %s", vm_request.interfaceName)
 
             try:
                 interface_result = await vm_manager.create_virtual_interface(
@@ -475,17 +450,13 @@ async def create_virtual_machine(
                         namespace_id = vm_request.namespace
                         if not namespace_id:
                             logger.debug("Resolving 'Global' namespace...")
-                            namespace_id = await network_resolver.resolve_namespace_id(
-                                "Global"
-                            )
+                            namespace_id = await network_resolver.resolve_namespace_id("Global")
                             if not namespace_id:
                                 raise Exception("Could not resolve 'Global' namespace")
                             logger.debug("Resolved namespace ID: %s", namespace_id)
 
                         # Create or get the IP address
-                        logger.debug(
-                            "Creating/ensuring IP address exists in Nautobot..."
-                        )
+                        logger.debug("Creating/ensuring IP address exists in Nautobot...")
                         ip_id = await ip_manager.ensure_ip_address_exists(
                             ip_address=vm_request.primaryIpv4,
                             namespace_id=namespace_id,
@@ -524,9 +495,7 @@ async def create_virtual_machine(
                     except Exception as ip_error:
                         logger.error("")
                         logger.error("=" * 60)
-                        logger.error(
-                            "❌ FAILED TO PROCESS IP: %s", vm_request.primaryIpv4
-                        )
+                        logger.error("❌ FAILED TO PROCESS IP: %s", vm_request.primaryIpv4)
                         logger.error("=" * 60)
                         logger.error("  Error: %s", ip_error)
                         logger.error("=" * 60)
@@ -535,12 +504,8 @@ async def create_virtual_machine(
                         )
 
             except Exception as iface_error:
-                logger.error(
-                    "✗ Interface creation failed: %s", iface_error, exc_info=True
-                )
-                response_data["warnings"].append(
-                    f"VM created, but interface creation failed: {str(iface_error)}"
-                )
+                logger.error("✗ Interface creation failed: %s", iface_error, exc_info=True)
+                response_data["warnings"].append(f"VM created, but interface creation failed: {str(iface_error)}")
 
         # Set primary IP for the VM if one was marked as primary
         if primary_ip_id:
@@ -562,22 +527,16 @@ async def create_virtual_machine(
                         break
 
             except Exception as primary_error:
-                logger.error(
-                    "✗ Failed to set primary IP: %s", primary_error, exc_info=True
-                )
+                logger.error("✗ Failed to set primary IP: %s", primary_error, exc_info=True)
                 response_data["warnings"].append(
                     f"VM and interfaces created, but failed to set primary IP: {str(primary_error)}"
                 )
 
         # Update final message
         if response_data["interfaces"]:
-            response_data["message"] += (
-                f" with {len(response_data['interfaces'])} interface(s)"
-            )
+            response_data["message"] += f" with {len(response_data['interfaces'])} interface(s)"
         if response_data["ip_addresses"]:
-            response_data["message"] += (
-                f" and {len(response_data['ip_addresses'])} IP address(es)"
-            )
+            response_data["message"] += f" and {len(response_data['ip_addresses'])} IP address(es)"
 
         logger.debug(
             "VM creation complete: id=%s, interfaces=%s, ips=%s, primary_ip=%s, warnings=%s",

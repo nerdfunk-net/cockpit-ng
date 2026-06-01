@@ -23,27 +23,21 @@ async def authenticate(
         if cisco_result:
             return {"device_type": "cisco", **cisco_result}
 
-        linux_result = await SshAuthenticator().authenticate_linux(
-            ip, username, password
-        )
+        linux_result = await SshAuthenticator().authenticate_linux(ip, username, password)
         if linux_result:
             return {"device_type": "linux", **linux_result}
 
     elif discovery_mode == "ssh-login":
         from .ssh import SshAuthenticator
 
-        result = await SshAuthenticator().authenticate(
-            ip, username, password, parser_templates
-        )
+        result = await SshAuthenticator().authenticate(ip, username, password, parser_templates)
         if result:
             return result
 
     elif discovery_mode == "netmiko":
         from .netmiko import NetmikoAuthenticator
 
-        result = await NetmikoAuthenticator().authenticate(
-            ip, username, password, parser_templates, debug_enabled
-        )
+        result = await NetmikoAuthenticator().authenticate(ip, username, password, parser_templates, debug_enabled)
         if result:
             return result
     else:

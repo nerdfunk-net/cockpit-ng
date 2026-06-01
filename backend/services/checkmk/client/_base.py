@@ -95,13 +95,9 @@ class _CheckMKBase:
             if response.content:
                 try:
                     response_json = response.json()
-                    self.logger.debug(
-                        "Response Body (first 500 chars): %s", str(response_json)[:500]
-                    )
+                    self.logger.debug("Response Body (first 500 chars): %s", str(response_json)[:500])
                 except (json.JSONDecodeError, ValueError):
-                    self.logger.debug(
-                        "Response Text (first 500 chars): %s", response.text[:500]
-                    )
+                    self.logger.debug("Response Text (first 500 chars): %s", response.text[:500])
 
             if response.status_code >= 400 and json_data:
                 self.logger.error(
@@ -117,9 +113,7 @@ class _CheckMKBase:
             self.logger.error("Request exception: %s", str(e))
             raise CheckMKAPIError(f"Request failed: {str(e)}")
 
-    def _handle_response(
-        self, response: requests.Response, request_body: Dict = None
-    ) -> Dict:
+    def _handle_response(self, response: requests.Response, request_body: Dict = None) -> Dict:
         try:
             if response.status_code in [200, 201, 204]:
                 if response.content:
@@ -194,16 +188,10 @@ class _CheckMKBase:
                 elif op_type == "update_host":
                     result = self.update_host(**operation.get("params", {}))
                 elif op_type == "delete_host":
-                    result = self.delete_host(
-                        operation.get("params", {}).get("hostname")
-                    )
+                    result = self.delete_host(operation.get("params", {}).get("hostname"))
                 else:
                     result = {"error": f"Unknown operation type: {op_type}"}
-                results.append(
-                    {"operation": operation, "result": result, "success": True}
-                )
+                results.append({"operation": operation, "result": result, "success": True})
             except CheckMKAPIError as e:
-                results.append(
-                    {"operation": operation, "error": str(e), "success": False}
-                )
+                results.append({"operation": operation, "error": str(e), "success": False})
         return results

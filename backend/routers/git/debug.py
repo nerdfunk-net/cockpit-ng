@@ -119,7 +119,9 @@ async def debug_write_test(
         test_file_path = repo_path / ".cockpit_debug_test.txt"
 
         # Create test content with timestamp
-        test_content = f"Cockpit Debug Test\nTimestamp: {datetime.now().isoformat()}\nRepository: {repository['name']}\n"
+        test_content = (
+            f"Cockpit Debug Test\nTimestamp: {datetime.now().isoformat()}\nRepository: {repository['name']}\n"
+        )
 
         try:
             # Try to write the file
@@ -142,9 +144,7 @@ async def debug_write_test(
 
                 return {
                     "success": success,
-                    "message": "File written successfully"
-                    if success
-                    else "File written but verification failed",
+                    "message": "File written successfully" if success else "File written but verification failed",
                     "details": {
                         "file_path": str(test_file_path),
                         "content_length": len(test_content),
@@ -366,7 +366,9 @@ async def debug_push_test(
 
         try:
             # Step 1: Create or update test file
-            test_content = f"Cockpit Debug Push Test\nTimestamp: {datetime.now().isoformat()}\nRepository: {repository['name']}\n"
+            test_content = (
+                f"Cockpit Debug Push Test\nTimestamp: {datetime.now().isoformat()}\nRepository: {repository['name']}\n"
+            )
             test_file_path.write_text(test_content)
 
             # Step 2: Stage the file
@@ -433,9 +435,7 @@ async def debug_push_test(
 
                         # Push to remote
                         try:
-                            push_info = origin.push(
-                                refspec=f"{repository['branch']}:{repository['branch']}"
-                            )
+                            push_info = origin.push(refspec=f"{repository['branch']}:{repository['branch']}")
 
                             # Restore original URL (without credentials) for token auth
                             if auth_type != "ssh_key" and original_url:
@@ -497,13 +497,12 @@ async def debug_push_test(
                             error_message = str(push_error)
 
                             # Provide helpful error messages for common issues
-                            if (
-                                "permission denied" in error_message.lower()
-                                or "403" in error_message
-                            ):
+                            if "permission denied" in error_message.lower() or "403" in error_message:
                                 suggestion = "Authentication failed or insufficient permissions. Check that the token has write access."
                             elif "could not resolve host" in error_message.lower():
-                                suggestion = "Network error: Cannot reach remote repository. Check network connectivity."
+                                suggestion = (
+                                    "Network error: Cannot reach remote repository. Check network connectivity."
+                                )
                             elif "authentication failed" in error_message.lower():
                                 suggestion = "Credentials are invalid. Update the token in credential settings."
                             else:
@@ -629,9 +628,7 @@ async def debug_diagnostics(
                 diagnostics["git_status"] = {
                     "is_dirty": repo.is_dirty(untracked_files=True),
                     "active_branch": repo.active_branch.name,
-                    "head_commit": repo.head.commit.hexsha[:8]
-                    if repo.head.is_valid()
-                    else "no commits",
+                    "head_commit": repo.head.commit.hexsha[:8] if repo.head.is_valid() else "no commits",
                     "remotes": [r.name for r in repo.remotes],
                     "has_origin": "origin" in [r.name for r in repo.remotes],
                 }
@@ -665,9 +662,7 @@ async def debug_diagnostics(
 
         # Credential information (without exposing secrets) using authentication service
         try:
-            username, token, ssh_key_path = git_auth_service.resolve_credentials(
-                repository
-            )
+            username, token, ssh_key_path = git_auth_service.resolve_credentials(repository)
             auth_type = repository.get("auth_type", "token")
 
             diagnostics["credentials"] = {
@@ -677,9 +672,7 @@ async def debug_diagnostics(
                 "has_token": bool(token),
                 "has_ssh_key": bool(ssh_key_path),
                 "token_length": len(token) if token else 0,
-                "authentication": "configured"
-                if (username and token) or ssh_key_path
-                else "none",
+                "authentication": "configured" if (username and token) or ssh_key_path else "none",
             }
 
             # Push capability assessment based on auth type

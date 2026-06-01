@@ -19,9 +19,7 @@ class RackDeviceMapping(Base):
     location_id = Column(String(255), nullable=False)  # Nautobot location UUID
     origin_name = Column(String(255), nullable=False)  # CSV device name as-is
     mapped_name = Column(String(255), nullable=False)  # Nautobot device name
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -30,8 +28,6 @@ class RackDeviceMapping(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint(
-            "rack_name", "location_id", "origin_name", name="uq_rack_device_mapping"
-        ),
+        UniqueConstraint("rack_name", "location_id", "origin_name", name="uq_rack_device_mapping"),
         Index("idx_rack_device_mapping_lookup", "rack_name", "location_id"),
     )

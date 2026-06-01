@@ -74,11 +74,7 @@ class TestCheckMKWithBaseline:
         all_devices = result.get("data", {}).get("devices", [])
 
         # Filter for devices with credA
-        devices = [
-            d
-            for d in all_devices
-            if d.get("_custom_field_data", {}).get("snmp_credentials") == "credA"
-        ]
+        devices = [d for d in all_devices if d.get("_custom_field_data", {}).get("snmp_credentials") == "credA"]
 
         if not devices:
             pytest.skip("No devices with SNMP credA found in baseline")
@@ -146,18 +142,14 @@ class TestCheckMKWithBaseline:
 
             print("\nNormalized config for lab-001:")
             print(f"Folder: {normalized_config.get('folder')}")
-            print(
-                f"Attributes keys: {list(normalized_config.get('attributes', {}).keys())}"
-            )
+            print(f"Attributes keys: {list(normalized_config.get('attributes', {}).keys())}")
 
             assert "folder" in normalized_config
             assert "attributes" in normalized_config
 
             # Check for SNMP configuration if credB is mapped
             if devices[0].get("_custom_field_data", {}).get("snmp_credentials"):
-                print(
-                    f"SNMP credentials: {devices[0]['_custom_field_data']['snmp_credentials']}"
-                )
+                print(f"SNMP credentials: {devices[0]['_custom_field_data']['snmp_credentials']}")
 
         except Exception as e:
             print(f"Normalization error: {e}")
@@ -187,9 +179,7 @@ class TestCheckMKWithBaseline:
             comparison_result = await nb2cmk_service.compare_device_config(device_id)
 
             print(f"Comparison result: {comparison_result.result}")
-            print(
-                f"Differences: {comparison_result.diff if comparison_result.diff else 'None'}"
-            )
+            print(f"Differences: {comparison_result.diff if comparison_result.diff else 'None'}")
 
             assert comparison_result is not None
             assert hasattr(comparison_result, "result")
@@ -224,11 +214,7 @@ class TestCheckMKWithBaseline:
             pytest.skip(f"GraphQL error: {result['errors']}")
 
         devices = result.get("data", {}).get("devices", [])
-        devices_with_snmp = [
-            d
-            for d in devices
-            if d.get("_custom_field_data", {}).get("snmp_credentials")
-        ]
+        devices_with_snmp = [d for d in devices if d.get("_custom_field_data", {}).get("snmp_credentials")]
 
         print(f"\nTotal devices in Nautobot: {len(devices)}")
         print(f"Devices with SNMP credentials: {len(devices_with_snmp)}")
@@ -270,14 +256,10 @@ class TestSNMPMappingWithBaseline:
         print(f"Baseline credential IDs: {baseline_creds}")
 
         # Check which baseline creds are mapped
-        unmapped_baseline = [
-            cred for cred in baseline_creds if cred not in snmp_mapping
-        ]
+        unmapped_baseline = [cred for cred in baseline_creds if cred not in snmp_mapping]
 
         if unmapped_baseline:
-            print(
-                f"\nWARNING: Baseline credentials not in SNMP mapping: {unmapped_baseline}"
-            )
+            print(f"\nWARNING: Baseline credentials not in SNMP mapping: {unmapped_baseline}")
             print("You may need to add these to config/snmp_mapping.yaml")
 
         # At least the snmp-id-* should be mapped

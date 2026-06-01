@@ -33,9 +33,7 @@ _MIN_PASSWORD_LENGTH = 8
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Set a new Cockpit login password for a named user."
-    )
+    parser = argparse.ArgumentParser(description="Set a new Cockpit login password for a named user.")
     parser.add_argument(
         "--username",
         required=True,
@@ -44,10 +42,7 @@ def main() -> None:
     parser.add_argument(
         "--password",
         default=None,
-        help=(
-            "New plaintext password.  "
-            "If omitted, you will be prompted interactively (input is hidden)."
-        ),
+        help=("New plaintext password.  If omitted, you will be prompted interactively (input is hidden)."),
     )
     args = parser.parse_args()
 
@@ -83,9 +78,7 @@ def main() -> None:
     # Validate
     # ------------------------------------------------------------------
     if len(new_password) < _MIN_PASSWORD_LENGTH:
-        print(
-            f"ERROR: Password must be at least {_MIN_PASSWORD_LENGTH} characters long."
-        )
+        print(f"ERROR: Password must be at least {_MIN_PASSWORD_LENGTH} characters long.")
         sys.exit(1)
 
     # ------------------------------------------------------------------

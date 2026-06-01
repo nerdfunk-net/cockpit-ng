@@ -29,9 +29,7 @@ def _clean_job_runs(postgres_engine_integration, _job_runs_table_present):
 
 @pytest.mark.integration
 class TestJobRunRepositoryDashboardPg:
-    def test_aggregate_status_counts_empty(
-        self, job_run_repository_pg: JobRunRepository
-    ) -> None:
+    def test_aggregate_status_counts_empty(self, job_run_repository_pg: JobRunRepository) -> None:
         counts = job_run_repository_pg.aggregate_status_counts()
         assert counts == {
             "total": 0,

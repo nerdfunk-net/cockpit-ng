@@ -59,12 +59,7 @@ class NB2CMKJobRepository(BaseRepository[NB2CMKJob]):
         """Get recent jobs ordered by created_at descending."""
         db = get_db_session()
         try:
-            return (
-                db.query(self.model)
-                .order_by(desc(self.model.created_at))
-                .limit(limit)
-                .all()
-            )
+            return db.query(self.model).order_by(desc(self.model.created_at)).limit(limit).all()
         finally:
             db.close()
 
@@ -102,9 +97,7 @@ class NB2CMKJobRepository(BaseRepository[NB2CMKJob]):
         cutoff_date = datetime.now() - timedelta(days=days)
         db = get_db_session()
         try:
-            return (
-                db.query(self.model).filter(self.model.created_at < cutoff_date).all()
-            )
+            return db.query(self.model).filter(self.model.created_at < cutoff_date).all()
         finally:
             db.close()
 

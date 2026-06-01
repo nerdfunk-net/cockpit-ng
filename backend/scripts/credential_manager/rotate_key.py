@@ -76,10 +76,7 @@ def _rotate_credentials(
             try:
                 plaintext = old_enc.decrypt(raw)
             except Exception as exc:
-                print(
-                    f"  WARNING: credentials id={row.id} field={field}: "
-                    f"{exc} — skipping field"
-                )
+                print(f"  WARNING: credentials id={row.id} field={field}: {exc} — skipping field")
                 row_failed = True
                 failed += 1
                 continue
@@ -94,9 +91,7 @@ def _rotate_credentials(
 
         if row_changed:
             tag = "[DRY-RUN] " if dry_run else ""
-            print(
-                f"  {tag}credentials id={row.id} name={row.name!r} owner={row.owner!r}"
-            )
+            print(f"  {tag}credentials id={row.id} name={row.name!r} owner={row.owner!r}")
             processed += 1
         else:
             skipped += 1
@@ -147,9 +142,7 @@ def _rotate_login_credentials(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description=(
-            "Re-encrypt stored network credentials from an old SECRET_KEY to a new one."
-        )
+        description=("Re-encrypt stored network credentials from an old SECRET_KEY to a new one.")
     )
     parser.add_argument(
         "--old-key",
@@ -186,10 +179,7 @@ def main() -> None:
     new_key: str = args.new_key or settings.secret_key
 
     if not new_key:
-        print(
-            "ERROR: new key could not be determined.  "
-            "Set SECRET_KEY in .env or pass --new-key."
-        )
+        print("ERROR: new key could not be determined.  Set SECRET_KEY in .env or pass --new-key.")
         sys.exit(1)
 
     if old_key == new_key:
@@ -227,18 +217,13 @@ def main() -> None:
     db = get_db_session()
     try:
         print("Processing credentials table ...")
-        cred_stats = _rotate_credentials(
-            db, old_enc, new_enc, args.username, args.dry_run
-        )
+        cred_stats = _rotate_credentials(db, old_enc, new_enc, args.username, args.dry_run)
 
         if not args.username:
             print("\nProcessing login_credentials table ...")
             login_stats = _rotate_login_credentials(db, old_enc, new_enc, args.dry_run)
         else:
-            print(
-                "\nSkipping login_credentials table "
-                "(no owner field — run without --username to process all rows)."
-            )
+            print("\nSkipping login_credentials table (no owner field — run without --username to process all rows).")
             login_stats = {"processed": 0, "skipped": 0, "failed": 0}
 
         if not args.dry_run:
@@ -265,18 +250,10 @@ def main() -> None:
             f"skipped={login_stats['skipped']}, "
             f"failed={login_stats['failed']}"
         )
-        print(
-            f"  TOTAL:             "
-            f"processed={total_processed}, "
-            f"skipped={total_skipped}, "
-            f"failed={total_failed}"
-        )
+        print(f"  TOTAL:             processed={total_processed}, skipped={total_skipped}, failed={total_failed}")
 
         if total_failed > 0:
-            print(
-                f"\nWARNING: {total_failed} row(s) could not be decrypted with "
-                "the old key and were skipped."
-            )
+            print(f"\nWARNING: {total_failed} row(s) could not be decrypted with the old key and were skipped.")
             sys.exit(2)
 
     except Exception as exc:

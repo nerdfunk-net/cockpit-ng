@@ -55,9 +55,7 @@ class CacheSettingsRequest(BaseModel):
     enabled: bool = True
     ttl_seconds: int = 600
     prefetch_on_startup: bool = True
-    refresh_interval_minutes: int = (
-        15  # DEPRECATED: No longer used, kept for API compatibility
-    )
+    refresh_interval_minutes: int = 15  # DEPRECATED: No longer used, kept for API compatibility
     max_commits: int = 500
     # Optional map of prefetchable items toggles, e.g., {"git": true, "locations": false}
     prefetch_items: Optional[Dict[str, bool]] = None
@@ -97,7 +95,7 @@ class Agent(BaseModel):
     git_repository_id: Optional[int] = None
 
     @model_validator(mode="after")
-    def git_repo_required_for_git_based(self) -> "Agent":
+    def git_repo_required_for_git_based(self) -> Agent:
         if self.type == "git-based" and self.git_repository_id is None:
             raise ValueError("git_repository_id is required for git-based agents")
         return self

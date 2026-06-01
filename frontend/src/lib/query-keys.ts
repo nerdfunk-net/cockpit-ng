@@ -437,4 +437,10 @@ export const queryKeys = {
     list: () => [...queryKeys.servers.all, 'list'] as const,
     detail: (id: number) => [...queryKeys.servers.all, 'detail', id] as const,
   },
+
+  // Agents settings
+  agents: {
+    all: ['agents'] as const,
+    list: () => [...queryKeys.agents.all, 'list'] as const,
+  },
 }

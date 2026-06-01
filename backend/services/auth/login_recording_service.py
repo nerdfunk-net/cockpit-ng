@@ -36,9 +36,7 @@ class LoginRecordingService:
         if extra_data:
             merged.update(extra_data)
         with db_transaction() as db:
-            self._users.update_last_login(
-                user_id, db=db, auto_commit=False
-            )
+            self._users.update_last_login(user_id, db=db, auto_commit=False)
             self._audit.create_log(
                 username=username,
                 user_id=user_id,

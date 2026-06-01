@@ -12,7 +12,6 @@ from utils.inventory_converter import (
     tree_to_operations,
 )
 
-
 # ── tree_to_operations ────────────────────────────────────────────────────────
 
 
@@ -36,9 +35,7 @@ def test_tree_to_operations_single_condition():
     tree = {
         "type": "root",
         "internalLogic": "AND",
-        "items": [
-            {"field": "location", "operator": "equals", "value": "NYC"}
-        ],
+        "items": [{"field": "location", "operator": "equals", "value": "NYC"}],
     }
     ops = tree_to_operations(tree)
     assert len(ops) == 1
@@ -116,9 +113,7 @@ def test_tree_to_operations_not_group():
                 "type": "group",
                 "logic": "NOT",
                 "internalLogic": "AND",
-                "items": [
-                    {"field": "status", "operator": "equals", "value": "retired"}
-                ],
+                "items": [{"field": "status", "operator": "equals", "value": "retired"}],
             }
         ],
     }
@@ -145,9 +140,7 @@ def test_convert_saved_inventory_version_2():
             "tree": {
                 "type": "root",
                 "internalLogic": "AND",
-                "items": [
-                    {"field": "location", "operator": "equals", "value": "NYC"}
-                ],
+                "items": [{"field": "location", "operator": "equals", "value": "NYC"}],
             },
         }
     ]

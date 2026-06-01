@@ -122,9 +122,7 @@ class IPAddressQueryService:
         }}
         """
         logger.info("Fetching IP addresses with filter %s=%s", filter_key, filter_value)
-        ip_addresses = self._run_graphql(
-            primary_query, f"filter {filter_key}={filter_value}"
-        )
+        ip_addresses = self._run_graphql(primary_query, f"filter {filter_key}={filter_value}")
         logger.info(
             "Found %d IP addresses matching filter (before null filtering)",
             len(ip_addresses),
@@ -134,9 +132,7 @@ class IPAddressQueryService:
             # Nautobot passes null values through range/comparison filters (Django ORM behavior).
             # Strip them out explicitly when the caller wants only entries with an actual value.
             before = len(ip_addresses)
-            ip_addresses = [
-                ip for ip in ip_addresses if ip.get(filter_field) is not None
-            ]
+            ip_addresses = [ip for ip in ip_addresses if ip.get(filter_field) is not None]
             removed = before - len(ip_addresses)
             if removed:
                 logger.info(
@@ -176,9 +172,7 @@ class IPAddressQueryService:
             """
             logger.info("Fetching IP addresses with %s=null", filter_field)
             null_addresses = self._run_graphql(null_query, f"{filter_field} is null")
-            logger.info(
-                "Found %d IP addresses with null %s", len(null_addresses), filter_field
-            )
+            logger.info("Found %d IP addresses with null %s", len(null_addresses), filter_field)
 
             # Merge, deduplicating by id
             seen_ids = {ip["id"] for ip in ip_addresses if ip.get("id")}
@@ -221,9 +215,7 @@ class IPAddressQueryService:
             patch["description"] = description
 
         if not patch:
-            logger.warning(
-                "update_ip_address called with nothing to update for %s", ip_id
-            )
+            logger.warning("update_ip_address called with nothing to update for %s", ip_id)
             return True  # nothing to do, not an error
 
         try:
@@ -280,9 +272,7 @@ class IPAddressQueryService:
         Returns:
             Summary dict with keys: total, deleted, failed
         """
-        ip_addresses = self.list_ip_addresses(
-            filter_field, filter_value, filter_type, include_null=include_null
-        )
+        ip_addresses = self.list_ip_addresses(filter_field, filter_value, filter_type, include_null=include_null)
         deleted = 0
         failed = 0
         for ip in ip_addresses:

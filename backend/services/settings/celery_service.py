@@ -74,15 +74,9 @@ class CelerySettingsService:
             queues = data.get("queues", [])
             kwargs = {
                 "max_workers": data.get("max_workers", self._default.max_workers),
-                "cleanup_enabled": data.get(
-                    "cleanup_enabled", self._default.cleanup_enabled
-                ),
-                "cleanup_interval_hours": data.get(
-                    "cleanup_interval_hours", self._default.cleanup_interval_hours
-                ),
-                "cleanup_age_hours": data.get(
-                    "cleanup_age_hours", self._default.cleanup_age_hours
-                ),
+                "cleanup_enabled": data.get("cleanup_enabled", self._default.cleanup_enabled),
+                "cleanup_interval_hours": data.get("cleanup_interval_hours", self._default.cleanup_interval_hours),
+                "cleanup_age_hours": data.get("cleanup_age_hours", self._default.cleanup_age_hours),
                 "client_data_cleanup_enabled": data.get(
                     "client_data_cleanup_enabled",
                     self._default.client_data_cleanup_enabled,
@@ -95,9 +89,7 @@ class CelerySettingsService:
                     "client_data_cleanup_age_hours",
                     self._default.client_data_cleanup_age_hours,
                 ),
-                "result_expires_hours": data.get(
-                    "result_expires_hours", self._default.result_expires_hours
-                ),
+                "result_expires_hours": data.get("result_expires_hours", self._default.result_expires_hours),
                 "queues": json.dumps(queues) if queues else None,
             }
             if existing:
@@ -127,15 +119,11 @@ class CelerySettingsService:
                     for q in current_queues:
                         if q["name"] == builtin["name"] and not q.get("built_in"):
                             q["built_in"] = True
-                            logger.info(
-                                "Set built_in flag for queue: %s", builtin["name"]
-                            )
+                            logger.info("Set built_in flag for queue: %s", builtin["name"])
 
             builtin_names = {bq["name"] for bq in BUILTIN_QUEUES}
             needs_update = queues_added or any(
-                not q.get("built_in")
-                for q in current_queues
-                if q["name"] in builtin_names
+                not q.get("built_in") for q in current_queues if q["name"] in builtin_names
             )
 
             if needs_update:

@@ -23,11 +23,7 @@ def initialize_database_settings():
         db_settings = settings_manager.get_nautobot_settings()
 
         # If no valid token in database, initialize with environment settings
-        if (
-            not db_settings
-            or not db_settings.get("token")
-            or db_settings.get("token") == ""
-        ):
+        if not db_settings or not db_settings.get("token") or db_settings.get("token") == "":
             logger.info("Initializing database with environment variable settings")
             nautobot_settings = {
                 "url": settings.nautobot_url,

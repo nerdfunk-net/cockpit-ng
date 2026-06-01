@@ -26,18 +26,10 @@ class DryRunRequest(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    templateId: int = Field(
-        ..., alias="templateId", description="Template ID to render"
-    )
-    deviceIds: List[str] = Field(
-        ..., alias="deviceIds", description="List of device UUIDs from inventory"
-    )
-    variables: dict = Field(
-        default_factory=dict, description="User-provided custom variables"
-    )
-    agentId: str = Field(
-        ..., alias="agentId", description="Agent ID for deployment configuration"
-    )
+    templateId: int = Field(..., alias="templateId", description="Template ID to render")
+    deviceIds: List[str] = Field(..., alias="deviceIds", description="List of device UUIDs from inventory")
+    variables: dict = Field(default_factory=dict, description="User-provided custom variables")
+    agentId: str = Field(..., alias="agentId", description="Agent ID for deployment configuration")
     path: str | None = Field(None, description="Optional deployment path")
     template_content: str | None = Field(
         None, description="Optional edited template content (overrides stored content)"

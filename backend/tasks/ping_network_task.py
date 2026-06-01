@@ -72,9 +72,7 @@ def _fping_networks(
 
     try:
         # Create temporary file with all IP addresses
-        with tempfile.NamedTemporaryFile(
-            mode="w", delete=False, suffix=".txt", prefix="fping_targets_"
-        ) as temp_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt", prefix="fping_targets_") as temp_file:
             temp_file_path = temp_file.name
             for ip in ip_list:
                 temp_file.write(f"{ip}\n")
@@ -114,12 +112,8 @@ def _fping_networks(
 
         # Log raw fping output for debugging
         logger.debug("fping return code: %s", result.returncode)
-        logger.debug(
-            "fping stdout length: %s bytes", len(result.stdout) if result.stdout else 0
-        )
-        logger.debug(
-            "fping stderr length: %s bytes", len(result.stderr) if result.stderr else 0
-        )
+        logger.debug("fping stdout length: %s bytes", len(result.stdout) if result.stdout else 0)
+        logger.debug("fping stderr length: %s bytes", len(result.stderr) if result.stderr else 0)
 
         # Parse fping output
         # When using -c flag, fping outputs statistics format in STDERR:
@@ -168,13 +162,9 @@ def _fping_networks(
 
                                 if rcv_count > 0:
                                     alive_ips.add(ip)
-                                    logger.debug(
-                                        "Found alive IP: %s (rcv=%s)", ip, rcv_count
-                                    )
+                                    logger.debug("Found alive IP: %s (rcv=%s)", ip, rcv_count)
                             except (IndexError, ValueError) as e:
-                                logger.warning(
-                                    "Failed to parse statistics line: %s - %s", line, e
-                                )
+                                logger.warning("Failed to parse statistics line: %s - %s", line, e)
 
             logger.debug("Processed %s statistics lines", stats_lines)
 
@@ -184,9 +174,7 @@ def _fping_networks(
             len(ip_list),
         )
         if alive_ips:
-            logger.info(
-                "Alive IPs: %s", sorted(list(alive_ips))[:50]
-            )  # Log first 50 alive IPs
+            logger.info("Alive IPs: %s", sorted(list(alive_ips))[:50])  # Log first 50 alive IPs
 
     except subprocess.TimeoutExpired:
         logger.warning("fping command timed out")
@@ -201,9 +189,7 @@ def _fping_networks(
                 os.unlink(temp_file_path)
                 logger.debug("Cleaned up temporary file %s", temp_file_path)
             except Exception as e:
-                logger.warning(
-                    "Failed to clean up temporary file %s: %s", temp_file_path, e
-                )
+                logger.warning("Failed to clean up temporary file %s: %s", temp_file_path, e)
 
     return alive_ips
 
@@ -364,9 +350,7 @@ def ping_network_task(
         )
 
         alive_ips = _fping_networks(all_ips, count, timeout, retry, interval)
-        logger.info(
-            "fping found %s alive hosts out of %s targets", len(alive_ips), len(all_ips)
-        )
+        logger.info("fping found %s alive hosts out of %s targets", len(alive_ips), len(all_ips))
 
         # Process results per network
         network_results: List[Dict[str, Any]] = []
@@ -423,9 +407,7 @@ def ping_network_task(
         # Mark job as completed
         _jrs.mark_completed(job_run_id, result=result)
 
-        logger.info(
-            "Ping network task completed: %s/%s reachable", len(alive_ips), len(all_ips)
-        )
+        logger.info("Ping network task completed: %s/%s reachable", len(alive_ips), len(all_ips))
         return result
 
     except Exception as e:

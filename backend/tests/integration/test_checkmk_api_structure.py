@@ -120,9 +120,7 @@ class TestCheckMKAPIResponseStructure:
         service = NautobotToCheckMKService()
 
         mock_nb_service = AsyncMock()
-        mock_nb_service.graphql_query = AsyncMock(
-            return_value={"data": {"device": mock_nautobot_device}}
-        )
+        mock_nb_service.graphql_query = AsyncMock(return_value={"data": {"device": mock_nautobot_device}})
         mock_config = MagicMock()
         mock_config.load_snmp_mapping.return_value = SNMP_MAPPING_CONFIG
         mock_config.load_checkmk_config.return_value = {
@@ -134,18 +132,12 @@ class TestCheckMKAPIResponseStructure:
         mock_client = MagicMock()
         mock_client.get_host.return_value = mock_checkmk_response
         with (
-            patch(
-                "service_factory.build_nautobot_service", return_value=mock_nb_service
-            ),
-            patch(
-                "service_factory.build_checkmk_config_service", return_value=mock_config
-            ),
+            patch("service_factory.build_nautobot_service", return_value=mock_nb_service),
+            patch("service_factory.build_checkmk_config_service", return_value=mock_config),
             patch("service_factory.build_checkmk_client", return_value=mock_client),
         ):
             # Perform comparison
-            result = await service.compare_device_config(
-                "71cd69db-dca1-425b-a1d8-46952ef2c8e9"
-            )
+            result = await service.compare_device_config("71cd69db-dca1-425b-a1d8-46952ef2c8e9")
 
             # Verify comparison succeeded
             assert result is not None

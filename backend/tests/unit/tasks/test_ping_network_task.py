@@ -162,9 +162,7 @@ def test_ping_network_task_success_with_alive_hosts():
         with patch("tasks.ping_network_task.service_factory") as mock_sf:
             mock_sf.build_job_run_service.return_value = mock_jrs
             with patch("tasks.ping_network_task._fping_networks", return_value=alive):
-                result = ping_network_task.run(
-                    cidrs=["192.168.1.0/24"], resolve_dns=False
-                )
+                result = ping_network_task.run(cidrs=["192.168.1.0/24"], resolve_dns=False)
 
     assert result["success"] is True
     assert result["total_reachable"] == 2

@@ -37,15 +37,11 @@ async def check_compliance(
     username/password combinations from the encrypted database.
     """
     try:
-        logger.info(
-            "Starting compliance check for %s devices", len(check_request.devices)
-        )
+        logger.info("Starting compliance check for %s devices", len(check_request.devices))
 
         # Validate that at least one check type is enabled
         if not (
-            check_request.check_ssh_logins
-            or check_request.check_snmp_credentials
-            or check_request.check_configuration
+            check_request.check_ssh_logins or check_request.check_snmp_credentials or check_request.check_configuration
         ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -79,18 +75,14 @@ async def check_compliance(
         if check_request.check_ssh_logins:
             for cred_id in check_request.selected_login_ids:
                 # Load with decryption to get actual passwords
-                cred = compliance.get_login_credential_by_id(
-                    cred_id, decrypt_password=True
-                )
+                cred = compliance.get_login_credential_by_id(cred_id, decrypt_password=True)
                 if cred and cred["is_active"]:
                     login_credentials.append(cred)
 
         if check_request.check_snmp_credentials:
             for snmp_id in check_request.selected_snmp_ids:
                 # Load with decryption to get actual passwords
-                snmp = compliance.get_snmp_mapping_by_id(
-                    snmp_id, decrypt_passwords=True
-                )
+                snmp = compliance.get_snmp_mapping_by_id(snmp_id, decrypt_passwords=True)
                 if snmp and snmp["is_active"]:
                     snmp_mappings.append(snmp)
 
@@ -158,9 +150,7 @@ async def check_compliance(
                         password=cred["password"],
                     )
                     # Add credential name to result details
-                    result["details"]["credential_name"] = cred.get(
-                        "name", cred["username"]
-                    )
+                    result["details"]["credential_name"] = cred.get("name", cred["username"])
                     ssh_results.append(result)
 
                 device_result["checks"]["ssh_logins"] = {

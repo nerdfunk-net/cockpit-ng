@@ -10,7 +10,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-
 _PATCH_REPO = "utils.audit_logger.audit_log_repo"
 
 
@@ -136,9 +135,7 @@ def test_log_checkmk_sync_event_add_success_message():
     with patch(_PATCH_REPO, mock_repo):
         from utils.audit_logger import log_checkmk_sync_event
 
-        log_checkmk_sync_event(
-            username="admin", action="add", device_name="sw1", success=True
-        )
+        log_checkmk_sync_event(username="admin", action="add", device_name="sw1", success=True)
 
     call_kwargs = mock_repo.create_log.call_args.kwargs
     assert "added to" in call_kwargs["message"]
@@ -151,9 +148,7 @@ def test_log_checkmk_sync_event_update_success_message():
     with patch(_PATCH_REPO, mock_repo):
         from utils.audit_logger import log_checkmk_sync_event
 
-        log_checkmk_sync_event(
-            username="admin", action="update", device_name="sw1", success=True
-        )
+        log_checkmk_sync_event(username="admin", action="update", device_name="sw1", success=True)
 
     call_kwargs = mock_repo.create_log.call_args.kwargs
     assert "updated in" in call_kwargs["message"]

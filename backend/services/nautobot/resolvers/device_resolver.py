@@ -39,9 +39,7 @@ class DeviceResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error(
-                    "GraphQL error looking up device by name: %s", result["errors"]
-                )
+                logger.error("GraphQL error looking up device by name: %s", result["errors"])
                 return None
 
             devices = result.get("data", {}).get("devices", [])
@@ -90,9 +88,7 @@ class DeviceResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error(
-                    "GraphQL error looking up IP address: %s", result["errors"]
-                )
+                logger.error("GraphQL error looking up IP address: %s", result["errors"])
                 return None
 
             ip_addresses = result.get("data", {}).get("ip_addresses", [])
@@ -105,9 +101,7 @@ class DeviceResolver(BaseResolver):
             devices = ip_obj.get("primary_ip4_for")
 
             if not devices:
-                logger.warning(
-                    "IP address %s is not set as primary IP for any device", ip_address
-                )
+                logger.warning("IP address %s is not set as primary IP for any device", ip_address)
                 return None
 
             # primary_ip4_for can be a list or a single device
@@ -124,9 +118,7 @@ class DeviceResolver(BaseResolver):
 
             device_id = device.get("id")
             device_name = device.get("name")
-            logger.info(
-                "Found device by IP '%s': %s (%s)", ip_address, device_name, device_id
-            )
+            logger.info("Found device by IP '%s': %s (%s)", ip_address, device_name, device_id)
             return device_id
 
         except Exception as e:
@@ -244,14 +236,10 @@ class DeviceResolver(BaseResolver):
             return device_id
 
         except Exception as e:
-            logger.error(
-                "Error resolving device by name (contains): %s", e, exc_info=True
-            )
+            logger.error("Error resolving device by name (contains): %s", e, exc_info=True)
             return None
 
-    async def resolve_device_by_name_starts_with(
-        self, device_name: str
-    ) -> Optional[str]:
+    async def resolve_device_by_name_starts_with(self, device_name: str) -> Optional[str]:
         """
         Resolve device UUID by searching for devices whose name *starts with* the given string.
 
@@ -287,9 +275,7 @@ class DeviceResolver(BaseResolver):
 
             devices = result.get("data", {}).get("devices", [])
             if not devices:
-                logger.warning(
-                    "No device found whose name starts with: %s", device_name
-                )
+                logger.warning("No device found whose name starts with: %s", device_name)
                 return None
 
             if len(devices) > 1:
@@ -311,14 +297,10 @@ class DeviceResolver(BaseResolver):
             return device_id
 
         except Exception as e:
-            logger.error(
-                "Error resolving device by name (starts_with): %s", e, exc_info=True
-            )
+            logger.error("Error resolving device by name (starts_with): %s", e, exc_info=True)
             return None
 
-    async def resolve_device_type_id(
-        self, model: str, manufacturer: Optional[str] = None
-    ) -> Optional[str]:
+    async def resolve_device_type_id(self, model: str, manufacturer: Optional[str] = None) -> Optional[str]:
         """
         Resolve device type (model) to UUID using GraphQL.
 
@@ -367,9 +349,7 @@ class DeviceResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error(
-                    "GraphQL error resolving device type: %s", result["errors"]
-                )
+                logger.error("GraphQL error resolving device type: %s", result["errors"])
                 return None
 
             device_types = result.get("data", {}).get("device_types", [])
@@ -405,9 +385,7 @@ class DeviceResolver(BaseResolver):
         try:
             logger.debug("Fetching device type display for UUID: %s", device_type_id)
 
-            result = await self.nautobot.rest_request(
-                endpoint=f"dcim/device-types/{device_type_id}/", method="GET"
-            )
+            result = await self.nautobot.rest_request(endpoint=f"dcim/device-types/{device_type_id}/", method="GET")
 
             if result:
                 # Try display field first (most descriptive), fall back to model
@@ -427,9 +405,7 @@ class DeviceResolver(BaseResolver):
             logger.error("Error fetching device type display: %s", e, exc_info=True)
             return None
 
-    async def find_interface_with_ip(
-        self, device_name: str, ip_address: str
-    ) -> Optional[Tuple[str, str]]:
+    async def find_interface_with_ip(self, device_name: str, ip_address: str) -> Optional[Tuple[str, str]]:
         """
         Find the interface that currently has a specific IP address on a device.
 
@@ -441,9 +417,7 @@ class DeviceResolver(BaseResolver):
             Tuple of (interface_id, interface_name) if found, None otherwise
         """
         try:
-            logger.info(
-                "Finding interface with IP %s on device %s", ip_address, device_name
-            )
+            logger.info("Finding interface with IP %s on device %s", ip_address, device_name)
 
             query = """
             query ($filter_device: [String], $filter_address: [String]) {
@@ -465,9 +439,7 @@ class DeviceResolver(BaseResolver):
             result = await self.nautobot.graphql_query(query, variables)
 
             if "errors" in result:
-                logger.error(
-                    "GraphQL error finding interface with IP: %s", result["errors"]
-                )
+                logger.error("GraphQL error finding interface with IP: %s", result["errors"])
                 return None
 
             devices = result.get("data", {}).get("devices", [])

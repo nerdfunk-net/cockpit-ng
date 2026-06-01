@@ -1,7 +1,17 @@
+import json
+import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from pydantic.networks import IPvAnyAddress
+
+_ANSIBLE_FACTS_MAX_BYTES = 512 * 1024  # 512 KB
+
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
 
 
 class ServerLocation(BaseModel):
@@ -57,9 +67,39 @@ class CreateServerRequest(BaseModel):
     distribution_release: Optional[str] = Field(None, max_length=100)
     distribution_version: Optional[str] = Field(None, max_length=100)
     contact: Optional[str] = Field(None, max_length=255)
-    nautobot_uuid: Optional[str] = Field(None, max_length=255)
+    nautobot_uuid: Optional[str] = Field(None, max_length=36)
     is_virtual: Optional[bool] = None
     ansible_facts: Optional[Dict[str, Any]] = None
+
+    @field_validator("primary_ipv4", mode="before")
+    @classmethod
+    def validate_ipv4(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        try:
+            IPvAnyAddress(v)
+        except Exception:
+            raise ValueError(f"primary_ipv4 must be a valid IP address, got: {v!r}")
+        return v
+
+    @field_validator("nautobot_uuid", mode="before")
+    @classmethod
+    def validate_uuid(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        if not _UUID_RE.match(str(v)):
+            raise ValueError(f"nautobot_uuid must be a valid UUID, got: {v!r}")
+        return v
+
+    @field_validator("ansible_facts", mode="before")
+    @classmethod
+    def validate_ansible_facts_size(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        size = len(json.dumps(v).encode())
+        if size > _ANSIBLE_FACTS_MAX_BYTES:
+            raise ValueError(f"ansible_facts exceeds maximum allowed size of {_ANSIBLE_FACTS_MAX_BYTES // 1024} KB")
+        return v
 
 
 class UpdateServerRequest(BaseModel):
@@ -75,11 +115,41 @@ class UpdateServerRequest(BaseModel):
     distribution_release: Optional[str] = Field(None, max_length=100)
     distribution_version: Optional[str] = Field(None, max_length=100)
     contact: Optional[str] = Field(None, max_length=255)
-    nautobot_uuid: Optional[str] = Field(None, max_length=255)
+    nautobot_uuid: Optional[str] = Field(None, max_length=36)
     is_virtual: Optional[bool] = None
     ansible_facts: Optional[Dict[str, Any]] = None
     selected_interfaces: Optional[List[Dict[str, Any]]] = None
     cluster: Optional[ServerCluster] = None
+
+    @field_validator("primary_ipv4", mode="before")
+    @classmethod
+    def validate_ipv4(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        try:
+            IPvAnyAddress(v)
+        except Exception:
+            raise ValueError(f"primary_ipv4 must be a valid IP address, got: {v!r}")
+        return v
+
+    @field_validator("nautobot_uuid", mode="before")
+    @classmethod
+    def validate_uuid(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        if not _UUID_RE.match(str(v)):
+            raise ValueError(f"nautobot_uuid must be a valid UUID, got: {v!r}")
+        return v
+
+    @field_validator("ansible_facts", mode="before")
+    @classmethod
+    def validate_ansible_facts_size(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        size = len(json.dumps(v).encode())
+        if size > _ANSIBLE_FACTS_MAX_BYTES:
+            raise ValueError(f"ansible_facts exceeds maximum allowed size of {_ANSIBLE_FACTS_MAX_BYTES // 1024} KB")
+        return v
 
 
 class ListServersResponse(BaseModel):

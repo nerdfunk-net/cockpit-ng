@@ -23,26 +23,25 @@ from models.servers import (
     ServerResponse,
     UpdateServerRequest,
 )
-from services.servers.servers_service import ServersService
+from services.servers.servers_service import _ALLOWED_GROUP_BY, ServersService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/servers", tags=["servers"])
 
-_ALLOWED_GROUP_BY = frozenset(
-    {"location", "distribution_release", "distribution_version", "contact"}
-)
-
 
 @router.get("", response_model=ListServersResponse)
 async def list_servers(
-    group_by: Optional[str] = Query(
-        None, description="Group servers by field (location, distribution_release, …)"
-    ),
+    group_by: Optional[str] = Query(None, description="Group servers by field (location, distribution_release, …)"),
     _: dict = Depends(require_permission("servers", "read")),
     service: ServersService = Depends(get_servers_service),
 ) -> ListServersResponse:
     """Return all servers, optionally grouped by a field value."""
+    if group_by is not None and group_by not in _ALLOWED_GROUP_BY:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid group_by value. Allowed: {sorted(_ALLOWED_GROUP_BY)}",
+        )
     try:
         servers = service.get_all()
         return ListServersResponse(
@@ -79,7 +78,7 @@ async def create_server(
 ) -> ServerResponse:
     """Create a new server record."""
     try:
-        server = service.create(**request.model_dump())
+        server = service.create(request)
         return ServerResponse.model_validate(server)
     except Exception as exc:
         raise_internal_server_error(logger, "Failed to create server", exc)
@@ -94,8 +93,7 @@ async def update_server(
 ) -> ServerResponse:
     """Update an existing server record."""
     try:
-        updates = {k: v for k, v in request.model_dump().items() if v is not None}
-        server = service.update(server_id, **updates)
+        server = service.update(server_id, request)
         if server is None:
             raise HTTPException(status_code=404, detail="Server not found")
         return ServerResponse.model_validate(server)

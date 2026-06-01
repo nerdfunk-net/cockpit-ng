@@ -11,14 +11,10 @@ from services.settings.credentials_service import CredentialsService
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 
 
-@router.get(
-    "", dependencies=[Depends(require_permission("settings.credentials", "read"))]
-)
+@router.get("", dependencies=[Depends(require_permission("settings.credentials", "read"))])
 def list_credentials(
     include_expired: bool = Query(False),
-    source: str | None = Query(
-        None, description="Filter by source: 'general', 'private', or None for all"
-    ),
+    source: str | None = Query(None, description="Filter by source: 'general', 'private', or None for all"),
     current_user: str = Depends(get_current_username),
     cred_mgr: CredentialsService = Depends(get_credentials_service),
 ) -> list[dict]:
@@ -31,29 +27,17 @@ def list_credentials(
     """
     if source == "general":
         # Return only general credentials
-        return cred_mgr.list_credentials(
-            include_expired=include_expired, source="general"
-        )
+        return cred_mgr.list_credentials(include_expired=include_expired, source="general")
     elif source == "private":
         # Return only user's private credentials
-        all_private = cred_mgr.list_credentials(
-            include_expired=include_expired, source="private"
-        )
-        user_private = [
-            cred for cred in all_private if cred.get("owner") == current_user
-        ]
+        all_private = cred_mgr.list_credentials(include_expired=include_expired, source="private")
+        user_private = [cred for cred in all_private if cred.get("owner") == current_user]
         return user_private
     else:
         # Return both general and user's private credentials
-        general_creds = cred_mgr.list_credentials(
-            include_expired=include_expired, source="general"
-        )
-        all_private = cred_mgr.list_credentials(
-            include_expired=include_expired, source="private"
-        )
-        user_private = [
-            cred for cred in all_private if cred.get("owner") == current_user
-        ]
+        general_creds = cred_mgr.list_credentials(include_expired=include_expired, source="general")
+        all_private = cred_mgr.list_credentials(include_expired=include_expired, source="private")
+        user_private = [cred for cred in all_private if cred.get("owner") == current_user]
         return general_creds + user_private
 
 
@@ -70,9 +54,7 @@ def create_credential(
             username=payload.username,
             cred_type=payload.type,
             password=payload.password,
-            valid_until=payload.valid_until.isoformat()
-            if payload.valid_until
-            else None,
+            valid_until=payload.valid_until.isoformat() if payload.valid_until else None,
             source="general",  # Force general source for admin credentials interface
             ssh_private_key=payload.ssh_private_key,
             ssh_passphrase=payload.ssh_passphrase,
@@ -107,9 +89,7 @@ def update_credential(
             username=payload.username,
             cred_type=payload.type,
             password=payload.password,
-            valid_until=payload.valid_until.isoformat()
-            if payload.valid_until
-            else None,
+            valid_until=payload.valid_until.isoformat() if payload.valid_until else None,
             source="general",  # Force general source for admin credentials interface
             ssh_private_key=payload.ssh_private_key,
             ssh_passphrase=payload.ssh_passphrase,
@@ -172,13 +152,9 @@ def get_credential_password(
     """
     try:
         # First check if credential exists and is accessible
-        general_creds = cred_mgr.list_credentials(
-            include_expired=False, source="general"
-        )
+        general_creds = cred_mgr.list_credentials(include_expired=False, source="general")
         all_private = cred_mgr.list_credentials(include_expired=False, source="private")
-        user_private = [
-            cred for cred in all_private if cred.get("owner") == current_user
-        ]
+        user_private = [cred for cred in all_private if cred.get("owner") == current_user]
         accessible_creds = general_creds + user_private
 
         credential = next((c for c in accessible_creds if c["id"] == cred_id), None)
@@ -217,13 +193,9 @@ def get_credential_ssh_key(
     """
     try:
         # First check if credential exists and is accessible
-        general_creds = cred_mgr.list_credentials(
-            include_expired=False, source="general"
-        )
+        general_creds = cred_mgr.list_credentials(include_expired=False, source="general")
         all_private = cred_mgr.list_credentials(include_expired=False, source="private")
-        user_private = [
-            cred for cred in all_private if cred.get("owner") == current_user
-        ]
+        user_private = [cred for cred in all_private if cred.get("owner") == current_user]
         accessible_creds = general_creds + user_private
 
         credential = next((c for c in accessible_creds if c["id"] == cred_id), None)

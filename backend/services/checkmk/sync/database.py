@@ -77,9 +77,7 @@ class NB2CMKDatabaseService:
         # No-op for backward compatibility
         return True
 
-    def create_job(
-        self, username: Optional[str] = None, job_id: Optional[str] = None
-    ) -> str:
+    def create_job(self, username: Optional[str] = None, job_id: Optional[str] = None) -> str:
         """Create a new background job and return job_id."""
         if job_id is None:
             job_id = str(uuid.uuid4())
@@ -126,9 +124,7 @@ class NB2CMKDatabaseService:
             logger.error("Error getting job %s: %s", job_id, e)
             return None
 
-    def update_job_status(
-        self, job_id: str, status: JobStatus, error_message: Optional[str] = None
-    ) -> bool:
+    def update_job_status(self, job_id: str, status: JobStatus, error_message: Optional[str] = None) -> bool:
         """Update job status."""
         try:
             update_data = {"status": status.value}
@@ -149,9 +145,7 @@ class NB2CMKDatabaseService:
             logger.error("Error updating job %s status: %s", job_id, e)
             return False
 
-    def update_job_progress(
-        self, job_id: str, processed_devices: int, total_devices: int, message: str = ""
-    ) -> bool:
+    def update_job_progress(self, job_id: str, processed_devices: int, total_devices: int, message: str = "") -> bool:
         """Update job progress."""
         try:
             updated = self.job_repo.update(
@@ -186,9 +180,7 @@ class NB2CMKDatabaseService:
             )
             logger.info("[DB_SERVICE] Device %s: Received diff = %s", device_name, diff)
 
-            ignored_attrs_json = (
-                json.dumps(ignored_attributes) if ignored_attributes else json.dumps([])
-            )
+            ignored_attrs_json = json.dumps(ignored_attributes) if ignored_attributes else json.dumps([])
             logger.info(
                 "[DB_SERVICE] Device %s: JSON ignored_attributes = %s",
                 device_name,
@@ -207,15 +199,11 @@ class NB2CMKDatabaseService:
                 processed_at=datetime.now(),
             )
 
-            logger.info(
-                "[DB_SERVICE] Device %s: Successfully stored to database", device_name
-            )
+            logger.info("[DB_SERVICE] Device %s: Successfully stored to database", device_name)
             return True
 
         except Exception as e:
-            logger.error(
-                "[DB_SERVICE] Error adding device result for job %s: %s", job_id, e
-            )
+            logger.error("[DB_SERVICE] Error adding device result for job %s: %s", job_id, e)
             return False
 
     def get_job_results(self, job_id: str) -> List[DeviceJobResult]:
@@ -242,9 +230,7 @@ class NB2CMKDatabaseService:
                     row.diff,
                 )
 
-                ignored_attrs = (
-                    json.loads(row.ignored_attributes) if row.ignored_attributes else []
-                )
+                ignored_attrs = json.loads(row.ignored_attributes) if row.ignored_attributes else []
                 logger.info(
                     "[DB_SERVICE] Device %s: parsed ignored_attributes = %s",
                     row.device_name,
@@ -258,12 +244,8 @@ class NB2CMKDatabaseService:
                         device_name=row.device_name,
                         checkmk_status=row.checkmk_status,
                         diff=row.diff or "",
-                        normalized_config=json.loads(row.normalized_config)
-                        if row.normalized_config
-                        else {},
-                        checkmk_config=json.loads(row.checkmk_config)
-                        if row.checkmk_config
-                        else None,
+                        normalized_config=json.loads(row.normalized_config) if row.normalized_config else {},
+                        checkmk_config=json.loads(row.checkmk_config) if row.checkmk_config else None,
                         ignored_attributes=ignored_attrs,
                         processed_at=row.processed_at,
                     )

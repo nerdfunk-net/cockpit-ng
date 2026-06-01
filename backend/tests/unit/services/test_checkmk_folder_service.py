@@ -12,9 +12,7 @@ import pytest
 from services.checkmk.folder import CheckMKFolderService
 from tests.mocks import FakeCheckMKClient
 
-_PATCH_TARGET = (
-    "services.checkmk.folder.CheckMKClientFactory.build_client_from_settings"
-)
+_PATCH_TARGET = "services.checkmk.folder.CheckMKClientFactory.build_client_from_settings"
 
 
 # ── GET /folders ───────────────────────────────────────────────────────────────
@@ -81,9 +79,7 @@ async def test_create_folder_path_multi_segment():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKFolderService()
-        success = await svc.create_path(
-            "/region/country/city", site_name="cmk", current_user={}
-        )
+        success = await svc.create_path("/region/country/city", site_name="cmk", current_user={})
 
     assert success is True
     assert "~region" in fake._folders

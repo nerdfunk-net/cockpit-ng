@@ -23,9 +23,7 @@ class RBACService:
     # Permissions
     # -------------------------------------------------------------------------
 
-    def create_permission(
-        self, resource: str, action: str, description: str = ""
-    ) -> Dict[str, Any]:
+    def create_permission(self, resource: str, action: str, description: str = "") -> Dict[str, Any]:
         if self._rbac_repo.get_permission(resource, action):
             raise ValueError(f"Permission {resource}:{action} already exists")
         perm = self._rbac_repo.create_permission(resource, action, description)
@@ -49,9 +47,7 @@ class RBACService:
     # Roles
     # -------------------------------------------------------------------------
 
-    def create_role(
-        self, name: str, description: str = "", is_system: bool = False
-    ) -> Dict[str, Any]:
+    def create_role(self, name: str, description: str = "", is_system: bool = False) -> Dict[str, Any]:
         if self._rbac_repo.role_name_exists(name):
             raise ValueError(f"Role '{name}' already exists")
         role = self._rbac_repo.create_role(name, description, is_system)
@@ -96,18 +92,14 @@ class RBACService:
     # Role-Permission Assignment
     # -------------------------------------------------------------------------
 
-    def assign_permission_to_role(
-        self, role_id: int, permission_id: int, granted: bool = True
-    ) -> None:
+    def assign_permission_to_role(self, role_id: int, permission_id: int, granted: bool = True) -> None:
         self._rbac_repo.assign_permission_to_role(role_id, permission_id, granted)
 
     def remove_permission_from_role(self, role_id: int, permission_id: int) -> None:
         self._rbac_repo.remove_permission_from_role(role_id, permission_id)
 
     def get_role_permissions(self, role_id: int) -> List[Dict[str, Any]]:
-        return [
-            self._perm_to_dict(p) for p in self._rbac_repo.get_role_permissions(role_id)
-        ]
+        return [self._perm_to_dict(p) for p in self._rbac_repo.get_role_permissions(role_id)]
 
     # -------------------------------------------------------------------------
     # User-Role Assignment
@@ -129,9 +121,7 @@ class RBACService:
     # User-Permission Overrides
     # -------------------------------------------------------------------------
 
-    def assign_permission_to_user(
-        self, user_id: int, permission_id: int, granted: bool = True
-    ) -> None:
+    def assign_permission_to_user(self, user_id: int, permission_id: int, granted: bool = True) -> None:
         self._rbac_repo.assign_permission_to_user(user_id, permission_id, granted)
 
     def remove_permission_from_user(self, user_id: int, permission_id: int) -> None:
@@ -159,9 +149,7 @@ class RBACService:
         if override is not None:
             return override
         for role in self._rbac_repo.get_user_roles(user_id):
-            if any(
-                p.id == perm.id for p in self._rbac_repo.get_role_permissions(role.id)
-            ):
+            if any(p.id == perm.id for p in self._rbac_repo.get_role_permissions(role.id)):
                 return True
         return False
 
@@ -185,14 +173,10 @@ class RBACService:
         granted.sort(key=lambda x: (x["resource"], x["action"]))
         return granted
 
-    def check_any_permission(
-        self, user_id: int, resource: str, actions: List[str]
-    ) -> bool:
+    def check_any_permission(self, user_id: int, resource: str, actions: List[str]) -> bool:
         return any(self.has_permission(user_id, resource, a) for a in actions)
 
-    def check_all_permissions(
-        self, user_id: int, resource: str, actions: List[str]
-    ) -> bool:
+    def check_all_permissions(self, user_id: int, resource: str, actions: List[str]) -> bool:
         return all(self.has_permission(user_id, resource, a) for a in actions)
 
     # -------------------------------------------------------------------------
@@ -226,21 +210,15 @@ class RBACService:
                 self.assign_role_to_user(user["id"], role_id)
         return user
 
-    def get_user_with_rbac(
-        self, user_id: int, include_inactive: bool = False
-    ) -> Optional[Dict[str, Any]]:
-        user = self._user_service.get_user_by_id(
-            user_id, include_inactive=include_inactive
-        )
+    def get_user_with_rbac(self, user_id: int, include_inactive: bool = False) -> Optional[Dict[str, Any]]:
+        user = self._user_service.get_user_by_id(user_id, include_inactive=include_inactive)
         if not user:
             return None
         user["roles"] = self.get_user_roles(user_id)
         user["permissions"] = self.get_user_permissions(user_id)
         return user
 
-    def list_users_with_rbac(
-        self, include_inactive: bool = True
-    ) -> List[Dict[str, Any]]:
+    def list_users_with_rbac(self, include_inactive: bool = True) -> List[Dict[str, Any]]:
         users = self._user_service.get_all_users(include_inactive=include_inactive)
         for user in users:
             user["roles"] = self.get_user_roles(user["id"])
@@ -280,13 +258,9 @@ class RBACService:
 
                 cred_svc = CredentialsService()
                 deleted = cred_svc.delete_credentials_by_owner(username)
-                logger.info(
-                    "Deleted %s private credentials for user %s", deleted, username
-                )
+                logger.info("Deleted %s private credentials for user %s", deleted, username)
             except Exception as e:
-                logger.warning(
-                    "Failed to delete credentials for user %s: %s", username, e
-                )
+                logger.warning("Failed to delete credentials for user %s: %s", username, e)
             try:
                 from services.auth.profile_service import delete_user_profile
 

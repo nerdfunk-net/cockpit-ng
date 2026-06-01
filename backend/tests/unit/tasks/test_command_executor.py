@@ -53,25 +53,19 @@ def test_execute_run_commands_happy_path_sends_rendered_commands() -> None:
         }
     )
     render_service = MagicMock()
-    render_service.render_template = AsyncMock(
-        return_value={"rendered_content": "show version\nshow ip int brief"}
-    )
+    render_service.render_template = AsyncMock(return_value={"rendered_content": "show version\nshow ip int brief"})
     netmiko = MagicMock()
     netmiko._connect_and_execute.return_value = {
         "success": True,
         "output": "Cisco IOS output",
     }
 
-    with patch(
-        "service_factory.build_credentials_service", return_value=credentials
-    ), patch(
-        "service_factory.build_template_service", return_value=templates
-    ), patch(
-        "service_factory.build_nautobot_service", return_value=nautobot
-    ), patch(
-        "services.network.automation.render.RenderService", return_value=render_service
-    ), patch(
-        "services.network.automation.netmiko.NetmikoService", return_value=netmiko
+    with (
+        patch("service_factory.build_credentials_service", return_value=credentials),
+        patch("service_factory.build_template_service", return_value=templates),
+        patch("service_factory.build_nautobot_service", return_value=nautobot),
+        patch("services.network.automation.render.RenderService", return_value=render_service),
+        patch("services.network.automation.netmiko.NetmikoService", return_value=netmiko),
     ):
         result = execute_run_commands(
             schedule_id=None,
@@ -106,12 +100,10 @@ def test_execute_run_commands_records_device_fetch_failure() -> None:
     nautobot = MagicMock()
     nautobot.graphql_query = AsyncMock(return_value={"data": {"device": None}})
 
-    with patch(
-        "service_factory.build_credentials_service", return_value=credentials
-    ), patch(
-        "service_factory.build_template_service", return_value=templates
-    ), patch(
-        "service_factory.build_nautobot_service", return_value=nautobot
+    with (
+        patch("service_factory.build_credentials_service", return_value=credentials),
+        patch("service_factory.build_template_service", return_value=templates),
+        patch("service_factory.build_nautobot_service", return_value=nautobot),
     ):
         result = execute_run_commands(
             schedule_id=None,

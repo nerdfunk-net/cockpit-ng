@@ -57,9 +57,7 @@ async def trigger_update_devices_from_csv(
         selected_columns=request.selected_columns,
         primary_key_column=request.primary_key_column,
         matching_strategy=request.matching_strategy,
-        name_transform=request.name_transform.model_dump()
-        if request.name_transform
-        else None,
+        name_transform=request.name_transform.model_dump() if request.name_transform else None,
         rack_location_column=request.rack_location_column,
     )
 
@@ -276,12 +274,8 @@ async def trigger_import_devices_from_csv(
         import_options=import_options,
     )
 
-    skip_duplicates = (
-        import_options.get("skip_duplicates", False) if import_options else False
-    )
-    job_name = (
-        f"Import devices from CSV{' (skip duplicates)' if skip_duplicates else ''}"
-    )
+    skip_duplicates = import_options.get("skip_duplicates", False) if import_options else False
+    job_name = f"Import devices from CSV{' (skip duplicates)' if skip_duplicates else ''}"
     _jrs = service_factory.build_job_run_service()
     job_run = _jrs.create_job_run(
         job_name=job_name,
@@ -321,9 +315,7 @@ async def trigger_import_or_update_from_csv(
         file_filter=request.file_filter,
     )
 
-    job_name = (
-        f"CSV Import ({request.import_type}){' (DRY RUN)' if request.dry_run else ''}"
-    )
+    job_name = f"CSV Import ({request.import_type}){' (DRY RUN)' if request.dry_run else ''}"
     _jrs = service_factory.build_job_run_service()
     job_run = _jrs.create_job_run(
         job_name=job_name,
@@ -339,7 +331,6 @@ async def trigger_import_or_update_from_csv(
         job_id=str(job_run["id"]),
         status="queued",
         message=(
-            f"CSV import task queued for {request.import_type}"
-            f"{' (dry run mode)' if request.dry_run else ''}: {task.id}"
+            f"CSV import task queued for {request.import_type}{' (dry run mode)' if request.dry_run else ''}: {task.id}"
         ),
     )

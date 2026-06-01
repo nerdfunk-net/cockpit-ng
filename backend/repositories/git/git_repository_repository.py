@@ -28,9 +28,7 @@ class GitRepositoryRepository(BaseRepository[GitRepository]):
         finally:
             db.close()
 
-    def get_by_category(
-        self, category: str, active_only: bool = True
-    ) -> List[GitRepository]:
+    def get_by_category(self, category: str, active_only: bool = True) -> List[GitRepository]:
         """Get repositories by category.
 
         Args:
@@ -72,8 +70,6 @@ class GitRepositoryRepository(BaseRepository[GitRepository]):
         """
         db = get_db_session()
         try:
-            return (
-                db.query(GitRepository).filter(GitRepository.name == name).count() > 0
-            )
+            return db.query(GitRepository).filter(GitRepository.name == name).count() > 0
         finally:
             db.close()

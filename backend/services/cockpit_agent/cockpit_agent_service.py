@@ -75,9 +75,7 @@ class CockpitAgentService:
         try:
             command_channel = f"cockpit-agent:{agent_id}"
             self.redis_client.publish(command_channel, json.dumps(command_message))
-            logger.info(
-                "Command sent to agent %s: %s (ID: %s)", agent_id, command, command_id
-            )
+            logger.info("Command sent to agent %s: %s (ID: %s)", agent_id, command, command_id)
         except redis.RedisError as e:
             logger.error("Failed to publish command to Redis: %s", e)
             # Update database status to error
@@ -90,9 +88,7 @@ class CockpitAgentService:
 
         return command_id
 
-    def wait_for_response(
-        self, agent_id: str, command_id: str, timeout: int = 30
-    ) -> dict:
+    def wait_for_response(self, agent_id: str, command_id: str, timeout: int = 30) -> dict:
         """
         Wait for response from agent
         Subscribes to response channel and blocks until response or timeout
@@ -107,9 +103,7 @@ class CockpitAgentService:
 
         try:
             # Create separate Redis client for subscription (can't use same client for pub/sub)
-            redis_sub = redis.from_url(
-                settings.redis_url, decode_responses=True, socket_timeout=_POLL_INTERVAL
-            )
+            redis_sub = redis.from_url(settings.redis_url, decode_responses=True, socket_timeout=_POLL_INTERVAL)
             pubsub = redis_sub.pubsub()
             pubsub.subscribe(response_channel)
 
@@ -117,9 +111,7 @@ class CockpitAgentService:
             start_time = time.time()
             while time.time() - start_time < timeout:
                 try:
-                    message = pubsub.get_message(
-                        ignore_subscribe_messages=True, timeout=_POLL_INTERVAL
-                    )
+                    message = pubsub.get_message(ignore_subscribe_messages=True, timeout=_POLL_INTERVAL)
                 except redis.exceptions.TimeoutError:
                     # No message within the poll window — check elapsed time and retry.
                     continue
@@ -151,11 +143,7 @@ class CockpitAgentService:
 
                 # Serialize dict/list outputs to JSON string for DB storage
                 raw_output = response_data.get("output")
-                output_to_store = (
-                    json.dumps(raw_output)
-                    if isinstance(raw_output, (dict, list))
-                    else raw_output
-                )
+                output_to_store = json.dumps(raw_output) if isinstance(raw_output, (dict, list)) else raw_output
                 # Update database with result
                 self.repository.update_command_result(
                     command_id=command_id,
@@ -190,9 +178,7 @@ class CockpitAgentService:
 
         except redis.RedisError as e:
             logger.error("Redis error while waiting for response: %s", e)
-            self.repository.update_command_result(
-                command_id=command_id, status="error", error=str(e)
-            )
+            self.repository.update_command_result(command_id=command_id, status="error", error=str(e))
             raise
 
     def get_agent_status(self, agent_id: str) -> Optional[Dict]:
@@ -214,9 +200,7 @@ class CockpitAgentService:
                 "status": status_data.get("status"),
                 "last_heartbeat": int(status_data.get("last_heartbeat", 0)),
                 "version": status_data.get("version"),
-                "hostname": status_data.get(
-                    "agent_id", status_data.get("hostname", agent_id)
-                ),
+                "hostname": status_data.get("agent_id", status_data.get("hostname", agent_id)),
                 "capabilities": status_data.get("capabilities", ""),
                 "started_at": int(status_data.get("started_at", 0)),
                 "commands_executed": int(status_data.get("commands_executed", 0)),

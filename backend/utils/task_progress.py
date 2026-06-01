@@ -35,9 +35,7 @@ class ProgressUpdater:
         """
         self.task = task_instance
 
-    def update(
-        self, stage: str, status: str, progress: int, **extra_fields: Any
-    ) -> None:
+    def update(self, stage: str, status: str, progress: int, **extra_fields: Any) -> None:
         """
         Update task progress with consistent structure.
 
@@ -79,9 +77,7 @@ class ProgressUpdater:
         meta = {"stage": "error", "status": message, "progress": 0, **extra_fields}
         self.task.update_state(state="FAILURE", meta=meta)
 
-    def complete(
-        self, message: str = "Task completed successfully", **extra_fields: Any
-    ) -> None:
+    def complete(self, message: str = "Task completed successfully", **extra_fields: Any) -> None:
         """
         Mark task as complete.
 

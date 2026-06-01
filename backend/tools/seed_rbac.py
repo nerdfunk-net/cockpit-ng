@@ -22,17 +22,13 @@ def migrate_inventory_permissions(verbose: bool = True):
     network.inventory permissions assigned to roles or users.
     """
     if verbose:
-        print(
-            "\nMigrating inventory permissions from network.inventory to general.inventory..."
-        )
+        print("\nMigrating inventory permissions from network.inventory to general.inventory...")
 
     # Get all permissions
     all_permissions = rbac.list_permissions()
 
     # Find old network.inventory permissions
-    old_perms = {
-        p["id"]: p for p in all_permissions if p["resource"] == "network.inventory"
-    }
+    old_perms = {p["id"]: p for p in all_permissions if p["resource"] == "network.inventory"}
 
     if not old_perms and verbose:
         print("  - No network.inventory permissions found to migrate")
@@ -55,18 +51,13 @@ def migrate_inventory_permissions(verbose: bool = True):
                     # Create the new permission if it doesn't exist
                     new_perm_id = None
                     for p in all_permissions:
-                        if (
-                            p["resource"] == "general.inventory"
-                            and p["action"] == action
-                        ):
+                        if p["resource"] == "general.inventory" and p["action"] == action:
                             new_perm_id = p["id"]
                             break
 
                     if new_perm_id:
                         # Assign the new permission to the role
-                        rbac.assign_permission_to_role(
-                            role["id"], new_perm_id, granted=True
-                        )
+                        rbac.assign_permission_to_role(role["id"], new_perm_id, granted=True)
                         migrated_count += 1
                         if verbose:
                             print(
@@ -74,9 +65,7 @@ def migrate_inventory_permissions(verbose: bool = True):
                             )
                 except Exception as e:
                     if verbose:
-                        print(
-                            f"  ✗ Error migrating permission for role '{role['name']}': {e}"
-                        )
+                        print(f"  ✗ Error migrating permission for role '{role['name']}': {e}")
 
     if verbose:
         if migrated_count > 0:
@@ -107,14 +96,10 @@ def cleanup_obsolete_permissions(verbose: bool = True):
                 rbac.delete_permission(perm["id"])
                 removed_count += 1
                 if verbose:
-                    print(
-                        f"  ✓ Removed obsolete permission: {perm['resource']}:{perm['action']}"
-                    )
+                    print(f"  ✓ Removed obsolete permission: {perm['resource']}:{perm['action']}")
             except Exception as e:
                 if verbose:
-                    print(
-                        f"  ✗ Error removing permission {perm['resource']}:{perm['action']}: {e}"
-                    )
+                    print(f"  ✗ Error removing permission {perm['resource']}:{perm['action']}: {e}")
 
     if verbose:
         if removed_count > 0:
@@ -251,14 +236,10 @@ def remove_all_rbac_data(verbose: bool = True):
                 rbac.delete_permission(perm["id"])
                 deleted_perms += 1
                 if verbose:
-                    print(
-                        f"  ✓ Deleted permission: {perm['resource']}:{perm['action']}"
-                    )
+                    print(f"  ✓ Deleted permission: {perm['resource']}:{perm['action']}")
             except Exception as e:
                 if verbose:
-                    print(
-                        f"  ✗ Error deleting permission {perm['resource']}:{perm['action']}: {e}"
-                    )
+                    print(f"  ✗ Error deleting permission {perm['resource']}:{perm['action']}: {e}")
 
         if verbose:
             print(f"\n  ✓ Deleted {deleted_perms} permissions\n")
@@ -512,9 +493,7 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
     operator_count = 0
     for perm_key in operator_perms:
         if perm_key in perm_map:
-            rbac.assign_permission_to_role(
-                roles["operator"]["id"], perm_map[perm_key], granted=True
-            )
+            rbac.assign_permission_to_role(roles["operator"]["id"], perm_map[perm_key], granted=True)
             operator_count += 1
     if verbose:
         print(f"    ✓ Assigned {operator_count} permissions")
@@ -587,9 +566,7 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
     network_count = 0
     for perm_key in network_engineer_perms:
         if perm_key in perm_map:
-            rbac.assign_permission_to_role(
-                roles["network_engineer"]["id"], perm_map[perm_key], granted=True
-            )
+            rbac.assign_permission_to_role(roles["network_engineer"]["id"], perm_map[perm_key], granted=True)
             network_count += 1
     if verbose:
         print(f"    ✓ Assigned {network_count} permissions")
@@ -653,9 +630,7 @@ def assign_admin_user_to_admin_role(verbose: bool = True):
         # Assign admin role to admin user
         rbac.assign_role_to_user(admin_user["id"], admin_role["id"])
         if verbose:
-            print(
-                f"  ✓ Assigned 'admin' role to user 'admin' (user_id={admin_user['id']})"
-            )
+            print(f"  ✓ Assigned 'admin' role to user 'admin' (user_id={admin_user['id']})")
 
     except Exception as e:
         if verbose:
@@ -714,9 +689,7 @@ def main(verbose: bool = True, remove_existing: bool = False):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Seed the RBAC system with default permissions and roles"
-    )
+    parser = argparse.ArgumentParser(description="Seed the RBAC system with default permissions and roles")
     parser.add_argument(
         "--remove-existing-permissions",
         action="store_true",
@@ -740,9 +713,7 @@ if __name__ == "__main__":
         print("\n   The system will then be reseeded with default data.")
         print("\n   Users will need to be reassigned to roles after this operation.\n")
 
-        response = (
-            input("Are you sure you want to continue? (yes/no): ").strip().lower()
-        )
+        response = input("Are you sure you want to continue? (yes/no): ").strip().lower()
         if response != "yes":
             print("\n❌ Operation cancelled.")
             sys.exit(0)

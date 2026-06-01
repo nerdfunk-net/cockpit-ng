@@ -11,9 +11,7 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
-_OIDC_CONFIG_PATH = (
-    Path(__file__).parent.parent.parent.parent / "config" / "oidc_providers.yaml"
-)
+_OIDC_CONFIG_PATH = Path(__file__).parent.parent.parent.parent / "config" / "oidc_providers.yaml"
 _EMPTY_CONFIG: Dict[str, Any] = {
     "providers": {},
     "global": {"allow_traditional_login": True},

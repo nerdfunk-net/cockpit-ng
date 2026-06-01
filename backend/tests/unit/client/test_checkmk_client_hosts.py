@@ -60,9 +60,7 @@ def test_get_all_hosts_calls_correct_endpoint():
 def test_get_all_hosts_passes_effective_attributes_param():
     """effective_attributes=True is forwarded as a query parameter."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"value": []})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"value": []})) as req:
         client.get_all_hosts(effective_attributes=True)
 
     assert req.call_args.kwargs["params"]["effective_attributes"] is True
@@ -73,9 +71,7 @@ def test_get_all_hosts_passes_effective_attributes_param():
 def test_get_all_hosts_passes_site_param_when_provided():
     """Optional site filter is included in query params when given."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"value": []})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"value": []})) as req:
         client.get_all_hosts(site="prod-site")
 
     assert req.call_args.kwargs["params"]["site"] == "prod-site"
@@ -86,9 +82,7 @@ def test_get_all_hosts_passes_site_param_when_provided():
 def test_get_all_hosts_omits_site_param_when_not_provided():
     """Site param is absent from the request when not specified."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"value": []})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"value": []})) as req:
         client.get_all_hosts()
 
     assert "site" not in req.call_args.kwargs["params"]
@@ -116,9 +110,7 @@ def test_get_host_builds_correct_url():
 def test_get_host_raises_on_404():
     """A 404 response propagates as CheckMKAPIError."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(404, {"title": "Not Found"})
-    ):
+    with patch.object(client.session, "request", return_value=_mock_response(404, {"title": "Not Found"})):
         with pytest.raises(CheckMKAPIError) as exc_info:
             client.get_host("nonexistent")
 
@@ -148,9 +140,7 @@ def test_get_host_etag_extracts_header():
 def test_get_host_etag_defaults_to_star_when_header_missing():
     """Missing ETag header falls back to '*'."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, None, headers={})
-    ):
+    with patch.object(client.session, "request", return_value=_mock_response(200, None, headers={})):
         etag = client.get_host_etag("router1")
 
     assert etag == "*"
@@ -161,9 +151,7 @@ def test_get_host_etag_defaults_to_star_when_header_missing():
 def test_get_host_etag_raises_on_non_200():
     """A non-200 response raises CheckMKAPIError."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(404, None)
-    ):
+    with patch.object(client.session, "request", return_value=_mock_response(404, None)):
         with pytest.raises(CheckMKAPIError):
             client.get_host_etag("missing-host")
 
@@ -176,9 +164,7 @@ def test_get_host_etag_raises_on_non_200():
 def test_create_host_posts_correct_json_body():
     """create_host sends host_name, folder, and attributes in the JSON body."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"id": "new-host"})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"id": "new-host"})) as req:
         client.create_host("new-host", folder="/dc1", attributes={"ipaddress": "10.0.0.1"})
 
     body = req.call_args.kwargs["json"]
@@ -192,9 +178,7 @@ def test_create_host_posts_correct_json_body():
 def test_create_host_uses_collection_endpoint():
     """create_host POSTs to the host_config collection endpoint."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"id": "h"})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"id": "h"})) as req:
         client.create_host("h", folder="/")
 
     assert req.call_args.kwargs["method"] == "POST"
@@ -206,9 +190,7 @@ def test_create_host_uses_collection_endpoint():
 def test_create_host_defaults_attributes_to_empty_dict():
     """When attributes is None, an empty dict is sent in the body."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"id": "h"})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"id": "h"})) as req:
         client.create_host("h", folder="/")
 
     assert req.call_args.kwargs["json"]["attributes"] == {}
@@ -219,9 +201,7 @@ def test_create_host_defaults_attributes_to_empty_dict():
 def test_create_host_passes_bake_agent_param():
     """bake_agent is forwarded as a query parameter."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"id": "h"})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"id": "h"})) as req:
         client.create_host("h", folder="/", bake_agent=True)
 
     assert req.call_args.kwargs["params"]["bake_agent"] is True
@@ -235,9 +215,7 @@ def test_create_host_passes_bake_agent_param():
 def test_update_host_sends_put_with_etag_header():
     """update_host with an explicit ETag sends a PUT with If-Match."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"id": "router1"})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"id": "router1"})) as req:
         client.update_host("router1", {"ipaddress": "10.0.0.1"}, etag='"v1"')
 
     call = req.call_args
@@ -255,9 +233,7 @@ def test_update_host_auto_fetches_etag_when_none():
     etag_resp = _mock_response(200, None, headers={"ETag": '"fetched"'})
     update_resp = _mock_response(200, {"updated": True})
 
-    with patch.object(
-        client.session, "request", side_effect=[etag_resp, update_resp]
-    ) as req:
+    with patch.object(client.session, "request", side_effect=[etag_resp, update_resp]) as req:
         result = client.update_host("router1", {"ipaddress": "10.0.0.2"})
 
     assert req.call_count == 2
@@ -275,9 +251,7 @@ def test_update_host_auto_fetches_etag_when_none():
 def test_delete_host_sends_delete_and_returns_true():
     """delete_host sends DELETE and returns True on success."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(204)
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(204)) as req:
         result = client.delete_host("old-host")
 
     assert req.call_args.kwargs["method"] == "DELETE"
@@ -296,9 +270,7 @@ def test_move_host_posts_to_move_action_endpoint():
     etag_resp = _mock_response(200, None, headers={"ETag": '"v1"'})
     move_resp = _mock_response(200, {"id": "router1"})
 
-    with patch.object(
-        client.session, "request", side_effect=[etag_resp, move_resp]
-    ) as req:
+    with patch.object(client.session, "request", side_effect=[etag_resp, move_resp]) as req:
         client.move_host("router1", "/dc2")
 
     move_call = req.call_args_list[1]
@@ -314,9 +286,7 @@ def test_move_host_posts_to_move_action_endpoint():
 def test_rename_host_posts_new_name_to_rename_endpoint():
     """rename_host sends new_name in the body to the rename action."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"id": "router2"})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"id": "router2"})) as req:
         client.rename_host("router1", "router2")
 
     assert "actions/rename/invoke" in req.call_args.kwargs["url"]
@@ -332,9 +302,7 @@ def test_bulk_create_hosts_sends_entries_array():
     """bulk_create_hosts wraps the host list in an 'entries' key."""
     client = _make_client()
     hosts = [{"host_name": "h1"}, {"host_name": "h2"}]
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"result": []})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"result": []})) as req:
         client.bulk_create_hosts(hosts)
 
     assert req.call_args.kwargs["json"] == {"entries": hosts}
@@ -347,9 +315,7 @@ def test_bulk_update_hosts_sends_entries():
     """bulk_update_hosts wraps the host dict in an 'entries' key."""
     client = _make_client()
     hosts = {"h1": {"attributes": {}}}
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"result": []})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"result": []})) as req:
         client.bulk_update_hosts(hosts)
 
     assert req.call_args.kwargs["json"] == {"entries": hosts}
@@ -361,9 +327,7 @@ def test_bulk_update_hosts_sends_entries():
 def test_bulk_delete_hosts_sends_hostname_list():
     """bulk_delete_hosts wraps hostnames list in an 'entries' key."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, {"result": []})
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, {"result": []})) as req:
         client.bulk_delete_hosts(["h1", "h2", "h3"])
 
     assert req.call_args.kwargs["json"] == {"entries": ["h1", "h2", "h3"]}

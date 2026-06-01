@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -64,21 +64,12 @@ export function InterfacesDialog({ open, onOpenChange, server }: InterfacesDialo
 
   const [selectedNames, setSelectedNames] = useState<Set<string>>(initialSelected)
 
-  // Re-sync when server prop changes (e.g. after save)
-  const [prevServerId, setPrevServerId] = useState(server.id)
-  if (server.id !== prevServerId) {
-    setPrevServerId(server.id)
-    setSelectedNames(initialSelected)
-  }
-
-  // Also reset selection when dialog opens
-  const [prevOpen, setPrevOpen] = useState(open)
-  if (open && !prevOpen) {
-    setSelectedNames(initialSelected)
-  }
-  if (open !== prevOpen) {
-    setPrevOpen(open)
-  }
+  // Reset selection when the dialog opens or the displayed server changes
+  useEffect(() => {
+    if (open) {
+      setSelectedNames(initialSelected)
+    }
+  }, [open, initialSelected])
 
   const toggleInterface = useCallback((name: string) => {
     setSelectedNames((prev) => {

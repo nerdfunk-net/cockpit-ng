@@ -21,9 +21,7 @@ class _ProblemsMixin:
             "notify": notify,
         }
 
-        response = self._make_request(
-            "POST", "domain-types/acknowledge/collections/host", json_data=json_data
-        )
+        response = self._make_request("POST", "domain-types/acknowledge/collections/host", json_data=json_data)
         return self._handle_response(response)
 
     def acknowledge_service_problem(
@@ -44,9 +42,7 @@ class _ProblemsMixin:
             "notify": notify,
         }
 
-        response = self._make_request(
-            "POST", "domain-types/acknowledge/collections/service", json_data=json_data
-        )
+        response = self._make_request("POST", "domain-types/acknowledge/collections/service", json_data=json_data)
         return self._handle_response(response)
 
     def delete_acknowledgment(self, ack_id: str) -> bool:
@@ -76,23 +72,17 @@ class _ProblemsMixin:
             "downtime_type": downtime_type,
         }
 
-        response = self._make_request(
-            "POST", "domain-types/downtime/collections/host", json_data=json_data
-        )
+        response = self._make_request("POST", "domain-types/downtime/collections/host", json_data=json_data)
         return self._handle_response(response)
 
-    def add_host_comment(
-        self, hostname: str, comment: str, persistent: bool = False
-    ) -> Dict:
+    def add_host_comment(self, hostname: str, comment: str, persistent: bool = False) -> Dict:
         json_data = {
             "host_name": hostname,
             "comment": comment,
             "persistent": persistent,
         }
 
-        response = self._make_request(
-            "POST", "domain-types/comment/collections/host", json_data=json_data
-        )
+        response = self._make_request("POST", "domain-types/comment/collections/host", json_data=json_data)
         return self._handle_response(response)
 
     def add_service_comment(
@@ -109,7 +99,5 @@ class _ProblemsMixin:
             "persistent": persistent,
         }
 
-        response = self._make_request(
-            "POST", "domain-types/comment/collections/service", json_data=json_data
-        )
+        response = self._make_request("POST", "domain-types/comment/collections/service", json_data=json_data)
         return self._handle_response(response)

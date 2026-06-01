@@ -276,9 +276,7 @@ def test_test_connection_returns_false_on_non_200():
 def test_test_connection_returns_false_on_network_error():
     """A network-level exception is caught and returns False."""
     client = _make_client()
-    with patch.object(
-        client.session, "request", side_effect=requests.exceptions.ConnectionError("refused")
-    ):
+    with patch.object(client.session, "request", side_effect=requests.exceptions.ConnectionError("refused")):
         assert client.test_connection() is False
 
 
@@ -291,9 +289,7 @@ def test_get_version_returns_parsed_response():
     """get_version calls GET /version and returns the parsed dict."""
     client = _make_client()
     version_data = {"site": "monitoring", "versions": {"checkmk": "2.3.0"}}
-    with patch.object(
-        client.session, "request", return_value=_mock_response(200, version_data)
-    ) as req:
+    with patch.object(client.session, "request", return_value=_mock_response(200, version_data)) as req:
         result = client.get_version()
 
     assert "version" in req.call_args.kwargs["url"]
@@ -310,9 +306,7 @@ def test_bulk_operation_create_host_records_success():
     client = _make_client()
     created = {"id": "new-host"}
     with patch.object(client, "create_host", return_value=created):
-        results = client.bulk_operation(
-            [{"type": "create_host", "params": {"hostname": "new-host", "folder": "/"}}]
-        )
+        results = client.bulk_operation([{"type": "create_host", "params": {"hostname": "new-host", "folder": "/"}}])
 
     assert len(results) == 1
     assert results[0]["success"] is True
@@ -326,9 +320,7 @@ def test_bulk_operation_update_host_dispatches_correctly():
     client = _make_client()
     updated = {"id": "router1"}
     with patch.object(client, "update_host", return_value=updated) as mock_update:
-        results = client.bulk_operation(
-            [{"type": "update_host", "params": {"hostname": "router1", "attributes": {}}}]
-        )
+        results = client.bulk_operation([{"type": "update_host", "params": {"hostname": "router1", "attributes": {}}}])
 
     mock_update.assert_called_once_with(hostname="router1", attributes={})
     assert results[0]["success"] is True
@@ -340,9 +332,7 @@ def test_bulk_operation_delete_host_dispatches_correctly():
     """delete_host is called with the hostname from params."""
     client = _make_client()
     with patch.object(client, "delete_host", return_value=True) as mock_del:
-        results = client.bulk_operation(
-            [{"type": "delete_host", "params": {"hostname": "old-host"}}]
-        )
+        results = client.bulk_operation([{"type": "delete_host", "params": {"hostname": "old-host"}}])
 
     mock_del.assert_called_once_with("old-host")
     assert results[0]["success"] is True
@@ -366,9 +356,7 @@ def test_bulk_operation_api_error_recorded_as_failure():
     """A CheckMKAPIError during an operation is recorded with success=False."""
     client = _make_client()
     with patch.object(client, "create_host", side_effect=CheckMKAPIError("duplicate", 400)):
-        results = client.bulk_operation(
-            [{"type": "create_host", "params": {"hostname": "dup-host"}}]
-        )
+        results = client.bulk_operation([{"type": "create_host", "params": {"hostname": "dup-host"}}])
 
     assert results[0]["success"] is False
     assert "duplicate" in results[0]["error"]

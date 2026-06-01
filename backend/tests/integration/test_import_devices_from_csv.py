@@ -249,9 +249,7 @@ class TestCsvParsePipeline:
         assert iface["namespace"] == NAMESPACE_NAME
 
         # IP address must have received the /24 suffix
-        assert iface["ip_address"] == IP_ADDRESS, (
-            f"Expected '{IP_ADDRESS}', got '{iface.get('ip_address')}'"
-        )
+        assert iface["ip_address"] == IP_ADDRESS, f"Expected '{IP_ADDRESS}', got '{iface.get('ip_address')}'"
 
     def test_device_data_does_not_contain_interface_fields(self):
         """Interface fields must not leak into the device_data dict."""
@@ -259,9 +257,7 @@ class TestCsvParsePipeline:
         device_data, _ = build_device_payload(rows[0])
 
         interface_keys = [k for k in device_data if k.startswith("interface_")]
-        assert interface_keys == [], (
-            f"interface_* keys found in device_data: {interface_keys}"
-        )
+        assert interface_keys == [], f"interface_* keys found in device_data: {interface_keys}"
 
     def test_custom_fields_are_grouped(self):
         """cf_* columns from the CSV must be collected under 'custom_fields'."""
@@ -283,9 +279,7 @@ class TestCsvParsePipeline:
 # ---------------------------------------------------------------------------
 
 
-async def _resolve_optional_id(
-    nautobot, query: str, path: tuple[str, ...]
-) -> str | None:
+async def _resolve_optional_id(nautobot, query: str, path: tuple[str, ...]) -> str | None:
     """Run a GraphQL query and return the first result's ID, or None."""
     result = await nautobot.graphql_query(query)
     data = result["data"]
@@ -313,9 +307,7 @@ async def get_or_create_manufacturer(nautobot, name: str) -> str:
     return mfr_id
 
 
-async def get_or_create_device_type(
-    nautobot, model: str, manufacturer_id: str
-) -> tuple[str, bool]:
+async def get_or_create_device_type(nautobot, model: str, manufacturer_id: str) -> tuple[str, bool]:
     """Return (device_type_id, was_created) for the given model + manufacturer."""
     query = f"""
     query {{
@@ -360,9 +352,7 @@ async def ensure_device_type(real_nautobot_service):
     module if they were created here.
     """
     mfr_id = await get_or_create_manufacturer(real_nautobot_service, MANUFACTURER_NAME)
-    dt_id, was_created = await get_or_create_device_type(
-        real_nautobot_service, DEVICE_TYPE_MODEL, mfr_id
-    )
+    dt_id, was_created = await get_or_create_device_type(real_nautobot_service, DEVICE_TYPE_MODEL, mfr_id)
     yield {
         "manufacturer_id": mfr_id,
         "device_type_id": dt_id,
@@ -371,17 +361,13 @@ async def ensure_device_type(real_nautobot_service):
 
     if was_created:
         try:
-            await real_nautobot_service.rest_request(
-                endpoint=f"dcim/device-types/{dt_id}/", method="DELETE"
-            )
+            await real_nautobot_service.rest_request(endpoint=f"dcim/device-types/{dt_id}/", method="DELETE")
             logger.info("✓ Removed device type '%s'", DEVICE_TYPE_MODEL)
         except Exception as exc:
             logger.warning("Could not remove device type: %s", exc)
 
         try:
-            await real_nautobot_service.rest_request(
-                endpoint=f"dcim/manufacturers/{mfr_id}/", method="DELETE"
-            )
+            await real_nautobot_service.rest_request(endpoint=f"dcim/manufacturers/{mfr_id}/", method="DELETE")
             logger.info("✓ Removed manufacturer '%s'", MANUFACTURER_NAME)
         except Exception as exc:
             logger.warning("Could not remove manufacturer: %s", exc)
@@ -399,18 +385,14 @@ async def cleanup_csv_import(real_nautobot_service):
 
     for dev_id in device_ids:
         try:
-            await real_nautobot_service.rest_request(
-                endpoint=f"dcim/devices/{dev_id}/", method="DELETE"
-            )
+            await real_nautobot_service.rest_request(endpoint=f"dcim/devices/{dev_id}/", method="DELETE")
             logger.info("✓ Deleted test device %s", dev_id)
         except Exception as exc:
             logger.warning("Could not delete device %s: %s", dev_id, exc)
 
     for pfx_id in prefix_ids:
         try:
-            await real_nautobot_service.rest_request(
-                endpoint=f"ipam/prefixes/{pfx_id}/", method="DELETE"
-            )
+            await real_nautobot_service.rest_request(endpoint=f"ipam/prefixes/{pfx_id}/", method="DELETE")
             logger.info("✓ Deleted auto-created prefix %s", pfx_id)
         except Exception as exc:
             logger.warning("Could not delete prefix %s: %s", pfx_id, exc)
@@ -462,9 +444,7 @@ class TestImportDevicesFromCsv:
         logger.info("✓ Status '%s' exists", STATUS_NAME)
 
         # Role
-        role_result = await real_nautobot_service.graphql_query(
-            f'query {{ roles(name: "{ROLE_NAME}") {{ id }} }}'
-        )
+        role_result = await real_nautobot_service.graphql_query(f'query {{ roles(name: "{ROLE_NAME}") {{ id }} }}')
         assert role_result["data"]["roles"], f"Role '{ROLE_NAME}' not found"
         logger.info("✓ Role '%s' exists", ROLE_NAME)
 
@@ -472,9 +452,7 @@ class TestImportDevicesFromCsv:
         ns_result = await real_nautobot_service.graphql_query(
             f'query {{ namespaces(name: "{NAMESPACE_NAME}") {{ id }} }}'
         )
-        assert ns_result["data"]["namespaces"], (
-            f"Namespace '{NAMESPACE_NAME}' not found"
-        )
+        assert ns_result["data"]["namespaces"], f"Namespace '{NAMESPACE_NAME}' not found"
         logger.info("✓ Namespace '%s' exists", NAMESPACE_NAME)
 
         # Platform (optional — log warning if absent)
@@ -517,14 +495,10 @@ class TestImportDevicesFromCsv:
             f'query {{ devices(name: "{DEVICE_NAME}", location: ["{LOCATION_NAME}"]) {{ id }} }}'
         )
         for existing in pre_check["data"]["devices"]:
-            logger.info(
-                "Pre-existing device found, adding to cleanup: %s", existing["id"]
-            )
+            logger.info("Pre-existing device found, adding to cleanup: %s", existing["id"])
             device_ids.append(existing["id"])
             # Delete it so the import starts from a clean state
-            await real_nautobot_service.rest_request(
-                endpoint=f"dcim/devices/{existing['id']}/", method="DELETE"
-            )
+            await real_nautobot_service.rest_request(endpoint=f"dcim/devices/{existing['id']}/", method="DELETE")
             logger.info("Removed pre-existing device %s", existing["id"])
 
         # Build import payload from the CSV
@@ -596,9 +570,7 @@ class TestImportDevicesFromCsv:
 
         # Interface
         assert len(device["interfaces"]) >= 1, "At least one interface expected"
-        loopback = next(
-            (i for i in device["interfaces"] if i["name"] == INTERFACE_NAME), None
-        )
+        loopback = next((i for i in device["interfaces"] if i["name"] == INTERFACE_NAME), None)
         assert loopback is not None, f"Interface '{INTERFACE_NAME}' not found"
         assert loopback["type"].lower() == INTERFACE_TYPE.lower()
         assert any(ip["address"] == IP_ADDRESS for ip in loopback["ip_addresses"]), (
@@ -616,9 +588,7 @@ class TestImportDevicesFromCsv:
             """
         )
         prefixes = pfx_result["data"]["prefixes"]
-        assert len(prefixes) >= 1, (
-            f"Expected auto-created prefix {AUTO_PREFIX} — not found in Nautobot"
-        )
+        assert len(prefixes) >= 1, f"Expected auto-created prefix {AUTO_PREFIX} — not found in Nautobot"
         prefix_ids.append(prefixes[0]["id"])
 
         logger.info(
@@ -671,12 +641,8 @@ class TestImportDevicesFromCsv:
             add_prefixes_automatically=True,
         )
 
-        assert second["success"] is True, (
-            f"Second import failed: {second.get('message')}"
-        )
-        assert second["created"] is False, (
-            "Device already existed — created must be False"
-        )
+        assert second["success"] is True, f"Second import failed: {second.get('message')}"
+        assert second["created"] is False, "Device already existed — created must be False"
         assert second["device_id"] is not None
 
         logger.info(
@@ -730,9 +696,9 @@ class TestImportDevicesFromCsv:
             )
 
         error = str(exc_info.value).lower()
-        assert any(
-            kw in error for kw in ["already exists", "duplicate", "unique", "name"]
-        ), f"Expected a duplicate-device error, got: {exc_info.value}"
+        assert any(kw in error for kw in ["already exists", "duplicate", "unique", "name"]), (
+            f"Expected a duplicate-device error, got: {exc_info.value}"
+        )
 
         logger.info(
             "✓ Duplicate device correctly rejected when skip_if_exists=False: %s",
@@ -744,9 +710,7 @@ class TestImportDevicesFromCsv:
 # Generic CSV — constants
 # ---------------------------------------------------------------------------
 
-GENERIC_CSV_FILE = os.path.join(
-    os.path.dirname(__file__), "..", "nautobot_devices_generic.csv"
-)
+GENERIC_CSV_FILE = os.path.join(os.path.dirname(__file__), "..", "nautobot_devices_generic.csv")
 
 # The generic CSV only has "name" and "ip_address" — every other device field
 # is supplied via GENERIC_IMPORT_DEFAULTS.
@@ -818,14 +782,10 @@ class TestGenericCsvParsePipeline:
 
     def test_generic_csv_file_is_readable(self):
         """The generic CSV must exist and contain exactly the two expected columns."""
-        assert os.path.exists(GENERIC_CSV_FILE), (
-            f"Generic CSV not found: {GENERIC_CSV_FILE}"
-        )
+        assert os.path.exists(GENERIC_CSV_FILE), f"Generic CSV not found: {GENERIC_CSV_FILE}"
         rows = read_csv_rows(GENERIC_CSV_FILE)
         assert len(rows) >= 1, "Generic CSV has no data rows"
-        assert set(rows[0].keys()) == {"name", "ip_address"}, (
-            f"Unexpected columns: {list(rows[0].keys())}"
-        )
+        assert set(rows[0].keys()) == {"name", "ip_address"}, f"Unexpected columns: {list(rows[0].keys())}"
         assert rows[0]["name"] == GENERIC_DEVICE_NAME
         assert rows[0]["ip_address"] == GENERIC_IP_HOST
 
@@ -927,16 +887,11 @@ class TestImportDevicesFromGenericCsv:
 
         # Pre-condition: remove any stale device from a previous failed run
         pre_check = await real_nautobot_service.graphql_query(
-            f'query {{ devices(name: "{GENERIC_DEVICE_NAME}",'
-            f' location: ["{GENERIC_LOCATION_NAME}"]) {{ id }} }}'
+            f'query {{ devices(name: "{GENERIC_DEVICE_NAME}", location: ["{GENERIC_LOCATION_NAME}"]) {{ id }} }}'
         )
         for existing in pre_check["data"]["devices"]:
-            await real_nautobot_service.rest_request(
-                endpoint=f"dcim/devices/{existing['id']}/", method="DELETE"
-            )
-            logger.info(
-                "Removed pre-existing device %s before generic CSV test", existing["id"]
-            )
+            await real_nautobot_service.rest_request(endpoint=f"dcim/devices/{existing['id']}/", method="DELETE")
+            logger.info("Removed pre-existing device %s before generic CSV test", existing["id"])
 
         # Build import payload
         rows = read_csv_rows(GENERIC_CSV_FILE)
@@ -996,14 +951,10 @@ class TestImportDevicesFromGenericCsv:
         assert device["primary_ip4"] is not None, "Primary IPv4 must be assigned"
         assert device["primary_ip4"]["address"] == GENERIC_IP_ADDRESS
 
-        loopback = next(
-            (i for i in device["interfaces"] if i["name"] == INTERFACE_NAME), None
-        )
+        loopback = next((i for i in device["interfaces"] if i["name"] == INTERFACE_NAME), None)
         assert loopback is not None, f"Interface '{INTERFACE_NAME}' not found"
         assert loopback["type"].lower() == INTERFACE_TYPE.lower()
-        assert any(
-            ip["address"] == GENERIC_IP_ADDRESS for ip in loopback["ip_addresses"]
-        ), (
+        assert any(ip["address"] == GENERIC_IP_ADDRESS for ip in loopback["ip_addresses"]), (
             f"IP {GENERIC_IP_ADDRESS} not found on interface; got: {loopback['ip_addresses']}"
         )
 
@@ -1012,9 +963,7 @@ class TestImportDevicesFromGenericCsv:
             f'query {{ prefixes(prefix: "{GENERIC_AUTO_PREFIX}") {{ id prefix }} }}'
         )
         prefixes = pfx_result["data"]["prefixes"]
-        assert len(prefixes) >= 1, (
-            f"Expected auto-created prefix {GENERIC_AUTO_PREFIX} in Nautobot"
-        )
+        assert len(prefixes) >= 1, f"Expected auto-created prefix {GENERIC_AUTO_PREFIX} in Nautobot"
         prefix_ids.append(prefixes[0]["id"])
 
         logger.info(
@@ -1043,13 +992,10 @@ class TestImportDevicesFromGenericCsv:
 
         # Pre-condition cleanup
         pre_check = await real_nautobot_service.graphql_query(
-            f'query {{ devices(name: "{GENERIC_DEVICE_NAME}",'
-            f' location: ["{GENERIC_LOCATION_NAME}"]) {{ id }} }}'
+            f'query {{ devices(name: "{GENERIC_DEVICE_NAME}", location: ["{GENERIC_LOCATION_NAME}"]) {{ id }} }}'
         )
         for existing in pre_check["data"]["devices"]:
-            await real_nautobot_service.rest_request(
-                endpoint=f"dcim/devices/{existing['id']}/", method="DELETE"
-            )
+            await real_nautobot_service.rest_request(endpoint=f"dcim/devices/{existing['id']}/", method="DELETE")
 
         rows = read_csv_rows(GENERIC_CSV_FILE)
         device_data, iface_config = build_generic_device_payload(rows[0])
@@ -1083,10 +1029,6 @@ class TestImportDevicesFromGenericCsv:
         """
         raw = await real_nautobot_service.graphql_query(gql)
         device = raw["data"]["device"]
-        assert not device["serial"], (
-            "Serial must be empty — generic CSV has no serial column"
-        )
+        assert not device["serial"], "Serial must be empty — generic CSV has no serial column"
 
-        logger.info(
-            "✓ Minimal generic CSV (2 columns) is sufficient for a full device import"
-        )
+        logger.info("✓ Minimal generic CSV (2 columns) is sufficient for a full device import")

@@ -23,9 +23,7 @@ def _fake_transaction():
 def _make_service() -> tuple[LoginRecordingService, MagicMock, MagicMock]:
     mock_users = MagicMock()
     mock_audit = MagicMock()
-    svc = LoginRecordingService(
-        user_repository=mock_users, audit_repository=mock_audit
-    )
+    svc = LoginRecordingService(user_repository=mock_users, audit_repository=mock_audit)
     return svc, mock_users, mock_audit
 
 
@@ -36,9 +34,7 @@ def _make_service() -> tuple[LoginRecordingService, MagicMock, MagicMock]:
 def test_record_login_updates_last_login():
     """record_successful_login calls user_repository.update_last_login."""
     svc, mock_users, mock_audit = _make_service()
-    with patch(
-        "services.auth.login_recording_service.db_transaction", _fake_transaction
-    ):
+    with patch("services.auth.login_recording_service.db_transaction", _fake_transaction):
         svc.record_successful_login(
             user_id=1,
             username="alice",
@@ -52,9 +48,7 @@ def test_record_login_updates_last_login():
 def test_record_login_creates_audit_entry():
     """record_successful_login calls audit_repository.create_log."""
     svc, mock_users, mock_audit = _make_service()
-    with patch(
-        "services.auth.login_recording_service.db_transaction", _fake_transaction
-    ):
+    with patch("services.auth.login_recording_service.db_transaction", _fake_transaction):
         svc.record_successful_login(
             user_id=2,
             username="bob",
@@ -68,9 +62,7 @@ def test_record_login_creates_audit_entry():
 def test_record_login_audit_event_type_is_login():
     """Audit log entry has event_type='login'."""
     svc, mock_users, mock_audit = _make_service()
-    with patch(
-        "services.auth.login_recording_service.db_transaction", _fake_transaction
-    ):
+    with patch("services.auth.login_recording_service.db_transaction", _fake_transaction):
         svc.record_successful_login(
             user_id=3,
             username="carol",
@@ -85,9 +77,7 @@ def test_record_login_audit_event_type_is_login():
 def test_record_login_includes_authentication_method():
     """extra_data in the audit log contains authentication_method."""
     svc, mock_users, mock_audit = _make_service()
-    with patch(
-        "services.auth.login_recording_service.db_transaction", _fake_transaction
-    ):
+    with patch("services.auth.login_recording_service.db_transaction", _fake_transaction):
         svc.record_successful_login(
             user_id=4,
             username="dave",
@@ -103,9 +93,7 @@ def test_record_login_includes_authentication_method():
 def test_record_login_includes_roles_in_extra_data():
     """extra_data in the audit log contains the assigned roles."""
     svc, mock_users, mock_audit = _make_service()
-    with patch(
-        "services.auth.login_recording_service.db_transaction", _fake_transaction
-    ):
+    with patch("services.auth.login_recording_service.db_transaction", _fake_transaction):
         svc.record_successful_login(
             user_id=5,
             username="eve",
@@ -120,9 +108,7 @@ def test_record_login_includes_roles_in_extra_data():
 def test_record_login_custom_message_used():
     """Custom message is forwarded to the audit entry."""
     svc, mock_users, mock_audit = _make_service()
-    with patch(
-        "services.auth.login_recording_service.db_transaction", _fake_transaction
-    ):
+    with patch("services.auth.login_recording_service.db_transaction", _fake_transaction):
         svc.record_successful_login(
             user_id=6,
             username="frank",
@@ -138,9 +124,7 @@ def test_record_login_custom_message_used():
 def test_record_login_default_message_contains_username():
     """Default message includes the username when no custom message given."""
     svc, mock_users, mock_audit = _make_service()
-    with patch(
-        "services.auth.login_recording_service.db_transaction", _fake_transaction
-    ):
+    with patch("services.auth.login_recording_service.db_transaction", _fake_transaction):
         svc.record_successful_login(
             user_id=7,
             username="grace",
@@ -155,9 +139,7 @@ def test_record_login_default_message_contains_username():
 def test_record_login_extra_data_merged():
     """extra_data kwarg is merged with the standard fields."""
     svc, mock_users, mock_audit = _make_service()
-    with patch(
-        "services.auth.login_recording_service.db_transaction", _fake_transaction
-    ):
+    with patch("services.auth.login_recording_service.db_transaction", _fake_transaction):
         svc.record_successful_login(
             user_id=8,
             username="heidi",

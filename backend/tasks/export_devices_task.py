@@ -117,9 +117,7 @@ def export_devices_task(
 
             devices = result.get("data", {}).get("devices", [])
             all_devices.extend(devices)
-            logger.info(
-                "✓ Fetched %s devices from batch %s", len(devices), batch_idx + 1
-            )
+            logger.info("✓ Fetched %s devices from batch %s", len(devices), batch_idx + 1)
 
         if not all_devices:
             return {

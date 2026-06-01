@@ -8,9 +8,7 @@ logger = logging.getLogger(__name__)
 
 class _HostGroupsMixin:
     def get_host_groups(self) -> Dict:
-        response = self._make_request(
-            "GET", "domain-types/host_group_config/collections/all"
-        )
+        response = self._make_request("GET", "domain-types/host_group_config/collections/all")
         return self._handle_response(response)
 
     def get_host_group(self, group_name: str) -> Dict:
@@ -37,9 +35,7 @@ class _HostGroupsMixin:
         if alias is not None:
             json_data["alias"] = alias
 
-        response = self._make_request(
-            "PUT", f"objects/host_group_config/{name}", json_data=json_data, etag=etag
-        )
+        response = self._make_request("PUT", f"objects/host_group_config/{name}", json_data=json_data, etag=etag)
         return self._handle_response(response)
 
     def delete_host_group(self, name: str) -> bool:

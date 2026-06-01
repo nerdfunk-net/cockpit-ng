@@ -39,9 +39,7 @@ def _make_run(
         "job_type": "backup",
         "status": "completed",
         "completed_at": completed_at,
-        "result": json.dumps(
-            {"backed_up_devices": backed_up, "failed_devices": failed}
-        ),
+        "result": json.dumps({"backed_up_devices": backed_up, "failed_devices": failed}),
     }
 
 
@@ -106,14 +104,10 @@ class TestBuildResponse:
 
     @patch(_REDIS_PATH)
     @patch(_REPO_PATH)
-    def test_failed_device_tracked(
-        self, mock_repo: MagicMock, mock_redis: MagicMock, svc: BackupStatusService
-    ) -> None:
+    def test_failed_device_tracked(self, mock_repo: MagicMock, mock_redis: MagicMock, svc: BackupStatusService) -> None:
         run = _make_run(
             backed_up=[],
-            failed=[
-                {"device_id": "dev-2", "device_name": "Switch 2", "error": "Timeout"}
-            ],
+            failed=[{"device_id": "dev-2", "device_name": "Switch 2", "error": "Timeout"}],
         )
         mock_repo.get_all_by_type_and_statuses.return_value = [run]
         _no_cache(mock_redis)
@@ -221,9 +215,7 @@ class TestBuildResponse:
 class TestCaching:
     @patch(_REDIS_PATH)
     @patch(_REPO_PATH)
-    def test_cache_hit_skips_repo(
-        self, mock_repo: MagicMock, mock_redis: MagicMock, svc: BackupStatusService
-    ) -> None:
+    def test_cache_hit_skips_repo(self, mock_repo: MagicMock, mock_redis: MagicMock, svc: BackupStatusService) -> None:
         cached_data = {
             "total_devices": 3,
             "devices_with_successful_backup": 2,
@@ -255,9 +247,7 @@ class TestCaching:
 
     @patch(_REDIS_PATH)
     @patch(_REPO_PATH)
-    def test_cache_miss_calls_repo(
-        self, mock_repo: MagicMock, mock_redis: MagicMock, svc: BackupStatusService
-    ) -> None:
+    def test_cache_miss_calls_repo(self, mock_repo: MagicMock, mock_redis: MagicMock, svc: BackupStatusService) -> None:
         _no_cache(mock_redis)
         mock_repo.get_all_by_type_and_statuses.return_value = []
 

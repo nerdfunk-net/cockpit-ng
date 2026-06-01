@@ -240,9 +240,7 @@ async def update_device_in_checkmk(
 
 @router.get("/jobs")
 async def list_comparison_jobs(
-    limit: int = Query(
-        20, ge=1, le=100, description="Maximum number of jobs to return"
-    ),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of jobs to return"),
     current_user: dict = Depends(require_permission("checkmk.devices", "read")),
     nb2cmk_db_service=Depends(get_nb2cmk_db_service),
 ):
@@ -261,18 +259,10 @@ async def list_comparison_jobs(
             job_list.append(
                 {
                     "id": job.job_id,
-                    "status": job.status.value
-                    if hasattr(job.status, "value")
-                    else job.status,
-                    "created_at": job.created_at.isoformat()
-                    if job.created_at
-                    else None,
-                    "started_at": job.started_at.isoformat()
-                    if job.started_at
-                    else None,
-                    "completed_at": job.completed_at.isoformat()
-                    if job.completed_at
-                    else None,
+                    "status": job.status.value if hasattr(job.status, "value") else job.status,
+                    "created_at": job.created_at.isoformat() if job.created_at else None,
+                    "started_at": job.started_at.isoformat() if job.started_at else None,
+                    "completed_at": job.completed_at.isoformat() if job.completed_at else None,
                     "total_devices": job.total_devices,
                     "processed_devices": job.processed_devices,
                     "progress_message": job.progress_message,
@@ -324,23 +314,17 @@ async def get_comparison_job_details(
                     "normalized_config": result.normalized_config,
                     "checkmk_config": result.checkmk_config,
                     "ignored_attributes": result.ignored_attributes,  # Include ignored attributes
-                    "processed_at": result.processed_at.isoformat()
-                    if result.processed_at
-                    else None,
+                    "processed_at": result.processed_at.isoformat() if result.processed_at else None,
                 }
             )
 
         return {
             "job": {
                 "id": job.job_id,
-                "status": job.status.value
-                if hasattr(job.status, "value")
-                else job.status,
+                "status": job.status.value if hasattr(job.status, "value") else job.status,
                 "created_at": job.created_at.isoformat() if job.created_at else None,
                 "started_at": job.started_at.isoformat() if job.started_at else None,
-                "completed_at": job.completed_at.isoformat()
-                if job.completed_at
-                else None,
+                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
                 "total_devices": job.total_devices,
                 "processed_devices": job.processed_devices,
                 "progress_message": job.progress_message,
@@ -421,9 +405,7 @@ async def clear_all_comparison_jobs(
         skipped_count = 0
 
         for job in jobs:
-            status_value = (
-                job.status.value if hasattr(job.status, "value") else job.status
-            )
+            status_value = job.status.value if hasattr(job.status, "value") else job.status
 
             # Skip running or pending jobs
             if status_value in ["running", "pending"]:

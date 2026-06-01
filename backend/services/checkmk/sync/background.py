@@ -28,9 +28,7 @@ class NB2CMKBackgroundService:
         self._db = service_factory.build_nb2cmk_db_service()
         self._sync = service_factory.build_nb2cmk_service()
 
-    async def start_devices_diff_job(
-        self, username: Optional[str] = None
-    ) -> JobStartResponse:
+    async def start_devices_diff_job(self, username: Optional[str] = None) -> JobStartResponse:
         """Start a background job to get device differences."""
 
         # Check if there's already an active job
@@ -63,9 +61,7 @@ class NB2CMKBackgroundService:
         job = self._db.get_job(job_id)
 
         if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
 
         return JobProgressResponse(
             job_id=job.job_id,
@@ -84,9 +80,7 @@ class NB2CMKBackgroundService:
         job = self._db.get_job(job_id)
 
         if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
 
         if job.status not in [JobStatus.COMPLETED, JobStatus.FAILED]:
             raise HTTPException(
@@ -114,9 +108,7 @@ class NB2CMKBackgroundService:
             }
             devices.append(device_info)
 
-        message = (
-            f"Retrieved {len(devices)} device comparison results from job {job_id}"
-        )
+        message = f"Retrieved {len(devices)} device comparison results from job {job_id}"
         if job.status == JobStatus.FAILED:
             message = f"Job {job_id} failed: {job.error_message}"
 
@@ -149,9 +141,7 @@ class NB2CMKBackgroundService:
 
             # Get all devices from Nautobot first
             logger.info("Job %s: Fetching devices from Nautobot", job_id)
-            self._db.update_job_progress(
-                job_id, 0, 0, "Fetching devices from Nautobot..."
-            )
+            self._db.update_job_progress(job_id, 0, 0, "Fetching devices from Nautobot...")
 
             # Use the existing service to get devices
             import service_factory
@@ -223,15 +213,9 @@ class NB2CMKBackgroundService:
                     device_info = {
                         "id": device_id,
                         "name": device_name,
-                        "role": device.get("role", {}).get("name", "")
-                        if device.get("role")
-                        else "",
-                        "status": device.get("status", {}).get("name", "")
-                        if device.get("status")
-                        else "",
-                        "location": device.get("location", {}).get("name", "")
-                        if device.get("location")
-                        else "",
+                        "role": device.get("role", {}).get("name", "") if device.get("role") else "",
+                        "status": device.get("status", {}).get("name", "") if device.get("status") else "",
+                        "location": device.get("location", {}).get("name", "") if device.get("location") else "",
                         "checkmk_status": "unknown",
                     }
 
@@ -243,14 +227,10 @@ class NB2CMKBackgroundService:
                             device_name,
                             device_id,
                         )
-                        comparison_result = await self._sync.compare_device_config(
-                            device_id
-                        )
+                        comparison_result = await self._sync.compare_device_config(device_id)
                         device_info["checkmk_status"] = comparison_result.result
                         device_info["diff"] = comparison_result.diff
-                        device_info["normalized_config"] = (
-                            comparison_result.normalized_config
-                        )
+                        device_info["normalized_config"] = comparison_result.normalized_config
                         device_info["checkmk_config"] = comparison_result.checkmk_config
 
                         logger.debug(
@@ -277,9 +257,7 @@ class NB2CMKBackgroundService:
                                 device_name,
                             )
                             device_info["checkmk_status"] = "missing"
-                            device_info["diff"] = (
-                                f"Host '{device_name}' not found in CheckMK"
-                            )
+                            device_info["diff"] = f"Host '{device_name}' not found in CheckMK"
                             device_info["normalized_config"] = {}
                             device_info["checkmk_config"] = None
                         else:
@@ -292,9 +270,7 @@ class NB2CMKBackgroundService:
                                 error_detail,
                             )
                             device_info["checkmk_status"] = "error"
-                            device_info["diff"] = (
-                                f"HTTP {http_exc.status_code} Error: {error_detail}"
-                            )
+                            device_info["diff"] = f"HTTP {http_exc.status_code} Error: {error_detail}"
                             device_info["normalized_config"] = {}
                             device_info["checkmk_config"] = None
 
@@ -342,17 +318,10 @@ class NB2CMKBackgroundService:
                     # For small device counts (<=20), update every device
                     # For larger counts, update every 5 devices or at the end
                     update_frequency = 1 if total_devices <= 20 else 5
-                    if (
-                        processed_count % update_frequency == 0
-                        or processed_count == total_devices
-                    ):
-                        progress_msg = (
-                            f"Processed {processed_count} of {total_devices} devices"
-                        )
+                    if processed_count % update_frequency == 0 or processed_count == total_devices:
+                        progress_msg = f"Processed {processed_count} of {total_devices} devices"
                         logger.info("Job %s: %s", job_id, progress_msg)
-                        self._db.update_job_progress(
-                            job_id, processed_count, total_devices, progress_msg
-                        )
+                        self._db.update_job_progress(job_id, processed_count, total_devices, progress_msg)
 
                     # Small delay to prevent overwhelming the system
                     await asyncio.sleep(0.1)
@@ -367,27 +336,18 @@ class NB2CMKBackgroundService:
                     processed_count += 1
                     # Update progress even on errors to show we're still working
                     update_frequency = 1 if total_devices <= 20 else 5
-                    if (
-                        processed_count % update_frequency == 0
-                        or processed_count == total_devices
-                    ):
+                    if processed_count % update_frequency == 0 or processed_count == total_devices:
                         progress_msg = f"Processed {processed_count} of {total_devices} devices (with errors)"
                         logger.info("Job %s: %s", job_id, progress_msg)
-                        self._db.update_job_progress(
-                            job_id, processed_count, total_devices, progress_msg
-                        )
+                        self._db.update_job_progress(job_id, processed_count, total_devices, progress_msg)
                     continue
 
             # Mark job as completed with final progress update
-            completion_msg = (
-                f"Completed device comparison for {processed_count} devices"
-            )
+            completion_msg = f"Completed device comparison for {processed_count} devices"
             logger.info("Job %s: %s", job_id, completion_msg)
 
             # Ensure final progress is updated
-            self._db.update_job_progress(
-                job_id, processed_count, total_devices, completion_msg
-            )
+            self._db.update_job_progress(job_id, processed_count, total_devices, completion_msg)
             self._db.update_job_status(job_id, JobStatus.COMPLETED)
 
         except asyncio.CancelledError:

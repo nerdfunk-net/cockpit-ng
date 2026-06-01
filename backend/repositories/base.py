@@ -45,9 +45,7 @@ class BaseRepository(Generic[T]):
     # ------------------------------------------------------------------
 
     @contextmanager
-    def _db_session(
-        self, db: Optional[Session] = None
-    ) -> Generator[Session, None, None]:
+    def _db_session(self, db: Optional[Session] = None) -> Generator[Session, None, None]:
         """Yield *db* unchanged when provided (caller owns lifetime).
 
         Otherwise, open a new session and close it on exit.  This keeps every

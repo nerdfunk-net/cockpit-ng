@@ -36,9 +36,7 @@ class TestDeviceResolution:
     """Tests for device resolution methods."""
 
     @pytest.mark.asyncio
-    async def test_resolve_device_by_name_success(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_device_by_name_success(self, common_service, mock_nautobot_service):
         """Test successful device resolution by name."""
         mock_nautobot_service.graphql_query.return_value = {
             "data": {"devices": [{"id": "device-uuid-123", "name": "test-device"}]}
@@ -50,9 +48,7 @@ class TestDeviceResolution:
         mock_nautobot_service.graphql_query.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_resolve_device_by_name_not_found(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_device_by_name_not_found(self, common_service, mock_nautobot_service):
         """Test device not found by name."""
         mock_nautobot_service.graphql_query.return_value = {"data": {"devices": []}}
 
@@ -61,22 +57,16 @@ class TestDeviceResolution:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_resolve_device_by_name_graphql_error(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_device_by_name_graphql_error(self, common_service, mock_nautobot_service):
         """Test handling of GraphQL errors."""
-        mock_nautobot_service.graphql_query.return_value = {
-            "errors": [{"message": "GraphQL error"}]
-        }
+        mock_nautobot_service.graphql_query.return_value = {"errors": [{"message": "GraphQL error"}]}
 
         result = await common_service.resolve_device_by_name("test-device")
 
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_resolve_device_by_ip_success(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_device_by_ip_success(self, common_service, mock_nautobot_service):
         """Test successful device resolution by IP."""
         mock_nautobot_service.graphql_query.return_value = {
             "data": {
@@ -98,9 +88,7 @@ class TestDeviceResolution:
         assert result == "device-uuid-456"
 
     @pytest.mark.asyncio
-    async def test_resolve_device_by_ip_no_primary(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_device_by_ip_no_primary(self, common_service, mock_nautobot_service):
         """Test IP not set as primary for any device."""
         mock_nautobot_service.graphql_query.return_value = {
             "data": {
@@ -119,9 +107,7 @@ class TestDeviceResolution:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_resolve_device_id_with_valid_uuid(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_device_id_with_valid_uuid(self, common_service, mock_nautobot_service):
         """Test resolution when valid UUID is provided."""
         device_uuid = "550e8400-e29b-41d4-a716-446655440000"
 
@@ -132,17 +118,13 @@ class TestDeviceResolution:
         mock_nautobot_service.graphql_query.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_resolve_device_id_fallback_to_name(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_device_id_fallback_to_name(self, common_service, mock_nautobot_service):
         """Test fallback to name resolution."""
         mock_nautobot_service.graphql_query.return_value = {
             "data": {"devices": [{"id": "device-uuid-789", "name": "test-device"}]}
         }
 
-        result = await common_service.resolve_device_id(
-            device_id="invalid-uuid", device_name="test-device"
-        )
+        result = await common_service.resolve_device_id(device_id="invalid-uuid", device_name="test-device")
 
         assert result == "device-uuid-789"
 
@@ -156,9 +138,7 @@ class TestResourceResolution:
     """Tests for resource resolution methods (status, namespace, etc.)."""
 
     @pytest.mark.asyncio
-    async def test_resolve_status_id_success(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_status_id_success(self, common_service, mock_nautobot_service):
         """Test successful status resolution."""
         mock_nautobot_service.rest_request.return_value = {
             "count": 2,
@@ -173,9 +153,7 @@ class TestResourceResolution:
         assert result == "status-uuid-1"
 
     @pytest.mark.asyncio
-    async def test_resolve_status_id_not_found(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_status_id_not_found(self, common_service, mock_nautobot_service):
         """Test status not found raises ValueError."""
         mock_nautobot_service.rest_request.return_value = {"count": 0, "results": []}
 
@@ -183,9 +161,7 @@ class TestResourceResolution:
             await common_service.resolve_status_id("nonexistent", "dcim.device")
 
     @pytest.mark.asyncio
-    async def test_resolve_namespace_id_success(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_namespace_id_success(self, common_service, mock_nautobot_service):
         """Test successful namespace resolution."""
         mock_nautobot_service.graphql_query.return_value = {
             "data": {"namespaces": [{"id": "namespace-uuid-1", "name": "Global"}]}
@@ -196,9 +172,7 @@ class TestResourceResolution:
         assert result == "namespace-uuid-1"
 
     @pytest.mark.asyncio
-    async def test_resolve_namespace_id_not_found(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_namespace_id_not_found(self, common_service, mock_nautobot_service):
         """Test namespace not found raises ValueError."""
         mock_nautobot_service.graphql_query.return_value = {"data": {"namespaces": []}}
 
@@ -206,9 +180,7 @@ class TestResourceResolution:
             await common_service.resolve_namespace_id("NonExistent")
 
     @pytest.mark.asyncio
-    async def test_resolve_platform_id_success(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_platform_id_success(self, common_service, mock_nautobot_service):
         """Test successful platform resolution."""
         mock_nautobot_service.graphql_query.return_value = {
             "data": {"platforms": [{"id": "platform-uuid-1", "name": "ios"}]}
@@ -219,9 +191,7 @@ class TestResourceResolution:
         assert result == "platform-uuid-1"
 
     @pytest.mark.asyncio
-    async def test_resolve_device_type_id_with_manufacturer(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_resolve_device_type_id_with_manufacturer(self, common_service, mock_nautobot_service):
         """Test device type resolution with manufacturer."""
         mock_nautobot_service.graphql_query.return_value = {
             "data": {
@@ -273,9 +243,7 @@ class TestValidation:
         assert common_service.validate_ip_address("192.168.1.1") is True
         assert common_service.validate_ip_address("10.0.0.1/24") is True
         # Current implementation doesn't validate octet ranges, just pattern
-        assert (
-            common_service.validate_ip_address("256.1.1.1") is True
-        )  # Passes regex pattern
+        assert common_service.validate_ip_address("256.1.1.1") is True  # Passes regex pattern
 
     def test_validate_ip_address_ipv6(self, common_service):
         """Test IPv6 address validation."""
@@ -373,9 +341,7 @@ class TestDataProcessing:
         }
         headers = list(row.keys())
 
-        update_data, interface_config, ip_namespace = (
-            common_service.prepare_update_data(row, headers)
-        )
+        update_data, interface_config, ip_namespace = common_service.prepare_update_data(row, headers)
 
         # Should exclude id and name, include other fields
         assert "id" not in update_data
@@ -404,9 +370,7 @@ class TestInterfaceAndIPHelpers:
     """Tests for interface and IP address helper methods."""
 
     @pytest.mark.asyncio
-    async def test_ensure_ip_address_exists_already_exists(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_ensure_ip_address_exists_already_exists(self, common_service, mock_nautobot_service):
         """Test when IP address already exists."""
         mock_nautobot_service.rest_request.return_value = {
             "count": 1,
@@ -422,9 +386,7 @@ class TestInterfaceAndIPHelpers:
         assert mock_nautobot_service.rest_request.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_ensure_ip_address_exists_creates_new(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_ensure_ip_address_exists_creates_new(self, common_service, mock_nautobot_service):
         """Test creating new IP address."""
         # First call: GET returns no results
         # Second call: resolve status
@@ -446,25 +408,19 @@ class TestInterfaceAndIPHelpers:
         assert mock_nautobot_service.rest_request.call_count == 3
 
     @pytest.mark.asyncio
-    async def test_ensure_interface_exists_already_exists(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_ensure_interface_exists_already_exists(self, common_service, mock_nautobot_service):
         """Test when interface already exists."""
         mock_nautobot_service.rest_request.return_value = {
             "count": 1,
             "results": [{"id": "interface-uuid-123", "name": "Loopback0"}],
         }
 
-        result = await common_service.ensure_interface_exists(
-            device_id="device-uuid-1", interface_name="Loopback0"
-        )
+        result = await common_service.ensure_interface_exists(device_id="device-uuid-1", interface_name="Loopback0")
 
         assert result == "interface-uuid-123"
 
     @pytest.mark.asyncio
-    async def test_assign_ip_to_interface_new_assignment(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_assign_ip_to_interface_new_assignment(self, common_service, mock_nautobot_service):
         """Test creating new IP-to-Interface assignment."""
         # First call: check if exists (returns 0)
         # Second call: create assignment
@@ -485,9 +441,7 @@ class TestInterfaceAndIPHelpers:
         assert mock_nautobot_service.rest_request.call_count == 2
 
     @pytest.mark.asyncio
-    async def test_assign_ip_to_interface_already_assigned(
-        self, common_service, mock_nautobot_service
-    ):
+    async def test_assign_ip_to_interface_already_assigned(self, common_service, mock_nautobot_service):
         """Test when IP is already assigned to interface."""
         mock_nautobot_service.rest_request.return_value = {
             "count": 1,
@@ -500,9 +454,7 @@ class TestInterfaceAndIPHelpers:
             ],
         }
 
-        result = await common_service.assign_ip_to_interface(
-            ip_id="ip-uuid-1", interface_id="interface-uuid-1"
-        )
+        result = await common_service.assign_ip_to_interface(ip_id="ip-uuid-1", interface_id="interface-uuid-1")
 
         assert result["id"] == "assignment-uuid-1"
         # Should only check, not create

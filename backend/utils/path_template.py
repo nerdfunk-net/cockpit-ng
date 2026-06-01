@@ -12,9 +12,7 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 
-def _resolve_location_type_filter(
-    device_data: Dict[str, Any], field_path: str, filter_value: str
-) -> Optional[str]:
+def _resolve_location_type_filter(device_data: Dict[str, Any], field_path: str, filter_value: str) -> Optional[str]:
     """Find the first location in the hierarchy matching location_type and return its field.
 
     Traverses device.location → .parent → .parent.parent → ...
@@ -45,9 +43,7 @@ def _resolve_location_type_filter(
 
     while location and isinstance(location, dict):
         location_type = location.get("location_type") or {}
-        type_name = (
-            location_type.get("name", "") if isinstance(location_type, dict) else ""
-        )
+        type_name = location_type.get("name", "") if isinstance(location_type, dict) else ""
         if type_name.lower() == filter_lower:
             value = location.get(target_field)
             logger.debug(
@@ -106,9 +102,7 @@ def replace_template_variables(template: str, device_data: Dict[str, Any]) -> st
                 filter_method = filter_method.strip()
                 filter_value = filter_value.strip()
                 if filter_method == "location_type":
-                    value = _resolve_location_type_filter(
-                        device_data, field_part.strip(), filter_value
-                    )
+                    value = _resolve_location_type_filter(device_data, field_part.strip(), filter_value)
                     resolved = str(value) if value is not None else ""
                     result = result.replace(f"{{{match}}}", resolved)
                     logger.debug("Replaced {%s} with '%s'", match, resolved)
@@ -129,9 +123,7 @@ def replace_template_variables(template: str, device_data: Dict[str, Any]) -> st
             logger.debug("Replaced {%s} with '%s'", match, value)
         else:
             # Keep the original variable if not found, or replace with empty string
-            logger.warning(
-                "Variable '%s' not found in device data, keeping as-is", match
-            )
+            logger.warning("Variable '%s' not found in device data, keeping as-is", match)
             # Optionally: result = result.replace(f"{{{match}}}", "")
 
     return result

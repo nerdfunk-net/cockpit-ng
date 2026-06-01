@@ -171,9 +171,7 @@ async def get_login_credential(
 ):
     """Get a specific login credential by ID (password masked)."""
     try:
-        credential = compliance.get_login_credential_by_id(
-            credential_id, decrypt_password=False
-        )
+        credential = compliance.get_login_credential_by_id(credential_id, decrypt_password=False)
         if not credential:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -200,9 +198,7 @@ async def create_login_credential(
             password=credential_request.password,
             description=credential_request.description,
         )
-        created_credential = compliance.get_login_credential_by_id(
-            credential_id, decrypt_password=False
-        )
+        created_credential = compliance.get_login_credential_by_id(credential_id, decrypt_password=False)
         return {
             "success": True,
             "message": "Login credential created successfully",
@@ -234,9 +230,7 @@ async def update_login_credential(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Login credential with ID {credential_id} not found or no changes made",
             )
-        updated_credential = compliance.get_login_credential_by_id(
-            credential_id, decrypt_password=False
-        )
+        updated_credential = compliance.get_login_credential_by_id(credential_id, decrypt_password=False)
         return {
             "success": True,
             "message": "Login credential updated successfully",
@@ -327,9 +321,7 @@ async def create_snmp_mapping(
             snmp_v3_priv_password=mapping_request.snmp_v3_priv_password,
             description=mapping_request.description,
         )
-        created_mapping = compliance.get_snmp_mapping_by_id(
-            mapping_id, decrypt_passwords=False
-        )
+        created_mapping = compliance.get_snmp_mapping_by_id(mapping_id, decrypt_passwords=False)
         return {
             "success": True,
             "message": "SNMP mapping created successfully",
@@ -371,9 +363,7 @@ async def update_snmp_mapping(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"SNMP mapping with ID {mapping_id} not found or no changes made",
             )
-        updated_mapping = compliance.get_snmp_mapping_by_id(
-            mapping_id, decrypt_passwords=False
-        )
+        updated_mapping = compliance.get_snmp_mapping_by_id(mapping_id, decrypt_passwords=False)
         return {
             "success": True,
             "message": "SNMP mapping updated successfully",
@@ -438,9 +428,7 @@ async def import_snmp_mappings(
         if result["errors"] > 0:
             parts.append(f"{result['errors']} errors")
 
-        message = (
-            f"SNMP mappings: {', '.join(parts)}" if parts else "No mappings imported"
-        )
+        message = f"SNMP mappings: {', '.join(parts)}" if parts else "No mappings imported"
 
         return {
             "success": True,

@@ -44,9 +44,7 @@ class DeviceBackupService:
         Args:
             nautobot_service: NautobotService instance for API operations
         """
-        self.nautobot_service = (
-            nautobot_service or service_factory.build_nautobot_service()
-        )
+        self.nautobot_service = nautobot_service or service_factory.build_nautobot_service()
         self.config_service = DeviceConfigService(self.nautobot_service)
         self.platform_mapper = NetmikoPlatformMapper()
 
@@ -91,9 +89,7 @@ class DeviceBackupService:
 
         repository = git_repo_manager.get_repository(config_repository_id)
         if not repository:
-            raise ValueError(
-                "Repository %s not found in database" % config_repository_id
-            )
+            raise ValueError("Repository %s not found in database" % config_repository_id)
 
         logger.info("\u2713 Repository: %s", repository.get("name"))
         logger.info("  - URL: %s", repository.get("url"))
@@ -165,15 +161,9 @@ class DeviceBackupService:
 
             device_name = device.get("name", device_id)
             primary_ip = (
-                device.get("primary_ip4", {}).get("address", "").split("/")[0]
-                if device.get("primary_ip4")
-                else None
+                device.get("primary_ip4", {}).get("address", "").split("/")[0] if device.get("primary_ip4") else None
             )
-            platform = (
-                device.get("platform", {}).get("name", "unknown")
-                if device.get("platform")
-                else "unknown"
-            )
+            platform = device.get("platform", {}).get("name", "unknown") if device.get("platform") else "unknown"
 
             device_backup_info.device_name = device_name
             device_backup_info.device_ip = primary_ip
@@ -233,9 +223,7 @@ class DeviceBackupService:
             logger.info("[%s] ✓ Backup completed for %s", device_index, device_name)
 
         except Exception as e:
-            logger.error(
-                "[%s] ✗ Exception during backup: %s", device_index, e, exc_info=True
-            )
+            logger.error("[%s] ✗ Exception during backup: %s", device_index, e, exc_info=True)
             device_backup_info.error = str(e)
 
         return device_backup_info
@@ -277,9 +265,7 @@ class DeviceBackupService:
             device_name = device_info.get("device_name", device_id)
 
             try:
-                logger.info(
-                    "Updating custom field for device: %s (%s)", device_name, device_id
-                )
+                logger.info("Updating custom field for device: %s (%s)", device_name, device_id)
 
                 update_data = {"custom_fields": {custom_field_name: backup_date}}
 

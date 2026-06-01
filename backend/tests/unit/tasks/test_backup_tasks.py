@@ -22,9 +22,7 @@ def _backup_result(device_id: str = "dev-1", error: str | None = None) -> MagicM
     result = MagicMock()
     result.error = error
     result.to_dict.return_value = (
-        {"device_id": device_id, "error": error}
-        if error
-        else {"device_id": device_id, "hostname": "router-01"}
+        {"device_id": device_id, "error": error} if error else {"device_id": device_id, "hostname": "router-01"}
     )
     return result
 
@@ -35,9 +33,7 @@ def test_backup_single_device_task_delegates_to_service() -> None:
     backup_service = MagicMock()
     backup_service.backup_single_device.return_value = _backup_result()
 
-    with patch(
-        "tasks.backup_tasks.DeviceBackupService", return_value=backup_service
-    ):
+    with patch("tasks.backup_tasks.DeviceBackupService", return_value=backup_service):
         result = backup_single_device_task.run(
             device_id="dev-1",
             device_index=1,
@@ -50,9 +46,7 @@ def test_backup_single_device_task_delegates_to_service() -> None:
 
     assert result == {"device_id": "dev-1", "hostname": "router-01"}
     backup_service.backup_single_device.assert_called_once()
-    assert backup_service.backup_single_device.call_args.kwargs["repo_dir"] == Path(
-        "/tmp/repo"
-    )
+    assert backup_service.backup_single_device.call_args.kwargs["repo_dir"] == Path("/tmp/repo")
 
 
 @pytest.mark.unit
@@ -61,10 +55,11 @@ def test_backup_devices_task_validation_failure_returns_error() -> None:
     backup_service = MagicMock()
     backup_service.validate_backup_inputs.side_effect = ValueError("No devices")
 
-    with patch("service_factory.build_git_service"), patch(
-        "service_factory.build_git_auth_service"
-    ), patch("tasks.backup_tasks.DeviceBackupService", return_value=backup_service), patch.object(
-        backup_devices_task, "update_state"
+    with (
+        patch("service_factory.build_git_service"),
+        patch("service_factory.build_git_auth_service"),
+        patch("tasks.backup_tasks.DeviceBackupService", return_value=backup_service),
+        patch.object(backup_devices_task, "update_state"),
     ):
         result = backup_devices_task.run(
             inventory=[],
@@ -109,14 +104,11 @@ def test_backup_devices_task_sequential_success_commits_and_prepares_result(
         "failed_count": 0,
     }
 
-    with patch(
-        "service_factory.build_git_service", return_value=git_service
-    ), patch(
-        "service_factory.build_git_auth_service", return_value=git_auth
-    ), patch(
-        "tasks.backup_tasks.DeviceBackupService", return_value=backup_service
-    ), patch.object(
-        backup_devices_task, "update_state"
+    with (
+        patch("service_factory.build_git_service", return_value=git_service),
+        patch("service_factory.build_git_auth_service", return_value=git_auth),
+        patch("tasks.backup_tasks.DeviceBackupService", return_value=backup_service),
+        patch.object(backup_devices_task, "update_state"),
     ):
         result = backup_devices_task.run(
             inventory=["dev-1"],
@@ -163,12 +155,11 @@ def test_finalize_backup_task_commits_successes_and_marks_job_complete(tmp_path)
         "timestamp_custom_field_name": "last_backup",
     }
 
-    with patch(
-        "service_factory.build_git_service", return_value=git_service
-    ), patch("service_factory.build_job_run_service", return_value=job_runs), patch(
-        "git.Repo", return_value=MagicMock()
-    ), patch(
-        "tasks.backup_tasks.DeviceBackupService", return_value=backup_service
+    with (
+        patch("service_factory.build_git_service", return_value=git_service),
+        patch("service_factory.build_job_run_service", return_value=job_runs),
+        patch("git.Repo", return_value=MagicMock()),
+        patch("tasks.backup_tasks.DeviceBackupService", return_value=backup_service),
     ):
         result = finalize_backup_task.run(
             [{"device_id": "dev-1", "hostname": "router-01"}],

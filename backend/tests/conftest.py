@@ -36,15 +36,9 @@ from tests.mocks import (
 
 def pytest_configure(config):
     """Register custom pytest markers."""
-    config.addinivalue_line(
-        "markers", "unit: Unit tests (fast, no external dependencies)"
-    )
-    config.addinivalue_line(
-        "markers", "integration: Integration tests (mocked externals)"
-    )
-    config.addinivalue_line(
-        "markers", "e2e: End-to-end tests (real systems, manual only)"
-    )
+    config.addinivalue_line("markers", "unit: Unit tests (fast, no external dependencies)")
+    config.addinivalue_line("markers", "integration: Integration tests (mocked externals)")
+    config.addinivalue_line("markers", "e2e: End-to-end tests (real systems, manual only)")
     config.addinivalue_line("markers", "nautobot: Tests involving Nautobot integration")
     config.addinivalue_line("markers", "checkmk: Tests involving CheckMK integration")
     config.addinivalue_line("markers", "slow: Tests that take >5 seconds")
@@ -132,9 +126,7 @@ def sample_repository() -> Dict[str, Any]:
 def sample_netmiko_connection():
     """Mock Netmiko connection object."""
     conn = MagicMock()
-    conn.send_command = Mock(
-        return_value="hostname switch01\n!\ninterface GigabitEthernet0/1"
-    )
+    conn.send_command = Mock(return_value="hostname switch01\n!\ninterface GigabitEthernet0/1")
     conn.disconnect = Mock()
     return conn
 
@@ -485,11 +477,7 @@ def test_nautobot_configured():
     nautobot_token = os.getenv("NAUTOBOT_TOKEN")
 
     # Check if configuration is present and not placeholder
-    is_configured = (
-        nautobot_url
-        and nautobot_token
-        and nautobot_token != "your-test-nautobot-token-here"
-    )
+    is_configured = nautobot_url and nautobot_token and nautobot_token != "your-test-nautobot-token-here"
 
     return is_configured
 
@@ -567,8 +555,6 @@ def real_ansible_inventory_service(real_nautobot_service):
     from services.inventory.inventory import InventoryService
 
     # Patch service_factory so inventory service gets the real nautobot service
-    with patch(
-        "service_factory.build_nautobot_service", return_value=real_nautobot_service
-    ):
+    with patch("service_factory.build_nautobot_service", return_value=real_nautobot_service):
         service = InventoryService()
         yield service

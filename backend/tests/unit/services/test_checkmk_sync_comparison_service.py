@@ -78,9 +78,7 @@ def _normalized(
     """Return a normalized device config dict as returned by get_device_normalized."""
     return {
         "folder": folder,
-        "attributes": attributes
-        if attributes is not None
-        else {"ipaddress": "10.0.0.1"},
+        "attributes": attributes if attributes is not None else {"ipaddress": "10.0.0.1"},
         "internal": {"hostname": hostname},
     }
 
@@ -208,9 +206,7 @@ class TestFilterDiffByIgnoredAttributes:
             "attributes.'meta_data': Present in CheckMK ('val') but missing in Nautobot; "
             "attributes.'ipaddress': Nautobot='10.0.0.1' vs CheckMK='10.0.0.2'"
         )
-        result = DeviceComparisonService.filter_diff_by_ignored_attributes(
-            diff, ["meta_data"]
-        )
+        result = DeviceComparisonService.filter_diff_by_ignored_attributes(diff, ["meta_data"])
         assert "meta_data" not in result
         assert "ipaddress" in result
 
@@ -218,9 +214,7 @@ class TestFilterDiffByIgnoredAttributes:
     @pytest.mark.checkmk
     def test_empty_diff_text_returned_unchanged(self) -> None:
         """Empty diff text is returned as-is regardless of ignored list."""
-        result = DeviceComparisonService.filter_diff_by_ignored_attributes(
-            "", ["meta_data"]
-        )
+        result = DeviceComparisonService.filter_diff_by_ignored_attributes("", ["meta_data"])
         assert result == ""
 
     @pytest.mark.unit
@@ -236,9 +230,7 @@ class TestFilterDiffByIgnoredAttributes:
     def test_all_entries_ignored_returns_empty_string(self) -> None:
         """All diff entries ignored → empty string returned."""
         diff = "attributes.'meta_data': val1 vs val2"
-        result = DeviceComparisonService.filter_diff_by_ignored_attributes(
-            diff, ["meta_data"]
-        )
+        result = DeviceComparisonService.filter_diff_by_ignored_attributes(diff, ["meta_data"])
         assert result == ""
 
 
@@ -253,9 +245,7 @@ class TestCompareDeviceConfig:
     def _setup(self, normalized: dict | None = None):
         """Return (service, mock_query, fake_client) ready for compare_device_config tests."""
         mock_query = MagicMock()
-        mock_query.get_device_normalized = AsyncMock(
-            return_value=normalized or _normalized()
-        )
+        mock_query.get_device_normalized = AsyncMock(return_value=normalized or _normalized())
         svc = _make_service(query_service=mock_query)
         return svc, mock_query, FakeCheckMKClient()
 
@@ -394,17 +384,13 @@ class TestGetDevicesDiff:
         """compare_device_config returns 'host_not_found' → checkmk_status='missing'."""
         svc = _make_service()
         mock_nautobot = AsyncMock()
-        mock_nautobot.graphql_query.return_value = {
-            "data": {"devices": [_nautobot_device()]}
-        }
+        mock_nautobot.graphql_query.return_value = {"data": {"devices": [_nautobot_device()]}}
         comparison = DeviceComparison(
             result="host_not_found",
             diff="Host 'router1' not found in CheckMK",
         )
         with patch(_PATCH_NAUTOBOT, return_value=mock_nautobot):
-            with patch.object(
-                svc, "compare_device_config", new=AsyncMock(return_value=comparison)
-            ):
+            with patch.object(svc, "compare_device_config", new=AsyncMock(return_value=comparison)):
                 result = await svc.get_devices_diff()
 
         assert result.total == 1
@@ -417,14 +403,10 @@ class TestGetDevicesDiff:
         """compare_device_config returns 'equal' → checkmk_status='equal'."""
         svc = _make_service()
         mock_nautobot = AsyncMock()
-        mock_nautobot.graphql_query.return_value = {
-            "data": {"devices": [_nautobot_device()]}
-        }
+        mock_nautobot.graphql_query.return_value = {"data": {"devices": [_nautobot_device()]}}
         comparison = DeviceComparison(result="equal")
         with patch(_PATCH_NAUTOBOT, return_value=mock_nautobot):
-            with patch.object(
-                svc, "compare_device_config", new=AsyncMock(return_value=comparison)
-            ):
+            with patch.object(svc, "compare_device_config", new=AsyncMock(return_value=comparison)):
                 result = await svc.get_devices_diff()
 
         assert result.devices[0]["checkmk_status"] == "equal"
@@ -436,16 +418,10 @@ class TestGetDevicesDiff:
         """compare_device_config returns 'diff' → checkmk_status='diff'."""
         svc = _make_service()
         mock_nautobot = AsyncMock()
-        mock_nautobot.graphql_query.return_value = {
-            "data": {"devices": [_nautobot_device()]}
-        }
-        comparison = DeviceComparison(
-            result="diff", diff="attributes.'ipaddress': differs"
-        )
+        mock_nautobot.graphql_query.return_value = {"data": {"devices": [_nautobot_device()]}}
+        comparison = DeviceComparison(result="diff", diff="attributes.'ipaddress': differs")
         with patch(_PATCH_NAUTOBOT, return_value=mock_nautobot):
-            with patch.object(
-                svc, "compare_device_config", new=AsyncMock(return_value=comparison)
-            ):
+            with patch.object(svc, "compare_device_config", new=AsyncMock(return_value=comparison)):
                 result = await svc.get_devices_diff()
 
         assert result.devices[0]["checkmk_status"] == "diff"
@@ -457,9 +433,7 @@ class TestGetDevicesDiff:
         """Unexpected exception in compare_device_config → checkmk_status='error'."""
         svc = _make_service()
         mock_nautobot = AsyncMock()
-        mock_nautobot.graphql_query.return_value = {
-            "data": {"devices": [_nautobot_device()]}
-        }
+        mock_nautobot.graphql_query.return_value = {"data": {"devices": [_nautobot_device()]}}
         with patch(_PATCH_NAUTOBOT, return_value=mock_nautobot):
             with patch.object(
                 svc,
@@ -488,9 +462,7 @@ class TestGetDevicesDiff:
         }
         comparison = DeviceComparison(result="equal")
         with patch(_PATCH_NAUTOBOT, return_value=mock_nautobot):
-            with patch.object(
-                svc, "compare_device_config", new=AsyncMock(return_value=comparison)
-            ):
+            with patch.object(svc, "compare_device_config", new=AsyncMock(return_value=comparison)):
                 result = await svc.get_devices_diff()
 
         assert result.total == 3
@@ -506,9 +478,7 @@ class TestGetDevicesDiff:
 
         svc = _make_service()
         mock_nautobot = AsyncMock()
-        mock_nautobot.graphql_query.return_value = {
-            "errors": [{"message": "query failed"}]
-        }
+        mock_nautobot.graphql_query.return_value = {"errors": [{"message": "query failed"}]}
         with patch(_PATCH_NAUTOBOT, return_value=mock_nautobot):
             with pytest.raises(HTTPException) as exc_info:
                 await svc.get_devices_diff()

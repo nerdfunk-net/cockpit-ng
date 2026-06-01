@@ -35,18 +35,14 @@ async def get_repositories(
 ):
     """Get all git repositories."""
     try:
-        repositories = git_repo_manager.get_repositories(
-            category=category, active_only=active_only
-        )
+        repositories = git_repo_manager.get_repositories(category=category, active_only=active_only)
 
         # Convert to response models
         repo_responses = []
         for repo in repositories:
             repo_responses.append(GitRepositoryResponse(**dict(repo)))
 
-        return GitRepositoryListResponse(
-            repositories=repo_responses, total=len(repo_responses)
-        )
+        return GitRepositoryListResponse(repositories=repo_responses, total=len(repo_responses))
     except Exception as e:
         raise_internal_server_error(logger, "Internal error", e)
 
@@ -107,9 +103,7 @@ async def create_repository(
         # Get the created repository
         created_repo = git_repo_manager.get_repository(repo_id)
         if not created_repo:
-            raise HTTPException(
-                status_code=500, detail="Failed to retrieve created repository"
-            )
+            raise HTTPException(status_code=500, detail="Failed to retrieve created repository")
 
         # Convert created repository data
         repo_dict = dict(created_repo)
@@ -150,9 +144,7 @@ async def update_repository(
         # Get the updated repository
         updated_repo = git_repo_manager.get_repository(repo_id)
         if not updated_repo:
-            raise HTTPException(
-                status_code=500, detail="Failed to retrieve updated repository"
-            )
+            raise HTTPException(status_code=500, detail="Failed to retrieve updated repository")
 
         # Convert updated repository data
         repo_dict = dict(updated_repo)

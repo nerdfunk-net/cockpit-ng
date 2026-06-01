@@ -51,21 +51,25 @@ def test_update_ip_addresses_from_csv_dry_run_uses_graphql_lookup() -> None:
     job_runs = MagicMock()
     job_runs.get_job_run_by_celery_id.return_value = None
 
-    with patch(
-        "tasks.update_ip_addresses_from_csv_task.service_factory.build_nautobot_service",
-        return_value=MagicMock(),
-    ), patch(
-        "tasks.update_ip_addresses_from_csv_task.service_factory.build_job_run_service",
-        return_value=job_runs,
-    ), patch(
-        "tasks.update_ip_addresses_from_csv_task._find_ip_address_by_address_and_namespace_graphql",
-        new_callable=AsyncMock,
-        return_value=("ip-1", {"tags": []}),
-    ) as lookup, patch(
-        "tasks.update_ip_addresses_from_csv_task._update_ip_address",
-        new_callable=AsyncMock,
-    ) as update, patch.object(
-        update_ip_addresses_from_csv_task, "update_state"
+    with (
+        patch(
+            "tasks.update_ip_addresses_from_csv_task.service_factory.build_nautobot_service",
+            return_value=MagicMock(),
+        ),
+        patch(
+            "tasks.update_ip_addresses_from_csv_task.service_factory.build_job_run_service",
+            return_value=job_runs,
+        ),
+        patch(
+            "tasks.update_ip_addresses_from_csv_task._find_ip_address_by_address_and_namespace_graphql",
+            new_callable=AsyncMock,
+            return_value=("ip-1", {"tags": []}),
+        ) as lookup,
+        patch(
+            "tasks.update_ip_addresses_from_csv_task._update_ip_address",
+            new_callable=AsyncMock,
+        ) as update,
+        patch.object(update_ip_addresses_from_csv_task, "update_state"),
     ):
         result = update_ip_addresses_from_csv_task.run(
             "address,parent__namespace__name,description\n10.0.0.1/24,Global,uplink",
@@ -87,22 +91,26 @@ def test_update_ip_addresses_from_csv_uuid_update_calls_rest_helper() -> None:
     job_runs = MagicMock()
     job_runs.get_job_run_by_celery_id.return_value = None
 
-    with patch(
-        "tasks.update_ip_addresses_from_csv_task.service_factory.build_nautobot_service",
-        return_value=MagicMock(),
-    ), patch(
-        "tasks.update_ip_addresses_from_csv_task.service_factory.build_job_run_service",
-        return_value=job_runs,
-    ), patch(
-        "tasks.update_ip_addresses_from_csv_task._get_ip_address_by_uuid",
-        new_callable=AsyncMock,
-        return_value={"id": "ip-1", "tags": []},
-    ) as get_by_uuid, patch(
-        "tasks.update_ip_addresses_from_csv_task._update_ip_address",
-        new_callable=AsyncMock,
-        return_value={"success": True},
-    ) as update, patch.object(
-        update_ip_addresses_from_csv_task, "update_state"
+    with (
+        patch(
+            "tasks.update_ip_addresses_from_csv_task.service_factory.build_nautobot_service",
+            return_value=MagicMock(),
+        ),
+        patch(
+            "tasks.update_ip_addresses_from_csv_task.service_factory.build_job_run_service",
+            return_value=job_runs,
+        ),
+        patch(
+            "tasks.update_ip_addresses_from_csv_task._get_ip_address_by_uuid",
+            new_callable=AsyncMock,
+            return_value={"id": "ip-1", "tags": []},
+        ) as get_by_uuid,
+        patch(
+            "tasks.update_ip_addresses_from_csv_task._update_ip_address",
+            new_callable=AsyncMock,
+            return_value={"success": True},
+        ) as update,
+        patch.object(update_ip_addresses_from_csv_task, "update_state"),
     ):
         result = update_ip_addresses_from_csv_task.run(
             "id,address,description,dns_name\nip-1,10.0.0.1/24,uplink,router-01",

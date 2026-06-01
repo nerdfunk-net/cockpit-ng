@@ -20,9 +20,7 @@ _CHECKMK_CONFIG = {
     "ignore_attributes": ["labels", "meta_data"],
 }
 
-_SNMP_CONFIG = {
-    "mappings": [{"oid": "1.3.6.1.4.1.9", "platform": "cisco"}]
-}
+_SNMP_CONFIG = {"mappings": [{"oid": "1.3.6.1.4.1.9", "platform": "cisco"}]}
 
 _QUERIES_CONFIG = {
     "queries": {

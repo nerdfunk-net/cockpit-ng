@@ -52,6 +52,4 @@ async def execute_template_and_sync_to_nautobot(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     except Exception as exc:
-        raise_internal_server_error(
-            logger, "Failed to execute template and sync", exc
-        )
+        raise_internal_server_error(logger, "Failed to execute template and sync", exc)

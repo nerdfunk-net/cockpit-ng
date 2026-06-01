@@ -157,8 +157,7 @@ async def trigger_scan_prefixes(
         job_id=job_id,
         status="queued",
         message=(
-            f"Scan prefixes task queued "
-            f"(field: {request.custom_field_name}={request.custom_field_value}): {task.id}"
+            f"Scan prefixes task queued (field: {request.custom_field_name}={request.custom_field_value}): {task.id}"
         ),
     )
 

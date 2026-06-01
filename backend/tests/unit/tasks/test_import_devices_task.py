@@ -29,9 +29,7 @@ def test_prepare_device_data_extracts_device_custom_and_interface_fields() -> No
         "interface_mtu": "1500",
     }
 
-    device_data, interface_config = _prepare_device_data(
-        row, list(row.keys()), create_interfaces=True
-    )
+    device_data, interface_config = _prepare_device_data(row, list(row.keys()), create_interfaces=True)
 
     assert device_data["name"] == "router-01"
     assert device_data["custom_fields"] == {"asset_owner": "netops"}
@@ -85,9 +83,7 @@ def test_import_devices_from_csv_success_and_skipped_device() -> None:
     )
 
     with ExitStack() as stack:
-        stack.enter_context(
-            patch("tasks.import_devices_task.service_factory.build_nautobot_service")
-        )
+        stack.enter_context(patch("tasks.import_devices_task.service_factory.build_nautobot_service"))
         stack.enter_context(
             patch(
                 "tasks.import_devices_task.service_factory.build_job_run_service",
@@ -131,9 +127,7 @@ def test_import_devices_from_csv_records_service_failure() -> None:
     csv_content = "name,device_type,role,location\nrouter-01,ISR,edge,Berlin"
 
     with ExitStack() as stack:
-        stack.enter_context(
-            patch("tasks.import_devices_task.service_factory.build_nautobot_service")
-        )
+        stack.enter_context(patch("tasks.import_devices_task.service_factory.build_nautobot_service"))
         stack.enter_context(
             patch(
                 "tasks.import_devices_task.service_factory.build_job_run_service",
@@ -150,6 +144,4 @@ def test_import_devices_from_csv_records_service_failure() -> None:
         result = import_devices_from_csv_task.run(csv_content)
 
     assert result["summary"]["failed"] == 1
-    assert result["failures"] == [
-        {"device_name": "router-01", "error": "Nautobot rejected"}
-    ]
+    assert result["failures"] == [{"device_name": "router-01", "error": "Nautobot rejected"}]

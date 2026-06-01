@@ -149,9 +149,7 @@ async def create_ipam_prefix(
             )
 
         endpoint = "ipam/prefixes/"
-        result = await nautobot_service.rest_request(
-            endpoint, method="POST", data=prefix_data
-        )
+        result = await nautobot_service.rest_request(endpoint, method="POST", data=prefix_data)
 
         logger.info("Created prefix %s in Nautobot IPAM", prefix_data.get("prefix"))
 

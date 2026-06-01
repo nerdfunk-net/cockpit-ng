@@ -105,30 +105,18 @@ def load_cache_schedules_task() -> dict:
         devices_interval = cache_settings.get("devices_cache_interval_minutes", 60)
         if devices_interval > 0:
             last_run = _get_last_cache_run("devices")
-            if (
-                last_run is None
-                or (now - last_run).total_seconds() >= devices_interval * 60
-            ):
-                dispatch_cache_task.delay(
-                    cache_type="devices", task_name="cache_all_devices"
-                )
+            if last_run is None or (now - last_run).total_seconds() >= devices_interval * 60:
+                dispatch_cache_task.delay(cache_type="devices", task_name="cache_all_devices")
                 _set_last_cache_run("devices", now)
                 dispatched.append("devices")
-                logger.info(
-                    "Dispatched devices cache task (interval: %sm)", devices_interval
-                )
+                logger.info("Dispatched devices cache task (interval: %sm)", devices_interval)
 
         # Check locations cache
         locations_interval = cache_settings.get("locations_cache_interval_minutes", 10)
         if locations_interval > 0:
             last_run = _get_last_cache_run("locations")
-            if (
-                last_run is None
-                or (now - last_run).total_seconds() >= locations_interval * 60
-            ):
-                dispatch_cache_task.delay(
-                    cache_type="locations", task_name="cache_all_locations"
-                )
+            if last_run is None or (now - last_run).total_seconds() >= locations_interval * 60:
+                dispatch_cache_task.delay(cache_type="locations", task_name="cache_all_locations")
                 _set_last_cache_run("locations", now)
                 dispatched.append("locations")
                 logger.info(
@@ -210,9 +198,7 @@ def dispatch_cache_task(self, cache_type: str, task_name: str) -> dict:
         }
 
     except Exception as e:
-        logger.error(
-            "Error dispatching cache task %s: %s", cache_type, e, exc_info=True
-        )
+        logger.error("Error dispatching cache task %s: %s", cache_type, e, exc_info=True)
         return {"success": False, "error": str(e)}
 
 
@@ -277,9 +263,7 @@ def cleanup_celery_data_task() -> dict:
                     if date_done:
                         # Parse the date (Celery stores it as ISO format)
                         if isinstance(date_done, str):
-                            task_time = datetime.fromisoformat(
-                                date_done.replace("Z", "+00:00")
-                            )
+                            task_time = datetime.fromisoformat(date_done.replace("Z", "+00:00"))
                             if task_time < cutoff_time:
                                 r.delete(key)
                                 removed_results += 1
@@ -489,9 +473,7 @@ def check_stale_jobs_task() -> dict:
                 )
 
         if marked_failed:
-            logger.info(
-                "Stale job check: marked %s job(s) as failed", len(marked_failed)
-            )
+            logger.info("Stale job check: marked %s job(s) as failed", len(marked_failed))
 
         return {
             "success": True,
@@ -542,11 +524,7 @@ def cleanup_audit_logs_task() -> dict:
         )
 
         with db_transaction() as db:
-            deleted = (
-                db.query(AuditLog)
-                .filter(AuditLog.created_at < cutoff)
-                .delete(synchronize_session=False)
-            )
+            deleted = db.query(AuditLog).filter(AuditLog.created_at < cutoff).delete(synchronize_session=False)
 
         logger.info("Audit log cleanup completed: %s entries deleted", deleted)
 

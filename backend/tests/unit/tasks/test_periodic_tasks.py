@@ -111,9 +111,7 @@ def test_load_cache_schedules_dispatches_devices_when_never_run():
 
     assert result["success"] is True
     assert "devices" in result["dispatched"]
-    mock_delay.assert_called_once_with(
-        cache_type="devices", task_name="cache_all_devices"
-    )
+    mock_delay.assert_called_once_with(cache_type="devices", task_name="cache_all_devices")
 
 
 @pytest.mark.unit
@@ -134,9 +132,7 @@ def test_load_cache_schedules_dispatches_locations_when_due():
                     result = load_cache_schedules_task.run()
 
     assert "locations" in result["dispatched"]
-    mock_delay.assert_called_once_with(
-        cache_type="locations", task_name="cache_all_locations"
-    )
+    mock_delay.assert_called_once_with(cache_type="locations", task_name="cache_all_locations")
 
 
 @pytest.mark.unit
@@ -177,9 +173,7 @@ def _make_jrs(running: list | None = None, pending: list | None = None) -> Magic
     jrs = MagicMock()
     running = running or []
     pending = pending or []
-    jrs.get_recent_runs.side_effect = lambda **kw: (
-        running if kw.get("status") == "running" else pending
-    )
+    jrs.get_recent_runs.side_effect = lambda **kw: (running if kw.get("status") == "running" else pending)
     return jrs
 
 
@@ -292,9 +286,7 @@ def test_cleanup_client_data_disabled_does_not_open_db():
         MockSM.return_value.get_celery_settings.return_value = {
             "client_data_cleanup_enabled": False,
         }
-        with patch(
-            "repositories.client_data.client_data_repository.ClientDataRepository"
-        ) as MockRepoCls:
+        with patch("repositories.client_data.client_data_repository.ClientDataRepository") as MockRepoCls:
             result = cleanup_client_data_task()
 
     assert result["success"] is True
@@ -311,9 +303,7 @@ def test_cleanup_client_data_delegates_to_repository():
         "client_data_cleanup_age_hours": 24,
     }
     mock_inst = MagicMock()
-    mock_inst.delete_records_older_than.return_value = ClientDataCleanupResult(
-        4, 5, 6
-    )
+    mock_inst.delete_records_older_than.return_value = ClientDataCleanupResult(4, 5, 6)
 
     with patch(_PATCH_SETTINGS_MGR) as MockSM:
         MockSM.return_value.get_celery_settings.return_value = settings

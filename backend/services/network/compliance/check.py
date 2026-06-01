@@ -196,9 +196,7 @@ class ComplianceCheckService:
 
         except Exception as e:
             error_msg = str(e)
-            logger.warning(
-                "SNMP v%s check failed for %s: %s", version, device_ip, error_msg
-            )
+            logger.warning("SNMP v%s check failed for %s: %s", version, device_ip, error_msg)
 
             return {
                 "success": False,
@@ -260,18 +258,10 @@ class ComplianceCheckService:
             # Debug logging
             logger.debug("SNMPv3 check for %s", device_ip)
             logger.debug("  Username: %s", username)
-            logger.debug(
-                "  Auth Protocol: %s (mapped to %s)", auth_protocol, auth_proto
-            )
-            logger.debug(
-                "  Auth Password: %s", "***set***" if auth_password else "None"
-            )
-            logger.debug(
-                "  Priv Protocol: %s (mapped to %s)", priv_protocol, priv_proto
-            )
-            logger.debug(
-                "  Priv Password: %s", "***set***" if priv_password else "None"
-            )
+            logger.debug("  Auth Protocol: %s (mapped to %s)", auth_protocol, auth_proto)
+            logger.debug("  Auth Password: %s", "***set***" if auth_password else "None")
+            logger.debug("  Priv Protocol: %s (mapped to %s)", priv_protocol, priv_proto)
+            logger.debug("  Priv Password: %s", "***set***" if priv_password else "None")
 
             # Create USM user data for SNMPv3
             # Only pass passwords if they exist and corresponding protocol is not noAuth/noPriv
@@ -299,9 +289,7 @@ class ComplianceCheckService:
 
             # Check for errors
             if error_indication:
-                logger.warning(
-                    "  SNMPv3 query failed with error_indication: %s", error_indication
-                )
+                logger.warning("  SNMPv3 query failed with error_indication: %s", error_indication)
                 return {
                     "success": False,
                     "status": "fail",
@@ -469,9 +457,7 @@ class ComplianceCheckService:
             }
         except Exception as e:
             error_msg = str(e)
-            logger.error(
-                "Configuration pattern check failed for %s: %s", device_ip, error_msg
-            )
+            logger.error("Configuration pattern check failed for %s: %s", device_ip, error_msg)
 
             return {
                 "success": False,
@@ -486,9 +472,7 @@ class ComplianceCheckService:
             }
 
     @staticmethod
-    def check_configuration_mock(
-        device_ip: str, device_name: str, patterns: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def check_configuration_mock(device_ip: str, device_name: str, patterns: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Mock implementation of configuration checking.
 

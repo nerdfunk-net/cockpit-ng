@@ -46,9 +46,7 @@ class TemplateRenderOrchestrator:
     # Advanced render
     # ------------------------------------------------------------------
 
-    async def advanced_render(
-        self, request: AdvancedTemplateRenderRequest
-    ) -> AdvancedTemplateRenderResponse:
+    async def advanced_render(self, request: AdvancedTemplateRenderRequest) -> AdvancedTemplateRenderResponse:
         """Render a template with full context (netmiko or agent)."""
         category = request.category.lower()
         warnings: List[str] = []
@@ -67,9 +65,7 @@ class TemplateRenderOrchestrator:
                 warnings,
             ) = await self._build_netmiko_context(request, context, warnings)
         elif category == "agent":
-            context, warnings = await self._build_agent_context(
-                request, context, warnings
-            )
+            context, warnings = await self._build_agent_context(request, context, warnings)
 
         variables_used = _extract_template_variables(request.template_content)
 
@@ -77,10 +73,7 @@ class TemplateRenderOrchestrator:
             rendered = Template(request.template_content).render(**context)
         except UndefinedError as exc:
             available = list(context.keys())
-            raise ValueError(
-                f"Undefined variable in template: {exc}. "
-                f"Available variables: {', '.join(available)}"
-            )
+            raise ValueError(f"Undefined variable in template: {exc}. Available variables: {', '.join(available)}")
         except TemplateError as exc:
             raise ValueError(f"Template syntax error: {exc}")
 
@@ -105,15 +98,12 @@ class TemplateRenderOrchestrator:
         context["pre_run"] = {"raw": "", "parsed": []}
 
         needs_device_data = (
-            request.use_nautobot_context
-            or (request.pre_run_command and request.pre_run_command.strip())
+            request.use_nautobot_context or (request.pre_run_command and request.pre_run_command.strip())
         ) and request.device_id
 
         if needs_device_data:
             try:
-                device_data = await self._device_qs.get_device_details(
-                    device_id=request.device_id, use_cache=True
-                )
+                device_data = await self._device_qs.get_device_details(device_id=request.device_id, use_cache=True)
                 context["device_details"] = device_data
                 context["devices"] = [
                     {
@@ -162,9 +152,7 @@ class TemplateRenderOrchestrator:
                 context["pre_run"] = {"raw": pre_run_output, "parsed": pre_run_parsed}
 
                 if result.get("parse_error"):
-                    warnings.append(
-                        f"TextFSM parsing not available: {result['parse_error']}"
-                    )
+                    warnings.append(f"TextFSM parsing not available: {result['parse_error']}")
             except Exception as exc:
                 raise ValueError(f"Failed to execute pre-run command: {exc}")
 
@@ -186,37 +174,26 @@ class TemplateRenderOrchestrator:
                 persistence = _sf.build_inventory_persistence_service()
                 inventory = persistence.get_inventory(request.inventory_id)
                 if not inventory:
-                    raise ValueError(
-                        f"Inventory with ID {request.inventory_id} not found"
-                    )
+                    raise ValueError(f"Inventory with ID {request.inventory_id} not found")
 
                 conditions = inventory.get("conditions", [])
                 if not conditions:
-                    logger.warning(
-                        "Inventory %s has no conditions", request.inventory_id
-                    )
+                    logger.warning("Inventory %s has no conditions", request.inventory_id)
                     context["devices"] = []
                     context["device_details"] = {}
                 else:
                     operations = convert_saved_inventory_to_operations(conditions)
                     devices, _ = await self._inventory.preview_inventory(operations)
 
-                    context["devices"] = [
-                        {"id": d.id, "name": d.name, "primary_ip4": d.primary_ip4}
-                        for d in devices
-                    ]
+                    context["devices"] = [{"id": d.id, "name": d.name, "primary_ip4": d.primary_ip4} for d in devices]
 
                     device_details: Dict[str, Any] = {}
                     for device in devices:
                         try:
-                            data = await self._device_qs.get_device_details(
-                                device_id=device.id, use_cache=True
-                            )
+                            data = await self._device_qs.get_device_details(device_id=device.id, use_cache=True)
                             device_details[device.name] = data
                         except Exception as exc:
-                            msg = (
-                                f"Failed to fetch details for device {device.id}: {exc}"
-                            )
+                            msg = f"Failed to fetch details for device {device.id}: {exc}"
                             logger.warning(msg)
                             warnings.append(msg)
                     context["device_details"] = device_details
@@ -280,26 +257,19 @@ class TemplateRenderOrchestrator:
                 for w in result.get("warnings", []):
                     warnings.append(f"Device {device_id}: {w}")
 
-                parsed, parse_errors = _parse_rendered_output(
-                    rendered_content, device_id, request.output_format
-                )
+                parsed, parse_errors = _parse_rendered_output(rendered_content, device_id, request.output_format)
                 if parsed is not None:
                     parsed_updates.append(parsed)
                 errors.extend(parse_errors)
 
             except Exception as exc:
                 errors.append(f"Device {device_id}: Template rendering failed: {exc}")
-                logger.error(
-                    "Error rendering template for device %s: %s", device_id, exc
-                )
+                logger.error("Error rendering template for device %s: %s", device_id, exc)
 
         if request.dry_run:
             return TemplateExecuteAndSyncResponse(
                 success=len(errors) == 0,
-                message=(
-                    f"Dry run completed. Parsed {len(parsed_updates)} device update(s). "
-                    f"{len(errors)} error(s)."
-                ),
+                message=(f"Dry run completed. Parsed {len(parsed_updates)} device update(s). {len(errors)} error(s)."),
                 rendered_outputs=rendered_outputs,
                 parsed_updates=parsed_updates,
                 errors=errors,
@@ -373,9 +343,7 @@ def _parse_rendered_output(
         if output_format == "json":
             parsed = json.loads(rendered_content)
             if not isinstance(parsed, dict):
-                errors.append(
-                    f"Device {device_id}: JSON output must be an object, got {type(parsed)}"
-                )
+                errors.append(f"Device {device_id}: JSON output must be an object, got {type(parsed)}")
                 return None, errors
             if "id" not in parsed and "name" not in parsed:
                 parsed["id"] = device_id
@@ -384,9 +352,7 @@ def _parse_rendered_output(
         if output_format == "yaml":
             parsed = yaml.safe_load(rendered_content)
             if not isinstance(parsed, dict):
-                errors.append(
-                    f"Device {device_id}: YAML output must be an object, got {type(parsed)}"
-                )
+                errors.append(f"Device {device_id}: YAML output must be an object, got {type(parsed)}")
                 return None, errors
             if "id" not in parsed and "name" not in parsed:
                 parsed["id"] = device_id
@@ -401,14 +367,10 @@ def _parse_rendered_output(
                     parsed[key.strip()] = value.strip()
             if len(parsed) > 1:
                 return parsed, errors
-            errors.append(
-                f"Device {device_id}: No key-value pairs found in text output"
-            )
+            errors.append(f"Device {device_id}: No key-value pairs found in text output")
             return None, errors
 
-        errors.append(
-            f"Device {device_id}: Unsupported output format '{output_format}'"
-        )
+        errors.append(f"Device {device_id}: Unsupported output format '{output_format}'")
         return None, errors
 
     except json.JSONDecodeError as exc:

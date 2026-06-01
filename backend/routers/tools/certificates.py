@@ -105,9 +105,7 @@ async def upload_certificate(
             )
 
         # Sanitize filename - only allow safe characters
-        safe_filename = "".join(
-            c for c in file.filename if c.isalnum() or c in ".-_"
-        ).rstrip()
+        safe_filename = "".join(c for c in file.filename if c.isalnum() or c in ".-_").rstrip()
         if not safe_filename.endswith(".crt"):
             safe_filename += ".crt"
 
@@ -224,9 +222,7 @@ def add_certificate_to_system(
                     command_output="\n".join(command_outputs),
                 )
             else:
-                logger.warning(
-                    "update-ca-certificates returned non-zero: %s", result.returncode
-                )
+                logger.warning("update-ca-certificates returned non-zero: %s", result.returncode)
                 return AddCertificateResponse(
                     success=False,
                     message="Certificate copied but update-ca-certificates failed",

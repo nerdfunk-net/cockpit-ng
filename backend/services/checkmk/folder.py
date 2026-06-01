@@ -23,9 +23,7 @@ class CheckMKFolderService:
     # Existing: create a full folder path incrementally
     # ------------------------------------------------------------------
 
-    async def create_path(
-        self, folder_path: str, site_name: str, current_user: Dict[str, Any]
-    ) -> bool:
+    async def create_path(self, folder_path: str, site_name: str, current_user: Dict[str, Any]) -> bool:
         """Create a complete folder path in CheckMK by creating folders incrementally."""
         try:
             if not folder_path or folder_path in ("/", "~"):
@@ -36,9 +34,7 @@ class CheckMKFolderService:
                 return True
 
             client = CheckMKClientFactory.build_client_from_settings()
-            logger.info(
-                "Creating folder path '%s' in site '%s'", folder_path, site_name
-            )
+            logger.info("Creating folder path '%s' in site '%s'", folder_path, site_name)
 
             for i in range(len(path_parts)):
                 parent_folder = "/" if i == 0 else "~" + "~".join(path_parts[:i])
@@ -73,14 +69,10 @@ class CheckMKFolderService:
                             parent_folder,
                         )
                         continue
-                    logger.error(
-                        "CheckMK API error creating folder '%s': %s", folder_name, e
-                    )
+                    logger.error("CheckMK API error creating folder '%s': %s", folder_name, e)
                     return False
                 except Exception as e:
-                    logger.error(
-                        "General error creating folder '%s': %s", folder_name, e
-                    )
+                    logger.error("General error creating folder '%s': %s", folder_name, e)
                     return False
 
             return True
@@ -101,9 +93,7 @@ class CheckMKFolderService:
     ) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
         result = await asyncio.to_thread(
-            lambda: client.get_all_folders(
-                parent=parent, recursive=recursive, show_hosts=show_hosts
-            )
+            lambda: client.get_all_folders(parent=parent, recursive=recursive, show_hosts=show_hosts)
         )
         folders = []
         for folder_data in result.get("value", []):
@@ -124,15 +114,9 @@ class CheckMKFolderService:
     # GET /folders/{folder_path}
     # ------------------------------------------------------------------
 
-    async def get_folder(
-        self, folder_path: str, show_hosts: bool = False
-    ) -> Dict[str, Any]:
+    async def get_folder(self, folder_path: str, show_hosts: bool = False) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        return await asyncio.to_thread(
-            lambda: client.get_folder(
-                slash_to_tilde(folder_path), show_hosts=show_hosts
-            )
-        )
+        return await asyncio.to_thread(lambda: client.get_folder(slash_to_tilde(folder_path), show_hosts=show_hosts))
 
     # ------------------------------------------------------------------
     # POST /folders
@@ -168,15 +152,9 @@ class CheckMKFolderService:
     # DELETE /folders/{folder_path}
     # ------------------------------------------------------------------
 
-    async def delete_folder(
-        self, folder_path: str, delete_mode: str = "recursive"
-    ) -> None:
+    async def delete_folder(self, folder_path: str, delete_mode: str = "recursive") -> None:
         client = CheckMKClientFactory.build_client_from_settings()
-        await asyncio.to_thread(
-            lambda: client.delete_folder(
-                slash_to_tilde(folder_path), delete_mode=delete_mode
-            )
-        )
+        await asyncio.to_thread(lambda: client.delete_folder(slash_to_tilde(folder_path), delete_mode=delete_mode))
 
     # ------------------------------------------------------------------
     # POST /folders/{folder_path}/move
@@ -185,9 +163,7 @@ class CheckMKFolderService:
     async def move_folder(self, folder_path: str, destination: str) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
         return await asyncio.to_thread(
-            lambda: client.move_folder(
-                slash_to_tilde(folder_path), slash_to_tilde(destination)
-            )
+            lambda: client.move_folder(slash_to_tilde(folder_path), slash_to_tilde(destination))
         )
 
     # ------------------------------------------------------------------
@@ -202,12 +178,8 @@ class CheckMKFolderService:
     # GET /folders/{folder_path}/hosts
     # ------------------------------------------------------------------
 
-    async def get_hosts_in_folder(
-        self, folder_path: str, effective_attributes: bool = False
-    ) -> Dict[str, Any]:
+    async def get_hosts_in_folder(self, folder_path: str, effective_attributes: bool = False) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
         return await asyncio.to_thread(
-            lambda: client.get_hosts_in_folder(
-                slash_to_tilde(folder_path), effective_attributes=effective_attributes
-            )
+            lambda: client.get_hosts_in_folder(slash_to_tilde(folder_path), effective_attributes=effective_attributes)
         )

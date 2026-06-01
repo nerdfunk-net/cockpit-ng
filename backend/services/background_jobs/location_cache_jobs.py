@@ -36,9 +36,7 @@ def cache_all_locations_task(self, job_run_id: int = None) -> Dict[str, Any]:
         from services.background_jobs.base import safe_graphql_query
 
         # Update task state
-        self.update_state(
-            state="PROGRESS", meta={"status": "Fetching locations from Nautobot..."}
-        )
+        self.update_state(state="PROGRESS", meta={"status": "Fetching locations from Nautobot..."})
 
         # GraphQL query for all locations with hierarchy
         query = """
@@ -91,9 +89,7 @@ def cache_all_locations_task(self, job_run_id: int = None) -> Dict[str, Any]:
                 _jrs.mark_completed(job_run_id, result=result)
             return result
 
-        logger.info(
-            "Task %s: Processing %s locations", self.request.id, total_locations
-        )
+        logger.info("Task %s: Processing %s locations", self.request.id, total_locations)
 
         # Cache configuration - locations change less frequently, use 10 min TTL
         LOCATION_TTL = 600  # 10 minutes

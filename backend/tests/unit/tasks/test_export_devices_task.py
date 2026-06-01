@@ -45,12 +45,11 @@ def test_export_devices_writes_yaml_file(tmp_path) -> None:
     settings = MagicMock()
     settings.data_directory = str(tmp_path)
 
-    with patch(
-        "service_factory.build_nautobot_service", return_value=nautobot
-    ), patch(
-        "service_factory.build_job_run_service", return_value=job_runs
-    ), patch("config.settings", settings), patch.object(
-        export_devices_task, "update_state"
+    with (
+        patch("service_factory.build_nautobot_service", return_value=nautobot),
+        patch("service_factory.build_job_run_service", return_value=job_runs),
+        patch("config.settings", settings),
+        patch.object(export_devices_task, "update_state"),
     ):
         result = export_devices_task.run(
             device_ids=["dev-1"],
@@ -73,9 +72,10 @@ def test_export_devices_returns_error_when_nautobot_returns_no_devices() -> None
     nautobot = MagicMock()
     nautobot.graphql_query = AsyncMock(return_value={"data": {"devices": []}})
 
-    with patch(
-        "service_factory.build_nautobot_service", return_value=nautobot
-    ), patch.object(export_devices_task, "update_state"):
+    with (
+        patch("service_factory.build_nautobot_service", return_value=nautobot),
+        patch.object(export_devices_task, "update_state"),
+    ):
         result = export_devices_task.run(
             device_ids=["missing"],
             properties=["name"],
@@ -93,13 +93,12 @@ def test_export_devices_returns_error_when_nautobot_returns_no_devices() -> None
 def test_export_devices_rejects_unsupported_format(tmp_path) -> None:
     """Unsupported export formats are rejected after successful data fetch."""
     nautobot = MagicMock()
-    nautobot.graphql_query = AsyncMock(
-        return_value={"data": {"devices": [{"id": "dev-1", "name": "router-01"}]}}
-    )
+    nautobot.graphql_query = AsyncMock(return_value={"data": {"devices": [{"id": "dev-1", "name": "router-01"}]}})
 
-    with patch(
-        "service_factory.build_nautobot_service", return_value=nautobot
-    ), patch.object(export_devices_task, "update_state"):
+    with (
+        patch("service_factory.build_nautobot_service", return_value=nautobot),
+        patch.object(export_devices_task, "update_state"),
+    ):
         result = export_devices_task.run(
             device_ids=["dev-1"],
             properties=["name"],

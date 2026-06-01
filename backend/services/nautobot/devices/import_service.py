@@ -117,9 +117,7 @@ class DeviceImportService:
             NautobotAPIError: If Nautobot API request fails
             Exception: If creation fails for any other reason
         """
-        logger.info(
-            "Starting device import for: %s", device_data.get("name", "unknown")
-        )
+        logger.info("Starting device import for: %s", device_data.get("name", "unknown"))
 
         warnings = []
         details = {
@@ -135,9 +133,7 @@ class DeviceImportService:
 
             # Step 2: Create device
             logger.info("Step 2: Creating device in Nautobot")
-            device_id, device_response, was_created = await self._create_device(
-                validated_data, skip_if_exists
-            )
+            device_id, device_response, was_created = await self._create_device(validated_data, skip_if_exists)
             details["device"] = device_response
 
             if not was_created:
@@ -172,9 +168,7 @@ class DeviceImportService:
             # Step 4: Assign primary IP (if we have one)
             if primary_ipv4_id:
                 logger.info("Step 4: Assigning primary IPv4 to device")
-                success = await self.common.assign_primary_ip_to_device(
-                    device_id, primary_ipv4_id
-                )
+                success = await self.common.assign_primary_ip_to_device(device_id, primary_ipv4_id)
                 if success:
                     details["primary_ip"] = primary_ipv4_id
                 else:
@@ -184,9 +178,7 @@ class DeviceImportService:
 
             # Success!
             success_message = f"Device '{validated_data['name']}' "
-            success_message += (
-                "imported successfully" if was_created else "already exists"
-            )
+            success_message += "imported successfully" if was_created else "already exists"
 
             return {
                 "success": True,
@@ -260,9 +252,7 @@ class DeviceImportService:
         else:
             # Try to resolve by name
             manufacturer = device_data.get("manufacturer")
-            device_type_id = await self.common.resolve_device_type_id(
-                device_type, manufacturer
-            )
+            device_type_id = await self.common.resolve_device_type_id(device_type, manufacturer)
             if not device_type_id:
                 raise ValueError(
                     f"Device type '{device_type}' not found"
@@ -365,9 +355,7 @@ class DeviceImportService:
                 raise NautobotAPIError("No device ID returned from Nautobot")
 
             device_id = device_response["id"]
-            logger.info(
-                "Device '%s' created successfully with ID: %s", device_name, device_id
-            )
+            logger.info("Device '%s' created successfully with ID: %s", device_name, device_id)
 
             return device_id, device_response, True
 
@@ -477,9 +465,7 @@ class DeviceImportService:
 
         return created_interfaces, result.primary_ip4_id
 
-    def _normalize_interface_config(
-        self, interface_config: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def _normalize_interface_config(self, interface_config: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Normalize interface configuration for InterfaceManagerService.
 
@@ -515,15 +501,11 @@ class DeviceImportService:
             if "tagged_vlans" in normalized_iface and normalized_iface["tagged_vlans"]:
                 tagged_vlans = normalized_iface["tagged_vlans"]
                 if isinstance(tagged_vlans, str):
-                    normalized_iface["tagged_vlans"] = [
-                        v.strip() for v in tagged_vlans.split(",") if v.strip()
-                    ]
+                    normalized_iface["tagged_vlans"] = [v.strip() for v in tagged_vlans.split(",") if v.strip()]
 
             # Handle tags
             if "tags" in normalized_iface and normalized_iface["tags"]:
-                normalized_iface["tags"] = self.common.normalize_tags(
-                    normalized_iface["tags"]
-                )
+                normalized_iface["tags"] = self.common.normalize_tags(normalized_iface["tags"])
 
             normalized.append(normalized_iface)
 

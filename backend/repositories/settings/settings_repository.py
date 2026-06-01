@@ -12,9 +12,9 @@ from core.models import (
     CelerySetting,
     CheckMKSetting,
     GitSetting,
+    NautobotSetting,
     NetworkDefault,
     ServerDefault,
-    NautobotSetting,
     SettingsMetadata,
 )
 from repositories.base import BaseRepository
@@ -152,11 +152,7 @@ class SettingsMetadataRepository(BaseRepository[SettingsMetadata]):
         """Get metadata by key."""
         session = get_db_session()
         try:
-            return (
-                session.query(SettingsMetadata)
-                .filter(SettingsMetadata.key == key)
-                .first()
-            )
+            return session.query(SettingsMetadata).filter(SettingsMetadata.key == key).first()
         finally:
             session.close()
 
@@ -164,11 +160,7 @@ class SettingsMetadataRepository(BaseRepository[SettingsMetadata]):
         """Set or update metadata value."""
         session = get_db_session()
         try:
-            metadata = (
-                session.query(SettingsMetadata)
-                .filter(SettingsMetadata.key == key)
-                .first()
-            )
+            metadata = session.query(SettingsMetadata).filter(SettingsMetadata.key == key).first()
             if metadata:
                 metadata.value = value
                 session.commit()

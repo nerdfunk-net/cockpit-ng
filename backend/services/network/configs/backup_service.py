@@ -18,9 +18,7 @@ class BackupService:
     def __init__(self):
         self.repository = BackupRepository()
 
-    async def get_devices_for_backup(
-        self, db: Session, filters: dict, pagination: dict, sorting: dict
-    ) -> dict:
+    async def get_devices_for_backup(self, db: Session, filters: dict, pagination: dict, sorting: dict) -> dict:
         """
         Get devices with backup status and filtering.
 
@@ -60,9 +58,7 @@ class BackupService:
             logger.error("Error getting devices for backup: %s", e, exc_info=True)
             raise
 
-    async def trigger_device_backup(
-        self, db: Session, device_id: str, user_id: int
-    ) -> dict:
+    async def trigger_device_backup(self, db: Session, device_id: str, user_id: int) -> dict:
         """
         Trigger backup job for a single device.
 
@@ -94,9 +90,7 @@ class BackupService:
             logger.error("Error triggering device backup: %s", e, exc_info=True)
             raise
 
-    async def trigger_bulk_backup(
-        self, db: Session, device_ids: List[str], user_id: int
-    ) -> dict:
+    async def trigger_bulk_backup(self, db: Session, device_ids: List[str], user_id: int) -> dict:
         """
         Trigger backup job for multiple devices.
 
@@ -130,9 +124,7 @@ class BackupService:
             logger.error("Error triggering bulk backup: %s", e, exc_info=True)
             raise
 
-    async def get_backup_history(
-        self, db: Session, device_id: str, limit: int = 50
-    ) -> List[dict]:
+    async def get_backup_history(self, db: Session, device_id: str, limit: int = 50) -> List[dict]:
         """
         Get backup history from Git repository.
 
@@ -163,9 +155,7 @@ class BackupService:
             logger.error("Error getting filter options: %s", e, exc_info=True)
             return {"roles": [], "locations": [], "device_types": [], "statuses": []}
 
-    async def download_backup(
-        self, db: Session, device_id: str, backup_id: str
-    ) -> bytes:
+    async def download_backup(self, db: Session, device_id: str, backup_id: str) -> bytes:
         """
         Download a specific backup file from Git repository.
 
@@ -205,9 +195,7 @@ class BackupService:
             logger.error("Error downloading backup: %s", e, exc_info=True)
             raise
 
-    async def restore_backup(
-        self, db: Session, device_id: str, backup_id: str, user_id: int
-    ) -> dict:
+    async def restore_backup(self, db: Session, device_id: str, backup_id: str, user_id: int) -> dict:
         """
         Trigger restore job for a backup.
 

@@ -14,7 +14,6 @@ from utils.cmk_site_utils import (
     _match_ip_to_site,
 )
 
-
 # ── _extract_device_ip ─────────────────────────────────────────────────────────
 
 
@@ -74,7 +73,7 @@ def test_match_ip_to_site_network_match():
 def test_match_ip_to_site_no_match():
     """IP outside all configured networks returns None."""
     by_ip = {"10.0.0.0/24": "dc1"}
-    assert _match_ip_to_site("192.168.1.1", by_ip) == None
+    assert _match_ip_to_site("192.168.1.1", by_ip) is None
 
 
 @pytest.mark.unit

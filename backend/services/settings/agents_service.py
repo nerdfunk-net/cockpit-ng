@@ -48,26 +48,16 @@ class AgentsSettingsService:
             repo = AgentsSettingRepository()
             existing = repo.get_settings()
             kwargs = {
-                "deployment_method": data.get(
-                    "deployment_method", self._default.deployment_method
-                ),
-                "local_root_path": data.get(
-                    "local_root_path", self._default.local_root_path
-                ),
+                "deployment_method": data.get("deployment_method", self._default.deployment_method),
+                "local_root_path": data.get("local_root_path", self._default.local_root_path),
                 "sftp_hostname": data.get("sftp_hostname", self._default.sftp_hostname),
                 "sftp_port": data.get("sftp_port", self._default.sftp_port),
                 "sftp_path": data.get("sftp_path", self._default.sftp_path),
                 "sftp_username": data.get("sftp_username", self._default.sftp_username),
                 "sftp_password": data.get("sftp_password", self._default.sftp_password),
-                "use_global_credentials": data.get(
-                    "use_global_credentials", self._default.use_global_credentials
-                ),
-                "global_credential_id": data.get(
-                    "global_credential_id", self._default.global_credential_id
-                ),
-                "git_repository_id": data.get(
-                    "git_repository_id", self._default.git_repository_id
-                ),
+                "use_global_credentials": data.get("use_global_credentials", self._default.use_global_credentials),
+                "global_credential_id": data.get("global_credential_id", self._default.global_credential_id),
+                "git_repository_id": data.get("git_repository_id", self._default.git_repository_id),
                 "agents": data.get("agents", []),
             }
             if existing:

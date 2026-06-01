@@ -36,9 +36,7 @@ from tests.fixtures.snmp_fixtures import (
 
 # Suppress InsecureRequestWarning for self-signed certificates in test environment
 # This is expected when testing against CheckMK instances with self-signed certificates
-pytestmark = pytest.mark.filterwarnings(
-    "ignore::urllib3.exceptions.InsecureRequestWarning"
-)
+pytestmark = pytest.mark.filterwarnings("ignore::urllib3.exceptions.InsecureRequestWarning")
 
 
 # ==============================================================================
@@ -49,9 +47,7 @@ pytestmark = pytest.mark.filterwarnings(
 @pytest.fixture
 def temp_snmp_mapping_file():
     """Create a temporary SNMP mapping file for testing."""
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".yaml", delete=False
-    ) as temp_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
         yaml.safe_dump(SNMP_MAPPING_CONFIG, temp_file)
         temp_path = Path(temp_file.name)
 
@@ -115,9 +111,7 @@ def real_checkmk_client():
     from urllib.parse import urlparse
 
     db_settings = settings_manager.get_checkmk_settings()
-    if not db_settings or not all(
-        key in db_settings for key in ["url", "site", "username", "password"]
-    ):
+    if not db_settings or not all(key in db_settings for key in ["url", "site", "username", "password"]):
         pytest.skip("CheckMK settings not configured")
 
     # Parse URL
@@ -209,9 +203,7 @@ def checkmk_test_devices(real_checkmk_client):
             # Check if device already exists
             try:
                 real_checkmk_client.get_host(device["host_name"])
-                print(
-                    f"  ℹ️  Device {device['host_name']} already exists, skipping creation"
-                )
+                print(f"  ℹ️  Device {device['host_name']} already exists, skipping creation")
                 created_devices.append(device["host_name"])
             except CheckMKAPIError as e:
                 if "404" in str(e):
@@ -314,9 +306,7 @@ class TestSNMPVersionDetection:
 
         mock_config_service._snmp_mapping = {"snmp-string-v3": snmp_config_v3_string}
 
-        device_data = create_device_with_snmp(
-            "test-uuid", "test-host", "10.1.1.1/24", "snmp-string-v3"
-        )
+        device_data = create_device_with_snmp("test-uuid", "test-host", "10.1.1.1/24", "snmp-string-v3")
 
         extensions = self.normalization_service.normalize_device(device_data)
 
@@ -333,9 +323,7 @@ class TestSNMPVersionDetection:
 
         mock_config_service._snmp_mapping = {"snmp-string-v2": snmp_config_v2_string}
 
-        device_data = create_device_with_snmp(
-            "test-uuid", "test-host", "10.1.1.1/24", "snmp-string-v2"
-        )
+        device_data = create_device_with_snmp("test-uuid", "test-host", "10.1.1.1/24", "snmp-string-v2")
 
         extensions = self.normalization_service.normalize_device(device_data)
 
@@ -357,13 +345,9 @@ class TestSNMPVersionDetection:
 
     def test_snmp_v3_auth_no_privacy(self, mock_config_service):
         """Test SNMPv3 without privacy (auth only)."""
-        mock_config_service._snmp_mapping = {
-            "snmp-v3-auth-only": SNMP_MAPPING_V3_AUTH_NO_PRIVACY
-        }
+        mock_config_service._snmp_mapping = {"snmp-v3-auth-only": SNMP_MAPPING_V3_AUTH_NO_PRIVACY}
 
-        device_data = create_device_with_snmp(
-            "test-uuid", "test-host", "10.1.1.1/24", "snmp-v3-auth-only"
-        )
+        device_data = create_device_with_snmp("test-uuid", "test-host", "10.1.1.1/24", "snmp-v3-auth-only")
 
         extensions = self.normalization_service.normalize_device(device_data)
 
@@ -417,17 +401,13 @@ class TestDeviceComparisonLiveUpdate:
             assert "snmp_community" in attributes, "Missing snmp_community attribute"
             snmp_config = attributes["snmp_community"]
 
-            assert snmp_config["type"] == "v3_auth_privacy", (
-                f"Expected v3_auth_privacy, got {snmp_config['type']}"
-            )
+            assert snmp_config["type"] == "v3_auth_privacy", f"Expected v3_auth_privacy, got {snmp_config['type']}"
             assert "security_name" in snmp_config, "Missing security_name"
             assert "auth_protocol" in snmp_config, "Missing auth_protocol"
             assert "privacy_protocol" in snmp_config, "Missing privacy_protocol"
 
             # Verify CheckMK's SNMP tag (uses snmp-v2 for both v2 and v3)
-            assert attributes["tag_snmp_ds"] == "snmp-v2", (
-                "Expected tag_snmp_ds to be snmp-v2"
-            )
+            assert attributes["tag_snmp_ds"] == "snmp-v2", "Expected tag_snmp_ds to be snmp-v2"
 
             print(f"✅ Successfully verified SNMPv3 device {test_hostname} in CheckMK")
             print(f"   SNMP type: {snmp_config['type']}")
@@ -461,15 +441,11 @@ class TestDeviceComparisonLiveUpdate:
             assert "snmp_community" in attributes, "Missing snmp_community attribute"
             snmp_config = attributes["snmp_community"]
 
-            assert snmp_config["type"] == "v1_v2_community", (
-                f"Expected v1_v2_community, got {snmp_config['type']}"
-            )
+            assert snmp_config["type"] == "v1_v2_community", f"Expected v1_v2_community, got {snmp_config['type']}"
             assert "community" in snmp_config, "Missing community string"
 
             # Verify CheckMK's SNMP tag
-            assert attributes["tag_snmp_ds"] == "snmp-v2", (
-                "Expected tag_snmp_ds to be snmp-v2"
-            )
+            assert attributes["tag_snmp_ds"] == "snmp-v2", "Expected tag_snmp_ds to be snmp-v2"
 
             print(f"✅ Successfully verified SNMPv2 device {test_hostname} in CheckMK")
             print(f"   SNMP type: {snmp_config['type']}")
@@ -498,21 +474,13 @@ class TestDeviceComparisonLiveUpdate:
             attributes = host_data["extensions"]["attributes"]
 
             # Verify no SNMP attributes
-            assert "snmp_community" not in attributes, (
-                "Device should not have snmp_community"
-            )
+            assert "snmp_community" not in attributes, "Device should not have snmp_community"
 
             # Verify SNMP tag is set to no-snmp
-            assert attributes["tag_snmp_ds"] == "no-snmp", (
-                "Expected tag_snmp_ds to be no-snmp"
-            )
-            assert attributes["tag_agent"] == "cmk-agent", (
-                "Expected tag_agent to be cmk-agent"
-            )
+            assert attributes["tag_snmp_ds"] == "no-snmp", "Expected tag_snmp_ds to be no-snmp"
+            assert attributes["tag_agent"] == "cmk-agent", "Expected tag_agent to be cmk-agent"
 
-            print(
-                f"✅ Successfully verified non-SNMP device {test_hostname} in CheckMK"
-            )
+            print(f"✅ Successfully verified non-SNMP device {test_hostname} in CheckMK")
             print(f"   Tag SNMP DS: {attributes['tag_snmp_ds']}")
             print(f"   Tag Agent: {attributes['tag_agent']}")
 

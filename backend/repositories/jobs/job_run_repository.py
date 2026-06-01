@@ -73,18 +73,12 @@ class JobRunRepository(BaseRepository[JobRun]):
 
         session = get_db_session()
         try:
-            job_run = (
-                session.query(self.model)
-                .filter(self.model.celery_task_id == celery_task_id)
-                .first()
-            )
+            job_run = session.query(self.model).filter(self.model.celery_task_id == celery_task_id).first()
             return _to_dict(job_run) if job_run else None
         finally:
             session.close()
 
-    def get_by_celery_task_ids(
-        self, celery_task_ids: List[str]
-    ) -> List[Dict[str, Any]]:
+    def get_by_celery_task_ids(self, celery_task_ids: List[str]) -> List[Dict[str, Any]]:
         """Get job runs by multiple Celery task IDs"""
         from core.database import get_db_session
 
@@ -93,26 +87,18 @@ class JobRunRepository(BaseRepository[JobRun]):
 
         session = get_db_session()
         try:
-            job_runs = (
-                session.query(self.model)
-                .filter(self.model.celery_task_id.in_(celery_task_ids))
-                .all()
-            )
+            job_runs = session.query(self.model).filter(self.model.celery_task_id.in_(celery_task_ids)).all()
             return [_to_dict(job_run) for job_run in job_runs]
         finally:
             session.close()
 
-    def get_by_schedule(
-        self, schedule_id: int, limit: int = 50, status: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    def get_by_schedule(self, schedule_id: int, limit: int = 50, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get job runs for a specific schedule"""
         from core.database import get_db_session
 
         session = get_db_session()
         try:
-            query = session.query(self.model).filter(
-                self.model.job_schedule_id == schedule_id
-            )
+            query = session.query(self.model).filter(self.model.job_schedule_id == schedule_id)
 
             if status:
                 query = query.filter(self.model.status == status)
@@ -220,12 +206,7 @@ class JobRunRepository(BaseRepository[JobRun]):
             total = query.count()
 
             offset = (page - 1) * page_size
-            items = (
-                query.order_by(desc(self.model.queued_at))
-                .offset(offset)
-                .limit(page_size)
-                .all()
-            )
+            items = query.order_by(desc(self.model.queued_at)).offset(offset).limit(page_size).all()
 
             return [_to_dict(item) for item in items], total
         finally:
@@ -237,9 +218,7 @@ class JobRunRepository(BaseRepository[JobRun]):
 
         session = get_db_session()
         try:
-            return (
-                session.query(self.model).filter(self.model.status == "running").count()
-            )
+            return session.query(self.model).filter(self.model.status == "running").count()
         finally:
             session.close()
 
@@ -249,9 +228,7 @@ class JobRunRepository(BaseRepository[JobRun]):
 
         session = get_db_session()
         try:
-            return (
-                session.query(self.model).filter(self.model.status == "pending").count()
-            )
+            return session.query(self.model).filter(self.model.status == "pending").count()
         finally:
             session.close()
 
@@ -263,15 +240,9 @@ class JobRunRepository(BaseRepository[JobRun]):
         try:
             stmt = select(
                 func.count().label("total"),
-                func.sum(
-                    case((self.model.status == "completed", 1), else_=0)
-                ).label("completed"),
-                func.sum(case((self.model.status == "failed", 1), else_=0)).label(
-                    "failed"
-                ),
-                func.sum(case((self.model.status == "running", 1), else_=0)).label(
-                    "running"
-                ),
+                func.sum(case((self.model.status == "completed", 1), else_=0)).label("completed"),
+                func.sum(case((self.model.status == "failed", 1), else_=0)).label("failed"),
+                func.sum(case((self.model.status == "running", 1), else_=0)).label("running"),
             ).select_from(self.model)
             row = session.execute(stmt).one()
             return {
@@ -301,17 +272,13 @@ class JobRunRepository(BaseRepository[JobRun]):
         finally:
             session.close()
 
-    def mark_started(
-        self, job_run_id: int, celery_task_id: str
-    ) -> Optional[Dict[str, Any]]:
+    def mark_started(self, job_run_id: int, celery_task_id: str) -> Optional[Dict[str, Any]]:
         """Mark a job run as started"""
         from core.database import get_db_session
 
         session = get_db_session()
         try:
-            job_run = (
-                session.query(self.model).filter(self.model.id == job_run_id).first()
-            )
+            job_run = session.query(self.model).filter(self.model.id == job_run_id).first()
             if job_run:
                 job_run.status = "running"
                 job_run.started_at = datetime.utcnow()
@@ -326,17 +293,13 @@ class JobRunRepository(BaseRepository[JobRun]):
         finally:
             session.close()
 
-    def mark_completed(
-        self, job_run_id: int, result: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+    def mark_completed(self, job_run_id: int, result: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Mark a job run as completed"""
         from core.database import get_db_session
 
         session = get_db_session()
         try:
-            job_run = (
-                session.query(self.model).filter(self.model.id == job_run_id).first()
-            )
+            job_run = session.query(self.model).filter(self.model.id == job_run_id).first()
             if job_run:
                 job_run.status = "completed"
                 job_run.completed_at = datetime.utcnow()
@@ -352,17 +315,13 @@ class JobRunRepository(BaseRepository[JobRun]):
         finally:
             session.close()
 
-    def mark_failed(
-        self, job_run_id: int, error_message: str
-    ) -> Optional[Dict[str, Any]]:
+    def mark_failed(self, job_run_id: int, error_message: str) -> Optional[Dict[str, Any]]:
         """Mark a job run as failed"""
         from core.database import get_db_session
 
         session = get_db_session()
         try:
-            job_run = (
-                session.query(self.model).filter(self.model.id == job_run_id).first()
-            )
+            job_run = session.query(self.model).filter(self.model.id == job_run_id).first()
             if job_run:
                 job_run.status = "failed"
                 job_run.completed_at = datetime.utcnow()
@@ -383,9 +342,7 @@ class JobRunRepository(BaseRepository[JobRun]):
 
         session = get_db_session()
         try:
-            job_run = (
-                session.query(self.model).filter(self.model.id == job_run_id).first()
-            )
+            job_run = session.query(self.model).filter(self.model.id == job_run_id).first()
             if job_run:
                 job_run.status = "cancelled"
                 job_run.completed_at = datetime.utcnow()
@@ -408,9 +365,7 @@ class JobRunRepository(BaseRepository[JobRun]):
         session = get_db_session()
         try:
             cutoff = datetime.utcnow() - timedelta(days=days)
-            result = (
-                session.query(self.model).filter(self.model.queued_at < cutoff).delete()
-            )
+            result = session.query(self.model).filter(self.model.queued_at < cutoff).delete()
             session.commit()
             return result
         except Exception:

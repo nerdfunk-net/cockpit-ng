@@ -56,9 +56,7 @@ class _FakeUser:
 class _FakeRole:
     _counter = 0
 
-    def __init__(
-        self, *, name: str, description: str = "", is_system: bool = False
-    ) -> None:
+    def __init__(self, *, name: str, description: str = "", is_system: bool = False) -> None:
         _FakeRole._counter += 1
         self.id: int = _FakeRole._counter
         self.name = name
@@ -192,9 +190,7 @@ class FakeUserRepository:
         return [
             u
             for u in self._users.values()
-            if q in u.username.lower()
-            or q in (u.email or "").lower()
-            or q in u.realname.lower()
+            if q in u.username.lower() or q in (u.email or "").lower() or q in u.realname.lower()
         ]
 
     def get_by_username_or_email(self, identifier: str) -> Optional[_FakeUser]:
@@ -223,12 +219,8 @@ class FakeRBACRepository:
 
     # -- Permission operations --------------------------------------------
 
-    def create_permission(
-        self, resource: str, action: str, description: str = ""
-    ) -> _FakePermission:
-        perm = _FakePermission(
-            resource=resource, action=action, description=description
-        )
+    def create_permission(self, resource: str, action: str, description: str = "") -> _FakePermission:
+        perm = _FakePermission(resource=resource, action=action, description=description)
         self._permissions[perm.id] = perm
         return perm
 
@@ -257,9 +249,7 @@ class FakeRBACRepository:
 
     # -- Role operations --------------------------------------------------
 
-    def create_role(
-        self, name: str, description: str = "", is_system: bool = False
-    ) -> _FakeRole:
+    def create_role(self, name: str, description: str = "", is_system: bool = False) -> _FakeRole:
         role = _FakeRole(name=name, description=description, is_system=is_system)
         self._roles[role.id] = role
         self._role_permissions[role.id] = {}
@@ -299,9 +289,7 @@ class FakeRBACRepository:
 
     # -- Role-Permission operations ----------------------------------------
 
-    def assign_permission_to_role(
-        self, role_id: int, permission_id: int, granted: bool = True
-    ) -> None:
+    def assign_permission_to_role(self, role_id: int, permission_id: int, granted: bool = True) -> None:
         self._role_permissions.setdefault(role_id, {})[permission_id] = granted
 
     def remove_permission_from_role(self, role_id: int, permission_id: int) -> bool:
@@ -313,11 +301,7 @@ class FakeRBACRepository:
 
     def get_role_permissions(self, role_id: int) -> List[_FakePermission]:
         mapping = self._role_permissions.get(role_id, {})
-        return [
-            self._permissions[pid]
-            for pid, granted in mapping.items()
-            if granted and pid in self._permissions
-        ]
+        return [self._permissions[pid] for pid, granted in mapping.items() if granted and pid in self._permissions]
 
     # -- User-Role operations ---------------------------------------------
 
@@ -340,9 +324,7 @@ class FakeRBACRepository:
 
     # -- User-Permission operations ----------------------------------------
 
-    def assign_permission_to_user(
-        self, user_id: int, permission_id: int, granted: bool = True
-    ) -> None:
+    def assign_permission_to_user(self, user_id: int, permission_id: int, granted: bool = True) -> None:
         self._user_permissions.setdefault(user_id, {})[permission_id] = granted
 
     def remove_permission_from_user(self, user_id: int, permission_id: int) -> bool:
@@ -354,20 +336,12 @@ class FakeRBACRepository:
 
     def get_user_permissions(self, user_id: int) -> List[_FakePermission]:
         mapping = self._user_permissions.get(user_id, {})
-        return [
-            self._permissions[pid]
-            for pid, granted in mapping.items()
-            if granted and pid in self._permissions
-        ]
+        return [self._permissions[pid] for pid, granted in mapping.items() if granted and pid in self._permissions]
 
-    def get_user_permission_override(
-        self, user_id: int, permission_id: int
-    ) -> Optional[bool]:
+    def get_user_permission_override(self, user_id: int, permission_id: int) -> Optional[bool]:
         return self._user_permissions.get(user_id, {}).get(permission_id)
 
-    def get_user_permission_overrides_with_status(
-        self, user_id: int
-    ) -> List[Tuple[_FakePermission, bool]]:
+    def get_user_permission_overrides_with_status(self, user_id: int) -> List[Tuple[_FakePermission, bool]]:
         mapping = self._user_permissions.get(user_id, {})
         result = []
         for pid, granted in mapping.items():

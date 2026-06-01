@@ -63,11 +63,7 @@ class UserRepository(BaseRepository[User]):
         """
         db = get_db_session()
         try:
-            return (
-                db.query(User)
-                .filter(or_(User.username == identifier, User.email == identifier))
-                .first()
-            )
+            return db.query(User).filter(or_(User.username == identifier, User.email == identifier)).first()
         finally:
             db.close()
 

@@ -24,9 +24,7 @@ class ProfileRepository(BaseRepository[UserProfile]):
         """
         db = get_db_session()
         try:
-            return (
-                db.query(UserProfile).filter(UserProfile.username == username).first()
-            )
+            return db.query(UserProfile).filter(UserProfile.username == username).first()
         finally:
             db.close()
 
@@ -41,10 +39,7 @@ class ProfileRepository(BaseRepository[UserProfile]):
         """
         db = get_db_session()
         try:
-            return (
-                db.query(UserProfile).filter(UserProfile.username == username).count()
-                > 0
-            )
+            return db.query(UserProfile).filter(UserProfile.username == username).count() > 0
         finally:
             db.close()
 

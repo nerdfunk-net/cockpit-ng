@@ -12,12 +12,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class PermissionBase(BaseModel):
     """Base permission model."""
 
-    resource: str = Field(
-        ..., description="Resource identifier (e.g., 'nautobot.devices')"
-    )
-    action: str = Field(
-        ..., description="Action type (e.g., 'read', 'write', 'delete', 'execute')"
-    )
+    resource: str = Field(..., description="Resource identifier (e.g., 'nautobot.devices')")
+    action: str = Field(..., description="Action type (e.g., 'read', 'write', 'delete', 'execute')")
     description: Optional[str] = Field("", description="Human-readable description")
 
 
@@ -39,12 +35,8 @@ class Permission(PermissionBase):
 class PermissionWithGrant(Permission):
     """Permission with granted status (for role/user assignments)."""
 
-    granted: bool = Field(
-        ..., description="Whether permission is granted (True) or denied (False)"
-    )
-    source: Optional[str] = Field(
-        None, description="Source of permission: 'role' or 'override'"
-    )
+    granted: bool = Field(..., description="Whether permission is granted (True) or denied (False)")
+    source: Optional[str] = Field(None, description="Source of permission: 'role' or 'override'")
 
 
 # ============================================================================
@@ -62,9 +54,7 @@ class RoleBase(BaseModel):
 class RoleCreate(RoleBase):
     """Model for creating a new role."""
 
-    is_system: bool = Field(
-        False, description="Whether this is a system role (cannot be deleted)"
-    )
+    is_system: bool = Field(False, description="Whether this is a system role (cannot be deleted)")
 
 
 class RoleUpdate(BaseModel):
@@ -149,9 +139,7 @@ class PermissionCheckResult(BaseModel):
     has_permission: bool = Field(..., description="Whether user has the permission")
     resource: str
     action: str
-    source: Optional[str] = Field(
-        None, description="Source: 'role', 'override', or None if denied"
-    )
+    source: Optional[str] = Field(None, description="Source: 'role', 'override', or None if denied")
 
 
 # ============================================================================
@@ -163,16 +151,12 @@ class UserPermissions(BaseModel):
     """All permissions for a user."""
 
     user_id: int
-    roles: List[Role] = Field(
-        default_factory=list, description="Roles assigned to user"
-    )
+    roles: List[Role] = Field(default_factory=list, description="Roles assigned to user")
     permissions: List[PermissionWithGrant] = Field(
         default_factory=list,
         description="Effective permissions (from roles + overrides)",
     )
-    overrides: List[PermissionWithGrant] = Field(
-        default_factory=list, description="Direct permission overrides"
-    )
+    overrides: List[PermissionWithGrant] = Field(default_factory=list, description="Direct permission overrides")
 
 
 # ============================================================================
@@ -191,9 +175,7 @@ class BulkPermissionAssignment(BaseModel):
     """Assign multiple permissions to a role."""
 
     role_id: int
-    permission_ids: List[int] = Field(
-        ..., description="List of permission IDs to assign"
-    )
+    permission_ids: List[int] = Field(..., description="List of permission IDs to assign")
     granted: bool = Field(True, description="True to allow, False to deny")
 
 
@@ -215,9 +197,7 @@ class UserCreate(UserBase):
     """Model for creating a new user."""
 
     password: str = Field(..., min_length=8, description="User password")
-    role_ids: List[int] = Field(
-        default_factory=list, description="Initial roles to assign to user"
-    )
+    role_ids: List[int] = Field(default_factory=list, description="Initial roles to assign to user")
 
 
 class UserUpdate(BaseModel):
@@ -243,15 +223,11 @@ class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    last_login: Optional[str] = Field(
-        None, description="Timestamp of most recent login"
-    )
+    last_login: Optional[str] = Field(None, description="Timestamp of most recent login")
     created_at: str
     updated_at: str
     roles: List[Role] = Field(default_factory=list, description="User's assigned roles")
-    permissions: List[PermissionWithGrant] = Field(
-        default_factory=list, description="User's effective permissions"
-    )
+    permissions: List[PermissionWithGrant] = Field(default_factory=list, description="User's effective permissions")
 
 
 class UserListResponse(BaseModel):
@@ -264,6 +240,4 @@ class UserListResponse(BaseModel):
 class BulkUserDelete(BaseModel):
     """Bulk delete users."""
 
-    user_ids: List[int] = Field(
-        ..., min_length=1, description="List of user IDs to delete"
-    )
+    user_ids: List[int] = Field(..., min_length=1, description="List of user IDs to delete")

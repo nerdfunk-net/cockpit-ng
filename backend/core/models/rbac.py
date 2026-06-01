@@ -22,9 +22,7 @@ class Role(Base):
     name = Column(String(255), unique=True, nullable=False)
     description = Column(Text)
     is_system = Column(Boolean, nullable=False, default=False)
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -33,12 +31,8 @@ class Role(Base):
     )
 
     # Relationships
-    role_permissions = relationship(
-        "RolePermission", back_populates="role", cascade="all, delete-orphan"
-    )
-    user_roles = relationship(
-        "UserRole", back_populates="role", cascade="all, delete-orphan"
-    )
+    role_permissions = relationship("RolePermission", back_populates="role", cascade="all, delete-orphan")
+    user_roles = relationship("UserRole", back_populates="role", cascade="all, delete-orphan")
 
 
 class Permission(Base):
@@ -48,17 +42,11 @@ class Permission(Base):
     resource = Column(String(255), nullable=False)
     action = Column(String(255), nullable=False)
     description = Column(Text)
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships
-    role_permissions = relationship(
-        "RolePermission", back_populates="permission", cascade="all, delete-orphan"
-    )
-    user_permissions = relationship(
-        "UserPermission", back_populates="permission", cascade="all, delete-orphan"
-    )
+    role_permissions = relationship("RolePermission", back_populates="permission", cascade="all, delete-orphan")
+    user_permissions = relationship("UserPermission", back_populates="permission", cascade="all, delete-orphan")
 
     __table_args__ = (
         UniqueConstraint("resource", "action", name="uix_resource_action"),
@@ -69,16 +57,10 @@ class Permission(Base):
 class RolePermission(Base):
     __tablename__ = "role_permissions"
 
-    role_id = Column(
-        Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
-    )
-    permission_id = Column(
-        Integer, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True
-    )
+    role_id = Column(Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
+    permission_id = Column(Integer, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
     granted = Column(Boolean, nullable=False, default=True)
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships
     role = relationship("Role", back_populates="role_permissions")
@@ -90,15 +72,9 @@ class RolePermission(Base):
 class UserRole(Base):
     __tablename__ = "user_roles"
 
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
-    role_id = Column(
-        Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
-    )
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    role_id = Column(Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="user_roles")
@@ -110,16 +86,10 @@ class UserRole(Base):
 class UserPermission(Base):
     __tablename__ = "user_permissions"
 
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
-    permission_id = Column(
-        Integer, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True
-    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    permission_id = Column(Integer, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
     granted = Column(Boolean, nullable=False, default=True)
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="user_permissions")

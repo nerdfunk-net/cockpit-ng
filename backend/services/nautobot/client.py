@@ -69,9 +69,7 @@ class NautobotService:
                 logger.debug("Using database settings for Nautobot: %s", config["url"])
                 return config
         except Exception as e:
-            logger.warning(
-                "Failed to get database settings, falling back to environment: %s", e
-            )
+            logger.warning("Failed to get database settings, falling back to environment: %s", e)
 
         from config import settings
 
@@ -84,9 +82,7 @@ class NautobotService:
         logger.debug("Using environment settings for Nautobot: %s", config["url"])
         return config
 
-    async def graphql_query(
-        self, query: str, variables: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    async def graphql_query(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
         """Execute a GraphQL query against Nautobot."""
         config = self._get_config()
 
@@ -101,19 +97,13 @@ class NautobotService:
         payload = {"query": query, "variables": variables or {}}
 
         try:
-            response = await self._do_post(
-                graphql_url, payload, headers, config["timeout"]
-            )
+            response = await self._do_post(graphql_url, payload, headers, config["timeout"])
             if response.status_code == 200:
                 return response.json()
             else:
-                raise NautobotAPIError(
-                    f"GraphQL request failed with status {response.status_code}: {response.text}"
-                )
+                raise NautobotAPIError(f"GraphQL request failed with status {response.status_code}: {response.text}")
         except httpx.TimeoutException:
-            raise NautobotAPIError(
-                f"GraphQL request timed out after {config['timeout']} seconds"
-            )
+            raise NautobotAPIError(f"GraphQL request timed out after {config['timeout']} seconds")
         except NautobotAPIError:
             raise
         except Exception as e:
@@ -139,9 +129,7 @@ class NautobotService:
         }
 
         try:
-            response = await self._do_request(
-                method, api_url, data, headers, config["timeout"]
-            )
+            response = await self._do_request(method, api_url, data, headers, config["timeout"])
             if response.status_code in [200, 201, 204]:
                 if response.status_code == 204:
                     return {
@@ -150,17 +138,11 @@ class NautobotService:
                     }
                 return response.json()
             elif response.status_code == 404:
-                raise NautobotNotFoundError(
-                    f"Resource not found: {endpoint} — {response.text}"
-                )
+                raise NautobotNotFoundError(f"Resource not found: {endpoint} — {response.text}")
             else:
-                raise NautobotAPIError(
-                    f"REST request failed with status {response.status_code}: {response.text}"
-                )
+                raise NautobotAPIError(f"REST request failed with status {response.status_code}: {response.text}")
         except httpx.TimeoutException:
-            raise NautobotAPIError(
-                f"REST request timed out after {config['timeout']} seconds"
-            )
+            raise NautobotAPIError(f"REST request timed out after {config['timeout']} seconds")
         except NautobotAPIError:
             raise
         except Exception as e:
@@ -176,13 +158,9 @@ class NautobotService:
     ) -> httpx.Response:
         """Send a POST request using the persistent client or a one-shot client."""
         if self._client is not None:
-            return await self._client.post(
-                url, json=payload, headers=headers, timeout=timeout
-            )
+            return await self._client.post(url, json=payload, headers=headers, timeout=timeout)
         async with httpx.AsyncClient() as client:
-            return await client.post(
-                url, json=payload, headers=headers, timeout=timeout
-            )
+            return await client.post(url, json=payload, headers=headers, timeout=timeout)
 
     async def _do_request(
         self,
@@ -194,13 +172,9 @@ class NautobotService:
     ) -> httpx.Response:
         """Send a request using the persistent client or a one-shot client."""
         if self._client is not None:
-            return await self._client.request(
-                method, url, json=data, headers=headers, timeout=timeout
-            )
+            return await self._client.request(method, url, json=data, headers=headers, timeout=timeout)
         async with httpx.AsyncClient() as client:
-            return await client.request(
-                method, url, json=data, headers=headers, timeout=timeout
-            )
+            return await client.request(method, url, json=data, headers=headers, timeout=timeout)
 
     async def test_connection(
         self, url: str, token: str, timeout: int = 30, verify_ssl: bool = True

@@ -38,9 +38,7 @@ class SnapshotTemplateService:
         existing = self.repo.get_by_name(template_data.name, created_by)
         if existing:
             if existing.scope == "global" or existing.created_by == created_by:
-                raise ValueError(
-                    f"Template with name '{template_data.name}' already exists"
-                )
+                raise ValueError(f"Template with name '{template_data.name}' already exists")
 
         # Create template
         commands = [cmd.dict() for cmd in template_data.commands]
@@ -54,9 +52,7 @@ class SnapshotTemplateService:
 
         return SnapshotCommandTemplateResponse.from_orm(template)
 
-    def get_template(
-        self, template_id: int
-    ) -> Optional[SnapshotCommandTemplateResponse]:
+    def get_template(self, template_id: int) -> Optional[SnapshotCommandTemplateResponse]:
         """
         Get a template by ID.
 
@@ -71,9 +67,7 @@ class SnapshotTemplateService:
             return SnapshotCommandTemplateResponse.from_orm(template)
         return None
 
-    def list_templates(
-        self, username: Optional[str] = None
-    ) -> List[SnapshotCommandTemplateResponse]:
+    def list_templates(self, username: Optional[str] = None) -> List[SnapshotCommandTemplateResponse]:
         """
         List all templates accessible by user.
 
@@ -122,9 +116,7 @@ class SnapshotTemplateService:
             del update_dict["commands"]
 
         # Update template
-        template = self.repo.update_template(
-            template_id=template_id, commands=commands, **update_dict
-        )
+        template = self.repo.update_template(template_id=template_id, commands=commands, **update_dict)
 
         if template:
             return SnapshotCommandTemplateResponse.from_orm(template)

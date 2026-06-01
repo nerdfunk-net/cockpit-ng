@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
@@ -104,5 +105,8 @@ export function useServerMutations() {
     },
   })
 
-  return { createServer, updateServer, deleteServer }
+  return useMemo(
+    () => ({ createServer, updateServer, deleteServer }),
+    [createServer, updateServer, deleteServer]
+  )
 }

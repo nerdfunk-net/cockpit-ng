@@ -1,9 +1,7 @@
 from typing import Any, Dict, List
 
 
-def filter_device_properties(
-    devices: List[Dict[str, Any]], properties: List[str]
-) -> List[Dict[str, Any]]:
+def filter_device_properties(devices: List[Dict[str, Any]], properties: List[str]) -> List[Dict[str, Any]]:
     """Filter devices to only include specified properties."""
     filtered_devices = []
 

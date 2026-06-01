@@ -148,9 +148,7 @@ def execute_ip_addresses(
                                 {
                                     "id": a.get("id"),
                                     "interface": a.get("interface", {}).get("name"),
-                                    "device": a.get("interface", {})
-                                    .get("device", {})
-                                    .get("name"),
+                                    "device": a.get("interface", {}).get("device", {}).get("name"),
                                 }
                                 for a in assignments
                             ],
@@ -163,9 +161,7 @@ def execute_ip_addresses(
                     deleted_ips.append({"address": ip_address, "id": ip_id})
                 else:
                     failed += 1
-                    failed_ips.append(
-                        {"address": ip_address, "id": ip_id, "reason": "delete failed"}
-                    )
+                    failed_ips.append({"address": ip_address, "id": ip_id, "reason": "delete failed"})
 
             return {
                 "success": True,

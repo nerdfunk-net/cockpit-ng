@@ -86,9 +86,7 @@ class SnapshotTemplateRepository:
         finally:
             db.close()
 
-    def get_all(
-        self, created_by: Optional[str] = None, scope: Optional[str] = None
-    ) -> List[SnapshotCommandTemplate]:
+    def get_all(self, created_by: Optional[str] = None, scope: Optional[str] = None) -> List[SnapshotCommandTemplate]:
         """
         Get all templates with optional filtering.
 
@@ -101,9 +99,7 @@ class SnapshotTemplateRepository:
         """
         db = get_db_session()
         try:
-            query = db.query(SnapshotCommandTemplate).options(
-                joinedload(SnapshotCommandTemplate.commands)
-            )
+            query = db.query(SnapshotCommandTemplate).options(joinedload(SnapshotCommandTemplate.commands))
 
             if created_by:
                 # Show global templates + user's private templates
@@ -144,11 +140,7 @@ class SnapshotTemplateRepository:
         """
         db = get_db_session()
         try:
-            template = (
-                db.query(SnapshotCommandTemplate)
-                .filter(SnapshotCommandTemplate.id == template_id)
-                .first()
-            )
+            template = db.query(SnapshotCommandTemplate).filter(SnapshotCommandTemplate.id == template_id).first()
             if not template:
                 return None
 
@@ -163,9 +155,7 @@ class SnapshotTemplateRepository:
             # Replace commands if provided
             if commands is not None:
                 # Delete existing commands
-                db.query(SnapshotCommand).filter(
-                    SnapshotCommand.template_id == template_id
-                ).delete()
+                db.query(SnapshotCommand).filter(SnapshotCommand.template_id == template_id).delete()
 
                 # Add new commands
                 for cmd_data in commands:
@@ -197,11 +187,7 @@ class SnapshotTemplateRepository:
         """
         db = get_db_session()
         try:
-            template = (
-                db.query(SnapshotCommandTemplate)
-                .filter(SnapshotCommandTemplate.id == template_id)
-                .first()
-            )
+            template = db.query(SnapshotCommandTemplate).filter(SnapshotCommandTemplate.id == template_id).first()
             if template:
                 template.is_active = False
                 db.commit()
@@ -210,9 +196,7 @@ class SnapshotTemplateRepository:
         finally:
             db.close()
 
-    def get_by_name(
-        self, name: str, created_by: Optional[str] = None
-    ) -> Optional[SnapshotCommandTemplate]:
+    def get_by_name(self, name: str, created_by: Optional[str] = None) -> Optional[SnapshotCommandTemplate]:
         """
         Get template by name.
 

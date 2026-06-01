@@ -49,12 +49,8 @@ class DeviceNormalizationService:
                 logger.error("[NORMALIZATION ERROR] %s", error_msg)
                 raise ValueError(error_msg)
 
-            logger.info(
-                "[NORMALIZATION] Starting normalization for device: %s", device_name
-            )
-            logger.debug(
-                "[NORMALIZATION] Device data keys: %s", list(device_data.keys())
-            )
+            logger.info("[NORMALIZATION] Starting normalization for device: %s", device_name)
+            logger.debug("[NORMALIZATION] Device data keys: %s", list(device_data.keys()))
             logger.info("=" * 80)
             logger.info("[SECTION] BEGIN DEVICE NORMALIZATION")
             logger.info("=" * 80)
@@ -73,18 +69,14 @@ class DeviceNormalizationService:
                     config_error,
                     exc_info=True,
                 )
-                raise ValueError(
-                    f"Failed to load CheckMK configuration: {str(config_error)}"
-                )
+                raise ValueError(f"Failed to load CheckMK configuration: {str(config_error)}")
 
             # Create the root extension dictionary
             extensions = DeviceExtensions(folder="", attributes={}, internal={})
 
             # Set hostname in internal dict (needed for CheckMK queries but not for comparison)
             extensions.internal["hostname"] = device_data.get("name", "")
-            logger.debug(
-                "[NORMALIZATION] Set hostname: %s", extensions.internal["hostname"]
-            )
+            logger.debug("[NORMALIZATION] Set hostname: %s", extensions.internal["hostname"])
 
             # Store device metadata in internal dict (for UI display, not for comparison)
             # Extract role name
@@ -171,9 +163,7 @@ class DeviceNormalizationService:
                     e,
                     exc_info=True,
                 )
-                raise ValueError(
-                    f"Failed to determine CheckMK site for device {device_name}: {str(e)}"
-                )
+                raise ValueError(f"Failed to determine CheckMK site for device {device_name}: {str(e)}")
 
             # Set folder using utility function
             try:
@@ -193,9 +183,7 @@ class DeviceNormalizationService:
                     e,
                     exc_info=True,
                 )
-                raise ValueError(
-                    f"Failed to determine CheckMK folder for device {device_name}: {str(e)}"
-                )
+                raise ValueError(f"Failed to determine CheckMK folder for device {device_name}: {str(e)}")
 
             # Set IP address from primary_ip4 (remove CIDR netmask for CheckMK compatibility)
             try:
@@ -215,9 +203,7 @@ class DeviceNormalizationService:
                     e,
                     exc_info=True,
                 )
-                raise ValueError(
-                    f"Failed to process IP address for device {device_name}: {str(e)}"
-                )
+                raise ValueError(f"Failed to process IP address for device {device_name}: {str(e)}")
 
             # Process various configuration mappings
             try:
@@ -229,9 +215,7 @@ class DeviceNormalizationService:
                 logger.info("-" * 80)
                 logger.info("[PROCESSING] tags and host tag group mappings")
                 logger.info("-" * 80)
-                self.tag_normalizer.process_additional_attributes(
-                    device_data, extensions
-                )
+                self.tag_normalizer.process_additional_attributes(device_data, extensions)
                 self.tag_normalizer.process_cf2htg_mappings(device_data, extensions)
                 self.tag_normalizer.process_tags2htg_mappings(device_data, extensions)
                 self.tag_normalizer.process_attr2htg_mappings(device_data, extensions)
@@ -241,9 +225,7 @@ class DeviceNormalizationService:
                 logger.info("-" * 80)
                 self.field_normalizer.process_field_mappings(device_data, extensions)
 
-                logger.info(
-                    "[NORMALIZATION] Successfully normalized device %s", device_name
-                )
+                logger.info("[NORMALIZATION] Successfully normalized device %s", device_name)
                 logger.debug(
                     "[NORMALIZATION] Final attributes for %s: %s",
                     device_name,
@@ -264,9 +246,7 @@ class DeviceNormalizationService:
                     e,
                     exc_info=True,
                 )
-                raise ValueError(
-                    f"Failed to process configuration mappings for device {device_name}: {str(e)}"
-                )
+                raise ValueError(f"Failed to process configuration mappings for device {device_name}: {str(e)}")
 
             return extensions
 

@@ -11,7 +11,6 @@ import pytest
 
 from services.nautobot.onboarding.onboarding_service import DeviceOnboardingService
 
-
 DEVICE_ID = "ae000000-0000-0000-0003-000000000001"
 JOB_ID = "job-123"
 
@@ -224,9 +223,7 @@ def test_process_single_device_runs_optional_updates_and_sync() -> None:
     svc = DeviceOnboardingService()
     svc._get_device_id_from_ip = MagicMock(return_value=(DEVICE_ID, "router-01"))
     svc._update_device_tags = MagicMock(return_value={"success": True, "type": "tags"})
-    svc._update_device_custom_fields = MagicMock(
-        return_value={"success": True, "type": "custom_fields"}
-    )
+    svc._update_device_custom_fields = MagicMock(return_value={"success": True, "type": "custom_fields"})
     svc._sync_network_data = MagicMock(return_value={"success": True, "job_id": "sync-1"})
 
     with patch("utils.audit_logger.log_device_onboarding") as audit:

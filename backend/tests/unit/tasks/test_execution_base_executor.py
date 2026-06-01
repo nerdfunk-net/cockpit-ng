@@ -44,9 +44,7 @@ def _run(job_type: str, **kwargs) -> tuple[dict, dict]:
 
     Returns (result, mocks_by_name) where mocks_by_name keys are executor function names.
     """
-    mocks = {
-        name: MagicMock(return_value={"success": True}) for name in _EXECUTOR_PATCHES
-    }
+    mocks = {name: MagicMock(return_value={"success": True}) for name in _EXECUTOR_PATCHES}
     with ExitStack() as stack:
         for name, patch_target in _EXECUTOR_PATCHES.items():
             stack.enter_context(patch(patch_target, mocks[name]))
@@ -202,11 +200,7 @@ def test_executor_receives_all_forwarded_parameters():
     sync_mock = MagicMock(return_value={"success": True})
     with ExitStack() as stack:
         for name, patch_target in _EXECUTOR_PATCHES.items():
-            mock = (
-                sync_mock
-                if name == "execute_sync_devices"
-                else MagicMock(return_value={"success": True})
-            )
+            mock = sync_mock if name == "execute_sync_devices" else MagicMock(return_value={"success": True})
             stack.enter_context(patch(patch_target, mock))
         execute_job_type(
             job_type="sync_devices",

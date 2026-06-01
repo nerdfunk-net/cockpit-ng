@@ -76,15 +76,9 @@ class DeviceQueryService:
                     {
                         "id": str(device.get("id", "")),
                         "name": device.get("name", ""),
-                        "role": device.get("role", {}).get("name", "")
-                        if device.get("role")
-                        else "",
-                        "status": device.get("status", {}).get("name", "")
-                        if device.get("status")
-                        else "",
-                        "location": device.get("location", {}).get("name", "")
-                        if device.get("location")
-                        else "",
+                        "role": device.get("role", {}).get("name", "") if device.get("role") else "",
+                        "status": device.get("status", {}).get("name", "") if device.get("status") else "",
+                        "location": device.get("location", {}).get("name", "") if device.get("location") else "",
                     }
                 )
 
@@ -125,9 +119,7 @@ class DeviceQueryService:
             query = self._config.get_query("get_device_normalized")
             if not query:
                 # Fallback to default query if not found in config
-                logger.warning(
-                    "Query 'get_device_normalized' not found in config, using fallback query"
-                )
+                logger.warning("Query 'get_device_normalized' not found in config, using fallback query")
                 query = """
                 query getDevice($deviceId: ID!) {
                   device(id: $deviceId) {
@@ -204,9 +196,7 @@ class DeviceQueryService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(
-                "Error getting normalized device config for %s: %s", device_id, e
-            )
+            logger.error("Error getting normalized device config for %s: %s", device_id, e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to get normalized device config: {e}",

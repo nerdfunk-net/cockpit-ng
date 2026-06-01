@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from services.nautobot.devices.update import DeviceUpdateService
 from services.nautobot.devices.types import InterfaceUpdateResult
+from services.nautobot.devices.update import DeviceUpdateService
 from tests.mocks import (
     DT_NETWORKA_ID,
     LOC_CITYA_ID,
@@ -20,7 +20,6 @@ from tests.mocks import (
     STATUS_ACTIVE_ID,
     FakeNautobotService,
 )
-
 
 DEVICE_ID = "ab000000-0000-0000-0003-000000000001"
 IP_ID = "ab000000-0000-0000-0001-000000000001"
@@ -86,9 +85,7 @@ async def test_resolve_device_id_fetches_name_when_identifier_is_ip() -> None:
     )
     svc = DeviceUpdateService(fake)
 
-    result = await svc._resolve_device_id(
-        {"ip_address": "10.0.0.1/24"}, matching_strategy="exact"
-    )
+    result = await svc._resolve_device_id({"ip_address": "10.0.0.1/24"}, matching_strategy="exact")
 
     assert result == (DEVICE_ID, "router-from-ip")
 

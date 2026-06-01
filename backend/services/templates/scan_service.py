@@ -24,14 +24,10 @@ class TemplateScanService:
     def scan_import_directory(self) -> TemplateScanImportResponse:
         """Return all importable templates found in the configured directory."""
         if not self._import_dir.exists():
-            return TemplateScanImportResponse(
-                templates=[], total_found=0, message="Import directory not found"
-            )
+            return TemplateScanImportResponse(templates=[], total_found=0, message="Import directory not found")
 
         templates: List[ImportableTemplateInfo] = []
-        yaml_files = list(self._import_dir.glob("*.yaml")) + list(
-            self._import_dir.glob("*.yml")
-        )
+        yaml_files = list(self._import_dir.glob("*.yaml")) + list(self._import_dir.glob("*.yml"))
 
         for yaml_file in yaml_files:
             info = self._parse_yaml_file(yaml_file)
@@ -60,9 +56,7 @@ class TemplateScanService:
                     category=props.get("category", "default"),
                     source=props.get("source", "file"),
                     file_path=str(yaml_file.absolute()),
-                    template_type=props.get(
-                        "type", props.get("template_type", "jinja2")
-                    ),
+                    template_type=props.get("type", props.get("template_type", "jinja2")),
                 )
 
             return ImportableTemplateInfo(

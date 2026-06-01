@@ -43,21 +43,15 @@ class NetmikoAuthenticator:
     ) -> Optional[Dict[str, Any]]:
         if ConnectHandler is None:
             logger.warning("Netmiko is not installed, falling back to basic SSH")
-            return await self._ssh_fallback.authenticate(
-                ip, username, password, parser_templates
-            )
+            return await self._ssh_fallback.authenticate(ip, username, password, parser_templates)
 
         for device_type in _DEVICE_TYPES:
             try:
-                result = await self._try_device_type(
-                    ip, username, password, device_type, debug_enabled
-                )
+                result = await self._try_device_type(ip, username, password, device_type, debug_enabled)
                 if result:
                     return result
             except Exception as e:
-                logger.debug(
-                    "Netmiko connection failed for %s with %s: %s", ip, device_type, e
-                )
+                logger.debug("Netmiko connection failed for %s with %s: %s", ip, device_type, e)
 
         logger.debug("All netmiko device types failed for %s", ip)
         return None
@@ -80,16 +74,12 @@ class NetmikoAuthenticator:
             "banner_timeout": SSH_LOGIN_TIMEOUT,
             "auth_timeout": SSH_LOGIN_TIMEOUT,
         }
-        logger.debug(
-            "Trying netmiko connection to %s with device_type: %s", ip, device_type
-        )
+        logger.debug("Trying netmiko connection to %s with device_type: %s", ip, device_type)
         connection = await asyncio.to_thread(ConnectHandler, **device_config)
         try:
             if device_type.startswith("linux"):
                 return self._detect_linux(connection, ip)
-            return self._detect_network_device(
-                connection, ip, device_type, debug_enabled
-            )
+            return self._detect_network_device(connection, ip, device_type, debug_enabled)
         finally:
             try:
                 connection.disconnect()
@@ -116,9 +106,7 @@ class NetmikoAuthenticator:
 
         try:
             show_version_raw = connection.send_command("show version", read_timeout=10)
-            show_version_structured = connection.send_command(
-                "show version", use_textfsm=True, read_timeout=10
-            )
+            show_version_structured = connection.send_command("show version", use_textfsm=True, read_timeout=10)
 
             if debug_enabled:
                 debug_data = {

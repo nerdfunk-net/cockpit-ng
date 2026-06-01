@@ -182,9 +182,7 @@ def update_devices_from_csv_task(
             identifier = device_id or device_name or ip_address or f"row-{idx}"
 
             try:
-                logger.info(
-                    "Processing device %s/%s: %s", idx, total_devices, identifier
-                )
+                logger.info("Processing device %s/%s: %s", idx, total_devices, identifier)
 
                 # Update progress
                 progress = 10 + int((idx / total_devices) * 80)
@@ -208,9 +206,7 @@ def update_devices_from_csv_task(
                 # Apply name transform before lookup (only when identifier contains a name)
                 if name_transform and "name" in device_identifier:
                     original_name = device_identifier["name"]
-                    device_identifier["name"] = _apply_name_transform(
-                        original_name, name_transform
-                    )
+                    device_identifier["name"] = _apply_name_transform(original_name, name_transform)
                     if device_identifier["name"] != original_name:
                         logger.info(
                             "Name transform applied: '%s' → '%s'",
@@ -221,9 +217,7 @@ def update_devices_from_csv_task(
                 # Extract rack location value for rack UUID disambiguation
                 rack_location_value = None
                 if rack_location_column and "rack" in update_data:
-                    rack_location_value = (
-                        row.get(rack_location_column, "").strip() or None
-                    )
+                    rack_location_value = row.get(rack_location_column, "").strip() or None
 
                 if not update_data:
                     logger.info("No update data for device %s, skipping", identifier)
@@ -493,9 +487,7 @@ def _prepare_row_data(
 
     # Extract interface configuration if present
     interface_config = None
-    if any(
-        f in headers for f in ["interface_name", "interface_type", "interface_status"]
-    ):
+    if any(f in headers for f in ["interface_name", "interface_type", "interface_status"]):
         interface_config = {
             "name": row.get("interface_name", "").strip() or "Loopback",
             "type": row.get("interface_type", "").strip() or "virtual",
@@ -539,9 +531,7 @@ def _prepare_row_data(
 
         # Handle tags field — convert comma-separated string to list
         if nb_field == "tags":
-            update_data[nb_field] = [
-                tag.strip() for tag in value.split(",") if tag.strip()
-            ]
+            update_data[nb_field] = [tag.strip() for tag in value.split(",") if tag.strip()]
             continue
 
         # Add to update data (service handles validation/resolution)

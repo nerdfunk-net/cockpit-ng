@@ -9,15 +9,16 @@ from core.models.jobs import Job, JobRun, JobSchedule, JobTemplate
 from core.models.nb2cmk import NB2CMKJob, NB2CMKJobResult, NB2CMKSync
 from core.models.rack import RackDeviceMapping
 from core.models.rbac import Permission, Role, RolePermission, UserPermission, UserRole
+from core.models.servers import Server
 from core.models.settings import (
     AgentsSetting,
     CacheSetting,
     CelerySetting,
     CheckMKSetting,
     GitSetting,
+    NautobotSetting,
     NetworkDefault,
     ServerDefault,
-    NautobotSetting,
     Setting,
     SettingsMetadata,
 )
@@ -28,7 +29,6 @@ from core.models.snapshots import (
     SnapshotResult,
 )
 from core.models.templates import Template, TemplateVersion
-from core.models.servers import Server
 from core.models.users import User, UserProfile
 
 __all__ = [

@@ -8,32 +8,24 @@ logger = logging.getLogger(__name__)
 
 
 class _FoldersMixin:
-    def get_all_folders(
-        self, parent: str = None, recursive: bool = False, show_hosts: bool = False
-    ) -> Dict:
+    def get_all_folders(self, parent: str = None, recursive: bool = False, show_hosts: bool = False) -> Dict:
         params = {"recursive": recursive, "show_hosts": show_hosts}
         if parent:
             params["parent"] = parent
 
         params = {k: v for k, v in params.items() if v is not None}
 
-        response = self._make_request(
-            "GET", "domain-types/folder_config/collections/all", params=params
-        )
+        response = self._make_request("GET", "domain-types/folder_config/collections/all", params=params)
         return self._handle_response(response)
 
     def get_folder(self, folder_path: str, show_hosts: bool = False) -> Dict:
         folder_url = slash_to_tilde(folder_path)
         params = {"show_hosts": show_hosts}
 
-        response = self._make_request(
-            "GET", f"objects/folder_config/{folder_url}", params=params
-        )
+        response = self._make_request("GET", f"objects/folder_config/{folder_url}", params=params)
         return self._handle_response(response)
 
-    def create_folder(
-        self, name: str, title: str, parent: str = "/", attributes: Dict = None
-    ) -> Dict:
+    def create_folder(self, name: str, title: str, parent: str = "/", attributes: Dict = None) -> Dict:
         if attributes is None:
             attributes = {}
 
@@ -44,9 +36,7 @@ class _FoldersMixin:
             "attributes": attributes,
         }
 
-        response = self._make_request(
-            "POST", "domain-types/folder_config/collections/all", json_data=json_data
-        )
+        response = self._make_request("POST", "domain-types/folder_config/collections/all", json_data=json_data)
         return self._handle_response(response)
 
     def update_folder(
@@ -70,18 +60,14 @@ class _FoldersMixin:
         if remove_attributes is not None:
             json_data["remove_attributes"] = remove_attributes
 
-        response = self._make_request(
-            "PUT", f"objects/folder_config/{folder_url}", json_data=json_data, etag=etag
-        )
+        response = self._make_request("PUT", f"objects/folder_config/{folder_url}", json_data=json_data, etag=etag)
         return self._handle_response(response)
 
     def delete_folder(self, folder_path: str, delete_mode: str = "recursive") -> bool:
         folder_url = slash_to_tilde(folder_path)
         params = {"delete_mode": delete_mode}
 
-        response = self._make_request(
-            "DELETE", f"objects/folder_config/{folder_url}", params=params
-        )
+        response = self._make_request("DELETE", f"objects/folder_config/{folder_url}", params=params)
         self._handle_response(response)
         return True
 
@@ -111,9 +97,7 @@ class _FoldersMixin:
         )
         return self._handle_response(response)
 
-    def get_hosts_in_folder(
-        self, folder_path: str, effective_attributes: bool = False
-    ) -> Dict:
+    def get_hosts_in_folder(self, folder_path: str, effective_attributes: bool = False) -> Dict:
         folder_url = slash_to_tilde(folder_path)
         params = {"effective_attributes": effective_attributes}
 

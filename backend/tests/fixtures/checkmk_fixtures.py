@@ -345,9 +345,7 @@ def create_host_response(
     }
 
 
-def create_hosts_list(
-    count: int = 3, folder: str = "/dc1"
-) -> Dict[str, Dict[str, Any]]:
+def create_hosts_list(count: int = 3, folder: str = "/dc1") -> Dict[str, Dict[str, Any]]:
     """
     Create a list of CheckMK hosts for testing.
 

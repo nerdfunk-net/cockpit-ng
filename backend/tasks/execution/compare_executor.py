@@ -61,9 +61,7 @@ def execute_compare_devices(
         # If no target devices provided, fetch all from Nautobot
         device_ids = target_devices
         if not device_ids:
-            logger.info(
-                "No target devices specified, fetching all devices from Nautobot"
-            )
+            logger.info("No target devices specified, fetching all devices from Nautobot")
             task_context.update_state(
                 state="PROGRESS",
                 meta={
@@ -104,13 +102,9 @@ def execute_compare_devices(
         # Create job in NB2CMK database for result tracking
         nb2cmk_db_service.create_job(username="scheduler", job_id=job_id)
         nb2cmk_db_service.update_job_status(job_id, NB2CMKJobStatus.RUNNING)
-        nb2cmk_db_service.update_job_progress(
-            job_id, 0, total_devices, "Starting comparison..."
-        )
+        nb2cmk_db_service.update_job_progress(job_id, 0, total_devices, "Starting comparison...")
 
-        logger.info(
-            "Starting comparison of %s devices, job_id: %s", total_devices, job_id
-        )
+        logger.info("Starting comparison of %s devices, job_id: %s", total_devices, job_id)
 
         # Process each device
         for i, device_id in enumerate(device_ids):
@@ -137,9 +131,7 @@ def execute_compare_devices(
                 )
 
                 # Perform actual comparison
-                comparison_result = asyncio.run(
-                    nb2cmk_service.compare_device_config(device_id)
-                )
+                comparison_result = asyncio.run(nb2cmk_service.compare_device_config(device_id))
 
                 if comparison_result:
                     completed_count += 1
@@ -151,23 +143,17 @@ def execute_compare_devices(
                     # Get device name from normalized config
                     device_name = device_id  # Default to UUID
                     if comparison_result.normalized_config:
-                        internal = comparison_result.normalized_config.get(
-                            "internal", {}
-                        )
+                        internal = comparison_result.normalized_config.get("internal", {})
                         device_name = internal.get("hostname", device_id)
 
                     # Filter diff to remove ignored attributes (same as manual job)
                     raw_diff = comparison_result.diff or ""
                     ignored_attrs = (
-                        comparison_result.ignored_attributes
-                        if hasattr(comparison_result, "ignored_attributes")
-                        else []
+                        comparison_result.ignored_attributes if hasattr(comparison_result, "ignored_attributes") else []
                     )
 
                     # Use the same filtering logic as the manual job
-                    filtered_diff = nb2cmk_service.filter_diff_by_ignored_attributes(
-                        raw_diff, ignored_attrs
-                    )
+                    filtered_diff = nb2cmk_service.filter_diff_by_ignored_attributes(raw_diff, ignored_attrs)
 
                     # Store result in NB2CMK database using add_device_result
                     # This format is expected by the "Sync Devices" app
@@ -224,9 +210,7 @@ def execute_compare_devices(
                     checkmk_config=None,
                     ignored_attributes=[],
                 )
-                results.append(
-                    {"device_id": device_id, "status": "failed", "error": error_msg}
-                )
+                results.append({"device_id": device_id, "status": "failed", "error": error_msg})
 
         # Update final progress
         task_context.update_state(

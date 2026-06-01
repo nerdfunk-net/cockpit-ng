@@ -27,17 +27,13 @@ async def get_profile(current_user: str = Depends(get_current_username)):
 
         user = get_user_by_username(current_user)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
         # Get profile data including API key
         profile = profile_manager.get_user_profile(current_user)
 
         # Get personal credentials for this user
-        all_credentials = credentials_manager.list_credentials(
-            include_expired=True, source="private"
-        )
+        all_credentials = credentials_manager.list_credentials(include_expired=True, source="private")
         personal_credentials = []
         for cred in all_credentials:
             if cred.get("owner") == current_user:
@@ -45,13 +41,9 @@ async def get_profile(current_user: str = Depends(get_current_username)):
                 password_token = ""
                 if cred.get("type") != "ssh_key" and cred.get("has_password"):
                     try:
-                        decrypted_password = credentials_manager.get_decrypted_password(
-                            cred["id"]
-                        )
+                        decrypted_password = credentials_manager.get_decrypted_password(cred["id"])
                         # Create a token with the same length as the actual password
-                        password_token = (
-                            "•" * len(decrypted_password) if decrypted_password else ""
-                        )
+                        password_token = "•" * len(decrypted_password) if decrypted_password else ""
                     except Exception as e:
                         logger.warning(
                             "Failed to decrypt password for credential %s: %s",
@@ -89,9 +81,7 @@ async def get_profile(current_user: str = Depends(get_current_username)):
 
 
 @router.put("", response_model=ProfileResponse)
-async def update_profile(
-    update_data: ProfileUpdateRequest, current_user: str = Depends(get_current_username)
-):
+async def update_profile(update_data: ProfileUpdateRequest, current_user: str = Depends(get_current_username)):
     """Update current user's profile information."""
     try:
         from services.auth.user_management import get_user_by_username, update_user
@@ -99,16 +89,10 @@ async def update_profile(
         # Get current user to get user ID
         user = get_user_by_username(current_user)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
         # Validate API key length if provided (allow empty string for no API key)
-        if (
-            update_data.api_key is not None
-            and update_data.api_key != ""
-            and len(update_data.api_key) != 42
-        ):
+        if update_data.api_key is not None and update_data.api_key != "" and len(update_data.api_key) != 42:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="API key must be exactly 42 characters long",
@@ -139,12 +123,8 @@ async def update_profile(
         # Handle personal credentials
         if update_data.personal_credentials is not None:
             # Get existing personal credentials for this user
-            all_credentials = credentials_manager.list_credentials(
-                include_expired=True, source="private"
-            )
-            existing_personal = [
-                cred for cred in all_credentials if cred.get("owner") == current_user
-            ]
+            all_credentials = credentials_manager.list_credentials(include_expired=True, source="private")
+            existing_personal = [cred for cred in all_credentials if cred.get("owner") == current_user]
             existing_ids = {str(cred["id"]) for cred in existing_personal}
 
             # Track which credentials we're keeping/updating
@@ -166,12 +146,8 @@ async def update_profile(
                             name=cred_data.name,
                             username=cred_data.username,
                             cred_type=cred_type_lower,
-                            ssh_private_key=cred_data.ssh_private_key
-                            if cred_data.ssh_private_key
-                            else None,
-                            ssh_passphrase=cred_data.ssh_passphrase
-                            if cred_data.ssh_passphrase
-                            else None,
+                            ssh_private_key=cred_data.ssh_private_key if cred_data.ssh_private_key else None,
+                            ssh_passphrase=cred_data.ssh_passphrase if cred_data.ssh_passphrase else None,
                             source="private",
                             owner=current_user,
                         )
@@ -245,9 +221,7 @@ async def update_profile(
         profile = profile_manager.get_user_profile(current_user)
 
         # Get updated personal credentials for this user
-        all_credentials = credentials_manager.list_credentials(
-            include_expired=True, source="private"
-        )
+        all_credentials = credentials_manager.list_credentials(include_expired=True, source="private")
         personal_credentials = []
         for cred in all_credentials:
             if cred.get("owner") == current_user:
@@ -269,13 +243,9 @@ async def update_profile(
                 else:
                     # Get decrypted password to determine length
                     try:
-                        decrypted_password = credentials_manager.get_decrypted_password(
-                            cred["id"]
-                        )
+                        decrypted_password = credentials_manager.get_decrypted_password(cred["id"])
                         # Create a token with the same length as the actual password
-                        password_token = (
-                            "•" * len(decrypted_password) if decrypted_password else ""
-                        )
+                        password_token = "•" * len(decrypted_password) if decrypted_password else ""
                     except Exception as e:
                         logger.warning(
                             "Failed to decrypt password for credential %s: %s",

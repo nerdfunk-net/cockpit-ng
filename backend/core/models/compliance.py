@@ -25,9 +25,7 @@ class ComplianceRule(Base):
     severity = Column(String(50), nullable=False, default="medium")
     is_active = Column(Boolean, nullable=False, default=True)
     tags = Column(Text)  # JSON string
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -36,9 +34,7 @@ class ComplianceRule(Base):
     )
 
     # Relationships
-    checks = relationship(
-        "ComplianceCheck", back_populates="rule", cascade="all, delete-orphan"
-    )
+    checks = relationship("ComplianceCheck", back_populates="rule", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("idx_compliance_rules_type", "rule_type"),
@@ -50,16 +46,12 @@ class ComplianceCheck(Base):
     __tablename__ = "compliance_checks"
 
     id = Column(Integer, primary_key=True, index=True)
-    rule_id = Column(
-        Integer, ForeignKey("compliance_rules.id", ondelete="CASCADE"), nullable=False
-    )
+    rule_id = Column(Integer, ForeignKey("compliance_rules.id", ondelete="CASCADE"), nullable=False)
     device_name = Column(String(255), nullable=False)
     config_file = Column(String(1000))
     status = Column(String(50), nullable=False)
     message = Column(Text)
-    checked_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    checked_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships
     rule = relationship("ComplianceRule", back_populates="checks")
@@ -77,13 +69,9 @@ class RegexPattern(Base):
     id = Column(Integer, primary_key=True, index=True)
     pattern = Column(Text, nullable=False)
     description = Column(Text)
-    pattern_type = Column(
-        String(50), nullable=False
-    )  # 'must_match' or 'must_not_match'
+    pattern_type = Column(String(50), nullable=False)  # 'must_match' or 'must_not_match'
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

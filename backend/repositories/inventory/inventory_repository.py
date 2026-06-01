@@ -16,9 +16,7 @@ class InventoryRepository(BaseRepository[Inventory]):
     def __init__(self):
         super().__init__(Inventory)
 
-    def get_by_name(
-        self, name: str, username: str, active_only: bool = True
-    ) -> Optional[Inventory]:
+    def get_by_name(self, name: str, username: str, active_only: bool = True) -> Optional[Inventory]:
         """
         Get an inventory by name accessible to a user.
 
@@ -40,10 +38,7 @@ class InventoryRepository(BaseRepository[Inventory]):
             query = db.query(self.model).filter(
                 self.model.name == name,
                 (self.model.scope == "global")
-                | (
-                    (self.model.scope == "private")
-                    & (self.model.created_by == username)
-                ),
+                | ((self.model.scope == "private") & (self.model.created_by == username)),
             )
 
             if active_only:
@@ -84,17 +79,12 @@ class InventoryRepository(BaseRepository[Inventory]):
             if scope == "global":
                 query = db.query(self.model).filter(self.model.scope == "global")
             elif scope == "private":
-                query = db.query(self.model).filter(
-                    self.model.scope == "private", self.model.created_by == username
-                )
+                query = db.query(self.model).filter(self.model.scope == "private", self.model.created_by == username)
             else:
                 # Both global and user's private inventories
                 query = db.query(self.model).filter(
                     (self.model.scope == "global")
-                    | (
-                        (self.model.scope == "private")
-                        & (self.model.created_by == username)
-                    )
+                    | ((self.model.scope == "private") & (self.model.created_by == username))
                 )
 
             if active_only:
@@ -130,10 +120,7 @@ class InventoryRepository(BaseRepository[Inventory]):
                     self.model.is_active,
                     self.model.group_path.isnot(None),
                     (self.model.scope == "global")
-                    | (
-                        (self.model.scope == "private")
-                        & (self.model.created_by == username)
-                    ),
+                    | ((self.model.scope == "private") & (self.model.created_by == username)),
                 )
                 .all()
             )
@@ -160,14 +147,10 @@ class InventoryRepository(BaseRepository[Inventory]):
             inventories = (
                 db.query(self.model)
                 .filter(
-                    (self.model.group_path == old_path)
-                    | self.model.group_path.like(old_path + "/%"),
+                    (self.model.group_path == old_path) | self.model.group_path.like(old_path + "/%"),
                     self.model.is_active,
                     (self.model.scope == "global")
-                    | (
-                        (self.model.scope == "private")
-                        & (self.model.created_by == username)
-                    ),
+                    | ((self.model.scope == "private") & (self.model.created_by == username)),
                 )
                 .all()
             )
@@ -181,9 +164,7 @@ class InventoryRepository(BaseRepository[Inventory]):
         finally:
             db.close()
 
-    def search_inventories(
-        self, query_text: str, username: str, active_only: bool = True
-    ) -> List[Inventory]:
+    def search_inventories(self, query_text: str, username: str, active_only: bool = True) -> List[Inventory]:
         """
         Search inventories by name or description.
 
@@ -200,16 +181,10 @@ class InventoryRepository(BaseRepository[Inventory]):
             search_pattern = f"%{query_text}%"
 
             query = db.query(self.model).filter(
-                (
-                    (self.model.name.ilike(search_pattern))
-                    | (self.model.description.ilike(search_pattern))
-                ),
+                ((self.model.name.ilike(search_pattern)) | (self.model.description.ilike(search_pattern))),
                 (
                     (self.model.scope == "global")
-                    | (
-                        (self.model.scope == "private")
-                        & (self.model.created_by == username)
-                    )
+                    | ((self.model.scope == "private") & (self.model.created_by == username))
                 ),
             )
 

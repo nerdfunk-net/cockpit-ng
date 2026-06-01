@@ -196,9 +196,7 @@ def test_check_ip_task_provided_delimiter_used_directly():
 
     with patch.object(check_ip_task, "update_state"):
         with patch(_PATCH_SF) as mock_sf:
-            mock_sf.build_device_query_service.return_value = _make_dqs(
-                nautobot_devices
-            )
+            mock_sf.build_device_query_service.return_value = _make_dqs(nautobot_devices)
             mock_sf.build_job_run_service.return_value = _make_jrs()
             with patch(_PATCH_SETTINGS) as mock_settings:
                 result = check_ip_task.run(csv_content, delimiter=";", quote_char='"')

@@ -16,7 +16,6 @@ from utils.cmk_folder_utils import (
     split_checkmk_folder_path,
 )
 
-
 # ── normalize_folder_path ──────────────────────────────────────────────────────
 
 

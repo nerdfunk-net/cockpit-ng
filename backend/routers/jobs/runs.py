@@ -23,22 +23,12 @@ router = APIRouter(prefix="/api/job-runs", tags=["job-runs"])
 async def list_job_runs(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(25, ge=1, le=100, description="Items per page"),
-    status: Optional[str] = Query(
-        None, description="Filter by status (comma-separated for multiple)"
-    ),
-    job_type: Optional[str] = Query(
-        None, description="Filter by job type (comma-separated for multiple)"
-    ),
-    exclude_job_type: Optional[str] = Query(
-        None, description="Exclude job types (comma-separated for multiple)"
-    ),
-    triggered_by: Optional[str] = Query(
-        None, description="Filter by trigger type (comma-separated for multiple)"
-    ),
+    status: Optional[str] = Query(None, description="Filter by status (comma-separated for multiple)"),
+    job_type: Optional[str] = Query(None, description="Filter by job type (comma-separated for multiple)"),
+    exclude_job_type: Optional[str] = Query(None, description="Exclude job types (comma-separated for multiple)"),
+    triggered_by: Optional[str] = Query(None, description="Filter by trigger type (comma-separated for multiple)"),
     schedule_id: Optional[int] = Query(None, description="Filter by schedule ID"),
-    template_id: Optional[str] = Query(
-        None, description="Filter by template ID (comma-separated for multiple)"
-    ),
+    template_id: Optional[str] = Query(None, description="Filter by template ID (comma-separated for multiple)"),
     current_user: dict = Depends(require_permission("jobs", "read")),
     job_run_service: JobRunService = Depends(get_job_run_service),
 ):
@@ -58,15 +48,9 @@ async def list_job_runs(
         # Parse comma-separated values into lists
         status_list = status.split(",") if status else None
         job_type_list = job_type.split(",") if job_type else None
-        exclude_job_type_list = (
-            exclude_job_type.split(",") if exclude_job_type else None
-        )
+        exclude_job_type_list = exclude_job_type.split(",") if exclude_job_type else None
         triggered_by_list = triggered_by.split(",") if triggered_by else None
-        template_id_list = (
-            [int(t) for t in template_id.split(",") if t.isdigit()]
-            if template_id
-            else None
-        )
+        template_id_list = [int(t) for t in template_id.split(",") if t.isdigit()] if template_id else None
 
         result = job_run_service.list_job_runs(
             page=page,
@@ -110,9 +94,7 @@ async def get_recent_runs(
     Get recent job runs (simplified endpoint for dashboard).
     """
     try:
-        runs = job_run_service.get_recent_runs(
-            limit=limit, status=status, job_type=job_type
-        )
+        runs = job_run_service.get_recent_runs(limit=limit, status=status, job_type=job_type)
         return runs
     except Exception as e:
         raise_internal_server_error(logger, "Internal error", e)
@@ -168,9 +150,7 @@ async def get_latest_compare_devices_result(
     """
     try:
         # Get the most recent completed compare_devices job
-        runs = job_run_service.get_recent_runs(
-            limit=1, status="completed", job_type="compare_devices"
-        )
+        runs = job_run_service.get_recent_runs(limit=1, status="completed", job_type="compare_devices")
 
         if not runs:
             return {
@@ -220,9 +200,7 @@ async def get_latest_ip_addresses_result(
     - completed_at: when the job completed
     """
     try:
-        runs = job_run_service.get_recent_runs(
-            limit=10, status="completed", job_type="ip_addresses"
-        )
+        runs = job_run_service.get_recent_runs(limit=10, status="completed", job_type="ip_addresses")
 
         # Find the most recent list job
         latest_run = None
@@ -275,13 +253,9 @@ async def get_latest_scan_prefix_result(
         from datetime import datetime, timezone
 
         # Get today's date at midnight in UTC
-        today_midnight = datetime.now(timezone.utc).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        today_midnight = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
 
-        runs = job_run_service.get_runs_since(
-            since=today_midnight, status="completed", job_type="scan_prefixes"
-        )
+        runs = job_run_service.get_runs_since(since=today_midnight, status="completed", job_type="scan_prefixes")
 
         if not runs:
             return {
@@ -355,9 +329,7 @@ async def get_latest_scan_prefix_result(
 
             # Use actual prefixes list from parent for accurate count
             prefixes_list = result.get("prefixes", [])
-            total_prefixes = (
-                len(prefixes_list) if prefixes_list else result.get("total_prefixes", 0)
-            )
+            total_prefixes = len(prefixes_list) if prefixes_list else result.get("total_prefixes", 0)
 
         # Case 2: Regular job (not split)
         else:
@@ -368,9 +340,7 @@ async def get_latest_scan_prefix_result(
             resolve_dns = result.get("resolve_dns", False)
 
         # Calculate reachability percentage
-        reachability_percent = (
-            (total_reachable / total_ips_scanned * 100) if total_ips_scanned > 0 else 0
-        )
+        reachability_percent = (total_reachable / total_ips_scanned * 100) if total_ips_scanned > 0 else 0
 
         return {
             "has_data": True,
@@ -466,15 +436,12 @@ async def get_job_progress(
             "completed": completed,
             "total": total,
             "percentage": percentage,
-            "message": f"Backed up {completed} devices"
-            + (f" of {total}" if total else ""),
+            "message": f"Backed up {completed} devices" + (f" of {total}" if total else ""),
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error getting progress for job run %s: %s", run_id, e, exc_info=True
-        )
+        logger.error("Error getting progress for job run %s: %s", run_id, e, exc_info=True)
         raise_internal_server_error(logger, "Internal error", e)
 
 
@@ -492,9 +459,7 @@ async def get_schedule_runs(
         runs = job_run_service.get_schedule_runs(schedule_id, limit=limit)
         return runs
     except Exception as e:
-        logger.error(
-            "Error getting runs for schedule %s: %s", schedule_id, e, exc_info=True
-        )
+        logger.error("Error getting runs for schedule %s: %s", schedule_id, e, exc_info=True)
         raise_internal_server_error(logger, "Internal error", e)
 
 
@@ -543,9 +508,7 @@ async def cancel_job_run(
 
 @router.delete("/cleanup")
 async def cleanup_old_runs(
-    days: int = Query(
-        30, ge=1, le=365, description="Delete runs older than this many days"
-    ),
+    days: int = Query(30, ge=1, le=365, description="Delete runs older than this many days"),
     current_user: dict = Depends(require_permission("jobs", "delete")),
     job_run_service: JobRunService = Depends(get_job_run_service),
 ):
@@ -576,18 +539,10 @@ async def clear_all_runs(
 
 @router.delete("/clear-filtered")
 async def clear_filtered_runs(
-    status: Optional[str] = Query(
-        None, description="Filter by status (comma-separated for multiple)"
-    ),
-    job_type: Optional[str] = Query(
-        None, description="Filter by job type (comma-separated for multiple)"
-    ),
-    triggered_by: Optional[str] = Query(
-        None, description="Filter by trigger type (comma-separated for multiple)"
-    ),
-    template_id: Optional[str] = Query(
-        None, description="Filter by template ID (comma-separated for multiple)"
-    ),
+    status: Optional[str] = Query(None, description="Filter by status (comma-separated for multiple)"),
+    job_type: Optional[str] = Query(None, description="Filter by job type (comma-separated for multiple)"),
+    triggered_by: Optional[str] = Query(None, description="Filter by trigger type (comma-separated for multiple)"),
+    template_id: Optional[str] = Query(None, description="Filter by template ID (comma-separated for multiple)"),
     current_user: dict = Depends(require_permission("jobs", "write")),
     job_run_service: JobRunService = Depends(get_job_run_service),
 ):
@@ -601,11 +556,7 @@ async def clear_filtered_runs(
         status_list = status.split(",") if status else None
         job_type_list = job_type.split(",") if job_type else None
         triggered_by_list = triggered_by.split(",") if triggered_by else None
-        template_id_list = (
-            [int(t) for t in template_id.split(",") if t.isdigit()]
-            if template_id
-            else None
-        )
+        template_id_list = [int(t) for t in template_id.split(",") if t.isdigit()] if template_id else None
 
         count = job_run_service.clear_filtered_runs(
             status=status_list,
@@ -689,9 +640,7 @@ async def execute_job_manually(
         schedule = _schedule_svc.get_job_schedule(schedule_id)
         if not schedule:
             logger.error("Schedule %s not found", schedule_id)
-            raise HTTPException(
-                status_code=404, detail=f"Schedule {schedule_id} not found"
-            )
+            raise HTTPException(status_code=404, detail=f"Schedule {schedule_id} not found")
 
         logger.info("Schedule found: %s", schedule.get("job_identifier"))
 
@@ -713,9 +662,7 @@ async def execute_job_manually(
         template = _template_svc.get_job_template(template_id)
         if not template:
             logger.error("Template %s not found in database", template_id)
-            raise HTTPException(
-                status_code=404, detail=f"Template {template_id} not found"
-            )
+            raise HTTPException(status_code=404, detail=f"Template {template_id} not found")
 
         # Dispatch the job
         task = dispatch_job.delay(

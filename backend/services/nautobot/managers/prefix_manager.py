@@ -82,12 +82,8 @@ class PrefixManager:
             namespace_id = await self.network_resolver.resolve_namespace_id(namespace)
 
         # Check if prefix already exists in this namespace
-        prefix_search_endpoint = (
-            f"ipam/prefixes/?prefix={prefix}&namespace={namespace_id}&format=json"
-        )
-        prefix_result = await self.nautobot.rest_request(
-            endpoint=prefix_search_endpoint, method="GET"
-        )
+        prefix_search_endpoint = f"ipam/prefixes/?prefix={prefix}&namespace={namespace_id}&format=json"
+        prefix_result = await self.nautobot.rest_request(endpoint=prefix_search_endpoint, method="GET")
 
         if prefix_result and prefix_result.get("count", 0) > 0:
             existing_prefix = prefix_result["results"][0]
@@ -98,9 +94,7 @@ class PrefixManager:
         logger.info("Creating new prefix: %s", prefix)
 
         # Resolve status to UUID
-        status_id = await self.metadata_resolver.resolve_status_id(
-            status, content_type="ipam.prefix"
-        )
+        status_id = await self.metadata_resolver.resolve_status_id(status, content_type="ipam.prefix")
 
         # Build payload - Nautobot REST API expects UUID strings, not nested objects
         prefix_data = {
@@ -147,9 +141,7 @@ class PrefixManager:
             prefix_data["custom_fields"] = kwargs["custom_fields"]
 
         # Create the prefix
-        result = await self.nautobot.rest_request(
-            endpoint="ipam/prefixes/", method="POST", data=prefix_data
-        )
+        result = await self.nautobot.rest_request(endpoint="ipam/prefixes/", method="POST", data=prefix_data)
 
         if not result or "id" not in result:
             raise NautobotAPIError(f"Failed to create prefix {prefix}: No ID returned")

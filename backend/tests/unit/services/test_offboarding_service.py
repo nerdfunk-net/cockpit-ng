@@ -40,17 +40,13 @@ def make_device_details(
             {
                 "id": IFACE_ID,
                 "name": "Loopback0",
-                "ip_addresses": [{"id": primary_ip_id, "address": primary_ip_address}]
-                if primary_ip_id
-                else [],
+                "ip_addresses": [{"id": primary_ip_id, "address": primary_ip_address}] if primary_ip_id else [],
             }
         ]
     return {
         "id": device_id,
         "name": name,
-        "primary_ip4": {"id": primary_ip_id, "address": primary_ip_address}
-        if primary_ip_id
-        else None,
+        "primary_ip4": {"id": primary_ip_id, "address": primary_ip_address} if primary_ip_id else None,
         "interfaces": interfaces,
     }
 
@@ -146,9 +142,7 @@ async def test_offboard_simple_device_success(offboarding_service, fake_nb):
     """Offboarding a device without CheckMK should remove it and its IPs."""
     current_user = {"username": "testuser", "user_id": 1}
 
-    result = await offboarding_service.offboard_device(
-        DEVICE_ID, simple_offboard_request(), current_user
-    )
+    result = await offboarding_service.offboard_device(DEVICE_ID, simple_offboard_request(), current_user)
 
     assert result["success"] is True
     assert DEVICE_ID not in fake_nb._devices
@@ -193,9 +187,7 @@ async def test_offboard_device_has_correct_device_name(offboarding_service):
     """Result should contain the device name."""
     current_user = {"username": "testuser", "user_id": 1}
 
-    result = await offboarding_service.offboard_device(
-        DEVICE_ID, simple_offboard_request(), current_user
-    )
+    result = await offboarding_service.offboard_device(DEVICE_ID, simple_offboard_request(), current_user)
 
     assert result["device_name"] == DEVICE_NAME
 
@@ -206,9 +198,7 @@ async def test_offboard_result_has_removed_items(offboarding_service):
     """Result removed_items list should include device entry."""
     current_user = {"username": "testuser", "user_id": 1}
 
-    result = await offboarding_service.offboard_device(
-        DEVICE_ID, simple_offboard_request(), current_user
-    )
+    result = await offboarding_service.offboard_device(DEVICE_ID, simple_offboard_request(), current_user)
 
     assert any("Device" in item for item in result["removed_items"])
 
@@ -245,9 +235,7 @@ async def test_offboard_without_checkmk_skips_remove_host(offboarding_service):
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_offboard_device_not_found_succeeds_with_warning(
-    offboarding_service, fake_nb
-):
+async def test_offboard_device_not_found_succeeds_with_warning(offboarding_service, fake_nb):
     """Offboarding a non-existent device ID should return success (DELETE is idempotent)."""
     current_user = {"username": "testuser", "user_id": 1}
     non_existent_id = "ee000000-0000-0000-ffff-000000000099"
@@ -268,9 +256,7 @@ async def test_offboard_device_not_found_succeeds_with_warning(
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_offboard_checkmk_failure_does_not_stop_nautobot_cleanup(
-    offboarding_service, fake_nb
-):
+async def test_offboard_checkmk_failure_does_not_stop_nautobot_cleanup(offboarding_service, fake_nb):
     """If CheckMK removal fails, Nautobot cleanup should still complete."""
     from fastapi import HTTPException
 
@@ -305,21 +291,15 @@ async def test_offboard_entire_chassis_removes_all_members(fake_nb, mock_cache):
     )
     fake_nb._virtual_chassis[VC_ID] = {"id": VC_ID, "name": "test-stack"}
 
-    member_details = make_device_details(
-        MEMBER_ID, "chassis-member-01", None, "0.0.0.0/0", []
-    )
+    member_details = make_device_details(MEMBER_ID, "chassis-member-01", None, "0.0.0.0/0", [])
     primary_details = make_device_details(DEVICE_ID, DEVICE_NAME, IP_ID, "10.0.0.1/24")
 
     mock_dqs = MagicMock()
-    mock_dqs.get_device_details = AsyncMock(
-        side_effect=[primary_details, member_details]
-    )
+    mock_dqs.get_device_details = AsyncMock(side_effect=[primary_details, member_details])
 
     with patch("service_factory.build_nautobot_service", return_value=fake_nb):
         with patch("service_factory.build_cache_service", return_value=mock_cache):
-            with patch(
-                "service_factory.build_device_query_service", return_value=mock_dqs
-            ):
+            with patch("service_factory.build_device_query_service", return_value=mock_dqs):
                 svc = OffboardingService()
                 svc._checkmk_cleanup = MagicMock()
                 svc._checkmk_cleanup.remove_host = AsyncMock(return_value=None)
@@ -333,9 +313,7 @@ async def test_offboard_entire_chassis_removes_all_members(fake_nb, mock_cache):
         chassis_member_ids=[DEVICE_ID, MEMBER_ID],
     )
 
-    result = await svc.offboard_device(
-        DEVICE_ID, request, {"username": "testuser", "user_id": 1}
-    )
+    result = await svc.offboard_device(DEVICE_ID, request, {"username": "testuser", "user_id": 1})
 
     assert result["success"] is True
     assert DEVICE_ID not in fake_nb._devices

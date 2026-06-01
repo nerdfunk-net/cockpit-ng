@@ -27,9 +27,7 @@ logger = logging.getLogger(__name__)
 class GitAuthenticationService:
     """Service for handling Git authentication operations."""
 
-    def resolve_credentials(
-        self, repository: Dict
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    def resolve_credentials(self, repository: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """Resolve username, token/password, and SSH key path from credential_name.
 
         Args:
@@ -67,11 +65,7 @@ class GitAuthenticationService:
             if auth_type == "ssh_key":
                 # Look for SSH key credential
                 match = next(
-                    (
-                        c
-                        for c in creds
-                        if c["name"] == credential_name and c["type"] == "ssh_key"
-                    ),
+                    (c for c in creds if c["name"] == credential_name and c["type"] == "ssh_key"),
                     None,
                 )
                 if match:
@@ -101,11 +95,7 @@ class GitAuthenticationService:
             elif auth_type == "generic":
                 # Look for generic credential (username/password, not for SSH)
                 match = next(
-                    (
-                        c
-                        for c in creds
-                        if c["name"] == credential_name and c["type"] == "generic"
-                    ),
+                    (c for c in creds if c["name"] == credential_name and c["type"] == "generic"),
                     None,
                 )
                 if match:
@@ -117,9 +107,7 @@ class GitAuthenticationService:
                     )
                     try:
                         password = cred_mgr.get_decrypted_password(match["id"])
-                        logger.debug(
-                            "Successfully decrypted password for '%s'", credential_name
-                        )
+                        logger.debug("Successfully decrypted password for '%s'", credential_name)
                         return username, password, None
                     except Exception as de:
                         logger.error(
@@ -143,11 +131,7 @@ class GitAuthenticationService:
             else:
                 # Look for token credential (default behavior)
                 match = next(
-                    (
-                        c
-                        for c in creds
-                        if c["name"] == credential_name and c["type"] == "token"
-                    ),
+                    (c for c in creds if c["name"] == credential_name and c["type"] == "token"),
                     None,
                 )
                 if match:
@@ -159,9 +143,7 @@ class GitAuthenticationService:
                     )
                     try:
                         token = cred_mgr.get_decrypted_password(match["id"])
-                        logger.debug(
-                            "Successfully decrypted token for '%s'", credential_name
-                        )
+                        logger.debug("Successfully decrypted token for '%s'", credential_name)
                         return username, token, None
                     except Exception as de:
                         logger.error(
@@ -186,9 +168,7 @@ class GitAuthenticationService:
             logger.error("Error resolving credential '%s': %s", credential_name, ce)
             return None, None, None
 
-    def build_auth_url(
-        self, url: str, username: Optional[str], token: Optional[str]
-    ) -> str:
+    def build_auth_url(self, url: str, username: Optional[str], token: Optional[str]) -> str:
         """Return a URL with HTTP(S) basic auth credentials injected.
 
         - Only applies to http/https URLs; other schemes (ssh/git) are returned untouched.

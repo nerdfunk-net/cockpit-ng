@@ -47,9 +47,7 @@ async def create_job_schedule(
 
             rbac_manager = service_factory.build_rbac_service()
 
-            has_permission = rbac_manager.has_permission(
-                current_user["user_id"], "jobs", "write"
-            )
+            has_permission = rbac_manager.has_permission(current_user["user_id"], "jobs", "write")
             if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -139,9 +137,7 @@ async def get_job_schedule(
         job = job_schedule_service.get_job_schedule(job_id)
 
         if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job schedule not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job schedule not found")
 
         # Check access permissions
         if not job.get("is_global") and job.get("user_id") != current_user["user_id"]:
@@ -171,9 +167,7 @@ async def update_job_schedule(
         job = job_schedule_service.get_job_schedule(job_id)
 
         if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job schedule not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job schedule not found")
 
         # Check permissions
         if job.get("is_global"):
@@ -182,9 +176,7 @@ async def update_job_schedule(
 
             rbac_manager = service_factory.build_rbac_service()
 
-            has_permission = rbac_manager.has_permission(
-                current_user["user_id"], "jobs", "write"
-            )
+            has_permission = rbac_manager.has_permission(current_user["user_id"], "jobs", "write")
             if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -233,9 +225,7 @@ async def delete_job_schedule(
         job = job_schedule_service.get_job_schedule(job_id)
 
         if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job schedule not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job schedule not found")
 
         # Check permissions
         if job.get("is_global"):
@@ -244,9 +234,7 @@ async def delete_job_schedule(
 
             rbac_manager = service_factory.build_rbac_service()
 
-            has_permission = rbac_manager.has_permission(
-                current_user["user_id"], "jobs", "write"
-            )
+            has_permission = rbac_manager.has_permission(current_user["user_id"], "jobs", "write")
             if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -310,9 +298,7 @@ async def execute_job(
         job = job_schedule_service.get_job_schedule(execution_request.job_schedule_id)
 
         if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job schedule not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job schedule not found")
 
         # Check permissions
         if not job.get("is_global") and job.get("user_id") != current_user["user_id"]:
@@ -347,9 +333,7 @@ async def execute_job(
         celery_task = dispatch_job.delay(
             schedule_id=execution_request.job_schedule_id,
             template_id=template_id,
-            job_name=job.get(
-                "job_identifier", f"manual-{execution_request.job_schedule_id}"
-            ),
+            job_name=job.get("job_identifier", f"manual-{execution_request.job_schedule_id}"),
             job_type=template.get("job_type"),
             credential_id=job.get("credential_id"),
             job_parameters=job_parameters if job_parameters else None,
@@ -409,9 +393,7 @@ async def get_scheduler_debug_status(
             if next_run:
                 # Parse next_run if it's a string
                 if isinstance(next_run, str):
-                    next_run_dt = datetime.fromisoformat(
-                        next_run.replace("Z", "+00:00")
-                    )
+                    next_run_dt = datetime.fromisoformat(next_run.replace("Z", "+00:00"))
                 else:
                     next_run_dt = next_run
 
@@ -427,9 +409,7 @@ async def get_scheduler_debug_status(
                     "schedule_type": schedule["schedule_type"],
                     "start_time": schedule.get("start_time"),
                     "next_run": schedule.get("next_run"),
-                    "next_run_local": next_run_dt.astimezone().isoformat()
-                    if next_run_dt
-                    else None,
+                    "next_run_local": next_run_dt.astimezone().isoformat() if next_run_dt else None,
                     "last_run": schedule.get("last_run"),
                     "seconds_until_next_run": int(time_diff),
                     "is_due": time_diff <= 0,
@@ -464,9 +444,7 @@ async def get_scheduler_debug_status(
             "server_time": {
                 "utc": now_utc.isoformat(),
                 "local": now_local.isoformat(),
-                "timezone_offset_hours": (
-                    now_local.astimezone().utcoffset().total_seconds() / 3600
-                )
+                "timezone_offset_hours": (now_local.astimezone().utcoffset().total_seconds() / 3600)
                 if now_local.astimezone().utcoffset()
                 else 0,
             },

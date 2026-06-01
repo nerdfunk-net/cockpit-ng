@@ -155,9 +155,7 @@ def prepare_update_data(
     }
 
     # Extract interface configuration if present
-    if any(
-        f in headers for f in ["interface_name", "interface_type", "interface_status"]
-    ):
+    if any(f in headers for f in ["interface_name", "interface_type", "interface_status"]):
         interface_config = {
             "name": row.get("interface_name", "").strip() or "Loopback",
             "type": row.get("interface_type", "").strip() or "virtual",

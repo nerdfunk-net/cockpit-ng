@@ -35,9 +35,7 @@ def template_service() -> MagicMock:
 
 
 @pytest.fixture
-def svc(
-    sched_repo: FakeJobScheduleRepository, template_service: MagicMock
-) -> JobScheduleService:
+def svc(sched_repo: FakeJobScheduleRepository, template_service: MagicMock) -> JobScheduleService:
     service = JobScheduleService.__new__(JobScheduleService)
     service._repo = sched_repo
     service._template_service = template_service
@@ -80,16 +78,12 @@ class TestCalculateNextRun:
 
     def test_interval_default_60_minutes(self) -> None:
         base = self._base()
-        result = JobScheduleService.calculate_next_run(
-            {"schedule_type": "interval"}, base_time=base
-        )
+        result = JobScheduleService.calculate_next_run({"schedule_type": "interval"}, base_time=base)
         assert result == base + timedelta(hours=1)
 
     def test_hourly_on_next_hour(self) -> None:
         base = datetime(2025, 1, 15, 10, 35, 0, tzinfo=timezone.utc)
-        result = JobScheduleService.calculate_next_run(
-            {"schedule_type": "hourly"}, base_time=base
-        )
+        result = JobScheduleService.calculate_next_run({"schedule_type": "hourly"}, base_time=base)
         assert result == datetime(2025, 1, 15, 11, 0, 0, tzinfo=timezone.utc)
 
     def test_daily_future_time_today(self) -> None:
@@ -134,15 +128,11 @@ class TestCalculateNextRun:
         assert result.minute == 0
 
     def test_custom_invalid_cron_returns_none(self) -> None:
-        result = JobScheduleService.calculate_next_run(
-            {"schedule_type": "custom", "cron_expression": "not-a-cron"}
-        )
+        result = JobScheduleService.calculate_next_run({"schedule_type": "custom", "cron_expression": "not-a-cron"})
         assert result is None
 
     def test_unknown_schedule_type_returns_none(self) -> None:
-        result = JobScheduleService.calculate_next_run(
-            {"schedule_type": "unknown_type"}
-        )
+        result = JobScheduleService.calculate_next_run({"schedule_type": "unknown_type"})
         assert result is None
 
 
@@ -203,9 +193,7 @@ class TestCreateJobSchedule:
         )
         assert result["job_parameters"] == params
 
-    def test_enriched_with_template_name(
-        self, svc: JobScheduleService, template_service: MagicMock
-    ) -> None:
+    def test_enriched_with_template_name(self, svc: JobScheduleService, template_service: MagicMock) -> None:
         result = _create_daily(svc)
         assert result.get("template_name") == "nightly-backup"
 
@@ -256,9 +244,7 @@ class TestListJobSchedules:
         assert "global-job" in ids
         assert "user-job" not in ids
 
-    def test_get_user_job_schedules_includes_global(
-        self, svc: JobScheduleService
-    ) -> None:
+    def test_get_user_job_schedules_includes_global(self, svc: JobScheduleService) -> None:
         svc.create_job_schedule("global-job", 1, "daily", is_global=True)
         svc.create_job_schedule("my-job", 1, "daily", is_global=False, user_id=7)
         result = svc.get_user_job_schedules(7)
@@ -284,9 +270,7 @@ class TestUpdateJobSchedule:
         result = svc.update_job_schedule(9999, job_identifier="ghost")
         assert result is None
 
-    def test_schedule_change_recalculates_next_run(
-        self, svc: JobScheduleService
-    ) -> None:
+    def test_schedule_change_recalculates_next_run(self, svc: JobScheduleService) -> None:
         created = _create_daily(svc, start_time="01:00")
         old_next_run = created["next_run"]
 

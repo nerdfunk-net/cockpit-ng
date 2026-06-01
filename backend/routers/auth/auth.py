@@ -71,9 +71,7 @@ async def login(
             elif role_names:
                 primary_role = role_names[0]
 
-            access_token_expires = timedelta(
-                minutes=settings.access_token_expire_minutes
-            )
+            access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
             access_token = create_access_token(
                 data={
                     "sub": user["username"],
@@ -91,9 +89,7 @@ async def login(
                 "email": user_with_roles.get("email"),
                 "role": primary_role,  # Legacy field for compatibility
                 "roles": role_names,  # New RBAC roles array
-                "permissions": user_with_roles.get(
-                    "permissions", []
-                ),  # New RBAC permissions
+                "permissions": user_with_roles.get("permissions", []),  # New RBAC permissions
                 "debug": user_with_roles.get("debug", False),
             }
 
@@ -136,9 +132,7 @@ async def refresh_token(request: Request):
     from services.auth.user_management import get_user_by_username
 
     # Extract Authorization header
-    auth_header = request.headers.get("authorization") or request.headers.get(
-        "Authorization"
-    )
+    auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
     if not auth_header or not auth_header.lower().startswith("bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -240,9 +234,7 @@ async def refresh_token(request: Request):
                 "email": user_with_roles.get("email"),
                 "role": primary_role,  # Legacy field for compatibility
                 "roles": role_names,  # CRITICAL FIX: Include roles array for sidebar
-                "permissions": user_with_roles.get(
-                    "permissions", []
-                ),  # New RBAC permissions
+                "permissions": user_with_roles.get("permissions", []),  # New RBAC permissions
                 "debug": user_with_roles.get("debug", False),
             },
         )
@@ -333,9 +325,7 @@ async def logout(
     # Try to get user info from token if available
     try:
         # Extract Authorization header
-        auth_header = request.headers.get("authorization") or request.headers.get(
-            "Authorization"
-        )
+        auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
         if auth_header and auth_header.lower().startswith("bearer "):
             token = auth_header.split(" ", 1)[1].strip()
 

@@ -12,7 +12,6 @@ import pytest
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.devices.query import DeviceQueryService
 
-
 DEVICE_ID = "aa000000-0000-0000-0003-000000000001"
 
 
@@ -158,9 +157,7 @@ async def test_get_devices_location_filter_flattens_location_devices() -> None:
     """Location filtering flattens devices from matching locations."""
     device = _device(name="switch-01")
     mock_nb = MagicMock()
-    mock_nb.graphql_query = AsyncMock(
-        return_value={"data": {"locations": [{"name": "DC1", "devices": [device]}]}}
-    )
+    mock_nb.graphql_query = AsyncMock(return_value={"data": {"locations": [{"name": "DC1", "devices": [device]}]}})
     svc = _service(mock_nb)
 
     with (

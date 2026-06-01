@@ -40,9 +40,7 @@ async def get_nautobot_device_roles(
 ):
     """Get Nautobot roles specifically for dcim.device content type."""
     try:
-        result = await nautobot_service.rest_request(
-            "extras/roles/?content_types=dcim.device&limit=0"
-        )
+        result = await nautobot_service.rest_request("extras/roles/?content_types=dcim.device&limit=0")
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch device roles: ", e)
@@ -70,9 +68,7 @@ async def get_nautobot_prefix_roles(
 ):
     """Get Nautobot roles specifically for ipam.prefix content type."""
     try:
-        result = await nautobot_service.rest_request(
-            "extras/roles/?content_types=ipam.prefix&limit=0"
-        )
+        result = await nautobot_service.rest_request("extras/roles/?content_types=ipam.prefix&limit=0")
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch prefix roles: ", e)
@@ -85,9 +81,7 @@ async def get_nautobot_ipaddress_roles(
 ):
     """Get Nautobot roles specifically for ipam.ipaddress content type."""
     try:
-        result = await nautobot_service.rest_request(
-            "extras/roles/?content_types=ipam.ipaddress&limit=0"
-        )
+        result = await nautobot_service.rest_request("extras/roles/?content_types=ipam.ipaddress&limit=0")
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch IP address roles: ", e)

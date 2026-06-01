@@ -24,9 +24,7 @@ async def test_get_device_custom_fields_returns_results() -> None:
     result = await svc.get_device_custom_fields()
 
     assert result == [{"name": "owner"}]
-    mock_nb.rest_request.assert_awaited_once_with(
-        "extras/custom-fields/?content_types=dcim.device"
-    )
+    mock_nb.rest_request.assert_awaited_once_with("extras/custom-fields/?content_types=dcim.device")
 
 
 @pytest.mark.asyncio
@@ -72,6 +70,4 @@ async def test_get_custom_field_choices_returns_choices() -> None:
     result = await svc.get_custom_field_choices("support_tier")
 
     assert result == [{"value": "gold"}]
-    mock_nb.rest_request.assert_awaited_once_with(
-        "extras/custom-field-choices/?custom_field=support_tier"
-    )
+    mock_nb.rest_request.assert_awaited_once_with("extras/custom-field-choices/?custom_field=support_tier")

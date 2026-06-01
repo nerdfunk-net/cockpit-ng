@@ -11,7 +11,6 @@ import pytest
 
 from services.nautobot.imports.prefix_update_service import PrefixUpdateService
 
-
 PREFIX_ID = "af000000-0000-0000-0001-000000000001"
 
 
@@ -135,9 +134,7 @@ def test_find_prefix_by_prefix_and_namespace_returns_first_match() -> None:
     )
     svc = PrefixUpdateService()
 
-    prefix_id, prefix_data = svc._find_prefix_by_prefix_and_namespace_graphql(
-        mock_nb, "10.0.0.0/24", "Global"
-    )
+    prefix_id, prefix_data = svc._find_prefix_by_prefix_and_namespace_graphql(mock_nb, "10.0.0.0/24", "Global")
 
     assert prefix_id == PREFIX_ID
     assert prefix_data["prefix"] == "10.0.0.0/24"

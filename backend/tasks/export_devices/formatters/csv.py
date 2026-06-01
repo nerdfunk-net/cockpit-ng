@@ -59,16 +59,12 @@ def export_to_csv(devices: List[Dict[str, Any]], csv_options: Dict[str, Any]) ->
         "software_version",
         "tags",
     ]
-    interface_cols = [
-        col for col in sorted(all_columns) if col.startswith("interface_")
-    ]
+    interface_cols = [col for col in sorted(all_columns) if col.startswith("interface_")]
     custom_cols = [col for col in sorted(all_columns) if col.startswith("cf_")]
     other_cols = [
         col
         for col in sorted(all_columns)
-        if col not in device_cols
-        and col not in interface_cols
-        and col not in custom_cols
+        if col not in device_cols and col not in interface_cols and col not in custom_cols
     ]
 
     ordered_columns = []
@@ -144,10 +140,7 @@ def _extract_device_fields(device: Dict[str, Any]) -> Dict[str, str]:
         fields["platform"] = str(device["platform"])
 
     if device.get("tags") and isinstance(device["tags"], list):
-        tag_names = [
-            tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag)
-            for tag in device["tags"]
-        ]
+        tag_names = [tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag) for tag in device["tags"]]
         if tag_names:
             fields["tags"] = ",".join(tag_names)
 
@@ -156,18 +149,14 @@ def _extract_device_fields(device: Dict[str, Any]) -> Dict[str, str]:
         if primary_addr:
             fields["ip_address"] = str(primary_addr)
 
-        if device["primary_ip4"].get("parent") and isinstance(
-            device["primary_ip4"]["parent"], dict
-        ):
+        if device["primary_ip4"].get("parent") and isinstance(device["primary_ip4"]["parent"], dict):
             parent = device["primary_ip4"]["parent"]
             if parent.get("namespace") and isinstance(parent["namespace"], dict):
                 namespace_name = parent["namespace"].get("name")
                 if namespace_name:
                     fields["namespace"] = str(namespace_name)
 
-    if device.get("_custom_field_data") and isinstance(
-        device["_custom_field_data"], dict
-    ):
+    if device.get("_custom_field_data") and isinstance(device["_custom_field_data"], dict):
         for cf_key, cf_value in device["_custom_field_data"].items():
             if cf_value is not None:
                 fields[f"cf_{cf_key}"] = str(cf_value)
@@ -175,9 +164,7 @@ def _extract_device_fields(device: Dict[str, Any]) -> Dict[str, str]:
     return fields
 
 
-def _extract_interface_fields(
-    interface: Dict[str, Any], device: Dict[str, Any]
-) -> Dict[str, str]:
+def _extract_interface_fields(interface: Dict[str, Any], device: Dict[str, Any]) -> Dict[str, str]:
     """
     Extract and flatten interface-level fields for CSV export.
 
@@ -227,34 +214,24 @@ def _extract_interface_fields(
                 else:
                     fields["set_primary_ipv4"] = "false"
 
-    if interface.get("parent_interface") and isinstance(
-        interface["parent_interface"], dict
-    ):
-        fields["interface_parent_interface"] = str(
-            interface["parent_interface"].get("name", "")
-        )
+    if interface.get("parent_interface") and isinstance(interface["parent_interface"], dict):
+        fields["interface_parent_interface"] = str(interface["parent_interface"].get("name", ""))
 
     if interface.get("lag") and isinstance(interface["lag"], dict):
         fields["interface_lag"] = str(interface["lag"].get("name", ""))
 
     if interface.get("untagged_vlan") and isinstance(interface["untagged_vlan"], dict):
-        fields["interface_untagged_vlan"] = str(
-            interface["untagged_vlan"].get("name", "")
-        )
+        fields["interface_untagged_vlan"] = str(interface["untagged_vlan"].get("name", ""))
 
     if interface.get("tagged_vlans") and isinstance(interface["tagged_vlans"], list):
         vlan_names = [
-            vlan.get("name", str(vlan)) if isinstance(vlan, dict) else str(vlan)
-            for vlan in interface["tagged_vlans"]
+            vlan.get("name", str(vlan)) if isinstance(vlan, dict) else str(vlan) for vlan in interface["tagged_vlans"]
         ]
         if vlan_names:
             fields["interface_tagged_vlans"] = ",".join(vlan_names)
 
     if interface.get("tags") and isinstance(interface["tags"], list):
-        tag_names = [
-            tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag)
-            for tag in interface["tags"]
-        ]
+        tag_names = [tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag) for tag in interface["tags"]]
         if tag_names:
             fields["interface_tags"] = ",".join(tag_names)
 

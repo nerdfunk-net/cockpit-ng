@@ -135,9 +135,7 @@ class NetmikoService:
 
         # Check if session has been cancelled before starting
         if session_id and session_id in self.cancelled_sessions:
-            logger.info(
-                "Skipping device %s - session %s cancelled", host_ip, session_id
-            )
+            logger.info("Skipping device %s - session %s cancelled", host_ip, session_id)
             result["cancelled"] = True
             result["error"] = "Execution cancelled by user"
             return result
@@ -166,9 +164,7 @@ class NetmikoService:
                         connection.enable()
                         logger.info("Privileged mode enabled")
                     except Exception as e:
-                        logger.warning(
-                            "Failed to enter privileged mode on %s: %s", host_ip, e
-                        )
+                        logger.warning("Failed to enter privileged mode on %s: %s", host_ip, e)
 
                 command_outputs = {}
                 output = ""
@@ -208,28 +204,20 @@ class NetmikoService:
 
                         # If TextFSM parsing is requested, parse the raw output we already have
                         if use_textfsm:
-                            logger.info(
-                                "Parsing command output with TextFSM for: %s", command
-                            )
+                            logger.info("Parsing command output with TextFSM for: %s", command)
                             try:
                                 # Use netmiko's textfsm parsing on the raw output
                                 from netmiko.utilities import get_structured_data
 
-                                parsed_output = get_structured_data(
-                                    raw_output, platform=device_type, command=command
-                                )
+                                parsed_output = get_structured_data(raw_output, platform=device_type, command=command)
 
                                 # Store parsed output if we got structured data
                                 if parsed_output:
                                     command_outputs[command] = parsed_output
-                                    logger.info(
-                                        "Successfully parsed output for: %s", command
-                                    )
+                                    logger.info("Successfully parsed output for: %s", command)
                                 else:
                                     # No TextFSM template available, store raw output
-                                    logger.info(
-                                        "No TextFSM template available for: %s", command
-                                    )
+                                    logger.info("No TextFSM template available for: %s", command)
                                     command_outputs[command] = raw_output
                             except Exception as parse_error:
                                 logger.warning(
@@ -253,16 +241,12 @@ class NetmikoService:
                             read_timeout=30,
                         )
                         # Confirm by pressing enter (send empty line)
-                        save_output += connection.send_command(
-                            "\n", expect_string=None, read_timeout=30
-                        )
+                        save_output += connection.send_command("\n", expect_string=None, read_timeout=30)
                         command_outputs["write_config"] = save_output
                         output += f"\n{save_output}"
                         logger.info("Config saved to startup on %s", host_ip)
                     except Exception as save_error:
-                        logger.warning(
-                            "Failed to save config on %s: %s", host_ip, save_error
-                        )
+                        logger.warning("Failed to save config on %s: %s", host_ip, save_error)
                         command_outputs["write_config_error"] = str(save_error)
 
                 result["success"] = True
@@ -380,14 +364,10 @@ class NetmikoService:
 
         for device in devices:
             device_ip = device.get("ip") or device.get("primary_ip4", "")
-            device_type = self._map_platform_to_device_type(
-                device.get("platform", "cisco_ios")
-            )
+            device_type = self._map_platform_to_device_type(device.get("platform", "cisco_ios"))
 
             if not device_ip:
-                logger.warning(
-                    "Skipping device without IP: %s", device.get("name", "Unknown")
-                )
+                logger.warning("Skipping device without IP: %s", device.get("name", "Unknown"))
                 continue
 
             # Run the synchronous netmiko operation in a thread pool
@@ -416,8 +396,7 @@ class NetmikoService:
                 logger.error("Task failed with exception: %s", result)
                 processed_results.append(
                     {
-                        "device": devices[i].get("ip")
-                        or devices[i].get("primary_ip4", "Unknown"),
+                        "device": devices[i].get("ip") or devices[i].get("primary_ip4", "Unknown"),
                         "success": False,
                         "output": "",
                         "error": str(result),
@@ -471,17 +450,11 @@ class NetmikoService:
 
         cred_mgr = service_factory.build_credentials_service()
 
-        general_creds = cred_mgr.list_credentials(
-            include_expired=False, source="general"
-        )
-        private_creds = cred_mgr.list_credentials(
-            include_expired=False, source="private"
-        )
+        general_creds = cred_mgr.list_credentials(include_expired=False, source="general")
+        private_creds = cred_mgr.list_credentials(include_expired=False, source="private")
         user_private = [c for c in private_creds if c.get("owner") == current_username]
 
-        credential = next(
-            (c for c in general_creds + user_private if c["id"] == credential_id), None
-        )
+        credential = next((c for c in general_creds + user_private if c["id"] == credential_id), None)
 
         if not credential:
             raise HTTPException(
@@ -566,9 +539,7 @@ class NetmikoService:
                 continue
 
             try:
-                nautobot_response = await nautobot_service.graphql_query(
-                    _DEVICE_DETAILS_QUERY, {"deviceId": device_id}
-                )
+                nautobot_response = await nautobot_service.graphql_query(_DEVICE_DETAILS_QUERY, {"deviceId": device_id})
 
                 if (
                     not nautobot_response
@@ -596,9 +567,7 @@ class NetmikoService:
                     if user_variables:
                         context.update(user_variables)
 
-                    needs_device_data = use_nautobot_context or (
-                        pre_run_command and pre_run_command.strip()
-                    )
+                    needs_device_data = use_nautobot_context or (pre_run_command and pre_run_command.strip())
 
                     if needs_device_data:
                         try:
@@ -611,29 +580,19 @@ class NetmikoService:
                                     "id": device_id,
                                     "name": device_data.get("name", ""),
                                     "primary_ip4": (
-                                        device_data.get("primary_ip4", {}).get(
-                                            "address", ""
-                                        )
-                                        if isinstance(
-                                            device_data.get("primary_ip4"), dict
-                                        )
+                                        device_data.get("primary_ip4", {}).get("address", "")
+                                        if isinstance(device_data.get("primary_ip4"), dict)
                                         else device_data.get("primary_ip4", "")
                                     ),
                                     "primary_ip6": (
-                                        device_data.get("primary_ip6", {}).get(
-                                            "address", ""
-                                        )
-                                        if isinstance(
-                                            device_data.get("primary_ip6"), dict
-                                        )
+                                        device_data.get("primary_ip6", {}).get("address", "")
+                                        if isinstance(device_data.get("primary_ip6"), dict)
                                         else device_data.get("primary_ip6", "")
                                     ),
                                 }
                             ]
                         except Exception as e:
-                            error_msg = (
-                                f"Failed to fetch Nautobot device data: {str(e)}"
-                            )
+                            error_msg = f"Failed to fetch Nautobot device data: {str(e)}"
                             logger.error(error_msg)
                             if pre_run_command and pre_run_command.strip():
                                 raise ValueError(error_msg)
@@ -641,30 +600,24 @@ class NetmikoService:
 
                     if pre_run_command and pre_run_command.strip():
                         if not template_credential_id:
-                            raise ValueError(
-                                "Template has pre_run_command but no credential_id configured"
-                            )
+                            raise ValueError("Template has pre_run_command but no credential_id configured")
                         try:
                             from services.network.automation.render import (
                                 render_service,
                             )
 
-                            pre_run_result = (
-                                await render_service._execute_pre_run_command(
-                                    device_id=device_id,
-                                    command=pre_run_command.strip(),
-                                    credential_id=template_credential_id,
-                                    nautobot_device=context.get("device_details"),
-                                )
+                            pre_run_result = await render_service._execute_pre_run_command(
+                                device_id=device_id,
+                                command=pre_run_command.strip(),
+                                credential_id=template_credential_id,
+                                nautobot_device=context.get("device_details"),
                             )
                             context["pre_run"] = {
                                 "raw": pre_run_result.get("raw_output", ""),
                                 "parsed": pre_run_result.get("parsed_output", []),
                             }
                             if pre_run_result.get("parse_error"):
-                                warnings.append(
-                                    f"TextFSM parsing not available: {pre_run_result['parse_error']}"
-                                )
+                                warnings.append(f"TextFSM parsing not available: {pre_run_result['parse_error']}")
                         except Exception as e:
                             error_msg = f"Failed to execute pre-run command: {str(e)}"
                             logger.error(error_msg)
@@ -683,8 +636,7 @@ class NetmikoService:
                 except UndefinedError as e:
                     available_vars = list(context.keys())
                     error_msg = (
-                        f"Undefined variable in template: {str(e)}. "
-                        f"Available variables: {', '.join(available_vars)}"
+                        f"Undefined variable in template: {str(e)}. Available variables: {', '.join(available_vars)}"
                     )
                     logger.error(error_msg)
                     failed_count += 1
@@ -762,9 +714,7 @@ class NetmikoService:
                         continue
 
                     platform = device.get("platform", {}).get("name", "cisco_ios")
-                    commands = [
-                        line.strip() for line in rendered.split("\n") if line.strip()
-                    ]
+                    commands = [line.strip() for line in rendered.split("\n") if line.strip()]
 
                     execution_result = await self.execute_commands_on_device(
                         device_ip=device_ip,

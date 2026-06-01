@@ -85,9 +85,7 @@ async def test_advanced_render_netmiko_adds_device_context_and_pre_run_output() 
     result = await orchestrator.advanced_render(
         AdvancedTemplateRenderRequest(
             template_content=(
-                "device={{ devices[0].name }} "
-                "ip={{ devices[0].primary_ip4 }} "
-                "version={{ pre_run.parsed[0].version }}"
+                "device={{ devices[0].name }} ip={{ devices[0].primary_ip4 }} version={{ pre_run.parsed[0].version }}"
             ),
             category="netmiko",
             device_id=DEVICE_ID,
@@ -129,18 +127,17 @@ async def test_advanced_render_agent_adds_inventory_snmp_mapping_and_path() -> N
     persistence = MagicMock()
     persistence.get_inventory.return_value = {"conditions": [{"field": "role"}]}
 
-    with patch(
-        "service_factory.build_inventory_persistence_service", return_value=persistence
-    ), patch(
-        "utils.inventory_converter.convert_saved_inventory_to_operations",
-        return_value=[{"operation": "role"}],
+    with (
+        patch("service_factory.build_inventory_persistence_service", return_value=persistence),
+        patch(
+            "utils.inventory_converter.convert_saved_inventory_to_operations",
+            return_value=[{"operation": "role"}],
+        ),
     ):
         result = await orchestrator.advanced_render(
             AdvancedTemplateRenderRequest(
                 template_content=(
-                    "count={{ devices|length }} "
-                    "snmp={{ snmp_mapping.cisco_ios.snmp_community }} "
-                    "path={{ path }}"
+                    "count={{ devices|length }} snmp={{ snmp_mapping.cisco_ios.snmp_community }} path={{ path }}"
                 ),
                 category="agent",
                 inventory_id=7,
@@ -210,8 +207,9 @@ async def test_execute_and_sync_queues_update_task_when_valid() -> None:
     update_task = MagicMock()
     update_task.delay.return_value = queued_task
 
-    with patch("service_factory.build_job_run_service", return_value=job_runs), patch(
-        "tasks.update_devices_task.update_devices_task", update_task
+    with (
+        patch("service_factory.build_job_run_service", return_value=job_runs),
+        patch("tasks.update_devices_task.update_devices_task", update_task),
     ):
         result = await orchestrator.execute_and_sync(
             TemplateExecuteAndSyncRequest(
@@ -243,8 +241,9 @@ async def test_execute_and_sync_returns_parse_errors_without_queueing() -> None:
     )
     update_task = MagicMock()
 
-    with patch("service_factory.build_job_run_service", return_value=MagicMock()), patch(
-        "tasks.update_devices_task.update_devices_task", update_task
+    with (
+        patch("service_factory.build_job_run_service", return_value=MagicMock()),
+        patch("tasks.update_devices_task.update_devices_task", update_task),
     ):
         result = await orchestrator.execute_and_sync(
             TemplateExecuteAndSyncRequest(
@@ -264,9 +263,7 @@ async def test_execute_and_sync_returns_parse_errors_without_queueing() -> None:
 @pytest.mark.unit
 def test_extract_template_variables_deduplicates_and_sorts() -> None:
     """Variable extraction returns unique dotted variable names."""
-    result = _extract_template_variables(
-        "{{ device.name }} {{ hostname }} {{ device.name }}"
-    )
+    result = _extract_template_variables("{{ device.name }} {{ hostname }} {{ device.name }}")
 
     assert result == ["device.name", "hostname"]
 

@@ -205,11 +205,7 @@ class RedisCacheService:
             namespaces = {}
             for key in cache_keys:
                 # Remove prefix to get user-facing key
-                user_key = (
-                    key[len(self._prefix) + 1 :]
-                    if key.startswith(f"{self._prefix}:")
-                    else key
-                )
+                user_key = key[len(self._prefix) + 1 :] if key.startswith(f"{self._prefix}:") else key
                 namespace = user_key.split(":")[0] if ":" in user_key else "default"
 
                 if namespace not in namespaces:
@@ -229,18 +225,12 @@ class RedisCacheService:
             hit_rate = (hits / total_requests * 100) if total_requests > 0 else 0
 
             # Get user-facing keys (without prefix)
-            user_keys = [
-                k[len(self._prefix) + 1 :]
-                for k in cache_keys
-                if k.startswith(f"{self._prefix}:")
-            ]
+            user_keys = [k[len(self._prefix) + 1 :] for k in cache_keys if k.startswith(f"{self._prefix}:")]
 
             return {
                 "overview": {
                     "total_items": len(cache_keys),
-                    "valid_items": len(
-                        cache_keys
-                    ),  # Redis auto-expires, so all are valid
+                    "valid_items": len(cache_keys),  # Redis auto-expires, so all are valid
                     "expired_items": 0,  # Redis handles expiration automatically
                     "total_size_bytes": total_size,
                     "total_size_mb": round(total_size / 1024 / 1024, 2),
@@ -288,11 +278,7 @@ class RedisCacheService:
 
             for redis_key in cache_keys:
                 # Get user-facing key
-                user_key = (
-                    redis_key[len(self._prefix) + 1 :]
-                    if redis_key.startswith(f"{self._prefix}:")
-                    else redis_key
-                )
+                user_key = redis_key[len(self._prefix) + 1 :] if redis_key.startswith(f"{self._prefix}:") else redis_key
                 namespace = user_key.split(":")[0] if ":" in user_key else "default"
 
                 # Get TTL
@@ -349,11 +335,7 @@ class RedisCacheService:
 
             for redis_key in keys:
                 # Get user-facing key
-                user_key = (
-                    redis_key[len(self._prefix) + 1 :]
-                    if redis_key.startswith(f"{self._prefix}:")
-                    else redis_key
-                )
+                user_key = redis_key[len(self._prefix) + 1 :] if redis_key.startswith(f"{self._prefix}:") else redis_key
 
                 # Get TTL
                 ttl = self._redis.ttl(redis_key)
@@ -430,14 +412,10 @@ class RedisCacheService:
             return {
                 "uptime_seconds": round(uptime, 1),
                 "total_requests": total_requests,
-                "requests_per_second": round(total_requests / uptime, 2)
-                if uptime > 0
-                else 0,
+                "requests_per_second": round(total_requests / uptime, 2) if uptime > 0 else 0,
                 "cache_hits": hits,
                 "cache_misses": misses,
-                "hit_rate_percent": round(
-                    (hits / total_requests * 100) if total_requests > 0 else 0, 2
-                ),
+                "hit_rate_percent": round((hits / total_requests * 100) if total_requests > 0 else 0, 2),
                 "expired_entries": 0,  # Redis handles automatically
                 "entries_created": created,
                 "entries_cleared": cleared,

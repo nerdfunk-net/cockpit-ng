@@ -62,9 +62,7 @@ async def list_permissions(
     return permissions
 
 
-@router.post(
-    "/permissions", response_model=Permission, status_code=status.HTTP_201_CREATED
-)
+@router.post("/permissions", response_model=Permission, status_code=status.HTTP_201_CREATED)
 async def create_permission(
     permission: PermissionCreate,
     current_user: dict = Depends(require_role("admin")),
@@ -91,9 +89,7 @@ async def get_permission(
     """Get a specific permission by ID."""
     permission = rbac.get_permission_by_id(permission_id)
     if not permission:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found")
     return permission
 
 
@@ -134,9 +130,7 @@ async def create_role(
 ):
     """Create a new role (admin only)."""
     try:
-        created = rbac.create_role(
-            name=role.name, description=role.description or "", is_system=role.is_system
-        )
+        created = rbac.create_role(name=role.name, description=role.description or "", is_system=role.is_system)
         audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
@@ -161,16 +155,12 @@ async def get_role(
     """Get a specific role by ID with its permissions."""
     role = rbac.get_role(role_id)
     if not role:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Role not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
     permissions = rbac.get_role_permissions(role_id)
 
     # Add granted and source fields to match PermissionWithGrant model
-    permissions_with_grant = [
-        {**perm, "granted": True, "source": "role"} for perm in permissions
-    ]
+    permissions_with_grant = [{**perm, "granted": True, "source": "role"} for perm in permissions]
 
     return {"permissions": permissions_with_grant, **role}
 
@@ -185,9 +175,7 @@ async def update_role(
 ):
     """Update a role (admin only)."""
     try:
-        updated = rbac.update_role(
-            role_id=role_id, name=role_update.name, description=role_update.description
-        )
+        updated = rbac.update_role(role_id=role_id, name=role_update.name, description=role_update.description)
         audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
@@ -236,9 +224,7 @@ async def get_role_permissions(
     """Get all permissions for a role."""
     role = rbac.get_role(role_id)
     if not role:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Role not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
     permissions = rbac.get_role_permissions(role_id)
     return permissions
@@ -261,20 +247,14 @@ async def assign_permission_to_role(
     # Verify role exists
     role = rbac.get_role(role_id)
     if not role:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Role not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
     # Verify permission exists
     permission = rbac.get_permission_by_id(assignment.permission_id)
     if not permission:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found")
 
-    rbac.assign_permission_to_role(
-        role_id, assignment.permission_id, assignment.granted
-    )
+    rbac.assign_permission_to_role(role_id, assignment.permission_id, assignment.granted)
     audit_log.log_event(
         username=current_user.get("username"),
         user_id=current_user.get("user_id"),
@@ -287,9 +267,7 @@ async def assign_permission_to_role(
     )
 
 
-@router.post(
-    "/roles/{role_id}/permissions/bulk", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.post("/roles/{role_id}/permissions/bulk", status_code=status.HTTP_204_NO_CONTENT)
 async def assign_multiple_permissions_to_role(
     role_id: int,
     assignment: BulkPermissionAssignment,
@@ -301,9 +279,7 @@ async def assign_multiple_permissions_to_role(
     # Verify role exists
     role = rbac.get_role(role_id)
     if not role:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Role not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
     for permission_id in assignment.permission_ids:
         rbac.assign_permission_to_role(role_id, permission_id, assignment.granted)
@@ -381,9 +357,7 @@ async def assign_role_to_user(
     # Verify role exists
     role = rbac.get_role(assignment.role_id)
     if not role:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Role not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
     rbac.assign_role_to_user(user_id, assignment.role_id)
 
@@ -400,9 +374,7 @@ async def assign_multiple_roles_to_user(
         rbac.assign_role_to_user(user_id, role_id)
 
 
-@router.delete(
-    "/users/{user_id}/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/users/{user_id}/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_role_from_user(
     user_id: int,
     role_id: int,
@@ -446,9 +418,7 @@ async def get_user_permissions(
     }
 
 
-@router.get(
-    "/users/{user_id}/permissions/overrides", response_model=list[PermissionWithGrant]
-)
+@router.get("/users/{user_id}/permissions/overrides", response_model=list[PermissionWithGrant])
 async def get_user_permission_overrides(
     user_id: int,
     current_user: dict = Depends(verify_token),
@@ -480,13 +450,9 @@ async def assign_permission_to_user(
         # Verify permission exists
         permission = rbac.get_permission_by_id(assignment.permission_id)
         if not permission:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found")
 
-        rbac.assign_permission_to_user(
-            user_id, assignment.permission_id, assignment.granted
-        )
+        rbac.assign_permission_to_user(user_id, assignment.permission_id, assignment.granted)
     except HTTPException:
         raise
     except Exception as e:
@@ -536,12 +502,7 @@ async def check_user_permission(
     if has_perm:
         # Check if it's from override
         overrides = rbac.get_user_permission_overrides(user_id)
-        if any(
-            p["resource"] == check.resource
-            and p["action"] == check.action
-            and p["granted"]
-            for p in overrides
-        ):
+        if any(p["resource"] == check.resource and p["action"] == check.action and p["granted"] for p in overrides):
             source = "override"
         else:
             source = "role"
@@ -588,12 +549,7 @@ async def check_my_permission(
     source = None
     if has_perm:
         overrides = rbac.get_user_permission_overrides(user_id)
-        if any(
-            p["resource"] == check.resource
-            and p["action"] == check.action
-            and p["granted"]
-            for p in overrides
-        ):
+        if any(p["resource"] == check.resource and p["action"] == check.action and p["granted"] for p in overrides):
             source = "override"
         else:
             source = "role"
@@ -678,9 +634,7 @@ async def get_user(
     try:
         user = rbac.get_user_with_rbac(user_id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         return user
     except HTTPException:
         raise
@@ -711,9 +665,7 @@ async def update_user(
         )
 
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
         # Get full user with roles and permissions (include inactive in case we just deactivated)
         user_with_rbac = rbac.get_user_with_rbac(user_id, include_inactive=True)
@@ -757,9 +709,7 @@ async def delete_user(
     try:
         success = rbac.delete_user_with_rbac(user_id)
         if not success:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         audit_log.log_event(
             username=current_user.get("username"),
             user_id=current_user.get("user_id"),
@@ -790,9 +740,7 @@ async def toggle_user_activation(
     try:
         user = rbac.toggle_user_activation(user_id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
         # Get full user with roles and permissions
         user_with_rbac = rbac.get_user_with_rbac(user_id, include_inactive=True)
@@ -800,9 +748,7 @@ async def toggle_user_activation(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error toggling activation for user %s: %s", user_id, str(e), exc_info=True
-        )
+        logger.error("Error toggling activation for user %s: %s", user_id, str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to toggle user activation",
@@ -819,9 +765,7 @@ async def toggle_user_debug(
     try:
         user = rbac.toggle_user_debug(user_id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
         # Get full user with roles and permissions
         user_with_rbac = rbac.get_user_with_rbac(user_id)
@@ -829,9 +773,7 @@ async def toggle_user_debug(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            "Error toggling debug for user %s: %s", user_id, str(e), exc_info=True
-        )
+        logger.error("Error toggling debug for user %s: %s", user_id, str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to toggle user debug mode",

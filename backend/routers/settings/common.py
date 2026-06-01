@@ -33,9 +33,7 @@ async def get_all_settings(
         if metadata.get("status") == "recovered":
             return {
                 "settings": settings_data,
-                "warning": metadata.get(
-                    "message", "Database was recovered from corruption"
-                ),
+                "warning": metadata.get("message", "Database was recovered from corruption"),
                 "recovery_performed": True,
             }
 

@@ -38,12 +38,8 @@ async def get_all_folders(
 ):
     """Get all folders."""
     try:
-        result = await service.get_all_folders(
-            parent=parent, recursive=recursive, show_hosts=show_hosts
-        )
-        return CheckMKFolderListResponse(
-            folders=result["folders"], total=result["total"]
-        )
+        result = await service.get_all_folders(parent=parent, recursive=recursive, show_hosts=show_hosts)
+        return CheckMKFolderListResponse(folders=result["folders"], total=result["total"])
     except CheckMKAPIError as e:
         logger.error(
             "CheckMK API error getting folders: status=%s, parent=%s",
@@ -61,12 +57,8 @@ async def get_all_folders(
                 elif "detail" in rd:
                     checkmk_detail = rd["detail"]
             if "could not be found" in checkmk_detail.lower():
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail=checkmk_detail
-                )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=checkmk_detail
-            )
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=checkmk_detail)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=checkmk_detail)
         elif e.status_code == 404:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -127,11 +119,7 @@ async def create_folder(
     except CheckMKAPIError as e:
         detail = str(e)
         validation_errors = []
-        if (
-            hasattr(e, "response_data")
-            and e.response_data
-            and isinstance(e.response_data, dict)
-        ):
+        if hasattr(e, "response_data") and e.response_data and isinstance(e.response_data, dict):
             rd = e.response_data
             if "detail" in rd:
                 detail = rd["detail"]
@@ -148,17 +136,13 @@ async def create_folder(
             detail = f"{detail} - {'; '.join(validation_errors)}"
         logger.error("CheckMK folder creation failed: %s", detail)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST
-            if e.status_code == 400
-            else status.HTTP_502_BAD_GATEWAY,
+            status_code=status.HTTP_400_BAD_REQUEST if e.status_code == 400 else status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to create folder: {detail}",
         )
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(
-            logger, f"Failed to create folder {request.name}", e
-        )
+        raise_internal_server_error(logger, f"Failed to create folder {request.name}", e)
 
 
 @router.get("/folders/{folder_path}", response_model=CheckMKOperationResponse)
@@ -228,9 +212,7 @@ async def delete_folder(
     """Delete folder."""
     try:
         await service.delete_folder(folder_path, delete_mode=delete_mode)
-        return CheckMKOperationResponse(
-            success=True, message=f"Deleted folder {folder_path} successfully"
-        )
+        return CheckMKOperationResponse(success=True, message=f"Deleted folder {folder_path} successfully")
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
@@ -271,9 +253,7 @@ async def get_hosts_in_folder(
 ):
     """Get all hosts in a specific folder."""
     try:
-        result = await service.get_hosts_in_folder(
-            folder_path, effective_attributes=effective_attributes
-        )
+        result = await service.get_hosts_in_folder(folder_path, effective_attributes=effective_attributes)
         return CheckMKOperationResponse(
             success=True,
             message=f"Retrieved hosts in folder {folder_path} successfully",
@@ -284,6 +264,4 @@ async def get_hosts_in_folder(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(
-            logger, f"Failed to get hosts in folder {folder_path}", e
-        )
+        raise_internal_server_error(logger, f"Failed to get hosts in folder {folder_path}", e)

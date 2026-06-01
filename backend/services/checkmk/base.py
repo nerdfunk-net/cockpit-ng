@@ -35,12 +35,8 @@ def get_checkmk_config(site_name: Optional[str] = None) -> CheckMKConfig:
     settings_manager = SettingsManager()
 
     db_settings = settings_manager.get_checkmk_settings()
-    if not db_settings or not all(
-        key in db_settings for key in ["url", "site", "username", "password"]
-    ):
-        raise CheckMKClientError(
-            "CheckMK settings not configured. Please configure CheckMK settings first."
-        )
+    if not db_settings or not all(key in db_settings for key in ["url", "site", "username", "password"]):
+        raise CheckMKClientError("CheckMK settings not configured. Please configure CheckMK settings first.")
 
     url = db_settings["url"].rstrip("/")
     if url.startswith(("http://", "https://")):

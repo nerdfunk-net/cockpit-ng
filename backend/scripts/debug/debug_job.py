@@ -74,9 +74,7 @@ def main():
     print(f"  Celery task dispatched   → task_id={result.id}")
     print()
     print("Job is now RUNNING. Open the Job History page and verify that:")
-    print(
-        "  1. The job appears with status 'running' (should update automatically every 3s)"
-    )
+    print("  1. The job appears with status 'running' (should update automatically every 3s)")
     print("  2. The Refresh button forces an immediate update")
     print(f"  3. After ~{duration}s the status changes to 'completed'")
     print()

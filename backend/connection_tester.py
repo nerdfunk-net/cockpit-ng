@@ -61,9 +61,7 @@ class ConnectionTester:
 
             # Use ThreadPoolExecutor to run requests in async context
             def make_request(url, headers, timeout, verify_ssl):
-                return requests.get(
-                    url, headers=headers, timeout=timeout, verify=verify_ssl
-                )
+                return requests.get(url, headers=headers, timeout=timeout, verify=verify_ssl)
 
             executor = ThreadPoolExecutor(max_workers=1)
 
@@ -169,11 +167,7 @@ class ConnectionTester:
                                 f"Connection successful! API is accessible but device endpoint structure may be different. (Using endpoint: {api_endpoint})",
                             )
                         else:
-                            error_text = (
-                                devices_response.text[:200]
-                                if devices_response.text
-                                else "No error details"
-                            )
+                            error_text = devices_response.text[:200] if devices_response.text else "No error details"
                             return (
                                 False,
                                 f"Device API test failed - HTTP {devices_response.status_code}: {error_text}",
@@ -323,14 +317,10 @@ class ConnectionTester:
                 try:
                     shutil.rmtree(temp_dir)
                 except Exception as e:
-                    logger.warning(
-                        "Failed to clean up temp directory %s: %s", temp_dir, e
-                    )
+                    logger.warning("Failed to clean up temp directory %s: %s", temp_dir, e)
 
     @staticmethod
-    async def test_all_connections(
-        nautobot_settings: Dict[str, Any], git_settings: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def test_all_connections(nautobot_settings: Dict[str, Any], git_settings: Dict[str, Any]) -> Dict[str, Any]:
         """
         Test all connections and return comprehensive results
 
@@ -358,17 +348,13 @@ class ConnectionTester:
 
         # Test Git connection
         try:
-            git_success, git_msg = await ConnectionTester.test_git_connection(
-                git_settings
-            )
+            git_success, git_msg = await ConnectionTester.test_git_connection(git_settings)
             results["git"] = {"success": git_success, "message": git_msg}
         except Exception as e:
             results["git"] = {"success": False, "message": f"Test failed: {str(e)}"}
 
         # Overall success if both tests pass
-        results["overall_success"] = (
-            results["nautobot"]["success"] and results["git"]["success"]
-        )
+        results["overall_success"] = results["nautobot"]["success"] and results["git"]["success"]
 
         return results
 

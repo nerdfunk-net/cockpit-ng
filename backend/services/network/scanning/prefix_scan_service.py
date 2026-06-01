@@ -48,8 +48,7 @@ class PrefixScanService:
         try:
             if job_run_id is None and task_context:
                 job_run = _jrs.create_job_run(
-                    job_name="Scan Prefixes (%s=%s)"
-                    % (custom_field_name, custom_field_value),
+                    job_name="Scan Prefixes (%s=%s)" % (custom_field_name, custom_field_value),
                     job_type="scan_prefixes",
                     triggered_by="manual",
                     executed_by=executed_by,
@@ -75,15 +74,12 @@ class PrefixScanService:
                     task_context.update_state(
                         state="PROGRESS",
                         meta={
-                            "status": "Fetching prefixes with %s=%s..."
-                            % (custom_field_name, custom_field_value),
+                            "status": "Fetching prefixes with %s=%s..." % (custom_field_name, custom_field_value),
                             "current": 0,
                             "total": 1,
                         },
                     )
-                cidrs = self._fetch_prefixes_by_custom_field(
-                    custom_field_name, custom_field_value
-                )
+                cidrs = self._fetch_prefixes_by_custom_field(custom_field_name, custom_field_value)
 
             if not cidrs:
                 result = {
@@ -108,11 +104,7 @@ class PrefixScanService:
             for cidr in cidrs:
                 try:
                     net = ipaddress.ip_network(cidr, strict=False)
-                    count = (
-                        net.num_addresses - 2
-                        if net.prefixlen < 31
-                        else net.num_addresses
-                    )
+                    count = net.num_addresses - 2 if net.prefixlen < 31 else net.num_addresses
                     if count < 0:
                         count = 0
                     prefix_ip_counts[cidr] = count
@@ -132,19 +124,14 @@ class PrefixScanService:
                             net = ipaddress.ip_network(cidr, strict=False)
                             current_subnets = [net]
 
-                            while any(
-                                sn.num_addresses > scan_max_ips
-                                for sn in current_subnets
-                            ):
+                            while any(sn.num_addresses > scan_max_ips for sn in current_subnets):
                                 next_subnets = []
                                 for sn in current_subnets:
                                     if sn.num_addresses > scan_max_ips:
                                         if sn.prefixlen >= 30:
                                             next_subnets.append(sn)
                                         else:
-                                            next_subnets.extend(
-                                                list(sn.subnets(prefixlen_diff=1))
-                                            )
+                                            next_subnets.extend(list(sn.subnets(prefixlen_diff=1)))
                                     else:
                                         next_subnets.append(sn)
                                 current_subnets = next_subnets
@@ -184,8 +171,7 @@ class PrefixScanService:
                     task_context.update_state(
                         state="PROGRESS",
                         meta={
-                            "status": "Splitting job: %s IPs > %s max..."
-                            % (total_ips_count, scan_max_ips),
+                            "status": "Splitting job: %s IPs > %s max..." % (total_ips_count, scan_max_ips),
                             "current": 0,
                             "total": 1,
                         },
@@ -209,9 +195,7 @@ class PrefixScanService:
                 if current_batch:
                     batches.append(current_batch)
 
-                logger.info(
-                    "Split %s prefixes into %s sub-tasks", len(cidrs), len(batches)
-                )
+                logger.info("Split %s prefixes into %s sub-tasks", len(cidrs), len(batches))
 
                 sub_task_ids = []
                 from tasks.scan_prefixes_task import scan_prefixes_task
@@ -240,8 +224,7 @@ class PrefixScanService:
 
                 result = {
                     "success": True,
-                    "message": "Job split into %s sub-tasks due to IP limit"
-                    % len(batches),
+                    "message": "Job split into %s sub-tasks due to IP limit" % len(batches),
                     "total_prefixes": len(original_cidrs),
                     "prefixes": original_cidrs,
                     "total_ips_to_scan": total_ips_count,
@@ -314,8 +297,7 @@ class PrefixScanService:
                     task_context.update_state(
                         state="PROGRESS",
                         meta={
-                            "status": "Processing prefix %s/%s..."
-                            % (idx + 1, len(cidrs)),
+                            "status": "Processing prefix %s/%s..." % (idx + 1, len(cidrs)),
                             "current": idx + 1,
                             "total": len(cidrs),
                         },
@@ -346,9 +328,7 @@ class PrefixScanService:
                                     set_active=set_reachable_ip_active,
                                 )
                             except Exception as e:
-                                logger.error(
-                                    "Failed to update IP %s in Nautobot: %s", ip, e
-                                )
+                                logger.error("Failed to update IP %s in Nautobot: %s", ip, e)
                     else:
                         unreachable.append(ip)
 
@@ -358,9 +338,7 @@ class PrefixScanService:
                     try:
                         self._update_prefix_last_scan(cidr)
                     except Exception as e:
-                        logger.error(
-                            "Failed to update prefix %s last_scan: %s", cidr, e
-                        )
+                        logger.error("Failed to update prefix %s last_scan: %s", cidr, e)
 
                 prefix_results.append(
                     {
@@ -427,9 +405,7 @@ class PrefixScanService:
     """
 
         try:
-            logger.info(
-                "Fetching prefixes with %s=%s", custom_field_name, custom_field_value
-            )
+            logger.info("Fetching prefixes with %s=%s", custom_field_name, custom_field_value)
             result = asyncio.run(nautobot_service.graphql_query(query))
 
             if not result or "data" not in result:
@@ -484,9 +460,7 @@ class PrefixScanService:
 
             if results:
                 ip_id = results[0].get("id")
-                update_data = {
-                    "custom_fields": {response_custom_field_name: current_date}
-                }
+                update_data = {"custom_fields": {response_custom_field_name: current_date}}
 
                 if set_active:
                     status_response = requests.get(
@@ -537,9 +511,7 @@ class PrefixScanService:
                 prefixes = response.json().get("results", [])
 
                 if not prefixes:
-                    logger.error(
-                        "No parent prefix found for IP %s in Nautobot", ip_address
-                    )
+                    logger.error("No parent prefix found for IP %s in Nautobot", ip_address)
                     return False
 
                 def get_prefix_len(p):
@@ -568,11 +540,7 @@ class PrefixScanService:
                 status_id = statuses[0].get("id")
 
                 parent_prefix_cidr = best_prefix.get("prefix", "")
-                prefix_length = (
-                    parent_prefix_cidr.split("/")[1]
-                    if "/" in parent_prefix_cidr
-                    else "32"
-                )
+                prefix_length = parent_prefix_cidr.split("/")[1] if "/" in parent_prefix_cidr else "32"
 
                 ip_with_netmask = "%s/%s" % (ip_address, prefix_length)
 
@@ -611,9 +579,7 @@ class PrefixScanService:
                 return True
 
         except Exception as e:
-            logger.error(
-                "Error processing IP %s in Nautobot: %s", ip_address, e, exc_info=True
-            )
+            logger.error("Error processing IP %s in Nautobot: %s", ip_address, e, exc_info=True)
             return False
 
     def _update_prefix_last_scan(
@@ -648,9 +614,7 @@ class PrefixScanService:
 
             prefixes = response.json().get("results", [])
             if not prefixes:
-                logger.debug(
-                    "Prefix %s not found, searching by containment", prefix_cidr
-                )
+                logger.debug("Prefix %s not found, searching by containment", prefix_cidr)
                 network_addr = prefix_cidr.split("/")[0]
                 response = requests.get(
                     "%s/api/ipam/prefixes/" % base_url,

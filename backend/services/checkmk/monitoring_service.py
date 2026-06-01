@@ -23,17 +23,11 @@ class CheckMKMonitoringService:
         query: Optional[str] = None,
     ) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        return await asyncio.to_thread(
-            lambda: client.get_all_monitored_hosts(columns=columns, query=query)
-        )
+        return await asyncio.to_thread(lambda: client.get_all_monitored_hosts(columns=columns, query=query))
 
-    async def get_monitored_host(
-        self, hostname: str, columns: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+    async def get_monitored_host(self, hostname: str, columns: Optional[List[str]] = None) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        return await asyncio.to_thread(
-            lambda: client.get_monitored_host(hostname, columns=columns)
-        )
+        return await asyncio.to_thread(lambda: client.get_monitored_host(hostname, columns=columns))
 
     async def get_host_services(
         self,
@@ -42,9 +36,7 @@ class CheckMKMonitoringService:
         query: Optional[str] = None,
     ) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        return await asyncio.to_thread(
-            lambda: client.get_host_services(hostname, columns=columns, query=query)
-        )
+        return await asyncio.to_thread(lambda: client.get_host_services(hostname, columns=columns, query=query))
 
     async def show_service(
         self,
@@ -53,6 +45,4 @@ class CheckMKMonitoringService:
         columns: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        return await asyncio.to_thread(
-            lambda: client.show_service(hostname, service, columns=columns)
-        )
+        return await asyncio.to_thread(lambda: client.show_service(hostname, service, columns=columns))

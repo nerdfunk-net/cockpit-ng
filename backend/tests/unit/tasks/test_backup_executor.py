@@ -51,14 +51,13 @@ def test_execute_backup_fetches_repository_from_template_schedule() -> None:
     git_repo_manager = MagicMock()
     git_repo_manager.get_repository.return_value = None
 
-    with patch("service_factory.build_git_service", return_value=MagicMock()), patch(
-        "service_factory.build_git_auth_service", return_value=MagicMock()
-    ), patch("service_factory.build_credentials_service", return_value=MagicMock()), patch(
-        "service_factory.build_job_schedule_service", return_value=schedule_service
-    ), patch(
-        "service_factory.build_job_template_service", return_value=template_service
-    ), patch(
-        "services.git.shared_utils.git_repo_manager", git_repo_manager
+    with (
+        patch("service_factory.build_git_service", return_value=MagicMock()),
+        patch("service_factory.build_git_auth_service", return_value=MagicMock()),
+        patch("service_factory.build_credentials_service", return_value=MagicMock()),
+        patch("service_factory.build_job_schedule_service", return_value=schedule_service),
+        patch("service_factory.build_job_template_service", return_value=template_service),
+        patch("services.git.shared_utils.git_repo_manager", git_repo_manager),
     ):
         result = execute_backup(
             schedule_id=5,

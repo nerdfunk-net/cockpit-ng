@@ -61,16 +61,12 @@ class CacheSettingsService:
             kwargs = {
                 "enabled": data.get("enabled", self._default.enabled),
                 "ttl_seconds": data.get("ttl_seconds", self._default.ttl_seconds),
-                "prefetch_on_startup": data.get(
-                    "prefetch_on_startup", self._default.prefetch_on_startup
-                ),
+                "prefetch_on_startup": data.get("prefetch_on_startup", self._default.prefetch_on_startup),
                 "refresh_interval_minutes": data.get(
                     "refresh_interval_minutes", self._default.refresh_interval_minutes
                 ),
                 "max_commits": data.get("max_commits", self._default.max_commits),
-                "prefetch_items": json.dumps(
-                    data.get("prefetch_items") or _DEFAULT_PREFETCH_ITEMS
-                ),
+                "prefetch_items": json.dumps(data.get("prefetch_items") or _DEFAULT_PREFETCH_ITEMS),
                 "devices_cache_interval_minutes": data.get(
                     "devices_cache_interval_minutes",
                     self._default.devices_cache_interval_minutes,

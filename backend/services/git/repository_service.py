@@ -30,9 +30,7 @@ class GitRepositoryService:
         """Create a new git repository record. Returns new ID."""
         try:
             if self._repo.name_exists(repo_data["name"]):
-                raise ValueError(
-                    f"Repository with name '{repo_data['name']}' already exists"
-                )
+                raise ValueError(f"Repository with name '{repo_data['name']}' already exists")
 
             new_repo = self._repo.create(
                 name=repo_data["name"],
@@ -48,9 +46,7 @@ class GitRepositoryService:
                 is_active=repo_data.get("is_active", True),
             )
 
-            logger.info(
-                "Created git repository: %s (ID: %s)", repo_data["name"], new_repo.id
-            )
+            logger.info("Created git repository: %s (ID: %s)", repo_data["name"], new_repo.id)
             return new_repo.id
         except ValueError:
             raise
@@ -67,9 +63,7 @@ class GitRepositoryService:
             logger.error("Error getting git repository %s: %s", repo_id, e)
             raise
 
-    def get_repositories(
-        self, category: Optional[str] = None, active_only: bool = False
-    ) -> List[Dict[str, Any]]:
+    def get_repositories(self, category: Optional[str] = None, active_only: bool = False) -> List[Dict[str, Any]]:
         """Get all git repositories, optionally filtered by category and active status."""
         try:
             if category:
@@ -111,9 +105,7 @@ class GitRepositoryService:
             if "name" in update_kwargs:
                 existing = self._repo.get_by_name(update_kwargs["name"])
                 if existing and existing.id != repo_id:
-                    raise ValueError(
-                        f"Repository with name '{update_kwargs['name']}' already exists"
-                    )
+                    raise ValueError(f"Repository with name '{update_kwargs['name']}' already exists")
 
             update_kwargs["updated_at"] = datetime.now(timezone.utc)
             self._repo.update(repo_id, **update_kwargs)
@@ -132,9 +124,7 @@ class GitRepositoryService:
                 self._repo.delete(repo_id)
                 action = "Deleted"
             else:
-                self._repo.update(
-                    repo_id, is_active=False, updated_at=datetime.now(timezone.utc)
-                )
+                self._repo.update(repo_id, is_active=False, updated_at=datetime.now(timezone.utc))
                 action = "Deactivated"
             logger.info("%s git repository ID: %s", action, repo_id)
             return True
@@ -142,9 +132,7 @@ class GitRepositoryService:
             logger.error("Error deleting git repository %s: %s", repo_id, e)
             raise
 
-    def update_sync_status(
-        self, repo_id: int, status: str, last_sync: Optional[datetime] = None
-    ) -> bool:
+    def update_sync_status(self, repo_id: int, status: str, last_sync: Optional[datetime] = None) -> bool:
         """Update the sync status of a repository."""
         try:
             if last_sync is None:
@@ -167,9 +155,7 @@ class GitRepositoryService:
             active_repos = [r for r in all_repos if r.is_active]
             category_counts: Dict[str, int] = {}
             for repo in all_repos:
-                category_counts[repo.category] = (
-                    category_counts.get(repo.category, 0) + 1
-                )
+                category_counts[repo.category] = category_counts.get(repo.category, 0) + 1
             return {
                 "status": "healthy",
                 "total_repositories": len(all_repos),

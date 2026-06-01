@@ -11,9 +11,7 @@ import sys
 from services.checkmk.client import CheckMKAPIError, CheckMKClient
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -77,9 +75,7 @@ def test_client():
         # Test 4: Get all monitored hosts (with status)
         logger.info("4. Getting monitored hosts with status...")
         try:
-            monitored = client.get_all_monitored_hosts(
-                columns=["name", "state", "address", "alias", "last_check"]
-            )
+            monitored = client.get_all_monitored_hosts(columns=["name", "state", "address", "alias", "last_check"])
             monitored_count = len(monitored.get("value", []))
             logger.info("   ✓ Found %s monitored hosts", monitored_count)
 
@@ -93,9 +89,7 @@ def test_client():
                     last_check = extensions.get("last_check", "N/A")
 
                     # Convert state to readable format
-                    state_text = {0: "UP", 1: "DOWN", 2: "UNREACHABLE"}.get(
-                        state, f"State {state}"
-                    )
+                    state_text = {0: "UP", 1: "DOWN", 2: "UNREACHABLE"}.get(state, f"State {state}")
                     logger.info(
                         "     %s. %s - %s (%s) - Last check: %s",
                         i + 1,
@@ -115,9 +109,7 @@ def test_client():
                 first_host = first_host_data.get("name")
                 logger.info("   Getting services for host: %s", first_host)
 
-                services = client.get_host_services(
-                    first_host, columns=["description", "state", "plugin_output"]
-                )
+                services = client.get_host_services(first_host, columns=["description", "state", "plugin_output"])
                 service_count = len(services.get("value", []))
                 logger.info("   ✓ Found %s services for %s", service_count, first_host)
 
@@ -182,15 +174,11 @@ def test_client():
             try:
                 first_host = monitored["value"][0]["extensions"]["name"]
                 discovery_status = client.get_service_discovery(first_host)
-                logger.info(
-                    "   ✓ Service discovery status retrieved for %s", first_host
-                )
+                logger.info("   ✓ Service discovery status retrieved for %s", first_host)
 
                 # Check discovery status
                 extensions = discovery_status.get("extensions", {})
-                logger.info(
-                    "   Discovery phase: %s", extensions.get("phase", "Unknown")
-                )
+                logger.info("   Discovery phase: %s", extensions.get("phase", "Unknown"))
             except CheckMKAPIError as e:
                 logger.info("   ⚠ Service discovery not available: %s", e)
 
@@ -250,9 +238,7 @@ def test_specific_host():
             state = extensions.get("state", "Unknown")
             last_check = extensions.get("last_check", "N/A")
 
-            state_text = {0: "UP", 1: "DOWN", 2: "UNREACHABLE"}.get(
-                state, f"State {state}"
-            )
+            state_text = {0: "UP", 1: "DOWN", 2: "UNREACHABLE"}.get(state, f"State {state}")
             logger.info("   Status: %s", state_text)
             logger.info("   Last Check: %s", last_check)
 
@@ -261,9 +247,7 @@ def test_specific_host():
 
         # Try to get services
         try:
-            services = client.get_host_services(
-                test_hostname, columns=["description", "state", "plugin_output"]
-            )
+            services = client.get_host_services(test_hostname, columns=["description", "state", "plugin_output"])
             service_count = len(services.get("value", []))
             logger.info("✓ Found %s services for %s", service_count, test_hostname)
 

@@ -113,9 +113,7 @@ def execute_sync_devices(
         # If no target devices provided, fetch all from Nautobot
         device_ids = target_devices
         if not device_ids:
-            logger.info(
-                "No target devices specified, fetching all devices from Nautobot"
-            )
+            logger.info("No target devices specified, fetching all devices from Nautobot")
             task_context.update_state(
                 state="PROGRESS",
                 meta={
@@ -143,19 +141,13 @@ def execute_sync_devices(
             }
 
         # Apply compare-run filtering if enabled
-        use_last_compare_run = (
-            template.get("use_last_compare_run", True) if template else True
-        )
-        sync_not_found_devices = (
-            template.get("sync_not_found_devices", False) if template else False
-        )
+        use_last_compare_run = template.get("use_last_compare_run", True) if template else True
+        sync_not_found_devices = template.get("sync_not_found_devices", False) if template else False
 
         original_count = len(device_ids)
         if use_last_compare_run:
             logger.info("Use Last Compare Run is enabled — filtering device list")
-            device_ids = _filter_by_last_compare_run(
-                device_ids, sync_not_found_devices, task_context
-            )
+            device_ids = _filter_by_last_compare_run(device_ids, sync_not_found_devices, task_context)
         else:
             logger.info(
                 "Use Last Compare Run is disabled — syncing all %s devices",
@@ -257,9 +249,7 @@ def execute_sync_devices(
                 template.get("activate_changes_after_sync"),
             )
 
-        logger.info(
-            "[ACTIVATION DEBUG] Final activate_changes value: %s", activate_changes
-        )
+        logger.info("[ACTIVATION DEBUG] Final activate_changes value: %s", activate_changes)
         logger.info("[ACTIVATION DEBUG] success_count: %s", success_count)
         logger.info(
             "[ACTIVATION DEBUG] Will activate changes: %s",
@@ -294,13 +284,9 @@ def execute_sync_devices(
                 }
         else:
             if not activate_changes:
-                logger.info(
-                    "[ACTIVATION] Skipping activation - activate_changes_after_sync is disabled"
-                )
+                logger.info("[ACTIVATION] Skipping activation - activate_changes_after_sync is disabled")
             elif success_count == 0:
-                logger.info(
-                    "[ACTIVATION] Skipping activation - no devices were synced successfully"
-                )
+                logger.info("[ACTIVATION] Skipping activation - no devices were synced successfully")
 
         # Update final progress
         task_context.update_state(
@@ -348,9 +334,7 @@ def _filter_by_last_compare_run(
 
     latest_job = job_repo.get_latest_compare_job()
     if not latest_job:
-        logger.info(
-            "No completed compare job found — syncing all %s devices", len(device_ids)
-        )
+        logger.info("No completed compare job found — syncing all %s devices", len(device_ids))
         return device_ids
 
     logger.info("Filtering against compare job %s", latest_job.job_id)
@@ -400,9 +384,7 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
     logger.info("[ACTIVATION] Starting CheckMK change activation...")
 
     db_settings = settings_manager.get_checkmk_settings()
-    if not db_settings or not all(
-        key in db_settings for key in ["url", "site", "username", "password"]
-    ):
+    if not db_settings or not all(key in db_settings for key in ["url", "site", "username", "password"]):
         logger.warning("[ACTIVATION] CheckMK settings not configured or incomplete")
         logger.warning(
             "[ACTIVATION] db_settings keys: %s",
@@ -460,9 +442,7 @@ def _activate_checkmk_changes() -> Dict[str, Any]:
         )
         logger.info("[ACTIVATION] activate_changes returned: %s", result)
     except Exception as e:
-        logger.error(
-            "[ACTIVATION] activate_changes raised exception: %s", e, exc_info=True
-        )
+        logger.error("[ACTIVATION] activate_changes raised exception: %s", e, exc_info=True)
         return {
             "success": False,
             "message": f"activate_changes failed: {str(e)}",

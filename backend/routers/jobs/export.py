@@ -81,9 +81,7 @@ async def preview_export_devices(
 
         if "primary_ip4" in request.properties:
             devices = [
-                device
-                for device in devices
-                if device.get("primary_ip4") and device["primary_ip4"].get("address")
+                device for device in devices if device.get("primary_ip4") and device["primary_ip4"].get("address")
             ]
 
         filtered_devices = _filter_device_properties(devices, request.properties)
@@ -92,9 +90,7 @@ async def preview_export_devices(
         if export_format == "yaml":
             preview_content = _export_to_yaml(filtered_devices)
         elif export_format == "csv":
-            preview_content = _export_to_csv(
-                filtered_devices, request.csv_options or {}
-            )
+            preview_content = _export_to_csv(filtered_devices, request.csv_options or {})
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -151,8 +147,7 @@ async def trigger_export_devices(
         csv_options = {
             "delimiter": request.csv_options.get("delimiter", ","),
             "quoteChar": request.csv_options.get("quoteChar", '"'),
-            "includeHeaders": request.csv_options.get("includeHeaders", "true").lower()
-            == "true",
+            "includeHeaders": request.csv_options.get("includeHeaders", "true").lower() == "true",
         }
 
     task = export_devices_task.delay(
@@ -199,11 +194,7 @@ async def download_export_file(
 
     task_result = result.result
     if not task_result or not task_result.get("success"):
-        error_msg = (
-            task_result.get("error", "Unknown error")
-            if task_result
-            else "No result available"
-        )
+        error_msg = task_result.get("error", "Unknown error") if task_result else "No result available"
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Export task failed: {error_msg}",

@@ -12,7 +12,6 @@ import pytest
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.managers.vm_manager import VirtualMachineManager
 
-
 VM_ID = "ac000000-0000-0000-0004-000000000001"
 CLUSTER_ID = "ac000000-0000-0000-0005-000000000001"
 STATUS_ID = "ac000000-0000-0000-0006-000000000001"

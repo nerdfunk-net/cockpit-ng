@@ -47,9 +47,7 @@ async def get_client_devices(
 async def get_client_data(
     device_name: Optional[str] = Query(None, description="Filter by device name"),
     ip_address: Optional[str] = Query(None, description="Filter IP address (partial)"),
-    mac_address: Optional[str] = Query(
-        None, description="Filter MAC address (partial)"
-    ),
+    mac_address: Optional[str] = Query(None, description="Filter MAC address (partial)"),
     port: Optional[str] = Query(None, description="Filter port (partial)"),
     vlan: Optional[str] = Query(None, description="Filter VLAN (partial)"),
     hostname: Optional[str] = Query(None, description="Filter hostname (partial)"),
@@ -103,13 +101,8 @@ async def get_client_history(
         )
         return ClientHistoryApiResponse(
             ip_history=[ClientIpHistoryRow.model_validate(r) for r in raw["ip_history"]],
-            mac_history=[
-                ClientMacHistoryRow.model_validate(r) for r in raw["mac_history"]
-            ],
-            hostname_history=[
-                ClientHostnameHistoryRow.model_validate(r)
-                for r in raw["hostname_history"]
-            ],
+            mac_history=[ClientMacHistoryRow.model_validate(r) for r in raw["mac_history"]],
+            hostname_history=[ClientHostnameHistoryRow.model_validate(r) for r in raw["hostname_history"]],
         )
     except Exception as exc:
         raise_internal_server_error(logger, "Failed to get client history", exc)

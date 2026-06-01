@@ -55,11 +55,7 @@ class CockpitAgentRepository:
         """
         Update command with execution result
         """
-        command_record = (
-            self.db.query(CockpitAgentCommand)
-            .filter(CockpitAgentCommand.command_id == command_id)
-            .first()
-        )
+        command_record = self.db.query(CockpitAgentCommand).filter(CockpitAgentCommand.command_id == command_id).first()
 
         if not command_record:
             return None
@@ -77,15 +73,9 @@ class CockpitAgentRepository:
 
     def get_command_by_id(self, command_id: str) -> Optional[CockpitAgentCommand]:
         """Get command by command_id"""
-        return (
-            self.db.query(CockpitAgentCommand)
-            .filter(CockpitAgentCommand.command_id == command_id)
-            .first()
-        )
+        return self.db.query(CockpitAgentCommand).filter(CockpitAgentCommand.command_id == command_id).first()
 
-    def get_command_history(
-        self, agent_id: str, limit: int = 50
-    ) -> List[CockpitAgentCommand]:
+    def get_command_history(self, agent_id: str, limit: int = 50) -> List[CockpitAgentCommand]:
         """
         Get command history for an agent
         Returns most recent commands first
@@ -103,12 +93,7 @@ class CockpitAgentRepository:
         Get command history for all agents
         Returns most recent commands first
         """
-        return (
-            self.db.query(CockpitAgentCommand)
-            .order_by(desc(CockpitAgentCommand.sent_at))
-            .limit(limit)
-            .all()
-        )
+        return self.db.query(CockpitAgentCommand).order_by(desc(CockpitAgentCommand.sent_at)).limit(limit).all()
 
     def count_commands(self, agent_id: Optional[str] = None) -> int:
         """Count total commands, optionally filtered by agent_id"""

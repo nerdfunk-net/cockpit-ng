@@ -55,9 +55,7 @@ class InventoryService:
     # Core inventory operations
     # ------------------------------------------------------------------
 
-    async def preview_inventory(
-        self, operations: List[LogicalOperation]
-    ) -> tuple[List[DeviceInfo], int]:
+    async def preview_inventory(self, operations: List[LogicalOperation]) -> tuple[List[DeviceInfo], int]:
         """
         Execute logical operations against Nautobot and return matching devices.
 
@@ -109,15 +107,9 @@ class InventoryService:
                     else:
                         result_devices = result_devices.intersection(operation_result)
 
-                logger.info(
-                    "Result set size after operation %s: %s", i, len(result_devices)
-                )
+                logger.info("Result set size after operation %s: %s", i, len(result_devices))
 
-            result_list = [
-                all_devices_data[device_id]
-                for device_id in result_devices
-                if device_id in all_devices_data
-            ]
+            result_list = [all_devices_data[device_id] for device_id in result_devices if device_id in all_devices_data]
 
             logger.info(
                 "Preview completed: %s devices found, %s operations executed",
@@ -138,13 +130,9 @@ class InventoryService:
     ) -> tuple[str, int]:
         """Generate final Ansible inventory by previewing devices and rendering a template."""
         devices, _ = await self.preview_inventory(operations)
-        return await self.export_service.render_inventory(
-            devices, template_name, template_category
-        )
+        return await self.export_service.render_inventory(devices, template_name, template_category)
 
-    async def analyze_inventory(
-        self, inventory_id: int, username: str
-    ) -> Dict[str, Any]:
+    async def analyze_inventory(self, inventory_id: int, username: str) -> Dict[str, Any]:
         """
         Load a saved inventory, apply access control, and analyse its device set.
 
@@ -152,9 +140,7 @@ class InventoryService:
         statuses, and roles.
         """
         try:
-            logger.info(
-                "Analyzing inventory ID %s for user '%s'", inventory_id, username
-            )
+            logger.info("Analyzing inventory ID %s for user '%s'", inventory_id, username)
 
             from utils.inventory_converter import convert_saved_inventory_to_operations
 
@@ -214,9 +200,7 @@ class InventoryService:
         conditions: List[Any],
         repository_id: int,
     ) -> Dict[str, Any]:
-        return await self.git_storage.save_inventory(
-            name, description, conditions, repository_id
-        )
+        return await self.git_storage.save_inventory(name, description, conditions, repository_id)
 
     async def list_inventories(self, repository_id: int) -> List[Any]:
         return await self.git_storage.list_inventories(repository_id)

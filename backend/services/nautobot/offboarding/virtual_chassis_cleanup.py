@@ -89,13 +89,8 @@ class VirtualChassisCleanupManager:
         vc_info = VirtualChassisInfo(
             id=vc_data["id"],
             name=vc_data["name"],
-            members=[
-                VirtualChassisMember(id=m["id"], name=m["name"])
-                for m in vc_data.get("members", [])
-            ],
-            master=VirtualChassisMember(
-                id=master_data["id"], name=master_data.get("name", "")
-            )
+            members=[VirtualChassisMember(id=m["id"], name=m["name"]) for m in vc_data.get("members", [])],
+            master=VirtualChassisMember(id=master_data["id"], name=master_data.get("name", ""))
             if master_data.get("id")
             else None,
         )

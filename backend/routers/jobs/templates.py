@@ -44,9 +44,7 @@ async def create_job_template(
             import service_factory
 
             rbac_manager = service_factory.build_rbac_service()
-            has_permission = rbac_manager.has_permission(
-                current_user["user_id"], "jobs", "write"
-            )
+            has_permission = rbac_manager.has_permission(current_user["user_id"], "jobs", "write")
             if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -127,9 +125,7 @@ async def create_job_template(
             collect_mac_address=template_data.collect_mac_address
             if template_data.collect_mac_address is not None
             else True,
-            collect_hostname=template_data.collect_hostname
-            if template_data.collect_hostname is not None
-            else True,
+            collect_hostname=template_data.collect_hostname if template_data.collect_hostname is not None else True,
             is_global=template_data.is_global,
         )
 
@@ -170,9 +166,7 @@ async def list_job_templates(
     - User's private templates
     """
     try:
-        templates = job_template_service.get_user_job_templates(
-            current_user["user_id"], job_type
-        )
+        templates = job_template_service.get_user_job_templates(current_user["user_id"], job_type)
 
         return JobTemplateListResponse(
             templates=[JobTemplateResponse(**t) for t in templates],
@@ -203,15 +197,10 @@ async def get_job_template(
         template = job_template_service.get_job_template(template_id)
 
         if not template:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found")
 
         # Check access - user must own private template or it must be global
-        if (
-            not template.get("is_global")
-            and template.get("user_id") != current_user["user_id"]
-        ):
+        if not template.get("is_global") and template.get("user_id") != current_user["user_id"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: You can only view your own private templates",
@@ -238,18 +227,14 @@ async def update_job_template(
         template = job_template_service.get_job_template(template_id)
 
         if not template:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found")
 
         # Check permissions
         if template.get("is_global"):
             import service_factory
 
             rbac_manager = service_factory.build_rbac_service()
-            has_permission = rbac_manager.has_permission(
-                current_user["user_id"], "jobs", "write"
-            )
+            has_permission = rbac_manager.has_permission(current_user["user_id"], "jobs", "write")
             if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -336,9 +321,7 @@ async def update_job_template(
         )
 
         if not updated_template:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found")
 
         audit_log.log_event(
             username=current_user.get("username"),
@@ -377,18 +360,14 @@ async def delete_job_template(
         template = job_template_service.get_job_template(template_id)
 
         if not template:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found")
 
         # Check permissions
         if template.get("is_global"):
             import service_factory
 
             rbac_manager = service_factory.build_rbac_service()
-            has_permission = rbac_manager.has_permission(
-                current_user["user_id"], "jobs", "write"
-            )
+            has_permission = rbac_manager.has_permission(current_user["user_id"], "jobs", "write")
             if not has_permission and current_user.get("role") != "admin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -404,9 +383,7 @@ async def delete_job_template(
         deleted = job_template_service.delete_job_template(template_id)
 
         if not deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job template not found")
 
         audit_log.log_event(
             username=current_user.get("username"),

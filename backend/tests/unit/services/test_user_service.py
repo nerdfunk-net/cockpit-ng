@@ -67,9 +67,7 @@ def populated_svc(svc: UserService, user_repo: FakeUserRepository) -> UserServic
 @pytest.mark.unit
 class TestCreateUser:
     def test_creates_user_with_hashed_password(self, svc: UserService) -> None:
-        result = svc.create_user(
-            username="alice", realname="Alice Smith", password="secret123"
-        )
+        result = svc.create_user(username="alice", realname="Alice Smith", password="secret123")
 
         assert result["username"] == "alice"
         assert result["realname"] == "Alice Smith"
@@ -81,9 +79,7 @@ class TestCreateUser:
         assert verify_password("secret123", stored.password)
 
     def test_default_permissions_are_user_level(self, svc: UserService) -> None:
-        result = svc.create_user(
-            username="carol", realname="Carol", password="pass1234"
-        )
+        result = svc.create_user(username="carol", realname="Carol", password="pass1234")
         assert result["permissions"] == PERMISSIONS_USER
 
     def test_custom_permissions_stored(self, svc: UserService) -> None:
@@ -95,9 +91,7 @@ class TestCreateUser:
         )
         assert result["permissions"] == PERMISSIONS_VIEWER
 
-    def test_duplicate_username_raises(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_duplicate_username_raises(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         user_repo.create(
             username="alice",
             realname="Alice",
@@ -107,9 +101,7 @@ class TestCreateUser:
         )
 
         with pytest.raises(ValueError, match="already exists"):
-            svc.create_user(
-                username="alice", realname="Other Alice", password="pass1234"
-            )
+            svc.create_user(username="alice", realname="Other Alice", password="pass1234")
 
     def test_missing_required_fields_raises(self, svc: UserService) -> None:
         with pytest.raises(ValueError):
@@ -133,9 +125,7 @@ class TestCreateUser:
         assert stored.email == "frank@example.com"
 
     def test_user_active_by_default(self, svc: UserService) -> None:
-        result = svc.create_user(
-            username="grace", realname="Grace", password="pass1234"
-        )
+        result = svc.create_user(username="grace", realname="Grace", password="pass1234")
         assert result["is_active"] is True
 
 
@@ -146,15 +136,11 @@ class TestCreateUser:
 
 @pytest.mark.unit
 class TestGetUsers:
-    def test_get_all_returns_active_and_inactive(
-        self, populated_svc: UserService
-    ) -> None:
+    def test_get_all_returns_active_and_inactive(self, populated_svc: UserService) -> None:
         users = populated_svc.get_all_users(include_inactive=True)
         assert len(users) == 2
 
-    def test_get_all_excludes_inactive_when_requested(
-        self, populated_svc: UserService
-    ) -> None:
+    def test_get_all_excludes_inactive_when_requested(self, populated_svc: UserService) -> None:
         users = populated_svc.get_all_users(include_inactive=False)
         assert len(users) == 1
         assert users[0]["username"] == "alice"
@@ -166,17 +152,13 @@ class TestGetUsers:
         assert result is not None
         assert result["username"] == "alice"
 
-    def test_get_user_by_id_inactive_excluded_by_default(
-        self, populated_svc: UserService
-    ) -> None:
+    def test_get_user_by_id_inactive_excluded_by_default(self, populated_svc: UserService) -> None:
         bob = populated_svc._repo.get_by_username("bob")
         assert bob is not None
         result = populated_svc.get_user_by_id(bob.id)
         assert result is None
 
-    def test_get_user_by_id_inactive_included_when_requested(
-        self, populated_svc: UserService
-    ) -> None:
+    def test_get_user_by_id_inactive_included_when_requested(self, populated_svc: UserService) -> None:
         bob = populated_svc._repo.get_by_username("bob")
         assert bob is not None
         result = populated_svc.get_user_by_id(bob.id, include_inactive=True)
@@ -185,21 +167,15 @@ class TestGetUsers:
     def test_get_user_by_id_nonexistent_returns_none(self, svc: UserService) -> None:
         assert svc.get_user_by_id(999) is None
 
-    def test_get_user_by_username_returns_active_user(
-        self, populated_svc: UserService
-    ) -> None:
+    def test_get_user_by_username_returns_active_user(self, populated_svc: UserService) -> None:
         result = populated_svc.get_user_by_username("alice")
         assert result is not None
         assert result["username"] == "alice"
 
-    def test_get_user_by_username_inactive_returns_none(
-        self, populated_svc: UserService
-    ) -> None:
+    def test_get_user_by_username_inactive_returns_none(self, populated_svc: UserService) -> None:
         assert populated_svc.get_user_by_username("bob") is None
 
-    def test_get_user_by_username_nonexistent_returns_none(
-        self, svc: UserService
-    ) -> None:
+    def test_get_user_by_username_nonexistent_returns_none(self, svc: UserService) -> None:
         assert svc.get_user_by_username("nobody") is None
 
 
@@ -221,9 +197,7 @@ class TestAuthenticateUser:
     def test_nonexistent_user_returns_none(self, populated_svc: UserService) -> None:
         assert populated_svc.authenticate_user("nobody", "password") is None
 
-    def test_inactive_user_cannot_authenticate(
-        self, populated_svc: UserService
-    ) -> None:
+    def test_inactive_user_cannot_authenticate(self, populated_svc: UserService) -> None:
         assert populated_svc.authenticate_user("bob", "password2") is None
 
 
@@ -234,9 +208,7 @@ class TestAuthenticateUser:
 
 @pytest.mark.unit
 class TestUpdateUser:
-    def test_update_realname(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_update_realname(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         user_repo.create(
             username="charlie",
             realname="Charlie",
@@ -251,9 +223,7 @@ class TestUpdateUser:
         assert result is not None
         assert result["realname"] == "Charles"
 
-    def test_update_password_hashes_new_value(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_update_password_hashes_new_value(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         user_repo.create(
             username="diana",
             realname="Diana",
@@ -269,9 +239,7 @@ class TestUpdateUser:
         assert stored is not None
         assert verify_password("new-password-long", stored.password)
 
-    def test_short_password_raises(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_short_password_raises(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         user_repo.create(
             username="edgar",
             realname="Edgar",
@@ -288,9 +256,7 @@ class TestUpdateUser:
     def test_update_nonexistent_user_returns_none(self, svc: UserService) -> None:
         assert svc.update_user(999, realname="Ghost") is None
 
-    def test_no_changes_returns_current_user(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_no_changes_returns_current_user(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         user_repo.create(
             username="faye",
             realname="Faye",
@@ -313,9 +279,7 @@ class TestUpdateUser:
 
 @pytest.mark.unit
 class TestDeleteUser:
-    def test_soft_delete_sets_inactive(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_soft_delete_sets_inactive(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         user_repo.create(
             username="henry",
             realname="Henry",
@@ -331,9 +295,7 @@ class TestDeleteUser:
         assert user_repo.get_by_id(henry.id) is not None
         assert user_repo.get_by_id(henry.id).is_active is False  # type: ignore[union-attr]
 
-    def test_hard_delete_removes_user(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_hard_delete_removes_user(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         user_repo.create(
             username="ivy",
             realname="Ivy",
@@ -372,35 +334,27 @@ class TestBulkOperations:
             ids.append(u.id)
         return ids
 
-    def test_bulk_delete_all_succeed(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_bulk_delete_all_succeed(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         ids = self._seed_users(user_repo)
         count, errors = svc.bulk_delete_users(ids)
         assert count == 3
         assert errors == []
 
-    def test_bulk_delete_partial_failure(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_bulk_delete_partial_failure(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         ids = self._seed_users(user_repo)
         count, errors = svc.bulk_delete_users([ids[0], 99999])
         assert count == 1
         assert len(errors) == 1
         assert "99999" in errors[0]
 
-    def test_bulk_hard_delete_succeeds(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_bulk_hard_delete_succeeds(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         ids = self._seed_users(user_repo)
         count, errors = svc.bulk_hard_delete_users(ids)
         assert count == 3
         assert errors == []
         assert user_repo.count() == 0
 
-    def test_bulk_update_permissions(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_bulk_update_permissions(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         ids = self._seed_users(user_repo)
         count, errors = svc.bulk_update_permissions(ids, PERMISSIONS_VIEWER)
         assert count == 3
@@ -459,9 +413,7 @@ class TestPermissionHelpers:
 
 @pytest.mark.unit
 class TestEnsureAdminPermissions:
-    def test_corrects_admin_permissions_if_wrong(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_corrects_admin_permissions_if_wrong(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         user_repo.create(
             username="admin",
             realname="Admin",
@@ -475,9 +427,7 @@ class TestEnsureAdminPermissions:
         assert admin is not None
         assert admin.permissions == PERMISSIONS_ADMIN
 
-    def test_leaves_correct_admin_permissions_unchanged(
-        self, svc: UserService, user_repo: FakeUserRepository
-    ) -> None:
+    def test_leaves_correct_admin_permissions_unchanged(self, svc: UserService, user_repo: FakeUserRepository) -> None:
         user_repo.create(
             username="admin",
             realname="Admin",

@@ -19,9 +19,7 @@ def _user_service():
     return _sf.build_user_service()
 
 
-user_db = type(
-    "_Proxy", (), {"__getattr__": lambda self, name: getattr(_user_service(), name)}
-)()
+user_db = type("_Proxy", (), {"__getattr__": lambda self, name: getattr(_user_service(), name)})()
 
 
 def create_user(
@@ -72,9 +70,7 @@ def get_all_users(include_inactive: bool = True) -> List[Dict[str, Any]]:
         raise Exception(f"Failed to get users: {str(e)}")
 
 
-def get_user_by_id(
-    user_id: int, include_inactive: bool = False
-) -> Optional[Dict[str, Any]]:
+def get_user_by_id(user_id: int, include_inactive: bool = False) -> Optional[Dict[str, Any]]:
     """Get user by ID with role information."""
     try:
         user = user_db.get_user_by_id(user_id, include_inactive=include_inactive)
@@ -173,9 +169,7 @@ def bulk_hard_delete_users(user_ids: List[int]) -> Tuple[int, List[str]]:
         return 0, [f"Failed to delete users: {str(e)}"]
 
 
-def bulk_update_permissions(
-    user_ids: List[int], permissions: int
-) -> Tuple[int, List[str]]:
+def bulk_update_permissions(user_ids: List[int], permissions: int) -> Tuple[int, List[str]]:
     """Update permissions for multiple users. Returns (success_count, error_messages)."""
     try:
         return user_db.bulk_update_permissions(user_ids, permissions)
@@ -206,9 +200,7 @@ def toggle_user_status(user_id: int) -> Optional[Dict[str, Any]]:
 
         # Toggle the status
         new_status = not user["is_active"]
-        logger.info(
-            "toggle_user_status: Toggling from %s to %s", user["is_active"], new_status
-        )
+        logger.info("toggle_user_status: Toggling from %s to %s", user["is_active"], new_status)
         result = update_user(user_id, is_active=new_status)
         logger.info("toggle_user_status: update_user returned: %s", result)
         return result

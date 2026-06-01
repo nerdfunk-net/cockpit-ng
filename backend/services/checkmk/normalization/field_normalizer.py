@@ -17,9 +17,7 @@ class FieldNormalizer:
 
         self._config = service_factory.build_checkmk_config_service()
 
-    def process_field_mappings(
-        self, device_data: Dict[str, Any], extensions: DeviceExtensions
-    ) -> None:
+    def process_field_mappings(self, device_data: Dict[str, Any], extensions: DeviceExtensions) -> None:
         """Process field mappings from Nautobot to CheckMK attributes.
 
         Args:
@@ -62,19 +60,12 @@ class FieldNormalizer:
                                 filter_method = filter_method.strip()
                                 filter_value = filter_value.strip()
                                 if filter_method == "location_type":
-                                    raw = _resolve_location_type_filter(
-                                        device_data, field_path, filter_value
-                                    )
+                                    raw = _resolve_location_type_filter(device_data, field_path, filter_value)
                                     if raw:
                                         value = raw
                                     else:
                                         # Fallback: use base field without modifier
-                                        value = (
-                                            _resolve_plain_field(
-                                                device_data, field_path
-                                            )
-                                            or None
-                                        )
+                                        value = _resolve_plain_field(device_data, field_path) or None
                                         logger.info(
                                             "Mapping '%s': location_type filter '%s' found no match, falling back to base field '%s': %s",
                                             nautobot_field,
@@ -103,9 +94,7 @@ class FieldNormalizer:
                                 )
                                 continue
                         else:
-                            value = self.extract_field_value(
-                                device_data, nautobot_field
-                            )
+                            value = self.extract_field_value(device_data, nautobot_field)
 
                         # Add the mapped attribute if value exists and is not empty
                         if value is not None and value != "":
@@ -126,9 +115,7 @@ class FieldNormalizer:
                                 value,
                             )
                         else:
-                            logger.info(
-                                "Skipping mapping '%s' - no value found", nautobot_field
-                            )
+                            logger.info("Skipping mapping '%s' - no value found", nautobot_field)
 
                     except Exception as e:
                         logger.warning(

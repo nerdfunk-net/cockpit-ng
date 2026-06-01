@@ -93,9 +93,7 @@ class GitCacheService:
         if cache_cfg.get("enabled", True):
             cached_commits = self._cache.get(cache_key)
             if cached_commits is not None:
-                logger.debug(
-                    "Cache hit for commits: repo %s, branch %s", repo_id, branch_name
-                )
+                logger.debug("Cache hit for commits: repo %s, branch %s", repo_id, branch_name)
                 limited_commits = cached_commits[:limit]
                 if use_models:
                     return [GitCommit(**c) for c in limited_commits]
@@ -103,9 +101,7 @@ class GitCacheService:
 
         # Cache miss - fetch from repository
         logger.debug("Cache miss for commits: repo %s, branch %s", repo_id, branch_name)
-        commits = self._fetch_commits_from_repo(
-            repo_id, repo_path, branch_name, limit, cache_cfg
-        )
+        commits = self._fetch_commits_from_repo(repo_id, repo_path, branch_name, limit, cache_cfg)
 
         if use_models:
             return [GitCommit(**c) for c in commits]
@@ -169,9 +165,7 @@ class GitCacheService:
             )
             return self._fetch_commits_subprocess(repo_path, branch_name, limit)
 
-    def _fetch_commits_subprocess(
-        self, repo_path: str, branch_name: str, limit: int
-    ) -> List[Dict[str, Any]]:
+    def _fetch_commits_subprocess(self, repo_path: str, branch_name: str, limit: int) -> List[Dict[str, Any]]:
         """Fetch commits using git subprocess as fallback.
 
         Args:
@@ -256,15 +250,11 @@ class GitCacheService:
         if cache_cfg.get("enabled", True):
             cached_history = self._cache.get(cache_key)
             if cached_history is not None:
-                logger.debug(
-                    "Cache hit for file history: repo %s, file %s", repo_id, file_path
-                )
+                logger.debug("Cache hit for file history: repo %s, file %s", repo_id, file_path)
                 return cached_history
 
         # Cache miss - fetch from repository
-        logger.debug(
-            "Cache miss for file history: repo %s, file %s", repo_id, file_path
-        )
+        logger.debug("Cache miss for file history: repo %s, file %s", repo_id, file_path)
 
         try:
             repo = Repo(repo_path)
@@ -309,9 +299,7 @@ class GitCacheService:
             logger.error("Failed to get file history for %s: %s", file_path, e)
             return []
 
-    def get_commit_details(
-        self, repo_id: int, repo_path: str, commit_hash: str
-    ) -> Optional[Dict[str, Any]]:
+    def get_commit_details(self, repo_id: int, repo_path: str, commit_hash: str) -> Optional[Dict[str, Any]]:
         """Get detailed information for a specific commit with caching.
 
         Args:

@@ -33,8 +33,7 @@ async def test_git_connection(
 ) -> Dict[str, Any]:
     """Test Git repository connectivity using the same shallow-clone path as Git settings."""
     has_inline_creds = bool(
-        (git_test.username and git_test.username.strip())
-        or (git_test.token and str(git_test.token).strip())
+        (git_test.username and git_test.username.strip()) or (git_test.token and str(git_test.token).strip())
     )
     auth_type = GitAuthType.TOKEN if has_inline_creds else GitAuthType.NONE
     conn_req = GitConnectionTestRequest(
@@ -79,10 +78,7 @@ async def sync_templates(
             if not sync_result.success:
                 repo_errors[str(repo.get("id", "unknown"))] = sync_result.message
 
-        all_git_ids = [
-            t["id"]
-            for t in template_manager.list_templates(source="git", username=username)
-        ]
+        all_git_ids = [t["id"] for t in template_manager.list_templates(source="git", username=username)]
 
         if sync_request.template_id is not None:
             tid = sync_request.template_id
@@ -114,17 +110,13 @@ async def sync_templates(
                 )
 
             if repo_errors:
-                template_manager.mark_git_templates_sync_metadata(
-                    [tid], sync_status="error", username=username
-                )
+                template_manager.mark_git_templates_sync_metadata([tid], sync_status="error", username=username)
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
                     detail="; ".join(repo_errors.values()),
                 )
 
-            template_manager.mark_git_templates_sync_metadata(
-                [tid], sync_status="synced", username=username
-            )
+            template_manager.mark_git_templates_sync_metadata([tid], sync_status="synced", username=username)
             return TemplateSyncResponse(
                 synced_templates=[tid],
                 failed_templates=[],
@@ -154,9 +146,7 @@ async def sync_templates(
 
         if repo_errors:
             if all_git_ids:
-                template_manager.mark_git_templates_sync_metadata(
-                    all_git_ids, sync_status="error", username=username
-                )
+                template_manager.mark_git_templates_sync_metadata(all_git_ids, sync_status="error", username=username)
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail={
@@ -166,9 +156,7 @@ async def sync_templates(
             )
 
         if all_git_ids:
-            template_manager.mark_git_templates_sync_metadata(
-                all_git_ids, sync_status="synced", username=username
-            )
+            template_manager.mark_git_templates_sync_metadata(all_git_ids, sync_status="synced", username=username)
         return TemplateSyncResponse(
             synced_templates=all_git_ids,
             failed_templates=[],

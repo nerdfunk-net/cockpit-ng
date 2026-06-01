@@ -44,23 +44,25 @@ def test_bulk_onboard_successful_device_updates_job_run() -> None:
     job_runs = MagicMock()
     job_runs.get_job_run_by_celery_id.return_value = {"id": 77}
 
-    with patch(
-        "tasks.onboard_device_task._trigger_nautobot_onboarding",
-        return_value=("job-1", "http://nautobot/jobs/job-1"),
-    ) as trigger, patch(
-        "tasks.onboard_device_task._wait_for_job_completion",
-        return_value=(True, {"status": "completed"}),
-    ), patch(
-        "tasks.onboard_device_task._process_single_device",
-        return_value={
-            "success": True,
-            "device_id": "dev-1",
-            "device_name": "router-01",
-        },
-    ) as process, patch(
-        "service_factory.build_job_run_service", return_value=job_runs
-    ), patch.object(
-        bulk_onboard_devices_task, "update_state"
+    with (
+        patch(
+            "tasks.onboard_device_task._trigger_nautobot_onboarding",
+            return_value=("job-1", "http://nautobot/jobs/job-1"),
+        ) as trigger,
+        patch(
+            "tasks.onboard_device_task._wait_for_job_completion",
+            return_value=(True, {"status": "completed"}),
+        ),
+        patch(
+            "tasks.onboard_device_task._process_single_device",
+            return_value={
+                "success": True,
+                "device_id": "dev-1",
+                "device_name": "router-01",
+            },
+        ) as process,
+        patch("service_factory.build_job_run_service", return_value=job_runs),
+        patch.object(bulk_onboard_devices_task, "update_state"),
     ):
         result = bulk_onboard_devices_task.run(
             devices=[{"ip_address": "192.0.2.10"}],
@@ -85,9 +87,10 @@ def test_bulk_onboard_missing_required_fields_records_device_failure() -> None:
     job_runs.get_job_run_by_celery_id.return_value = {"id": 78}
     incomplete_defaults = {**DEFAULT_CONFIG, "location_id": ""}
 
-    with patch(
-        "service_factory.build_job_run_service", return_value=job_runs
-    ), patch.object(bulk_onboard_devices_task, "update_state"):
+    with (
+        patch("service_factory.build_job_run_service", return_value=job_runs),
+        patch.object(bulk_onboard_devices_task, "update_state"),
+    ):
         result = bulk_onboard_devices_task.run(
             devices=[{"ip_address": "192.0.2.10"}],
             default_config=incomplete_defaults,
@@ -106,18 +109,18 @@ def test_bulk_onboard_job_timeout_records_onboarding_failure() -> None:
     job_runs = MagicMock()
     job_runs.get_job_run_by_celery_id.return_value = None
 
-    with patch(
-        "tasks.onboard_device_task._trigger_nautobot_onboarding",
-        return_value=("job-timeout", "url"),
-    ), patch(
-        "tasks.onboard_device_task._wait_for_job_completion",
-        return_value=(False, "timeout"),
-    ), patch(
-        "tasks.onboard_device_task._process_single_device"
-    ) as process, patch(
-        "service_factory.build_job_run_service", return_value=job_runs
-    ), patch.object(
-        bulk_onboard_devices_task, "update_state"
+    with (
+        patch(
+            "tasks.onboard_device_task._trigger_nautobot_onboarding",
+            return_value=("job-timeout", "url"),
+        ),
+        patch(
+            "tasks.onboard_device_task._wait_for_job_completion",
+            return_value=(False, "timeout"),
+        ),
+        patch("tasks.onboard_device_task._process_single_device") as process,
+        patch("service_factory.build_job_run_service", return_value=job_runs),
+        patch.object(bulk_onboard_devices_task, "update_state"),
     ):
         result = bulk_onboard_devices_task.run(
             devices=[{"ip_address": "192.0.2.10"}],

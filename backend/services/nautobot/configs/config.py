@@ -148,9 +148,7 @@ class DeviceConfigService:
         - NetmikoService: For SSH connections to network devices
         - NetmikoPlatformMapper: For platform name normalization
         """
-        self.nautobot_service = (
-            nautobot_service or service_factory.build_nautobot_service()
-        )
+        self.nautobot_service = nautobot_service or service_factory.build_nautobot_service()
         self.netmiko_service = NetmikoService()
         self.platform_mapper = NetmikoPlatformMapper()
 
@@ -203,11 +201,7 @@ class DeviceConfigService:
 
         device_data = asyncio.run(self.nautobot_service.graphql_query(query, variables))
 
-        if (
-            not device_data
-            or "data" not in device_data
-            or not device_data["data"].get("device")
-        ):
+        if not device_data or "data" not in device_data or not device_data["data"].get("device"):
             logger.error("%s ✗ Failed to get device data from Nautobot", log_prefix)
             logger.error("%s Response: %s", log_prefix, device_data)
             raise ValueError("Failed to fetch device data from Nautobot")
@@ -215,15 +209,9 @@ class DeviceConfigService:
         device = device_data["data"]["device"]
         device_name = device.get("name", device_id)
         primary_ip = (
-            device.get("primary_ip4", {}).get("address", "").split("/")[0]
-            if device.get("primary_ip4")
-            else None
+            device.get("primary_ip4", {}).get("address", "").split("/")[0] if device.get("primary_ip4") else None
         )
-        platform = (
-            device.get("platform", {}).get("name", "unknown")
-            if device.get("platform")
-            else "unknown"
-        )
+        platform = device.get("platform", {}).get("name", "unknown") if device.get("platform") else "unknown"
 
         logger.info("%s ✓ Device data fetched from Nautobot", log_prefix)
         logger.info("%s   - Name: %s", log_prefix, device_name)
@@ -231,9 +219,7 @@ class DeviceConfigService:
         logger.info("%s   - Platform: %s", log_prefix, platform)
 
         if not primary_ip:
-            logger.error(
-                "%s ✗ Device has no primary IP address - cannot connect", log_prefix
-            )
+            logger.error("%s ✗ Device has no primary IP address - cannot connect", log_prefix)
             raise ValueError("No primary IP address")
 
         return device
@@ -272,9 +258,7 @@ class DeviceConfigService:
         log_prefix = f"[{device_index}]" if device_index else ""
         display_name = device_name or device_ip
 
-        logger.info(
-            "%s Connecting to %s (%s) via SSH...", log_prefix, display_name, device_ip
-        )
+        logger.info("%s Connecting to %s (%s) via SSH...", log_prefix, display_name, device_ip)
         logger.info("%s   - Username: %s", log_prefix, username)
         logger.info("%s   - Device type: %s", log_prefix, device_type)
 
@@ -350,16 +334,12 @@ class DeviceConfigService:
 
         # Validate we got configs
         if running_config:
-            logger.info(
-                "%s ✓ Running config: %s bytes", log_prefix, len(running_config)
-            )
+            logger.info("%s ✓ Running config: %s bytes", log_prefix, len(running_config))
         else:
             logger.warning("%s ⚠ Running config is empty!", log_prefix)
 
         if startup_config:
-            logger.info(
-                "%s ✓ Startup config: %s bytes", log_prefix, len(startup_config)
-            )
+            logger.info("%s ✓ Startup config: %s bytes", log_prefix, len(startup_config))
         else:
             logger.info("%s Startup config is empty or not retrieved", log_prefix)
 
@@ -406,28 +386,20 @@ class DeviceConfigService:
 
             running_path = replace_template_variables(running_template, device)
             running_path = running_path.lstrip("/")
-            logger.info(
-                "%s Using templated running config path: %s", log_prefix, running_path
-            )
+            logger.info("%s Using templated running config path: %s", log_prefix, running_path)
         else:
             running_path = "backups/%s.%s.running-config" % (device_name, current_date)
-            logger.info(
-                "%s Using default running config path: %s", log_prefix, running_path
-            )
+            logger.info("%s Using default running config path: %s", log_prefix, running_path)
 
         if startup_template:
             from utils.path_template import replace_template_variables
 
             startup_path = replace_template_variables(startup_template, device)
             startup_path = startup_path.lstrip("/")
-            logger.info(
-                "%s Using templated startup config path: %s", log_prefix, startup_path
-            )
+            logger.info("%s Using templated startup config path: %s", log_prefix, startup_path)
         else:
             startup_path = "backups/%s.%s.startup-config" % (device_name, current_date)
-            logger.info(
-                "%s Using default startup config path: %s", log_prefix, startup_path
-            )
+            logger.info("%s Using default startup config path: %s", log_prefix, startup_path)
 
         running_file = repo_path / running_path
         startup_file = repo_path / startup_path

@@ -91,9 +91,7 @@ def execute_run_commands(
         # If no target devices provided, fetch all from Nautobot
         device_ids = target_devices
         if not device_ids:
-            logger.info(
-                "No target devices specified, fetching all devices from Nautobot"
-            )
+            logger.info("No target devices specified, fetching all devices from Nautobot")
             task_context.update_state(
                 state="PROGRESS",
                 meta={
@@ -175,22 +173,16 @@ def execute_run_commands(
 
         # Get command template content
         logger.info("Fetching command template: %s...", command_template_name)
-        command_template_obj = template_manager.get_template_by_name(
-            command_template_name
-        )
+        command_template_obj = template_manager.get_template_by_name(command_template_name)
         if not command_template_obj:
-            logger.error(
-                "ERROR: Command template '%s' not found", command_template_name
-            )
+            logger.error("ERROR: Command template '%s' not found", command_template_name)
             return {
                 "success": False,
                 "error": f"Command template '{command_template_name}' not found",
                 "credential_info": credential_info,
             }
 
-        template_content = template_manager.get_template_content(
-            command_template_obj["id"]
-        )
+        template_content = template_manager.get_template_content(command_template_obj["id"])
         if not template_content:
             logger.error(
                 "ERROR: Command template content not found for '%s'",
@@ -326,15 +318,9 @@ def execute_run_commands(
                     }
                     """
                 variables = {"deviceId": device_id}
-                device_data = asyncio.run(
-                    nautobot_service.graphql_query(query, variables)
-                )
+                device_data = asyncio.run(nautobot_service.graphql_query(query, variables))
 
-                if (
-                    not device_data
-                    or "data" not in device_data
-                    or not device_data["data"].get("device")
-                ):
+                if not device_data or "data" not in device_data or not device_data["data"].get("device"):
                     logger.error("[%s] ✗ Failed to get device data from Nautobot", idx)
                     device_result["error"] = "Failed to fetch device data from Nautobot"
                     failed_devices.append(device_result)
@@ -350,12 +336,8 @@ def execute_run_commands(
 
                 # Get platform information from Nautobot
                 platform_obj = device.get("platform", {})
-                network_driver = (
-                    platform_obj.get("network_driver") if platform_obj else None
-                )
-                platform_name = (
-                    platform_obj.get("name", "unknown") if platform_obj else "unknown"
-                )
+                network_driver = platform_obj.get("network_driver") if platform_obj else None
+                platform_name = platform_obj.get("name", "unknown") if platform_obj else "unknown"
 
                 # Determine device type for Netmiko
                 if network_driver:
@@ -414,30 +396,20 @@ def execute_run_commands(
                     device_result["rendered_commands"] = rendered_content
                     logger.info("[%s] ✓ Template rendered successfully", idx)
                 except Exception as render_error:
-                    logger.error(
-                        "[%s] ✗ Template rendering failed: %s", idx, render_error
-                    )
-                    device_result["error"] = (
-                        f"Template rendering failed: {str(render_error)}"
-                    )
+                    logger.error("[%s] ✗ Template rendering failed: %s", idx, render_error)
+                    device_result["error"] = f"Template rendering failed: {str(render_error)}"
                     failed_devices.append(device_result)
                     continue
 
                 # Convert rendered content to command list
-                commands = [
-                    line.strip()
-                    for line in rendered_content.split("\n")
-                    if line.strip()
-                ]
+                commands = [line.strip() for line in rendered_content.split("\n") if line.strip()]
 
                 if not commands:
                     logger.error(
                         "[%s] ✗ No commands to execute after template rendering",
                         idx,
                     )
-                    device_result["error"] = (
-                        "No commands to execute after template rendering"
-                    )
+                    device_result["error"] = "No commands to execute after template rendering"
                     failed_devices.append(device_result)
                     continue
 
@@ -467,9 +439,7 @@ def execute_run_commands(
                     )
                     successful_devices.append(device_result)
                 else:
-                    device_result["error"] = result.get(
-                        "error", "Command execution failed"
-                    )
+                    device_result["error"] = result.get("error", "Command execution failed")
                     logger.error(
                         "[%s] ✗ Command execution failed: %s",
                         idx,

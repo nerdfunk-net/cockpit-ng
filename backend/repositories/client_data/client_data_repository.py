@@ -154,9 +154,7 @@ def _client_data_combined_cte():
         arp_entries.c.session_id,
     ).select_from(arp_entries)
 
-    all_device_mac_pairs = union(pairs_from_mac, pairs_from_arp).cte(
-        "all_device_mac_pairs"
-    )
+    all_device_mac_pairs = union(pairs_from_mac, pairs_from_arp).cte("all_device_mac_pairs")
 
     mt = mac_table_entries
     ae = arp_entries
@@ -178,13 +176,11 @@ def _client_data_combined_cte():
         .select_from(p)
         .outerjoin(
             mt,
-            (p.c.mac_address == mt.c.mac_address)
-            & (p.c.device_name == mt.c.device_name),
+            (p.c.mac_address == mt.c.mac_address) & (p.c.device_name == mt.c.device_name),
         )
         .outerjoin(
             ae,
-            (p.c.mac_address == ae.c.mac_address)
-            & (p.c.device_name == ae.c.device_name),
+            (p.c.mac_address == ae.c.mac_address) & (p.c.device_name == ae.c.device_name),
         )
         .outerjoin(bim, p.c.mac_address == bim.c.mac_address)
         .outerjoin(
@@ -258,9 +254,7 @@ class ClientDataRepository:
         Layer-2-only devices (which have no ARP entries) are included.
         """
         ls = _latest_session_cte()
-        mac = select(ClientMacAddress.device_name, ClientMacAddress.session_id).select_from(
-            ClientMacAddress
-        )
+        mac = select(ClientMacAddress.device_name, ClientMacAddress.session_id).select_from(ClientMacAddress)
         ip = (
             select(ClientIpAddress.device_name, ClientIpAddress.session_id)
             .select_from(ClientIpAddress)
@@ -289,9 +283,7 @@ class ClientDataRepository:
 
         with get_db_session() as session:
             for model in (ClientHostname, ClientMacAddress, ClientIpAddress):
-                session.execute(
-                    delete(model).where(model.session_id.notin_(keep_ids))
-                )
+                session.execute(delete(model).where(model.session_id.notin_(keep_ids)))
             session.commit()
         logger.debug("Deleted client data sessions beyond the most recent %s", keep)
 
@@ -331,47 +323,27 @@ class ClientDataRepository:
         params: dict = {}
 
         if device_name:
-            conditions.append(
-                combined.c.device_name.ilike(
-                    func.concat("%", bindparam("device_name_filter"), "%")
-                )
-            )
+            conditions.append(combined.c.device_name.ilike(func.concat("%", bindparam("device_name_filter"), "%")))
             params["device_name_filter"] = device_name
 
         if ip_address:
-            conditions.append(
-                combined.c.ip_address.ilike(
-                    func.concat("%", bindparam("ip_address"), "%")
-                )
-            )
+            conditions.append(combined.c.ip_address.ilike(func.concat("%", bindparam("ip_address"), "%")))
             params["ip_address"] = ip_address
 
         if mac_address:
-            conditions.append(
-                combined.c.mac_address.ilike(
-                    func.concat("%", bindparam("mac_address"), "%")
-                )
-            )
+            conditions.append(combined.c.mac_address.ilike(func.concat("%", bindparam("mac_address"), "%")))
             params["mac_address"] = mac_address
 
         if port:
-            conditions.append(
-                combined.c.port.ilike(func.concat("%", bindparam("port"), "%"))
-            )
+            conditions.append(combined.c.port.ilike(func.concat("%", bindparam("port"), "%")))
             params["port"] = port
 
         if vlan:
-            conditions.append(
-                combined.c.vlan.ilike(func.concat("%", bindparam("vlan"), "%"))
-            )
+            conditions.append(combined.c.vlan.ilike(func.concat("%", bindparam("vlan"), "%")))
             params["vlan"] = vlan
 
         if hostname:
-            conditions.append(
-                combined.c.hostname.ilike(
-                    func.concat("%", bindparam("hostname"), "%")
-                )
-            )
+            conditions.append(combined.c.hostname.ilike(func.concat("%", bindparam("hostname"), "%")))
             params["hostname"] = hostname
 
         where_clause = and_(*conditions) if conditions else None
@@ -393,11 +365,15 @@ class ClientDataRepository:
         ).select_from(combined)
         if where_clause is not None:
             data_stmt = data_stmt.where(where_clause)
-        data_stmt = data_stmt.order_by(
-            nulls_last(combined.c.ip_address.asc()),
-            combined.c.mac_address,
-            combined.c.device_name,
-        ).limit(page_size).offset(offset)
+        data_stmt = (
+            data_stmt.order_by(
+                nulls_last(combined.c.ip_address.asc()),
+                combined.c.mac_address,
+                combined.c.device_name,
+            )
+            .limit(page_size)
+            .offset(offset)
+        )
 
         with get_db_session() as session:
             total = session.execute(count_stmt, params).scalar() or 0

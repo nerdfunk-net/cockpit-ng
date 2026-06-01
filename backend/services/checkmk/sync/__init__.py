@@ -94,9 +94,7 @@ class NautobotToCheckMKService:
         """
         return await self.comparison_service.compare_device_config(device_id)
 
-    def _compare_configurations(
-        self, nb_config: Dict[str, Any], cmk_config: Dict[str, Any]
-    ) -> List[str]:
+    def _compare_configurations(self, nb_config: Dict[str, Any], cmk_config: Dict[str, Any]) -> List[str]:
         """Compare Nautobot and CheckMK configurations and return differences.
 
         Args:
@@ -109,9 +107,7 @@ class NautobotToCheckMKService:
         return self.comparison_service._compare_configurations(nb_config, cmk_config)
 
     @staticmethod
-    def filter_diff_by_ignored_attributes(
-        diff_text: str, ignored_attributes: List[str]
-    ) -> str:
+    def filter_diff_by_ignored_attributes(diff_text: str, ignored_attributes: List[str]) -> str:
         """Filter diff text to remove differences related to ignored attributes.
 
         Args:
@@ -121,9 +117,7 @@ class NautobotToCheckMKService:
         Returns:
             Filtered diff text with ignored attributes removed
         """
-        return DeviceComparisonService.filter_diff_by_ignored_attributes(
-            diff_text, ignored_attributes
-        )
+        return DeviceComparisonService.filter_diff_by_ignored_attributes(diff_text, ignored_attributes)
 
     def get_filtered_attributes(self, nb_attributes, cmk_attributes) -> List[str]:
         """Get the list of attributes that are ignored during comparison.
@@ -131,9 +125,7 @@ class NautobotToCheckMKService:
         Returns:
             List of attribute names
         """
-        return self.comparison_service.get_filtered_attributes(
-            nb_attributes, cmk_attributes
-        )
+        return self.comparison_service.get_filtered_attributes(nb_attributes, cmk_attributes)
 
     # Operations methods - delegate to DeviceSyncOperations
     async def add_device_to_checkmk(self, device_id: str) -> DeviceOperationResult:

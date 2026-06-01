@@ -9,9 +9,7 @@ import pytest
 from services.settings.defaults import NetworkDefaults
 from services.settings.network_defaults_service import NetworkDefaultsService
 
-_PATCH_DEFAULT_REPO = (
-    "services.settings.network_defaults_service.NetworkDefaultRepository"
-)
+_PATCH_DEFAULT_REPO = "services.settings.network_defaults_service.NetworkDefaultRepository"
 
 _DEFAULT_NETWORK_DEFAULTS = NetworkDefaults()
 

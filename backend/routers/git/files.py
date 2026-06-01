@@ -77,9 +77,7 @@ async def get_file_content(
     path: str,
     current_user: dict = Depends(require_permission("git.repositories", "read")),
 ):
-    content = _git_file_service.get_file_content(
-        repo_id, path, username=current_user.get("username")
-    )
+    content = _git_file_service.get_file_content(repo_id, path, username=current_user.get("username"))
     return PlainTextResponse(content=content)
 
 
@@ -89,9 +87,7 @@ async def get_file_content_parsed(
     path: str,
     current_user: dict = Depends(require_permission("git.repositories", "read")),
 ):
-    return _git_file_service.get_file_content_parsed(
-        repo_id, path, username=current_user.get("username")
-    )
+    return _git_file_service.get_file_content_parsed(repo_id, path, username=current_user.get("username"))
 
 
 @router.get("/tree")

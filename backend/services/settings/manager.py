@@ -15,15 +15,15 @@ from services.settings.defaults import (
     CelerySettings,
     CheckMKSettings,
     GitSettings,
-    NetworkDefaults,
     NautobotSettings,
+    NetworkDefaults,
     ServerDefaults,
 )
 from services.settings.git_service import GitSettingsService
-from services.settings.network_defaults_service import NetworkDefaultsService
-from services.settings.server_defaults_service import ServerDefaultsService
 from services.settings.nautobot_service import NautobotSettingsService
+from services.settings.network_defaults_service import NetworkDefaultsService
 from services.settings.oidc_service import OidcService
+from services.settings.server_defaults_service import ServerDefaultsService
 from services.settings.system_service import SystemSettingsService
 
 logger = logging.getLogger(__name__)

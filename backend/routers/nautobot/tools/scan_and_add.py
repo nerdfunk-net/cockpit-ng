@@ -57,9 +57,7 @@ async def start_scan(
             debug_enabled=debug_enabled,
         )
 
-        return ScanStartResponse(
-            job_id=job.job_id, total_targets=job.total_targets, state=job.state
-        )
+        return ScanStartResponse(job_id=job.job_id, total_targets=job.total_targets, state=job.state)
     except Exception as e:
         raise_internal_server_error(logger, "Failed to start scan: ", e)
 
@@ -70,9 +68,7 @@ async def get_scan_status(job_id: str, scan_service=Depends(get_scan_service)):
     job = await scan_service.get_job(job_id)
 
     if not job:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Scan job not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scan job not found")
 
     return ScanStatusResponse(
         job_id=job.job_id,
@@ -106,9 +102,7 @@ async def delete_scan_job(job_id: str, scan_service=Depends(get_scan_service)):
     job = await scan_service.get_job(job_id)
 
     if not job:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Scan job not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scan job not found")
 
     # Remove job from service
     scan_service._jobs.pop(job_id, None)

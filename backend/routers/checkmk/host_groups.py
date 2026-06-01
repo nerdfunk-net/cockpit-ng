@@ -35,9 +35,7 @@ async def get_host_groups(
     """Get all host groups."""
     try:
         result = await service.get_host_groups()
-        return CheckMKOperationResponse(
-            success=True, message="Retrieved host groups successfully", data=result
-        )
+        return CheckMKOperationResponse(success=True, message="Retrieved host groups successfully", data=result)
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
@@ -65,9 +63,7 @@ async def create_host_group(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(
-            logger, f"Failed to create host group {request.name}", e
-        )
+        raise_internal_server_error(logger, f"Failed to create host group {request.name}", e)
 
 
 # Static paths before parameterised /{name}
@@ -149,9 +145,7 @@ async def update_host_group(
     """Update existing host group."""
     try:
         result = await service.update_host_group(name, alias=request.alias)
-        return CheckMKOperationResponse(
-            success=True, message=f"Updated host group {name} successfully", data=result
-        )
+        return CheckMKOperationResponse(success=True, message=f"Updated host group {name} successfully", data=result)
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
@@ -169,9 +163,7 @@ async def delete_host_group(
     """Delete host group."""
     try:
         await service.delete_host_group(name)
-        return CheckMKOperationResponse(
-            success=True, message=f"Deleted host group {name} successfully"
-        )
+        return CheckMKOperationResponse(success=True, message=f"Deleted host group {name} successfully")
     except CheckMKClientError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:

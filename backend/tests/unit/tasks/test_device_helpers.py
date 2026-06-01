@@ -11,7 +11,6 @@ import pytest
 
 from tasks.utils.device_helpers import get_target_devices
 
-
 _PATCH_RESOLVER = "utils.inventory_resolver.resolve_inventory_to_device_ids_sync"
 
 

@@ -30,9 +30,7 @@ class GitOperationsService:
     def __init__(self):
         self._auth = GitAuthenticationService()
 
-    def sync_repository(
-        self, repository: Dict[str, Any], force_clone: bool = False
-    ) -> SyncResult:
+    def sync_repository(self, repository: Dict[str, Any], force_clone: bool = False) -> SyncResult:
         """Sync a repository (clone if not exists, pull if exists).
 
         Args:
@@ -46,9 +44,7 @@ class GitOperationsService:
             Exception: If sync operation fails
         """
         repo_path = str(get_repo_path(repository))
-        logger.info(
-            "Syncing repository '%s' to path: %s", repository["name"], repo_path
-        )
+        logger.info("Syncing repository '%s' to path: %s", repository["name"], repo_path)
 
         os.makedirs(os.path.dirname(repo_path), exist_ok=True)
 
@@ -70,34 +66,22 @@ class GitOperationsService:
             if needs_clone:
                 # Backup non-repo directory if present
                 if repo_dir_exists and not is_git_repo:
-                    parent_dir = os.path.dirname(
-                        repo_path.rstrip(os.sep)
-                    ) or os.path.dirname(repo_path)
+                    parent_dir = os.path.dirname(repo_path.rstrip(os.sep)) or os.path.dirname(repo_path)
                     base_name = os.path.basename(os.path.normpath(repo_path))
-                    backup_path = os.path.join(
-                        parent_dir, f"{base_name}_backup_{int(time.time())}"
-                    )
+                    backup_path = os.path.join(parent_dir, f"{base_name}_backup_{int(time.time())}")
                     shutil.move(repo_path, backup_path)
                     logger.info("Backed up existing directory to %s", backup_path)
 
                 # Clone repository
                 try:
                     if not repository.get("verify_ssl", True):
-                        logger.warning(
-                            "Git SSL verification disabled - not recommended for production"
-                        )
+                        logger.warning("Git SSL verification disabled - not recommended for production")
                     with set_ssl_env(repository):
-                        logger.info(
-                            "Cloning branch %s into %s", repository["branch"], repo_path
-                        )
-                        Repo.clone_from(
-                            clone_url, repo_path, branch=repository["branch"]
-                        )
+                        logger.info("Cloning branch %s into %s", repository["branch"], repo_path)
+                        Repo.clone_from(clone_url, repo_path, branch=repository["branch"])
 
                     if not os.path.isdir(os.path.join(repo_path, ".git")):
-                        raise GitCommandError(
-                            "clone", 1, b"", b".git not found after clone"
-                        )
+                        raise GitCommandError("clone", 1, b"", b".git not found after clone")
 
                     success = True
                     message = f"Repository '{repository['name']}' cloned successfully to {repo_path}"
@@ -106,11 +90,11 @@ class GitOperationsService:
                     err = str(gce)
                     logger.error("Git clone failed: %s", err)
                     if "authentication" in err.lower():
-                        message = (
-                            "Authentication failed. Please check your Git credentials."
-                        )
+                        message = "Authentication failed. Please check your Git credentials."
                     elif "not found" in err.lower():
-                        message = f"Repository or branch not found. URL: {repository['url']} Branch: {repository['branch']}"
+                        message = (
+                            f"Repository or branch not found. URL: {repository['url']} Branch: {repository['branch']}"
+                        )
                     else:
                         message = f"Git clone failed: {err}"
                 except Exception as e:
@@ -119,11 +103,7 @@ class GitOperationsService:
                 finally:
                     # Cleanup empty directory after failed clone
                     try:
-                        if (
-                            not success
-                            and os.path.isdir(repo_path)
-                            and not os.listdir(repo_path)
-                        ):
+                        if not success and os.path.isdir(repo_path) and not os.listdir(repo_path):
                             shutil.rmtree(repo_path)
                             logger.info(
                                 "Removed empty directory after failed clone: %s",
@@ -147,9 +127,7 @@ class GitOperationsService:
                     with set_ssl_env(repository):
                         origin.pull(repository["branch"])
                         success = True
-                        message = (
-                            f"Repository '{repository['name']}' updated successfully"
-                        )
+                        message = f"Repository '{repository['name']}' updated successfully"
                         logger.info(message)
                 except Exception as e:
                     logger.error("Error during Git pull: %s", e)
@@ -202,9 +180,7 @@ class GitOperationsService:
         ):
             try:
                 if not repository.get("verify_ssl", True):
-                    logger.warning(
-                        "Git SSL verification disabled - not recommended for production"
-                    )
+                    logger.warning("Git SSL verification disabled - not recommended for production")
 
                 with set_ssl_env(repository):
                     logger.info(
@@ -215,9 +191,7 @@ class GitOperationsService:
                     Repo.clone_from(clone_url, repo_path, branch=repository["branch"])
 
                 if not os.path.isdir(os.path.join(repo_path, ".git")):
-                    raise GitCommandError(
-                        "clone", 1, b"", b".git not found after clone"
-                    )
+                    raise GitCommandError("clone", 1, b"", b".git not found after clone")
 
                 success = True
                 message = f"Repository '{repository['name']}' removed and re-cloned successfully"
@@ -227,9 +201,7 @@ class GitOperationsService:
                 err = str(gce)
                 logger.error("Git clone failed: %s", err)
                 if "authentication" in err.lower():
-                    message = (
-                        "Authentication failed. Please check your Git credentials."
-                    )
+                    message = "Authentication failed. Please check your Git credentials."
                 elif "not found" in err.lower():
                     message = f"Repository or branch not found. URL: {repository['url']} Branch: {repository['branch']}"
                 else:
@@ -240,15 +212,9 @@ class GitOperationsService:
             finally:
                 # Cleanup empty directory after failed clone
                 try:
-                    if (
-                        not success
-                        and os.path.isdir(repo_path)
-                        and not os.listdir(repo_path)
-                    ):
+                    if not success and os.path.isdir(repo_path) and not os.listdir(repo_path):
                         shutil.rmtree(repo_path)
-                        logger.info(
-                            "Removed empty directory after failed clone: %s", repo_path
-                        )
+                        logger.info("Removed empty directory after failed clone: %s", repo_path)
                 except Exception as ce:
                     logger.warning("Cleanup after failed clone skipped: %s", ce)
 
@@ -260,9 +226,7 @@ class GitOperationsService:
             repository_path=repo_path if success else None,
         )
 
-    def clone_repository(
-        self, repository: Dict[str, Any], target_path: str = None
-    ) -> CloneResult:
+    def clone_repository(self, repository: Dict[str, Any], target_path: str = None) -> CloneResult:
         """Clone a repository to a specific path.
 
         Args:
@@ -305,9 +269,7 @@ class GitOperationsService:
 
         return CloneResult(success=success, message=message, repo_path=repo_path)
 
-    def get_repository_status(
-        self, repository: Dict[str, Any], repo_id: int
-    ) -> Dict[str, Any]:
+    def get_repository_status(self, repository: Dict[str, Any], repo_id: int) -> Dict[str, Any]:
         """Get comprehensive repository status using GitPython.
 
         This replaces the old implementation that used 7 subprocess calls
@@ -362,9 +324,7 @@ class GitOperationsService:
                     commit = repo.head.commit
                     status_info["current_commit"] = commit.hexsha[:8]
                     status_info["last_commit_message"] = commit.message.strip()
-                    status_info["last_commit_date"] = (
-                        commit.committed_datetime.isoformat()
-                    )
+                    status_info["last_commit_date"] = commit.committed_datetime.isoformat()
                     status_info["last_commit_author"] = commit.author.name
                     status_info["last_commit_author_email"] = commit.author.email
             except Exception as e:
@@ -409,19 +369,11 @@ class GitOperationsService:
                         remote_branch = f"origin/{repository['branch']}"
                         if remote_branch in [ref.name for ref in repo.refs]:
                             # Commits behind (replaces git rev-list HEAD..origin/branch)
-                            behind = list(
-                                repo.iter_commits(
-                                    f"HEAD..{remote_branch}", max_count=100
-                                )
-                            )
+                            behind = list(repo.iter_commits(f"HEAD..{remote_branch}", max_count=100))
                             status_info["behind_count"] = len(behind)
 
                             # Commits ahead (replaces git rev-list origin/branch..HEAD)
-                            ahead = list(
-                                repo.iter_commits(
-                                    f"{remote_branch}..HEAD", max_count=100
-                                )
-                            )
+                            ahead = list(repo.iter_commits(f"{remote_branch}..HEAD", max_count=100))
                             status_info["ahead_count"] = len(ahead)
 
                             status_info["is_synced"] = status_info["behind_count"] == 0
@@ -440,9 +392,7 @@ class GitOperationsService:
 
                     for file in files:
                         if not file.startswith("."):
-                            rel_path = os.path.relpath(
-                                os.path.join(root, file), repo_path
-                            )
+                            rel_path = os.path.relpath(os.path.join(root, file), repo_path)
                             status_info["config_files"].append(rel_path)
 
                 status_info["config_files"].sort()

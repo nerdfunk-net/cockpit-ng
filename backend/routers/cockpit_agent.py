@@ -230,9 +230,7 @@ async def ping_devices(
         # 1. Load the saved inventory
         inventory = inventory_persistence.get_inventory(request.inventory_id)
         if not inventory:
-            raise HTTPException(
-                status_code=404, detail=f"Inventory {request.inventory_id} not found"
-            )
+            raise HTTPException(status_code=404, detail=f"Inventory {request.inventory_id} not found")
 
         # 2. Resolve devices from inventory conditions
         conditions = inventory.get("conditions", [])
@@ -254,14 +252,10 @@ async def ping_devices(
             if not device.name:
                 continue
             try:
-                result = await nautobot.graphql_query(
-                    _DEVICE_IPS_QUERY, {"name": device.name}
-                )
+                result = await nautobot.graphql_query(_DEVICE_IPS_QUERY, {"name": device.name})
                 ip_addresses = _extract_ip_addresses(result, device.name)
             except Exception as exc:
-                logger.warning(
-                    "Failed to fetch IPs for device '%s': %s", device.name, exc
-                )
+                logger.warning("Failed to fetch IPs for device '%s': %s", device.name, exc)
                 ip_addresses = []
 
             device_ping_list.append(
@@ -273,9 +267,7 @@ async def ping_devices(
             )
 
         if not device_ping_list:
-            raise HTTPException(
-                status_code=400, detail="No devices with names found in inventory"
-            )
+            raise HTTPException(status_code=400, detail="No devices with names found in inventory")
 
         username = user.get("sub", "system")
 

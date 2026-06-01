@@ -22,9 +22,7 @@ class CheckMKActivationService:
         client = CheckMKClientFactory.build_client_from_settings()
 
         def _fetch() -> Dict[str, Any]:
-            response = client._make_request(
-                "GET", "domain-types/activation_run/collections/pending_changes"
-            )
+            response = client._make_request("GET", "domain-types/activation_run/collections/pending_changes")
             etag = "*"
             if response.status_code == 200:
                 etag = response.headers.get("ETag", "*")
@@ -46,24 +44,16 @@ class CheckMKActivationService:
             )
         )
 
-    async def activate_changes_with_etag(
-        self, etag: str, request: Any
-    ) -> Dict[str, Any]:
+    async def activate_changes_with_etag(self, etag: str, request: Any) -> Dict[str, Any]:
         return await self.activate_changes(request, etag=etag)
 
     async def get_activation_status(self, activation_id: str) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        return await asyncio.to_thread(
-            lambda: client.get_activation_status(activation_id)
-        )
+        return await asyncio.to_thread(lambda: client.get_activation_status(activation_id))
 
-    async def wait_for_activation_completion(
-        self, activation_id: str
-    ) -> Dict[str, Any]:
+    async def wait_for_activation_completion(self, activation_id: str) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        return await asyncio.to_thread(
-            lambda: client.wait_for_activation_completion(activation_id)
-        )
+        return await asyncio.to_thread(lambda: client.wait_for_activation_completion(activation_id))
 
     async def get_running_activations(self) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()

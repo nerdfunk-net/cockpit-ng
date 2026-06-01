@@ -87,9 +87,7 @@ async def get_dcim_interfaces(
 
         result = await nautobot_service.rest_request(endpoint, method="GET")
 
-        logger.info(
-            "Retrieved %s interfaces from Nautobot DCIM", result.get("count", 0)
-        )
+        logger.info("Retrieved %s interfaces from Nautobot DCIM", result.get("count", 0))
         return result
 
     except Exception as e:
@@ -165,9 +163,7 @@ async def create_dcim_interface(
     try:
         # Validate required fields
         required_fields = ["name", "device", "type", "status"]
-        missing_fields = [
-            field for field in required_fields if field not in interface_data
-        ]
+        missing_fields = [field for field in required_fields if field not in interface_data]
 
         if missing_fields:
             raise HTTPException(
@@ -176,9 +172,7 @@ async def create_dcim_interface(
             )
 
         endpoint = "dcim/interfaces/"
-        result = await nautobot_service.rest_request(
-            endpoint, method="POST", data=interface_data
-        )
+        result = await nautobot_service.rest_request(endpoint, method="POST", data=interface_data)
 
         logger.info(
             "Created interface %s on device %s in Nautobot DCIM",
@@ -246,9 +240,7 @@ async def update_dcim_interface(
         endpoint = f"dcim/interfaces/{interface_id}/"
 
         # Use PATCH for partial updates
-        result = await nautobot_service.rest_request(
-            endpoint, method="PATCH", data=interface_data
-        )
+        result = await nautobot_service.rest_request(endpoint, method="PATCH", data=interface_data)
 
         logger.info("Updated interface %s in Nautobot DCIM", interface_id)
 

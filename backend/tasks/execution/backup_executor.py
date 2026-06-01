@@ -96,9 +96,7 @@ def execute_backup(
 
         if job_parameters:
             config_repository_id = job_parameters.get("config_repository_id")
-            logger.info(
-                "Config repository ID from job_parameters: %s", config_repository_id
-            )
+            logger.info("Config repository ID from job_parameters: %s", config_repository_id)
 
         # If not in job_parameters, try to get from template via schedule
         if not config_repository_id and schedule_id:
@@ -112,18 +110,10 @@ def execute_backup(
                     template = _template_svc.get_job_template(template_id)
                     if template:
                         config_repository_id = template.get("config_repository_id")
-                        backup_running_config_path = template.get(
-                            "backup_running_config_path"
-                        )
-                        backup_startup_config_path = template.get(
-                            "backup_startup_config_path"
-                        )
-                        write_timestamp_to_custom_field = template.get(
-                            "write_timestamp_to_custom_field", False
-                        )
-                        timestamp_custom_field_name = template.get(
-                            "timestamp_custom_field_name"
-                        )
+                        backup_running_config_path = template.get("backup_running_config_path")
+                        backup_startup_config_path = template.get("backup_startup_config_path")
+                        write_timestamp_to_custom_field = template.get("write_timestamp_to_custom_field", False)
+                        timestamp_custom_field_name = template.get("timestamp_custom_field_name")
                         parallel_tasks = template.get("parallel_tasks", 1)
                         logger.info(
                             "Config repository ID from template: %s",
@@ -158,9 +148,7 @@ def execute_backup(
         # If no target devices provided, fetch all from Nautobot
         device_ids = target_devices
         if not device_ids:
-            logger.info(
-                "No target devices specified, fetching all devices from Nautobot"
-            )
+            logger.info("No target devices specified, fetching all devices from Nautobot")
             task_context.update_state(
                 state="PROGRESS",
                 meta={
@@ -210,9 +198,7 @@ def execute_backup(
         logger.info("Fetching repository %s from database...", config_repository_id)
         repository = git_repo_manager.get_repository(config_repository_id)
         if not repository:
-            logger.error(
-                "ERROR: Repository %s not found in database", config_repository_id
-            )
+            logger.error("ERROR: Repository %s not found in database", config_repository_id)
             return {
                 "success": False,
                 "error": f"Repository {config_repository_id} not found",
@@ -291,9 +277,7 @@ def execute_backup(
 
         # Get Git credentials for repository (for logging purposes)
         logger.info("Resolving Git repository credentials...")
-        git_username, git_token, git_ssh_key_path = (
-            git_auth_service.resolve_credentials(dict(repository))
-        )
+        git_username, git_token, git_ssh_key_path = git_auth_service.resolve_credentials(dict(repository))
         logger.info("  - Git username: %s", git_username or "none")
         logger.info("  - Git token: %s", "*" * 10 if git_token else "none")
         logger.info("  - SSH key: %s", "configured" if git_ssh_key_path else "none")
@@ -304,9 +288,7 @@ def execute_backup(
             git_repo = git_service.open_or_clone(dict(repository))
 
             git_status["repository_existed"] = repo_dir.exists()
-            git_status["operation"] = (
-                "opened" if git_status["repository_existed"] else "cloned"
-            )
+            git_status["operation"] = "opened" if git_status["repository_existed"] else "cloned"
 
             logger.info("✓ Repository ready at %s", repo_dir)
             logger.info("  - Current branch: %s", git_repo.active_branch)
@@ -406,9 +388,7 @@ def execute_backup(
 
             # Return immediately - chord callback will handle finalization
             logger.info("Chord created for %s devices", total_devices)
-            logger.info(
-                "Parallel backup tasks launched - finalization will happen in callback"
-            )
+            logger.info("Parallel backup tasks launched - finalization will happen in callback")
 
             return {
                 "success": True,
@@ -495,9 +475,7 @@ def execute_backup(
                 )
 
                 git_commit_status["files_changed"] = result.files_changed
-                git_commit_status["commit_hash"] = (
-                    result.commit_sha[:8] if result.commit_sha else None
-                )
+                git_commit_status["commit_hash"] = result.commit_sha[:8] if result.commit_sha else None
                 git_commit_status["committed"] = result.commit_sha is not None
                 git_commit_status["pushed"] = result.pushed
 
@@ -536,11 +514,7 @@ def execute_backup(
             "errors": [],
         }
 
-        if (
-            write_timestamp_to_custom_field
-            and timestamp_custom_field_name
-            and backed_up_devices
-        ):
+        if write_timestamp_to_custom_field and timestamp_custom_field_name and backed_up_devices:
             logger.info("-" * 80)
             logger.info("STEP 5: UPDATING NAUTOBOT CUSTOM FIELDS WITH BACKUP TIMESTAMP")
             logger.info("-" * 80)

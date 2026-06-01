@@ -64,42 +64,28 @@ class DeviceOnboardingService:
 
             # Resolve string names to UUIDs using resolvers
             role_name = device_data.get("role", "")
-            role_id = (
-                await self.metadata_resolver.resolve_role_id(role_name)
-                if role_name
-                else ""
-            )
+            role_id = await self.metadata_resolver.resolve_role_id(role_name) if role_name else ""
 
             namespace_name = device_data.get("namespace", "")
-            namespace_id = (
-                await self.network_resolver.resolve_namespace_id(namespace_name)
-                if namespace_name
-                else ""
-            )
+            namespace_id = await self.network_resolver.resolve_namespace_id(namespace_name) if namespace_name else ""
 
             device_status_name = device_data.get("status", "")
             device_status_id = (
-                await self.metadata_resolver.resolve_status_id(
-                    device_status_name, "dcim.device"
-                )
+                await self.metadata_resolver.resolve_status_id(device_status_name, "dcim.device")
                 if device_status_name
                 else ""
             )
 
             interface_status_name = device_data.get("interface_status", "")
             interface_status_id = (
-                await self.metadata_resolver.resolve_status_id(
-                    interface_status_name, "dcim.interface"
-                )
+                await self.metadata_resolver.resolve_status_id(interface_status_name, "dcim.interface")
                 if interface_status_name
                 else ""
             )
 
             ip_status_name = device_data.get("ip_status", "")
             ip_status_id = (
-                await self.metadata_resolver.resolve_status_id(
-                    ip_status_name, "ipam.ipaddress"
-                )
+                await self.metadata_resolver.resolve_status_id(ip_status_name, "ipam.ipaddress")
                 if ip_status_name
                 else ""
             )
@@ -109,12 +95,8 @@ class DeviceOnboardingService:
             if platform_name == "auto-detect":
                 platform_id = None  # Use None for auto-detect
             elif platform_name:
-                platform_id = await self.metadata_resolver.resolve_platform_id(
-                    platform_name
-                )
-                logger.debug(
-                    "Platform '%s' resolved to ID: %s", platform_name, platform_id
-                )
+                platform_id = await self.metadata_resolver.resolve_platform_id(platform_name)
+                logger.debug("Platform '%s' resolved to ID: %s", platform_name, platform_id)
                 # If UUID lookup fails, use None instead of the platform name
                 if not platform_id:
                     platform_id = None
@@ -128,8 +110,7 @@ class DeviceOnboardingService:
                     "location": location_id,
                     "ip_addresses": device_data.get("ip_address", ""),
                     "secrets_group": secret_group_id,
-                    "device_role": role_id
-                    or role_name,  # Fallback to name if resolution fails
+                    "device_role": role_id or role_name,  # Fallback to name if resolution fails
                     "namespace": namespace_id or namespace_name,
                     "device_status": device_status_id or device_status_name,
                     "interface_status": interface_status_id or interface_status_name,
@@ -137,9 +118,7 @@ class DeviceOnboardingService:
                     "platform": platform_id,
                     "port": device_data.get("port", 22),
                     "timeout": device_data.get("timeout", 30),
-                    "update_devices_without_primary_ip": device_data.get(
-                        "update_devices_without_primary_ip", False
-                    ),
+                    "update_devices_without_primary_ip": device_data.get("update_devices_without_primary_ip", False),
                 }
             }
 
@@ -148,9 +127,7 @@ class DeviceOnboardingService:
             logger.debug("  Original names -> UUIDs:")
             logger.debug("    role: '%s' -> '%s'", role_name, role_id)
             logger.debug("    namespace: '%s' -> '%s'", namespace_name, namespace_id)
-            logger.debug(
-                "    device_status: '%s' -> '%s'", device_status_name, device_status_id
-            )
+            logger.debug("    device_status: '%s' -> '%s'", device_status_name, device_status_id)
             logger.debug(
                 "    interface_status: '%s' -> '%s'",
                 interface_status_name,

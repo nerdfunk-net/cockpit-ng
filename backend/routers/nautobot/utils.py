@@ -49,9 +49,7 @@ async def get_nautobot_stats(
 
         # Try to get IP addresses and prefixes (might not exist in all Nautobot versions)
         try:
-            ip_addresses_result = await nautobot_service.rest_request(
-                "ipam/ip-addresses/"
-            )
+            ip_addresses_result = await nautobot_service.rest_request("ipam/ip-addresses/")
             ip_addresses_count = ip_addresses_result.get("count", 0)
         except Exception:
             ip_addresses_count = 0

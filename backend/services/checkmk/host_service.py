@@ -46,9 +46,7 @@ class CheckMKHostService:
                     "host_name": host_data.get("id"),
                     "folder": host_data.get("extensions", {}).get("folder", "/"),
                     "attributes": host_data.get("extensions", {}).get("attributes", {}),
-                    "effective_attributes": host_data.get("extensions", {}).get(
-                        "effective_attributes"
-                    )
+                    "effective_attributes": host_data.get("extensions", {}).get("effective_attributes")
                     if effective_attributes
                     else None,
                 }
@@ -59,19 +57,13 @@ class CheckMKHostService:
     # GET /hosts/{hostname}
     # ------------------------------------------------------------------
 
-    async def get_host(
-        self, hostname: str, effective_attributes: bool = False
-    ) -> Dict[str, Any]:
+    async def get_host(self, hostname: str, effective_attributes: bool = False) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
         try:
-            return await asyncio.to_thread(
-                lambda: client.get_host(hostname, effective_attributes)
-            )
+            return await asyncio.to_thread(lambda: client.get_host(hostname, effective_attributes))
         except CheckMKAPIError as e:
             if e.status_code == 404:
-                raise HostNotFoundError(
-                    f"Host '{hostname}' not found in CheckMK"
-                ) from e
+                raise HostNotFoundError(f"Host '{hostname}' not found in CheckMK") from e
             raise
 
     # ------------------------------------------------------------------
@@ -106,9 +98,7 @@ class CheckMKHostService:
                     hostname,
                 )
                 disc_result = await asyncio.to_thread(
-                    lambda: client.start_service_discovery(
-                        hostname, mode=discovery_mode
-                    )
+                    lambda: client.start_service_discovery(hostname, mode=discovery_mode)
                 )
                 response_data["discovery"] = {
                     "started": True,
@@ -149,9 +139,7 @@ class CheckMKHostService:
     # PUT /hosts/{hostname}
     # ------------------------------------------------------------------
 
-    async def update_host(
-        self, hostname: str, attributes: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def update_host(self, hostname: str, attributes: Dict[str, Any]) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
         return await asyncio.to_thread(lambda: client.update_host(hostname, attributes))
 
@@ -159,9 +147,7 @@ class CheckMKHostService:
     # DELETE /hosts/{hostname}
     # ------------------------------------------------------------------
 
-    async def delete_host(
-        self, hostname: str, site_name: Optional[str] = None
-    ) -> Dict[str, Any]:
+    async def delete_host(self, hostname: str, site_name: Optional[str] = None) -> Dict[str, Any]:
         logger.info("Deleting host from CheckMK: %s", hostname)
         client = CheckMKClientFactory.build_client_from_settings(site_name=site_name)
         await asyncio.to_thread(lambda: client.delete_host(hostname))
@@ -174,9 +160,7 @@ class CheckMKHostService:
     async def move_host(self, hostname: str, target_folder: str) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
         checkmk_folder = slash_to_tilde(target_folder)
-        return await asyncio.to_thread(
-            lambda: client.move_host(hostname, checkmk_folder)
-        )
+        return await asyncio.to_thread(lambda: client.move_host(hostname, checkmk_folder))
 
     # ------------------------------------------------------------------
     # POST /hosts/{hostname}/rename
@@ -208,10 +192,7 @@ class CheckMKHostService:
 
     async def bulk_update_hosts(self, entries: Dict[str, Any]) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        hosts = {
-            hostname: {"attributes": req.attributes}
-            for hostname, req in entries.items()
-        }
+        hosts = {hostname: {"attributes": req.attributes} for hostname, req in entries.items()}
         return await asyncio.to_thread(lambda: client.bulk_update_hosts(hosts))
 
     # ------------------------------------------------------------------

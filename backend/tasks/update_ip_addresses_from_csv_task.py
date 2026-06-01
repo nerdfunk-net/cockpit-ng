@@ -171,9 +171,7 @@ def update_ip_addresses_from_csv_task(
             # Extract values using mapped column names
             address_value = row.get(address_col, "").strip()
             namespace_value = row.get(namespace_col, "").strip() or "Global"
-            csv_uuid = (
-                row.get(id_col, "").strip() if (not ignore_uuid and id_col) else None
-            )
+            csv_uuid = row.get(id_col, "").strip() if (not ignore_uuid and id_col) else None
 
             # Identifier for logging
             if ignore_uuid or not csv_uuid:
@@ -258,13 +256,9 @@ def update_ip_addresses_from_csv_task(
 
                     # Verify the IP address exists
                     try:
-                        existing_ip_address = asyncio.run(
-                            _get_ip_address_by_uuid(nautobot_service, ip_address_uuid)
-                        )
+                        existing_ip_address = asyncio.run(_get_ip_address_by_uuid(nautobot_service, ip_address_uuid))
                         if not existing_ip_address:
-                            logger.warning(
-                                "IP address with UUID '%s' not found", ip_address_uuid
-                            )
+                            logger.warning("IP address with UUID '%s' not found", ip_address_uuid)
                             failures.append(
                                 {
                                     "row": idx,
@@ -293,9 +287,7 @@ def update_ip_addresses_from_csv_task(
                 )
 
                 if not update_data:
-                    logger.info(
-                        "No update data for IP address %s, skipping", identifier
-                    )
+                    logger.info("No update data for IP address %s, skipping", identifier)
                     skipped.append(
                         {
                             "row": idx,
@@ -332,11 +324,7 @@ def update_ip_addresses_from_csv_task(
                     logger.info("  - Method: PATCH")
                     logger.info("  - Payload: %s", update_data)
 
-                    result = asyncio.run(
-                        _update_ip_address(
-                            nautobot_service, ip_address_uuid, update_data
-                        )
-                    )
+                    result = asyncio.run(_update_ip_address(nautobot_service, ip_address_uuid, update_data))
 
                     if result["success"]:
                         successes.append(
@@ -455,18 +443,14 @@ def update_ip_addresses_from_csv_task(
         return error_result
 
 
-async def _get_ip_address_by_uuid(
-    nautobot_service: NautobotService, ip_address_uuid: str
-) -> Optional[Dict[str, Any]]:
+async def _get_ip_address_by_uuid(nautobot_service: NautobotService, ip_address_uuid: str) -> Optional[Dict[str, Any]]:
     """Get an IP address from Nautobot by UUID using the REST API."""
     try:
         endpoint = f"ipam/ip-addresses/{ip_address_uuid}/"
         result = await nautobot_service.rest_request(endpoint, method="GET")
         return result
     except Exception as e:
-        logger.error(
-            "Error getting IP address by UUID %s: %s", ip_address_uuid, e, exc_info=True
-        )
+        logger.error("Error getting IP address by UUID %s: %s", ip_address_uuid, e, exc_info=True)
         return None
 
 
@@ -517,17 +501,13 @@ async def _find_ip_address_by_address_and_namespace_graphql(
         result = await nautobot_service.graphql_query(query, variables)
 
         if not result or "data" not in result:
-            logger.warning(
-                "No data returned from GraphQL query for address: %s", address
-            )
+            logger.warning("No data returned from GraphQL query for address: %s", address)
             return None, None
 
         ip_addresses = result.get("data", {}).get("ip_addresses", [])
 
         if not ip_addresses:
-            logger.warning(
-                "IP address '%s' not found in namespace '%s'", address, namespace
-            )
+            logger.warning("IP address '%s' not found in namespace '%s'", address, namespace)
             return None, None
 
         if len(ip_addresses) > 1:
@@ -660,9 +640,7 @@ def _prepare_ip_address_update_data(
 
     columns_to_process = selected_columns if selected_columns is not None else headers
 
-    logger.info(
-        "[_prepare_ip_address_update_data] Columns to process: %s", columns_to_process
-    )
+    logger.info("[_prepare_ip_address_update_data] Columns to process: %s", columns_to_process)
 
     for field in columns_to_process:
         if field in excluded_fields:

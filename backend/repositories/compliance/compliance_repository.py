@@ -15,17 +15,13 @@ class RegexPatternRepository(BaseRepository[RegexPattern]):
     def __init__(self):
         super().__init__(RegexPattern)
 
-    def get_by_type(
-        self, pattern_type: str, is_active: Optional[bool] = None
-    ) -> List[RegexPattern]:
+    def get_by_type(self, pattern_type: str, is_active: Optional[bool] = None) -> List[RegexPattern]:
         """Get patterns by type (must_match or must_not_match)"""
         from core.database import get_db_session
 
         session = get_db_session()
         try:
-            query = session.query(self.model).filter(
-                self.model.pattern_type == pattern_type
-            )
+            query = session.query(self.model).filter(self.model.pattern_type == pattern_type)
 
             if is_active is not None:
                 query = query.filter(self.model.is_active == is_active)
@@ -101,9 +97,7 @@ class SNMPMappingRepository(BaseRepository[SNMPMapping]):
         finally:
             session.close()
 
-    def get_by_version(
-        self, version: str, is_active: Optional[bool] = None
-    ) -> List[SNMPMapping]:
+    def get_by_version(self, version: str, is_active: Optional[bool] = None) -> List[SNMPMapping]:
         """Get SNMP mappings by version (v1, v2c, v3)"""
         from core.database import get_db_session
 

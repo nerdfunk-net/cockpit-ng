@@ -9,9 +9,7 @@ import pytest
 from services.settings.defaults import ServerDefaults
 from services.settings.server_defaults_service import ServerDefaultsService
 
-_PATCH_DEFAULT_REPO = (
-    "services.settings.server_defaults_service.ServerDefaultRepository"
-)
+_PATCH_DEFAULT_REPO = "services.settings.server_defaults_service.ServerDefaultRepository"
 
 _DEFAULT_SERVER_DEFAULTS = ServerDefaults()
 

@@ -23,15 +23,11 @@ class CheckMKDiscoveryService:
 
     async def start_service_discovery(self, hostname: str, mode: str) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        return await asyncio.to_thread(
-            lambda: client.start_service_discovery(hostname, mode)
-        )
+        return await asyncio.to_thread(lambda: client.start_service_discovery(hostname, mode))
 
     async def wait_for_service_discovery(self, hostname: str) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()
-        return await asyncio.to_thread(
-            lambda: client.wait_for_service_discovery(hostname)
-        )
+        return await asyncio.to_thread(lambda: client.wait_for_service_discovery(hostname))
 
     async def update_discovery_phase(
         self,
@@ -43,9 +39,7 @@ class CheckMKDiscoveryService:
         kwargs: Dict[str, Any] = {"phase": phase}
         if services:
             kwargs["services"] = services
-        return await asyncio.to_thread(
-            lambda: client.update_discovery_phase(hostname, **kwargs)
-        )
+        return await asyncio.to_thread(lambda: client.update_discovery_phase(hostname, **kwargs))
 
     async def start_bulk_discovery(self, request: Any) -> Dict[str, Any]:
         client = CheckMKClientFactory.build_client_from_settings()

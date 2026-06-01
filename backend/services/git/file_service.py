@@ -85,9 +85,9 @@ class GitFileService:
                         or query_lower in file_info["directory"].lower()
                     ):
                         filtered_files.append(file_info)
-                    elif fnmatch.fnmatch(
-                        file_info["name"].lower(), f"*{query_lower}*"
-                    ) or fnmatch.fnmatch(file_info["path"].lower(), f"*{query_lower}*"):
+                    elif fnmatch.fnmatch(file_info["name"].lower(), f"*{query_lower}*") or fnmatch.fnmatch(
+                        file_info["path"].lower(), f"*{query_lower}*"
+                    ):
                         filtered_files.append(file_info)
 
             if query:
@@ -143,9 +143,7 @@ class GitFileService:
 
             if file_path:
                 try:
-                    file_content = (
-                        (commit.tree / file_path).data_stream.read().decode("utf-8")
-                    )
+                    file_content = (commit.tree / file_path).data_stream.read().decode("utf-8")
                     return {
                         "file_path": file_path,
                         "content": file_content,
@@ -154,8 +152,7 @@ class GitFileService:
                 except KeyError:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
-                        detail="File '%s' not found in commit %s"
-                        % (file_path, commit_hash[:8]),
+                        detail="File '%s' not found in commit %s" % (file_path, commit_hash[:8]),
                     )
 
             files = []
@@ -166,9 +163,7 @@ class GitFileService:
             from config import settings
 
             config_extensions = settings.allowed_file_extensions
-            config_files = [
-                f for f in files if any(f.endswith(ext) for ext in config_extensions)
-            ]
+            config_files = [f for f in files if any(f.endswith(ext) for ext in config_extensions)]
             return sorted(config_files)
         except Exception as e:
             raise HTTPException(
@@ -457,9 +452,7 @@ class GitFileService:
                 raise HTTPException(status_code=404, detail="File not found: %s" % path)
 
             if not os.path.isfile(file_path_resolved):
-                raise HTTPException(
-                    status_code=400, detail="Path is not a file: %s" % path
-                )
+                raise HTTPException(status_code=400, detail="Path is not a file: %s" % path)
 
             try:
                 with open(file_path_resolved, encoding="utf-8") as f:
@@ -547,9 +540,7 @@ class GitFileService:
                 try:
                     items = os.listdir(dir_path)
                 except PermissionError:
-                    logger.warning(
-                        "Permission denied accessing directory: %s", dir_path
-                    )
+                    logger.warning("Permission denied accessing directory: %s", dir_path)
                     return None
 
                 dirs = []
@@ -685,9 +676,7 @@ class GitFileService:
                                 "email": last_commit.author.email,
                             },
                             "date": last_commit.committed_datetime.isoformat(),
-                            "timestamp": int(
-                                last_commit.committed_datetime.timestamp()
-                            ),
+                            "timestamp": int(last_commit.committed_datetime.timestamp()),
                         }
                     else:
                         commit_info = {
@@ -699,9 +688,7 @@ class GitFileService:
                             "timestamp": 0,
                         }
                 except Exception as e:
-                    logger.warning(
-                        "Failed to get commit info for %s: %s", file_rel_path, e
-                    )
+                    logger.warning("Failed to get commit info for %s: %s", file_rel_path, e)
                     commit_info = {
                         "hash": "",
                         "short_hash": "",
@@ -773,19 +760,13 @@ class GitFileService:
                             "name": file,
                             "path": full_path,
                             "directory": rel_root,
-                            "size": os.path.getsize(abs_path)
-                            if os.path.exists(abs_path)
-                            else 0,
+                            "size": os.path.getsize(abs_path) if os.path.exists(abs_path) else 0,
                         }
                     )
 
             if query:
                 q = query.lower()
-                csv_files = [
-                    f
-                    for f in csv_files
-                    if q in f["name"].lower() or q in f["path"].lower()
-                ]
+                csv_files = [f for f in csv_files if q in f["name"].lower() or q in f["path"].lower()]
 
             csv_files.sort(key=lambda x: x["path"])
             total = len(csv_files)
@@ -819,34 +800,26 @@ class GitFileService:
             repo_path_str = str(git_repo_path(repository))
 
             if not os.path.exists(repo_path_str):
-                raise HTTPException(
-                    status_code=404, detail="Repository directory not found"
-                )
+                raise HTTPException(status_code=404, detail="Repository directory not found")
 
             file_path = os.path.join(repo_path_str, path)
             file_path_resolved = os.path.realpath(file_path)
             repo_path_resolved = os.path.realpath(repo_path_str)
 
             if not file_path_resolved.startswith(repo_path_resolved):
-                raise HTTPException(
-                    status_code=403, detail="Access denied: path is outside repository"
-                )
+                raise HTTPException(status_code=403, detail="Access denied: path is outside repository")
 
             if not os.path.exists(file_path_resolved):
                 raise HTTPException(status_code=404, detail="File not found: %s" % path)
 
             if not os.path.isfile(file_path_resolved):
-                raise HTTPException(
-                    status_code=400, detail="Path is not a file: %s" % path
-                )
+                raise HTTPException(status_code=400, detail="Path is not a file: %s" % path)
 
             try:
                 with open(file_path_resolved, encoding="utf-8") as f:
                     content = f.read()
             except UnicodeDecodeError:
-                raise HTTPException(
-                    status_code=400, detail="File is not a text file: %s" % path
-                )
+                raise HTTPException(status_code=400, detail="File is not a text file: %s" % path)
 
             reader = csv.reader(
                 io.StringIO(content),

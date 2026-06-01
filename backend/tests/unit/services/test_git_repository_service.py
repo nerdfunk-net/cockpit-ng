@@ -69,9 +69,7 @@ def test_create_repository_returns_new_id():
 
     with patch(_PATCH_REPO, return_value=mock_repo):
         svc = GitRepositoryService()
-        result = svc.create_repository(
-            {"name": "my-repo", "category": "templates", "url": "https://github.com/x"}
-        )
+        result = svc.create_repository({"name": "my-repo", "category": "templates", "url": "https://github.com/x"})
 
     assert result == 42
 
@@ -85,9 +83,7 @@ def test_create_repository_raises_when_name_exists():
     with patch(_PATCH_REPO, return_value=mock_repo):
         svc = GitRepositoryService()
         with pytest.raises(ValueError, match="already exists"):
-            svc.create_repository(
-                {"name": "dup", "category": "templates", "url": "https://x"}
-            )
+            svc.create_repository({"name": "dup", "category": "templates", "url": "https://x"})
 
 
 # ── get_repository ────────────────────────────────────────────────────────────

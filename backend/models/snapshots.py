@@ -52,9 +52,7 @@ class SnapshotCommandTemplateBase(BaseModel):
 class SnapshotCommandTemplateCreate(SnapshotCommandTemplateBase):
     """Model for creating a snapshot command template."""
 
-    commands: List[SnapshotCommandCreate] = Field(
-        default_factory=list, description="List of commands in template"
-    )
+    commands: List[SnapshotCommandCreate] = Field(default_factory=list, description="List of commands in template")
 
 
 class SnapshotCommandTemplateUpdate(BaseModel):
@@ -87,9 +85,7 @@ class SnapshotCommandTemplateResponse(SnapshotCommandTemplateBase):
 class SnapshotExecuteRequest(BaseModel):
     """Model for executing a snapshot."""
 
-    name: str = Field(
-        ..., description="Snapshot name (supports placeholders like {device})"
-    )
+    name: str = Field(..., description="Snapshot name (supports placeholders like {device})")
     description: Optional[str] = Field(None, description="Snapshot description")
     commands: List[SnapshotCommandCreate] = Field(
         ...,
@@ -101,24 +97,12 @@ class SnapshotExecuteRequest(BaseModel):
         ...,
         description="Path template with placeholders: {device_name}, {timestamp}, {template_name}, {custom_field.*}. MUST include filename with .json extension",
     )
-    devices: List[Dict[str, Any]] = Field(
-        ..., description="List of devices to snapshot", min_length=1
-    )
-    credential_id: Optional[int] = Field(
-        None, description="ID of stored credential to use (optional)"
-    )
-    username: Optional[str] = Field(
-        None, description="SSH username (required if credential_id not provided)"
-    )
-    password: Optional[str] = Field(
-        None, description="SSH password (required if credential_id not provided)"
-    )
-    template_id: Optional[int] = Field(
-        None, description="Optional template ID to associate snapshot with"
-    )
-    template_name: Optional[str] = Field(
-        None, description="Template name for path placeholder replacement"
-    )
+    devices: List[Dict[str, Any]] = Field(..., description="List of devices to snapshot", min_length=1)
+    credential_id: Optional[int] = Field(None, description="ID of stored credential to use (optional)")
+    username: Optional[str] = Field(None, description="SSH username (required if credential_id not provided)")
+    password: Optional[str] = Field(None, description="SSH password (required if credential_id not provided)")
+    template_id: Optional[int] = Field(None, description="Optional template ID to associate snapshot with")
+    template_name: Optional[str] = Field(None, description="Template name for path placeholder replacement")
 
 
 class SnapshotResultResponse(BaseModel):
@@ -198,9 +182,7 @@ class SnapshotCompareRequest(BaseModel):
 
     snapshot_id_1: int = Field(..., description="First snapshot ID")
     snapshot_id_2: int = Field(..., description="Second snapshot ID")
-    device_filter: Optional[List[str]] = Field(
-        None, description="Optional list of device names to compare"
-    )
+    device_filter: Optional[List[str]] = Field(None, description="Optional list of device names to compare")
 
 
 class CommandDiff(BaseModel):

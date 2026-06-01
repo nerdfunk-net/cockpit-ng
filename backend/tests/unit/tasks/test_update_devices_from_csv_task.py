@@ -32,22 +32,15 @@ class TestApplyNameTransform:
 
     def test_none_transform_returns_original(self):
         """None name_transform leaves the name unchanged."""
-        assert (
-            _apply_name_transform("router1.example.com", None) == "router1.example.com"
-        )
+        assert _apply_name_transform("router1.example.com", None) == "router1.example.com"
 
     def test_empty_pattern_returns_original(self):
         """Empty pattern string leaves the name unchanged."""
-        assert (
-            _apply_name_transform("router1", {"mode": "regex", "pattern": ""})
-            == "router1"
-        )
+        assert _apply_name_transform("router1", {"mode": "regex", "pattern": ""}) == "router1"
 
     def test_regex_mode_no_capturing_group_returns_full_match(self):
         """Regex without a capturing group returns the full match (group 0)."""
-        result = _apply_name_transform(
-            "router1.example.com", {"mode": "regex", "pattern": r"\w+"}
-        )
+        result = _apply_name_transform("router1.example.com", {"mode": "regex", "pattern": r"\w+"})
         assert result == "router1"
 
     def test_regex_mode_with_capturing_group_returns_group1(self):
@@ -60,9 +53,7 @@ class TestApplyNameTransform:
 
     def test_regex_mode_no_match_returns_original(self):
         """Regex that matches nothing leaves the name unchanged."""
-        result = _apply_name_transform(
-            "router1", {"mode": "regex", "pattern": r"^\d+$"}
-        )
+        result = _apply_name_transform("router1", {"mode": "regex", "pattern": r"^\d+$"})
         assert result == "router1"
 
     def test_replace_mode_substitutes_pattern(self):
@@ -83,9 +74,7 @@ class TestApplyNameTransform:
 
     def test_invalid_pattern_returns_original(self):
         """An invalid regex pattern is caught and the original name is returned."""
-        result = _apply_name_transform(
-            "router1", {"mode": "regex", "pattern": r"[invalid"}
-        )
+        result = _apply_name_transform("router1", {"mode": "regex", "pattern": r"[invalid"})
         assert result == "router1"
 
 
@@ -148,9 +137,7 @@ class TestPrepareRowData:
         """Only columns in selected_columns are included in update_data."""
         row = {"name": "r1", "status": "active", "role": "edge", "platform": "ios"}
         headers = list(row.keys())
-        identifier, update_data, _ = _prepare_row_data(
-            row, headers, selected_columns=["name", "status"]
-        )
+        identifier, update_data, _ = _prepare_row_data(row, headers, selected_columns=["name", "status"])
         assert update_data == {"status": "active"}
         assert "role" not in update_data
         assert "platform" not in update_data
@@ -292,9 +279,7 @@ def test_csv_task_missing_identifier_column_returns_failure():
     csv_content = _csv({"hostname": "r1", "status": "active"})
     result = _run(csv_content)
     assert result["success"] is False
-    assert (
-        "identifier" in result["error"].lower() or "missing" in result["error"].lower()
-    )
+    assert "identifier" in result["error"].lower() or "missing" in result["error"].lower()
 
 
 @pytest.mark.unit

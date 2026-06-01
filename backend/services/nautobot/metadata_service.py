@@ -36,9 +36,7 @@ class NautobotMetadataService:
             Exception: If the API request fails
         """
         logger.debug("Fetching device custom fields from Nautobot")
-        result = await self.nautobot.rest_request(
-            "extras/custom-fields/?content_types=dcim.device"
-        )
+        result = await self.nautobot.rest_request("extras/custom-fields/?content_types=dcim.device")
         custom_fields = result.get("results", [])
         logger.debug("Retrieved %d device custom field definitions", len(custom_fields))
         return custom_fields
@@ -54,9 +52,7 @@ class NautobotMetadataService:
             Exception: If the API request fails
         """
         logger.debug("Fetching prefix custom fields from Nautobot")
-        result = await self.nautobot.rest_request(
-            "extras/custom-fields/?content_types=ipam.prefix"
-        )
+        result = await self.nautobot.rest_request("extras/custom-fields/?content_types=ipam.prefix")
         custom_fields = result.get("results", [])
         logger.debug("Retrieved %d prefix custom field definitions", len(custom_fields))
         return custom_fields
@@ -79,9 +75,7 @@ class NautobotMetadataService:
         logger.debug("Retrieved %d VM custom field definitions", len(custom_fields))
         return custom_fields
 
-    async def get_custom_field_choices(
-        self, custom_field_name: str
-    ) -> List[Dict[str, Any]]:
+    async def get_custom_field_choices(self, custom_field_name: str) -> List[Dict[str, Any]]:
         """
         Get Nautobot custom field choices for a specific custom field.
 
@@ -95,9 +89,7 @@ class NautobotMetadataService:
             Exception: If the API request fails
         """
         logger.debug("Fetching custom field choices for: %s", custom_field_name)
-        result = await self.nautobot.rest_request(
-            f"extras/custom-field-choices/?custom_field={custom_field_name}"
-        )
+        result = await self.nautobot.rest_request(f"extras/custom-field-choices/?custom_field={custom_field_name}")
         choices = result.get("results", [])
         logger.debug(
             "Retrieved %d choices for custom field '%s'",

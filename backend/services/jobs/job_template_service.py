@@ -89,25 +89,13 @@ class JobTemplateService:
         if self._repo.check_name_exists(name, user_id if not is_global else None):
             raise ValueError(f"A job template with name '{name}' already exists")
 
-        deploy_custom_variables_json = (
-            json.dumps(deploy_custom_variables) if deploy_custom_variables else None
-        )
-        deploy_templates_json = (
-            json.dumps(deploy_templates) if deploy_templates else None
-        )
+        deploy_custom_variables_json = json.dumps(deploy_custom_variables) if deploy_custom_variables else None
+        deploy_templates_json = json.dumps(deploy_templates) if deploy_templates else None
         csv_import_column_mapping_json = (
-            json.dumps(csv_import_column_mapping)
-            if csv_import_column_mapping is not None
-            else None
+            json.dumps(csv_import_column_mapping) if csv_import_column_mapping is not None else None
         )
-        csv_import_defaults_json = (
-            json.dumps(csv_import_defaults) if csv_import_defaults is not None else None
-        )
-        csv_export_properties_json = (
-            json.dumps(csv_export_properties)
-            if csv_export_properties is not None
-            else None
-        )
+        csv_import_defaults_json = json.dumps(csv_import_defaults) if csv_import_defaults is not None else None
+        csv_export_properties_json = json.dumps(csv_export_properties) if csv_export_properties is not None else None
 
         template = self._repo.create(
             name=name,
@@ -189,26 +177,20 @@ class JobTemplateService:
             return self._to_dict(template)
         return None
 
-    def get_job_template_by_name(
-        self, name: str, user_id: Optional[int] = None
-    ) -> Optional[Dict[str, Any]]:
+    def get_job_template_by_name(self, name: str, user_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
         template = self._repo.get_by_name(name, user_id)
         if template:
             return self._to_dict(template)
         return None
 
-    def list_job_templates(
-        self, user_id: Optional[int] = None, job_type: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    def list_job_templates(self, user_id: Optional[int] = None, job_type: Optional[str] = None) -> List[Dict[str, Any]]:
         if user_id is not None:
             templates = self._repo.get_user_templates(user_id, job_type)
         else:
             templates = self._repo.get_global_templates(job_type)
         return [self._to_dict(t) for t in templates]
 
-    def get_user_job_templates(
-        self, user_id: int, job_type: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    def get_user_job_templates(self, user_id: int, job_type: Optional[str] = None) -> List[Dict[str, Any]]:
         templates = self._repo.get_user_templates(user_id, job_type)
         return [self._to_dict(t) for t in templates]
 
@@ -307,9 +289,7 @@ class JobTemplateService:
         if backup_startup_config_path is not None:
             update_data["backup_startup_config_path"] = backup_startup_config_path
         if write_timestamp_to_custom_field is not None:
-            update_data["write_timestamp_to_custom_field"] = (
-                write_timestamp_to_custom_field
-            )
+            update_data["write_timestamp_to_custom_field"] = write_timestamp_to_custom_field
         if timestamp_custom_field_name is not None:
             update_data["timestamp_custom_field_name"] = timestamp_custom_field_name
         if activate_changes_after_sync is not None:
@@ -333,9 +313,7 @@ class JobTemplateService:
         if scan_custom_field_value is not None:
             update_data["scan_custom_field_value"] = scan_custom_field_value
         if scan_response_custom_field_name is not None:
-            update_data["scan_response_custom_field_name"] = (
-                scan_response_custom_field_name
-            )
+            update_data["scan_response_custom_field_name"] = scan_response_custom_field_name
         if scan_set_reachable_ip_active is not None:
             update_data["scan_set_reachable_ip_active"] = scan_set_reachable_ip_active
         if scan_max_ips is not None:
@@ -385,9 +363,7 @@ class JobTemplateService:
         if csv_import_quote_char is not None:
             update_data["csv_import_quote_char"] = csv_import_quote_char
         if csv_import_column_mapping is not None:
-            update_data["csv_import_column_mapping"] = json.dumps(
-                csv_import_column_mapping
-            )
+            update_data["csv_import_column_mapping"] = json.dumps(csv_import_column_mapping)
         if csv_import_file_filter is not None:
             update_data["csv_import_file_filter"] = csv_import_file_filter
         if csv_import_defaults is not None:
@@ -397,9 +373,7 @@ class JobTemplateService:
         if csv_import_add_prefixes is not None:
             update_data["csv_import_add_prefixes"] = csv_import_add_prefixes
         if csv_import_default_prefix_length is not None:
-            update_data["csv_import_default_prefix_length"] = (
-                csv_import_default_prefix_length
-            )
+            update_data["csv_import_default_prefix_length"] = csv_import_default_prefix_length
         if csv_export_repo_id is not None:
             update_data["csv_export_repo_id"] = csv_export_repo_id
         if csv_export_file_path is not None:
@@ -584,16 +558,10 @@ class JobTemplateService:
             "deploy_agent_id": template.deploy_agent_id,
             "deploy_path": template.deploy_path,
             "deploy_custom_variables": (
-                json.loads(template.deploy_custom_variables)
-                if template.deploy_custom_variables
-                else None
+                json.loads(template.deploy_custom_variables) if template.deploy_custom_variables else None
             ),
             "activate_after_deploy": template.activate_after_deploy,
-            "deploy_templates": (
-                json.loads(template.deploy_templates)
-                if template.deploy_templates
-                else None
-            ),
+            "deploy_templates": (json.loads(template.deploy_templates) if template.deploy_templates else None),
             "ip_action": template.ip_action,
             "ip_filter_field": template.ip_filter_field,
             "ip_filter_type": template.ip_filter_type,
@@ -610,25 +578,17 @@ class JobTemplateService:
             "csv_import_delimiter": template.csv_import_delimiter,
             "csv_import_quote_char": template.csv_import_quote_char,
             "csv_import_column_mapping": (
-                json.loads(template.csv_import_column_mapping)
-                if template.csv_import_column_mapping
-                else None
+                json.loads(template.csv_import_column_mapping) if template.csv_import_column_mapping else None
             ),
             "csv_import_file_filter": template.csv_import_file_filter,
-            "csv_import_defaults": (
-                json.loads(template.csv_import_defaults)
-                if template.csv_import_defaults
-                else None
-            ),
+            "csv_import_defaults": (json.loads(template.csv_import_defaults) if template.csv_import_defaults else None),
             "csv_import_format": template.csv_import_format,
             "csv_import_add_prefixes": template.csv_import_add_prefixes,
             "csv_import_default_prefix_length": template.csv_import_default_prefix_length,
             "csv_export_repo_id": template.csv_export_repo_id,
             "csv_export_file_path": template.csv_export_file_path,
             "csv_export_properties": (
-                json.loads(template.csv_export_properties)
-                if template.csv_export_properties
-                else None
+                json.loads(template.csv_export_properties) if template.csv_export_properties else None
             ),
             "csv_export_delimiter": template.csv_export_delimiter,
             "csv_export_quote_char": template.csv_export_quote_char,

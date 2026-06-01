@@ -46,18 +46,11 @@ def check_user(username: str):
     print(f"  Total: {len(user_perms)} permissions")
 
     # Check for dashboard.settings:read specifically
-    has_dashboard = any(
-        p["resource"] == "dashboard.settings" and p["action"] == "read"
-        for p in user_perms
-    )
+    has_dashboard = any(p["resource"] == "dashboard.settings" and p["action"] == "read" for p in user_perms)
     print(f"\n  ✓ Has dashboard.settings:read: {has_dashboard}")
 
     if has_dashboard:
-        dashboard_perm = next(
-            p
-            for p in user_perms
-            if p["resource"] == "dashboard.settings" and p["action"] == "read"
-        )
+        dashboard_perm = next(p for p in user_perms if p["resource"] == "dashboard.settings" and p["action"] == "read")
         print(f"    Source: {dashboard_perm.get('source', 'unknown')}")
 
     # List all permissions

@@ -10,7 +10,6 @@ import pytest
 
 from tasks.utils.condition_helpers import convert_conditions_to_operations
 
-
 # ── convert_conditions_to_operations ──────────────────────────────────────────
 
 
@@ -29,9 +28,7 @@ def test_convert_conditions_version_2():
             "tree": {
                 "type": "root",
                 "internalLogic": "AND",
-                "items": [
-                    {"field": "location", "operator": "equals", "value": "NYC"}
-                ],
+                "items": [{"field": "location", "operator": "equals", "value": "NYC"}],
             },
         }
     ]

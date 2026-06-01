@@ -86,9 +86,7 @@ class DeviceCreationService:
             return await self._validate_dry_run(request)
 
         # Step 1: Create device
-        device_id, device_response = await self._step1_create_device(
-            request, workflow_status
-        )
+        device_id, device_response = await self._step1_create_device(request, workflow_status)
 
         # Step 1.5a: Assign device to virtual chassis if requested
         if request.new_virtual_chassis_name:
@@ -110,9 +108,9 @@ class DeviceCreationService:
         )
 
         # Determine overall success — "skipped" is valid when no interfaces were requested
-        overall_success = workflow_status["step1_device"][
-            "status"
-        ] == "success" and workflow_status["step3_interfaces"]["status"] in [
+        overall_success = workflow_status["step1_device"]["status"] == "success" and workflow_status[
+            "step3_interfaces"
+        ]["status"] in [
             "success",
             "partial",
             "skipped",
@@ -134,11 +132,7 @@ class DeviceCreationService:
                 # Get device_type display name from UUID
                 device_type_field = device_response.get("device_type")
                 if isinstance(device_type_field, dict) and "id" in device_type_field:
-                    device_type_name = (
-                        await self.common_service.get_device_type_display(
-                            device_type_field["id"]
-                        )
-                    )
+                    device_type_name = await self.common_service.get_device_type_display(device_type_field["id"])
                     extra_data["device_type"] = device_type_name or request.device_type
                 else:
                     extra_data["device_type"] = request.device_type
@@ -146,9 +140,7 @@ class DeviceCreationService:
                 # Get platform name from UUID
                 platform_field = device_response.get("platform")
                 if isinstance(platform_field, dict) and "id" in platform_field:
-                    platform_name = await self.common_service.get_platform_name(
-                        platform_field["id"]
-                    )
+                    platform_name = await self.common_service.get_platform_name(platform_field["id"])
                     extra_data["platform"] = platform_name or request.platform
                 elif request.platform:
                     extra_data["platform"] = request.platform
@@ -178,9 +170,7 @@ class DeviceCreationService:
                     extra_data=extra_data,
                 )
             else:
-                error_message = workflow_status["step1_device"].get(
-                    "message", "Unknown error"
-                )
+                error_message = workflow_status["step1_device"].get("message", "Unknown error")
                 audit_log_repo.create_log(
                     username=username,
                     user_id=user_id,
@@ -200,16 +190,11 @@ class DeviceCreationService:
             "device": device_response,
             "workflow_status": workflow_status,
             "summary": {
-                "device_created": workflow_status["step1_device"]["status"]
-                == "success",
+                "device_created": workflow_status["step1_device"]["status"] == "success",
                 "interfaces_created": interfaces_created,
                 "interfaces_failed": len(workflow_status["step3_interfaces"]["errors"]),
-                "ip_addresses_created": len(
-                    workflow_status["step2_ip_addresses"]["data"]
-                ),
-                "ip_addresses_failed": len(
-                    workflow_status["step2_ip_addresses"]["errors"]
-                ),
+                "ip_addresses_created": len(workflow_status["step2_ip_addresses"]["data"]),
+                "ip_addresses_failed": len(workflow_status["step2_ip_addresses"]["errors"]),
                 "primary_ipv4_assigned": primary_ipv4_id is not None,
             },
         }
@@ -231,13 +216,9 @@ class DeviceCreationService:
 
         # Check if device name already exists
         try:
-            existing = await self._nb.rest_request(
-                f"dcim/devices/?name={request.name}&limit=1"
-            )
+            existing = await self._nb.rest_request(f"dcim/devices/?name={request.name}&limit=1")
             if existing.get("count", 0) > 0:
-                errors.append(
-                    f"A device named '{request.name}' already exists in Nautobot"
-                )
+                errors.append(f"A device named '{request.name}' already exists in Nautobot")
         except Exception as e:
             logger.warning("Dry run: could not check device existence: %s", str(e))
 
@@ -257,22 +238,16 @@ class DeviceCreationService:
             try:
                 result = await self._nb.rest_request(endpoint)
                 if result.get("count", 0) == 0:
-                    errors.append(
-                        f"{label} ID '{getattr(request, _field)}' not found in Nautobot"
-                    )
+                    errors.append(f"{label} ID '{getattr(request, _field)}' not found in Nautobot")
             except Exception as e:
                 logger.warning("Dry run: could not validate %s: %s", label, str(e))
 
         # Validate optional platform UUID
         if request.platform:
             try:
-                result = await self._nb.rest_request(
-                    f"dcim/platforms/?id={request.platform}&limit=1"
-                )
+                result = await self._nb.rest_request(f"dcim/platforms/?id={request.platform}&limit=1")
                 if result.get("count", 0) == 0:
-                    errors.append(
-                        f"Platform ID '{request.platform}' not found in Nautobot"
-                    )
+                    errors.append(f"Platform ID '{request.platform}' not found in Nautobot")
             except Exception as e:
                 logger.warning("Dry run: could not validate platform: %s", str(e))
 
@@ -282,9 +257,7 @@ class DeviceCreationService:
             "dry_run": True,
             "device_id": None,
             "errors": errors,
-            "message": "Validation passed"
-            if success
-            else f"{len(errors)} validation error(s) found",
+            "message": "Validation passed" if success else f"{len(errors)} validation error(s) found",
         }
 
     def _log_request_data(self, request: AddDeviceRequest) -> None:
@@ -320,9 +293,7 @@ class DeviceCreationService:
                     ip_data.is_primary,
                 )
 
-    async def _resolve_request_names_to_ids(
-        self, request: AddDeviceRequest
-    ) -> AddDeviceRequest:
+    async def _resolve_request_names_to_ids(self, request: AddDeviceRequest) -> AddDeviceRequest:
         """
         Resolve human-readable names to Nautobot UUIDs.
 
@@ -334,13 +305,9 @@ class DeviceCreationService:
 
         # device_type
         if request.device_type and not is_valid_uuid(request.device_type):
-            device_type_id = await self.common_service.resolve_device_type_id(
-                request.device_type
-            )
+            device_type_id = await self.common_service.resolve_device_type_id(request.device_type)
             if not device_type_id:
-                raise ValueError(
-                    f"Device type '{request.device_type}' not found in Nautobot"
-                )
+                raise ValueError(f"Device type '{request.device_type}' not found in Nautobot")
             updates["device_type"] = device_type_id
 
         # role
@@ -352,42 +319,32 @@ class DeviceCreationService:
 
         # status
         if request.status and not is_valid_uuid(request.status):
-            status_id = await self.common_service.resolve_status_id(
-                request.status, content_type="dcim.device"
-            )
+            status_id = await self.common_service.resolve_status_id(request.status, content_type="dcim.device")
             if not status_id:
                 raise ValueError(f"Status '{request.status}' not found in Nautobot")
             updates["status"] = status_id
 
         # location
         if request.location and not is_valid_uuid(request.location):
-            location_id = await self.common_service.resolve_location_id(
-                request.location
-            )
+            location_id = await self.common_service.resolve_location_id(request.location)
             if not location_id:
                 raise ValueError(f"Location '{request.location}' not found in Nautobot")
             updates["location"] = location_id
 
         # platform (optional field — skip silently if not found)
         if request.platform and not is_valid_uuid(request.platform):
-            platform_id = await self.common_service.resolve_platform_id(
-                request.platform
-            )
+            platform_id = await self.common_service.resolve_platform_id(request.platform)
             if platform_id:
                 updates["platform"] = platform_id
             else:
-                logger.warning(
-                    "Platform '%s' not found in Nautobot — skipping", request.platform
-                )
+                logger.warning("Platform '%s' not found in Nautobot — skipping", request.platform)
                 updates["platform"] = None
 
         if updates:
             return request.model_copy(update=updates)
         return request
 
-    async def _step1_create_device(
-        self, request: AddDeviceRequest, workflow_status: dict
-    ) -> tuple[str, dict]:
+    async def _step1_create_device(self, request: AddDeviceRequest, workflow_status: dict) -> tuple[str, dict]:
         """
         Step 1: Create device in Nautobot DCIM.
 
@@ -426,9 +383,7 @@ class DeviceCreationService:
             if not is_valid_uuid(rack_id):
                 rack_id = await self.common_service.resolve_rack_id(rack_id)
                 if not rack_id:
-                    logger.warning(
-                        "Rack '%s' not found — skipping rack placement", request.rack
-                    )
+                    logger.warning("Rack '%s' not found — skipping rack placement", request.rack)
             if rack_id:
                 device_payload["rack"] = rack_id
                 if request.face:
@@ -438,22 +393,16 @@ class DeviceCreationService:
 
         logger.info("Device payload: %s", device_payload)
 
-        device_response = await self._nb.rest_request(
-            endpoint="dcim/devices/", method="POST", data=device_payload
-        )
+        device_response = await self._nb.rest_request(endpoint="dcim/devices/", method="POST", data=device_payload)
 
         if not device_response or "id" not in device_response:
             workflow_status["step1_device"]["status"] = "failed"
-            workflow_status["step1_device"]["message"] = (
-                "Failed to create device: No device ID returned"
-            )
+            workflow_status["step1_device"]["message"] = "Failed to create device: No device ID returned"
             raise NautobotAPIError("Failed to create device: No device ID returned")
 
         device_id = device_response["id"]
         workflow_status["step1_device"]["status"] = "success"
-        workflow_status["step1_device"]["message"] = (
-            f"Device '{request.name}' created successfully"
-        )
+        workflow_status["step1_device"]["message"] = f"Device '{request.name}' created successfully"
         workflow_status["step1_device"]["data"] = {
             "id": device_id,
             "name": request.name,
@@ -494,9 +443,7 @@ class DeviceCreationService:
         1. Leading integer after ':' in device_name (e.g. "lab-004:4" -> 4)
         2. max(existing_positions) + 1 as fallback
         """
-        logger.info(
-            "Step 1.5a: Adding device %s to virtual chassis %s", device_id, vc_id
-        )
+        logger.info("Step 1.5a: Adding device %s to virtual chassis %s", device_id, vc_id)
         try:
             name_position = self._extract_vc_position_from_name(device_name)
 
@@ -508,13 +455,9 @@ class DeviceCreationService:
                     device_name,
                 )
             else:
-                members_resp = await self._nb.rest_request(
-                    f"dcim/devices/?virtual_chassis={vc_id}&limit=100"
-                )
+                members_resp = await self._nb.rest_request(f"dcim/devices/?virtual_chassis={vc_id}&limit=100")
                 positions = [
-                    m.get("vc_position")
-                    for m in members_resp.get("results", [])
-                    if m.get("vc_position") is not None
+                    m.get("vc_position") for m in members_resp.get("results", []) if m.get("vc_position") is not None
                 ]
                 next_position = (max(positions) + 1) if positions else 1
                 logger.info(
@@ -545,9 +488,7 @@ class DeviceCreationService:
                 exc,
             )
             # Non-fatal: device was created successfully; log the warning in workflow status
-            workflow_status["step1_device"]["message"] += (
-                f" (Warning: could not join virtual chassis: {exc})"
-            )
+            workflow_status["step1_device"]["message"] += f" (Warning: could not join virtual chassis: {exc})"
 
     async def _step1_5a_create_and_join_virtual_chassis(
         self, device_id: str, vc_name: str, workflow_status: dict
@@ -601,9 +542,7 @@ class DeviceCreationService:
                 f" (Warning: could not create virtual chassis '{vc_name}': {exc})"
             )
 
-    async def _step1_5_create_prefixes(
-        self, request: AddDeviceRequest, workflow_status: dict
-    ) -> None:
+    async def _step1_5_create_prefixes(self, request: AddDeviceRequest, workflow_status: dict) -> None:
         """
         Step 1.5: Create parent prefixes for IP addresses if they don't exist.
 
@@ -648,13 +587,9 @@ class DeviceCreationService:
                 try:
                     ip_network = ipaddress.ip_network(ip_with_cidr, strict=False)
                     prefix_str = str(ip_network)
-                    logger.info(
-                        "Calculated prefix for %s: %s", ip_with_cidr, prefix_str
-                    )
+                    logger.info("Calculated prefix for %s: %s", ip_with_cidr, prefix_str)
                 except ValueError as e:
-                    logger.error(
-                        "Invalid IP address format for %s: %s", ip_with_cidr, e
-                    )
+                    logger.error("Invalid IP address format for %s: %s", ip_with_cidr, e)
                     continue
 
                 # Create unique key for prefix+namespace to avoid duplicates
@@ -670,9 +605,7 @@ class DeviceCreationService:
                 # Create prefix using common service
                 # Note: We don't set location for auto-created prefixes because
                 # Nautobot has restrictions on which location types can be used with prefixes
-                logger.info(
-                    "Ensuring prefix exists: %s in namespace %s", prefix_str, namespace
-                )
+                logger.info("Ensuring prefix exists: %s in namespace %s", prefix_str, namespace)
                 prefix_id = await self.common_service.ensure_prefix_exists(
                     prefix=prefix_str,
                     namespace=namespace,
@@ -698,9 +631,7 @@ class DeviceCreationService:
             len(prefixes_created),
         )
 
-    def _convert_interfaces_to_dict_format(
-        self, interfaces: List[InterfaceData]
-    ) -> List[Dict[str, Any]]:
+    def _convert_interfaces_to_dict_format(self, interfaces: List[InterfaceData]) -> List[Dict[str, Any]]:
         """
         Convert AddDeviceRequest interfaces to dict format for InterfaceManagerService.
 
@@ -741,9 +672,7 @@ class DeviceCreationService:
             if interface.untagged_vlan:
                 interface_dict["untagged_vlan"] = interface.untagged_vlan
             if interface.tagged_vlans:
-                interface_dict["tagged_vlans"] = [
-                    v.strip() for v in interface.tagged_vlans.split(",") if v.strip()
-                ]
+                interface_dict["tagged_vlans"] = [v.strip() for v in interface.tagged_vlans.split(",") if v.strip()]
             if interface.parent_interface:
                 interface_dict["parent_interface"] = interface.parent_interface
             if interface.bridge:
@@ -797,9 +726,7 @@ class DeviceCreationService:
 
         if not request.interfaces:
             workflow_status["step2_ip_addresses"]["status"] = "skipped"
-            workflow_status["step2_ip_addresses"]["message"] = (
-                "No IP addresses to create"
-            )
+            workflow_status["step2_ip_addresses"]["message"] = "No IP addresses to create"
             workflow_status["step3_interfaces"]["status"] = "skipped"
             workflow_status["step3_interfaces"]["message"] = "No interfaces to create"
             workflow_status["step4_primary_ip"]["status"] = "skipped"
@@ -820,9 +747,7 @@ class DeviceCreationService:
         # Step 2: IP addresses
         if result.ip_addresses_created > 0:
             workflow_status["step2_ip_addresses"]["status"] = "success"
-            workflow_status["step2_ip_addresses"]["message"] = (
-                f"Created {result.ip_addresses_created} IP address(es)"
-            )
+            workflow_status["step2_ip_addresses"]["message"] = f"Created {result.ip_addresses_created} IP address(es)"
             # Populate data for summary (count only, detailed tracking in InterfaceManagerService)
             workflow_status["step2_ip_addresses"]["data"] = [
                 {"status": "success"} for _ in range(result.ip_addresses_created)
@@ -834,9 +759,7 @@ class DeviceCreationService:
         # Add warnings as errors for tracking
         for warning in result.warnings:
             if "IP" in warning or "ip_address" in warning.lower():
-                workflow_status["step2_ip_addresses"]["errors"].append(
-                    {"error": warning}
-                )
+                workflow_status["step2_ip_addresses"]["errors"].append({"error": warning})
             elif "Interface" in warning or "interface" in warning.lower():
                 workflow_status["step3_interfaces"]["errors"].append({"error": warning})
 
@@ -844,9 +767,7 @@ class DeviceCreationService:
         interfaces_created = result.interfaces_created + result.interfaces_updated
         if interfaces_created > 0 and result.interfaces_failed == 0:
             workflow_status["step3_interfaces"]["status"] = "success"
-            workflow_status["step3_interfaces"]["message"] = (
-                f"Created {interfaces_created} interface(s) successfully"
-            )
+            workflow_status["step3_interfaces"]["message"] = f"Created {interfaces_created} interface(s) successfully"
         elif interfaces_created > 0 and result.interfaces_failed > 0:
             workflow_status["step3_interfaces"]["status"] = "partial"
             workflow_status["step3_interfaces"]["message"] = (
@@ -864,16 +785,10 @@ class DeviceCreationService:
         # Step 4: Primary IP
         if result.primary_ip4_id:
             workflow_status["step4_primary_ip"]["status"] = "success"
-            workflow_status["step4_primary_ip"]["message"] = (
-                "Primary IPv4 address assigned successfully"
-            )
-            workflow_status["step4_primary_ip"]["data"] = {
-                "ip_id": result.primary_ip4_id
-            }
+            workflow_status["step4_primary_ip"]["message"] = "Primary IPv4 address assigned successfully"
+            workflow_status["step4_primary_ip"]["data"] = {"ip_id": result.primary_ip4_id}
         else:
             workflow_status["step4_primary_ip"]["status"] = "skipped"
-            workflow_status["step4_primary_ip"]["message"] = (
-                "No IPv4 address available for primary IP assignment"
-            )
+            workflow_status["step4_primary_ip"]["message"] = "No IPv4 address available for primary IP assignment"
 
         return interfaces_created, result.primary_ip4_id

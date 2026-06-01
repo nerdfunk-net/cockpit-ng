@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAgentsQuery } from '@/hooks/queries/use-agents-query'
 import {
   Dialog,
   DialogContent,
@@ -27,15 +28,12 @@ import { useServerMutations } from '@/hooks/queries/use-server-mutations'
 import type { Agent } from '@/components/features/settings/connections/agents/types'
 import type { ServerResponse } from '../types'
 
+const EMPTY_AGENTS: Agent[] = []
+
 interface AddServerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onServerAdded: (server: ServerResponse) => void
-}
-
-interface AgentsSettingsResponse {
-  success: boolean
-  data?: { agents: Agent[] }
 }
 
 interface CommandResponse {
@@ -101,36 +99,24 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
   const [sshUser, setSshUser] = useState('root')
   const [selectedCredentialId, setSelectedCredentialId] = useState<string>('')
   const [selectedAgentId, setSelectedAgentId] = useState<string>('')
-  const [ansibleAgents, setAnsibleAgents] = useState<Agent[]>([])
-  const [isLoadingAgents, setIsLoadingAgents] = useState(false)
   const [isGettingFacts, setIsGettingFacts] = useState(false)
 
   const { data: sshCredentials = EMPTY_CREDENTIALS, isLoading: isLoadingCreds } = useSshCredentialsQuery({
     enabled: open,
   })
 
-  // Load ansible agents when dialog opens
+  const { data: allAgents = EMPTY_AGENTS, isLoading: isLoadingAgents } = useAgentsQuery({ enabled: open })
+  const ansibleAgents = useMemo(
+    () => allAgents.filter((a) => a.type === 'ansible'),
+    [allAgents]
+  )
+
+  // Auto-select the only agent when there is exactly one
   useEffect(() => {
-    if (!open) return
-    setIsLoadingAgents(true)
-    apiCall<AgentsSettingsResponse>('settings/agents')
-      .then((response) => {
-        const all = response?.data?.agents ?? []
-        const filtered = all.filter((a) => a.type === 'ansible')
-        setAnsibleAgents(filtered)
-        if (filtered.length === 1 && filtered[0]?.agent_id) {
-          setSelectedAgentId(filtered[0].agent_id)
-        }
-      })
-      .catch(() => {
-        toast({
-          title: 'Failed to load agents',
-          description: 'Could not fetch configured agents.',
-          variant: 'destructive',
-        })
-      })
-      .finally(() => setIsLoadingAgents(false))
-  }, [open, apiCall, toast])
+    if (ansibleAgents.length === 1 && ansibleAgents[0]?.agent_id && !selectedAgentId) {
+      setSelectedAgentId(ansibleAgents[0].agent_id)
+    }
+  }, [ansibleAgents, selectedAgentId])
 
   // Reset form when dialog closes
   useEffect(() => {
@@ -140,7 +126,6 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
       setSshUser('root')
       setSelectedCredentialId('')
       setSelectedAgentId('')
-      setAnsibleAgents([])
     }
   }, [open])
 

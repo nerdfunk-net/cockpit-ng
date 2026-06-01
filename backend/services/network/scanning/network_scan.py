@@ -97,9 +97,7 @@ class NetworkScanService:
             )
 
         # Initialize progress tracking
-        progress = NetworkScanProgress(
-            total=len(targets), scanned=0, alive=0, unreachable=0
-        )
+        progress = NetworkScanProgress(total=len(targets), scanned=0, alive=0, unreachable=0)
 
         if scan_id:
             self._active_scans[scan_id] = progress
@@ -178,9 +176,7 @@ class NetworkScanService:
 
             # Safety check: enforce reasonable network sizes
             if network.prefixlen < 16:  # Larger than /16 might be too big
-                raise ValueError(
-                    f"Network too large: {cidr}. Minimum prefix length is /16"
-                )
+                raise ValueError(f"Network too large: {cidr}. Minimum prefix length is /16")
 
             # Convert to list of IP strings
             if network.prefixlen == 32:
@@ -217,9 +213,7 @@ class NetworkScanService:
                             alive = True
                             break
                     except Exception as e:
-                        logger.debug(
-                            "Ping attempt %s failed for %s: %s", attempt + 1, ip, e
-                        )
+                        logger.debug("Ping attempt %s failed for %s: %s", attempt + 1, ip, e)
 
                 # Update results and progress
                 if alive:
@@ -313,8 +307,7 @@ class NetworkScanService:
                 f"fping < {temp_file_path}",
                 shell=True,
                 capture_output=True,
-                timeout=PING_TIMEOUT_SECONDS
-                * 10,  # Allow more time for network scanning
+                timeout=PING_TIMEOUT_SECONDS * 10,  # Allow more time for network scanning
                 text=True,
             )
 
@@ -341,9 +334,7 @@ class NetworkScanService:
                     parts = line.split()
                     if len(parts) >= 3:
                         ip = parts[0]
-                        status_indicator = (
-                            parts[1] + " " + parts[2]
-                        )  # "is alive" or "is unreachable"
+                        status_indicator = parts[1] + " " + parts[2]  # "is alive" or "is unreachable"
 
                         if self._is_valid_ip(ip):
                             if "is alive" in status_indicator:
@@ -359,9 +350,7 @@ class NetworkScanService:
         except subprocess.TimeoutExpired:
             logger.warning("fping command timed out")
         except FileNotFoundError:
-            logger.error(
-                "fping command not found. Please install fping or use 'ping' mode instead"
-            )
+            logger.error("fping command not found. Please install fping or use 'ping' mode instead")
         except Exception as e:
             logger.error("fping command failed: %s", e)
         finally:
@@ -371,9 +360,7 @@ class NetworkScanService:
                     os.unlink(temp_file_path)
                     logger.debug("Cleaned up temporary file %s", temp_file_path)
                 except Exception as e:
-                    logger.warning(
-                        "Failed to clean up temporary file %s: %s", temp_file_path, e
-                    )
+                    logger.warning("Failed to clean up temporary file %s: %s", temp_file_path, e)
 
         return alive_ips
 

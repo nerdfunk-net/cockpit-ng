@@ -22,15 +22,11 @@ class RBACRepository(BaseRepository):
     # Permission Operations
     # ========================================================================
 
-    def create_permission(
-        self, resource: str, action: str, description: str = ""
-    ) -> Permission:
+    def create_permission(self, resource: str, action: str, description: str = "") -> Permission:
         """Create a new permission."""
         db = get_db_session()
         try:
-            permission = Permission(
-                resource=resource, action=action, description=description
-            )
+            permission = Permission(resource=resource, action=action, description=description)
             db.add(permission)
             db.commit()
             db.refresh(permission)
@@ -43,11 +39,7 @@ class RBACRepository(BaseRepository):
         db = get_db_session()
         try:
             return (
-                db.query(Permission)
-                .filter(
-                    and_(Permission.resource == resource, Permission.action == action)
-                )
-                .first()
+                db.query(Permission).filter(and_(Permission.resource == resource, Permission.action == action)).first()
             )
         finally:
             db.close()
@@ -64,11 +56,7 @@ class RBACRepository(BaseRepository):
         """Get all permissions."""
         db = get_db_session()
         try:
-            return (
-                db.query(Permission)
-                .order_by(Permission.resource, Permission.action)
-                .all()
-            )
+            return db.query(Permission).order_by(Permission.resource, Permission.action).all()
         finally:
             db.close()
 
@@ -76,9 +64,7 @@ class RBACRepository(BaseRepository):
         """Delete a permission."""
         db = get_db_session()
         try:
-            permission = (
-                db.query(Permission).filter(Permission.id == permission_id).first()
-            )
+            permission = db.query(Permission).filter(Permission.id == permission_id).first()
             if permission:
                 db.delete(permission)
                 db.commit()
@@ -91,9 +77,7 @@ class RBACRepository(BaseRepository):
     # Role Operations
     # ========================================================================
 
-    def create_role(
-        self, name: str, description: str = "", is_system: bool = False
-    ) -> Role:
+    def create_role(self, name: str, description: str = "", is_system: bool = False) -> Role:
         """Create a new role."""
         db = get_db_session()
         try:
@@ -169,9 +153,7 @@ class RBACRepository(BaseRepository):
     # Role-Permission Operations
     # ========================================================================
 
-    def assign_permission_to_role(
-        self, role_id: int, permission_id: int, granted: bool = True
-    ) -> RolePermission:
+    def assign_permission_to_role(self, role_id: int, permission_id: int, granted: bool = True) -> RolePermission:
         """Assign permission to role."""
         db = get_db_session()
         try:
@@ -194,9 +176,7 @@ class RBACRepository(BaseRepository):
                 return existing
 
             # Create new
-            role_perm = RolePermission(
-                role_id=role_id, permission_id=permission_id, granted=granted
-            )
+            role_perm = RolePermission(role_id=role_id, permission_id=permission_id, granted=granted)
             db.add(role_perm)
             db.commit()
             db.refresh(role_perm)
@@ -232,9 +212,7 @@ class RBACRepository(BaseRepository):
         db = get_db_session()
         try:
             role_perms = (
-                db.query(RolePermission)
-                .filter(and_(RolePermission.role_id == role_id, RolePermission.granted))
-                .all()
+                db.query(RolePermission).filter(and_(RolePermission.role_id == role_id, RolePermission.granted)).all()
             )
 
             permission_ids = [rp.permission_id for rp in role_perms]
@@ -254,11 +232,7 @@ class RBACRepository(BaseRepository):
         db = get_db_session()
         try:
             # Check if already exists
-            existing = (
-                db.query(UserRole)
-                .filter(and_(UserRole.user_id == user_id, UserRole.role_id == role_id))
-                .first()
-            )
+            existing = db.query(UserRole).filter(and_(UserRole.user_id == user_id, UserRole.role_id == role_id)).first()
 
             if existing:
                 return existing
@@ -277,9 +251,7 @@ class RBACRepository(BaseRepository):
         db = get_db_session()
         try:
             user_role = (
-                db.query(UserRole)
-                .filter(and_(UserRole.user_id == user_id, UserRole.role_id == role_id))
-                .first()
+                db.query(UserRole).filter(and_(UserRole.user_id == user_id, UserRole.role_id == role_id)).first()
             )
 
             if user_role:
@@ -317,9 +289,7 @@ class RBACRepository(BaseRepository):
     # User-Permission Operations
     # ========================================================================
 
-    def assign_permission_to_user(
-        self, user_id: int, permission_id: int, granted: bool = True
-    ) -> UserPermission:
+    def assign_permission_to_user(self, user_id: int, permission_id: int, granted: bool = True) -> UserPermission:
         """Assign permission directly to user."""
         db = get_db_session()
         try:
@@ -342,9 +312,7 @@ class RBACRepository(BaseRepository):
                 return existing
 
             # Create new
-            user_perm = UserPermission(
-                user_id=user_id, permission_id=permission_id, granted=granted
-            )
+            user_perm = UserPermission(user_id=user_id, permission_id=permission_id, granted=granted)
             db.add(user_perm)
             db.commit()
             db.refresh(user_perm)
@@ -380,9 +348,7 @@ class RBACRepository(BaseRepository):
         db = get_db_session()
         try:
             user_perms = (
-                db.query(UserPermission)
-                .filter(and_(UserPermission.user_id == user_id, UserPermission.granted))
-                .all()
+                db.query(UserPermission).filter(and_(UserPermission.user_id == user_id, UserPermission.granted)).all()
             )
 
             permission_ids = [up.permission_id for up in user_perms]
@@ -393,9 +359,7 @@ class RBACRepository(BaseRepository):
         finally:
             db.close()
 
-    def get_user_permission_override(
-        self, user_id: int, permission_id: int
-    ) -> Optional[bool]:
+    def get_user_permission_override(self, user_id: int, permission_id: int) -> Optional[bool]:
         """Get user's permission override (True=granted, False=denied, None=no override)."""
         db = get_db_session()
         try:
@@ -416,9 +380,7 @@ class RBACRepository(BaseRepository):
         finally:
             db.close()
 
-    def get_user_permission_overrides_with_status(
-        self, user_id: int
-    ) -> List[tuple[Permission, bool]]:
+    def get_user_permission_overrides_with_status(self, user_id: int) -> List[tuple[Permission, bool]]:
         """Get all permission overrides for a user with their granted status.
 
         Returns:

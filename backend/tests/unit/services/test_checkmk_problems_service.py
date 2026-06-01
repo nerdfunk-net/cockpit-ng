@@ -17,9 +17,7 @@ from services.checkmk.exceptions import CheckMKAPIError
 from services.checkmk.problems_service import CheckMKProblemsService
 from tests.mocks import FakeCheckMKClient
 
-_PATCH_TARGET = (
-    "services.checkmk.problems_service.CheckMKClientFactory.build_client_from_settings"
-)
+_PATCH_TARGET = "services.checkmk.problems_service.CheckMKClientFactory.build_client_from_settings"
 
 
 def _host_ack_request(hostname: str, comment: str = "ack") -> SimpleNamespace:
@@ -32,9 +30,7 @@ def _host_ack_request(hostname: str, comment: str = "ack") -> SimpleNamespace:
     )
 
 
-def _svc_ack_request(
-    hostname: str, service: str, comment: str = "ack"
-) -> SimpleNamespace:
+def _svc_ack_request(hostname: str, service: str, comment: str = "ack") -> SimpleNamespace:
     return SimpleNamespace(
         host_name=hostname,
         service_description=service,
@@ -55,9 +51,7 @@ def _downtime_request(hostname: str, comment: str = "maint") -> SimpleNamespace:
     )
 
 
-def _comment_request(
-    hostname: str, comment: str, *, persistent: bool = False
-) -> SimpleNamespace:
+def _comment_request(hostname: str, comment: str, *, persistent: bool = False) -> SimpleNamespace:
     return SimpleNamespace(
         host_name=hostname,
         comment=comment,
@@ -87,9 +81,7 @@ async def test_acknowledge_host_problem_success():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
-        await svc.acknowledge_host_problem(
-            _host_ack_request("router1", "Acknowledged by ops team")
-        )
+        await svc.acknowledge_host_problem(_host_ack_request("router1", "Acknowledged by ops team"))
 
     ack = fake.get_acknowledgement("router1")
     assert ack is not None
@@ -122,9 +114,7 @@ async def test_acknowledge_service_problem_success():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
-        await svc.acknowledge_service_problem(
-            _svc_ack_request("router1", "CPU load", "High load during backup window")
-        )
+        await svc.acknowledge_service_problem(_svc_ack_request("router1", "CPU load", "High load during backup window"))
 
     key = "router1:CPU load"
     ack = fake.get_acknowledgement(key)
@@ -142,9 +132,7 @@ async def test_delete_acknowledgment_removes_it():
     """Deleting an acknowledgement removes it from the store."""
     fake = FakeCheckMKClient()
     fake.seed_host("router1", {})
-    fake.acknowledge_host_problem(
-        "router1", comment="temp ack", sticky=False, notify=False, persistent=False
-    )
+    fake.acknowledge_host_problem("router1", comment="temp ack", sticky=False, notify=False, persistent=False)
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
@@ -166,9 +154,7 @@ async def test_create_host_downtime_success():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
-        await svc.create_host_downtime(
-            _downtime_request("maintenance-host", "Scheduled maintenance")
-        )
+        await svc.create_host_downtime(_downtime_request("maintenance-host", "Scheduled maintenance"))
 
     downtime = fake.get_downtime("maintenance-host")
     assert downtime is not None
@@ -233,9 +219,7 @@ async def test_add_service_comment_success():
 
     with patch(_PATCH_TARGET, return_value=fake):
         svc = CheckMKProblemsService()
-        await svc.add_service_comment(
-            _svc_comment_request("router1", "CPU load", "Elevated during backup")
-        )
+        await svc.add_service_comment(_svc_comment_request("router1", "CPU load", "Elevated during backup"))
 
     key = "router1:CPU load"
     comments = fake.get_comments(key)

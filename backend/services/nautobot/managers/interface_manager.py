@@ -68,17 +68,11 @@ class InterfaceManager:
         Raises:
             Exception: If creation fails and interface doesn't exist
         """
-        logger.info(
-            "Ensuring interface exists: %s on device %s", interface_name, device_id
-        )
+        logger.info("Ensuring interface exists: %s on device %s", interface_name, device_id)
 
         # Check if interface already exists
-        interfaces_endpoint = (
-            f"dcim/interfaces/?device_id={device_id}&name={interface_name}&format=json"
-        )
-        interfaces_result = await self.nautobot.rest_request(
-            endpoint=interfaces_endpoint, method="GET"
-        )
+        interfaces_endpoint = f"dcim/interfaces/?device_id={device_id}&name={interface_name}&format=json"
+        interfaces_result = await self.nautobot.rest_request(endpoint=interfaces_endpoint, method="GET")
 
         if interfaces_result and interfaces_result.get("count", 0) > 0:
             existing_interface = interfaces_result["results"][0]
@@ -89,9 +83,7 @@ class InterfaceManager:
         logger.info("Creating new interface: %s", interface_name)
 
         # Resolve status to UUID
-        status_id = await self.metadata_resolver.resolve_status_id(
-            interface_status, content_type="dcim.interface"
-        )
+        status_id = await self.metadata_resolver.resolve_status_id(interface_status, content_type="dcim.interface")
 
         interface_data = {
             "device": device_id,
@@ -141,9 +133,7 @@ class InterfaceManager:
         Returns:
             IP address UUID
         """
-        logger.info(
-            "Ensuring interface with IP %s for device %s", ip_address, device_id
-        )
+        logger.info("Ensuring interface with IP %s for device %s", ip_address, device_id)
 
         # Resolve namespace
         namespace_id = await self.network_resolver.resolve_namespace_id(ip_namespace)
@@ -166,13 +156,9 @@ class InterfaceManager:
         )
 
         # Assign IP to interface
-        await self.ip_manager.assign_ip_to_interface(
-            ip_id=ip_id, interface_id=interface_id, is_primary=True
-        )
+        await self.ip_manager.assign_ip_to_interface(ip_id=ip_id, interface_id=interface_id, is_primary=True)
 
-        logger.info(
-            "Successfully ensured interface %s with IP %s", interface_name, ip_address
-        )
+        logger.info("Successfully ensured interface %s with IP %s", interface_name, ip_address)
         return ip_id
 
     async def update_interface_ip(
@@ -225,9 +211,7 @@ class InterfaceManager:
 
         # Step 1: Find the interface that currently has the old IP
         if old_ip:
-            interface_info = await device_resolver.find_interface_with_ip(
-                device_name=device_name, ip_address=old_ip
-            )
+            interface_info = await device_resolver.find_interface_with_ip(device_name=device_name, ip_address=old_ip)
 
             if interface_info:
                 interface_id, interface_name = interface_info
@@ -282,9 +266,7 @@ class InterfaceManager:
 
         # Step 4: Assign the new IP to the existing interface
         logger.info("Assigning IP %s to interface %s", new_ip, interface_name)
-        await self.ip_manager.assign_ip_to_interface(
-            ip_id=new_ip_id, interface_id=interface_id
-        )
+        await self.ip_manager.assign_ip_to_interface(ip_id=new_ip_id, interface_id=interface_id)
 
         logger.info(
             "✓ Successfully updated interface %s from %s to %s",

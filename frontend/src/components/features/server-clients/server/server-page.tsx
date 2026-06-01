@@ -108,7 +108,7 @@ export function ServerPage() {
             Failed to load servers. Please try again.
           </div>
         ) : (
-          <div className="flex" style={{ minHeight: '520px' }}>
+          <div className="flex min-h-[520px]">
             {/* Left tree panel */}
             <div className="w-64 border-r border-gray-200 shrink-0 bg-gray-50">
               <ServerTree
