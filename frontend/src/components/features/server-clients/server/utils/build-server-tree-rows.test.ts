@@ -43,4 +43,24 @@ describe('buildServerTreeRows', () => {
     const rows = buildServerTreeRows(servers, 'location', new Set(), true)
     expect(rows.some((r) => r.type === 'server')).toBe(true)
   })
+
+  it('groups by contact name when contact object exists', () => {
+    const servers = [
+      summary({
+        id: 1,
+        hostname: 'a',
+        contact: { id: '13b79fe1-264f-40a3-91ed-9e93dd45a5d4', name: 'Ops' },
+      }),
+      summary({
+        id: 2,
+        hostname: 'b',
+        contact: null,
+      }),
+    ]
+    const rows = buildServerTreeRows(servers, 'contact', new Set(['Ops', 'Uncategorized']), false)
+    const groups = rows.filter((r) => r.type === 'group')
+    expect(groups).toHaveLength(2)
+    expect(groups[0]).toMatchObject({ type: 'group', name: 'Ops' })
+    expect(groups[1]).toMatchObject({ type: 'group', name: 'Uncategorized' })
+  })
 })

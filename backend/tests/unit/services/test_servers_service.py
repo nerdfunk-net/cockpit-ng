@@ -186,12 +186,13 @@ def test_create_respects_explicit_is_virtual_over_facts() -> None:
 def test_update_passes_only_set_fields() -> None:
     """update sends exclude_unset fields to the repository."""
     svc, mock_repo = _make_service()
-    mock_repo.update.return_value = _server(contact="ops@example.com")
+    contact = {"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "Team Ops"}
+    mock_repo.update.return_value = _server(contact=contact)
 
-    data = UpdateServerRequest(contact="ops@example.com")
+    data = UpdateServerRequest(contact=contact)
     result = svc.update(1, data)
 
-    mock_repo.update.assert_called_once_with(1, contact="ops@example.com")
+    mock_repo.update.assert_called_once_with(1, contact=contact)
     assert result is not None
 
 
@@ -244,8 +245,16 @@ def test_get_grouped_by_scalar_field() -> None:
     """String fields are grouped by their string value."""
     svc, mock_repo = _make_service()
     mock_repo.get_all.return_value = [
-        _server(id=1, hostname="a", contact="team-a"),
-        _server(id=2, hostname="b", contact="team-a"),
+        _server(
+            id=1,
+            hostname="a",
+            contact={"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "team-a"},
+        ),
+        _server(
+            id=2,
+            hostname="b",
+            contact={"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "team-a"},
+        ),
         _server(id=3, hostname="c", contact=None),
     ]
 

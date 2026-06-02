@@ -39,6 +39,7 @@ import { useServerMutations } from '@/hooks/queries/use-server-mutations'
 
 import { InterfacesDialog } from '../dialogs/interfaces-dialog'
 import { ClusterRow } from './cluster-row'
+import { ContactRow } from './contact-row'
 import { useRefreshServerFacts } from '../hooks/use-refresh-server-facts'
 import { useRemoveServer } from '../hooks/use-remove-server'
 import { useUpdateServerToNautobot } from '../hooks/use-update-server-to-nautobot'
@@ -269,7 +270,7 @@ export function ServerDetail({ server, onShowFacts, onRemoved }: ServerDetailPro
           <FactRow label="RAM" value={server.memtotal_mb != null ? `${server.memtotal_mb} MB` : null} />
           <FactRow label="Disks" value={server.disk_count} />
           <LocationRow server={server} />
-          <FactRow label="Contact" value={server.contact} />
+          <ContactRow server={server} />
           <NautobotUuidRow server={server} />
         </div>
 

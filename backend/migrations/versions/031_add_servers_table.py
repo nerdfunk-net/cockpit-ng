@@ -189,7 +189,7 @@ class Migration(BaseMigration):
                     "architecture": "x86_64",
                     "distribution_release": "noble",
                     "distribution_version": "24.04",
-                    "contact": "ops@example.com",
+                    "contact": None,
                     "nautobot_uuid": None,
                     "ansible_facts": json.dumps(mock_facts),
                 },

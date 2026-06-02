@@ -21,7 +21,10 @@ function getGroupKey(server: ServerSummaryResponse, groupBy: GroupByField): stri
   if (groupBy === 'cluster') {
     return server.cluster?.name ?? 'No cluster'
   }
-  type StringGroupBy = 'distribution_release' | 'distribution_version' | 'contact'
+  if (groupBy === 'contact') {
+    return server.contact?.name ?? 'Uncategorized'
+  }
+  type StringGroupBy = 'distribution_release' | 'distribution_version'
   return (server[groupBy as StringGroupBy] as string | null) ?? 'Uncategorized'
 }
 

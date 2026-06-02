@@ -7,6 +7,7 @@ import type {
   AnsibleCredentials,
   SelectedInterface,
   ServerCluster,
+  ServerContact,
   ServerLocation,
   ServerResponse,
 } from '@/components/features/server-clients/server/types'
@@ -23,7 +24,7 @@ interface CreateServerPayload {
   architecture?: string | null
   distribution_release?: string | null
   distribution_version?: string | null
-  contact?: string | null
+  contact?: ServerContact | null
   nautobot_uuid?: string | null
   is_virtual?: boolean | null
   ansible_facts?: Record<string, unknown> | null
@@ -42,7 +43,7 @@ interface UpdateServerPayload {
   architecture?: string | null
   distribution_release?: string | null
   distribution_version?: string | null
-  contact?: string | null
+  contact?: ServerContact | null
   nautobot_uuid?: string | null
   is_virtual?: boolean | null
   ansible_facts?: Record<string, unknown> | null

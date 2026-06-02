@@ -29,6 +29,20 @@ class ServerCluster(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ServerContact(BaseModel):
+    id: str
+    name: str
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v: Any) -> Any:
+        if not _UUID_RE.match(str(v)):
+            raise ValueError(f"contact.id must be a valid UUID, got: {v!r}")
+        return v
+
+    model_config = {"from_attributes": True}
+
+
 class AnsibleCredentials(BaseModel):
     """Parameters used to gather Ansible facts (passwords are not stored)."""
 
@@ -53,7 +67,7 @@ class ServerSummaryResponse(BaseModel):
     cluster: Optional[ServerCluster] = None
     distribution_release: Optional[str] = None
     distribution_version: Optional[str] = None
-    contact: Optional[str] = None
+    contact: Optional[ServerContact] = None
     is_virtual: bool = False
 
     model_config = {"from_attributes": True}
@@ -73,7 +87,7 @@ class ServerResponse(BaseModel):
     architecture: Optional[str] = None
     distribution_release: Optional[str] = None
     distribution_version: Optional[str] = None
-    contact: Optional[str] = None
+    contact: Optional[ServerContact] = None
     nautobot_uuid: Optional[str] = None
     is_virtual: bool = False
     ansible_facts: Optional[Dict[str, Any]] = None
@@ -97,7 +111,7 @@ class CreateServerRequest(BaseModel):
     architecture: Optional[str] = Field(None, max_length=100)
     distribution_release: Optional[str] = Field(None, max_length=100)
     distribution_version: Optional[str] = Field(None, max_length=100)
-    contact: Optional[str] = Field(None, max_length=255)
+    contact: Optional[ServerContact] = None
     nautobot_uuid: Optional[str] = Field(None, max_length=36)
     is_virtual: Optional[bool] = None
     ansible_facts: Optional[Dict[str, Any]] = None
@@ -159,7 +173,7 @@ class UpdateServerRequest(BaseModel):
     architecture: Optional[str] = Field(None, max_length=100)
     distribution_release: Optional[str] = Field(None, max_length=100)
     distribution_version: Optional[str] = Field(None, max_length=100)
-    contact: Optional[str] = Field(None, max_length=255)
+    contact: Optional[ServerContact] = None
     nautobot_uuid: Optional[str] = Field(None, max_length=36)
     is_virtual: Optional[bool] = None
     ansible_facts: Optional[Dict[str, Any]] = None

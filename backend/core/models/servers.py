@@ -23,7 +23,7 @@ class Server(Base):
     architecture = Column(String(100), nullable=True)
     distribution_release = Column(String(100), nullable=True)
     distribution_version = Column(String(100), nullable=True)
-    contact = Column(String(255), nullable=True)
+    contact = Column(JSONB, nullable=True)
     nautobot_uuid = Column(String(36), nullable=True)
     is_virtual = Column(Boolean, nullable=False, server_default="false", default=False)
     ansible_facts = Column(JSONB, nullable=True)

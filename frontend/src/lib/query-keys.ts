@@ -116,6 +116,7 @@ export const queryKeys = {
     // Dropdown data (static-ish, cache for 5 minutes)
     dropdowns: () => [...queryKeys.nautobot.all, 'dropdowns'] as const,
     locations: () => [...queryKeys.nautobot.all, 'locations'] as const,
+    contacts: () => [...queryKeys.nautobot.all, 'contacts'] as const,
     roles: () => [...queryKeys.nautobot.all, 'roles'] as const,
     deviceTypes: () => [...queryKeys.nautobot.all, 'device-types'] as const,
     platforms: () => [...queryKeys.nautobot.all, 'platforms'] as const,

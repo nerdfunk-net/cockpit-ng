@@ -132,9 +132,13 @@ def test_create_server_empty_hostname_raises() -> None:
 @pytest.mark.unit
 def test_update_server_partial_fields() -> None:
     """Update accepts a subset of fields."""
-    req = UpdateServerRequest(contact="ops@example.com")
+    req = UpdateServerRequest(
+        contact={"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "ops@example.com"}
+    )
     dumped = req.model_dump(exclude_unset=True)
-    assert dumped == {"contact": "ops@example.com"}
+    assert dumped == {
+        "contact": {"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "ops@example.com"}
+    }
 
 
 @pytest.mark.unit
@@ -154,6 +158,13 @@ def test_update_server_cluster_and_interfaces() -> None:
     assert req.cluster is not None
     assert req.cluster.name == "prod-cluster"
     assert len(req.selected_interfaces or []) == 1
+
+
+@pytest.mark.unit
+def test_update_server_invalid_contact_uuid_raises() -> None:
+    """Update rejects invalid contact UUIDs."""
+    with pytest.raises(ValidationError, match="contact.id"):
+        UpdateServerRequest(contact={"id": "bad-uuid", "name": "ops"})
 
 
 # ── Response models ────────────────────────────────────────────────────────────
