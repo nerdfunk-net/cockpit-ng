@@ -1,4 +1,4 @@
-"""Unit tests for Nautobot taxonomy router contact endpoints."""
+"""Unit tests for Nautobot extra router contact endpoints."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from routers.nautobot.taxonomy import (
+from routers.nautobot.extra import (
     get_nautobot_contact_details,
     get_nautobot_contacts,
 )

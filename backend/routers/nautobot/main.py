@@ -6,6 +6,7 @@ Each sub-router handles a specific domain:
 - devices: Core device management and operations
 - locations: Location hierarchy (locations, location-types, parent-locations)
 - taxonomy: Device taxonomy (platforms, device-types, manufacturers, roles)
+- extra: Extra metadata endpoints (contacts)
 - statuses: Status lookups by content type
 - tags: Tag and custom field lookups
 - ipam: IPAM metadata (namespaces, VLANs, software versions/image files)
@@ -23,6 +24,7 @@ from fastapi import APIRouter
 
 from .clusters import router as clusters_router
 from .device_ops import router as device_ops_router
+from .extra import router as extra_router
 
 # Import sub-routers from new feature-based structure
 from .devices import router as devices_router
@@ -52,6 +54,7 @@ router.include_router(stacks_router)
 router.include_router(devices_router)
 router.include_router(locations_router)
 router.include_router(taxonomy_router)
+router.include_router(extra_router)
 router.include_router(statuses_router)
 router.include_router(tags_router)
 router.include_router(ipam_metadata_router)

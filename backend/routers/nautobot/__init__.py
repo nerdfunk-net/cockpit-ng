@@ -3,6 +3,7 @@ Nautobot integration routers.
 
 This package contains routers for:
 - Device management (CRUD operations)
+- Extra metadata endpoints (contacts)
 - Interface management
 - IP address and prefix management
 - Location hierarchy
@@ -20,6 +21,7 @@ This package contains routers for:
 from .clusters import router as clusters_router
 from .device_ops import router as device_ops_router
 from .devices import router as devices_router
+from .extra import router as extra_router
 from .infrastructure import router as infrastructure_router
 from .interfaces import router as interfaces_router
 from .ip_addresses import router as ip_addresses_router
@@ -37,6 +39,7 @@ from .utils import router as nautobot_utils_router
 __all__ = [
     "nautobot_router",
     "devices_router",
+    "extra_router",
     "interfaces_router",
     "ip_addresses_router",
     "prefixes_router",

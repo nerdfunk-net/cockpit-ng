@@ -37,6 +37,7 @@ interface SelectContactDialogProps {
 }
 
 const NO_CONTACT_VALUE = '__no_contact__'
+const EMPTY_CONTACTS: ServerContact[] = []
 
 export function SelectContactDialog({
   open,
@@ -52,7 +53,7 @@ export function SelectContactDialog({
 }: SelectContactDialogProps) {
   const [contactId, setContactId] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const { data: contacts = [], isLoading } = useNautobotContactsQuery(open)
+  const { data: contacts = EMPTY_CONTACTS, isLoading } = useNautobotContactsQuery(open)
 
   const normalizedContacts = useMemo(
     () => contacts.map((contact) => ({ ...contact, label: contact.name ?? contact.display ?? contact.id })),
