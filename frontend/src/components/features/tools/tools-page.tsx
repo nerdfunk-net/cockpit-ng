@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import {
   Card,
@@ -9,8 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/use-toast'
 import {
   Wrench,
   Shield,
@@ -19,74 +16,17 @@ import {
   ChevronRight,
   Database,
   FlaskConical,
-  Loader2,
 } from 'lucide-react'
 
 interface ToolLink {
   title: string
   description: string
-  href?: string
+  href: string
   icon: React.ReactNode
   external?: boolean
-  action?: () => void
 }
 
 export default function DeveloperToolsPage() {
-  const { toast } = useToast()
-  const [isCreatingBaseline, setIsCreatingBaseline] = useState(false)
-
-  const handleCreateBaseline = async () => {
-    setIsCreatingBaseline(true)
-    try {
-      // Get auth token from cookie
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('cockpit_auth_token='))
-        ?.split('=')[1]
-
-      if (!token) {
-        throw new Error('Not authenticated')
-      }
-
-      const response = await fetch('/api/proxy/tools/tests-baseline', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Failed to create test baseline')
-      }
-
-      // Build success message with counts
-      const created = data.created || {}
-      const counts = Object.entries(created)
-        .filter(([_, count]) => typeof count === 'number' && count > 0)
-        .map(([resource, count]) => `${count as number} ${resource}`)
-        .join(', ')
-
-      toast({
-        title: 'Test Baseline Created',
-        description: counts
-          ? `Created: ${counts}`
-          : 'Test baseline created successfully',
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description:
-          error instanceof Error ? error.message : 'Failed to create test baseline',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsCreatingBaseline(false)
-    }
-  }
-
   const tools: ToolLink[] = [
     {
       title: 'OIDC Test Dashboard',
@@ -110,11 +50,11 @@ export default function DeveloperToolsPage() {
       icon: <Database className="w-6 h-6" />,
     },
     {
-      title: 'Test Baseline',
+      title: 'Baseline Management',
       description:
-        'Create test data in Nautobot including location types, locations, roles, tags, manufacturers, platforms, device types, and devices from YAML configuration.',
+        'Generate baseline YAML and import test data from contributing-data/tests_baseline/ into Nautobot.',
+      href: '/tools/baseline-management',
       icon: <FlaskConical className="w-6 h-6" />,
-      action: handleCreateBaseline,
     },
   ]
 
@@ -136,53 +76,8 @@ export default function DeveloperToolsPage() {
 
         {/* Tools Grid */}
         <div className="grid gap-4">
-          {tools.map(tool => {
-            // Action-based card (button click)
-            if (tool.action) {
-              return (
-                <Card
-                  key={tool.title}
-                  className="group hover:shadow-lg transition-all duration-200 hover:border-purple-300"
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100 text-purple-600 group-hover:bg-purple-500 group-hover:text-white transition-colors">
-                          {tool.icon}
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg">{tool.title}</CardTitle>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={tool.action}
-                        disabled={isCreatingBaseline}
-                        size="sm"
-                        className="ml-4"
-                      >
-                        {isCreatingBaseline ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating...
-                          </>
-                        ) : (
-                          'Create Baseline'
-                        )}
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-sm text-gray-600">
-                      {tool.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              )
-            }
-
-            // Link-based card (navigation)
-            return (
-              <Link key={tool.href} href={tool.href!}>
+          {tools.map(tool => (
+              <Link key={tool.href} href={tool.href}>
                 <Card className="group hover:shadow-lg transition-all duration-200 hover:border-purple-300 cursor-pointer">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
@@ -209,8 +104,7 @@ export default function DeveloperToolsPage() {
                   </CardContent>
                 </Card>
               </Link>
-            )
-          })}
+          ))}
         </div>
 
         {/* Info Box */}

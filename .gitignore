@@ -202,6 +202,8 @@ apscheduler_jobs.db
 /data/ssh_keys
 /backend/data
 /data/exports
+/data/baseline/*.yaml
+/data/baseline/*.yml
 /agent-os
 /.claude
 config/oidc_providers.yaml

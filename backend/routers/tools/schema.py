@@ -14,7 +14,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from core.auth import verify_token
 from core.safe_http_errors import raise_internal_server_error
 from core.schema_manager import SchemaManager
+from models.tools import CreateBaselineRequest, CreateBaselineResponse
 from services.network.tools.baseline import TestBaselineService
+from services.network.tools.baseline_generator import generate_baseline_file
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +100,27 @@ async def seed_rbac(remove_existing: bool = False) -> Dict[str, Any]:
 
     except Exception as e:
         raise_internal_server_error(logger, "Failed to seed RBAC system", e)
+
+
+@router.post(
+    "/create-baseline",
+    dependencies=[Depends(verify_token)],
+    response_model=CreateBaselineResponse,
+)
+async def create_baseline_yaml(body: CreateBaselineRequest) -> CreateBaselineResponse:
+    """
+    Generate a baseline YAML file from parameters and write it to data/baseline/.
+
+    Operators can copy the file into contributing-data/tests_baseline/ and run
+    POST /api/tools/tests-baseline to import into Nautobot.
+    """
+    try:
+        return generate_baseline_file(body)
+    except ValueError as e:
+        logger.error("Invalid baseline generation request: %s", e)
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise_internal_server_error(logger, "Failed to generate baseline YAML", e)
 
 
 @router.post("/tests-baseline", dependencies=[Depends(verify_token)])

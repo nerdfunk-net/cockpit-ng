@@ -10,8 +10,104 @@ import yaml
 
 from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot.devices.import_service import DeviceImportService
+from services.nautobot.managers.ip_manager import IPManager
+from services.nautobot.managers.cluster_manager import ClusterManager
+from services.nautobot.managers.vm_manager import VirtualMachineManager
+from services.nautobot.resolvers.metadata_resolver import MetadataResolver
+from services.nautobot.resolvers.network_resolver import NetworkResolver
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_CLUSTER_TYPE_NAME = "cluster-type"
+DEFAULT_TAG_CONTENT_TYPES = [
+    "dcim.device",
+    "virtualization.virtualmachine",
+    "virtualization.cluster",
+]
+STATUS_CONTENT_TYPE_LOCATION = "dcim.location"
+STATUS_CONTENT_TYPE_VM = "virtualization.virtualmachine"
+STATUS_CONTENT_TYPE_VM_INTERFACE = "virtualization.vminterface"
+STATUS_CONTENT_TYPE_IP_ADDRESS = "ipam.ipaddress"
+
+
+def normalize_content_types(content_types: Any) -> List[str]:
+    """Normalize YAML/API content_types to a sorted list of 'app_label.model' strings."""
+    if content_types is None:
+        return []
+    if isinstance(content_types, str):
+        return [content_types]
+    if not isinstance(content_types, list):
+        return []
+
+    normalized: List[str] = []
+    for item in content_types:
+        if isinstance(item, str):
+            normalized.append(item)
+        elif isinstance(item, dict):
+            app_label = item.get("app_label")
+            model = item.get("model")
+            if app_label and model:
+                normalized.append(f"{app_label}.{model}")
+            elif isinstance(item.get("display"), str) and "." in item["display"]:
+                normalized.append(item["display"])
+    return sorted(set(normalized))
+
+
+def normalize_location_type_content_types(content_types: Any) -> List[str]:
+    """
+    Normalize content_types for LocationType create/update.
+
+    Virtual machines are not associated to locations directly in Nautobot; clusters
+    are. Map legacy ``virtualization.virtualmachine`` to ``virtualization.cluster``.
+    """
+    normalized: List[str] = []
+    for ct in normalize_content_types(content_types):
+        if ct == "virtualization.virtualmachine":
+            normalized.append("virtualization.cluster")
+        else:
+            normalized.append(ct)
+    return sorted(set(normalized))
+
+
+def content_types_from_api_record(record: Dict[str, Any]) -> List[str]:
+    """Extract content type strings from a Nautobot location-type API record."""
+    return normalize_location_type_content_types(record.get("content_types"))
+
+
+def tag_content_types_from_api_record(record: Dict[str, Any]) -> List[str]:
+    """Extract content type strings from a Nautobot tag API record."""
+    return normalize_content_types(record.get("content_types"))
+
+
+def desired_tag_content_types(tag: Dict[str, Any]) -> List[str]:
+    """Merge YAML tag content_types with defaults required for baseline import."""
+    from_yaml = normalize_content_types(tag.get("content_types"))
+    if not from_yaml:
+        from_yaml = list(DEFAULT_TAG_CONTENT_TYPES)
+    return sorted(set(from_yaml) | set(DEFAULT_TAG_CONTENT_TYPES))
+
+
+def sort_location_types_by_parent(
+    location_types: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Return location types ordered so parents are created before children."""
+    by_name = {lt["name"]: lt for lt in location_types}
+    sorted_list: List[Dict[str, Any]] = []
+    resolved: set[str] = set()
+
+    def visit(name: str) -> None:
+        if name in resolved or name not in by_name:
+            return
+        lt = by_name[name]
+        parent = lt.get("parent")
+        if parent and parent in by_name:
+            visit(parent)
+        sorted_list.append(lt)
+        resolved.add(name)
+
+    for lt in location_types:
+        visit(lt["name"])
+    return sorted_list
 
 
 class TestBaselineService:
@@ -33,7 +129,11 @@ class TestBaselineService:
             "prefixes": {},
             "custom_fields": {},
             "custom_field_choices": {},
+            "cluster_types": {},
+            "cluster_groups": {},
+            "clusters": {},
             "devices": {},
+            "virtual_machines": {},
         }
         self.status_cache: Dict[str, str] = {}  # Cache for status name -> UUID mapping
         self.custom_field_cache: Dict[
@@ -74,44 +174,70 @@ class TestBaselineService:
 
         return baseline_data
 
-    async def get_status_uuid(self, status_name: str) -> Optional[str]:
+    def _status_cache_key(self, status_name: str, content_type: Optional[str]) -> str:
+        if content_type:
+            return f"{content_type}:{status_name}"
+        return status_name
+
+    def _cache_status_record(
+        self, status: Dict[str, Any], content_type: Optional[str]
+    ) -> None:
+        name = status["name"]
+        status_id = status["id"]
+        for key in (
+            self._status_cache_key(name, content_type),
+            self._status_cache_key(name.lower(), content_type),
+        ):
+            self.status_cache[key] = status_id
+        if not content_type:
+            self.status_cache[name] = status_id
+            self.status_cache[name.lower()] = status_id
+
+    async def get_status_uuid(
+        self, status_name: str, content_type: Optional[str] = None
+    ) -> Optional[str]:
         """
-        Get the UUID for a status by name.
-        Uses cached values if available, otherwise fetches from Nautobot.
+        Get the UUID for a status by name, optionally scoped to a content type.
+
+        Nautobot statuses are per content type (e.g. VM vs VM interface); the same
+        name can map to different UUIDs.
 
         Args:
-            status_name: Name of the status (e.g., "active")
+            status_name: Name of the status (e.g., "Active", "Offline")
+            content_type: Optional ``app_label.model`` filter (e.g.
+                ``virtualization.vminterface``)
 
         Returns:
             UUID of the status, or None if not found
         """
-        # Check cache first
-        if status_name in self.status_cache:
-            return self.status_cache[status_name]
+        for lookup_name in (status_name, status_name.lower()):
+            cache_key = self._status_cache_key(lookup_name, content_type)
+            if cache_key in self.status_cache:
+                return self.status_cache[cache_key]
 
-        # Fetch all statuses from Nautobot
         try:
-            response = await self.nautobot.rest_request(
-                "extras/statuses/", method="GET"
-            )
+            endpoint = "extras/statuses/"
+            if content_type:
+                endpoint = f"extras/statuses/?content_types={content_type}"
 
-            # Cache all statuses
+            response = await self.nautobot.rest_request(endpoint, method="GET")
+
             if "results" in response:
                 for status in response["results"]:
-                    # Cache both the exact name and lowercase version for case-insensitive lookup
-                    self.status_cache[status["name"]] = status["id"]
-                    self.status_cache[status["name"].lower()] = status["id"]
+                    self._cache_status_record(status, content_type)
 
-                # Debug: log available statuses
-                available_statuses = [s["name"] for s in response["results"]]
-                logger.info("Available statuses: %s", available_statuses)
+                logger.info(
+                    "Loaded %s statuses for content_type=%s",
+                    len(response["results"]),
+                    content_type or "all",
+                )
 
-            # Try exact match first, then case-insensitive
-            status_uuid = self.status_cache.get(status_name)
-            if not status_uuid:
-                status_uuid = self.status_cache.get(status_name.lower())
+            for lookup_name in (status_name, status_name.lower()):
+                cache_key = self._status_cache_key(lookup_name, content_type)
+                if cache_key in self.status_cache:
+                    return self.status_cache[cache_key]
 
-            return status_uuid
+            return None
 
         except Exception as e:
             logger.error("Error fetching statuses from Nautobot: %s", e)
@@ -122,41 +248,55 @@ class TestBaselineService:
     ) -> Dict[str, str]:
         """Create location types in Nautobot with parent-child relationships."""
         created = {}
-
-        # Sort location types to create parent types first (those without parent field)
-        sorted_types = sorted(
-            location_types, key=lambda x: 0 if not x.get("parent") else 1
-        )
+        sorted_types = sort_location_types_by_parent(location_types)
 
         for lt in sorted_types:
             try:
-                # Check if already exists
+                desired_content_types = normalize_location_type_content_types(
+                    lt.get("content_types")
+                )
+
                 response = await self.nautobot.rest_request(
                     f"dcim/location-types/?name={lt['name']}", method="GET"
                 )
 
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
-                    created[lt["name"]] = existing["id"]
-                    logger.info("Location type '%s' already exists", lt["name"])
+                    existing_id = existing["id"]
+                    created[lt["name"]] = existing_id
+
+                    if desired_content_types:
+                        existing_content_types = content_types_from_api_record(existing)
+                        if desired_content_types != existing_content_types:
+                            await self.nautobot.rest_request(
+                                f"dcim/location-types/{existing_id}/",
+                                method="PATCH",
+                                data={"content_types": desired_content_types},
+                            )
+                            logger.info(
+                                "Updated content_types for location type '%s': %s",
+                                lt["name"],
+                                desired_content_types,
+                            )
+                        else:
+                            logger.info(
+                                "Location type '%s' already exists with correct content_types",
+                                lt["name"],
+                            )
+                    else:
+                        logger.info("Location type '%s' already exists", lt["name"])
                     continue
 
-                # Create new location type
-                payload = {
+                payload: Dict[str, Any] = {
                     "name": lt["name"],
                     "description": lt.get("description", ""),
                 }
 
-                # Handle content_types
-                if "content_types" in lt:
-                    content_types = lt["content_types"]
-                    if isinstance(content_types, str):
-                        content_types = [content_types]
-                    payload["content_types"] = content_types
+                if desired_content_types:
+                    payload["content_types"] = desired_content_types
 
-                # Handle parent location type
-                if "parent" in lt and lt["parent"]:
-                    parent_type_name = lt["parent"]
+                parent_type_name = lt.get("parent")
+                if parent_type_name:
                     parent_type_id = created.get(parent_type_name)
                     if parent_type_id:
                         payload["parent"] = {"id": parent_type_id}
@@ -207,7 +347,9 @@ class TestBaselineService:
 
                 # Resolve status name to UUID
                 status_name = location.get("status", "active")
-                status_uuid = await self.get_status_uuid(status_name)
+                status_uuid = await self.get_status_uuid(
+                    status_name, STATUS_CONTENT_TYPE_LOCATION
+                )
                 if status_uuid:
                     payload["status"] = {"id": status_uuid}
                 else:
@@ -305,10 +447,31 @@ class TestBaselineService:
                     f"extras/tags/?name={tag['name']}", method="GET"
                 )
 
+                desired_content_types = desired_tag_content_types(tag)
+
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
-                    created[tag["name"]] = existing["id"]
-                    logger.info("Tag '%s' already exists", tag["name"])
+                    tag_id = existing["id"]
+                    existing_content_types = tag_content_types_from_api_record(
+                        existing
+                    )
+                    if desired_content_types != existing_content_types:
+                        await self.nautobot.rest_request(
+                            f"extras/tags/{tag_id}/",
+                            method="PATCH",
+                            data={"content_types": desired_content_types},
+                        )
+                        logger.info(
+                            "Updated content_types for tag '%s': %s",
+                            tag["name"],
+                            desired_content_types,
+                        )
+                    else:
+                        logger.info(
+                            "Tag '%s' already exists with correct content_types",
+                            tag["name"],
+                        )
+                    created[tag["name"]] = tag_id
                     continue
 
                 # Create new tag
@@ -318,13 +481,11 @@ class TestBaselineService:
                 payload = {
                     "name": tag["name"],
                     "color": hex_color,
+                    "content_types": desired_content_types,
                 }
 
                 if "description" in tag:
                     payload["description"] = tag["description"]
-
-                if "content_types" in tag:
-                    payload["content_types"] = tag["content_types"]
 
                 result = await self.nautobot.rest_request(
                     "extras/tags/", method="POST", data=payload
@@ -851,6 +1012,300 @@ class TestBaselineService:
 
         return created
 
+    async def create_cluster_groups(
+        self, cluster_groups: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
+        """Create virtualization cluster groups in Nautobot."""
+        created: Dict[str, str] = {}
+        for group in cluster_groups:
+            name = group["name"]
+            try:
+                response = await self.nautobot.rest_request(
+                    f"virtualization/cluster-groups/?name={name}",
+                    method="GET",
+                )
+                if response.get("count", 0) > 0:
+                    existing = response["results"][0]
+                    created[name] = existing["id"]
+                    logger.info("Cluster group '%s' already exists", name)
+                    continue
+
+                payload = {"name": name}
+                if "description" in group:
+                    payload["description"] = group["description"]
+
+                result = await self.nautobot.rest_request(
+                    "virtualization/cluster-groups/",
+                    method="POST",
+                    data=payload,
+                )
+                created[name] = result["id"]
+                logger.info("Created cluster group: %s", name)
+            except Exception as e:
+                logger.error("Error creating cluster group '%s': %s", name, e)
+                raise
+        return created
+
+    async def create_cluster_types(
+        self, cluster_types: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
+        """Create virtualization cluster types in Nautobot."""
+        created: Dict[str, str] = {}
+        cluster_manager = ClusterManager(self.nautobot)
+        for cluster_type in cluster_types:
+            name = cluster_type["name"]
+            try:
+                response = await self.nautobot.rest_request(
+                    f"virtualization/cluster-types/?name={name}",
+                    method="GET",
+                )
+                if response.get("count", 0) > 0:
+                    existing = response["results"][0]
+                    created[name] = existing["id"]
+                    logger.info("Cluster type '%s' already exists", name)
+                    continue
+
+                result = await cluster_manager.create_cluster_type(
+                    name=name,
+                    slug=cluster_type.get("slug"),
+                    description=cluster_type.get("description"),
+                )
+                created[name] = result["id"]
+                logger.info("Created cluster type: %s", name)
+            except Exception as e:
+                logger.error("Error creating cluster type '%s': %s", name, e)
+                raise
+        return created
+
+    async def create_clusters(self, clusters: List[Dict[str, Any]]) -> Dict[str, str]:
+        """Create virtualization clusters in Nautobot."""
+        created: Dict[str, str] = {}
+        cluster_manager = ClusterManager(self.nautobot)
+        for cluster in clusters:
+            name = cluster["name"]
+            try:
+                response = await self.nautobot.rest_request(
+                    f"virtualization/clusters/?name={name}",
+                    method="GET",
+                )
+                if response.get("count", 0) > 0:
+                    existing = response["results"][0]
+                    created[name] = existing["id"]
+                    logger.info("Cluster '%s' already exists", name)
+                    continue
+
+                group_id: Optional[str] = None
+                group_name = cluster.get("cluster_group")
+                if group_name:
+                    group_id = self.created_resources["cluster_groups"].get(group_name)
+                    if not group_id:
+                        logger.warning(
+                            "Cluster group '%s' not found for cluster '%s'",
+                            group_name,
+                            name,
+                        )
+
+                location_id: Optional[str] = None
+                location_name = cluster.get("location")
+                if location_name:
+                    location_id = self.created_resources["locations"].get(
+                        location_name
+                    )
+                    if not location_id:
+                        logger.warning(
+                            "Location '%s' not found for cluster '%s'",
+                            location_name,
+                            name,
+                        )
+
+                type_name = cluster.get("cluster_type", DEFAULT_CLUSTER_TYPE_NAME)
+                type_id: Optional[str] = None
+                if type_name:
+                    type_id = self.created_resources["cluster_types"].get(type_name)
+                    if not type_id:
+                        logger.warning(
+                            "Cluster type '%s' not found for cluster '%s'",
+                            type_name,
+                            name,
+                        )
+
+                description = cluster.get("description")
+                result = await cluster_manager.create_cluster(
+                    name=name,
+                    description=description,
+                    cluster_type_id=type_id,
+                    cluster_group_id=group_id,
+                    location_id=location_id,
+                )
+                created[name] = result["id"]
+                logger.info("Created cluster: %s", name)
+            except Exception as e:
+                logger.error("Error creating cluster '%s': %s", name, e)
+                raise
+        return created
+
+    async def create_virtual_machines(
+        self, virtual_machines: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
+        """Create virtual machines in Nautobot using VirtualMachineManager."""
+        created: Dict[str, str] = {}
+        vm_manager = VirtualMachineManager(self.nautobot)
+        network_resolver = NetworkResolver(self.nautobot)
+        metadata_resolver = MetadataResolver(self.nautobot)
+        ip_manager = IPManager(self.nautobot, network_resolver, metadata_resolver)
+
+        for vm in virtual_machines:
+            vm_name = vm.get("name")
+            if not vm_name:
+                continue
+            try:
+                existing = await self.nautobot.rest_request(
+                    f"virtualization/virtual-machines/?name={vm_name}",
+                    method="GET",
+                )
+                if existing.get("count", 0) > 0:
+                    created[vm_name] = existing["results"][0]["id"]
+                    logger.info("Virtual machine '%s' already exists", vm_name)
+                    continue
+
+                cluster_name = vm.get("cluster")
+                cluster_id = self.created_resources["clusters"].get(cluster_name)
+                if not cluster_id:
+                    logger.error(
+                        "Cluster '%s' not found for VM '%s'", cluster_name, vm_name
+                    )
+                    continue
+
+                status_name = vm.get("status", "active")
+                status_uuid = await self.get_status_uuid(
+                    status_name, STATUS_CONTENT_TYPE_VM
+                )
+                if not status_uuid:
+                    logger.error(
+                        "Status '%s' not found for VM '%s' (content_type=%s)",
+                        status_name,
+                        vm_name,
+                        STATUS_CONTENT_TYPE_VM,
+                    )
+                    continue
+
+                role_id = None
+                if "roles" in vm and vm["roles"]:
+                    role_name = (
+                        vm["roles"][0] if isinstance(vm["roles"], list) else vm["roles"]
+                    )
+                    role_id = self.created_resources["roles"].get(role_name)
+                elif "role" in vm:
+                    role_id = self.created_resources["roles"].get(vm["role"])
+
+                platform_id = None
+                if "platform" in vm:
+                    platform_id = self.created_resources["platforms"].get(
+                        vm["platform"]
+                    )
+
+                tag_ids: List[str] = []
+                if vm.get("tags"):
+                    for tag_name in vm["tags"]:
+                        tag_id = self.created_resources["tags"].get(tag_name)
+                        if tag_id:
+                            tag_ids.append(tag_id)
+
+                custom_fields = vm.get("custom_fields") or {}
+
+                vm_result = await vm_manager.create_virtual_machine(
+                    name=vm_name,
+                    cluster_id=cluster_id,
+                    status_id=status_uuid,
+                    role_id=role_id,
+                    platform_id=platform_id,
+                    tags=tag_ids or None,
+                    custom_fields=custom_fields,
+                )
+                vm_id = vm_result.get("id")
+                if not vm_id:
+                    raise RuntimeError(f"VM '{vm_name}' created without ID")
+
+                primary_ip_id = None
+                if vm.get("interfaces"):
+                    for iface in vm["interfaces"]:
+                        iface_status_name = iface.get("status", status_name)
+                        iface_status_uuid = await self.get_status_uuid(
+                            iface_status_name, STATUS_CONTENT_TYPE_VM_INTERFACE
+                        )
+                        if not iface_status_uuid and iface_status_name.lower() != "active":
+                            logger.warning(
+                                "Status '%s' not found for VM interface on '%s'; "
+                                "falling back to Active",
+                                iface_status_name,
+                                vm_name,
+                            )
+                            iface_status_uuid = await self.get_status_uuid(
+                                "active", STATUS_CONTENT_TYPE_VM_INTERFACE
+                            )
+                        if not iface_status_uuid:
+                            logger.error(
+                                "No suitable status for VM interface on '%s' "
+                                "(content_type=%s)",
+                                vm_name,
+                                STATUS_CONTENT_TYPE_VM_INTERFACE,
+                            )
+                            raise RuntimeError(
+                                "Missing Active status for virtualization interface"
+                            )
+
+                        iface_result = await vm_manager.create_virtual_interface(
+                            name=iface.get("name", "eth0"),
+                            virtual_machine_id=vm_id,
+                            status_id=iface_status_uuid,
+                            enabled=iface.get("enabled", True),
+                        )
+                        interface_id = iface_result.get("id")
+                        if not interface_id or "ip_address" not in iface:
+                            continue
+
+                        namespace = iface.get("namespace", "Global")
+                        namespace_id = await network_resolver.resolve_namespace_id(
+                            namespace
+                        )
+                        if not namespace_id:
+                            raise ValueError(
+                                f"Could not resolve namespace '{namespace}'"
+                            )
+
+                        ip_status_name = iface.get("ip_status", "active")
+                        ip_id = await ip_manager.ensure_ip_address_exists(
+                            ip_address=iface["ip_address"],
+                            namespace_id=namespace_id,
+                            status_name=ip_status_name,
+                            add_prefixes_automatically=True,
+                        )
+                        await vm_manager.assign_ip_to_virtual_interface(
+                            ip_address_id=ip_id,
+                            virtual_interface_id=interface_id,
+                        )
+
+                        if "primary_ip4" in vm:
+                            primary_ip = vm["primary_ip4"].split("/")[0]
+                            iface_ip = iface["ip_address"].split("/")[0]
+                            if primary_ip == iface_ip:
+                                primary_ip_id = ip_id
+
+                if primary_ip_id:
+                    await vm_manager.assign_primary_ip_to_vm(vm_id, primary_ip_id)
+
+                created[vm_name] = vm_id
+                logger.info("Created virtual machine: %s", vm_name)
+            except Exception as e:
+                logger.error(
+                    "Error creating virtual machine '%s': %s",
+                    vm.get("name", "unknown"),
+                    e,
+                )
+                raise
+
+        return created
+
     async def create_baseline(self) -> Dict[str, Any]:
         """
         Load baseline files and create all resources in Nautobot.
@@ -875,7 +1330,11 @@ class TestBaselineService:
                 "prefixes": [],
                 "custom_fields": {},
                 "custom_field_choices": {},
+                "cluster_types": [],
+                "cluster_groups": [],
+                "clusters": [],
                 "devices": [],
+                "virtual_machines": [],
             }
 
             for data in baseline_data_list:
@@ -887,6 +1346,14 @@ class TestBaselineService:
                                 merged_data[key].update(data[key])
                         else:
                             merged_data[key].extend(data[key])
+
+            if merged_data["clusters"] and not merged_data["cluster_types"]:
+                merged_data["cluster_types"] = [
+                    {
+                        "name": DEFAULT_CLUSTER_TYPE_NAME,
+                        "slug": DEFAULT_CLUSTER_TYPE_NAME,
+                    }
+                ]
 
             # Create resources in dependency order
             summary = {
@@ -980,12 +1447,46 @@ class TestBaselineService:
                 total_choices = sum(choice_counts.values())
                 summary["created"]["custom_field_choices"] = total_choices
 
-            # 11. Devices (depends on device types, locations, platforms, roles, tags, prefixes, and custom fields)
+            # 11. Cluster types (before cluster groups and clusters)
+            if merged_data["cluster_types"]:
+                self.created_resources[
+                    "cluster_types"
+                ] = await self.create_cluster_types(merged_data["cluster_types"])
+                summary["created"]["cluster_types"] = len(
+                    self.created_resources["cluster_types"]
+                )
+
+            # 12. Cluster groups (before clusters)
+            if merged_data["cluster_groups"]:
+                self.created_resources[
+                    "cluster_groups"
+                ] = await self.create_cluster_groups(merged_data["cluster_groups"])
+                summary["created"]["cluster_groups"] = len(
+                    self.created_resources["cluster_groups"]
+                )
+
+            # 13. Clusters (depends on cluster types and cluster groups)
+            if merged_data["clusters"]:
+                self.created_resources["clusters"] = await self.create_clusters(
+                    merged_data["clusters"]
+                )
+                summary["created"]["clusters"] = len(self.created_resources["clusters"])
+
+            # 14. Devices (depends on device types, locations, platforms, roles, tags, prefixes, and custom fields)
             if merged_data["devices"]:
                 self.created_resources["devices"] = await self.create_devices(
                     merged_data["devices"]
                 )
                 summary["created"]["devices"] = len(self.created_resources["devices"])
+
+            # 15. Virtual machines (depends on clusters, roles, platforms, tags, prefixes)
+            if merged_data["virtual_machines"]:
+                self.created_resources[
+                    "virtual_machines"
+                ] = await self.create_virtual_machines(merged_data["virtual_machines"])
+                summary["created"]["virtual_machines"] = len(
+                    self.created_resources["virtual_machines"]
+                )
 
             logger.info("Baseline creation complete: %s", summary)
             return summary

@@ -237,6 +237,44 @@ class Cluster(BaseModel):
     device_assignments: list[ClusterDeviceAssignment] = []
 
 
+class CreateClusterTypeRequest(BaseModel):
+    """Request model for creating a virtualization cluster type in Nautobot."""
+
+    name: str
+    slug: Optional[str] = None
+    description: Optional[str] = None
+    tags: Optional[list[str]] = None  # List of tag UUIDs
+
+    @field_validator("slug", "description", mode="before")
+    @classmethod
+    def convert_empty_string_to_none(cls, v: Optional[str]) -> Optional[str]:
+        """Convert empty strings to None for optional string fields."""
+        if v is None or (isinstance(v, str) and v.strip() == ""):
+            return None
+        return v
+
+
+class CreateClusterRequest(BaseModel):
+    """Request model for creating a virtualization cluster in Nautobot."""
+
+    name: str
+    description: Optional[str] = None
+    cluster_type: Optional[str] = None  # Cluster type UUID (required by Nautobot)
+    cluster_group: Optional[str] = None  # Cluster group UUID
+    location: Optional[str] = None  # Location UUID
+    tags: Optional[list[str]] = None  # List of tag UUIDs
+
+    @field_validator(
+        "description", "cluster_type", "cluster_group", "location", mode="before"
+    )
+    @classmethod
+    def convert_empty_string_to_none(cls, v: Optional[str]) -> Optional[str]:
+        """Convert empty strings to None for optional string fields."""
+        if v is None or (isinstance(v, str) and v.strip() == ""):
+            return None
+        return v
+
+
 class AddVirtualMachineRequest(BaseModel):
     """Request model for adding a virtual machine to Nautobot.
 

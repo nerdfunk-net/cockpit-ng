@@ -19,12 +19,15 @@ from models.nautobot import (
     AddVirtualMachineRequest,
     Cluster,
     ClusterGroup,
+    CreateClusterRequest,
+    CreateClusterTypeRequest,
     UpdateVirtualMachineRequest,
 )
+from routers.nautobot.rest_errors import extract_nautobot_error_detail
 from services.audit.audit_log_service import AuditLogService
 from services.nautobot.client import NautobotService
-from services.nautobot.common.exceptions import NautobotNotFoundError
-from services.nautobot.managers import IPManager
+from services.nautobot.common.exceptions import NautobotAPIError, NautobotNotFoundError
+from services.nautobot.managers import ClusterManager, IPManager
 from services.nautobot.managers.vm_manager import VirtualMachineManager
 from services.nautobot.resolvers import (
     ClusterResolver,
@@ -75,6 +78,174 @@ async def get_clusters(
         return clusters
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch clusters: ", e)
+
+
+@router.post(
+    "/clusters",
+    status_code=status.HTTP_201_CREATED,
+    summary="REST: Create Cluster",
+)
+async def create_cluster(
+    request: CreateClusterRequest,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
+):
+    """
+    Create a new virtualization cluster in Nautobot.
+
+    **REST API** proxies to Nautobot `POST /api/virtualization/clusters/`.
+
+    **Required Permission:** `nautobot.devices:write`
+
+    **Request Body:**
+    - `name`: Cluster name (required)
+    - `description`: Optional description
+    - `cluster_type`: Cluster type UUID (required by Nautobot when creating clusters)
+    - `cluster_group`: Optional cluster group UUID
+    - `location`: Optional location UUID
+    - `tags`: Optional list of tag UUIDs
+
+    **Returns:**
+    - Created cluster object from Nautobot (includes `id`, `name`, etc.)
+
+    **Raises:**
+    - `400`: Invalid request (e.g. validation error from Nautobot)
+    - `500`: Internal server error
+    """
+    try:
+        cluster_manager = ClusterManager(nautobot_service)
+        result = await cluster_manager.create_cluster(
+            name=request.name,
+            description=request.description,
+            cluster_type_id=request.cluster_type,
+            cluster_group_id=request.cluster_group,
+            location_id=request.location,
+            tags=request.tags,
+        )
+
+        audit_log.log_event(
+            username=current_user.get("username")
+            or current_user.get("sub")
+            or "unknown",
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-cluster-created",
+            message=f"Cluster '{request.name}' created in Nautobot",
+            resource_type="cluster",
+            resource_id=result.get("id"),
+            resource_name=request.name,
+            severity="info",
+            extra_data={
+                "cluster_type": request.cluster_type,
+                "cluster_group": request.cluster_group,
+                "location": request.location,
+            },
+        )
+
+        return result
+
+    except HTTPException:
+        raise
+    except NautobotAPIError as exc:
+        error_msg = extract_nautobot_error_detail(str(exc))
+        if "status 400" in str(exc):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg,
+            )
+        raise_internal_server_error(
+            logger,
+            "Failed to create cluster (Nautobot API error)",
+            exc,
+            extra={"cluster_name": request.name},
+        )
+    except Exception as exc:
+        raise_internal_server_error(
+            logger,
+            "Failed to create cluster",
+            exc,
+            extra={"cluster_name": request.name},
+        )
+
+
+@router.post(
+    "/cluster-type",
+    status_code=status.HTTP_201_CREATED,
+    summary="REST: Create Cluster Type",
+)
+async def create_cluster_type(
+    request: CreateClusterTypeRequest,
+    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+    audit_log: AuditLogService = Depends(get_audit_log_service),
+):
+    """
+    Create a new virtualization cluster type in Nautobot.
+
+    **REST API** proxies to Nautobot `POST /api/virtualization/cluster-types/`.
+
+    **Required Permission:** `nautobot.devices:write`
+
+    **Request Body:**
+    - `name`: Cluster type name (required)
+    - `slug`: Optional slug (derived from `name` when omitted)
+    - `description`: Optional description
+    - `tags`: Optional list of tag UUIDs
+
+    **Returns:**
+    - Created cluster type object from Nautobot (includes `id`, `name`, `slug`, etc.)
+
+    **Raises:**
+    - `400`: Invalid request (e.g. validation error from Nautobot)
+    - `500`: Internal server error
+    """
+    try:
+        cluster_manager = ClusterManager(nautobot_service)
+        result = await cluster_manager.create_cluster_type(
+            name=request.name,
+            slug=request.slug,
+            description=request.description,
+            tags=request.tags,
+        )
+
+        audit_log.log_event(
+            username=current_user.get("username")
+            or current_user.get("sub")
+            or "unknown",
+            user_id=current_user.get("user_id"),
+            event_type="nautobot-cluster-type-created",
+            message=f"Cluster type '{request.name}' created in Nautobot",
+            resource_type="cluster_type",
+            resource_id=result.get("id"),
+            resource_name=request.name,
+            severity="info",
+            extra_data={"slug": result.get("slug") or request.slug},
+        )
+
+        return result
+
+    except HTTPException:
+        raise
+    except NautobotAPIError as exc:
+        error_msg = extract_nautobot_error_detail(str(exc))
+        if "status 400" in str(exc):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg,
+            )
+        raise_internal_server_error(
+            logger,
+            "Failed to create cluster type (Nautobot API error)",
+            exc,
+            extra={"cluster_type_name": request.name},
+        )
+    except Exception as exc:
+        raise_internal_server_error(
+            logger,
+            "Failed to create cluster type",
+            exc,
+            extra={"cluster_type_name": request.name},
+        )
 
 
 @router.get(
