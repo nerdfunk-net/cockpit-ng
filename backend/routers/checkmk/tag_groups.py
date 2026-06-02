@@ -35,6 +35,7 @@ async def get_all_host_tag_groups(
             tag_groups=result["tag_groups"], total=result["total"]
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK tag group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
@@ -57,6 +58,7 @@ async def get_host_tag_group(
             data=result,
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK tag group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
@@ -79,6 +81,7 @@ async def create_host_tag_group(
             data=result,
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK tag group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
@@ -104,6 +107,7 @@ async def update_host_tag_group(
             data=result,
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK tag group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
@@ -128,6 +132,7 @@ async def delete_host_tag_group(
             success=True, message=f"Deleted host tag group {name} successfully"
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK tag group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise

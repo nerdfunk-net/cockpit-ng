@@ -83,8 +83,10 @@ async def create_permission(
             description=permission.description or "",
         )
         return created
-    except RBACConflictError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except RBACConflictError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Permission already exists"
+        )
 
 
 @router.get("/permissions/{permission_id}", response_model=Permission)
@@ -111,8 +113,10 @@ async def delete_permission(
     """Delete a permission (admin only)."""
     try:
         rbac.delete_permission(permission_id)
-    except RBACNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except RBACNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found"
+        )
 
 
 # ============================================================================
@@ -153,8 +157,10 @@ async def create_role(
             severity="info",
         )
         return created
-    except RBACConflictError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except RBACConflictError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Role name already exists"
+        )
 
 
 @router.get("/roles/{role_id}", response_model=RoleWithPermissions)
@@ -204,8 +210,10 @@ async def update_role(
             severity="info",
         )
         return updated
-    except RBACNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except RBACNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Role not found"
+        )
 
 
 @router.delete("/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -228,10 +236,15 @@ async def delete_role(
             resource_name=str(role_id),
             severity="info",
         )
-    except RBACNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except RBACConstraintError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except RBACNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Role not found"
+        )
+    except RBACConstraintError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete a system role",
+        )
 
 
 @router.get("/roles/{role_id}/permissions", response_model=list[PermissionWithGrant])
@@ -651,8 +664,11 @@ async def create_user(
         )
 
         return user_with_rbac
-    except RBACNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except RBACNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="One or more specified roles not found",
+        )
     except Exception as e:
         raise_internal_server_error(logger, "Failed to create user: ", e)
 

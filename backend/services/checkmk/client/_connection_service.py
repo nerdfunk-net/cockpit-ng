@@ -160,8 +160,11 @@ class CheckMKConnectionService:
         try:
             response = await asyncio.to_thread(_fetch)
         except Exception as e:
+            logger.error(
+                "Failed to connect to CheckMK inventory API: %s", str(e), exc_info=True
+            )
             raise CheckMKClientError(
-                f"Failed to connect to CheckMK inventory API: {str(e)}"
+                "Failed to connect to CheckMK inventory API"
             ) from e
 
         if response.status_code == 404:

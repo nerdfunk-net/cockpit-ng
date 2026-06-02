@@ -39,6 +39,7 @@ async def get_host_groups(
             success=True, message="Retrieved host groups successfully", data=result
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK host group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
@@ -61,6 +62,7 @@ async def create_host_group(
             data=result,
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK host group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
@@ -88,6 +90,7 @@ async def bulk_update_host_groups(
             data=result,
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK host group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
@@ -110,6 +113,7 @@ async def bulk_delete_host_groups(
             data=result,
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK host group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
@@ -132,6 +136,7 @@ async def get_host_group(
             data=result,
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK host group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
@@ -153,6 +158,7 @@ async def update_host_group(
             success=True, message=f"Updated host group {name} successfully", data=result
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK host group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
@@ -173,6 +179,7 @@ async def delete_host_group(
             success=True, message=f"Deleted host group {name} successfully"
         )
     except CheckMKClientError as e:
+        logger.warning("CheckMK host group error: %s", str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
