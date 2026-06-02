@@ -44,12 +44,18 @@ describe('buildServerTreeRows', () => {
     expect(rows.some((r) => r.type === 'server')).toBe(true)
   })
 
-  it('groups by contact name when contact object exists', () => {
+  it('groups by first contact name when contact array exists', () => {
     const servers = [
       summary({
         id: 1,
         hostname: 'a',
-        contact: { id: '13b79fe1-264f-40a3-91ed-9e93dd45a5d4', name: 'Ops' },
+        contact: [
+          {
+            id: '13b79fe1-264f-40a3-91ed-9e93dd45a5d4',
+            name: 'Ops',
+            role: { id: '866298d0-d942-440b-9c89-8b3e9eb81f79', name: 'Administrative' },
+          },
+        ],
       }),
       summary({
         id: 2,

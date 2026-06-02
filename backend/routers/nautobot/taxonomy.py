@@ -93,6 +93,21 @@ async def get_nautobot_ipaddress_roles(
         raise_internal_server_error(logger, "Failed to fetch IP address roles: ", e)
 
 
+@router.get("/roles/contacts", summary="🔶 REST: List Contact Association Roles")
+async def get_nautobot_contact_roles(
+    current_user: dict = Depends(require_permission("nautobot.devices", "read")),
+    nautobot_service: NautobotService = Depends(get_nautobot_service),
+):
+    """Get Nautobot roles for extras.contactassociation (contact-to-object links)."""
+    try:
+        result = await nautobot_service.rest_request(
+            "extras/roles/?content_types=extras.contactassociation&limit=0"
+        )
+        return result.get("results", [])
+    except Exception as e:
+        raise_internal_server_error(logger, "Failed to fetch contact roles: ", e)
+
+
 @router.get("/platforms", summary="🔶 REST: List Platforms")
 async def get_nautobot_platforms(
     current_user: dict = Depends(require_permission("nautobot.devices", "read")),

@@ -24,6 +24,7 @@ from models.nautobot import (
     UpdateDeviceRequest,
 )
 from services.nautobot.client import NautobotService
+from routers.nautobot.rest_errors import extract_nautobot_error_detail
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.devices.update import DeviceUpdateService
@@ -33,41 +34,6 @@ from services.nautobot_helpers.cache_helpers import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _extract_nautobot_error_detail(error_msg: str) -> str:
-    """Extract a human-readable message from a NautobotAPIError string.
-
-    Nautobot REST errors look like:
-      'REST request failed with status 400: {"__all__":["..."]}'
-    or the ip_manager wraps them with a nicer message like:
-      'Cannot create IP address ...: No suitable parent prefix exists.'
-    """
-    import json
-    import re
-
-    # If it's already a user-friendly message (not raw REST), return as-is
-    if not error_msg.startswith("REST request failed"):
-        return error_msg
-
-    # Try to extract JSON body from "REST request failed with status 400: {..."
-    match = re.search(r"status \d+: (.+)$", error_msg)
-    if match:
-        try:
-            body = json.loads(match.group(1))
-            # Nautobot returns {"field": ["message", ...], ...}
-            messages = []
-            for field_errors in body.values():
-                if isinstance(field_errors, list):
-                    messages.extend(field_errors)
-                else:
-                    messages.append(str(field_errors))
-            if messages:
-                return "; ".join(messages)
-        except (json.JSONDecodeError, AttributeError):
-            pass
-
-    return error_msg
 
 
 router = APIRouter(
@@ -490,7 +456,7 @@ async def add_device(
         # Forward Nautobot 400 errors as 400 (user-correctable: duplicate device, missing prefix, etc.)
         if "status 400" in error_msg:
             # Extract the human-readable message from the Nautobot JSON response
-            detail = _extract_nautobot_error_detail(error_msg)
+            detail = extract_nautobot_error_detail(error_msg)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=detail,

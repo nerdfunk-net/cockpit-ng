@@ -118,6 +118,7 @@ export const queryKeys = {
     locations: () => [...queryKeys.nautobot.all, 'locations'] as const,
     contacts: () => [...queryKeys.nautobot.all, 'contacts'] as const,
     roles: () => [...queryKeys.nautobot.all, 'roles'] as const,
+    contactRoles: () => [...queryKeys.nautobot.all, 'contact-roles'] as const,
     deviceTypes: () => [...queryKeys.nautobot.all, 'device-types'] as const,
     platforms: () => [...queryKeys.nautobot.all, 'platforms'] as const,
     statuses: (type?: string) =>

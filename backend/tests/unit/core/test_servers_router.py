@@ -269,21 +269,28 @@ def test_create_server_validation_error_returns_422(client: TestClient) -> None:
 def test_update_server_returns_updated_record(client: TestClient) -> None:
     """Update endpoint returns the updated server."""
     mock_service = MagicMock()
-    new_contact = {"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "new-ops"}
-    mock_service.update.return_value = _detail(contact=new_contact)
+    new_contact = {
+        "id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4",
+        "name": "new-ops",
+        "role": {
+            "id": "866298d0-d942-440b-9c89-8b3e9eb81f79",
+            "name": "Administrative",
+        },
+    }
+    mock_service.update.return_value = _detail(contact=[new_contact])
 
     with _auth_context(client, mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.put(
             "/api/servers/1",
-            json={"contact": new_contact},
+            json={"contact": [new_contact]},
             headers=_AUTH_HEADERS,
         )
 
     app.dependency_overrides.clear()
 
     assert resp.status_code == 200
-    assert resp.json()["contact"] == new_contact
+    assert resp.json()["contact"] == [{**new_contact, "association_id": None}]
     assert isinstance(mock_service.update.call_args[0][1], UpdateServerRequest)
 
 
@@ -297,7 +304,18 @@ def test_update_server_not_found_returns_404(client: TestClient) -> None:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.put(
             "/api/servers/999",
-            json={"contact": {"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "x"}},
+            json={
+                "contact": [
+                    {
+                        "id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4",
+                        "name": "x",
+                        "role": {
+                            "id": "866298d0-d942-440b-9c89-8b3e9eb81f79",
+                            "name": "Administrative",
+                        },
+                    }
+                ]
+            },
             headers=_AUTH_HEADERS,
         )
 

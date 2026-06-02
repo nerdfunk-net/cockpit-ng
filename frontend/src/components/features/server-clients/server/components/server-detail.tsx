@@ -270,7 +270,6 @@ export function ServerDetail({ server, onShowFacts, onRemoved }: ServerDetailPro
           <FactRow label="RAM" value={server.memtotal_mb != null ? `${server.memtotal_mb} MB` : null} />
           <FactRow label="Disks" value={server.disk_count} />
           <LocationRow server={server} />
-          <ContactRow server={server} />
           <NautobotUuidRow server={server} />
         </div>
 
@@ -357,6 +356,8 @@ export function ServerDetail({ server, onShowFacts, onRemoved }: ServerDetailPro
             <p className="text-xs text-gray-400 italic">No interfaces selected — click Manage to add some.</p>
           )}
         </div>
+
+        <ContactRow server={server} />
 
         {/* Actions */}
         <div className="pt-2 border-t border-gray-200 flex justify-between items-center gap-2">

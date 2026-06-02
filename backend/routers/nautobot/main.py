@@ -6,7 +6,7 @@ Each sub-router handles a specific domain:
 - devices: Core device management and operations
 - locations: Location hierarchy (locations, location-types, parent-locations)
 - taxonomy: Device taxonomy (platforms, device-types, manufacturers, roles)
-- extra: Extra metadata endpoints (contacts)
+- extra: Extra metadata endpoints (contacts, contact-associations)
 - statuses: Status lookups by content type
 - tags: Tag and custom field lookups
 - ipam: IPAM metadata (namespaces, VLANs, software versions/image files)

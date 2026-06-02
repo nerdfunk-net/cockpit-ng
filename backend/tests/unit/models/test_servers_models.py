@@ -12,10 +12,21 @@ from models.servers import (
     AnsibleCredentials,
     CreateServerRequest,
     ListServersResponse,
+    ServerResponse,
     ServerSummaryResponse,
     UpdateServerRequest,
     _ANSIBLE_FACTS_MAX_BYTES,
 )
+
+_CONTACT_ROLE = {
+    "id": "866298d0-d942-440b-9c89-8b3e9eb81f79",
+    "name": "Administrative",
+}
+_CONTACT_ENTRY = {
+    "id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4",
+    "name": "ops@example.com",
+    "role": _CONTACT_ROLE,
+}
 
 _VALID_UUID = "550e8400-e29b-41d4-a716-446655440000"
 
@@ -132,13 +143,43 @@ def test_create_server_empty_hostname_raises() -> None:
 @pytest.mark.unit
 def test_update_server_partial_fields() -> None:
     """Update accepts a subset of fields."""
-    req = UpdateServerRequest(
-        contact={"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "ops@example.com"}
-    )
+    req = UpdateServerRequest(contact=_CONTACT_ENTRY)
     dumped = req.model_dump(exclude_unset=True)
-    assert dumped == {
-        "contact": {"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "ops@example.com"}
+    assert dumped == {"contact": [_CONTACT_ENTRY]}
+
+
+@pytest.mark.unit
+def test_update_server_normalizes_single_contact_to_array() -> None:
+    """Legacy single-object contact input is stored as a one-element list."""
+    req = UpdateServerRequest(contact=_CONTACT_ENTRY)
+    assert len(req.contact or []) == 1
+    assert req.contact[0].name == "ops@example.com"
+
+
+@pytest.mark.unit
+def test_update_server_accepts_contact_array() -> None:
+    """Update accepts contact as an array."""
+    second = {
+        "id": "a13b79fe-264f-40a3-91ed-9e93dd45a5d5",
+        "name": "billing@example.com",
+        "role": _CONTACT_ROLE,
     }
+    req = UpdateServerRequest(contact=[_CONTACT_ENTRY, second])
+    assert len(req.contact or []) == 2
+
+
+@pytest.mark.unit
+def test_server_response_normalizes_legacy_single_contact() -> None:
+    """Response models normalize legacy DB single-object contact to an array."""
+    resp = ServerResponse(
+        id=1,
+        hostname="web01",
+        contact=_CONTACT_ENTRY,
+        is_virtual=False,
+    )
+    assert resp.contact is not None
+    assert len(resp.contact) == 1
+    assert resp.contact[0].name == "ops@example.com"
 
 
 @pytest.mark.unit
@@ -165,6 +206,20 @@ def test_update_server_invalid_contact_uuid_raises() -> None:
     """Update rejects invalid contact UUIDs."""
     with pytest.raises(ValidationError, match="contact.id"):
         UpdateServerRequest(contact={"id": "bad-uuid", "name": "ops"})
+
+
+@pytest.mark.unit
+def test_update_server_missing_contact_role_raises() -> None:
+    """Update rejects contact without role."""
+    with pytest.raises(ValidationError, match="contact.role"):
+        UpdateServerRequest(
+            contact=[
+                {
+                    "id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4",
+                    "name": "ops@example.com",
+                }
+            ]
+        )
 
 
 # ── Response models ────────────────────────────────────────────────────────────

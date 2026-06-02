@@ -48,7 +48,19 @@ class ServersService:
         groups: Dict[str, List[Server]] = {}
         for server in servers:
             raw = getattr(server, group_by, None)
-            if isinstance(raw, dict):
+            if group_by == "contact":
+                if isinstance(raw, list) and raw:
+                    first = raw[0]
+                    key = (
+                        first.get("name")
+                        if isinstance(first, dict)
+                        else getattr(first, "name", None)
+                    ) or "Uncategorized"
+                elif isinstance(raw, dict):
+                    key = raw.get("name") or "Uncategorized"
+                else:
+                    key = "Uncategorized"
+            elif isinstance(raw, dict):
                 key = raw.get("name") or "Uncategorized"
             else:
                 key = str(raw) if raw is not None else "Uncategorized"

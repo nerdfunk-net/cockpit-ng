@@ -29,7 +29,7 @@ class ServerCluster(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class ServerContact(BaseModel):
+class ServerContactRole(BaseModel):
     id: str
     name: str
 
@@ -37,7 +37,51 @@ class ServerContact(BaseModel):
     @classmethod
     def validate_id(cls, v: Any) -> Any:
         if not _UUID_RE.match(str(v)):
+            raise ValueError(f"contact.role.id must be a valid UUID, got: {v!r}")
+        return v
+
+
+def normalize_contacts(value: Any) -> Optional[List["ServerContact"]]:
+    """Normalize legacy single-object or array JSON into a contact list."""
+    if value is None:
+        return None
+    if isinstance(value, list):
+        return [ServerContact.model_validate(item) for item in value]
+    if isinstance(value, dict):
+        return [ServerContact.model_validate(value)]
+    raise ValueError("contact must be an object or a list of objects")
+
+
+def _validate_contacts_have_roles(contacts: Optional[List["ServerContact"]]) -> None:
+    if contacts is None:
+        return
+    for entry in contacts:
+        if entry.role is None:
+            raise ValueError("contact.role is required for every contact in the list")
+
+
+class ServerContact(BaseModel):
+    id: str
+    name: str
+    role: Optional[ServerContactRole] = None
+    association_id: Optional[str] = None
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v: Any) -> Any:
+        if not _UUID_RE.match(str(v)):
             raise ValueError(f"contact.id must be a valid UUID, got: {v!r}")
+        return v
+
+    @field_validator("association_id", mode="before")
+    @classmethod
+    def validate_association_id(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        if not _UUID_RE.match(str(v)):
+            raise ValueError(
+                f"contact.association_id must be a valid UUID, got: {v!r}"
+            )
         return v
 
     model_config = {"from_attributes": True}
@@ -67,8 +111,13 @@ class ServerSummaryResponse(BaseModel):
     cluster: Optional[ServerCluster] = None
     distribution_release: Optional[str] = None
     distribution_version: Optional[str] = None
-    contact: Optional[ServerContact] = None
+    contact: Optional[List[ServerContact]] = None
     is_virtual: bool = False
+
+    @field_validator("contact", mode="before")
+    @classmethod
+    def normalize_contact_field(cls, v: Any) -> Any:
+        return normalize_contacts(v)
 
     model_config = {"from_attributes": True}
 
@@ -87,7 +136,7 @@ class ServerResponse(BaseModel):
     architecture: Optional[str] = None
     distribution_release: Optional[str] = None
     distribution_version: Optional[str] = None
-    contact: Optional[ServerContact] = None
+    contact: Optional[List[ServerContact]] = None
     nautobot_uuid: Optional[str] = None
     is_virtual: bool = False
     ansible_facts: Optional[Dict[str, Any]] = None
@@ -95,6 +144,11 @@ class ServerResponse(BaseModel):
     selected_interfaces: Optional[List[Dict[str, Any]]] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+    @field_validator("contact", mode="before")
+    @classmethod
+    def normalize_contact_field(cls, v: Any) -> Any:
+        return normalize_contacts(v)
 
     model_config = {"from_attributes": True}
 
@@ -111,7 +165,7 @@ class CreateServerRequest(BaseModel):
     architecture: Optional[str] = Field(None, max_length=100)
     distribution_release: Optional[str] = Field(None, max_length=100)
     distribution_version: Optional[str] = Field(None, max_length=100)
-    contact: Optional[ServerContact] = None
+    contact: Optional[List[ServerContact]] = None
     nautobot_uuid: Optional[str] = Field(None, max_length=36)
     is_virtual: Optional[bool] = None
     ansible_facts: Optional[Dict[str, Any]] = None
@@ -126,6 +180,16 @@ class CreateServerRequest(BaseModel):
             raise ValueError("credential_id must not be set when use_sshkey is true")
         if not creds.use_sshkey and creds.credential_id is None:
             raise ValueError("credential_id is required when use_sshkey is false")
+        return self
+
+    @field_validator("contact", mode="before")
+    @classmethod
+    def normalize_contact_input(cls, v: Any) -> Any:
+        return normalize_contacts(v)
+
+    @model_validator(mode="after")
+    def validate_contact_roles(self) -> "CreateServerRequest":
+        _validate_contacts_have_roles(self.contact)
         return self
 
     @field_validator("primary_ipv4", mode="before")
@@ -173,7 +237,7 @@ class UpdateServerRequest(BaseModel):
     architecture: Optional[str] = Field(None, max_length=100)
     distribution_release: Optional[str] = Field(None, max_length=100)
     distribution_version: Optional[str] = Field(None, max_length=100)
-    contact: Optional[ServerContact] = None
+    contact: Optional[List[ServerContact]] = None
     nautobot_uuid: Optional[str] = Field(None, max_length=36)
     is_virtual: Optional[bool] = None
     ansible_facts: Optional[Dict[str, Any]] = None
@@ -200,6 +264,17 @@ class UpdateServerRequest(BaseModel):
         if not _UUID_RE.match(str(v)):
             raise ValueError(f"nautobot_uuid must be a valid UUID, got: {v!r}")
         return v
+
+    @field_validator("contact", mode="before")
+    @classmethod
+    def normalize_contact_input(cls, v: Any) -> Any:
+        return normalize_contacts(v)
+
+    @model_validator(mode="after")
+    def validate_contact_roles(self) -> "UpdateServerRequest":
+        if "contact" in self.model_fields_set:
+            _validate_contacts_have_roles(self.contact)
+        return self
 
     @field_validator("ansible_facts", mode="before")
     @classmethod

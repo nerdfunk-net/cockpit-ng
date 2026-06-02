@@ -24,7 +24,7 @@ interface CreateServerPayload {
   architecture?: string | null
   distribution_release?: string | null
   distribution_version?: string | null
-  contact?: ServerContact | null
+  contact?: ServerContact[] | null
   nautobot_uuid?: string | null
   is_virtual?: boolean | null
   ansible_facts?: Record<string, unknown> | null
@@ -43,7 +43,7 @@ interface UpdateServerPayload {
   architecture?: string | null
   distribution_release?: string | null
   distribution_version?: string | null
-  contact?: ServerContact | null
+  contact?: ServerContact[] | null
   nautobot_uuid?: string | null
   is_virtual?: boolean | null
   ansible_facts?: Record<string, unknown> | null

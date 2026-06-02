@@ -29,6 +29,8 @@ jobs:
           --health-retries 10
 
     env:
+      # Required by migration 015 (credential encryption) and app crypto helpers
+      SECRET_KEY: ci-test-secret-key-not-for-production
       COCKPIT_DATABASE_HOST: localhost
       COCKPIT_DATABASE_PORT: "5432"
       COCKPIT_DATABASE_NAME: cockpit_test

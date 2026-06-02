@@ -186,7 +186,16 @@ def test_create_respects_explicit_is_virtual_over_facts() -> None:
 def test_update_passes_only_set_fields() -> None:
     """update sends exclude_unset fields to the repository."""
     svc, mock_repo = _make_service()
-    contact = {"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "Team Ops"}
+    contact = [
+        {
+            "id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4",
+            "name": "Team Ops",
+            "role": {
+                "id": "866298d0-d942-440b-9c89-8b3e9eb81f79",
+                "name": "Administrative",
+            },
+        }
+    ]
     mock_repo.update.return_value = _server(contact=contact)
 
     data = UpdateServerRequest(contact=contact)
@@ -262,6 +271,28 @@ def test_get_grouped_by_scalar_field() -> None:
 
     assert groups["team-a"][0].hostname == "a"
     assert groups["Uncategorized"][0].hostname == "c"
+
+
+@pytest.mark.unit
+def test_get_grouped_contact_array_uses_first_name() -> None:
+    """contact arrays are grouped by the first entry's name."""
+    svc, mock_repo = _make_service()
+    mock_repo.get_all.return_value = [
+        _server(
+            id=1,
+            hostname="a",
+            contact=[
+                {"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "primary"},
+                {"id": "a13b79fe-264f-40a3-91ed-9e93dd45a5d5", "name": "secondary"},
+            ],
+        ),
+        _server(id=2, hostname="b", contact=[]),
+    ]
+
+    groups = svc.get_grouped("contact")
+
+    assert groups["primary"][0].hostname == "a"
+    assert groups["Uncategorized"][0].hostname == "b"
 
 
 @pytest.mark.unit

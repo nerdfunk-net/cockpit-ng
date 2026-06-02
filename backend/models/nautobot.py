@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import ipaddress
 from typing import Any, Dict, List, Literal, Optional, Union
+from uuid import UUID
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
@@ -501,6 +502,88 @@ class RackReservationCreate(BaseModel):
     units: List[int]
     description: str
     location_id: str
+
+
+# --- Contact Associations ---
+
+ContactAssociationObjectType = Literal[
+    "dcim.device",
+    "virtualization.virtualmachine",
+]
+
+
+class ContactAssociationNamedRef(BaseModel):
+    """Nautobot nested lookup by name (role/status)."""
+
+    name: str
+
+
+ContactAssociationRef = Union[str, UUID, ContactAssociationNamedRef, Dict[str, str]]
+
+
+def contact_association_ref_to_nautobot(
+    value: ContactAssociationRef,
+) -> Union[str, Dict[str, str]]:
+    """Serialize a role/status reference for the Nautobot REST API."""
+    if isinstance(value, ContactAssociationNamedRef):
+        return value.model_dump()
+    if isinstance(value, dict):
+        return value
+    return str(value)
+
+
+class ContactAssociationCreate(BaseModel):
+    """Create a contact association on a device or virtual machine."""
+
+    contact_id: UUID
+    associated_object_type: ContactAssociationObjectType
+    associated_object_id: UUID
+    role: ContactAssociationRef = Field(
+        default_factory=lambda: ContactAssociationNamedRef(name="Administrative")
+    )
+    status: ContactAssociationRef = Field(
+        default_factory=lambda: ContactAssociationNamedRef(name="Active")
+    )
+
+    def to_nautobot_payload(self) -> Dict[str, Any]:
+        return {
+            "contact": str(self.contact_id),
+            "associated_object_type": self.associated_object_type,
+            "associated_object_id": str(self.associated_object_id),
+            "role": contact_association_ref_to_nautobot(self.role),
+            "status": contact_association_ref_to_nautobot(self.status),
+        }
+
+
+class ContactAssociationBulkUpdateItem(BaseModel):
+    """Partial update of an existing contact association (requires association id)."""
+
+    id: UUID
+    contact_id: Optional[UUID] = None
+    associated_object_type: Optional[ContactAssociationObjectType] = None
+    associated_object_id: Optional[UUID] = None
+    role: Optional[ContactAssociationRef] = None
+    status: Optional[ContactAssociationRef] = None
+
+    def to_nautobot_payload(self) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {"id": str(self.id)}
+        if self.contact_id is not None:
+            payload["contact"] = str(self.contact_id)
+        if self.associated_object_type is not None:
+            payload["associated_object_type"] = self.associated_object_type
+        if self.associated_object_id is not None:
+            payload["associated_object_id"] = str(self.associated_object_id)
+        if self.role is not None:
+            payload["role"] = contact_association_ref_to_nautobot(self.role)
+        if self.status is not None:
+            payload["status"] = contact_association_ref_to_nautobot(self.status)
+        return payload
+
+
+class ContactAssociationBulkUpdateRequest(BaseModel):
+    """Bulk partial update of contact associations."""
+
+    items: List[ContactAssociationBulkUpdateItem] = Field(..., min_length=1)
 
 
 # --- Network Scan and Add ---
