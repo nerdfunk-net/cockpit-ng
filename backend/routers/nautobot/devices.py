@@ -23,8 +23,8 @@ from models.nautobot import (
     SyncNetworkDataRequest,
     UpdateDeviceRequest,
 )
-from services.nautobot.client import NautobotService
 from routers.nautobot.rest_errors import extract_nautobot_error_detail
+from services.nautobot.client import NautobotService
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.devices.query import DeviceQueryService
 from services.nautobot.devices.update import DeviceUpdateService

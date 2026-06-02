@@ -32,11 +32,11 @@ async def get_git_settings(
         git_settings = settings_manager.get_git_settings()
         return {"success": True, "data": git_settings}
 
-    except Exception as e:
-        logger.error("Error getting Git settings: %s", e)
+    except Exception:
+        logger.error("Error getting Git settings", exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to retrieve Git settings: {str(e)}",
+            "message": "Failed to retrieve Git settings",
         }
 
 
@@ -110,9 +110,9 @@ async def create_git_settings(
         else:
             return {"success": False, "message": "Failed to update Git settings"}
 
-    except Exception as e:
-        logger.error("Error updating Git settings: %s", e)
-        return {"success": False, "message": f"Failed to update Git settings: {str(e)}"}
+    except Exception:
+        logger.error("Error updating Git settings", exc_info=True)
+        return {"success": False, "message": "Failed to update Git settings"}
 
 
 @router.post("/test/git")
@@ -136,11 +136,11 @@ async def test_git_connection(
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-    except Exception as e:
-        logger.error("Error testing Git connection: %s", e)
+    except Exception:
+        logger.error("Error testing Git connection", exc_info=True)
         return {
             "success": False,
-            "message": f"Test failed: {str(e)}",
+            "message": "Git connection test failed",
             "tested_repo": test_request.repo_url,
             "tested_branch": test_request.branch,
             "timestamp": datetime.now(timezone.utc).isoformat(),

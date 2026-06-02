@@ -30,11 +30,11 @@ async def get_checkmk_settings(
         settings_data = settings_manager.get_checkmk_settings()
         return {"success": True, "data": settings_data}
 
-    except Exception as e:
-        logger.error("Error getting CheckMK settings: %s", e)
+    except Exception:
+        logger.error("Error getting CheckMK settings", exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to get CheckMK settings: {str(e)}",
+            "message": "Failed to get CheckMK settings",
         }
 
 
@@ -60,11 +60,11 @@ async def create_checkmk_settings(
         else:
             return {"success": False, "message": "Failed to update CheckMK settings"}
 
-    except Exception as e:
-        logger.error("Error updating CheckMK settings: %s", e)
+    except Exception:
+        logger.error("Error updating CheckMK settings", exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to update CheckMK settings: {str(e)}",
+            "message": "Failed to update CheckMK settings",
         }
 
 
@@ -91,11 +91,11 @@ async def test_checkmk_connection(
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-    except Exception as e:
-        logger.error("Error testing CheckMK connection: %s", e)
+    except Exception:
+        logger.error("Error testing CheckMK connection", exc_info=True)
         return {
             "success": False,
-            "message": f"Test failed: {str(e)}",
+            "message": "CheckMK connection test failed",
             "tested_url": test_request.url,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }

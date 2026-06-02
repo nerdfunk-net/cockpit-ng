@@ -69,7 +69,7 @@ class ConnectionTester:
 
             # First, let's test the base URL to see if it's a valid Nautobot instance
             try:
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
                 response = await loop.run_in_executor(
                     executor,
                     make_request,

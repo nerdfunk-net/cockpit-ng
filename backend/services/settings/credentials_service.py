@@ -12,6 +12,10 @@ from config import settings as config_settings
 from core.crypto import EncryptionService
 from core.models import Credential
 from repositories import CredentialsRepository
+from services.settings.exceptions import (
+    CredentialMissingFieldError,
+    CredentialNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +93,7 @@ class CredentialsService:
     ) -> Dict[str, Any]:
         existing = self._repo.get_by_id(cred_id)
         if not existing:
-            raise ValueError("Credential not found")
+            raise CredentialNotFoundError(cred_id)
         kwargs: Dict[str, Any] = {"updated_at": datetime.utcnow()}
         if name is not None:
             kwargs["name"] = name
@@ -133,23 +137,23 @@ class CredentialsService:
     def get_decrypted_password(self, cred_id: int) -> str:
         cred = self._repo.get_by_id(cred_id)
         if not cred:
-            raise ValueError("Credential not found")
+            raise CredentialNotFoundError(cred_id)
         if not cred.password_encrypted:
-            raise ValueError("Credential has no password")
+            raise CredentialMissingFieldError("Credential has no password")
         return self._encryption.decrypt(cred.password_encrypted)
 
     def get_decrypted_ssh_key(self, cred_id: int) -> str:
         cred = self._repo.get_by_id(cred_id)
         if not cred:
-            raise ValueError("Credential not found")
+            raise CredentialNotFoundError(cred_id)
         if not cred.ssh_key_encrypted:
-            raise ValueError("Credential has no SSH key")
+            raise CredentialMissingFieldError("Credential has no SSH key")
         return self._encryption.decrypt(cred.ssh_key_encrypted)
 
     def get_decrypted_ssh_passphrase(self, cred_id: int) -> Optional[str]:
         cred = self._repo.get_by_id(cred_id)
         if not cred:
-            raise ValueError("Credential not found")
+            raise CredentialNotFoundError(cred_id)
         if not cred.ssh_passphrase_encrypted:
             return None
         return self._encryption.decrypt(cred.ssh_passphrase_encrypted)

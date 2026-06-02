@@ -28,11 +28,11 @@ async def get_cache_settings(
 
         cache_settings = settings_manager.get_cache_settings()
         return {"success": True, "data": cache_settings}
-    except Exception as e:
-        logger.error("Error getting Cache settings: %s", e)
+    except Exception:
+        logger.error("Error getting Cache settings", exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to retrieve Cache settings: {str(e)}",
+            "message": "Failed to retrieve Cache settings",
         }
 
 
@@ -87,9 +87,9 @@ async def create_cache_settings(
             }
         else:
             return {"success": False, "message": "Failed to update Cache settings"}
-    except Exception as e:
-        logger.error("Error updating Cache settings: %s", e)
+    except Exception:
+        logger.error("Error updating Cache settings", exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to update Cache settings: {str(e)}",
+            "message": "Failed to update Cache settings",
         }

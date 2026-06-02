@@ -28,11 +28,11 @@ async def get_server_defaults(
 
         return {"success": True, "data": defaults}
 
-    except Exception as e:
-        logger.error("Error getting server defaults: %s", e, exc_info=True)
+    except Exception:
+        logger.error("Error getting server defaults", exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to retrieve server defaults: {str(e)}",
+            "message": "Failed to retrieve server defaults",
         }
 
 
@@ -56,9 +56,9 @@ async def update_server_defaults(
             }
         return {"success": False, "message": "Failed to update server defaults"}
 
-    except Exception as e:
-        logger.error("Error updating server defaults: %s", e)
+    except Exception:
+        logger.error("Error updating server defaults", exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to update server defaults: {str(e)}",
+            "message": "Failed to update server defaults",
         }

@@ -11,7 +11,7 @@ from routers.nautobot.rest_errors import extract_nautobot_error_detail
 def test_extract_nautobot_error_detail_parses_json_body() -> None:
     """400 responses with JSON bodies are flattened to a readable message."""
     error_msg = (
-        'REST request failed with status 400: '
+        "REST request failed with status 400: "
         '{"__all__":["Duplicate association for this object."]}'
     )
     assert extract_nautobot_error_detail(error_msg) == (

@@ -9,13 +9,13 @@ import pytest
 from pydantic import ValidationError
 
 from models.servers import (
+    _ANSIBLE_FACTS_MAX_BYTES,
     AnsibleCredentials,
     CreateServerRequest,
     ListServersResponse,
     ServerResponse,
     ServerSummaryResponse,
     UpdateServerRequest,
-    _ANSIBLE_FACTS_MAX_BYTES,
 )
 
 _CONTACT_ROLE = {

@@ -94,10 +94,22 @@ def send_command(
         )
 
         if response.get("status") == "timeout":
-            raise HTTPException(status_code=504, detail=response.get("error"))
+            logger.warning(
+                "Agent %s timed out: %s", request.agent_id, response.get("error")
+            )
+            raise HTTPException(
+                status_code=504,
+                detail="Agent did not respond within the timeout",
+            )
 
         if response.get("status") == "error":
-            raise HTTPException(status_code=500, detail=response.get("error"))
+            logger.error(
+                "Agent %s returned error: %s", request.agent_id, response.get("error")
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Agent returned an error",
+            )
 
         return response
 
@@ -135,10 +147,17 @@ def git_pull(
         )
 
         if response["status"] == "error":
-            raise HTTPException(status_code=500, detail=response.get("error"))
+            logger.error("Agent %s git-pull error: %s", agent_id, response.get("error"))
+            raise HTTPException(status_code=500, detail="Agent returned an error")
 
         if response["status"] == "timeout":
-            raise HTTPException(status_code=504, detail=response.get("error"))
+            logger.warning(
+                "Agent %s git-pull timed out: %s", agent_id, response.get("error")
+            )
+            raise HTTPException(
+                status_code=504,
+                detail="Agent did not respond within the timeout",
+            )
 
         return response
 
@@ -174,10 +193,19 @@ def docker_restart(
         )
 
         if response["status"] == "error":
-            raise HTTPException(status_code=500, detail=response.get("error"))
+            logger.error(
+                "Agent %s docker-restart error: %s", agent_id, response.get("error")
+            )
+            raise HTTPException(status_code=500, detail="Agent returned an error")
 
         if response["status"] == "timeout":
-            raise HTTPException(status_code=504, detail=response.get("error"))
+            logger.warning(
+                "Agent %s docker-restart timed out: %s", agent_id, response.get("error")
+            )
+            raise HTTPException(
+                status_code=504,
+                detail="Agent did not respond within the timeout",
+            )
 
         return response
 

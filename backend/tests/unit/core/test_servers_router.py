@@ -89,7 +89,10 @@ def _auth_context(client: TestClient, mock_service: MagicMock):
 def test_list_servers_returns_summaries(client: TestClient) -> None:
     """List endpoint returns servers, total, and total_all."""
     mock_service = MagicMock()
-    mock_service.list_summaries.return_value = [_summary(), _summary(id=2, hostname="db01")]
+    mock_service.list_summaries.return_value = [
+        _summary(),
+        _summary(id=2, hostname="db01"),
+    ]
     mock_service.count_all.return_value = 5
 
     with _auth_context(client, mock_service) as rbac:

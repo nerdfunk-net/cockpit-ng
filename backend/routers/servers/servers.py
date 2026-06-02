@@ -32,7 +32,7 @@ router = APIRouter(prefix="/api/servers", tags=["servers"])
 
 
 @router.get("", response_model=ListServersResponse)
-async def list_servers(
+def list_servers(
     q: Optional[str] = Query(
         None,
         min_length=1,
@@ -66,7 +66,7 @@ async def list_servers(
 
 
 @router.get("/{server_id}", response_model=ServerResponse)
-async def get_server(
+def get_server(
     server_id: int,
     _: dict = Depends(require_permission("servers", "read")),
     service: ServersService = Depends(get_servers_service),
@@ -84,7 +84,7 @@ async def get_server(
 
 
 @router.post("", response_model=ServerResponse, status_code=201)
-async def create_server(
+def create_server(
     request: CreateServerRequest,
     _: dict = Depends(require_permission("servers", "write")),
     service: ServersService = Depends(get_servers_service),
@@ -98,7 +98,7 @@ async def create_server(
 
 
 @router.put("/{server_id}", response_model=ServerResponse)
-async def update_server(
+def update_server(
     server_id: int,
     request: UpdateServerRequest,
     _: dict = Depends(require_permission("servers", "write")),
@@ -117,7 +117,7 @@ async def update_server(
 
 
 @router.delete("/{server_id}", status_code=204)
-async def delete_server(
+def delete_server(
     server_id: int,
     _: dict = Depends(require_permission("servers", "delete")),
     service: ServersService = Depends(get_servers_service),

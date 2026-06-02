@@ -7,9 +7,9 @@ See: doc/refactoring/REFACTORING_SERVICES.md — Phase 4
 Cache strategy (Option A — cache-first):
   Most filter operations load the full device list once from Redis
   (key: nautobot:devices:all, populated by cache_all_devices_task) and
-  perform in-Python filtering.  The result is held in self._devices_cache
-  for the lifetime of the service instance so that multiple conditions in
-  the same inventory preview only pay the Redis round-trip once.
+  perform in-Python filtering.  The per-request cache lives in
+  DeviceCacheLoader so multiple conditions in the same inventory preview
+  only pay the Redis round-trip once.
 
   Exceptions that still go directly to Nautobot GraphQL:
     • location  — Nautobot resolves child-location hierarchy server-side
@@ -23,132 +23,40 @@ import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from models.inventory import DeviceInfo
+from services.inventory import device_filters as filters
+from services.inventory.device_cache import DeviceCacheLoader
 
 if TYPE_CHECKING:
     from services.settings.cache import RedisCacheService
 
 logger = logging.getLogger(__name__)
 
-_BULK_CACHE_KEY = "nautobot:devices:all"
-
 
 class InventoryQueryService:
     """Handles all Nautobot GraphQL queries for inventory device lookups."""
 
     def __init__(self, cache_service: Optional[RedisCacheService] = None):
-        self._cache_service = cache_service
-        # Per-instance warm cache — populated on first use, avoids repeated Redis reads
-        self._devices_cache: Optional[List[DeviceInfo]] = None
-        # Cache for custom field types (key -> type mapping)
-        self._custom_field_types_cache: Optional[Dict[str, str]] = None
+        self._cache = DeviceCacheLoader(cache_service)
 
     # ------------------------------------------------------------------
-    # Cache helpers
-    # ------------------------------------------------------------------
-
-    def _parse_device_from_cache(self, raw: Dict[str, Any]) -> DeviceInfo:
-        """Convert a flat cache dict (from extract_device_essentials) to DeviceInfo."""
-        tags = raw.get("tags") or []
-        return DeviceInfo(
-            id=raw.get("id", ""),
-            name=raw.get("name"),
-            serial=raw.get("serial"),
-            primary_ip4=raw.get("primary_ip4"),
-            status=raw.get("status"),
-            device_type=raw.get("device_type"),
-            role=raw.get("role"),
-            location=raw.get("location"),
-            platform=raw.get("platform"),
-            tags=tags,
-            manufacturer=raw.get("manufacturer"),
-        )
-
-    async def _get_all_devices_cached(self) -> List[DeviceInfo]:
-        """
-        Return all devices, preferring the Redis bulk cache over a live API call.
-
-        The parsed list is stored in self._devices_cache so subsequent calls
-        within the same request pay no extra cost.
-        """
-        if self._devices_cache is not None:
-            return self._devices_cache
-
-        if self._cache_service is not None:
-            try:
-                raw_list = self._cache_service.get(_BULK_CACHE_KEY)
-                if raw_list:
-                    devices = [self._parse_device_from_cache(d) for d in raw_list]
-                    logger.info(
-                        "Cache hit for '%s': %s devices", _BULK_CACHE_KEY, len(devices)
-                    )
-                    self._devices_cache = devices
-                    return devices
-                logger.info(
-                    "Cache miss for '%s', falling back to Nautobot API", _BULK_CACHE_KEY
-                )
-            except Exception as exc:
-                logger.warning(
-                    "Redis read failed for '%s', falling back to Nautobot API: %s",
-                    _BULK_CACHE_KEY,
-                    exc,
-                )
-
-        devices = await self._query_all_devices_live()
-        self._devices_cache = devices
-        return devices
-
-    # ------------------------------------------------------------------
-    # Custom field metadata
+    # Delegation shim (used by inventory.py and tests)
     # ------------------------------------------------------------------
 
     async def _get_custom_field_types(self) -> Dict[str, str]:
-        """
-        Fetch custom field types from Nautobot API and cache them.
+        return await self._cache.get_custom_field_types()
 
-        Returns:
-            Dictionary mapping custom field keys to their types
-            (e.g., {"checkmk_site": "select", "freifeld": "text"})
-        """
-        if self._custom_field_types_cache is not None:
-            return self._custom_field_types_cache
+    # ------------------------------------------------------------------
+    # Cache-backed device list (with live fallback)
+    # ------------------------------------------------------------------
 
-        try:
-            import service_factory
-
-            nautobot_metadata_service = (
-                service_factory.build_nautobot_metadata_service()
-            )
-
-            logger.info("Fetching custom field types from Nautobot")
-
-            custom_fields = await nautobot_metadata_service.get_device_custom_fields()
-
-            type_mapping = {}
-            for field in custom_fields:
-                field_key = field.get("key")
-                field_type_dict = field.get("type", {})
-                field_type_value = (
-                    field_type_dict.get("value")
-                    if isinstance(field_type_dict, dict)
-                    else None
-                )
-
-                if field_key and field_type_value:
-                    type_mapping[field_key] = field_type_value
-                    logger.info(
-                        "Custom field '%s' has type '%s'", field_key, field_type_value
-                    )
-
-            logger.info(
-                "Loaded %s custom field types: %s", len(type_mapping), type_mapping
-            )
-
-            self._custom_field_types_cache = type_mapping
-            return type_mapping
-
-        except Exception as e:
-            logger.error("Error fetching custom field types: %s", e, exc_info=True)
-            return {}
+    async def _get_all_devices_cached(self) -> List[DeviceInfo]:
+        """Return all devices, preferring the Redis bulk cache over a live API call."""
+        devices = await self._cache.get_all()
+        if not self._cache.is_populated:
+            # Redis miss — fall back to live Nautobot query and warm the loader
+            devices = await self._query_all_devices_live()
+            self._cache.set_devices(devices)
+        return devices
 
     # ------------------------------------------------------------------
     # Live Nautobot GraphQL helpers (used as fallback or for uncacheable queries)
@@ -204,25 +112,17 @@ class InventoryQueryService:
         return await self._get_all_devices_cached()
 
     # ------------------------------------------------------------------
-    # Cache-first query methods
+    # Cache-first filter methods (delegate pure logic to device_filters)
     # ------------------------------------------------------------------
 
     async def _query_devices_by_name(
         self, name_filter: str, use_contains: bool = False
     ) -> List[DeviceInfo]:
-        """Filter devices by name using the bulk cache."""
         if not name_filter or name_filter.strip() == "":
             logger.warning("Empty name_filter provided, returning empty result")
             return []
-
         all_devices = await self._get_all_devices_cached()
-
-        if use_contains:
-            needle = name_filter.lower()
-            result = [d for d in all_devices if d.name and needle in d.name.lower()]
-        else:
-            result = [d for d in all_devices if d.name == name_filter]
-
+        result = filters.by_name(all_devices, name_filter, use_contains)
         logger.info(
             "Cache filter name='%s' (contains=%s): %s devices",
             name_filter,
@@ -234,18 +134,11 @@ class InventoryQueryService:
     async def _query_devices_by_role(
         self, role_filter: str, use_negation: bool = False
     ) -> List[DeviceInfo]:
-        """Filter devices by role using the bulk cache."""
         if not role_filter or role_filter.strip() == "":
             logger.warning("Empty role_filter provided, returning empty result")
             return []
-
         all_devices = await self._get_all_devices_cached()
-
-        if use_negation:
-            result = [d for d in all_devices if d.role != role_filter]
-        else:
-            result = [d for d in all_devices if d.role == role_filter]
-
+        result = filters.by_role(all_devices, role_filter, use_negation)
         logger.info(
             "Cache filter role='%s' (negation=%s): %s devices",
             role_filter,
@@ -255,42 +148,31 @@ class InventoryQueryService:
         return result
 
     async def _query_devices_by_status(self, status_filter: str) -> List[DeviceInfo]:
-        """Filter devices by status using the bulk cache."""
         if not status_filter or status_filter.strip() == "":
             logger.warning("Empty status_filter provided, returning empty result")
             return []
-
         all_devices = await self._get_all_devices_cached()
-        result = [d for d in all_devices if d.status == status_filter]
+        result = filters.by_status(all_devices, status_filter)
         logger.info("Cache filter status='%s': %s devices", status_filter, len(result))
         return result
 
     async def _query_devices_by_tag(self, tag_filter: str) -> List[DeviceInfo]:
-        """Filter devices by tag using the bulk cache."""
         if not tag_filter or tag_filter.strip() == "":
             logger.warning("Empty tag_filter provided, returning empty result")
             return []
-
         all_devices = await self._get_all_devices_cached()
-        result = [d for d in all_devices if tag_filter in (d.tags or [])]
+        result = filters.by_tag(all_devices, tag_filter)
         logger.info("Cache filter tag='%s': %s devices", tag_filter, len(result))
         return result
 
     async def _query_devices_by_devicetype(
         self, devicetype_filter: str, use_negation: bool = False
     ) -> List[DeviceInfo]:
-        """Filter devices by device type using the bulk cache."""
         if not devicetype_filter or devicetype_filter.strip() == "":
             logger.warning("Empty devicetype_filter provided, returning empty result")
             return []
-
         all_devices = await self._get_all_devices_cached()
-
-        if use_negation:
-            result = [d for d in all_devices if d.device_type != devicetype_filter]
-        else:
-            result = [d for d in all_devices if d.device_type == devicetype_filter]
-
+        result = filters.by_device_type(all_devices, devicetype_filter, use_negation)
         logger.info(
             "Cache filter device_type='%s' (negation=%s): %s devices",
             devicetype_filter,
@@ -302,18 +184,11 @@ class InventoryQueryService:
     async def _query_devices_by_manufacturer(
         self, manufacturer_filter: str, use_negation: bool = False
     ) -> List[DeviceInfo]:
-        """Filter devices by manufacturer using the bulk cache."""
         if not manufacturer_filter or manufacturer_filter.strip() == "":
             logger.warning("Empty manufacturer_filter provided, returning empty result")
             return []
-
         all_devices = await self._get_all_devices_cached()
-
-        if use_negation:
-            result = [d for d in all_devices if d.manufacturer != manufacturer_filter]
-        else:
-            result = [d for d in all_devices if d.manufacturer == manufacturer_filter]
-
+        result = filters.by_manufacturer(all_devices, manufacturer_filter, use_negation)
         logger.info(
             "Cache filter manufacturer='%s' (negation=%s): %s devices",
             manufacturer_filter,
@@ -325,13 +200,11 @@ class InventoryQueryService:
     async def _query_devices_by_platform(
         self, platform_filter: str
     ) -> List[DeviceInfo]:
-        """Filter devices by platform using the bulk cache."""
         if not platform_filter or platform_filter.strip() == "":
             logger.warning("Empty platform_filter provided, returning empty result")
             return []
-
         all_devices = await self._get_all_devices_cached()
-        result = [d for d in all_devices if d.platform == platform_filter]
+        result = filters.by_platform(all_devices, platform_filter)
         logger.info(
             "Cache filter platform='%s': %s devices", platform_filter, len(result)
         )
@@ -340,18 +213,12 @@ class InventoryQueryService:
     async def _query_devices_by_has_primary(
         self, has_primary_filter: str
     ) -> List[DeviceInfo]:
-        """Filter devices by whether they have a primary IP using the bulk cache."""
-        has_primary_bool = has_primary_filter.lower() == "true"
-
         all_devices = await self._get_all_devices_cached()
-
-        if has_primary_bool:
-            result = [d for d in all_devices if d.primary_ip4]
-        else:
-            result = [d for d in all_devices if not d.primary_ip4]
-
+        result = filters.by_has_primary_ip(all_devices, has_primary_filter)
         logger.info(
-            "Cache filter has_primary=%s: %s devices", has_primary_bool, len(result)
+            "Cache filter has_primary=%s: %s devices",
+            has_primary_filter.lower() == "true",
+            len(result),
         )
         return result
 
@@ -371,11 +238,6 @@ class InventoryQueryService:
         child-location hierarchy server-side.  Replicating that logic in Python
         would require fetching and traversing the entire location tree, which is
         more expensive than a single filtered GraphQL query.
-
-        Args:
-            location_filter: Location name or ID to filter by
-            use_contains: Use case-insensitive contains matching
-            use_negation: Use negation (location__n) to exclude devices from this location
         """
         import service_factory
 
@@ -507,19 +369,6 @@ class InventoryQueryService:
 
         Intentionally kept as a live Nautobot call: CIDR containment filtering
         (within_include / within / exact) requires server-side evaluation.
-
-        Traverses: prefixes → ip_addresses → interface_assignments → interface → device.
-        IP addresses without interface assignments are ignored.
-        Devices are deduplicated by ID.
-
-        The value may optionally include a namespace name after the CIDR, separated by
-        a space (e.g. "192.168.183.0/24 Global"). When present, the namespace is added
-        as an additional filter to the GraphQL query.
-
-        Args:
-            prefix_filter: CIDR notation with optional namespace
-                           (e.g., "192.168.183.0/24" or "192.168.183.0/24 Global")
-            operator: One of "within_include", "within", "exact"
         """
         import service_factory
 
@@ -529,7 +378,6 @@ class InventoryQueryService:
             logger.warning("Empty prefix_filter provided, returning empty result")
             return []
 
-        # Split CIDR and optional namespace: "192.168.183.0/24 Global" → ("192.168.183.0/24", "Global")
         parts = prefix_filter.strip().split(None, 1)
         cidr = parts[0]
         namespace = parts[1].strip() if len(parts) > 1 else None
@@ -611,19 +459,10 @@ class InventoryQueryService:
         custom_field_value: str,
         use_contains: bool = False,
     ) -> List[DeviceInfo]:
-        """
-        Query devices by custom field value.
+        """Query devices by custom field value.
 
         Intentionally kept as a live Nautobot call: custom fields are dynamic
         and not stored in the bulk device cache.
-
-        Args:
-            custom_field_name: Name of the custom field (with cf_ prefix)
-            custom_field_value: Value to search for
-            use_contains: Whether to use contains (icontains) or exact match
-
-        Returns:
-            List of matching devices
         """
         try:
             import service_factory
@@ -643,7 +482,7 @@ class InventoryQueryService:
                 )
                 return []
 
-            custom_field_types = await self._get_custom_field_types()
+            custom_field_types = await self._cache.get_custom_field_types()
 
             cf_key = custom_field_name.replace("cf_", "")
             cf_type = custom_field_types.get(cf_key)
@@ -766,7 +605,7 @@ class InventoryQueryService:
             return []
 
     # ------------------------------------------------------------------
-    # Shared parser
+    # Shared parser (GraphQL nested dicts → DeviceInfo)
     # ------------------------------------------------------------------
 
     def _parse_device_data(

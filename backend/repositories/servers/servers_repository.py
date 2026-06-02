@@ -32,11 +32,7 @@ class ServersRepository(BaseRepository[Server]):
             query = session.query(Server).options(load_only(*_SUMMARY_COLUMNS))
             if search:
                 escaped = (
-                    search.replace("\\", "\\\\")
-                    .replace("%", "\\%")
-                    .replace("_", "\\_")
+                    search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
                 )
-                query = query.filter(
-                    Server.hostname.ilike(f"%{escaped}%", escape="\\")
-                )
+                query = query.filter(Server.hostname.ilike(f"%{escaped}%", escape="\\"))
             return query.order_by(Server.hostname.asc()).all()

@@ -6,6 +6,11 @@ All tests run offline — no database required.
 import pytest
 
 from core.auth import get_password_hash
+from services.auth.exceptions import (
+    RBACConflictError,
+    RBACConstraintError,
+    RBACNotFoundError,
+)
 from services.auth.rbac_service import RBACService
 from services.auth.user_service import PERMISSIONS_USER, UserService
 from tests.mocks.fake_auth_repositories import FakeRBACRepository, FakeUserRepository
@@ -79,7 +84,7 @@ class TestPermissionCRUD:
 
     def test_create_duplicate_permission_raises(self, rbac_svc: RBACService) -> None:
         rbac_svc.create_permission("devices", "read")
-        with pytest.raises(ValueError, match="already exists"):
+        with pytest.raises(RBACConflictError, match="already exists"):
             rbac_svc.create_permission("devices", "read")
 
     def test_get_permission_found(self, rbac_svc: RBACService) -> None:
@@ -126,7 +131,7 @@ class TestRoleCRUD:
 
     def test_create_duplicate_role_raises(self, rbac_svc: RBACService) -> None:
         rbac_svc.create_role("viewer")
-        with pytest.raises(ValueError, match="already exists"):
+        with pytest.raises(RBACConflictError, match="already exists"):
             rbac_svc.create_role("viewer")
 
     def test_get_role_by_id(self, rbac_svc: RBACService) -> None:
@@ -161,7 +166,7 @@ class TestRoleCRUD:
         assert updated["name"] == "new-name"
 
     def test_update_nonexistent_role_raises(self, rbac_svc: RBACService) -> None:
-        with pytest.raises(ValueError, match="not found"):
+        with pytest.raises(RBACNotFoundError, match="not found"):
             rbac_svc.update_role(999, name="whatever")
 
     def test_delete_non_system_role(self, rbac_svc: RBACService) -> None:
@@ -171,11 +176,11 @@ class TestRoleCRUD:
 
     def test_delete_system_role_raises(self, rbac_svc: RBACService) -> None:
         role = rbac_svc.create_role("system-role", is_system=True)
-        with pytest.raises(ValueError, match="Cannot delete system role"):
+        with pytest.raises(RBACConstraintError, match="Cannot delete system role"):
             rbac_svc.delete_role(role["id"])
 
     def test_delete_nonexistent_role_raises(self, rbac_svc: RBACService) -> None:
-        with pytest.raises(ValueError, match="not found"):
+        with pytest.raises(RBACNotFoundError, match="not found"):
             rbac_svc.delete_role(999)
 
 
@@ -452,7 +457,7 @@ class TestCreateUserWithRoles:
         assert any(r["id"] == role["id"] for r in roles)
 
     def test_invalid_role_id_rolls_back_user(self, rbac_svc: RBACService) -> None:
-        with pytest.raises(ValueError, match="not found"):
+        with pytest.raises(RBACNotFoundError, match="not found"):
             rbac_svc.create_user_with_roles(
                 username="rollback",
                 realname="Rollback",

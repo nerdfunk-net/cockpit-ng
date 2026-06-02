@@ -123,9 +123,10 @@ async def create_tests_baseline() -> Dict[str, Any]:
         result = await service.create_baseline()
 
         if not result.get("success"):
+            logger.error("Test baseline creation failed: %s", result.get("message"))
             raise HTTPException(
                 status_code=500,
-                detail=result.get("message", "Failed to create test baseline"),
+                detail="Failed to create test baseline",
             )
 
         return result

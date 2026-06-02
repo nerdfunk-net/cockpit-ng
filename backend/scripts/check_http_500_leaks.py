@@ -39,6 +39,9 @@ _LEAK_PATTERNS = (
     re.compile(
         r"detail\s*=\s*f[\"'][^\"']*\{str\s*\(\s*(?:e|exc|error)\s*\)\}[^\"']*[\"']"
     ),
+    # Catch dict lookups forwarding external/agent error strings into 5xx detail
+    re.compile(r"detail\s*=\s*\w+\.get\s*\("),
+    re.compile(r'detail\s*=\s*\w+\s*\[\s*["\']'),
 )
 
 

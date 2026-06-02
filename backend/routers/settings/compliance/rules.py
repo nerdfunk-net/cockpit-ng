@@ -20,6 +20,7 @@ from models.settings import (
     SNMPMappingUpdateRequest,
 )
 from services.compliance.compliance_service import ComplianceService
+from services.compliance.exceptions import ComplianceValidationError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings/compliance", tags=["compliance-settings"])
@@ -83,7 +84,7 @@ async def create_regex_pattern(
             "message": "Regex pattern created successfully",
             "data": created_pattern,
         }
-    except ValueError as e:
+    except ComplianceValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -335,7 +336,7 @@ async def create_snmp_mapping(
             "message": "SNMP mapping created successfully",
             "data": created_mapping,
         }
-    except ValueError as e:
+    except ComplianceValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -381,7 +382,7 @@ async def update_snmp_mapping(
         }
     except HTTPException:
         raise
-    except ValueError as e:
+    except ComplianceValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -447,7 +448,7 @@ async def import_snmp_mappings(
             "message": message,
             "data": result,
         }
-    except ValueError as e:
+    except ComplianceValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),

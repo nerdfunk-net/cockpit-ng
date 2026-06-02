@@ -247,7 +247,7 @@ async def create_virtual_machine(
 
         vm_id = vm_result.get("id")
         if not vm_id:
-            raise Exception("VM creation succeeded but no ID returned")
+            raise RuntimeError("VM creation succeeded but no ID returned")
 
         logger.info("VM created with ID: %s", vm_id)
 
@@ -315,7 +315,7 @@ async def create_virtual_machine(
 
                     interface_id = interface_result.get("id")
                     if not interface_id:
-                        raise Exception(
+                        raise RuntimeError(
                             f"Interface '{interface_data.name}' created but no ID returned"
                         )
 
@@ -410,28 +410,25 @@ async def create_virtual_machine(
                                     ip_data.address,
                                 )
 
-                            except Exception as ip_error:
-                                logger.error("")
-                                logger.error("=" * 60)
+                            except Exception:
                                 logger.error(
-                                    "❌ FAILED TO PROCESS IP: %s", ip_data.address
+                                    "Failed to create/assign IP %s on interface %s",
+                                    ip_data.address,
+                                    interface_data.name,
+                                    exc_info=True,
                                 )
-                                logger.error("=" * 60)
-                                logger.error("  Error: %s", ip_error)
-                                logger.error("=" * 60)
                                 response_data["warnings"].append(
-                                    f"Failed to create/assign IP {ip_data.address} on interface {interface_data.name}: {str(ip_error)}"
+                                    f"Failed to create/assign IP {ip_data.address} on interface {interface_data.name}"
                                 )
 
-                except Exception as iface_error:
+                except Exception:
                     logger.error(
-                        "✗ Failed to create interface '%s': %s",
+                        "Failed to create interface '%s'",
                         interface_data.name,
-                        iface_error,
                         exc_info=True,
                     )
                     response_data["warnings"].append(
-                        f"Failed to create interface {interface_data.name}: {str(iface_error)}"
+                        f"Failed to create interface {interface_data.name}"
                     )
 
             logger.debug(
@@ -455,7 +452,9 @@ async def create_virtual_machine(
 
                 interface_id = interface_result.get("id")
                 if not interface_id:
-                    raise Exception("Interface creation succeeded but no ID returned")
+                    raise RuntimeError(
+                        "Interface creation succeeded but no ID returned"
+                    )
 
                 logger.debug("Interface created with ID: %s", interface_id)
                 response_data["interfaces"].append(
@@ -484,7 +483,9 @@ async def create_virtual_machine(
                                 "Global"
                             )
                             if not namespace_id:
-                                raise Exception("Could not resolve 'Global' namespace")
+                                raise NautobotNotFoundError(
+                                    "Could not resolve 'Global' namespace"
+                                )
                             logger.debug("Resolved namespace ID: %s", namespace_id)
 
                         # Create or get the IP address
@@ -526,25 +527,20 @@ async def create_virtual_machine(
 
                         primary_ip_id = ip_id
 
-                    except Exception as ip_error:
-                        logger.error("")
-                        logger.error("=" * 60)
+                    except Exception:
                         logger.error(
-                            "❌ FAILED TO PROCESS IP: %s", vm_request.primaryIpv4
+                            "Failed to process legacy primary IP %s",
+                            vm_request.primaryIpv4,
+                            exc_info=True,
                         )
-                        logger.error("=" * 60)
-                        logger.error("  Error: %s", ip_error)
-                        logger.error("=" * 60)
                         response_data["warnings"].append(
-                            f"VM and interface created, but IP assignment failed: {str(ip_error)}"
+                            "VM and interface created, but IP assignment failed"
                         )
 
-            except Exception as iface_error:
-                logger.error(
-                    "✗ Interface creation failed: %s", iface_error, exc_info=True
-                )
+            except Exception:
+                logger.error("Interface creation failed", exc_info=True)
                 response_data["warnings"].append(
-                    f"VM created, but interface creation failed: {str(iface_error)}"
+                    "VM created, but interface creation failed"
                 )
 
         # Set primary IP for the VM if one was marked as primary
@@ -566,12 +562,10 @@ async def create_virtual_machine(
                         response_data["message"] += f" with primary IP {ip['address']}"
                         break
 
-            except Exception as primary_error:
-                logger.error(
-                    "✗ Failed to set primary IP: %s", primary_error, exc_info=True
-                )
+            except Exception:
+                logger.error("Failed to set primary IP", exc_info=True)
                 response_data["warnings"].append(
-                    f"VM and interfaces created, but failed to set primary IP: {str(primary_error)}"
+                    "VM and interfaces created, but failed to set primary IP"
                 )
 
         # Update final message
@@ -612,11 +606,9 @@ async def create_virtual_machine(
         return response_data
 
     except Exception as e:
-        logger.error("")
-        logger.error("=" * 80)
-        logger.error("======= FATAL ERROR =======")
-        logger.error("=" * 80)
-        logger.error("Error: %s", e, exc_info=True)
+        logger.error(
+            "Fatal error creating virtual machine %s", vm_request.name, exc_info=True
+        )
         raise_internal_server_error(
             logger,
             "Failed to create virtual machine",

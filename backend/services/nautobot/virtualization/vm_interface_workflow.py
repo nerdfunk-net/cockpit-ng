@@ -166,25 +166,15 @@ class VirtualMachineInterfaceWorkflow:
                     if not address:
                         continue
 
-                    namespace = ip_data.get("namespace")
-                    if not namespace:
-                        warnings.append(
-                            f"Interface {iface_name}: namespace required for {address}"
+                    map_key = f"{iface_name}:{address}"
+                    ip_id = ip_address_map.get(map_key)
+                    if not ip_id:
+                        logger.warning(
+                            "IP %s on interface %s not in pre-built map, skipping assignment",
+                            address,
+                            iface_name,
                         )
                         continue
-
-                    namespace_id = await self.common.resolve_namespace_id(namespace)
-                    ip_kwargs: Dict[str, Any] = {}
-                    if ip_data.get("ip_role"):
-                        ip_kwargs["role"] = {"id": ip_data["ip_role"]}
-
-                    ip_id = await self.ip_manager.ensure_ip_address_exists(
-                        ip_address=address,
-                        namespace_id=namespace_id,
-                        status_name="active",
-                        add_prefixes_automatically=add_prefixes_automatically,
-                        **ip_kwargs,
-                    )
 
                     await self.vm_manager.assign_ip_to_virtual_interface(
                         ip_address_id=ip_id,

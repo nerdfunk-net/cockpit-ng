@@ -79,9 +79,7 @@ class ServerContact(BaseModel):
         if v is None:
             return v
         if not _UUID_RE.match(str(v)):
-            raise ValueError(
-                f"contact.association_id must be a valid UUID, got: {v!r}"
-            )
+            raise ValueError(f"contact.association_id must be a valid UUID, got: {v!r}")
         return v
 
     model_config = {"from_attributes": True}

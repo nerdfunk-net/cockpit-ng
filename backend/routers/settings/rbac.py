@@ -40,6 +40,11 @@ from models.rbac import (
     UserUpdate,
 )
 from services.audit.audit_log_service import AuditLogService
+from services.auth.exceptions import (
+    RBACConflictError,
+    RBACConstraintError,
+    RBACNotFoundError,
+)
 from services.auth.rbac_service import RBACService
 
 logger = logging.getLogger(__name__)
@@ -78,7 +83,7 @@ async def create_permission(
             description=permission.description or "",
         )
         return created
-    except ValueError as e:
+    except RBACConflictError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -106,7 +111,7 @@ async def delete_permission(
     """Delete a permission (admin only)."""
     try:
         rbac.delete_permission(permission_id)
-    except ValueError as e:
+    except RBACNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
@@ -148,7 +153,7 @@ async def create_role(
             severity="info",
         )
         return created
-    except ValueError as e:
+    except RBACConflictError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -199,7 +204,7 @@ async def update_role(
             severity="info",
         )
         return updated
-    except ValueError as e:
+    except RBACNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
@@ -223,7 +228,9 @@ async def delete_role(
             resource_name=str(role_id),
             severity="info",
         )
-    except ValueError as e:
+    except RBACNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except RBACConstraintError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -644,7 +651,7 @@ async def create_user(
         )
 
         return user_with_rbac
-    except ValueError as e:
+    except RBACNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise_internal_server_error(logger, "Failed to create user: ", e)

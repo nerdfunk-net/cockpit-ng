@@ -12,6 +12,7 @@ from core.auth import require_permission
 from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_cache_service, get_nautobot_service
 from services.nautobot.client import NautobotService
+from services.settings.manager import SettingsManager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["nautobot-infrastructure"])
@@ -66,8 +67,6 @@ async def get_racks(
         location: Optional location ID or name to filter racks
     """
     try:
-        from services.settings.manager import SettingsManager
-
         settings_manager = SettingsManager()
 
         cache_key = f"nautobot:racks:list:{location or 'all'}"
@@ -104,8 +103,6 @@ async def get_rack_groups(
         location: Optional location ID or name to filter rack groups
     """
     try:
-        from services.settings.manager import SettingsManager
-
         settings_manager = SettingsManager()
 
         cache_key = f"nautobot:rack-groups:list:{location or 'all'}"
@@ -140,8 +137,6 @@ async def get_interface_types(
     Uses OPTIONS request to get field choices from the interfaces endpoint.
     """
     try:
-        from services.settings.manager import SettingsManager
-
         settings_manager = SettingsManager()
 
         cache_key = "nautobot:interface_types:list"

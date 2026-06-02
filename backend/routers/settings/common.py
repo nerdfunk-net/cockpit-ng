@@ -129,11 +129,11 @@ async def check_settings_health(
                 "recovery_result": recovery_result,
             }
 
-    except Exception as e:
-        logger.error("Settings health check failed: %s", e)
+    except Exception:
+        logger.error("Settings health check failed", exc_info=True)
         return {
             "status": "error",
-            "message": f"Health check failed: {str(e)}",
+            "message": "Health check failed",
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 

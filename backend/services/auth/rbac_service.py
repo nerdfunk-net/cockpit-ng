@@ -7,6 +7,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from core.models import Permission, Role
 from repositories.auth.rbac_repository import RBACRepository
+from services.auth.exceptions import (
+    RBACConflictError,
+    RBACConstraintError,
+    RBACNotFoundError,
+)
 
 if TYPE_CHECKING:
     from services.auth.user_service import UserService
@@ -27,7 +32,7 @@ class RBACService:
         self, resource: str, action: str, description: str = ""
     ) -> Dict[str, Any]:
         if self._rbac_repo.get_permission(resource, action):
-            raise ValueError(f"Permission {resource}:{action} already exists")
+            raise RBACConflictError(f"Permission {resource}:{action} already exists")
         perm = self._rbac_repo.create_permission(resource, action, description)
         return self._perm_to_dict(perm)
 
@@ -53,7 +58,7 @@ class RBACService:
         self, name: str, description: str = "", is_system: bool = False
     ) -> Dict[str, Any]:
         if self._rbac_repo.role_name_exists(name):
-            raise ValueError(f"Role '{name}' already exists")
+            raise RBACConflictError(f"Role '{name}' already exists")
         role = self._rbac_repo.create_role(name, description, is_system)
         return self._role_to_dict(role)
 
@@ -76,7 +81,7 @@ class RBACService:
     ) -> Dict[str, Any]:
         role = self._rbac_repo.get_role(role_id)
         if not role:
-            raise ValueError(f"Role with id {role_id} not found")
+            raise RBACNotFoundError("Role", role_id)
         updates: Dict[str, Any] = {}
         if name is not None:
             updates["name"] = name
@@ -87,9 +92,9 @@ class RBACService:
     def delete_role(self, role_id: int) -> None:
         role = self._rbac_repo.get_role(role_id)
         if not role:
-            raise ValueError(f"Role with id {role_id} not found")
+            raise RBACNotFoundError("Role", role_id)
         if role.is_system:
-            raise ValueError("Cannot delete system role")
+            raise RBACConstraintError("Cannot delete system role")
         self._rbac_repo.delete_role(role_id)
 
     # -------------------------------------------------------------------------
@@ -222,7 +227,7 @@ class RBACService:
             for role_id in role_ids:
                 if not self.get_role(role_id):
                     self._user_service.hard_delete_user(user["id"])
-                    raise ValueError(f"Role with id {role_id} not found")
+                    raise RBACNotFoundError("Role", role_id)
                 self.assign_role_to_user(user["id"], role_id)
         return user
 

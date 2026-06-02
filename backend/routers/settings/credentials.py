@@ -1,13 +1,21 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.auth import get_current_username, require_permission
+from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_audit_log_service, get_credentials_service
 from models.credentials import CredentialCreate, CredentialUpdate
 from services.audit.audit_log_service import AuditLogService
 from services.settings.credentials_service import CredentialsService
+from services.settings.exceptions import (
+    CredentialMissingFieldError,
+    CredentialNotFoundError,
+)
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 
 
@@ -89,7 +97,7 @@ def create_credential(
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise_internal_server_error(logger, "Failed to create credential", e)
 
 
 @router.put("/{cred_id}")
@@ -125,10 +133,10 @@ def update_credential(
             severity="info",
         )
         return result
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except CredentialNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Credential {cred_id} not found")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise_internal_server_error(logger, "Failed to update credential", e)
 
 
 @router.delete("/{cred_id}")
@@ -152,7 +160,7 @@ def delete_credential(
         )
         return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise_internal_server_error(logger, "Failed to delete credential", e)
 
 
 @router.get(
@@ -191,13 +199,15 @@ def get_credential_password(
 
         # Now get the decrypted password
         password = cred_mgr.get_decrypted_password(cred_id)
-        if password is None:
-            raise HTTPException(status_code=404, detail="Credential not found")
         return {"password": password}
     except HTTPException:
         raise
+    except CredentialNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Credential {cred_id} not found")
+    except CredentialMissingFieldError:
+        raise HTTPException(status_code=404, detail="Credential has no password")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise_internal_server_error(logger, "Failed to retrieve credential password", e)
 
 
 @router.get(
@@ -251,7 +261,9 @@ def get_credential_ssh_key(
         }
     except HTTPException:
         raise
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except CredentialNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Credential {cred_id} not found")
+    except CredentialMissingFieldError:
+        raise HTTPException(status_code=404, detail="Credential has no SSH key")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise_internal_server_error(logger, "Failed to retrieve credential SSH key", e)

@@ -15,6 +15,7 @@ from repositories.compliance.compliance_repository import (
     RegexPatternRepository,
     SNMPMappingRepository,
 )
+from services.compliance.exceptions import ComplianceValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class ComplianceService:
         self, pattern: str, pattern_type: str, description: Optional[str] = None
     ) -> int:
         if pattern_type not in ("must_match", "must_not_match"):
-            raise ValueError(
+            raise ComplianceValidationError(
                 "Invalid pattern_type. Must be 'must_match' or 'must_not_match'"
             )
         new = self._regex_repo.create(
@@ -214,7 +215,9 @@ class ComplianceService:
         description: Optional[str] = None,
     ) -> int:
         if snmp_version not in ("v1", "v2c", "v3"):
-            raise ValueError("Invalid snmp_version. Must be 'v1', 'v2c', or 'v3'")
+            raise ComplianceValidationError(
+                "Invalid snmp_version. Must be 'v1', 'v2c', or 'v3'"
+            )
         new = self._snmp_repo.create(
             name=name,
             snmp_community=snmp_community,
@@ -256,7 +259,9 @@ class ComplianceService:
             data["name"] = name
         if snmp_version is not None:
             if snmp_version not in ("v1", "v2c", "v3"):
-                raise ValueError("Invalid snmp_version. Must be 'v1', 'v2c', or 'v3'")
+                raise ComplianceValidationError(
+                    "Invalid snmp_version. Must be 'v1', 'v2c', or 'v3'"
+                )
             data["snmp_version"] = snmp_version
         if snmp_community is not None:
             data["snmp_community"] = snmp_community

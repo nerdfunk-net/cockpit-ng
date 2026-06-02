@@ -41,8 +41,8 @@ async def cache_stats(
     try:
         stats = cache_service.stats()
         return {"success": True, "data": stats}
-    except Exception as exc:
-        return {"success": False, "message": str(exc)}
+    except Exception:
+        return {"success": False, "message": "Cache operation failed"}
 
 
 @router.get("/entries")
@@ -57,8 +57,8 @@ async def cache_entries(
     try:
         entries = cache_service.get_entries(include_expired=include_expired)
         return {"success": True, "data": entries, "count": len(entries)}
-    except Exception as exc:
-        return {"success": False, "message": str(exc)}
+    except Exception:
+        return {"success": False, "message": "Cache operation failed"}
 
 
 @router.get("/namespace/{namespace}")
@@ -71,8 +71,8 @@ async def cache_namespace_info(
     try:
         info = cache_service.get_namespace_info(namespace)
         return {"success": True, "data": info}
-    except Exception as exc:
-        return {"success": False, "message": str(exc)}
+    except Exception:
+        return {"success": False, "message": "Cache operation failed"}
 
 
 @router.get("/performance")
@@ -84,8 +84,8 @@ async def cache_performance(
     try:
         metrics = cache_service.get_performance_metrics()
         return {"success": True, "data": metrics}
-    except Exception as exc:
-        return {"success": False, "message": str(exc)}
+    except Exception:
+        return {"success": False, "message": "Cache operation failed"}
 
 
 @router.post("/clear")
@@ -118,8 +118,8 @@ async def clear_cache(
             "message": f"Cleared cache namespace '{namespace}' ({cleared_count} items)",
             "cleared_count": cleared_count,
         }
-    except Exception as exc:
-        return {"success": False, "message": str(exc)}
+    except Exception:
+        return {"success": False, "message": "Cache operation failed"}
 
 
 @router.post("/cleanup")
@@ -135,8 +135,8 @@ async def cleanup_expired(
             "message": f"Removed {removed_count} expired entries",
             "removed_count": removed_count,
         }
-    except Exception as exc:
-        return {"success": False, "message": str(exc)}
+    except Exception:
+        return {"success": False, "message": "Cache operation failed"}
 
 
 @router.post("/devices/clear")
@@ -167,8 +167,8 @@ async def clear_devices_cache(
             message = f"Cleared {cleared_count} device cache entries"
 
         return {"success": True, "message": message, "cleared_count": cleared_count}
-    except Exception as exc:
-        return {"success": False, "message": str(exc)}
+    except Exception:
+        return {"success": False, "message": "Cache operation failed"}
 
 
 @router.get("/devices/stats")
@@ -188,5 +188,5 @@ async def get_devices_cache_stats(
                 "cache_ttl_minutes": 30,
             },
         }
-    except Exception as exc:
-        return {"success": False, "message": str(exc)}
+    except Exception:
+        return {"success": False, "message": "Cache operation failed"}

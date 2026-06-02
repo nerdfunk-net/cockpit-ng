@@ -58,7 +58,9 @@ async def test_sync_updates_existing_interface() -> None:
         return_value=[{"id": VIF_ID, "name": "eth0"}]
     )
     workflow.vm_manager.delete_virtual_interface = AsyncMock()
-    workflow.vm_manager.update_virtual_interface = AsyncMock(return_value={"id": VIF_ID})
+    workflow.vm_manager.update_virtual_interface = AsyncMock(
+        return_value={"id": VIF_ID}
+    )
     workflow.vm_manager.create_virtual_interface = AsyncMock()
     workflow.vm_manager.clean_virtual_interface_ips = AsyncMock()
     workflow.vm_manager.assign_ip_to_virtual_interface = AsyncMock()

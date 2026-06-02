@@ -61,11 +61,11 @@ async def create_agents_settings(
                 "message": "Failed to update Agents settings",
             }
 
-    except Exception as e:
-        logger.error("Error creating/updating Agents settings: %s", e)
+    except Exception:
+        logger.error("Error creating/updating Agents settings", exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to update Agents settings: {str(e)}",
+            "message": "Failed to update Agents settings",
         }
 
 
@@ -181,11 +181,11 @@ async def test_agents_connection(
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
-    except Exception as e:
-        logger.error("Error testing Agents connection: %s", e)
+    except Exception:
+        logger.error("Error testing Agents connection", exc_info=True)
         return {
             "success": False,
-            "message": f"Test failed: {str(e)}",
+            "message": "Agents connection test failed",
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
@@ -226,11 +226,11 @@ async def get_telegraf_config(
             "message": "Successfully loaded Telegraf configuration",
         }
 
-    except Exception as e:
-        logger.error("Error reading Telegraf config: %s", e)
+    except Exception:
+        logger.error("Error reading Telegraf config", exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to read Telegraf config: {str(e)}",
+            "message": "Failed to read Telegraf config",
             "data": "",
         }
 

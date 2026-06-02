@@ -137,9 +137,7 @@ async def bulk_update_contact_associations(
 
     **🔶 This endpoint uses the Nautobot REST API.**
     """
-    payload: list[dict[str, Any]] = [
-        item.to_nautobot_payload() for item in body.items
-    ]
+    payload: list[dict[str, Any]] = [item.to_nautobot_payload() for item in body.items]
     try:
         return await nautobot_service.rest_request(
             CONTACT_ASSOCIATIONS_ENDPOINT,
@@ -204,7 +202,5 @@ async def delete_contact_association(
     except HTTPException:
         raise
     except Exception as e:
-        raise_internal_server_error(
-            logger, "Failed to delete contact association: ", e
-        )
+        raise_internal_server_error(logger, "Failed to delete contact association: ", e)
     return {"status": "deleted"}

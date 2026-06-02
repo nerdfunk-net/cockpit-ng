@@ -28,11 +28,11 @@ async def get_network_defaults(
 
         return {"success": True, "data": defaults}
 
-    except Exception as e:
-        logger.error("Error getting network defaults: %s", e, exc_info=True)
+    except Exception:
+        logger.error("Error getting network defaults", exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to retrieve network defaults: {str(e)}",
+            "message": "Failed to retrieve network defaults",
         }
 
 
@@ -56,9 +56,9 @@ async def update_network_defaults(
             }
         return {"success": False, "message": "Failed to update network defaults"}
 
-    except Exception as e:
-        logger.error("Error updating network defaults: %s", e)
+    except Exception:
+        logger.error("Error updating network defaults", exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to update network defaults: {str(e)}",
+            "message": "Failed to update network defaults",
         }

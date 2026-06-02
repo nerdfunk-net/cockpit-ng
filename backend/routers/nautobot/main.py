@@ -24,10 +24,10 @@ from fastapi import APIRouter
 
 from .clusters import router as clusters_router
 from .device_ops import router as device_ops_router
-from .extra import router as extra_router
 
 # Import sub-routers from new feature-based structure
 from .devices import router as devices_router
+from .extra import router as extra_router
 from .infrastructure import router as infrastructure_router
 from .interfaces import router as dcim_interfaces_router
 from .ip_addresses import router as ipam_addresses_router

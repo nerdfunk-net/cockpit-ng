@@ -145,5 +145,3 @@ async def get_nautobot_manufacturers(
         return result.get("results", [])
     except Exception as e:
         raise_internal_server_error(logger, "Failed to fetch manufacturers: ", e)
-
-
