@@ -60,6 +60,15 @@ AUTO_PREFIX = "192.168.181.0/24"
 IP_ADDRESS_NO_PREFIX = "192.168.182.254/24"
 AUTO_PREFIX_NO_PREFIX = "192.168.182.0/24"
 
+# VLAN used in VLAN-mode integration tests
+VLAN_100_VID = 100
+VLAN_100_NAME = "test-vlan-100"
+
+# Interface property values used in metadata integration tests
+IFACE_MAC_ADDRESS = "00:1A:2B:3C:4D:5E"
+IFACE_MTU = 1499
+IFACE_DESCRIPTION = "pytest description"
+
 
 # ---------------------------------------------------------------------------
 # Helpers – resource resolution and bootstrapping
@@ -193,6 +202,33 @@ async def get_form_resource_ids(nautobot) -> dict:
     }
 
 
+async def get_or_create_vlan(nautobot, vid: int, name: str, status_id: str) -> tuple[str, bool]:
+    """Return (vlan_id, was_created) for the given VID, creating it if absent."""
+    query = f"""
+    query {{
+      vlans(vid: {vid}) {{
+        id
+        vid
+        name
+      }}
+    }}
+    """
+    result = await nautobot.graphql_query(query)
+    vlans = result["data"]["vlans"]
+    if vlans:
+        return vlans[0]["id"], False
+
+    logger.info("Creating VLAN %s '%s'", vid, name)
+    response = await nautobot.rest_request(
+        endpoint="ipam/vlans/",
+        method="POST",
+        data={"vid": vid, "name": name, "status": status_id},
+    )
+    vlan_id = response["id"]
+    logger.info("✓ Created VLAN %s '%s' (%s)", vid, name, vlan_id)
+    return vlan_id, True
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -266,6 +302,31 @@ async def form_resource_ids(real_nautobot_service):
             logger.info("✓ Removed manufacturer '%s'", MANUFACTURER_NAME)
         except Exception as exc:
             logger.warning("Could not remove manufacturer: %s", exc)
+
+
+@pytest.fixture(scope="module")
+async def vlan_100(real_nautobot_service, form_resource_ids):
+    """
+    Module-scoped fixture that resolves (and creates if necessary) VLAN 100.
+    Cleans up only if this fixture created the VLAN.
+    """
+    vlan_id, was_created = await get_or_create_vlan(
+        real_nautobot_service,
+        vid=VLAN_100_VID,
+        name=VLAN_100_NAME,
+        status_id=form_resource_ids["status_id"],
+    )
+    yield vlan_id
+
+    if was_created:
+        try:
+            await real_nautobot_service.rest_request(
+                endpoint=f"ipam/vlans/{vlan_id}/",
+                method="DELETE",
+            )
+            logger.info("✓ Removed test VLAN %s '%s'", VLAN_100_VID, VLAN_100_NAME)
+        except Exception as exc:
+            logger.warning("Could not remove test VLAN %s: %s", vlan_id, exc)
 
 
 # ---------------------------------------------------------------------------
@@ -674,3 +735,316 @@ class TestAddDeviceFormData:
             "✓ Device creation correctly rejected when add_prefix=False and %s is absent",
             AUTO_PREFIX_NO_PREFIX,
         )
+
+    # ------------------------------------------------------------------
+    # VLAN mode tests
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _build_vlan_request(ids: dict, suffix: str, **iface_kwargs) -> AddDeviceRequest:
+        """Build an AddDeviceRequest with a single interface for VLAN mode tests."""
+        return AddDeviceRequest(
+            name=f"{DEVICE_NAME}-vlan-{suffix}",
+            serial=f"{DEVICE_SERIAL}-vlan-{suffix}",
+            role=ids["role_id"],
+            status=ids["status_id"],
+            location=ids["location_id"],
+            device_type=ids["device_type_id"],
+            platform=ids["platform_id"],
+            add_prefix=False,
+            default_prefix_length="/24",
+            interfaces=[
+                InterfaceData(
+                    name=INTERFACE_NAME,
+                    type=INTERFACE_TYPE,
+                    status=ids["status_id"],
+                    **iface_kwargs,
+                )
+            ],
+        )
+
+    @staticmethod
+    def _normalize_mode(mode: str | None) -> str | None:
+        """Normalize Nautobot mode enum (e.g. 'TAGGED_ALL') to API slug ('tagged-all')."""
+        if mode is None:
+            return None
+        return mode.lower().replace("_", "-")
+
+    @staticmethod
+    async def _fetch_interface(nautobot, device_id: str) -> dict:
+        """Return the first interface dict for the given device, including VLAN fields."""
+        query = f"""
+        query {{
+          device(id: "{device_id}") {{
+            interfaces {{
+              name
+              mode
+              mac_address
+              mtu
+              description
+              untagged_vlan {{ id vid }}
+              tagged_vlans {{ id vid }}
+            }}
+          }}
+        }}
+        """
+        raw = await nautobot.graphql_query(query)
+        ifaces = raw["data"]["device"]["interfaces"]
+        assert ifaces, "Expected at least one interface on the device"
+        return ifaces[0]
+
+    @pytest.mark.asyncio
+    async def test_interface_vlan_mode_none(
+        self,
+        real_nautobot_service,
+        device_creation_service,
+        form_resource_ids,
+        cleanup_test_device,
+    ):
+        """
+        Interface with mode='none' must be created without a VLAN mode set.
+
+        Covers the fix: the backend must not forward the UI sentinel 'none'
+        to Nautobot (which rejects it as an invalid choice).
+        """
+        device_ids, _ = cleanup_test_device
+        request = self._build_vlan_request(form_resource_ids, "none", mode="none")
+
+        result = await device_creation_service.create_device_with_interfaces(request)
+        if result.get("device_id"):
+            device_ids.append(result["device_id"])
+
+        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+
+        iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
+        mode_value = self._normalize_mode(iface.get("mode"))
+        assert mode_value is None or mode_value == "", (
+            f"Expected no mode, got '{mode_value}'"
+        )
+        assert iface.get("untagged_vlan") is None
+        assert iface.get("tagged_vlans") == []
+
+        logger.info("✓ Interface created with no VLAN mode")
+
+    @pytest.mark.asyncio
+    async def test_interface_vlan_mode_access_with_untagged_vlan(
+        self,
+        real_nautobot_service,
+        device_creation_service,
+        form_resource_ids,
+        vlan_100,
+        cleanup_test_device,
+    ):
+        """
+        Interface with mode='access' and untagged_vlan set to VLAN 100 must
+        have both persisted in Nautobot.
+
+        Covers the fix: untagged_vlan must be sent to Nautobot as {"id": uuid}.
+        """
+        device_ids, _ = cleanup_test_device
+        request = self._build_vlan_request(
+            form_resource_ids,
+            "access",
+            mode="access",
+            untagged_vlan=vlan_100,
+        )
+
+        result = await device_creation_service.create_device_with_interfaces(request)
+        if result.get("device_id"):
+            device_ids.append(result["device_id"])
+
+        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+
+        iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
+        mode_value = self._normalize_mode(iface.get("mode"))
+        assert mode_value == "access", f"Expected mode 'access', got '{mode_value}'"
+        assert iface.get("untagged_vlan") is not None, "untagged_vlan must be set"
+        assert iface["untagged_vlan"]["vid"] == VLAN_100_VID, (
+            f"Expected VID {VLAN_100_VID}, got {iface['untagged_vlan']['vid']}"
+        )
+        assert iface.get("tagged_vlans") == []
+
+        logger.info("✓ Interface created with mode=access and untagged VLAN %s", VLAN_100_VID)
+
+    @pytest.mark.asyncio
+    async def test_interface_vlan_mode_tagged_with_vlans(
+        self,
+        real_nautobot_service,
+        device_creation_service,
+        form_resource_ids,
+        vlan_100,
+        cleanup_test_device,
+    ):
+        """
+        Interface with mode='tagged', untagged_vlan=100, and tagged_vlans=[100]
+        must have all three persisted in Nautobot.
+
+        Covers the fix: tagged_vlans must be sent as [{"id": uuid}].
+        """
+        device_ids, _ = cleanup_test_device
+        request = self._build_vlan_request(
+            form_resource_ids,
+            "tagged",
+            mode="tagged",
+            untagged_vlan=vlan_100,
+            tagged_vlans=[vlan_100],
+        )
+
+        result = await device_creation_service.create_device_with_interfaces(request)
+        if result.get("device_id"):
+            device_ids.append(result["device_id"])
+
+        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+
+        iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
+        mode_value = self._normalize_mode(iface.get("mode"))
+        assert mode_value == "tagged", f"Expected mode 'tagged', got '{mode_value}'"
+        assert iface.get("untagged_vlan") is not None, "untagged_vlan must be set"
+        assert iface["untagged_vlan"]["vid"] == VLAN_100_VID
+        tagged_vids = [v["vid"] for v in (iface.get("tagged_vlans") or [])]
+        assert VLAN_100_VID in tagged_vids, (
+            f"Expected VID {VLAN_100_VID} in tagged_vlans, got {tagged_vids}"
+        )
+
+        logger.info(
+            "✓ Interface created with mode=tagged, untagged VLAN %s, tagged VLANs %s",
+            VLAN_100_VID,
+            tagged_vids,
+        )
+
+    @pytest.mark.asyncio
+    async def test_interface_vlan_mode_tagged_all_with_untagged_vlan(
+        self,
+        real_nautobot_service,
+        device_creation_service,
+        form_resource_ids,
+        vlan_100,
+        cleanup_test_device,
+    ):
+        """
+        Interface with mode='tagged-all' and untagged_vlan=100 must have
+        both persisted in Nautobot. No explicit tagged_vlans list is sent
+        since 'tagged-all' implicitly includes every VLAN.
+        """
+        device_ids, _ = cleanup_test_device
+        request = self._build_vlan_request(
+            form_resource_ids,
+            "tagged-all",
+            mode="tagged-all",
+            untagged_vlan=vlan_100,
+        )
+
+        result = await device_creation_service.create_device_with_interfaces(request)
+        if result.get("device_id"):
+            device_ids.append(result["device_id"])
+
+        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+
+        iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
+        mode_value = self._normalize_mode(iface.get("mode"))
+        assert mode_value == "tagged-all", f"Expected mode 'tagged-all', got '{mode_value}'"
+        assert iface.get("untagged_vlan") is not None, "untagged_vlan must be set"
+        assert iface["untagged_vlan"]["vid"] == VLAN_100_VID, (
+            f"Expected VID {VLAN_100_VID}, got {iface['untagged_vlan']['vid']}"
+        )
+
+        logger.info("✓ Interface created with mode=tagged-all and untagged VLAN %s", VLAN_100_VID)
+
+    # ------------------------------------------------------------------
+    # Interface metadata tests (MAC address, MTU, description)
+    # ------------------------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_interface_mac_address(
+        self,
+        real_nautobot_service,
+        device_creation_service,
+        form_resource_ids,
+        cleanup_test_device,
+    ):
+        """
+        MAC address set on an interface must be persisted in Nautobot.
+        """
+        device_ids, _ = cleanup_test_device
+        request = self._build_vlan_request(
+            form_resource_ids,
+            "mac",
+            mac_address=IFACE_MAC_ADDRESS,
+        )
+
+        result = await device_creation_service.create_device_with_interfaces(request)
+        if result.get("device_id"):
+            device_ids.append(result["device_id"])
+
+        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+
+        iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
+        stored = iface.get("mac_address")
+        assert stored is not None, "mac_address must be set on the interface"
+        assert stored.upper() == IFACE_MAC_ADDRESS.upper(), (
+            f"Expected MAC '{IFACE_MAC_ADDRESS}', got '{stored}'"
+        )
+
+        logger.info("✓ Interface MAC address '%s' persisted correctly", stored)
+
+    @pytest.mark.asyncio
+    async def test_interface_mtu(
+        self,
+        real_nautobot_service,
+        device_creation_service,
+        form_resource_ids,
+        cleanup_test_device,
+    ):
+        """
+        MTU set on an interface must be persisted in Nautobot.
+        """
+        device_ids, _ = cleanup_test_device
+        request = self._build_vlan_request(
+            form_resource_ids,
+            "mtu",
+            mtu=IFACE_MTU,
+        )
+
+        result = await device_creation_service.create_device_with_interfaces(request)
+        if result.get("device_id"):
+            device_ids.append(result["device_id"])
+
+        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+
+        iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
+        assert iface.get("mtu") == IFACE_MTU, (
+            f"Expected MTU {IFACE_MTU}, got {iface.get('mtu')}"
+        )
+
+        logger.info("✓ Interface MTU %s persisted correctly", IFACE_MTU)
+
+    @pytest.mark.asyncio
+    async def test_interface_description(
+        self,
+        real_nautobot_service,
+        device_creation_service,
+        form_resource_ids,
+        cleanup_test_device,
+    ):
+        """
+        Description set on an interface must be persisted in Nautobot.
+        """
+        device_ids, _ = cleanup_test_device
+        request = self._build_vlan_request(
+            form_resource_ids,
+            "desc",
+            description=IFACE_DESCRIPTION,
+        )
+
+        result = await device_creation_service.create_device_with_interfaces(request)
+        if result.get("device_id"):
+            device_ids.append(result["device_id"])
+
+        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+
+        iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
+        assert iface.get("description") == IFACE_DESCRIPTION, (
+            f"Expected description '{IFACE_DESCRIPTION}', got '{iface.get('description')}'"
+        )
+
+        logger.info("✓ Interface description '%s' persisted correctly", IFACE_DESCRIPTION)
