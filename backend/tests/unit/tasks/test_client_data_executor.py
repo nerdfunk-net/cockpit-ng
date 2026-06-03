@@ -147,3 +147,102 @@ def test_resolve_hostnames_skips_unresolved_ips() -> None:
             "device_ip": "10.0.0.1",
         }
     ]
+
+
+@pytest.mark.unit
+def test_client_data_executor_credential_not_found() -> None:
+    credentials = MagicMock()
+    credentials.get_credential_by_id.return_value = None
+
+    with patch("service_factory.build_credentials_service", return_value=credentials):
+        result = execute_get_client_data(
+            schedule_id=None,
+            credential_id=99,
+            job_parameters={"collect_ip_address": True},
+            target_devices=["dev-1"],
+            task_context=MagicMock(),
+        )
+
+    assert result["success"] is False
+    assert "not found" in result["error"]
+
+
+@pytest.mark.unit
+def test_client_data_executor_collects_and_persists() -> None:
+    """Sequential collection stores ARP rows via ClientDataRepository."""
+    from unittest.mock import AsyncMock
+
+    credentials = MagicMock()
+    credentials.get_credential_by_id.return_value = {
+        "name": "ssh",
+        "username": "admin",
+    }
+    credentials.get_decrypted_password.return_value = "secret"
+
+    mock_nb = MagicMock()
+    mock_nb.graphql_query = AsyncMock(
+        return_value={
+            "data": {
+                "device": {
+                    "name": "switch-01",
+                    "primary_ip4": {"address": "10.0.0.1/24", "host": "10.0.0.1"},
+                    "platform": {"network_driver": "cisco_ios"},
+                }
+            }
+        }
+    )
+
+    mock_netmiko = MagicMock()
+    mock_netmiko.execute_commands = AsyncMock(
+        return_value=(
+            "netmiko-session",
+            [
+                {
+                    "success": True,
+                    "command_outputs": {
+                        "show ip arp": [
+                            {
+                                "ip_address": "10.0.0.10",
+                                "mac_address": "AA.BB.CC00.0100",
+                                "interface": "Gi0/1",
+                            }
+                        ],
+                    },
+                }
+            ],
+        )
+    )
+
+    mock_repo = MagicMock()
+    mock_repo.bulk_insert_ip_addresses.return_value = 1
+    mock_repo.bulk_insert_mac_addresses.return_value = 0
+    mock_repo.bulk_insert_hostnames.return_value = 0
+
+    with patch("service_factory.build_credentials_service", return_value=credentials):
+        with patch("service_factory.build_nautobot_service", return_value=mock_nb):
+            with patch(
+                "services.network.automation.netmiko.NetmikoService",
+                return_value=mock_netmiko,
+            ):
+                with patch(
+                    "repositories.client_data.client_data_repository.ClientDataRepository",
+                    return_value=mock_repo,
+                ):
+                    result = execute_get_client_data(
+                        schedule_id=None,
+                        credential_id=10,
+                        job_parameters={
+                            "collect_ip_address": True,
+                            "collect_mac_address": False,
+                            "collect_hostname": False,
+                            "parallel_tasks": 1,
+                        },
+                        target_devices=["dev-1"],
+                        task_context=MagicMock(),
+                    )
+
+    assert result["success"] is True
+    assert result["arp_entries"] == 1
+    assert result["session_id"]
+    mock_repo.bulk_insert_ip_addresses.assert_called_once()
+    mock_repo.delete_old_sessions.assert_called_once_with(keep=5)

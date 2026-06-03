@@ -6,7 +6,7 @@ from collections.abc import Coroutine
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
@@ -175,3 +175,64 @@ async def test_cancel_job_cancels_running_task() -> None:
     assert result is True
     mock_task.cancel.assert_called_once()
     assert "job-1" not in svc._running_jobs
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_process_devices_diff_completes_job() -> None:
+    mock_db = MagicMock()
+    mock_sync = MagicMock()
+    comparison = MagicMock()
+    comparison.result = "equal"
+    comparison.diff = ""
+    comparison.normalized_config = {}
+    comparison.checkmk_config = {}
+    mock_sync.compare_device_config = AsyncMock(return_value=comparison)
+
+    nautobot = MagicMock()
+    nautobot.graphql_query = AsyncMock(
+        return_value={
+            "data": {
+                "devices": [
+                    {
+                        "id": "uuid-1",
+                        "name": "router1",
+                        "role": {"name": "core"},
+                        "location": {"name": "DC"},
+                        "status": {"name": "active"},
+                    }
+                ]
+            }
+        }
+    )
+
+    svc = _service(mock_db, mock_sync)
+
+    with (
+        patch("service_factory.build_nautobot_service", return_value=nautobot),
+        patch("asyncio.sleep", new_callable=AsyncMock),
+    ):
+        await svc._process_devices_diff("job-diff-1")
+
+    mock_db.update_job_status.assert_any_call("job-diff-1", JobStatus.RUNNING)
+    mock_db.update_job_status.assert_any_call("job-diff-1", JobStatus.COMPLETED)
+    mock_db.add_device_result.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_process_devices_diff_graphql_error_marks_failed() -> None:
+    mock_db = MagicMock()
+    nautobot = MagicMock()
+    nautobot.graphql_query = AsyncMock(return_value={"errors": [{"message": "bad"}]})
+
+    svc = _service(mock_db)
+
+    with patch("service_factory.build_nautobot_service", return_value=nautobot):
+        await svc._process_devices_diff("job-bad")
+
+    mock_db.update_job_status.assert_called_with(
+        "job-bad",
+        JobStatus.FAILED,
+        "GraphQL errors: [{'message': 'bad'}]",
+    )

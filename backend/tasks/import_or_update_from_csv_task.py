@@ -6,6 +6,11 @@ from services.nautobot.imports.csv_import_service import CsvImportService
 _csv_import_service = CsvImportService()
 
 
+def _run_csv_import(task_context, **kwargs) -> dict:
+    """Synchronous entry point used by csv_import_executor (dispatch_job)."""
+    return _csv_import_service.run_import(task_context=task_context, **kwargs)
+
+
 @celery_app.task(name="tasks.import_or_update_from_csv", bind=True)
 def import_or_update_from_csv_task(
     self,

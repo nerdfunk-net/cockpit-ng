@@ -147,9 +147,7 @@ class InventoryGitStorage:
                         SavedInventory(
                             name=data["name"],
                             description=data.get("description"),
-                            conditions=[
-                                SavedInventoryCondition(**c) for c in data["conditions"]
-                            ],
+                            conditions=data["conditions"],
                             created_at=data.get("created_at"),
                             updated_at=data.get("updated_at"),
                         )

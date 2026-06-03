@@ -594,3 +594,68 @@ class TestProvisionOrGetUser:
                 )
 
         assert exc_info.value.status_code == 404
+
+
+# ===========================================================================
+# exchange_code_for_tokens
+# ===========================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+class TestExchangeCodeForTokens:
+    async def test_success_returns_token_response(self) -> None:
+        svc = OIDCService()
+        svc._configs["my-provider"] = _fake_oidc_config()
+        tokens = {"access_token": "a" * 30, "token_type": "Bearer"}
+
+        mock_cls, mock_client = _http_client_mock(tokens)
+        with (
+            patch(_PATCH_SETTINGS) as mock_sm,
+            patch(_PATCH_HTTPX, mock_cls),
+        ):
+            mock_sm.get_oidc_provider.return_value = _fake_provider()
+            result = await svc.exchange_code_for_tokens("my-provider", "auth-code")
+
+        assert result["access_token"] == tokens["access_token"]
+        mock_client.post.assert_awaited_once()
+
+    async def test_missing_client_secret_raises_500(self) -> None:
+        svc = OIDCService()
+        svc._configs["my-provider"] = _fake_oidc_config()
+        provider = _fake_provider()
+        provider.pop("client_secret")
+
+        with patch(_PATCH_SETTINGS) as mock_sm:
+            mock_sm.get_oidc_provider.return_value = provider
+            with pytest.raises(HTTPException) as exc_info:
+                await svc.exchange_code_for_tokens("my-provider", "code")
+
+        assert exc_info.value.status_code == 500
+
+
+# ===========================================================================
+# get_jwks
+# ===========================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+class TestGetJwks:
+    async def test_fetches_and_caches_jwks(self) -> None:
+        svc = OIDCService()
+        svc._configs["my-provider"] = _fake_oidc_config()
+        jwks = {"keys": [{"kid": "key-1"}]}
+
+        mock_cls, mock_client = _http_client_mock(jwks)
+        with (
+            patch(_PATCH_SETTINGS) as mock_sm,
+            patch(_PATCH_HTTPX, mock_cls),
+        ):
+            mock_sm.get_oidc_provider.return_value = _fake_provider()
+            first = await svc.get_jwks("my-provider")
+            second = await svc.get_jwks("my-provider")
+
+        assert first == jwks
+        assert second == jwks
+        assert mock_client.get.await_count == 1

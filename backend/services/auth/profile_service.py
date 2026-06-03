@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from core.models import UserProfile
@@ -48,7 +48,8 @@ def update_user_profile(
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     existing = _profile_repo.get_by_username(username)
-    now = datetime.utcnow()
+    # Naive UTC for DB columns (same pattern as credentials_service)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     if existing:
         update_kwargs: Dict[str, Any] = {"updated_at": now}
         if realname is not None:

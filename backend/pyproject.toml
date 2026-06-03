@@ -80,6 +80,8 @@ filterwarnings = [
     "ignore:.*import python_multipart.*:PendingDeprecationWarning",
     # slowapi still uses asyncio.iscoroutinefunction (deprecated in Python 3.14+)
     "ignore:.*asyncio\\.iscoroutinefunction.*:DeprecationWarning:slowapi",
+    # jnpr/junos factory uses legacy pyparsing setParseAction (third-party)
+    "ignore:.*setParseAction.* deprecated.*",
 ]
 
 # Console output style
