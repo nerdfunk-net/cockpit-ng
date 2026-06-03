@@ -168,8 +168,16 @@ class _CheckMKBase:
         except json.JSONDecodeError as e:
             self.logger.error("JSON decode error: %s", str(e))
             self.logger.error("Raw response (first 500 chars): %s", response.text[:500])
+            snippet = response.text[:500]
+            hint = ""
+            if snippet.lstrip().lower().startswith(("<!doctype", "<html")):
+                hint = (
+                    f" (API base: {self.base_url} — check CHECKMK_URL is the server root "
+                    f"e.g. http://host:8080, CHECKMK_SITE matches your OMD site e.g. cmk, "
+                    "and use an automation user/password)"
+                )
             raise CheckMKAPIError(
-                f"Invalid JSON response: {response.text[:500]}",
+                f"Invalid JSON response: {snippet}{hint}",
                 status_code=response.status_code,
             )
 

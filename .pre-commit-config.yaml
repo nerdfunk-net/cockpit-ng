@@ -1,0 +1,16 @@
+# See https://pre-commit.com for more information
+repos:
+  - repo: local
+    hooks:
+      - id: verify-baseline-parity
+        name: Verify pytest baseline YAML parity
+        entry: bash -c 'cd backend && python scripts/verify_baseline_parity.py --mode full'
+        language: system
+        pass_filenames: false
+        files: >-
+          ^(contributing-data/tests_baseline/baseline\.yaml|
+          backend/tests/baseline\.golden\.yaml|
+          backend/services/network/tools/baseline_generator\.py|
+          backend/services/network/tools/baseline_inventory_simulator\.py|
+          backend/tests/fixtures/baseline_inventory_filter_cases\.py|
+          data/baseline/profiles/pytest\.json)$

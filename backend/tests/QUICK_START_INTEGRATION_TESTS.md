@@ -23,16 +23,30 @@ NAUTOBOT_TIMEOUT=30
 
 ### 2. Load Baseline Data
 
-The baseline data should already be loaded in your test Nautobot instance:
+**Canonical file**: `contributing-data/tests_baseline/baseline.yaml` (also linked from `backend/tests/baseline.yaml`).
 
-**File**: `contributing-data/tests_baseline/baseline.yaml`
+**Regenerate** (Pytest profile — 120 devices, unique IPs, golden metadata):
+
+```bash
+cd backend
+python tests/generate_baseline.py --profile pytest --output ../contributing-data/tests_baseline
+python scripts/expect_inventory_counts.py --write-manifest
+python scripts/verify_baseline_parity.py --mode full
+# Or from repo root: make baseline-manifest && make verify-baseline
+```
+
+Then import via **Tools → Baseline Management → Import**, or:
+
+```bash
+curl -X POST http://localhost:8000/api/tools/tests-baseline \
+  -H "Authorization: Bearer $TOKEN"
+```
 
 **Contains**:
-- 120 devices (100 network + 20 servers)
-- 2 locations (City A, City B)
-- 2 roles (Network, server)
-- 2 tags (Production, Staging)
-- Platforms, device types, statuses, namespaces
+- 120 devices (100 network `lab-001`…`lab-100` + 20 servers `server-01`…`server-20`)
+- 6 city locations under Country A/B/C
+- Tags: Production (39), Staging (52), lab (29)
+- Statuses: Active (66), Offline (54)
 
 **Verify baseline loaded**:
 ```bash
@@ -92,6 +106,18 @@ pytest tests/integration/test_device_operations_real_nautobot.py -v
 - Edge cases (duplicate names, non-existent devices)
 
 **Time**: ~10-15 seconds
+
+---
+
+### CheckMK Baseline Tests (live Nautobot + CheckMK)
+
+```bash
+pytest tests/integration/test_checkmk_baseline.py -v -m "integration and checkmk"
+```
+
+**Requires**: `backend/.env.test` with `NAUTOBOT_*` and `CHECKMK_*`, plus baseline imported into that Nautobot.
+
+Full guide: [README.md#test-environment-file-backendenvtest](README.md#test-environment-file-backendenvtest).
 
 ---
 

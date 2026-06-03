@@ -35,7 +35,15 @@ from tests.mocks import (
 
 
 def pytest_configure(config):
-    """Register custom pytest markers."""
+    """Register custom pytest markers and load optional ``backend/.env.test``."""
+    from tests.test_env import load_test_env
+
+    load_test_env()
+
+    config.addinivalue_line(
+        "markers",
+        "postgres: PostgreSQL repository tests (TEST_DATABASE_URL in .env.test)",
+    )
     config.addinivalue_line(
         "markers", "unit: Unit tests (fast, no external dependencies)"
     )
@@ -48,6 +56,32 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "nautobot: Tests involving Nautobot integration")
     config.addinivalue_line("markers", "checkmk: Tests involving CheckMK integration")
     config.addinivalue_line("markers", "slow: Tests that take >5 seconds")
+
+
+def pytest_runtest_setup(item):
+    """Skip live Nautobot/CheckMK integration tests when ``.env.test`` is incomplete."""
+    markers = {mark.name for mark in item.iter_markers()}
+    if "integration" not in markers:
+        return
+
+    from test_runtime_config import (
+        checkmk_settings_from_env,
+        nautobot_settings_from_env,
+    )
+    from tests.test_env import load_test_env
+
+    load_test_env()
+
+    if "nautobot" in markers and nautobot_settings_from_env() is None:
+        pytest.skip(
+            "Nautobot not configured. Copy backend/.env.test.example to .env.test "
+            "and set NAUTOBOT_HOST / NAUTOBOT_TOKEN."
+        )
+    if "checkmk" in markers and checkmk_settings_from_env() is None:
+        pytest.skip(
+            "CheckMK not configured. Add CHECKMK_URL, CHECKMK_SITE, CHECKMK_USERNAME, "
+            "and CHECKMK_PASSWORD to backend/.env.test."
+        )
 
 
 @pytest.fixture
@@ -469,29 +503,24 @@ def test_nautobot_configured():
     """
     Check if test Nautobot instance is configured.
 
-    Returns True if .env.test has valid Nautobot configuration.
+    Returns True if ``backend/.env.test`` has valid Nautobot configuration.
     Use with pytest.mark.skipif to skip tests when Nautobot is not configured.
     """
-    import os
+    from test_runtime_config import nautobot_settings_from_env
+    from tests.test_env import load_test_env
 
-    from dotenv import load_dotenv
+    load_test_env()
+    return nautobot_settings_from_env() is not None
 
-    # Load test environment
-    test_env_path = os.path.join(os.path.dirname(__file__), "..", ".env.test")
-    if os.path.exists(test_env_path):
-        load_dotenv(test_env_path, override=True)
 
-    nautobot_url = os.getenv("NAUTOBOT_HOST")
-    nautobot_token = os.getenv("NAUTOBOT_TOKEN")
+@pytest.fixture(scope="session")
+def test_checkmk_configured():
+    """True when ``backend/.env.test`` defines CheckMK connection variables."""
+    from test_runtime_config import checkmk_settings_from_env
+    from tests.test_env import load_test_env
 
-    # Check if configuration is present and not placeholder
-    is_configured = (
-        nautobot_url
-        and nautobot_token
-        and nautobot_token != "your-test-nautobot-token-here"
-    )
-
-    return is_configured
+    load_test_env()
+    return checkmk_settings_from_env() is not None
 
 
 @pytest.fixture(scope="module")
@@ -513,39 +542,32 @@ def real_nautobot_service(test_nautobot_configured):
         Tests using this fixture will be automatically skipped if .env.test
         is not configured with valid Nautobot credentials.
     """
-    import os
-
-    from dotenv import load_dotenv
-
-    # Skip if not configured
     if not test_nautobot_configured:
-        pytest.skip("Test Nautobot instance not configured. Set up .env.test file.")
+        pytest.skip(
+            "Test Nautobot not configured. Copy .env.test.example to .env.test "
+            "and set NAUTOBOT_HOST / NAUTOBOT_TOKEN."
+        )
 
-    # Load test environment
-    test_env_path = os.path.join(os.path.dirname(__file__), "..", ".env.test")
-    load_dotenv(test_env_path, override=True)
+    from tests.test_env import load_test_env
 
-    from services.nautobot import NautobotService
+    load_test_env()
 
-    service = NautobotService()
+    import service_factory as _sf
 
-    # Override config to use test environment
-    service.config = {
-        "url": os.getenv("NAUTOBOT_HOST"),
-        "token": os.getenv("NAUTOBOT_TOKEN"),
-        "timeout": int(os.getenv("NAUTOBOT_TIMEOUT", "30")),
-        "verify_ssl": True,
-        "_source": "test_environment",
-    }
+    return _sf.build_nautobot_service()
 
-    # Validate configuration
-    assert service.config["url"], "NAUTOBOT_HOST must be set in .env.test"
-    assert service.config["token"], "NAUTOBOT_TOKEN must be set in .env.test"
-    assert service.config["token"] != "your-test-nautobot-token-here", (
-        "Update NAUTOBOT_TOKEN in .env.test with real token"
-    )
 
-    return service
+@pytest.fixture(scope="session")
+def baseline_manifest():
+    """
+    Session-scoped baseline stats and expected inventory filter counts.
+
+    Loaded from tests/fixtures/baseline_manifest.json (generated from canonical YAML).
+    Regenerate with: python scripts/expect_inventory_counts.py --write-manifest
+    """
+    from tests.fixtures.baseline_manifest import load_baseline_manifest
+
+    return load_baseline_manifest()
 
 
 @pytest.fixture(scope="module")

@@ -1,0 +1,842 @@
+[
+  {
+    "name": "lab-001",
+    "location": "Another City C",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-002",
+    "location": "Another City C",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-003",
+    "location": "City A",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-004",
+    "location": "Another City A",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-005",
+    "location": "City C",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-006",
+    "location": "Another City A",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-007",
+    "location": "City B",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-008",
+    "location": "Another City B",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-009",
+    "location": "Another City A",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-010",
+    "location": "City A",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-011",
+    "location": "City B",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-012",
+    "location": "Another City C",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-013",
+    "location": "City B",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-014",
+    "location": "City A",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-015",
+    "location": "City C",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-016",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-017",
+    "location": "City C",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-018",
+    "location": "Another City B",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-019",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-020",
+    "location": "City B",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-021",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-022",
+    "location": "Another City C",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-023",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-024",
+    "location": "Another City A",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-025",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-026",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-027",
+    "location": "City C",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-028",
+    "location": "City C",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-029",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-030",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-031",
+    "location": "City A",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-032",
+    "location": "City B",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-033",
+    "location": "City C",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-034",
+    "location": "Another City B",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-035",
+    "location": "Another City B",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-036",
+    "location": "Another City B",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-037",
+    "location": "Another City B",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-038",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-039",
+    "location": "City A",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-040",
+    "location": "Another City B",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-041",
+    "location": "Another City B",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-042",
+    "location": "Another City A",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-043",
+    "location": "City B",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-044",
+    "location": "City C",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-045",
+    "location": "City A",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-046",
+    "location": "Another City C",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-047",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-048",
+    "location": "City B",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-049",
+    "location": "City C",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-050",
+    "location": "Another City A",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-051",
+    "location": "Another City C",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-052",
+    "location": "Another City A",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-053",
+    "location": "City B",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-054",
+    "location": "Another City B",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-055",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-056",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-057",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-058",
+    "location": "City B",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-059",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-060",
+    "location": "Another City A",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-061",
+    "location": "Another City B",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-062",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-063",
+    "location": "Another City A",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-064",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-065",
+    "location": "City A",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-066",
+    "location": "City C",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-067",
+    "location": "City C",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-068",
+    "location": "City C",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-069",
+    "location": "Another City B",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-070",
+    "location": "City B",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-071",
+    "location": "City B",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-072",
+    "location": "Another City C",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-073",
+    "location": "City B",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-074",
+    "location": "Another City B",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-075",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-076",
+    "location": "Another City A",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-077",
+    "location": "Another City A",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-078",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-079",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-080",
+    "location": "City C",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-081",
+    "location": "Another City B",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-082",
+    "location": "Another City A",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-083",
+    "location": "City C",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-084",
+    "location": "City B",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-085",
+    "location": "Another City A",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-086",
+    "location": "Another City B",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-087",
+    "location": "Another City B",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-088",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-089",
+    "location": "Another City A",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-090",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-091",
+    "location": "Another City B",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-092",
+    "location": "Another City B",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-093",
+    "location": "City B",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-094",
+    "location": "City A",
+    "tag": "lab",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-095",
+    "location": "Another City C",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-096",
+    "location": "Another City A",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-097",
+    "location": "City B",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-098",
+    "location": "Another City A",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "Network"
+  },
+  {
+    "name": "lab-099",
+    "location": "Another City C",
+    "tag": "Production",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "lab-100",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "Network"
+  },
+  {
+    "name": "server-01",
+    "location": "City C",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-02",
+    "location": "City A",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-03",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "server"
+  },
+  {
+    "name": "server-04",
+    "location": "Another City C",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-05",
+    "location": "Another City B",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-06",
+    "location": "Another City A",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-07",
+    "location": "City C",
+    "tag": "lab",
+    "status": "Active",
+    "role": "server"
+  },
+  {
+    "name": "server-08",
+    "location": "Another City B",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-09",
+    "location": "City B",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-10",
+    "location": "City C",
+    "tag": "Production",
+    "status": "Active",
+    "role": "server"
+  },
+  {
+    "name": "server-11",
+    "location": "Another City C",
+    "tag": "Staging",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-12",
+    "location": "Another City C",
+    "tag": "lab",
+    "status": "Active",
+    "role": "server"
+  },
+  {
+    "name": "server-13",
+    "location": "City B",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-14",
+    "location": "Another City C",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-15",
+    "location": "Another City B",
+    "tag": "lab",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-16",
+    "location": "City B",
+    "tag": "Staging",
+    "status": "Active",
+    "role": "server"
+  },
+  {
+    "name": "server-17",
+    "location": "City B",
+    "tag": "Production",
+    "status": "Active",
+    "role": "server"
+  },
+  {
+    "name": "server-18",
+    "location": "Another City A",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "server"
+  },
+  {
+    "name": "server-19",
+    "location": "City A",
+    "tag": "Production",
+    "status": "Active",
+    "role": "server"
+  },
+  {
+    "name": "server-20",
+    "location": "City B",
+    "tag": "Production",
+    "status": "Offline",
+    "role": "server"
+  }
+]

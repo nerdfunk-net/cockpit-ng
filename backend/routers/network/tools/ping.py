@@ -78,7 +78,7 @@ async def create_tests_baseline() -> Dict[str, Any]:
     """
     Create test baseline data in Nautobot from YAML configuration files.
 
-    Reads all YAML files from ./contributing-data/checkmk/tests_baseline/ and creates:
+    Reads all YAML files from contributing-data/tests_baseline/ and creates:
     - Location types
     - Locations
     - Roles

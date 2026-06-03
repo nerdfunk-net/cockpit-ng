@@ -4,6 +4,7 @@ Generate test baseline YAML files from structured parameters.
 
 from __future__ import annotations
 
+import copy
 import ipaddress
 import random
 import re
@@ -18,6 +19,7 @@ from models.tools import (
     CreateBaselineResponse,
     DistributionConfig,
 )
+from services.network.tools.baseline_profiles import merge_profile_into_request
 
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
 REPO_ROOT = BACKEND_ROOT.parent
@@ -41,6 +43,18 @@ DEFAULT_DATES = [
 ]
 
 DistributionColumn = Literal["network", "server", "vm"]
+
+PYTEST_CITY_ORDER = [
+    "City A",
+    "Another City A",
+    "City B",
+    "Another City B",
+    "City C",
+    "Another City C",
+]
+
+# Host octets reserved by integration tests (see doc/PYTEST_BASELINE.md §10)
+RESERVED_HOST_OCTETS = {254}
 
 
 def get_output_directory() -> Path:
@@ -116,6 +130,32 @@ class IpAllocator:
                 raise ValueError(f"Exhausted addresses in prefix {network}")
         self._cursors[pool_index] = host + 1
         return f"{network.network_address + host}/{network.prefixlen}"
+
+
+class UniqueIpAllocator(IpAllocator):
+    """IpAllocator that enforces unique host addresses across all allocations."""
+
+    def __init__(
+        self,
+        prefix_strings: List[str],
+        reserved_host_octets: Optional[set[int]] = None,
+    ) -> None:
+        super().__init__(prefix_strings)
+        self._used_hosts: set[str] = set()
+        self._reserved = reserved_host_octets or RESERVED_HOST_OCTETS
+
+    def next_ip(self, pool_index: int) -> str:
+        for _ in range(512):
+            candidate = super().next_ip(pool_index)
+            host_addr = candidate.split("/")[0]
+            host_octet = int(host_addr.rsplit(".", 1)[-1])
+            if host_octet in self._reserved:
+                continue
+            if host_addr in self._used_hosts:
+                continue
+            self._used_hosts.add(host_addr)
+            return candidate
+        raise ValueError("Could not allocate a unique IP address")
 
 
 def build_location_types(hierarchy: List[str]) -> List[Dict[str, Any]]:
@@ -199,6 +239,293 @@ def build_locations(
             )
 
     return locations, leaf_names
+
+
+def build_pytest_locations() -> Tuple[List[Dict[str, Any]], List[str]]:
+    """
+    Build the pytest_legacy location tree (Country/State/City + Building/Room under City A).
+    """
+    hierarchy = ["Country", "State", "City", "Building", "Room"]
+    location_types = build_location_types(hierarchy)
+    if location_types:
+        room_types = list(location_types[-1]["content_types"])
+        if "dcim.rack" not in room_types:
+            room_types.append("dcim.rack")
+        location_types[-1]["content_types"] = sorted(set(room_types))
+
+    locations: List[Dict[str, Any]] = []
+    country_state_city: List[Tuple[str, str, List[str]]] = [
+        ("Country A", "State A", ["City A", "Another City A"]),
+        ("Country B", "State B", ["City B", "Another City B"]),
+        ("Country C", "State C", ["City C", "Another City C"]),
+    ]
+
+    for country, state, cities in country_state_city:
+        locations.append(
+            {
+                "name": country,
+                "location_types": "Country",
+                "parent": None,
+                "status": "active",
+                "description": country,
+            }
+        )
+        locations.append(
+            {
+                "name": state,
+                "parent": country,
+                "location_types": "State",
+                "description": state,
+                "status": "active",
+            }
+        )
+        for city in cities:
+            locations.append(
+                {
+                    "name": city,
+                    "parent": state,
+                    "location_types": "City",
+                    "description": city,
+                    "status": "active",
+                }
+            )
+
+    locations.extend(
+        [
+            {
+                "name": "Building A",
+                "parent": "City A",
+                "location_types": "Building",
+                "description": "Building A",
+                "status": "active",
+            },
+            {
+                "name": "Room A",
+                "parent": "Building A",
+                "location_types": "Room",
+                "description": "Room A",
+                "status": "active",
+            },
+        ]
+    )
+    return locations, list(PYTEST_CITY_ORDER)
+
+
+def assign_sequential_name(
+    kind: Literal["network", "server"],
+    index: int,
+    request: CreateBaselineRequest,
+) -> str:
+    if kind == "network":
+        width = request.network_device_index_width
+        return f"{request.network_device_prefix}-{index:0{width}d}"
+    width = request.server_device_index_width
+    return f"{request.server_device_prefix}-{index:0{width}d}"
+
+
+def resolve_golden_path(request: CreateBaselineRequest) -> Path:
+    if not request.golden_reference_path:
+        raise ValueError("golden_reference_path is required for golden_parity mode")
+    path = Path(request.golden_reference_path)
+    if not path.is_absolute():
+        path = REPO_ROOT / path
+    if not path.is_file():
+        raise FileNotFoundError(f"Golden baseline not found: {path}")
+    return path
+
+
+def load_golden_baseline(request: CreateBaselineRequest) -> Dict[str, Any]:
+    path = resolve_golden_path(request)
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def apply_golden_metadata(
+    devices: List[Dict[str, Any]], golden_path: Path
+) -> None:
+    """Copy per-device metadata from golden YAML by device name (not IPs)."""
+    golden = yaml.safe_load(golden_path.read_text(encoding="utf-8"))
+    golden_by_name = {d["name"]: d for d in golden.get("devices", [])}
+    for device in devices:
+        golden_device = golden_by_name.get(device["name"])
+        if not golden_device:
+            continue
+        for key in (
+            "location",
+            "status",
+            "tags",
+            "roles",
+            "role",
+            "custom_fields",
+            "device_type",
+            "platform",
+            "serial",
+        ):
+            if key in golden_device:
+                device[key] = copy.deepcopy(golden_device[key])
+
+
+def allocate_ips_pytest(
+    devices: List[Dict[str, Any]], prefix_strings: List[str]
+) -> None:
+    """Assign unique primary and interface IPs; never copy addresses from golden."""
+    allocator = UniqueIpAllocator(prefix_strings)
+    for device in devices:
+        is_network = device.get("device_type") == "networkA"
+        if is_network:
+            primary = allocator.next_ip(0)
+            secondary = allocator.next_ip(min(1, len(prefix_strings) - 1))
+            device["primary_ip4"] = primary
+            device["interfaces"] = [
+                {
+                    "name": "GigabitEthernet1/0/1",
+                    "type": "1000base-t",
+                    "ip_address": primary,
+                },
+                {
+                    "name": "GigabitEthernet1/0/2",
+                    "type": "1000base-t",
+                    "ip_address": secondary,
+                },
+            ]
+        else:
+            server_pool = min(2, len(prefix_strings) - 1)
+            primary = allocator.next_ip(server_pool)
+            device["primary_ip4"] = primary
+            device["interfaces"] = [
+                {
+                    "name": "eth0",
+                    "type": "1000base-t",
+                    "ip_address": primary,
+                }
+            ]
+
+
+def build_pytest_metadata(request: CreateBaselineRequest) -> Dict[str, Any]:
+    """Metadata sections matching the golden pytest baseline."""
+    tag_names = parse_comma_list(request.tags) or ["Production", "Staging", "lab"]
+    metadata = build_default_metadata(
+        tag_names,
+        request.network_device_role,
+        request.server_role,
+        request.vm_role,
+    )
+    metadata["roles"].append(
+        {
+            "name": "lab",
+            "description": "This is a lab device",
+            "content_types": ["dcim.device"],
+        }
+    )
+    for role in metadata["roles"]:
+        if role["name"] == request.server_role:
+            role["name"] = "server"
+            role["description"] = "This device is a server"
+    metadata["custom_field_choices"] = {
+        "net": [
+            {"value": "netA", "label": "Network A"},
+            {"value": "netB", "label": "Network B"},
+            {"value": "lab", "label": "lab"},
+        ],
+        "checkmk_site": [
+            {"value": "siteA", "label": "Site A"},
+            {"value": "siteB", "label": "Site B"},
+            {"value": "siteC", "label": "Site C"},
+        ],
+        "snmp_credentials": [
+            {"value": "credA", "label": "Credential A"},
+            {"value": "credB", "label": "Credential B"},
+            {"value": "credC", "label": "Credential C"},
+        ],
+    }
+    net_field = metadata["custom_fields"]["net"][0]
+    net_field["selections"] = ["netA", "netB", "netC"]
+    return metadata
+
+
+def build_devices_pytest(request: CreateBaselineRequest) -> List[Dict[str, Any]]:
+    """Build 120 devices in pytest generation order with sequential names."""
+    dist = request.distribution
+    if not dist or dist.mode != "manual":
+        raise ValueError("pytest_legacy requires manual distribution")
+
+    by_city = {row.location: row for row in dist.by_location}
+    devices: List[Dict[str, Any]] = []
+    network_index = 1
+    server_index = 1
+
+    for city in PYTEST_CITY_ORDER:
+        row = by_city.get(city)
+        if not row:
+            raise ValueError(f"Manual distribution missing city '{city}'")
+
+        for _ in range(row.network):
+            devices.append(
+                {
+                    "name": assign_sequential_name("network", network_index, request),
+                    "device_type": "networkA",
+                    "platform": "Cisco IOS",
+                    "roles": [request.network_device_role],
+                    "location": city,
+                    "status": "Active",
+                    "tags": [parse_comma_list(request.tags)[0]],
+                    "serial": f"NET{network_index:07d}",
+                }
+            )
+            network_index += 1
+
+        for _ in range(row.server):
+            devices.append(
+                {
+                    "name": assign_sequential_name("server", server_index, request),
+                    "device_type": "serverA",
+                    "platform": "ServerPlatform",
+                    "roles": [request.server_role],
+                    "location": city,
+                    "status": "Active",
+                    "tags": [parse_comma_list(request.tags)[0]],
+                    "serial": f"SRV{server_index:07d}",
+                }
+            )
+            server_index += 1
+
+    return devices
+
+
+def generate_pytest_legacy_dict(request: CreateBaselineRequest) -> Dict[str, Any]:
+    prefix_list = parse_comma_list(request.prefixes)
+
+    if request.metadata_mode == "golden_parity":
+        baseline = load_golden_baseline(request)
+        devices = copy.deepcopy(baseline.get("devices", []))
+        allocate_ips_pytest(devices, prefix_list)
+        baseline["devices"] = devices
+        return baseline
+
+    locations, leaf_names = build_pytest_locations()
+    validate_manual_distribution(
+        request.distribution or DistributionConfig(),
+        leaf_names,
+        request.number_of_network_devices,
+        request.number_of_servers,
+        request.number_of_virtual_machines,
+    )
+    devices = build_devices_pytest(request)
+    golden_path = resolve_golden_path(request) if request.golden_reference_path else None
+    if golden_path and golden_path.is_file():
+        apply_golden_metadata(devices, golden_path)
+    allocate_ips_pytest(devices, prefix_list)
+
+    prefixes_section = [
+        {"prefix": p, "description": p} for p in prefix_list
+    ]
+    hierarchy = parse_hierarchy(request.location_hierarchy)
+    return {
+        "location_types": build_location_types(hierarchy),
+        "location": locations,
+        "prefixes": prefixes_section,
+        "devices": devices,
+        **build_pytest_metadata(request),
+    }
 
 
 def validate_manual_distribution(
@@ -538,6 +865,10 @@ def network_role_match(device: Dict[str, Any], role_name: str) -> bool:
 
 
 def generate_baseline_dict(request: CreateBaselineRequest) -> Dict[str, Any]:
+    request = merge_profile_into_request(request)
+    if request.layout == "pytest_legacy":
+        return generate_pytest_legacy_dict(request)
+
     hierarchy = parse_hierarchy(request.location_hierarchy)
     prefix_list = parse_comma_list(request.prefixes)
     tag_names = parse_comma_list(request.tags) or ["lab"]
@@ -722,6 +1053,7 @@ def generate_baseline_file(
     request: CreateBaselineRequest,
     output_dir: Optional[Path] = None,
 ) -> CreateBaselineResponse:
+    request = merge_profile_into_request(request)
     baseline = generate_baseline_dict(request)
     stats = compute_stats(baseline)
 
@@ -741,6 +1073,12 @@ def generate_baseline_file(
     }
     write_yaml_with_blank_lines(baseline, file_path, stats_dict)
 
+    warnings: List[str] = []
+    if request.layout == "pytest_legacy":
+        primary_ips = [d.get("primary_ip4", "").split("/")[0] for d in baseline.get("devices", [])]
+        if len(primary_ips) != len(set(primary_ips)):
+            warnings.append("Duplicate primary_ip4 values detected after generation")
+
     return CreateBaselineResponse(
         success=True,
         message="Baseline YAML file created successfully",
@@ -748,4 +1086,6 @@ def generate_baseline_file(
         filename=filename,
         stats=stats,
         distribution=stats.locations,
+        profile=request.profile,
+        warnings=warnings,
     )

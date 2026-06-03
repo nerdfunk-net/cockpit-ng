@@ -161,6 +161,12 @@ class Migration(BaseMigration):
                 self.log_debug("Mock server row already exists, skipping insert")
                 return
 
+            mock_location = {
+                "id": "00000000-0000-0000-0000-000000000001",
+                "name": "Berlin DC-1",
+                "hierarchical_path": "Berlin DC-1",
+            }
+
             conn.execute(
                 text(
                     """
@@ -170,16 +176,17 @@ class Migration(BaseMigration):
                         architecture, distribution_release, distribution_version,
                         contact, nautobot_uuid, ansible_facts
                     ) VALUES (
-                        :hostname, :location, :primary_ipv4, :primary_interface,
-                        :os_family, :processor_count, :memtotal_mb, :disk_count,
-                        :architecture, :distribution_release, :distribution_version,
+                        :hostname, CAST(:location AS jsonb), :primary_ipv4,
+                        :primary_interface, :os_family, :processor_count,
+                        :memtotal_mb, :disk_count, :architecture,
+                        :distribution_release, :distribution_version,
                         :contact, :nautobot_uuid, CAST(:ansible_facts AS jsonb)
                     )
                     """
                 ),
                 {
                     "hostname": "v2202503262298326986",
-                    "location": "Berlin DC-1",
+                    "location": json.dumps(mock_location),
                     "primary_ipv4": "45.136.30.143",
                     "primary_interface": "eth0",
                     "os_family": "Debian",

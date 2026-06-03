@@ -1,0 +1,47 @@
+{
+  "id": "pytest",
+  "label": "Pytest integration tests",
+  "description": "120 devices, City A/B/C layout, lab-001 naming for Nautobot integration tests",
+  "output": {
+    "filename": "baseline",
+    "suggested_import_dir": "contributing-data/tests_baseline"
+  },
+  "request": {
+    "name": "baseline",
+    "profile": "pytest",
+    "layout": "pytest_legacy",
+    "naming_scheme": "sequential",
+    "network_device_prefix": "lab",
+    "network_device_index_width": 3,
+    "server_device_prefix": "server",
+    "server_device_index_width": 2,
+    "prefixes": "192.168.178.0/24,192.168.179.0/24,192.168.180.0/24,192.168.181.0/24",
+    "network_device_role": "Network",
+    "server_role": "server",
+    "vm_role": "Virtual Machine",
+    "tags": "Production,Staging,lab",
+    "custom_fields": "",
+    "location_hierarchy": "Country -> State -> City -> Building -> Room",
+    "number_of_locations": 6,
+    "number_of_network_devices": 100,
+    "number_of_servers": 20,
+    "number_of_virtual_machines": 0,
+    "number_of_clusters": 0,
+    "distribution": {
+      "mode": "manual",
+      "seed": 42,
+      "by_location": [
+        { "location": "City A", "network": 19, "server": 2, "vm": 0 },
+        { "location": "Another City A", "network": 16, "server": 2, "vm": 0 },
+        { "location": "City B", "network": 15, "server": 5, "vm": 0 },
+        { "location": "Another City B", "network": 17, "server": 3, "vm": 0 },
+        { "location": "City C", "network": 13, "server": 3, "vm": 0 },
+        { "location": "Another City C", "network": 20, "server": 5, "vm": 0 }
+      ]
+    },
+    "tag_quotas": { "Production": 39, "Staging": 52, "lab": 29 },
+    "status_quotas": { "Active": 66, "Offline": 54 },
+    "metadata_mode": "golden_parity",
+    "golden_reference_path": "backend/tests/baseline.golden.yaml"
+  }
+}

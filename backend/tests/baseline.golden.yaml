@@ -3,7 +3,6 @@
 # Total Devices: 120
 #   - Network Devices: 100
 #   - Server Devices: 20
-#   - Virtual Machines: 0
 #
 # Distribution by Location:
 #   - Another City A: 18 devices
@@ -256,14 +255,14 @@ devices:
   tags:
   - Production
   serial: NET0000001
-  primary_ip4: 192.168.178.1/24
+  primary_ip4: 192.168.178.36/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.1/24
+    ip_address: 192.168.178.36/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.1/24
+    ip_address: 192.168.179.36/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -281,14 +280,14 @@ devices:
   tags:
   - Production
   serial: NET0000002
-  primary_ip4: 192.168.178.2/24
+  primary_ip4: 192.168.178.9/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.2/24
+    ip_address: 192.168.178.9/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.2/24
+    ip_address: 192.168.179.9/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -306,14 +305,14 @@ devices:
   tags:
   - Production
   serial: NET0000003
-  primary_ip4: 192.168.178.3/24
+  primary_ip4: 192.168.178.144/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.3/24
+    ip_address: 192.168.178.144/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.3/24
+    ip_address: 192.168.179.144/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -331,14 +330,14 @@ devices:
   tags:
   - lab
   serial: NET0000004
-  primary_ip4: 192.168.178.4/24
+  primary_ip4: 192.168.178.115/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.4/24
+    ip_address: 192.168.178.115/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.4/24
+    ip_address: 192.168.179.115/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -356,14 +355,14 @@ devices:
   tags:
   - Staging
   serial: NET0000005
-  primary_ip4: 192.168.178.5/24
+  primary_ip4: 192.168.178.72/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.5/24
+    ip_address: 192.168.178.72/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.5/24
+    ip_address: 192.168.179.72/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -381,14 +380,14 @@ devices:
   tags:
   - Production
   serial: NET0000006
-  primary_ip4: 192.168.178.6/24
+  primary_ip4: 192.168.178.92/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.6/24
+    ip_address: 192.168.178.92/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.6/24
+    ip_address: 192.168.179.92/24
   custom_fields:
     net: netB
     checkmk_site: siteA
@@ -406,14 +405,14 @@ devices:
   tags:
   - lab
   serial: NET0000007
-  primary_ip4: 192.168.178.7/24
+  primary_ip4: 192.168.178.250/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.7/24
+    ip_address: 192.168.178.250/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.7/24
+    ip_address: 192.168.179.250/24
   custom_fields:
     net: netB
     checkmk_site: siteA
@@ -431,14 +430,14 @@ devices:
   tags:
   - Production
   serial: NET0000008
-  primary_ip4: 192.168.178.8/24
+  primary_ip4: 192.168.178.148/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.8/24
+    ip_address: 192.168.178.148/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.8/24
+    ip_address: 192.168.179.148/24
   custom_fields:
     net: lab
     checkmk_site: siteB
@@ -456,14 +455,14 @@ devices:
   tags:
   - lab
   serial: NET0000009
-  primary_ip4: 192.168.178.9/24
+  primary_ip4: 192.168.178.253/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.9/24
+    ip_address: 192.168.178.253/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.9/24
+    ip_address: 192.168.179.253/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -481,14 +480,14 @@ devices:
   tags:
   - Production
   serial: NET0000010
-  primary_ip4: 192.168.178.10/24
+  primary_ip4: 192.168.178.42/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.10/24
+    ip_address: 192.168.178.42/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.10/24
+    ip_address: 192.168.179.42/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -506,14 +505,14 @@ devices:
   tags:
   - Staging
   serial: NET0000011
-  primary_ip4: 192.168.178.11/24
+  primary_ip4: 192.168.178.156/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.11/24
+    ip_address: 192.168.178.156/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.11/24
+    ip_address: 192.168.179.156/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -531,14 +530,14 @@ devices:
   tags:
   - Production
   serial: NET0000012
-  primary_ip4: 192.168.178.12/24
+  primary_ip4: 192.168.178.98/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.12/24
+    ip_address: 192.168.178.98/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.12/24
+    ip_address: 192.168.179.98/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -556,14 +555,14 @@ devices:
   tags:
   - lab
   serial: NET0000013
-  primary_ip4: 192.168.178.13/24
+  primary_ip4: 192.168.178.216/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.13/24
+    ip_address: 192.168.178.216/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.13/24
+    ip_address: 192.168.179.216/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -581,14 +580,14 @@ devices:
   tags:
   - Production
   serial: NET0000014
-  primary_ip4: 192.168.178.14/24
+  primary_ip4: 192.168.178.55/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.14/24
+    ip_address: 192.168.178.55/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.14/24
+    ip_address: 192.168.179.55/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -606,14 +605,14 @@ devices:
   tags:
   - lab
   serial: NET0000015
-  primary_ip4: 192.168.178.15/24
+  primary_ip4: 192.168.178.227/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.15/24
+    ip_address: 192.168.178.227/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.15/24
+    ip_address: 192.168.179.227/24
   custom_fields:
     net: netB
     checkmk_site: siteA
@@ -631,14 +630,14 @@ devices:
   tags:
   - Staging
   serial: NET0000016
-  primary_ip4: 192.168.178.16/24
+  primary_ip4: 192.168.178.192/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.16/24
+    ip_address: 192.168.178.192/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.16/24
+    ip_address: 192.168.179.192/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -656,14 +655,14 @@ devices:
   tags:
   - Staging
   serial: NET0000017
-  primary_ip4: 192.168.178.17/24
+  primary_ip4: 192.168.178.131/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.17/24
+    ip_address: 192.168.178.131/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.17/24
+    ip_address: 192.168.179.131/24
   custom_fields:
     net: lab
     checkmk_site: siteB
@@ -681,14 +680,14 @@ devices:
   tags:
   - Production
   serial: NET0000018
-  primary_ip4: 192.168.178.18/24
+  primary_ip4: 192.168.178.203/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.18/24
+    ip_address: 192.168.178.203/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.18/24
+    ip_address: 192.168.179.203/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -706,14 +705,14 @@ devices:
   tags:
   - Staging
   serial: NET0000019
-  primary_ip4: 192.168.178.19/24
+  primary_ip4: 192.168.178.136/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.19/24
+    ip_address: 192.168.178.136/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.19/24
+    ip_address: 192.168.179.136/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -731,14 +730,14 @@ devices:
   tags:
   - lab
   serial: NET0000020
-  primary_ip4: 192.168.178.20/24
+  primary_ip4: 192.168.178.197/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.20/24
+    ip_address: 192.168.178.197/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.20/24
+    ip_address: 192.168.179.197/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -756,14 +755,14 @@ devices:
   tags:
   - Staging
   serial: NET0000021
-  primary_ip4: 192.168.178.21/24
+  primary_ip4: 192.168.178.1/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.21/24
+    ip_address: 192.168.178.1/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.21/24
+    ip_address: 192.168.179.1/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -781,14 +780,14 @@ devices:
   tags:
   - lab
   serial: NET0000022
-  primary_ip4: 192.168.178.22/24
+  primary_ip4: 192.168.178.223/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.22/24
+    ip_address: 192.168.178.223/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.22/24
+    ip_address: 192.168.179.223/24
   custom_fields:
     net: netB
     checkmk_site: siteC
@@ -806,14 +805,14 @@ devices:
   tags:
   - Staging
   serial: NET0000023
-  primary_ip4: 192.168.178.23/24
+  primary_ip4: 192.168.178.96/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.23/24
+    ip_address: 192.168.178.96/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.23/24
+    ip_address: 192.168.179.96/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -831,14 +830,14 @@ devices:
   tags:
   - lab
   serial: NET0000024
-  primary_ip4: 192.168.178.24/24
+  primary_ip4: 192.168.178.5/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.24/24
+    ip_address: 192.168.178.5/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.24/24
+    ip_address: 192.168.179.5/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -856,14 +855,14 @@ devices:
   tags:
   - Staging
   serial: NET0000025
-  primary_ip4: 192.168.178.25/24
+  primary_ip4: 192.168.178.22/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.25/24
+    ip_address: 192.168.178.22/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.25/24
+    ip_address: 192.168.179.22/24
   custom_fields:
     net: netB
     checkmk_site: siteA
@@ -881,14 +880,14 @@ devices:
   tags:
   - Staging
   serial: NET0000026
-  primary_ip4: 192.168.178.26/24
+  primary_ip4: 192.168.178.243/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.26/24
+    ip_address: 192.168.178.243/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.26/24
+    ip_address: 192.168.179.243/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -906,14 +905,14 @@ devices:
   tags:
   - Production
   serial: NET0000027
-  primary_ip4: 192.168.178.27/24
+  primary_ip4: 192.168.178.238/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.27/24
+    ip_address: 192.168.178.238/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.27/24
+    ip_address: 192.168.179.238/24
   custom_fields:
     net: netB
     checkmk_site: siteC
@@ -931,14 +930,14 @@ devices:
   tags:
   - lab
   serial: NET0000028
-  primary_ip4: 192.168.178.28/24
+  primary_ip4: 192.168.178.172/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.28/24
+    ip_address: 192.168.178.172/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.28/24
+    ip_address: 192.168.179.172/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -956,14 +955,14 @@ devices:
   tags:
   - Staging
   serial: NET0000029
-  primary_ip4: 192.168.178.29/24
+  primary_ip4: 192.168.178.58/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.29/24
+    ip_address: 192.168.178.58/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.29/24
+    ip_address: 192.168.179.58/24
   custom_fields:
     net: netB
     checkmk_site: siteC
@@ -981,14 +980,14 @@ devices:
   tags:
   - Staging
   serial: NET0000030
-  primary_ip4: 192.168.178.30/24
+  primary_ip4: 192.168.178.2/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.30/24
+    ip_address: 192.168.178.2/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.30/24
+    ip_address: 192.168.179.2/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -1006,14 +1005,14 @@ devices:
   tags:
   - lab
   serial: NET0000031
-  primary_ip4: 192.168.178.31/24
+  primary_ip4: 192.168.178.221/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.31/24
+    ip_address: 192.168.178.221/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.31/24
+    ip_address: 192.168.179.221/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -1031,14 +1030,14 @@ devices:
   tags:
   - Production
   serial: NET0000032
-  primary_ip4: 192.168.178.32/24
+  primary_ip4: 192.168.178.55/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.32/24
+    ip_address: 192.168.178.55/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.32/24
+    ip_address: 192.168.179.55/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -1056,14 +1055,14 @@ devices:
   tags:
   - Production
   serial: NET0000033
-  primary_ip4: 192.168.178.33/24
+  primary_ip4: 192.168.178.201/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.33/24
+    ip_address: 192.168.178.201/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.33/24
+    ip_address: 192.168.179.201/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -1081,14 +1080,14 @@ devices:
   tags:
   - Staging
   serial: NET0000034
-  primary_ip4: 192.168.178.34/24
+  primary_ip4: 192.168.178.91/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.34/24
+    ip_address: 192.168.178.91/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.34/24
+    ip_address: 192.168.179.91/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -1106,14 +1105,14 @@ devices:
   tags:
   - Staging
   serial: NET0000035
-  primary_ip4: 192.168.178.35/24
+  primary_ip4: 192.168.178.16/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.35/24
+    ip_address: 192.168.178.16/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.35/24
+    ip_address: 192.168.179.16/24
   custom_fields:
     net: netB
     checkmk_site: siteC
@@ -1131,14 +1130,14 @@ devices:
   tags:
   - lab
   serial: NET0000036
-  primary_ip4: 192.168.178.36/24
+  primary_ip4: 192.168.178.138/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.36/24
+    ip_address: 192.168.178.138/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.36/24
+    ip_address: 192.168.179.138/24
   custom_fields:
     net: netB
     checkmk_site: siteA
@@ -1156,14 +1155,14 @@ devices:
   tags:
   - Production
   serial: NET0000037
-  primary_ip4: 192.168.178.37/24
+  primary_ip4: 192.168.178.224/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.37/24
+    ip_address: 192.168.178.224/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.37/24
+    ip_address: 192.168.179.224/24
   custom_fields:
     net: netB
     checkmk_site: siteA
@@ -1181,14 +1180,14 @@ devices:
   tags:
   - Staging
   serial: NET0000038
-  primary_ip4: 192.168.178.38/24
+  primary_ip4: 192.168.178.249/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.38/24
+    ip_address: 192.168.178.249/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.38/24
+    ip_address: 192.168.179.249/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -1206,14 +1205,14 @@ devices:
   tags:
   - Production
   serial: NET0000039
-  primary_ip4: 192.168.178.39/24
+  primary_ip4: 192.168.178.222/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.39/24
+    ip_address: 192.168.178.222/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.39/24
+    ip_address: 192.168.179.222/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -1231,14 +1230,14 @@ devices:
   tags:
   - Production
   serial: NET0000040
-  primary_ip4: 192.168.178.40/24
+  primary_ip4: 192.168.178.238/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.40/24
+    ip_address: 192.168.178.238/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.40/24
+    ip_address: 192.168.179.238/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -1256,14 +1255,14 @@ devices:
   tags:
   - Staging
   serial: NET0000041
-  primary_ip4: 192.168.178.41/24
+  primary_ip4: 192.168.178.40/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.41/24
+    ip_address: 192.168.178.40/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.41/24
+    ip_address: 192.168.179.40/24
   custom_fields:
     net: netB
     checkmk_site: siteC
@@ -1281,14 +1280,14 @@ devices:
   tags:
   - Staging
   serial: NET0000042
-  primary_ip4: 192.168.178.42/24
+  primary_ip4: 192.168.178.192/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.42/24
+    ip_address: 192.168.178.192/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.42/24
+    ip_address: 192.168.179.192/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -1306,14 +1305,14 @@ devices:
   tags:
   - Production
   serial: NET0000043
-  primary_ip4: 192.168.178.43/24
+  primary_ip4: 192.168.178.15/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.43/24
+    ip_address: 192.168.178.15/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.43/24
+    ip_address: 192.168.179.15/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -1331,14 +1330,14 @@ devices:
   tags:
   - Production
   serial: NET0000044
-  primary_ip4: 192.168.178.44/24
+  primary_ip4: 192.168.178.104/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.44/24
+    ip_address: 192.168.178.104/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.44/24
+    ip_address: 192.168.179.104/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -1356,14 +1355,14 @@ devices:
   tags:
   - lab
   serial: NET0000045
-  primary_ip4: 192.168.178.45/24
+  primary_ip4: 192.168.178.108/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.45/24
+    ip_address: 192.168.178.108/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.45/24
+    ip_address: 192.168.179.108/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -1381,14 +1380,14 @@ devices:
   tags:
   - lab
   serial: NET0000046
-  primary_ip4: 192.168.178.46/24
+  primary_ip4: 192.168.178.172/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.46/24
+    ip_address: 192.168.178.172/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.46/24
+    ip_address: 192.168.179.172/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -1406,14 +1405,14 @@ devices:
   tags:
   - Staging
   serial: NET0000047
-  primary_ip4: 192.168.178.47/24
+  primary_ip4: 192.168.178.118/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.47/24
+    ip_address: 192.168.178.118/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.47/24
+    ip_address: 192.168.179.118/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -1431,14 +1430,14 @@ devices:
   tags:
   - Production
   serial: NET0000048
-  primary_ip4: 192.168.178.48/24
+  primary_ip4: 192.168.178.19/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.48/24
+    ip_address: 192.168.178.19/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.48/24
+    ip_address: 192.168.179.19/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -1456,14 +1455,14 @@ devices:
   tags:
   - Production
   serial: NET0000049
-  primary_ip4: 192.168.178.49/24
+  primary_ip4: 192.168.178.226/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.49/24
+    ip_address: 192.168.178.226/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.49/24
+    ip_address: 192.168.179.226/24
   custom_fields:
     net: lab
     checkmk_site: siteB
@@ -1481,14 +1480,14 @@ devices:
   tags:
   - Staging
   serial: NET0000050
-  primary_ip4: 192.168.178.50/24
+  primary_ip4: 192.168.178.157/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.50/24
+    ip_address: 192.168.178.157/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.50/24
+    ip_address: 192.168.179.157/24
   custom_fields:
     net: netB
     checkmk_site: siteA
@@ -1506,14 +1505,14 @@ devices:
   tags:
   - lab
   serial: NET0000051
-  primary_ip4: 192.168.178.51/24
+  primary_ip4: 192.168.178.241/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.51/24
+    ip_address: 192.168.178.241/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.51/24
+    ip_address: 192.168.179.241/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -1531,14 +1530,14 @@ devices:
   tags:
   - Staging
   serial: NET0000052
-  primary_ip4: 192.168.178.52/24
+  primary_ip4: 192.168.178.70/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.52/24
+    ip_address: 192.168.178.70/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.52/24
+    ip_address: 192.168.179.70/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -1556,14 +1555,14 @@ devices:
   tags:
   - lab
   serial: NET0000053
-  primary_ip4: 192.168.178.53/24
+  primary_ip4: 192.168.178.130/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.53/24
+    ip_address: 192.168.178.130/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.53/24
+    ip_address: 192.168.179.130/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -1581,14 +1580,14 @@ devices:
   tags:
   - Staging
   serial: NET0000054
-  primary_ip4: 192.168.178.54/24
+  primary_ip4: 192.168.178.12/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.54/24
+    ip_address: 192.168.178.12/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.54/24
+    ip_address: 192.168.179.12/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -1606,14 +1605,14 @@ devices:
   tags:
   - Staging
   serial: NET0000055
-  primary_ip4: 192.168.178.55/24
+  primary_ip4: 192.168.178.142/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.55/24
+    ip_address: 192.168.178.142/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.55/24
+    ip_address: 192.168.179.142/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -1631,14 +1630,14 @@ devices:
   tags:
   - Staging
   serial: NET0000056
-  primary_ip4: 192.168.178.56/24
+  primary_ip4: 192.168.178.140/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.56/24
+    ip_address: 192.168.178.140/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.56/24
+    ip_address: 192.168.179.140/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -1656,14 +1655,14 @@ devices:
   tags:
   - Staging
   serial: NET0000057
-  primary_ip4: 192.168.178.57/24
+  primary_ip4: 192.168.178.11/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.57/24
+    ip_address: 192.168.178.11/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.57/24
+    ip_address: 192.168.179.11/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -1681,14 +1680,14 @@ devices:
   tags:
   - Staging
   serial: NET0000058
-  primary_ip4: 192.168.178.58/24
+  primary_ip4: 192.168.178.171/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.58/24
+    ip_address: 192.168.178.171/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.58/24
+    ip_address: 192.168.179.171/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -1706,14 +1705,14 @@ devices:
   tags:
   - Staging
   serial: NET0000059
-  primary_ip4: 192.168.178.59/24
+  primary_ip4: 192.168.178.237/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.59/24
+    ip_address: 192.168.178.237/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.59/24
+    ip_address: 192.168.179.237/24
   custom_fields:
     net: lab
     checkmk_site: siteB
@@ -1731,14 +1730,14 @@ devices:
   tags:
   - Production
   serial: NET0000060
-  primary_ip4: 192.168.178.60/24
+  primary_ip4: 192.168.178.201/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.60/24
+    ip_address: 192.168.178.201/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.60/24
+    ip_address: 192.168.179.201/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -1756,14 +1755,14 @@ devices:
   tags:
   - lab
   serial: NET0000061
-  primary_ip4: 192.168.178.61/24
+  primary_ip4: 192.168.178.98/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.61/24
+    ip_address: 192.168.178.98/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.61/24
+    ip_address: 192.168.179.98/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -1781,14 +1780,14 @@ devices:
   tags:
   - Staging
   serial: NET0000062
-  primary_ip4: 192.168.178.62/24
+  primary_ip4: 192.168.178.211/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.62/24
+    ip_address: 192.168.178.211/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.62/24
+    ip_address: 192.168.179.211/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -1806,14 +1805,14 @@ devices:
   tags:
   - Production
   serial: NET0000063
-  primary_ip4: 192.168.178.63/24
+  primary_ip4: 192.168.178.72/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.63/24
+    ip_address: 192.168.178.72/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.63/24
+    ip_address: 192.168.179.72/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -1831,14 +1830,14 @@ devices:
   tags:
   - Staging
   serial: NET0000064
-  primary_ip4: 192.168.178.64/24
+  primary_ip4: 192.168.178.241/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.64/24
+    ip_address: 192.168.178.241/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.64/24
+    ip_address: 192.168.179.241/24
   custom_fields:
     net: netB
     checkmk_site: siteC
@@ -1856,14 +1855,14 @@ devices:
   tags:
   - Production
   serial: NET0000065
-  primary_ip4: 192.168.178.65/24
+  primary_ip4: 192.168.178.28/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.65/24
+    ip_address: 192.168.178.28/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.65/24
+    ip_address: 192.168.179.28/24
   custom_fields:
     net: netB
     checkmk_site: siteA
@@ -1881,14 +1880,14 @@ devices:
   tags:
   - Staging
   serial: NET0000066
-  primary_ip4: 192.168.178.66/24
+  primary_ip4: 192.168.178.99/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.66/24
+    ip_address: 192.168.178.99/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.66/24
+    ip_address: 192.168.179.99/24
   custom_fields:
     net: netB
     checkmk_site: siteC
@@ -1906,14 +1905,14 @@ devices:
   tags:
   - Production
   serial: NET0000067
-  primary_ip4: 192.168.178.67/24
+  primary_ip4: 192.168.178.134/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.67/24
+    ip_address: 192.168.178.134/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.67/24
+    ip_address: 192.168.179.134/24
   custom_fields:
     net: netB
     checkmk_site: siteA
@@ -1931,14 +1930,14 @@ devices:
   tags:
   - lab
   serial: NET0000068
-  primary_ip4: 192.168.178.68/24
+  primary_ip4: 192.168.178.94/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.68/24
+    ip_address: 192.168.178.94/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.68/24
+    ip_address: 192.168.179.94/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -1956,14 +1955,14 @@ devices:
   tags:
   - Production
   serial: NET0000069
-  primary_ip4: 192.168.178.69/24
+  primary_ip4: 192.168.178.185/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.69/24
+    ip_address: 192.168.178.185/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.69/24
+    ip_address: 192.168.179.185/24
   custom_fields:
     net: lab
     checkmk_site: siteB
@@ -1981,14 +1980,14 @@ devices:
   tags:
   - lab
   serial: NET0000070
-  primary_ip4: 192.168.178.70/24
+  primary_ip4: 192.168.178.179/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.70/24
+    ip_address: 192.168.178.179/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.70/24
+    ip_address: 192.168.179.179/24
   custom_fields:
     net: netB
     checkmk_site: siteC
@@ -2006,14 +2005,14 @@ devices:
   tags:
   - lab
   serial: NET0000071
-  primary_ip4: 192.168.178.71/24
+  primary_ip4: 192.168.178.174/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.71/24
+    ip_address: 192.168.178.174/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.71/24
+    ip_address: 192.168.179.174/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -2031,14 +2030,14 @@ devices:
   tags:
   - Production
   serial: NET0000072
-  primary_ip4: 192.168.178.72/24
+  primary_ip4: 192.168.178.78/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.72/24
+    ip_address: 192.168.178.78/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.72/24
+    ip_address: 192.168.179.78/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -2056,14 +2055,14 @@ devices:
   tags:
   - Production
   serial: NET0000073
-  primary_ip4: 192.168.178.73/24
+  primary_ip4: 192.168.178.120/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.73/24
+    ip_address: 192.168.178.120/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.73/24
+    ip_address: 192.168.179.120/24
   custom_fields:
     net: netB
     checkmk_site: siteC
@@ -2081,14 +2080,14 @@ devices:
   tags:
   - Staging
   serial: NET0000074
-  primary_ip4: 192.168.178.74/24
+  primary_ip4: 192.168.178.169/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.74/24
+    ip_address: 192.168.178.169/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.74/24
+    ip_address: 192.168.179.169/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -2106,14 +2105,14 @@ devices:
   tags:
   - Staging
   serial: NET0000075
-  primary_ip4: 192.168.178.75/24
+  primary_ip4: 192.168.178.24/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.75/24
+    ip_address: 192.168.178.24/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.75/24
+    ip_address: 192.168.179.24/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -2131,14 +2130,14 @@ devices:
   tags:
   - lab
   serial: NET0000076
-  primary_ip4: 192.168.178.76/24
+  primary_ip4: 192.168.178.12/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.76/24
+    ip_address: 192.168.178.12/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.76/24
+    ip_address: 192.168.179.12/24
   custom_fields:
     net: netB
     checkmk_site: siteA
@@ -2156,14 +2155,14 @@ devices:
   tags:
   - Staging
   serial: NET0000077
-  primary_ip4: 192.168.178.77/24
+  primary_ip4: 192.168.178.184/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.77/24
+    ip_address: 192.168.178.184/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.77/24
+    ip_address: 192.168.179.184/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -2181,14 +2180,14 @@ devices:
   tags:
   - Staging
   serial: NET0000078
-  primary_ip4: 192.168.178.78/24
+  primary_ip4: 192.168.178.229/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.78/24
+    ip_address: 192.168.178.229/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.78/24
+    ip_address: 192.168.179.229/24
   custom_fields:
     net: netB
     checkmk_site: siteB
@@ -2206,14 +2205,14 @@ devices:
   tags:
   - Staging
   serial: NET0000079
-  primary_ip4: 192.168.178.79/24
+  primary_ip4: 192.168.178.13/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.79/24
+    ip_address: 192.168.178.13/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.79/24
+    ip_address: 192.168.179.13/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -2231,14 +2230,14 @@ devices:
   tags:
   - Production
   serial: NET0000080
-  primary_ip4: 192.168.178.80/24
+  primary_ip4: 192.168.178.244/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.80/24
+    ip_address: 192.168.178.244/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.80/24
+    ip_address: 192.168.179.244/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -2256,14 +2255,14 @@ devices:
   tags:
   - lab
   serial: NET0000081
-  primary_ip4: 192.168.178.81/24
+  primary_ip4: 192.168.178.230/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.81/24
+    ip_address: 192.168.178.230/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.81/24
+    ip_address: 192.168.179.230/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -2281,14 +2280,14 @@ devices:
   tags:
   - lab
   serial: NET0000082
-  primary_ip4: 192.168.178.82/24
+  primary_ip4: 192.168.178.197/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.82/24
+    ip_address: 192.168.178.197/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.82/24
+    ip_address: 192.168.179.197/24
   custom_fields:
     net: netB
     checkmk_site: siteB
@@ -2306,14 +2305,14 @@ devices:
   tags:
   - Staging
   serial: NET0000083
-  primary_ip4: 192.168.178.83/24
+  primary_ip4: 192.168.178.183/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.83/24
+    ip_address: 192.168.178.183/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.83/24
+    ip_address: 192.168.179.183/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -2331,14 +2330,14 @@ devices:
   tags:
   - Production
   serial: NET0000084
-  primary_ip4: 192.168.178.84/24
+  primary_ip4: 192.168.178.36/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.84/24
+    ip_address: 192.168.178.36/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.84/24
+    ip_address: 192.168.179.36/24
   custom_fields:
     net: netB
     checkmk_site: siteB
@@ -2356,14 +2355,14 @@ devices:
   tags:
   - Production
   serial: NET0000085
-  primary_ip4: 192.168.178.85/24
+  primary_ip4: 192.168.178.17/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.85/24
+    ip_address: 192.168.178.17/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.85/24
+    ip_address: 192.168.179.17/24
   custom_fields:
     net: netB
     checkmk_site: siteC
@@ -2381,14 +2380,14 @@ devices:
   tags:
   - Staging
   serial: NET0000086
-  primary_ip4: 192.168.178.86/24
+  primary_ip4: 192.168.178.53/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.86/24
+    ip_address: 192.168.178.53/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.86/24
+    ip_address: 192.168.179.53/24
   custom_fields:
     net: netB
     checkmk_site: siteC
@@ -2406,14 +2405,14 @@ devices:
   tags:
   - Staging
   serial: NET0000087
-  primary_ip4: 192.168.178.87/24
+  primary_ip4: 192.168.178.123/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.87/24
+    ip_address: 192.168.178.123/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.87/24
+    ip_address: 192.168.179.123/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -2431,14 +2430,14 @@ devices:
   tags:
   - Staging
   serial: NET0000088
-  primary_ip4: 192.168.178.88/24
+  primary_ip4: 192.168.178.125/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.88/24
+    ip_address: 192.168.178.125/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.88/24
+    ip_address: 192.168.179.125/24
   custom_fields:
     net: netB
     checkmk_site: siteB
@@ -2456,14 +2455,14 @@ devices:
   tags:
   - Staging
   serial: NET0000089
-  primary_ip4: 192.168.178.89/24
+  primary_ip4: 192.168.178.172/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.89/24
+    ip_address: 192.168.178.172/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.89/24
+    ip_address: 192.168.179.172/24
   custom_fields:
     net: netB
     checkmk_site: siteB
@@ -2481,14 +2480,14 @@ devices:
   tags:
   - Staging
   serial: NET0000090
-  primary_ip4: 192.168.178.90/24
+  primary_ip4: 192.168.178.233/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.90/24
+    ip_address: 192.168.178.233/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.90/24
+    ip_address: 192.168.179.233/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -2506,14 +2505,14 @@ devices:
   tags:
   - lab
   serial: NET0000091
-  primary_ip4: 192.168.178.91/24
+  primary_ip4: 192.168.178.35/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.91/24
+    ip_address: 192.168.178.35/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.91/24
+    ip_address: 192.168.179.35/24
   custom_fields:
     net: lab
     checkmk_site: siteC
@@ -2531,14 +2530,14 @@ devices:
   tags:
   - Production
   serial: NET0000092
-  primary_ip4: 192.168.178.92/24
+  primary_ip4: 192.168.178.117/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.92/24
+    ip_address: 192.168.178.117/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.92/24
+    ip_address: 192.168.179.117/24
   custom_fields:
     net: netA
     checkmk_site: siteB
@@ -2556,14 +2555,14 @@ devices:
   tags:
   - Staging
   serial: NET0000093
-  primary_ip4: 192.168.178.93/24
+  primary_ip4: 192.168.178.121/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.93/24
+    ip_address: 192.168.178.121/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.93/24
+    ip_address: 192.168.179.121/24
   custom_fields:
     net: netB
     checkmk_site: siteB
@@ -2581,14 +2580,14 @@ devices:
   tags:
   - lab
   serial: NET0000094
-  primary_ip4: 192.168.178.94/24
+  primary_ip4: 192.168.178.200/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.94/24
+    ip_address: 192.168.178.200/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.94/24
+    ip_address: 192.168.179.200/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -2606,14 +2605,14 @@ devices:
   tags:
   - Production
   serial: NET0000095
-  primary_ip4: 192.168.178.95/24
+  primary_ip4: 192.168.178.62/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.95/24
+    ip_address: 192.168.178.62/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.95/24
+    ip_address: 192.168.179.62/24
   custom_fields:
     net: netA
     checkmk_site: siteA
@@ -2631,14 +2630,14 @@ devices:
   tags:
   - Staging
   serial: NET0000096
-  primary_ip4: 192.168.178.96/24
+  primary_ip4: 192.168.178.180/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.96/24
+    ip_address: 192.168.178.180/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.96/24
+    ip_address: 192.168.179.180/24
   custom_fields:
     net: lab
     checkmk_site: siteA
@@ -2656,14 +2655,14 @@ devices:
   tags:
   - Staging
   serial: NET0000097
-  primary_ip4: 192.168.178.97/24
+  primary_ip4: 192.168.178.200/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.97/24
+    ip_address: 192.168.178.200/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.97/24
+    ip_address: 192.168.179.200/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -2681,14 +2680,14 @@ devices:
   tags:
   - Staging
   serial: NET0000098
-  primary_ip4: 192.168.178.98/24
+  primary_ip4: 192.168.178.102/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.98/24
+    ip_address: 192.168.178.102/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.98/24
+    ip_address: 192.168.179.102/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -2706,14 +2705,14 @@ devices:
   tags:
   - Production
   serial: NET0000099
-  primary_ip4: 192.168.178.99/24
+  primary_ip4: 192.168.178.27/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.99/24
+    ip_address: 192.168.178.27/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.99/24
+    ip_address: 192.168.179.27/24
   custom_fields:
     net: netA
     checkmk_site: siteC
@@ -2731,14 +2730,14 @@ devices:
   tags:
   - Staging
   serial: NET0000100
-  primary_ip4: 192.168.178.100/24
+  primary_ip4: 192.168.178.89/24
   interfaces:
   - name: GigabitEthernet1/0/1
     type: 1000base-t
-    ip_address: 192.168.178.100/24
+    ip_address: 192.168.178.89/24
   - name: GigabitEthernet1/0/2
     type: 1000base-t
-    ip_address: 192.168.179.100/24
+    ip_address: 192.168.179.89/24
   custom_fields:
     net: lab
     checkmk_site: siteC

@@ -30,7 +30,8 @@ export default function BaselineManagementPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Baseline Management</h1>
               <p className="text-gray-500 text-sm">
-                Generate baseline YAML and import test data into Nautobot
+                Generate baseline YAML and import test data into Nautobot. Use the
+                Pytest profile for the 120-device integration-test contract.
               </p>
             </div>
           </div>

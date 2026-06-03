@@ -1,0 +1,20 @@
+{
+  "id": "demo",
+  "label": "Demo / UI defaults",
+  "description": "Small baseline with Location A/B/C naming (default generator layout)",
+  "output": {
+    "filename": "baseline",
+    "suggested_import_dir": "data/baseline"
+  },
+  "request": {
+    "name": "baseline",
+    "profile": "demo",
+    "layout": "default",
+    "naming_scheme": "ip",
+    "number_of_locations": 3,
+    "number_of_network_devices": 10,
+    "number_of_servers": 2,
+    "number_of_virtual_machines": 0,
+    "number_of_clusters": 1
+  }
+}

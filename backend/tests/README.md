@@ -8,6 +8,191 @@ This directory contains the test suite for the Cockpit-NG backend application. A
 
 **Recently added**: Server inventory (SERVER & CLIENTS / Server UI) — **47** unit tests across service, Pydantic models, and API router.
 
+## Quick navigation
+
+| Topic | Where in this file |
+|-------|-------------------|
+| **`.env.test` configuration** (start here) | [Test environment file](#test-environment-file-backendenvtest) |
+| **PostgreSQL, `init_db`, external services** | [Setting up dependencies](#setting-up-dependencies) |
+| **Pytest baseline** (generate/import `baseline.yaml`, manifest) | [Pytest baseline](#pytest-baseline--build-baselineyaml-and-what-to-do-next) |
+| **CheckMK integration** (live Nautobot + CheckMK) | [CheckMK integration tests](#checkmk-integration-tests-live-nautobot--checkmk) |
+| **Nautobot integration** | [Running Integration Tests](#running-integration-tests) |
+| **Run pytest** (markers, coverage) | [Running Tests](#running-tests) |
+
+## Test environment file (`backend/.env.test`)
+
+Create **one** file for optional integration tests (Nautobot, CheckMK, PostgreSQL). Pytest loads it automatically at startup (`tests/test_env.py` sets `COCKPIT_TEST_ENV=1` so live tests use these values, **not** Cockpit Settings in the UI). Your normal `backend/.env` and the Settings UI are unchanged.
+
+### Create the file
+
+```bash
+cd backend
+cp .env.test.example .env.test
+```
+
+Edit `.env.test` and enable only the sections you need. Tests for missing configuration are **skipped**, not failed.
+
+### Example (from `.env.test.example`)
+
+```bash
+# Cockpit backend — integration / optional live-service tests
+# Omit sections you do not need; matching tests are skipped.
+
+# =============================================================================
+# Nautobot (inventory, device ops, CSV import, CheckMK baseline tests)
+# =============================================================================
+NAUTOBOT_HOST=http://localhost:8080
+NAUTOBOT_TOKEN=your-test-nautobot-token-here
+NAUTOBOT_TIMEOUT=30
+NAUTOBOT_VERIFY_SSL=true
+
+# =============================================================================
+# CheckMK (test_checkmk_baseline.py, test_checkmk_device_lifecycle.py)
+# Server root only (no /check_mk path). Site is the OMD site id (often "cmk").
+# =============================================================================
+CHECKMK_URL=http://192.168.178.101:8080
+CHECKMK_SITE=cmk
+# Or: CHECKMK_URL=http://192.168.178.101:8080/cmk  (CHECKMK_SITE optional)
+CHECKMK_USERNAME=automation
+CHECKMK_PASSWORD=your-automation-secret
+CHECKMK_VERIFY_SSL=false
+
+# =============================================================================
+# PostgreSQL repository tests (tests/integration/repositories/, @pytest.mark.postgres)
+# Either set TEST_DATABASE_URL directly:
+# TEST_DATABASE_URL=postgresql+psycopg2://postgres:postgres@127.0.0.1:5432/cockpit_test
+#
+# Or use COCKPIT_DATABASE_* (TEST_DATABASE_URL is derived if unset):
+# =============================================================================
+COCKPIT_DATABASE_HOST=127.0.0.1
+COCKPIT_DATABASE_PORT=5432
+COCKPIT_DATABASE_NAME=cockpit_test
+COCKPIT_DATABASE_USERNAME=postgres
+COCKPIT_DATABASE_PASSWORD=postgres
+
+# Required when running init_db() against the test database
+SECRET_KEY=local-test-secret-not-for-production
+```
+
+Canonical template: [`backend/.env.test.example`](../.env.test.example) (keep in sync when adding variables).
+
+### Variable reference
+
+| Variables | Used by |
+|-----------|---------|
+| `NAUTOBOT_HOST`, `NAUTOBOT_TOKEN`, `NAUTOBOT_TIMEOUT`, `NAUTOBOT_VERIFY_SSL` | `@pytest.mark.nautobot` integration tests |
+| `CHECKMK_URL`, `CHECKMK_SITE`, `CHECKMK_USERNAME`, `CHECKMK_PASSWORD`, `CHECKMK_VERIFY_SSL` | `@pytest.mark.checkmk` integration tests |
+| `TEST_DATABASE_URL` **or** `COCKPIT_DATABASE_*` | `@pytest.mark.postgres` repository tests; pytest derives `TEST_DATABASE_URL` from `COCKPIT_DATABASE_*` when unset |
+| `SECRET_KEY` | `init_db()` when applying migrations to the test database |
+
+## Setting up dependencies
+
+After `.env.test` exists, start external services and apply the database schema before running integration or PostgreSQL tests.
+
+### PostgreSQL test database
+
+Repository tests under `tests/integration/repositories/` run SQL against a **real PostgreSQL** instance (JSONB, `DISTINCT ON`, aggregates). They use the marker **`postgres`** and are **skipped** unless `TEST_DATABASE_URL` is set (from `.env.test` or the shell).
+
+| File | What it covers |
+|------|----------------|
+| `integration/repositories/test_client_data_repository_pg.py` | `ClientDataRepository` — L2-only devices, session history, retention cleanup |
+| `integration/repositories/test_job_run_repository_pg.py` | `JobRunRepository` — status aggregates, recent backup window |
+
+Package notes: [integration/repositories/README.md](integration/repositories/README.md).
+
+**Safety:** Use a **dedicated** database (for example `cockpit_test`), not production or your normal dev Cockpit DB. Tests **truncate** client-data tables before each test and **delete all rows** from `job_runs` before each job-run test.
+
+**Start PostgreSQL** (example with Docker; match host/port/name/user/password in `.env.test`):
+
+```bash
+docker run -d --name cockpit-pg-test \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=cockpit_test \
+  -p 5432:5432 \
+  postgres:16-alpine
+```
+
+### Apply schema (`init_db`)
+
+`init_db()` uses `COCKPIT_DATABASE_*` and `SECRET_KEY` from `.env.test` (not `TEST_DATABASE_URL` alone). Point those variables at the **same** database pytest will use.
+
+Required for **`job_runs`** (job-run tests skip if the table is missing). Client-data tables may be created via `create_all` in fixtures, but running migrations is the supported path:
+
+```bash
+cd backend
+set -a && source .env.test && set +a
+python -c "from core.database import init_db; init_db()"
+```
+
+### Run PostgreSQL tests
+
+```bash
+cd backend
+
+# Repository tests only (pytest loads .env.test automatically)
+python -m pytest tests/integration/repositories -v -m postgres
+
+# Same as GitHub Actions (unit + repository PG)
+python -m pytest tests/unit tests/integration/repositories -v
+```
+
+CI: [`.github/workflows/backend-tests.yml`](../../.github/workflows/backend-tests.yml) — PostgreSQL 16 service, `init_db()`, then `pytest tests/unit tests/integration/repositories`.
+
+### Other integration prerequisites
+
+| Suite | Besides `.env.test` |
+|-------|---------------------|
+| `@pytest.mark.nautobot` | Live Nautobot; [baseline data](#3-load-data-into-test-nautobot) for inventory/CheckMK baseline tests |
+| `@pytest.mark.checkmk` | Live CheckMK; see [CheckMK integration tests](#checkmk-integration-tests-live-nautobot--checkmk) |
+| Unit tests (`tests/unit/`) | No `.env.test` required |
+
+## CheckMK integration tests (live Nautobot + CheckMK)
+
+| File | Needs in `.env.test` | Run |
+|------|----------------------|-----|
+| `integration/test_checkmk_baseline.py` | Nautobot + CheckMK; baseline imported | `pytest tests/integration/test_checkmk_baseline.py -v -m "integration and checkmk"` |
+| `integration/test_checkmk_device_lifecycle.py` | CheckMK (Nautobot for one compare test) | `pytest tests/integration/test_checkmk_device_lifecycle.py -v -m "integration and checkmk"` |
+| `integration/test_checkmk_api_structure.py` | None (offline) | `pytest tests/integration/test_checkmk_api_structure.py -v` |
+
+### Prerequisites
+
+1. **`backend/.env.test`** from `.env.test.example` with valid `NAUTOBOT_*` and `CHECKMK_*` values.
+2. **Baseline in Nautobot** — [Pytest baseline §3](#3-load-data-into-test-nautobot).
+
+### Troubleshooting: CheckMK `Invalid JSON response: <!DOCTYPE HTML`
+
+The client received an HTML page instead of the REST API (wrong URL/site or auth). Configure:
+
+- **`CHECKMK_URL`** — server root only, e.g. `http://192.168.178.101:8080` (not `/check_mk/...`)
+- **`CHECKMK_SITE`** — OMD site id, often `cmk` (API path is `/{site}/check_mk/api/1.0`)
+- **`CHECKMK_USERNAME` / `CHECKMK_PASSWORD`** — CheckMK **automation** user (not the admin UI password)
+- **`CHECKMK_VERIFY_SSL=false`** — if the site uses a self-signed certificate
+
+You may also set `CHECKMK_URL=http://host:8080/cmk` and omit `CHECKMK_SITE`. Verify:
+
+```bash
+source .env.test  # or: set -a && source .env.test && set +a
+curl -sS -u "${CHECKMK_USERNAME}:${CHECKMK_PASSWORD}" \
+  -H "Accept: application/json" \
+  "${CHECKMK_URL%/}/${CHECKMK_SITE}/check_mk/api/1.0/version"
+```
+
+The connection prerequisite test prints the resolved API base on success; on failure the error includes it.
+
+### Troubleshooting: Nautobot `403` / `Invalid token`
+
+Usually `NAUTOBOT_TOKEN` in `.env.test` is wrong, expired, or still the placeholder. Verify:
+
+```bash
+curl -sS -X POST "$NAUTOBOT_HOST/api/graphql/" \
+  -H "Authorization: Token $NAUTOBOT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ devices { name } }"}'
+```
+
+**Offline alternative:** `pytest tests/integration/test_checkmk_api_structure.py -v`
+
 ## Test Statistics
 
 - **Total Tests**: 1,387 (1,158 `unit`, remainder `integration` / `postgres` / other markers)
@@ -579,9 +764,14 @@ python -m pytest -m unit
 # Run only integration tests
 python -m pytest -m integration
 
+# PostgreSQL repository tests — see top of this README
+python -m pytest -m postgres
+
 # Run only async tests
 python -m pytest -m asyncio
 ```
+
+PostgreSQL setup: **[Setting up dependencies](#setting-up-dependencies)** and **[Test environment file](#test-environment-file-backendenvtest)** at the top of this file.
 
 ### Run with Coverage
 ```bash
@@ -620,6 +810,11 @@ tests/
 │       ├── test_servers_service.py         # ServersService (18 tests)
 │       └── ...                             # additional service test modules
 ├── integration/
+│   ├── repositories/                    # PostgreSQL (@pytest.mark.postgres, TEST_DATABASE_URL)
+│   │   ├── conftest.py
+│   │   ├── README.md
+│   │   ├── test_client_data_repository_pg.py
+│   │   └── test_job_run_repository_pg.py
 │   └── workflows/
 │       └── test_nb2cmk_sync_workflow.py
 ├── test_device_common_service.py        # Utility service tests
@@ -835,8 +1030,8 @@ python -m pytest tests/test_my_new_service.py -v
 
 ```bash
 # 1. Configure test environment
-cp ../.env.test.example ../.env.test
-nano ../.env.test  # Add your test Nautobot URL and token
+cp .env.test.example .env.test
+nano .env.test  # Nautobot, CheckMK, PostgreSQL as needed
 
 # 2. Run integration tests
 pytest -m "integration and nautobot" -v
@@ -861,25 +1056,106 @@ pytest -m "integration and nautobot" -v
 ### Running Integration Tests
 
 ```bash
-# All integration tests (mocked + real)
+# All integration tests (mocked + real Nautobot; PG tests only if TEST_DATABASE_URL is set)
 pytest -m integration
 
-# Only real Nautobot integration tests
+# Only real Nautobot integration tests (.env.test)
 pytest -m "integration and nautobot"
+
+# Only PostgreSQL repository tests (TEST_DATABASE_URL required)
+pytest -m postgres
 
 # Skip integration tests (unit only)
 pytest -m "not integration"
 ```
+
+PostgreSQL setup: [Setting up dependencies](#setting-up-dependencies) (near the top of this file).
+
+### Pytest baseline — build `baseline.yaml` and what to do next
+
+The **Pytest profile** produces the canonical 120-device dataset used by inventory, device-operation, CSV import, and CheckMK integration tests. Full design: [`doc/PYTEST_BASELINE.md`](../../doc/PYTEST_BASELINE.md).
+
+| Artifact | Path | Role |
+|----------|------|------|
+| Canonical YAML | `contributing-data/tests_baseline/baseline.yaml` | Import into Nautobot; commit this file |
+| Symlink (tests/docs) | `backend/tests/baseline.yaml` → contributing file | Same content; do not edit separately |
+| Golden metadata | `backend/tests/baseline.golden.yaml` | Tag/status/location reference for parity checks (not imported) |
+| Expected counts | `tests/fixtures/baseline_manifest.json` | Integration test assertions; regenerate after YAML changes |
+
+#### 1. Generate `baseline.yaml`
+
+**CLI (from `backend/`):**
+
+```bash
+cd backend
+python tests/generate_baseline.py --profile pytest \
+  --output ../contributing-data/tests_baseline
+```
+
+**UI:** Tools → Baseline Management → Generate → select profile **Pytest** → Generate. Copy the generated file into `contributing-data/tests_baseline/baseline.yaml` if the API wrote elsewhere (default generator output is under `data/baseline/`).
+
+The Pytest profile uses sequential names (`lab-001` … `lab-100`, `server-01` … `server-20`), six city locations, unique IPs, and metadata aligned with `baseline.golden.yaml`.
+
+#### 2. After generating — verify, manifest, commit
+
+Run from the **repository root** (or use equivalent `cd backend && python scripts/...` commands):
+
+```bash
+# 1) Stats, unique IPs, and per-device metadata vs golden (pre-commit runs this too)
+make verify-baseline
+
+# 2) Refresh integration-test expected counts (manifest-driven assertions)
+make baseline-manifest
+
+# 3) Optional: inspect a single filter count
+cd backend && python scripts/expect_inventory_counts.py --filter filter_by_location_city_a
+```
+
+Commit at least:
+
+- `contributing-data/tests_baseline/baseline.yaml`
+- `tests/fixtures/baseline_manifest.json` (if counts changed)
+
+Install git hooks once (requires `pre-commit` from `backend/requirements.txt`):
+
+```bash
+pip install -r backend/requirements.txt   # includes pre-commit
+pre-commit install                        # from repo root
+```
+
+On commit, the `verify-baseline-parity` hook re-runs `verify_baseline_parity.py` when baseline-related files change.
+
+#### 3. Load data into test Nautobot
+
+Baseline data is **not** imported by pytest. Load explicitly:
+
+- **UI:** Tools → Baseline Management → **Import** tab  
+- **API:** `POST /api/tools/tests-baseline` (optional body: `{"directory": "../contributing-data/tests_baseline"}`)  
+- Override directory: env `BASELINE_DIR` (path relative to `backend/` unless absolute)
+
+Import is idempotent (existing objects are skipped).
+
+#### 4. Run integration tests
+
+```bash
+cd backend
+cp .env.test.example .env.test   # set NAUTOBOT_HOST and NAUTOBOT_TOKEN
+pytest -m "integration and nautobot" tests/integration/test_inventory_baseline.py -v
+```
+
+Tests with exact device counts use the `baseline_manifest` fixture (`assert_device_count` vs `baseline_manifest.json`). Nautobot must match the imported YAML or those tests fail even when YAML and manifest are correct.
+
+Quick reference: [QUICK_START_INTEGRATION_TESTS.md](QUICK_START_INTEGRATION_TESTS.md).
 
 ### Documentation
 
 **General Integration Testing**:
 - [INTEGRATION_TESTING.md](INTEGRATION_TESTING.md) - Comprehensive setup guide
 - [RUN_INTEGRATION_TESTS.md](RUN_INTEGRATION_TESTS.md) - Quick run guide
-- `../.env.test` - Test environment (create from `../.env.test.example`)
+- `backend/.env.test` - Single test config (create from `backend/.env.test.example`)
 
 **Specific Test Suites**:
-- [BASELINE_TEST_DATA.md](BASELINE_TEST_DATA.md) - Ansible inventory baseline test data
+- [BASELINE_TEST_DATA.md](BASELINE_TEST_DATA.md) - Per-location device breakdown and filter examples
 - [DEVICE_OPERATIONS_TESTS.md](DEVICE_OPERATIONS_TESTS.md) - Add Device and Bulk Edit tests
 - [FINAL_SUMMARY.md](FINAL_SUMMARY.md) - Complete integration test summary
 
@@ -898,7 +1174,7 @@ Potential areas for expansion:
 
 ---
 
-**Last Updated**: 2026-06-01
+**Last Updated**: 2026-06-02
 **Test Suite Version**: 1.5
 **Total Tests**: 1,387 collected (1,158 `unit`) + integration suites (ansible-inventory baseline, device operations, repository PG tests when configured)
 **Server inventory**: 47 unit tests (`test_servers_service`, `test_servers_models`, `test_servers_router`)

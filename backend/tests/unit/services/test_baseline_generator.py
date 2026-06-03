@@ -15,6 +15,8 @@ from models.tools import (
 )
 from services.network.tools.baseline_generator import (
     assign_locations,
+    assign_sequential_name,
+    build_pytest_locations,
     generate_baseline_dict,
     generate_baseline_file,
     location_label,
@@ -107,6 +109,31 @@ def test_generate_baseline_dict_structure() -> None:
         "virtualization.cluster",
     }
     assert data["devices"][0]["name"].startswith("lab-192-168")
+
+
+def test_build_pytest_locations_has_six_cities() -> None:
+    _locations, leaves = build_pytest_locations()
+    assert leaves == [
+        "City A",
+        "Another City A",
+        "City B",
+        "Another City B",
+        "City C",
+        "Another City C",
+    ]
+
+
+def test_assign_sequential_name() -> None:
+    request = CreateBaselineRequest(
+        name="t",
+        naming_scheme="sequential",
+        network_device_prefix="lab",
+        network_device_index_width=3,
+        server_device_prefix="server",
+        server_device_index_width=2,
+    )
+    assert assign_sequential_name("network", 1, request) == "lab-001"
+    assert assign_sequential_name("server", 20, request) == "server-20"
 
 
 def test_generate_baseline_file_writes_valid_yaml() -> None:

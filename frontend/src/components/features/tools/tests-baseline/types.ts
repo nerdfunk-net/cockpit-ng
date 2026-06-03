@@ -28,6 +28,28 @@ export interface CreateBaselineRequest {
   number_of_virtual_machines: number
   number_of_clusters: number
   distribution?: DistributionConfig
+  profile?: string
+  layout?: 'default' | 'pytest_legacy'
+  naming_scheme?: 'ip' | 'sequential'
+  metadata_mode?: 'generated' | 'golden_parity'
+  golden_reference_path?: string
+}
+
+export interface BaselineProfileSummary {
+  id: string
+  label: string
+  description: string
+}
+
+export interface BaselineProfileDetail {
+  id: string
+  label: string
+  description: string
+  output?: {
+    filename?: string
+    suggested_import_dir?: string
+  }
+  request: Record<string, unknown>
 }
 
 export interface BaselineStats {
@@ -48,4 +70,6 @@ export interface CreateBaselineResponse {
   filename: string
   stats: BaselineStats
   distribution: Record<string, number>
+  profile?: string
+  warnings?: string[]
 }

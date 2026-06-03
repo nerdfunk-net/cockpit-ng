@@ -42,18 +42,14 @@ def get_checkmk_config(site_name: Optional[str] = None) -> CheckMKConfig:
             "CheckMK settings not configured. Please configure CheckMK settings first."
         )
 
-    url = db_settings["url"].rstrip("/")
-    if url.startswith(("http://", "https://")):
-        parsed = urlparse(url)
-        protocol = parsed.scheme
-        host = parsed.netloc
-    else:
-        protocol = "https"
-        host = url
+    protocol, host, resolved_site = parse_checkmk_url(
+        db_settings["url"],
+        site_name or db_settings.get("site"),
+    )
 
     return CheckMKConfig(
         host=host,
-        site=site_name or db_settings["site"],
+        site=resolved_site,
         username=db_settings["username"],
         password=db_settings["password"],
         protocol=protocol,
@@ -62,13 +58,54 @@ def get_checkmk_config(site_name: Optional[str] = None) -> CheckMKConfig:
     )
 
 
-def parse_url_str(url: str) -> tuple[str, str]:
-    """Return (protocol, host) from a URL string with or without a scheme."""
-    raw = url.rstrip("/")
+def parse_checkmk_url(url: str, site: Optional[str] = None) -> tuple[str, str, str]:
+    """
+    Parse a CheckMK server URL into (protocol, host, site).
+
+    Accepts common forms:
+      - ``http://host:8080`` (site from ``site`` argument / CHECKMK_SITE)
+      - ``http://host:8080/cmk``
+      - ``http://host:8080/cmk/check_mk`` or full REST base through ``.../api/1.0``
+
+    ``host`` is hostname with optional port (no path). Site is the OMD site id (e.g. ``cmk``).
+    """
+    raw = (url or "").strip().rstrip("/")
+    if not raw:
+        return "https", "", (site or "").strip()
+
+    path_parts: list[str] = []
+
     if raw.startswith(("http://", "https://")):
         parsed = urlparse(raw)
-        return parsed.scheme, parsed.netloc
-    return "https", raw
+        protocol = parsed.scheme
+        host = parsed.netloc
+        path_parts = [p for p in parsed.path.split("/") if p]
+    elif "/" in raw:
+        host, remainder = raw.split("/", 1)
+        protocol = "https"
+        path_parts = [p for p in remainder.split("/") if p]
+    else:
+        return "https", raw, (site or "").strip()
+
+    while path_parts and path_parts[-1] in ("1.0", "api"):
+        path_parts.pop()
+    if path_parts and path_parts[-1] == "check_mk":
+        path_parts.pop()
+
+    derived_site = path_parts[0] if path_parts else ""
+    resolved_site = derived_site or (site or "").strip()
+    return protocol, host, resolved_site
+
+
+def parse_url_str(url: str) -> tuple[str, str]:
+    """Return (protocol, host) from a URL string with or without a scheme."""
+    protocol, host, _site = parse_checkmk_url(url)
+    return protocol, host
+
+
+def checkmk_api_base_url(protocol: str, host: str, site: str) -> str:
+    """REST API base URL Cockpit uses for CheckMK (for diagnostics)."""
+    return f"{protocol}://{host}/{site}/check_mk/api/1.0"
 
 
 def slash_to_tilde(path: str) -> str:

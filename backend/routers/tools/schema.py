@@ -14,9 +14,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from core.auth import verify_token
 from core.safe_http_errors import raise_internal_server_error
 from core.schema_manager import SchemaManager
-from models.tools import CreateBaselineRequest, CreateBaselineResponse
+from models.tools import (
+    BaselineProfileSummary,
+    CreateBaselineRequest,
+    CreateBaselineResponse,
+    ImportBaselineRequest,
+)
 from services.network.tools.baseline import TestBaselineService
 from services.network.tools.baseline_generator import generate_baseline_file
+from services.network.tools.baseline_profiles import list_profiles, load_profile
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +108,28 @@ async def seed_rbac(remove_existing: bool = False) -> Dict[str, Any]:
         raise_internal_server_error(logger, "Failed to seed RBAC system", e)
 
 
+@router.get(
+    "/baseline-profiles",
+    dependencies=[Depends(verify_token)],
+    response_model=list[BaselineProfileSummary],
+)
+async def get_baseline_profiles() -> list[BaselineProfileSummary]:
+    """List available baseline generation profiles (e.g. pytest, demo)."""
+    return list_profiles()
+
+
+@router.get(
+    "/baseline-profiles/{profile_id}",
+    dependencies=[Depends(verify_token)],
+)
+async def get_baseline_profile(profile_id: str) -> Dict[str, Any]:
+    """Return full profile JSON for UI form prefill."""
+    try:
+        return load_profile(profile_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.post(
     "/create-baseline",
     dependencies=[Depends(verify_token)],
@@ -124,11 +152,13 @@ async def create_baseline_yaml(body: CreateBaselineRequest) -> CreateBaselineRes
 
 
 @router.post("/tests-baseline", dependencies=[Depends(verify_token)])
-async def create_tests_baseline() -> Dict[str, Any]:
+async def create_tests_baseline(
+    body: ImportBaselineRequest | None = None,
+) -> Dict[str, Any]:
     """
     Create test baseline data in Nautobot from YAML configuration files.
 
-    Reads all YAML files from ./contributing-data/checkmk/tests_baseline/ and creates:
+    Reads all YAML files from contributing-data/tests_baseline/ (or BASELINE_DIR) and creates:
     - Location types
     - Locations
     - Roles
@@ -143,7 +173,8 @@ async def create_tests_baseline() -> Dict[str, Any]:
     """
     try:
         service = TestBaselineService()
-        result = await service.create_baseline()
+        directory = body.directory if body else None
+        result = await service.create_baseline(directory=directory)
 
         if not result.get("success"):
             logger.error("Test baseline creation failed: %s", result.get("message"))

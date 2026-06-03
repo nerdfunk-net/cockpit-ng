@@ -74,8 +74,8 @@ async def baseline_device_ids(real_nautobot_service):
     Get IDs for baseline test devices that we'll modify and restore.
 
     We'll use:
-    - lab-100: Last network device (City B, Staging)
-    - server-20: Last server device (City B, Staging)
+    - lab-100: Network device in Another City C (Staging, Active)
+    - server-20: Server device in City B (Production, Offline)
     """
     device_ids = {}
 

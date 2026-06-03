@@ -1,6 +1,8 @@
 # Repository PostgreSQL integration tests
 
-These tests use **`TEST_DATABASE_URL`** (SQLAlchemy URL, typically `postgresql+psycopg2://…`).
+These tests use **`TEST_DATABASE_URL`** (SQLAlchemy URL, typically `postgresql+psycopg2://…`). You can set it in **`backend/.env.test`** (or export it); if omitted, pytest derives it from `COCKPIT_DATABASE_*` in the same file.
+
+Full setup: **[`tests/README.md` — Test environment file](../../README.md#test-environment-file-backendenvtest)** then **[Setting up dependencies](../../README.md#setting-up-dependencies)**.
 
 ## Requirements
 

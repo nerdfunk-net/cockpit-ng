@@ -55,6 +55,10 @@ class DistributionConfig(BaseModel):
         return self
 
 
+class ImportBaselineRequest(BaseModel):
+    directory: Optional[str] = None
+
+
 class CreateBaselineRequest(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     prefixes: str = Field(
@@ -73,6 +77,18 @@ class CreateBaselineRequest(BaseModel):
     number_of_clusters: int = Field(ge=0, default=1)
     distribution: Optional[DistributionConfig] = None
 
+    profile: Optional[str] = None
+    layout: Literal["default", "pytest_legacy"] = "default"
+    naming_scheme: Literal["ip", "sequential"] = "ip"
+    network_device_prefix: str = "lab"
+    network_device_index_width: int = Field(ge=1, default=3)
+    server_device_prefix: str = "server"
+    server_device_index_width: int = Field(ge=1, default=2)
+    tag_quotas: Optional[dict[str, int]] = None
+    status_quotas: Optional[dict[str, int]] = None
+    metadata_mode: Literal["generated", "golden_parity"] = "generated"
+    golden_reference_path: Optional[str] = None
+
     @field_validator("name")
     @classmethod
     def validate_name(cls, value: str) -> str:
@@ -89,6 +105,45 @@ class CreateBaselineRequest(BaseModel):
             )
         return self
 
+    @model_validator(mode="after")
+    def validate_pytest_layout(self) -> CreateBaselineRequest:
+        if self.metadata_mode == "golden_parity" and not self.golden_reference_path:
+            raise ValueError(
+                "golden_reference_path is required when metadata_mode is golden_parity"
+            )
+        if self.metadata_mode != "golden_parity" and self.golden_reference_path:
+            raise ValueError(
+                "golden_reference_path is only allowed when metadata_mode is golden_parity"
+            )
+
+        total_devices = self.number_of_network_devices + self.number_of_servers
+        if self.tag_quotas is not None:
+            tag_sum = sum(self.tag_quotas.values())
+            if tag_sum != total_devices:
+                raise ValueError(
+                    f"tag_quotas must sum to {total_devices}, got {tag_sum}"
+                )
+        if self.status_quotas is not None:
+            status_sum = sum(self.status_quotas.values())
+            if status_sum != total_devices:
+                raise ValueError(
+                    f"status_quotas must sum to {total_devices}, got {status_sum}"
+                )
+
+        if self.layout != "pytest_legacy":
+            return self
+
+        if self.number_of_locations != 6:
+            raise ValueError(
+                "pytest_legacy layout requires number_of_locations == 6"
+            )
+        dist = self.distribution
+        if not dist or dist.mode != "manual":
+            raise ValueError(
+                "pytest_legacy layout requires distribution.mode == manual"
+            )
+        return self
+
 
 class BaselineStats(BaseModel):
     total_devices: int
@@ -101,6 +156,12 @@ class BaselineStats(BaseModel):
     statuses: dict[str, int] = Field(default_factory=dict)
 
 
+class BaselineProfileSummary(BaseModel):
+    id: str
+    label: str
+    description: str
+
+
 class CreateBaselineResponse(BaseModel):
     success: bool = True
     message: str
@@ -108,3 +169,5 @@ class CreateBaselineResponse(BaseModel):
     filename: str
     stats: BaselineStats
     distribution: dict[str, int] = Field(default_factory=dict)
+    profile: Optional[str] = None
+    warnings: list[str] = Field(default_factory=list)

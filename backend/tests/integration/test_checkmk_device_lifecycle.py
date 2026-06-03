@@ -1,31 +1,22 @@
 """
 Integration tests for CheckMK device lifecycle: Create → Compare → Sync → Delete.
 
-These tests create real devices in CheckMK, test comparison and sync operations,
-and clean up afterward. This provides end-to-end integration testing.
+Prerequisites: ``backend/.env.test`` with CheckMK (and Nautobot for compare tests).
+See ``.env.test.example``.
 
-Prerequisites:
-1. CheckMK instance running and configured in settings
-2. Nautobot instance running with baseline data loaded
-3. Backend server running with CheckMK settings configured
-
-Run with:
-    pytest tests/integration/test_checkmk_device_lifecycle.py -v
+Run:
+    pytest tests/integration/test_checkmk_device_lifecycle.py -v -m "integration and checkmk"
 """
-
-from urllib.parse import urlparse
 
 import pytest
 
-import service_factory as _sf
-from services.checkmk.client import CheckMKAPIError, CheckMKClient
+from services.checkmk.base import CheckMKClientFactory, checkmk_api_base_url, get_checkmk_config
+from services.checkmk.client import CheckMKAPIError
 from services.checkmk.config import ConfigService
 from services.checkmk.sync.base import NautobotToCheckMKService
 from services.settings.manager import SettingsManager as _SM
 
 settings_manager = _SM()
-
-nautobot_service = _sf.build_nautobot_service()
 
 # Suppress InsecureRequestWarning for self-signed certificates in test environment
 # This is expected when testing against CheckMK instances with self-signed certificates
@@ -39,34 +30,18 @@ pytestmark = pytest.mark.filterwarnings(
 # =============================================================================
 
 
+@pytest.fixture(scope="class")
+def nautobot_service(real_nautobot_service):
+    return real_nautobot_service
+
+
 @pytest.fixture(scope="module")
 def checkmk_client():
-    """Create CheckMK client for tests."""
-    db_settings = settings_manager.get_checkmk_settings()
-    if not db_settings or not all(
-        key in db_settings for key in ["url", "site", "username", "password"]
-    ):
-        pytest.skip("CheckMK settings not configured")
-
-    # Parse URL
-    url = db_settings["url"].rstrip("/")
-    if url.startswith(("http://", "https://")):
-        parsed_url = urlparse(url)
-        protocol = parsed_url.scheme
-        host = parsed_url.netloc
-    else:
-        protocol = "https"
-        host = url
-
-    return CheckMKClient(
-        host=host,
-        site_name=db_settings["site"],
-        username=db_settings["username"],
-        password=db_settings["password"],
-        protocol=protocol,
-        verify_ssl=db_settings.get("verify_ssl", True),
-        timeout=30,
-    )
+    """Create CheckMK client from ``.env.test`` (via SettingsManager test env)."""
+    try:
+        return CheckMKClientFactory.build_client_from_settings()
+    except Exception as exc:
+        pytest.skip(f"CheckMK not configured: {exc}")
 
 
 @pytest.fixture(scope="module")
@@ -153,29 +128,12 @@ class TestCheckMKDeviceLifecycle:
         if cls.created_devices:
             print(f"\n🧹 Cleaning up {len(cls.created_devices)} test devices...")
 
-            db_settings = settings_manager.get_checkmk_settings()
-            if db_settings and all(
-                key in db_settings for key in ["url", "site", "username", "password"]
-            ):
-                url = db_settings["url"].rstrip("/")
-                if url.startswith(("http://", "https://")):
-                    parsed_url = urlparse(url)
-                    protocol = parsed_url.scheme
-                    host = parsed_url.netloc
-                else:
-                    protocol = "https"
-                    host = url
+            try:
+                client = CheckMKClientFactory.build_client_from_settings()
+            except Exception:
+                client = None
 
-                client = CheckMKClient(
-                    host=host,
-                    site_name=db_settings["site"],
-                    username=db_settings["username"],
-                    password=db_settings["password"],
-                    protocol=protocol,
-                    verify_ssl=db_settings.get("verify_ssl", True),
-                    timeout=30,
-                )
-
+            if client is not None:
                 for hostname in cls.created_devices:
                     try:
                         client.delete_host(hostname)
@@ -276,7 +234,10 @@ class TestCheckMKDeviceLifecycle:
     # =========================================================================
 
     @pytest.mark.asyncio
-    async def test_03_compare_baseline_device_with_checkmk(self, nb2cmk_service):
+    @pytest.mark.nautobot
+    async def test_03_compare_baseline_device_with_checkmk(
+        self, nb2cmk_service, nautobot_service
+    ):
         """
         Test comparing a baseline device with CheckMK.
 
@@ -645,10 +606,13 @@ class TestCheckMKConnectionPrerequisites:
 
     def test_checkmk_connection(self, checkmk_client):
         """Test that CheckMK is accessible."""
+        cfg = get_checkmk_config()
+        api_base = checkmk_api_base_url(cfg.protocol, cfg.host, cfg.site)
         try:
             version_info = checkmk_client.get_version()
             print("\n✅ CheckMK is accessible")
+            print(f"  API base: {api_base}")
             print(f"  Version: {version_info.get('version', 'unknown')}")
             print(f"  Edition: {version_info.get('edition', 'unknown')}")
         except Exception as e:
-            pytest.fail(f"❌ CheckMK not accessible: {e}")
+            pytest.fail(f"❌ CheckMK not accessible at {api_base}: {e}")

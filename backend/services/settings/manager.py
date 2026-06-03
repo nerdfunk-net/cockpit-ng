@@ -59,6 +59,11 @@ class SettingsManager:
     # --- Nautobot ---
 
     def get_nautobot_settings(self) -> Dict[str, Any]:
+        from test_runtime_config import nautobot_settings_from_env
+
+        env_settings = nautobot_settings_from_env()
+        if env_settings:
+            return env_settings
         return self._nautobot.get()
 
     def update_nautobot_settings(self, settings: Dict[str, Any]) -> bool:
@@ -93,6 +98,11 @@ class SettingsManager:
     # --- CheckMK ---
 
     def get_checkmk_settings(self) -> Dict[str, Any]:
+        from test_runtime_config import checkmk_settings_from_env
+
+        env_settings = checkmk_settings_from_env()
+        if env_settings:
+            return env_settings
         return self._checkmk.get()
 
     def update_checkmk_settings(self, settings: Dict[str, Any]) -> bool:

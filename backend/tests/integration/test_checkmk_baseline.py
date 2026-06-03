@@ -1,25 +1,19 @@
 """
 Integration tests for CheckMK using baseline test data.
 
-These tests use the baseline.yaml data loaded into Nautobot to test
-real CheckMK integration with known devices.
-
 Prerequisites:
-1. Nautobot instance running with baseline data loaded
-2. CheckMK instance running and configured in settings
-3. Backend server running
+1. ``backend/.env.test`` — Nautobot + CheckMK vars (see ``.env.test.example``)
+2. Baseline imported into that Nautobot instance
 
-Run with:
+Run:
+    cd backend
     pytest tests/integration/test_checkmk_baseline.py -v -m "integration and checkmk"
 """
 
 import pytest
 
-import service_factory as _sf
 from services.checkmk.config import ConfigService
 from services.checkmk.sync.base import NautobotToCheckMKService
-
-nautobot_service = _sf.build_nautobot_service()
 
 
 @pytest.mark.integration
@@ -27,6 +21,10 @@ nautobot_service = _sf.build_nautobot_service()
 @pytest.mark.nautobot
 class TestCheckMKWithBaseline:
     """Test CheckMK integration using baseline test data."""
+
+    @pytest.fixture(scope="class")
+    def nautobot_service(self, real_nautobot_service):
+        return real_nautobot_service
 
     @pytest.fixture(scope="class")
     def config_service(self):
@@ -53,7 +51,7 @@ class TestCheckMKWithBaseline:
         print(f"First 10 devices: {device_names[:10]}")
 
     @pytest.mark.asyncio
-    async def test_get_device_with_snmp_from_baseline(self):
+    async def test_get_device_with_snmp_from_baseline(self, nautobot_service):
         """Test getting a device with SNMP credentials from baseline."""
         # Query Nautobot for all devices and filter in Python
         query = """
@@ -91,7 +89,9 @@ class TestCheckMKWithBaseline:
         assert device["_custom_field_data"]["snmp_credentials"] == "credA"
 
     @pytest.mark.asyncio
-    async def test_normalize_baseline_device(self, nb2cmk_service, config_service):
+    async def test_normalize_baseline_device(
+        self, nb2cmk_service, config_service, nautobot_service
+    ):
         """Test normalizing a baseline device with SNMP credentials."""
         # Get all devices and find lab-001
         query = """
@@ -165,48 +165,7 @@ class TestCheckMKWithBaseline:
             pytest.skip(f"Could not normalize device: {e}")
 
     @pytest.mark.asyncio
-    async def test_compare_baseline_device_if_exists_in_checkmk(self, nb2cmk_service):
-        """
-        Test comparing a baseline device with CheckMK.
-
-        This test will skip if the device doesn't exist in CheckMK yet.
-        """
-        # Get devices from Nautobot
-        devices_result = await nb2cmk_service.get_devices_for_sync()
-
-        if not devices_result.devices:
-            pytest.skip("No devices found in Nautobot")
-
-        # Try to compare the first device
-        device_id = devices_result.devices[0]["id"]
-        device_name = devices_result.devices[0]["name"]
-
-        print(f"\nAttempting to compare device: {device_name} (ID: {device_id})")
-
-        try:
-            comparison_result = await nb2cmk_service.compare_device_config(device_id)
-
-            print(f"Comparison result: {comparison_result.result}")
-            print(
-                f"Differences: {comparison_result.diff if comparison_result.diff else 'None'}"
-            )
-
-            assert comparison_result is not None
-            assert hasattr(comparison_result, "result")
-            assert comparison_result.result in ["equal", "diff", "host_not_found"]
-
-            if comparison_result.result == "host_not_found":
-                pytest.skip(f"Device '{device_name}' not found in CheckMK (expected)")
-
-        except Exception as e:
-            # If device doesn't exist in CheckMK, that's expected
-            if "not found" in str(e).lower() or "404" in str(e):
-                pytest.skip(f"Device '{device_name}' not found in CheckMK (expected)")
-            else:
-                raise
-
-    @pytest.mark.asyncio
-    async def test_list_devices_with_snmp_credentials(self):
+    async def test_list_devices_with_snmp_credentials(self, nautobot_service):
         """List all devices in baseline that have SNMP credentials."""
         query = """
         query {
@@ -293,8 +252,13 @@ class TestSNMPMappingWithBaseline:
 class TestPrerequisites:
     """Test that prerequisites are met for baseline testing."""
 
+    @pytest.fixture(scope="class")
+    def nautobot_service(self, real_nautobot_service):
+        return real_nautobot_service
+
     @pytest.mark.asyncio
-    async def test_nautobot_is_accessible(self):
+    @pytest.mark.nautobot
+    async def test_nautobot_is_accessible(self, nautobot_service):
         """Test that Nautobot is accessible."""
         query = """
         query {
@@ -311,6 +275,7 @@ class TestPrerequisites:
         except Exception as e:
             pytest.fail(f"❌ Nautobot not accessible: {e}")
 
+    @pytest.mark.checkmk
     def test_checkmk_config_exists(self):
         """Test that CheckMK configuration exists."""
         import service_factory

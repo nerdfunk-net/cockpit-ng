@@ -63,10 +63,10 @@ def _truncate_client_data_tables(postgres_engine_client_data):
 @pytest.fixture
 def client_data_repository_pg(postgres_engine_client_data, monkeypatch):
     """``ClientDataRepository`` using a session factory bound to the test engine."""
-    from repositories import client_data_repository as mod
+    import core.database as db_mod
 
     make_session = sessionmaker(bind=postgres_engine_client_data)
-    monkeypatch.setattr(mod, "get_db_session", lambda: make_session())
+    monkeypatch.setattr(db_mod, "get_db_session", lambda: make_session())
     from repositories.client_data.client_data_repository import ClientDataRepository
 
     return ClientDataRepository()

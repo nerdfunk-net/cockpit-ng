@@ -29,7 +29,13 @@ Architecture:
 
 import pytest
 
+from tests.fixtures.baseline_inventory_filter_cases import BASELINE_FILTER_TREES
+from tests.fixtures.baseline_manifest import BaselineManifest
 from utils.inventory_converter import tree_to_operations
+
+
+def _filter_tree(filter_id: str) -> dict:
+    return BASELINE_FILTER_TREES[filter_id]
 
 # =============================================================================
 # Integration Tests - Basic Filtering with Baseline Data
@@ -42,36 +48,23 @@ class TestBaselineBasicFiltering:
     """Test basic filtering with real baseline data using tree structure."""
 
     @pytest.mark.asyncio
-    async def test_filter_by_location_city_a(self, real_ansible_inventory_service):
+    async def test_filter_by_location_city_a(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test filtering by City A location using tree structure.
 
         Expected: 21 devices in City A
         """
-        # Build tree structure (version 2)
-        tree = {
-            "type": "root",
-            "internalLogic": "AND",
-            "items": [
-                {
-                    "id": "1",
-                    "field": "location",
-                    "operator": "equals",
-                    "value": "City A",
-                }
-            ],
-        }
-
-        # Convert tree to operations
+        tree = _filter_tree("filter_by_location_city_a")
         operations = tree_to_operations(tree)
 
         devices, count = await real_ansible_inventory_service.preview_inventory(
             operations
         )
 
-        # Should find devices in City A
-        assert len(devices) == 21, (
-            f"Expected 21 devices in City A, found {len(devices)}"
+        baseline_manifest.assert_device_count(
+            devices, "filter_by_location_city_a", label="City A"
         )
 
         # All devices should be in City A
@@ -81,7 +74,9 @@ class TestBaselineBasicFiltering:
             )
 
     @pytest.mark.asyncio
-    async def test_filter_by_role_network(self, real_ansible_inventory_service):
+    async def test_filter_by_role_network(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test filtering by Network role using tree structure.
 
@@ -106,16 +101,16 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert len(devices) == 100, (
-            f"Expected 100 network devices, found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "filter_by_role_network")
 
         # All should have Network role
         for device in devices:
             assert device.role == "Network"
 
     @pytest.mark.asyncio
-    async def test_filter_by_role_server(self, real_ansible_inventory_service):
+    async def test_filter_by_role_server(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test filtering by server role using tree structure.
 
@@ -140,13 +135,15 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert len(devices) == 20, f"Expected 20 server devices, found {len(devices)}"
+        baseline_manifest.assert_device_count(devices, "filter_by_role_server")
 
         for device in devices:
             assert device.role == "server"
 
     @pytest.mark.asyncio
-    async def test_filter_by_platform_cisco_ios(self, real_ansible_inventory_service):
+    async def test_filter_by_platform_cisco_ios(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test filtering by Cisco IOS platform using tree structure.
 
@@ -171,15 +168,15 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert len(devices) == 100, (
-            f"Expected 100 Cisco IOS devices, found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "filter_by_platform_cisco_ios")
 
         for device in devices:
             assert device.platform == "Cisco IOS"
 
     @pytest.mark.asyncio
-    async def test_filter_by_tag_production(self, real_ansible_inventory_service):
+    async def test_filter_by_tag_production(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test filtering by Production tag using tree structure.
 
@@ -204,15 +201,15 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert len(devices) == 39, (
-            f"Expected 39 Production devices, found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "filter_by_tag_production")
 
         for device in devices:
             assert "Production" in device.tags
 
     @pytest.mark.asyncio
-    async def test_filter_by_tag_staging(self, real_ansible_inventory_service):
+    async def test_filter_by_tag_staging(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test filtering by Staging tag using tree structure.
 
@@ -237,13 +234,15 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert len(devices) == 52, f"Expected 52 Staging devices, found {len(devices)}"
+        baseline_manifest.assert_device_count(devices, "filter_by_tag_staging")
 
         for device in devices:
             assert "Staging" in device.tags
 
     @pytest.mark.asyncio
-    async def test_filter_by_tag_lab(self, real_ansible_inventory_service):
+    async def test_filter_by_tag_lab(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test filtering by lab tag using tree structure.
 
@@ -263,13 +262,15 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert len(devices) == 29, f"Expected 29 lab devices, found {len(devices)}"
+        baseline_manifest.assert_device_count(devices, "filter_by_tag_lab")
 
         for device in devices:
             assert "lab" in device.tags
 
     @pytest.mark.asyncio
-    async def test_filter_by_status_active(self, real_ansible_inventory_service):
+    async def test_filter_by_status_active(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test filtering by Active status using tree structure.
 
@@ -289,13 +290,15 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert len(devices) == 66, f"Expected 66 Active devices, found {len(devices)}"
+        baseline_manifest.assert_device_count(devices, "filter_by_status_active")
 
         for device in devices:
             assert device.status == "Active"
 
     @pytest.mark.asyncio
-    async def test_filter_by_status_offline(self, real_ansible_inventory_service):
+    async def test_filter_by_status_offline(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test filtering by Offline status using tree structure.
 
@@ -320,13 +323,15 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert len(devices) == 54, f"Expected 54 Offline devices, found {len(devices)}"
+        baseline_manifest.assert_device_count(devices, "filter_by_status_offline")
 
         for device in devices:
             assert device.status == "Offline"
 
     @pytest.mark.asyncio
-    async def test_filter_by_location_state_a(self, real_ansible_inventory_service):
+    async def test_filter_by_location_state_a(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test filtering by State A location using tree structure.
 
@@ -351,9 +356,7 @@ class TestBaselineBasicFiltering:
             operations
         )
 
-        assert len(devices) == 39, (
-            f"Expected 39 devices in State A, found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "filter_by_location_state_a")
 
         for device in devices:
             assert device.location == "City A" or device.location == "Another City A"
@@ -460,7 +463,9 @@ class TestBaselineOrLogic:
     """Test conditions with OR logic using nested groups."""
 
     @pytest.mark.asyncio
-    async def test_filter_multiple_operations_or(self, real_ansible_inventory_service):
+    async def test_filter_multiple_operations_or(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test OR logic using tree structure with nested group.
 
@@ -499,9 +504,8 @@ class TestBaselineOrLogic:
             operations
         )
 
-        # Should find devices in either City A or City B
-        assert len(devices) == 41, (
-            f"Expected 41 devices (City A + City B), found {len(devices)}"
+        baseline_manifest.assert_device_count(
+            devices, "filter_multiple_operations_or"
         )
 
         # All devices should be in City A or City B
@@ -509,7 +513,9 @@ class TestBaselineOrLogic:
             assert device.location in ["City A", "City B"]
 
     @pytest.mark.asyncio
-    async def test_filter_three_locations_or(self, real_ansible_inventory_service):
+    async def test_filter_three_locations_or(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test OR logic with three locations using tree structure.
 
@@ -554,9 +560,7 @@ class TestBaselineOrLogic:
             operations
         )
 
-        assert len(devices) == 57, (
-            f"Expected 57 devices (all locations), found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "filter_three_locations_or")
 
     @pytest.mark.asyncio
     async def test_filter_complex_or_logic(self, real_ansible_inventory_service):
@@ -647,7 +651,9 @@ class TestBaselineOperators:
     """Test various operators with tree structure."""
 
     @pytest.mark.asyncio
-    async def test_filter_not_equals_operator(self, real_ansible_inventory_service):
+    async def test_filter_not_equals_operator(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test not_equals operator using tree structure.
 
@@ -673,10 +679,7 @@ class TestBaselineOperators:
             operations
         )
 
-        # Should find all devices NOT in City A
-        assert len(devices) == 99, (
-            f"Expected 99 devices not in City A, found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "filter_not_equals_operator")
 
         # None should be in City A
         for device in devices:
@@ -684,7 +687,7 @@ class TestBaselineOperators:
 
     @pytest.mark.asyncio
     async def test_filter_using_equals_and_not_equals_operator(
-        self, real_ansible_inventory_service
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
     ):
         """
         Test equals and not_equals operator using tree structure.
@@ -717,17 +720,17 @@ class TestBaselineOperators:
             operations
         )
 
-        # Should find all devices in State A except Another City A
-        assert len(devices) == 21, (
-            f"Expected 21 devices not in Another City A, found {len(devices)}"
+        baseline_manifest.assert_device_count(
+            devices, "filter_using_equals_and_not_equals_operator"
         )
 
-        # None should be in City A
         for device in devices:
             assert device.location == "City A"
 
     @pytest.mark.asyncio
-    async def test_filter_contains_operator(self, real_ansible_inventory_service):
+    async def test_filter_contains_operator(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test contains operator using tree structure.
 
@@ -748,17 +751,16 @@ class TestBaselineOperators:
             operations
         )
 
-        # Should find devices with "lab-0" in name (lab-001 to lab-099)
-        assert len(devices) == 99, (
-            f"Expected 99 devices with 'lab-0' in name, found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "filter_contains_operator")
 
         # All should contain "lab-0"
         for device in devices:
             assert "lab-0" in device.name
 
     @pytest.mark.asyncio
-    async def test_filter_not_contains_operator(self, real_ansible_inventory_service):
+    async def test_filter_not_contains_operator(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test not_contains operator using tree structure.
 
@@ -784,15 +786,15 @@ class TestBaselineOperators:
             operations
         )
 
-        assert len(devices) == 100, (
-            f"Expected 100 devices without 'server' in name, found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "filter_not_contains_operator")
 
         for device in devices:
             assert "server" not in device.name
 
     @pytest.mark.asyncio
-    async def test_filter_tag_not_equals_operator(self, real_ansible_inventory_service):
+    async def test_filter_tag_not_equals_operator(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test tag field with not_equals operator combined with location filter.
 
@@ -828,10 +830,7 @@ class TestBaselineOperators:
             operations
         )
 
-        # Should find exactly 9 devices in City A without Staging tag
-        assert len(devices) == 9, (
-            f"Expected 9 devices in City A without Staging tag, found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "filter_tag_not_equals_operator")
 
         # Verify all devices are in City A
         for device in devices:
@@ -857,7 +856,9 @@ class TestBaselineNotLogic:
     """Test NOT operator with nested groups."""
 
     @pytest.mark.asyncio
-    async def test_not_operator_simple(self, real_ansible_inventory_service):
+    async def test_not_operator_simple(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test simple NOT operator: State A NOT City A.
 
@@ -903,10 +904,7 @@ class TestBaselineNotLogic:
             operations
         )
 
-        # Should find devices in State A that are NOT in City A
-        assert len(devices) == 18, (
-            f"Expected 18 devices (State A - City A), found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "not_operator_simple")
 
         # All devices should be in State A but not City A
         for device in devices:
@@ -915,7 +913,7 @@ class TestBaselineNotLogic:
 
     @pytest.mark.asyncio
     async def test_not_operator_multiple_exclusions(
-        self, real_ansible_inventory_service
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
     ):
         """
         Test NOT operator with multiple exclusions: State A NOT (City A OR Another City A).
@@ -968,9 +966,8 @@ class TestBaselineNotLogic:
             operations
         )
 
-        # Should return 0 devices since all State A devices are in City A or Another City A
-        assert len(devices) == 0, (
-            f"Expected 0 devices (State A contains only City A and Another City A), found {len(devices)}"
+        baseline_manifest.assert_device_count(
+            devices, "not_operator_multiple_exclusions"
         )
 
     @pytest.mark.asyncio
@@ -1097,7 +1094,9 @@ class TestBaselineNotLogic:
             assert device.location in ["State A", "Another City A"]
 
     @pytest.mark.asyncio
-    async def test_location_not_equals_operator(self, real_ansible_inventory_service):
+    async def test_location_not_equals_operator(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test location field with not_equals operator.
 
@@ -1123,10 +1122,7 @@ class TestBaselineNotLogic:
             operations
         )
 
-        # City A has 21 devices, so we should get 120 - 21 = 99 devices
-        assert len(devices) == 99, (
-            f"Expected 99 devices (all except City A), found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "location_not_equals_operator")
 
         # Verify no device is from City A
         for device in devices:
@@ -1136,7 +1132,7 @@ class TestBaselineNotLogic:
 
     @pytest.mark.asyncio
     async def test_complex_nested_not_with_role_and_status(
-        self, real_ansible_inventory_service
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
     ):
         """
         Test complex nested NOT logic with role and status filters.
@@ -1209,9 +1205,8 @@ class TestBaselineNotLogic:
             operations
         )
 
-        # Should find exactly 13 Active Network devices in City A (part of State A, excluding Another City A)
-        assert len(devices) == 13, (
-            f"Expected 13 Active Network devices in City A, found {len(devices)}"
+        baseline_manifest.assert_device_count(
+            devices, "complex_nested_not_with_role_and_status"
         )
 
         # Verify all devices meet the criteria
@@ -1231,7 +1226,7 @@ class TestBaselineNotLogic:
 
     @pytest.mark.asyncio
     async def test_not_equals_operator_with_role_and_status(
-        self, real_ansible_inventory_service
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
     ):
         """
         Test not_equals operator with role and status filters (alternative to nested NOT logic).
@@ -1290,9 +1285,8 @@ class TestBaselineNotLogic:
             operations
         )
 
-        # Should find exactly 13 Active Network devices in City A
-        assert len(devices) == 13, (
-            f"Expected 13 Active Network devices in City A, found {len(devices)}"
+        baseline_manifest.assert_device_count(
+            devices, "not_equals_operator_with_role_and_status"
         )
 
         # Verify all devices meet the criteria
@@ -1398,7 +1392,9 @@ class TestBaselineEmptyFilters:
     """Test empty or no filter conditions."""
 
     @pytest.mark.asyncio
-    async def test_empty_filter_returns_all(self, real_ansible_inventory_service):
+    async def test_empty_filter_returns_all(
+        self, real_ansible_inventory_service, baseline_manifest: BaselineManifest
+    ):
         """
         Test that an empty filter returns all devices.
 
@@ -1413,7 +1409,4 @@ class TestBaselineEmptyFilters:
             operations
         )
 
-        # Should return all devices
-        assert len(devices) == 120, (
-            f"Expected 120 devices with empty filter, found {len(devices)}"
-        )
+        baseline_manifest.assert_device_count(devices, "empty_filter_returns_all")

@@ -1,4 +1,9 @@
-import type { CreateBaselineRequest, DistributionConfig } from './types'
+import type {
+  BaselineProfileDetail,
+  CreateBaselineRequest,
+  DistributionConfig,
+} from './types'
+import type { TestsBaselineFormValues } from './tests-baseline-schema'
 
 export const DEFAULT_DISTRIBUTION: DistributionConfig = {
   mode: 'even',
@@ -44,4 +49,41 @@ export function buildManualDistributionRows(
     server: 0,
     vm: 0,
   }))
+}
+
+export function profileRequestToFormValues(
+  profile: BaselineProfileDetail
+): TestsBaselineFormValues {
+  const request = profile.request as CreateBaselineRequest & {
+    distribution?: DistributionConfig
+  }
+  const distribution = request.distribution
+  const locationCount = request.number_of_locations ?? 3
+
+  return {
+    profile: profile.id,
+    name: request.name ?? 'baseline',
+    prefixes: request.prefixes ?? DEFAULT_FORM_VALUES.prefixes,
+    network_device_role:
+      request.network_device_role ?? DEFAULT_FORM_VALUES.network_device_role,
+    server_role: request.server_role ?? DEFAULT_FORM_VALUES.server_role,
+    vm_role: request.vm_role ?? DEFAULT_FORM_VALUES.vm_role,
+    tags: request.tags ?? DEFAULT_FORM_VALUES.tags,
+    custom_fields: request.custom_fields ?? '',
+    location_hierarchy:
+      request.location_hierarchy ?? DEFAULT_FORM_VALUES.location_hierarchy,
+    number_of_locations: locationCount,
+    number_of_network_devices:
+      request.number_of_network_devices ??
+      DEFAULT_FORM_VALUES.number_of_network_devices,
+    number_of_servers:
+      request.number_of_servers ?? DEFAULT_FORM_VALUES.number_of_servers,
+    number_of_virtual_machines:
+      request.number_of_virtual_machines ?? 0,
+    number_of_clusters: request.number_of_clusters ?? 0,
+    distribution_mode: distribution?.mode ?? 'even',
+    distribution_seed: distribution?.seed ?? 42,
+    manual_distribution:
+      distribution?.by_location ?? buildManualDistributionRows(locationCount),
+  }
 }

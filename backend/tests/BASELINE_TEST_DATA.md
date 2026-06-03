@@ -1,6 +1,6 @@
 # Baseline Test Data for Integration Tests
 
-This document describes the test data available in your Nautobot instance loaded from `contributing-data/tests_baseline/baseline.yaml`.
+This document describes the test data available in your Nautobot instance loaded from `contributing-data/tests_baseline/baseline.yaml` (the same file as `backend/tests/baseline.yaml` via symlink). Regenerate with the **Pytest** profile; see `doc/PYTEST_BASELINE.md` and `backend/tests/QUICK_START_INTEGRATION_TESTS.md`.
 
 ## Test Data Summary
 

@@ -281,13 +281,12 @@ pytest tests/integration/test_checkmk_device_lifecycle.py::TestCheckMKConnection
 4. ℹ️ **Note**: Creates and deletes `testdevice` and `192.168.180.0/24` prefix during each test
 
 ### For Integration Tests (`test_checkmk_baseline.py`):
-1. ✅ Nautobot running with baseline data loaded
-2. ✅ CheckMK running and configured
-3. ✅ Backend `.env` configured with correct URLs
+1. ✅ `backend/.env.test` with `NAUTOBOT_*` and `CHECKMK_*` (copy from `.env.test.example`)
+2. ✅ Nautobot running with baseline data loaded (`contributing-data/tests_baseline/baseline.yaml`)
+3. ℹ️ [../README.md#checkmk-integration-tests-live-nautobot--checkmk](../README.md#checkmk-integration-tests-live-nautobot--checkmk)
 
 ### For Device Lifecycle Tests (`test_checkmk_device_lifecycle.py`):
-1. ✅ CheckMK running and configured in backend settings
-2. ✅ Backend `.env` configured with CheckMK connection details
+1. ✅ `backend/.env.test` with CheckMK variables configured
 3. ✅ CheckMK user has permissions to create/update/delete hosts
 4. ⚠️ **Note**: Creates and deletes real devices in CheckMK (with automatic cleanup)
 

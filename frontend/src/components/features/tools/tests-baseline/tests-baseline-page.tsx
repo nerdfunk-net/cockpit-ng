@@ -44,12 +44,18 @@ import { useToast } from '@/hooks/use-toast'
 import {
   buildManualDistributionRows,
   DEFAULT_FORM_VALUES,
+  profileRequestToFormValues,
 } from './constants'
 import {
   testsBaselineFormSchema,
   type TestsBaselineFormValues,
 } from './tests-baseline-schema'
-import type { CreateBaselineRequest, CreateBaselineResponse } from './types'
+import type {
+  BaselineProfileDetail,
+  BaselineProfileSummary,
+  CreateBaselineRequest,
+  CreateBaselineResponse,
+} from './types'
 import type { ChangeEvent, Ref } from 'react'
 
 function bindNumberInputField(
@@ -82,6 +88,7 @@ function sanitizeName(name: string): string {
 
 function formValuesToRequest(values: TestsBaselineFormValues): CreateBaselineRequest {
   const request: CreateBaselineRequest = {
+    profile: values.profile || undefined,
     name: sanitizeName(values.name) || 'baseline',
     prefixes: values.prefixes,
     network_device_role: values.network_device_role,
@@ -119,6 +126,8 @@ export function BaselineGenerateForm() {
   const [lastResult, setLastResult] = useState<CreateBaselineResponse | null>(
     null
   )
+  const [profiles, setProfiles] = useState<BaselineProfileSummary[]>([])
+  const [selectedProfile, setSelectedProfile] = useState<string>('custom')
 
   const defaultManualRows = useMemo(
     () => buildManualDistributionRows(DEFAULT_FORM_VALUES.number_of_locations),
@@ -129,11 +138,61 @@ export function BaselineGenerateForm() {
     resolver: zodResolver(testsBaselineFormSchema),
     defaultValues: {
       ...DEFAULT_FORM_VALUES,
+      profile: undefined,
       distribution_mode: 'even',
       distribution_seed: 42,
       manual_distribution: defaultManualRows,
     },
   })
+
+  useEffect(() => {
+    if (!token) return
+    void (async () => {
+      try {
+        const response = await fetch('/api/proxy/tools/baseline-profiles', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (response.ok) {
+          const data = (await response.json()) as BaselineProfileSummary[]
+          setProfiles(data)
+        }
+      } catch {
+        // Profiles are optional for the form
+      }
+    })()
+  }, [token])
+
+  const applyProfile = useCallback(
+    async (profileId: string) => {
+      if (profileId === 'custom') {
+        setSelectedProfile('custom')
+        form.reset({
+          ...DEFAULT_FORM_VALUES,
+          distribution_mode: 'even',
+          distribution_seed: 42,
+          manual_distribution: buildManualDistributionRows(
+            DEFAULT_FORM_VALUES.number_of_locations
+          ),
+        })
+        return
+      }
+      if (!token) return
+      const response = await fetch(
+        `/api/proxy/tools/baseline-profiles/${profileId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (!response.ok) {
+        throw new Error('Failed to load profile')
+      }
+      const profile = (await response.json()) as BaselineProfileDetail
+      setSelectedProfile(profileId)
+      form.reset(profileRequestToFormValues(profile))
+      if (profile.request.distribution) {
+        setShowDistribution(true)
+      }
+    },
+    [form, token]
+  )
 
   const locationCount = useWatch({
     control: form.control,
@@ -152,15 +211,36 @@ export function BaselineGenerateForm() {
   })
 
   useEffect(() => {
-    if (distributionMode === 'manual') {
-      form.setValue(
-        'manual_distribution',
-        buildManualDistributionRows(
-          locationCount ?? DEFAULT_FORM_VALUES.number_of_locations
-        )
-      )
-    }
+    if (distributionMode !== 'manual') return
+
+    const count = locationCount ?? DEFAULT_FORM_VALUES.number_of_locations
+    const current = form.getValues('manual_distribution')
+    // Only resize when location count changes — do not wipe profile rows (e.g. Pytest cities).
+    if (current.length === count) return
+
+    form.setValue('manual_distribution', buildManualDistributionRows(count))
   }, [locationCount, distributionMode, form])
+
+  const onInvalid = useCallback(
+    (errors: typeof form.formState.errors) => {
+      const firstMessage =
+        errors.manual_distribution?.message ??
+        errors.number_of_clusters?.message ??
+        errors.name?.message ??
+        'Please fix the highlighted fields before generating.'
+
+      if (errors.manual_distribution) {
+        setShowDistribution(true)
+      }
+
+      toast({
+        title: 'Cannot generate baseline',
+        description: firstMessage,
+        variant: 'destructive',
+      })
+    },
+    [toast]
+  )
 
   const onSubmit = useCallback(
     async (values: TestsBaselineFormValues) => {
@@ -192,9 +272,13 @@ export function BaselineGenerateForm() {
 
         const result = data as CreateBaselineResponse
         setLastResult(result)
+        const importHint =
+          result.profile === 'pytest'
+            ? 'Copy to contributing-data/tests_baseline/ then use Import below.'
+            : `Wrote ${result.filename}. Copy to contributing-data/tests_baseline/ then import below.`
         toast({
           title: 'Baseline YAML created',
-          description: `Wrote ${result.filename}. Copy to contributing-data/tests_baseline/ then import below.`,
+          description: importHint,
         })
       } catch (error) {
         toast({
@@ -213,7 +297,51 @@ export function BaselineGenerateForm() {
   return (
     <div className="space-y-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form
+            onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+            className="space-y-6"
+          >
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle>Profile</CardTitle>
+                <CardDescription>
+                  Use the Pytest profile for integration-test baseline data (120 devices,
+                  City A/B/C layout). Custom unlocks all fields.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="max-w-md space-y-2">
+                  <Label htmlFor="baseline-profile">Baseline profile</Label>
+                  <Select
+                    value={selectedProfile}
+                    onValueChange={value => {
+                      void applyProfile(value).catch(error => {
+                        toast({
+                          title: 'Error',
+                          description:
+                            error instanceof Error
+                              ? error.message
+                              : 'Failed to apply profile',
+                          variant: 'destructive',
+                        })
+                      })
+                    }}
+                  >
+                    <SelectTrigger id="baseline-profile">
+                      <SelectValue placeholder="Select profile" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="custom">Custom</SelectItem>
+                      {profiles.map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle>General</CardTitle>
@@ -611,9 +739,11 @@ export function BaselineGenerateForm() {
                         ))}
                       </TableBody>
                     </Table>
-                    <FormMessage>
-                      {form.formState.errors.manual_distribution?.message}
-                    </FormMessage>
+                    {form.formState.errors.manual_distribution?.message && (
+                      <p className="text-sm font-medium text-destructive">
+                        {form.formState.errors.manual_distribution.message}
+                      </p>
+                    )}
                   </div>
                 )}
                 </CardContent>

@@ -1,0 +1,59 @@
+{
+  "source": "/Users/mp/programming/cockpit-ng/contributing-data/tests_baseline/baseline.yaml",
+  "stats": {
+    "total_devices": 120,
+    "network_devices": 100,
+    "server_devices": 20,
+    "virtual_machines": 0,
+    "clusters": 0,
+    "locations": {
+      "Another City C": 25,
+      "City A": 21,
+      "Another City A": 18,
+      "City C": 16,
+      "City B": 20,
+      "Another City B": 20
+    },
+    "tags": {
+      "Production": 39,
+      "lab": 29,
+      "Staging": 52
+    },
+    "statuses": {
+      "Active": 66,
+      "Offline": 54
+    }
+  },
+  "filters": {
+    "filter_by_location_city_a": 21,
+    "filter_by_role_network": 100,
+    "filter_by_role_server": 20,
+    "filter_by_platform_cisco_ios": 100,
+    "filter_by_tag_production": 39,
+    "filter_by_tag_staging": 52,
+    "filter_by_tag_lab": 29,
+    "filter_by_status_active": 66,
+    "filter_by_status_offline": 54,
+    "filter_by_location_state_a": 39,
+    "filter_multiple_conditions_and": 5,
+    "filter_location_and_role": 19,
+    "filter_multiple_operations_or": 41,
+    "filter_three_locations_or": 57,
+    "filter_complex_or_logic": 50,
+    "filter_not_equals_operator": 99,
+    "filter_using_equals_and_not_equals_operator": 21,
+    "filter_contains_operator": 99,
+    "filter_not_contains_operator": 100,
+    "filter_tag_not_equals_operator": 9,
+    "not_operator_simple": 18,
+    "not_operator_multiple_exclusions": 0,
+    "not_operator_with_tag": 27,
+    "not_operator_complex": 7,
+    "location_not_equals_operator": 99,
+    "complex_nested_not_with_role_and_status": 13,
+    "not_equals_operator_with_role_and_status": 13,
+    "filter_by_custom_field_net": 40,
+    "filter_by_custom_field_checkmk_site": 42,
+    "empty_filter_returns_all": 120
+  }
+}

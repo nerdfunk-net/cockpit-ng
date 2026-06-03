@@ -3,6 +3,7 @@ Service for creating test baselines in Nautobot from YAML configuration files.
 """
 
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -142,18 +143,28 @@ class TestBaselineService:
         self.common = DeviceCommonService(nb)
 
     async def load_baseline_files(
-        self, directory: str = "../contributing-data/tests_baseline"
+        self, directory: str | None = None
     ) -> List[Dict[str, Any]]:
         """
         Load all YAML files from the baseline directory.
 
         Args:
-            directory: Path to directory containing baseline YAML files (relative to backend directory)
+            directory: Path to directory containing baseline YAML files (relative to
+                backend/ unless absolute). Defaults to BASELINE_DIR env or
+                ../contributing-data/tests_baseline.
 
         Returns:
             List of parsed YAML data dictionaries
         """
+        if directory is None:
+            directory = os.environ.get(
+                "BASELINE_DIR",
+                "../contributing-data/tests_baseline",
+            )
         baseline_dir = Path(directory)
+        if not baseline_dir.is_absolute():
+            backend_root = Path(__file__).resolve().parents[3]
+            baseline_dir = (backend_root / baseline_dir).resolve()
         if not baseline_dir.exists():
             raise FileNotFoundError(f"Baseline directory not found: {directory}")
 
@@ -1306,7 +1317,9 @@ class TestBaselineService:
 
         return created
 
-    async def create_baseline(self) -> Dict[str, Any]:
+    async def create_baseline(
+        self, directory: str | None = None
+    ) -> Dict[str, Any]:
         """
         Load baseline files and create all resources in Nautobot.
         Creates resources in the correct order to handle dependencies.
@@ -1316,7 +1329,7 @@ class TestBaselineService:
         """
         try:
             # Load all baseline files
-            baseline_data_list = await self.load_baseline_files()
+            baseline_data_list = await self.load_baseline_files(directory)
 
             # Merge all data
             merged_data = {

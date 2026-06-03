@@ -11,6 +11,7 @@ const distributionRowSchema = z.object({
 
 export const testsBaselineFormSchema = z
   .object({
+    profile: z.string().optional(),
     name: z
       .string()
       .min(1, 'Name is required')
