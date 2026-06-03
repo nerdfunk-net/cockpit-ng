@@ -121,6 +121,13 @@ def mock_cache():
     return cache
 
 
+@pytest.fixture(autouse=True)
+def _mock_offboarding_audit_repo():
+    """Keep unit tests offline when a real PostgreSQL test DB is configured."""
+    with patch("services.nautobot.offboarding.audit.audit_log_repo", MagicMock()):
+        yield
+
+
 @pytest.fixture
 def offboarding_service(fake_nb, mock_device_query_svc, mock_cache):
     """OffboardingService with all external dependencies patched."""
