@@ -46,7 +46,7 @@ export function useCheckMKYamlQuery(options: UseYamlQueryOptions = DEFAULT_OPTIO
     queryKey: queryKeys.checkmkSettings.checkmkYaml(),
     queryFn: async () => {
       try {
-        const response = await apiCall<LoadYamlResponse>(`config/${YAML_FILES.CHECKMK}`)
+        const response = await apiCall<LoadYamlResponse>(`config/checkmk/${YAML_FILES.CHECKMK}`)
 
         if (response.success && response.data) {
           return response.data
@@ -75,7 +75,7 @@ export function useCheckMKQueriesQuery(options: UseYamlQueryOptions = DEFAULT_OP
     queryKey: queryKeys.checkmkSettings.queriesYaml(),
     queryFn: async () => {
       try {
-        const response = await apiCall<LoadYamlResponse>(`config/${YAML_FILES.QUERIES}`)
+        const response = await apiCall<LoadYamlResponse>(`config/checkmk/${YAML_FILES.QUERIES}`)
 
         if (response.success && response.data) {
           return response.data

@@ -142,7 +142,11 @@ export default function CheckMKSettingsForm() {
   }, [localSelectedYaml, selectedFilename, saveYaml])
 
   const handleSaveQueries = useCallback(() => {
-    saveYaml.mutate({ filename: YAML_FILES.QUERIES, content: localQueriesYaml })
+    saveYaml.mutate({
+      filename: YAML_FILES.QUERIES,
+      content: localQueriesYaml,
+      apiPath: `config/checkmk/${YAML_FILES.QUERIES}`,
+    })
   }, [localQueriesYaml, saveYaml])
 
   const handleReloadSelectedYaml = useCallback(() => {

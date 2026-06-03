@@ -13,7 +13,7 @@ export function useCheckmkConfig(): UseCheckmkConfigReturn {
 
   const loadCheckmkConfig = useCallback(async () => {
     try {
-      const config = await apiCall<Record<string, unknown>>('config/checkmk.yaml')
+      const config = await apiCall<Record<string, unknown>>('config/checkmk/checkmk.yaml')
       setCheckmkConfig(config || null)
     } catch (err) {
       console.error('Failed to load CheckMK config:', err)

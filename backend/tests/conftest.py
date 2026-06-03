@@ -34,11 +34,30 @@ from tests.mocks import (
 # =============================================================================
 
 
+def _ensure_test_db_migrations() -> None:
+    """Apply any pending migrations to the test database.
+
+    Runs silently when COCKPIT_TEST_ENV is not set (i.e. unit-only runs) so
+    the overhead is only paid when .env.test is loaded.
+    """
+    import os
+
+    if not os.getenv("COCKPIT_TEST_ENV"):
+        return
+    try:
+        from core.database import init_db
+
+        init_db()
+    except Exception:
+        pass  # DB may not be reachable in unit-only CI — don't block test collection
+
+
 def pytest_configure(config):
     """Register custom pytest markers and load optional ``backend/.env.test``."""
     from tests.test_env import load_test_env
 
     load_test_env()
+    _ensure_test_db_migrations()
 
     config.addinivalue_line(
         "markers",

@@ -42,7 +42,7 @@ class ConfigService:
             yaml.YAMLError: If YAML parsing fails
         """
         if self._checkmk_config is None or force_reload:
-            config_path = self._config_dir / "checkmk.yaml"
+            config_path = self._checkmk_dir / "checkmk.yaml"
 
             try:
                 with open(config_path) as f:
@@ -102,7 +102,7 @@ class ConfigService:
             yaml.YAMLError: If YAML parsing fails
         """
         if self._queries is None or force_reload:
-            config_path = self._config_dir / "checkmk_queries.yaml"
+            config_path = self._checkmk_dir / "checkmk_queries.yaml"
 
             try:
                 with open(config_path) as f:
