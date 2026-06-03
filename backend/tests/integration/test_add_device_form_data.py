@@ -50,8 +50,10 @@ LOCATION_NAME = "City A"
 NAMESPACE_NAME = "Global"
 
 INTERFACE_NAME = "Loopback"
+INTERFACE_NAME_2 = "Loopback2"
 INTERFACE_TYPE = "virtual"
 IP_ADDRESS = "192.168.181.254/24"
+IP_ADDRESS_2 = "192.168.181.253/24"
 
 # The auto-created prefix derived from IP_ADDRESS and /24
 AUTO_PREFIX = "192.168.181.0/24"
@@ -1048,3 +1050,116 @@ class TestAddDeviceFormData:
         )
 
         logger.info("✓ Interface description '%s' persisted correctly", IFACE_DESCRIPTION)
+
+    @pytest.mark.asyncio
+    async def test_add_device_with_two_interfaces(
+        self,
+        real_nautobot_service,
+        device_creation_service,
+        form_resource_ids,
+        cleanup_test_device,
+    ):
+        """
+        A device with two interfaces must have both created in Nautobot, each
+        with its own IP address assigned.
+
+        Interface 1: Loopback  – 192.168.181.254/24 (primary IPv4)
+        Interface 2: Loopback2 – 192.168.181.253/24
+        Both IPs share the same /24 prefix; auto-prefix creation is enabled.
+        """
+        device_ids, prefix_ids = cleanup_test_device
+        ids = form_resource_ids
+
+        request = AddDeviceRequest(
+            name=f"{DEVICE_NAME}-two-ifaces",
+            serial=f"{DEVICE_SERIAL}-two-ifaces",
+            role=ids["role_id"],
+            status=ids["status_id"],
+            location=ids["location_id"],
+            device_type=ids["device_type_id"],
+            platform=ids["platform_id"],
+            add_prefix=True,
+            default_prefix_length="/24",
+            interfaces=[
+                InterfaceData(
+                    name=INTERFACE_NAME,
+                    type=INTERFACE_TYPE,
+                    status=ids["status_id"],
+                    ip_addresses=[
+                        IpAddressData(
+                            address=IP_ADDRESS,
+                            namespace=ids["namespace_id"],
+                            ip_role=None,
+                            is_primary=True,
+                        )
+                    ],
+                ),
+                InterfaceData(
+                    name=INTERFACE_NAME_2,
+                    type=INTERFACE_TYPE,
+                    status=ids["status_id"],
+                    ip_addresses=[
+                        IpAddressData(
+                            address=IP_ADDRESS_2,
+                            namespace=ids["namespace_id"],
+                            ip_role=None,
+                            is_primary=False,
+                        )
+                    ],
+                ),
+            ],
+        )
+
+        result = await device_creation_service.create_device_with_interfaces(request)
+        if result.get("device_id"):
+            device_ids.append(result["device_id"])
+
+        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+
+        summary = result["summary"]
+        assert summary["interfaces_created"] == 2, (
+            f"Expected 2 interfaces created, got {summary['interfaces_created']}"
+        )
+        assert summary["ip_addresses_created"] == 2, (
+            f"Expected 2 IP addresses created, got {summary['ip_addresses_created']}"
+        )
+
+        # Verify both interfaces exist in Nautobot with their IPs
+        query = f"""
+        query {{
+          device(id: "{result["device_id"]}") {{
+            interfaces {{
+              name
+              type
+              ip_addresses {{ address }}
+            }}
+          }}
+        }}
+        """
+        raw = await real_nautobot_service.graphql_query(query)
+        ifaces = raw["data"]["device"]["interfaces"]
+        assert len(ifaces) == 2, f"Expected 2 interfaces in Nautobot, got {len(ifaces)}"
+
+        by_name = {i["name"]: i for i in ifaces}
+        assert INTERFACE_NAME in by_name, f"'{INTERFACE_NAME}' not found in {list(by_name)}"
+        assert INTERFACE_NAME_2 in by_name, f"'{INTERFACE_NAME_2}' not found in {list(by_name)}"
+
+        assert any(ip["address"] == IP_ADDRESS for ip in by_name[INTERFACE_NAME]["ip_addresses"]), (
+            f"{IP_ADDRESS} not assigned to {INTERFACE_NAME}"
+        )
+        assert any(ip["address"] == IP_ADDRESS_2 for ip in by_name[INTERFACE_NAME_2]["ip_addresses"]), (
+            f"{IP_ADDRESS_2} not assigned to {INTERFACE_NAME_2}"
+        )
+
+        # Track the shared prefix for cleanup
+        prefix_result = await real_nautobot_service.graphql_query(
+            f'query {{ prefixes(prefix: "{AUTO_PREFIX}") {{ id }} }}'
+        )
+        for p in prefix_result["data"]["prefixes"]:
+            if p["id"] not in prefix_ids:
+                prefix_ids.append(p["id"])
+
+        logger.info(
+            "✓ Device created with two interfaces: %s (%s) and %s (%s)",
+            INTERFACE_NAME, IP_ADDRESS, INTERFACE_NAME_2, IP_ADDRESS_2,
+        )
