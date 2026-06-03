@@ -21,6 +21,7 @@ router = APIRouter(prefix="/api/config", tags=["config"])
 # Base path for config files
 # Updated path: routers/settings/connections/config.py -> backend/ -> project_root/config/
 CONFIG_BASE_PATH = Path(__file__).parent.parent.parent.parent.parent / "config"
+CHECKMK_CONFIG_PATH = CONFIG_BASE_PATH / "checkmk"
 
 
 @router.post("/validate")
@@ -73,6 +74,98 @@ async def validate_yaml_content(
 
     except Exception as e:
         raise_internal_server_error(logger, "Error validating YAML content: ", e)
+
+
+@router.get("/checkmk/{filename}")
+async def read_checkmk_config_file(
+    filename: str,
+    current_user: dict = Depends(require_permission("settings.common", "read")),
+):
+    """Read a CheckMK-specific configuration file from config/checkmk/."""
+    try:
+        if not filename.endswith(".yaml") or "/" in filename or "\\" in filename:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid filename. Only .yaml files are allowed.",
+            )
+
+        config_file = CHECKMK_CONFIG_PATH / filename
+
+        if not config_file.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Configuration file {filename} not found",
+            )
+
+        try:
+            with open(config_file, encoding="utf-8") as f:
+                content = f.read()
+
+            logger.info(
+                "Successfully read checkmk config file: %s by user: %s",
+                filename,
+                current_user,
+            )
+            return {
+                "success": True,
+                "data": content,
+                "message": f"Successfully read {filename}",
+            }
+
+        except Exception as e:
+            raise_internal_server_error(
+                logger,
+                f"Error reading checkmk configuration file {filename}",
+                e,
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise_internal_server_error(logger, "Unexpected error: ", e)
+
+
+@router.post("/checkmk/{filename}")
+async def write_checkmk_config_file(
+    filename: str,
+    file_content: ConfigFileContent,
+    current_user: dict = Depends(require_permission("settings.common", "write")),
+    config_service=Depends(get_checkmk_config_service),
+):
+    """Write a CheckMK-specific configuration file to config/checkmk/."""
+    try:
+        if not filename.endswith(".yaml") or "/" in filename or "\\" in filename:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid filename. Only .yaml files are allowed.",
+            )
+
+        CHECKMK_CONFIG_PATH.mkdir(parents=True, exist_ok=True)
+        config_file = CHECKMK_CONFIG_PATH / filename
+
+        try:
+            with open(config_file, "w", encoding="utf-8") as f:
+                f.write(file_content.content)
+
+            config_service.reload_config()
+            logger.info(
+                "Successfully wrote checkmk config file: %s by user: %s",
+                filename,
+                current_user,
+            )
+            return {"success": True, "message": f"Successfully saved {filename}"}
+
+        except Exception as e:
+            raise_internal_server_error(
+                logger,
+                f"Error writing checkmk configuration file {filename}",
+                e,
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise_internal_server_error(logger, "Unexpected error: ", e)
 
 
 @router.get("/{filename}")

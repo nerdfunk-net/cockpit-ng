@@ -121,17 +121,21 @@ export function useCheckMKMutations() {
   })
 
   /**
-   * Save YAML file
+   * Save YAML file. Use apiPath to override the default config/${filename} path
+   * (e.g. "config/checkmk/my.yaml" for priority-rule configs).
    */
   const saveYaml = useMutation({
     mutationFn: async ({
       filename,
       content,
+      apiPath,
     }: {
       filename: string
       content: string
+      apiPath?: string
     }) => {
-      const response = await apiCall<SaveYamlResponse>(`config/${filename}`, {
+      const path = apiPath ?? `config/${filename}`
+      const response = await apiCall<SaveYamlResponse>(path, {
         method: 'POST',
         body: JSON.stringify({ content }),
       })
@@ -143,14 +147,19 @@ export function useCheckMKMutations() {
       return { filename, response }
     },
     onSuccess: ({ filename }) => {
-      // Invalidate appropriate query based on filename
+      if (filename === 'checkmk_queries.yaml') {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.checkmkSettings.queriesYaml(),
+        })
+      }
+      // Invalidate the dynamic file cache (covers priority-rule configs and checkmk.yaml)
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.checkmkSettings.yamlFile(filename),
+      })
+      // Also invalidate the legacy checkmkYaml key if saving checkmk.yaml
       if (filename === 'checkmk.yaml') {
         queryClient.invalidateQueries({
           queryKey: queryKeys.checkmkSettings.checkmkYaml(),
-        })
-      } else if (filename === 'checkmk_queries.yaml') {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.checkmkSettings.queriesYaml(),
         })
       }
 

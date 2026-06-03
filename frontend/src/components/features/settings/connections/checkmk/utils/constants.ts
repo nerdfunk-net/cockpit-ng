@@ -28,3 +28,16 @@ export const TAB_VALUES = {
   CHECKMK_CONFIG: 'checkmk-config',
   QUERIES: 'queries',
 } as const
+
+export const SUPPORTED_EXPRESSION_KEYS = [
+  { value: 'role', label: 'Role' },
+  { value: 'status', label: 'Status' },
+  { value: 'location', label: 'Location' },
+  { value: 'manufacturer', label: 'Manufacturer' },
+  { value: 'device_type', label: 'Device Type' },
+  { value: 'platform', label: 'Platform' },
+  { value: 'custom_field', label: 'Custom Field' },
+  { value: 'ip_prefix', label: 'IP Prefix' },
+] as const
+
+export const DEFAULT_PRIORITY_RULE_FILENAME = 'checkmk.yaml' as const

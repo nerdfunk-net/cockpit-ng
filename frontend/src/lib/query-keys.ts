@@ -355,6 +355,14 @@ export const queryKeys = {
     yaml: () => [...queryKeys.checkmkSettings.all, 'yaml'] as const,
     checkmkYaml: () => [...queryKeys.checkmkSettings.yaml(), 'checkmk'] as const,
     queriesYaml: () => [...queryKeys.checkmkSettings.yaml(), 'queries'] as const,
+    yamlFile: (filename: string) =>
+      [...queryKeys.checkmkSettings.yaml(), 'file', filename] as const,
+  },
+
+  // CheckMK Priority Rules
+  checkmkPriorityRules: {
+    all: ['checkmkPriorityRules'] as const,
+    list: () => [...queryKeys.checkmkPriorityRules.all, 'list'] as const,
   },
 
   // Compliance Settings

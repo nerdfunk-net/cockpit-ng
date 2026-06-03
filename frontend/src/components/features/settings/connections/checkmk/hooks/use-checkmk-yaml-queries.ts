@@ -4,6 +4,31 @@ import { queryKeys } from '@/lib/query-keys'
 import type { LoadYamlResponse } from '../types'
 import { CACHE_TIME, YAML_FILES } from '../utils/constants'
 
+/**
+ * Fetch any CheckMK config YAML file by filename
+ */
+export function useCheckmkDynamicYamlQuery(filename: string | null) {
+  const { apiCall } = useApi()
+
+  return useQuery({
+    queryKey: queryKeys.checkmkSettings.yamlFile(filename ?? ''),
+    queryFn: async () => {
+      if (!filename) return ''
+      try {
+        const response = await apiCall<LoadYamlResponse>(`config/checkmk/${filename}`)
+        if (response.success && response.data) {
+          return response.data
+        }
+        return ''
+      } catch {
+        return ''
+      }
+    },
+    enabled: !!filename,
+    staleTime: CACHE_TIME.YAML,
+  })
+}
+
 interface UseYamlQueryOptions {
   enabled?: boolean
 }

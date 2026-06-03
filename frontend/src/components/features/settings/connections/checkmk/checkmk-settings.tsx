@@ -5,32 +5,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, Settings, FileText, Shield } from 'lucide-react'
 import { useCheckMKSettingsQuery } from './hooks/use-checkmk-settings-query'
 import {
-  useCheckMKYamlQuery,
   useCheckMKQueriesQuery,
+  useCheckmkDynamicYamlQuery,
 } from './hooks/use-checkmk-yaml-queries'
 import { useCheckMKMutations } from './hooks/use-checkmk-mutations'
 import { ConnectionSettingsForm } from './components/connection-settings-form'
 import { YamlEditorCard } from './components/yaml-editor-card'
+import { PriorityRulesPanel } from './components/priority-rules-panel'
 import { CheckMKHelpDialog } from './dialogs/checkmk-help-dialog'
 import { YamlValidationDialog } from './dialogs/yaml-validation-dialog'
 import type { CheckMKSettings, ValidationError } from './types'
 import {
   DEFAULT_CHECKMK_SETTINGS,
+  DEFAULT_PRIORITY_RULE_FILENAME,
   TAB_VALUES,
   YAML_FILES,
   EMPTY_STRING,
 } from './utils/constants'
 
 export default function CheckMKSettingsForm() {
-  // TanStack Query - no manual state management needed
   const { data: settings = DEFAULT_CHECKMK_SETTINGS, isLoading: settingsLoading } =
     useCheckMKSettingsQuery()
-
-  const {
-    data: checkmkYaml = EMPTY_STRING,
-    isLoading: checkmkYamlLoading,
-    refetch: refetchCheckmkYaml,
-  } = useCheckMKYamlQuery()
 
   const {
     data: queriesYaml = EMPTY_STRING,
@@ -40,8 +35,19 @@ export default function CheckMKSettingsForm() {
 
   const { saveSettings, testConnection, validateYaml, saveYaml } = useCheckMKMutations()
 
-  // Local state for UI only (not server data)
-  const [localCheckmkYaml, setLocalCheckmkYaml] = useState(checkmkYaml)
+  // Which file is currently selected in the priority panel
+  const [selectedFilename, setSelectedFilename] = useState<string>(
+    DEFAULT_PRIORITY_RULE_FILENAME
+  )
+
+  // Dynamic YAML for the selected file in Tab 2
+  const {
+    data: selectedYaml = EMPTY_STRING,
+    isLoading: selectedYamlLoading,
+    refetch: refetchSelectedYaml,
+  } = useCheckmkDynamicYamlQuery(selectedFilename)
+
+  const [localSelectedYaml, setLocalSelectedYaml] = useState(selectedYaml)
   const [localQueriesYaml, setLocalQueriesYaml] = useState(queriesYaml)
   const [activeTab, setActiveTab] = useState<string>(TAB_VALUES.CONNECTION)
   const [validationError, setValidationError] = useState<ValidationError | null>(null)
@@ -50,16 +56,21 @@ export default function CheckMKSettingsForm() {
   const [testStatus, setTestStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [testMessage, setTestMessage] = useState('')
 
-  // Update local content when query data changes
+  // Sync server data → local state when query data changes
   useEffect(() => {
-    setLocalCheckmkYaml(checkmkYaml)
-  }, [checkmkYaml])
+    setLocalSelectedYaml(selectedYaml)
+  }, [selectedYaml])
 
   useEffect(() => {
     setLocalQueriesYaml(queriesYaml)
   }, [queriesYaml])
 
-  // Callbacks with useCallback for stability
+  // Reset local yaml when a different file is selected
+  useEffect(() => {
+    setLocalSelectedYaml(selectedYaml)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFilename])
+
   const handleSaveSettings = useCallback(
     (data: CheckMKSettings) => {
       saveSettings.mutate(data)
@@ -94,14 +105,12 @@ export default function CheckMKSettingsForm() {
     [testConnection]
   )
 
-  const handleResetSettings = useCallback(() => {
-    // Reset will be handled by form state
-  }, [])
+  const handleResetSettings = useCallback(() => {}, [])
 
-  const handleValidateCheckmk = useCallback(() => {
+  const handleValidateSelectedYaml = useCallback(() => {
     setValidationError(null)
     validateYaml.mutate(
-      { content: localCheckmkYaml, filename: YAML_FILES.CHECKMK },
+      { content: localSelectedYaml, filename: selectedFilename },
       {
         onError: (error: ValidationError | Error) => {
           setValidationError(error)
@@ -109,7 +118,7 @@ export default function CheckMKSettingsForm() {
         },
       }
     )
-  }, [localCheckmkYaml, validateYaml])
+  }, [localSelectedYaml, selectedFilename, validateYaml])
 
   const handleValidateQueries = useCallback(() => {
     setValidationError(null)
@@ -124,17 +133,21 @@ export default function CheckMKSettingsForm() {
     )
   }, [localQueriesYaml, validateYaml])
 
-  const handleSaveCheckmk = useCallback(() => {
-    saveYaml.mutate({ filename: YAML_FILES.CHECKMK, content: localCheckmkYaml })
-  }, [localCheckmkYaml, saveYaml])
+  const handleSaveSelectedYaml = useCallback(() => {
+    saveYaml.mutate({
+      filename: selectedFilename,
+      content: localSelectedYaml,
+      apiPath: `config/checkmk/${selectedFilename}`,
+    })
+  }, [localSelectedYaml, selectedFilename, saveYaml])
 
   const handleSaveQueries = useCallback(() => {
     saveYaml.mutate({ filename: YAML_FILES.QUERIES, content: localQueriesYaml })
   }, [localQueriesYaml, saveYaml])
 
-  const handleReloadCheckmk = useCallback(() => {
-    refetchCheckmkYaml()
-  }, [refetchCheckmkYaml])
+  const handleReloadSelectedYaml = useCallback(() => {
+    refetchSelectedYaml()
+  }, [refetchSelectedYaml])
 
   const handleReloadQueries = useCallback(() => {
     refetchQueriesYaml()
@@ -206,22 +219,36 @@ export default function CheckMKSettingsForm() {
           />
         </TabsContent>
 
-        {/* CheckMK Configuration Tab */}
-        <TabsContent value={TAB_VALUES.CHECKMK_CONFIG} className="space-y-6">
-          <YamlEditorCard
-            title={`CheckMK Configuration (${YAML_FILES.CHECKMK})`}
-            value={localCheckmkYaml}
-            onChange={setLocalCheckmkYaml}
-            onSave={handleSaveCheckmk}
-            onValidate={handleValidateCheckmk}
-            onReload={handleReloadCheckmk}
-            isLoading={checkmkYamlLoading}
-            isValidating={validateYaml.isPending}
-            isSaving={saveYaml.isPending}
-            showHelp={true}
-            onHelpClick={() => setShowHelpDialog(true)}
-            description="Edit the CheckMK configuration YAML file. This controls site mapping, folder structure, and host tag groups."
-          />
+        {/* CheckMK Configuration Tab — split panel */}
+        <TabsContent value={TAB_VALUES.CHECKMK_CONFIG}>
+          <div className="grid grid-cols-[240px_1fr] gap-4 min-h-[520px]">
+            {/* Left: priority rules list */}
+            <div className="flex flex-col border rounded-lg p-3 bg-card">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Priority Rules
+              </p>
+              <PriorityRulesPanel
+                selectedFilename={selectedFilename}
+                onSelectFilename={setSelectedFilename}
+              />
+            </div>
+
+            {/* Right: YAML editor for selected file */}
+            <YamlEditorCard
+              title={selectedFilename}
+              value={localSelectedYaml}
+              onChange={setLocalSelectedYaml}
+              onSave={handleSaveSelectedYaml}
+              onValidate={handleValidateSelectedYaml}
+              onReload={handleReloadSelectedYaml}
+              isLoading={selectedYamlLoading}
+              isValidating={validateYaml.isPending}
+              isSaving={saveYaml.isPending}
+              showHelp={selectedFilename === YAML_FILES.CHECKMK}
+              onHelpClick={() => setShowHelpDialog(true)}
+              description={`Editing ${selectedFilename}. Click Save Configuration to persist changes.`}
+            />
+          </div>
         </TabsContent>
 
         {/* Queries Tab */}

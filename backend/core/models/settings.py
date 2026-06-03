@@ -261,6 +261,26 @@ class CelerySetting(Base):
     )
 
 
+class CheckMKPriorityRule(Base):
+    """Priority rules for selecting which checkmk config to use per device."""
+
+    __tablename__ = "checkmk_priority_rules"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    priority_order = Column(Integer, nullable=False)
+    filename = Column(String(255), nullable=False)
+    expression = Column(JSON, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
 class SettingsMetadata(Base):
     """Settings metadata for versioning and status."""
 
