@@ -109,15 +109,25 @@ class PriorityRuleEvaluator:
 
         if key == "status":
             status = device_data.get("status") or {}
-            return (status.get("name") or "") if isinstance(status, dict) else str(status)
+            return (
+                (status.get("name") or "") if isinstance(status, dict) else str(status)
+            )
 
         if key == "location":
             location = device_data.get("location") or {}
-            return (location.get("name") or "") if isinstance(location, dict) else str(location)
+            return (
+                (location.get("name") or "")
+                if isinstance(location, dict)
+                else str(location)
+            )
 
         if key == "platform":
             platform = device_data.get("platform") or {}
-            return (platform.get("name") or "") if isinstance(platform, dict) else str(platform)
+            return (
+                (platform.get("name") or "")
+                if isinstance(platform, dict)
+                else str(platform)
+            )
 
         if key == "manufacturer":
             device_type = device_data.get("device_type") or {}
@@ -150,23 +160,21 @@ class PriorityRuleEvaluator:
         logger.warning("Unknown expression key '%s'", key)
         return ""
 
-    def _device_ip_in_prefix(
-        self, device_data: Dict[str, Any], cidr: str
-    ) -> bool:
+    def _device_ip_in_prefix(self, device_data: Dict[str, Any], cidr: str) -> bool:
         """Return True when the device's primary IP falls inside the given CIDR."""
         if not cidr:
             return False
         primary_ip4 = device_data.get("primary_ip4") or {}
         address = (
-            primary_ip4.get("address") or ""
-            if isinstance(primary_ip4, dict)
-            else ""
+            primary_ip4.get("address") or "" if isinstance(primary_ip4, dict) else ""
         )
         if not address:
             return False
         ip_str = address.split("/")[0]
         try:
-            return ipaddress.ip_address(ip_str) in ipaddress.ip_network(cidr, strict=False)
+            return ipaddress.ip_address(ip_str) in ipaddress.ip_network(
+                cidr, strict=False
+            )
         except ValueError:
             logger.debug("ip_prefix evaluation error: ip=%s cidr=%s", ip_str, cidr)
             return False
@@ -180,7 +188,5 @@ class PriorityRuleEvaluator:
             return False
         target = tag_name.lower()
         return any(
-            (t.get("name") or "").lower() == target
-            for t in tags
-            if isinstance(t, dict)
+            (t.get("name") or "").lower() == target for t in tags if isinstance(t, dict)
         )

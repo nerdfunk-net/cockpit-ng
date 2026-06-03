@@ -11,8 +11,8 @@ import yaml
 
 from services.nautobot.devices.common import DeviceCommonService
 from services.nautobot.devices.import_service import DeviceImportService
-from services.nautobot.managers.ip_manager import IPManager
 from services.nautobot.managers.cluster_manager import ClusterManager
+from services.nautobot.managers.ip_manager import IPManager
 from services.nautobot.managers.vm_manager import VirtualMachineManager
 from services.nautobot.resolvers.metadata_resolver import MetadataResolver
 from services.nautobot.resolvers.network_resolver import NetworkResolver
@@ -463,9 +463,7 @@ class BaselineImportService:
                 if response.get("count", 0) > 0:
                     existing = response["results"][0]
                     tag_id = existing["id"]
-                    existing_content_types = tag_content_types_from_api_record(
-                        existing
-                    )
+                    existing_content_types = tag_content_types_from_api_record(existing)
                     if desired_content_types != existing_content_types:
                         await self.nautobot.rest_request(
                             f"extras/tags/{tag_id}/",
@@ -1119,9 +1117,7 @@ class BaselineImportService:
                 location_id: Optional[str] = None
                 location_name = cluster.get("location")
                 if location_name:
-                    location_id = self.created_resources["locations"].get(
-                        location_name
-                    )
+                    location_id = self.created_resources["locations"].get(location_name)
                     if not location_id:
                         logger.warning(
                             "Location '%s' not found for cluster '%s'",
@@ -1244,7 +1240,10 @@ class BaselineImportService:
                         iface_status_uuid = await self.get_status_uuid(
                             iface_status_name, STATUS_CONTENT_TYPE_VM_INTERFACE
                         )
-                        if not iface_status_uuid and iface_status_name.lower() != "active":
+                        if (
+                            not iface_status_uuid
+                            and iface_status_name.lower() != "active"
+                        ):
                             logger.warning(
                                 "Status '%s' not found for VM interface on '%s'; "
                                 "falling back to Active",
@@ -1317,9 +1316,7 @@ class BaselineImportService:
 
         return created
 
-    async def create_baseline(
-        self, directory: str | None = None
-    ) -> Dict[str, Any]:
+    async def create_baseline(self, directory: str | None = None) -> Dict[str, Any]:
         """
         Load baseline files and create all resources in Nautobot.
         Creates resources in the correct order to handle dependencies.

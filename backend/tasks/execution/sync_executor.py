@@ -31,7 +31,9 @@ async def _sync_one_device(nb2cmk_service, device_id: str) -> Dict[str, Any]:
     hostname_fallback = normalized_data.get("internal", {}).get("hostname", device_id)
 
     matched_rule = normalized_data.get("internal", {}).get("matched_rule", {})
-    priority_rule = None if matched_rule.get("is_default") else matched_rule.get("filename")
+    priority_rule = (
+        None if matched_rule.get("is_default") else matched_rule.get("filename")
+    )
 
     if not ip_address:
         logger.info(

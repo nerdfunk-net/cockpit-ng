@@ -68,9 +68,7 @@ class ClusterManager:
                 method="POST",
                 data=payload,
             )
-            logger.info(
-                "Created cluster type '%s' with ID %s", name, result.get("id")
-            )
+            logger.info("Created cluster type '%s' with ID %s", name, result.get("id"))
             return result
         except NautobotAPIError as e:
             logger.error(

@@ -110,7 +110,11 @@ def test_stats_returns_overview() -> None:
 @pytest.mark.unit
 def test_get_entries_lists_keys() -> None:
     redis = _redis_mock()
-    redis.keys.return_value = ["cockpit-cache:stats", "cockpit-cache:start_time", "cockpit-cache:ns:k1"]
+    redis.keys.return_value = [
+        "cockpit-cache:stats",
+        "cockpit-cache:start_time",
+        "cockpit-cache:ns:k1",
+    ]
     redis.ttl.return_value = 120
     redis.memory_usage.return_value = 256
     svc = _service(redis)

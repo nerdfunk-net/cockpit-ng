@@ -25,7 +25,9 @@ def test_map_to_netmiko_unknown_uses_default() -> None:
 @pytest.mark.unit
 def test_add_mapping_extends_platform_map() -> None:
     NetmikoPlatformMapper.add_mapping("CustomOS", "juniper_junos")
-    assert NetmikoPlatformMapper.map_to_netmiko("device with customos") == "juniper_junos"
+    assert (
+        NetmikoPlatformMapper.map_to_netmiko("device with customos") == "juniper_junos"
+    )
 
 
 @pytest.mark.unit

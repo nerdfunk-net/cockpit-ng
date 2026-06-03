@@ -82,7 +82,9 @@ def test_open_or_clone_reclones_on_invalid_repo() -> None:
 
     with patch("services.git.service.get_repo_path", return_value=Path("/data/repo")):
         with patch.object(Path, "mkdir", return_value=None):
-            with patch("services.git.service.Repo", side_effect=InvalidGitRepositoryError()):
+            with patch(
+                "services.git.service.Repo", side_effect=InvalidGitRepositoryError()
+            ):
                 with patch.object(svc, "_clone_fresh", return_value=mock_repo) as clone:
                     result = svc.open_or_clone(_REPO)
 

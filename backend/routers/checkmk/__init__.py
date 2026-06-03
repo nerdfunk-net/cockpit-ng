@@ -9,8 +9,8 @@ from .folders import router as _folders_router
 from .host_groups import router as _host_groups_router
 from .hosts import router as _hosts_router
 from .monitoring import router as _monitoring_router
-from .problems import router as _problems_router
 from .priority_rules import router as _priority_rules_router
+from .problems import router as _problems_router
 from .sync import router as nb2cmk_router
 from .tag_groups import router as _tag_groups_router
 

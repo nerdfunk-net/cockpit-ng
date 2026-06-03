@@ -74,9 +74,10 @@ async def get_device_details(
     except ValueError as e:
         # ValueError from service indicates device not found or query error
         if "not found" in str(e).lower():
+            logger.warning("Device not found (id=%s): %s", device_id, e)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=str(e),
+                detail="Device not found",
             )
         raise_internal_server_error(
             logger,

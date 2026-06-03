@@ -11,9 +11,8 @@ Run::
 
 from __future__ import annotations
 
-from sqlalchemy import inspect as sa_inspect
-
 import pytest
+from sqlalchemy import inspect as sa_inspect
 
 from repositories.servers.servers_repository import ServersRepository
 

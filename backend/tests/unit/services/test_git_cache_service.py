@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -74,10 +73,10 @@ def test_get_commits_skips_cache_when_disabled() -> None:
     mock_cache = MagicMock()
     svc = _service(mock_cache)
 
-    with patch.object(
-        svc, "_get_cache_config", return_value={"enabled": False}
-    ):
-        with patch.object(svc, "_fetch_commits_from_repo", return_value=_SAMPLE_COMMITS) as fetch:
+    with patch.object(svc, "_get_cache_config", return_value={"enabled": False}):
+        with patch.object(
+            svc, "_fetch_commits_from_repo", return_value=_SAMPLE_COMMITS
+        ) as fetch:
             result = svc.get_commits(1, "/tmp/repo", "main")
 
     assert result == _SAMPLE_COMMITS
@@ -91,8 +90,14 @@ def test_get_commits_fetches_and_caches_on_miss() -> None:
     mock_cache.get.return_value = None
     svc = _service(mock_cache)
 
-    with patch.object(svc, "_get_cache_config", return_value={"enabled": True, "max_commits": 500, "ttl_seconds": 600}):
-        with patch.object(svc, "_fetch_commits_from_repo", return_value=_SAMPLE_COMMITS) as fetch:
+    with patch.object(
+        svc,
+        "_get_cache_config",
+        return_value={"enabled": True, "max_commits": 500, "ttl_seconds": 600},
+    ):
+        with patch.object(
+            svc, "_fetch_commits_from_repo", return_value=_SAMPLE_COMMITS
+        ) as fetch:
             result = svc.get_commits(5, "/tmp/repo", "main")
 
     assert result == _SAMPLE_COMMITS
@@ -167,9 +172,15 @@ def test_fetch_commits_from_repo_uses_gitpython_and_caches() -> None:
 
     with patch("services.git.cache.Repo") as repo_cls:
         repo_cls.return_value.iter_commits.return_value = [mock_commit]
-        with patch("services.git.cache.commit_to_dict", return_value=_SAMPLE_COMMITS[0]):
+        with patch(
+            "services.git.cache.commit_to_dict", return_value=_SAMPLE_COMMITS[0]
+        ):
             commits = svc._fetch_commits_from_repo(
-                1, "/tmp/repo", "main", 10, {"enabled": True, "max_commits": 500, "ttl_seconds": 60}
+                1,
+                "/tmp/repo",
+                "main",
+                10,
+                {"enabled": True, "max_commits": 500, "ttl_seconds": 60},
             )
 
     assert len(commits) == 1
@@ -184,10 +195,14 @@ def test_get_file_history_fetches_from_repo_on_miss() -> None:
     mock_commit = MagicMock()
     mock_commit.parents = []
 
-    with patch.object(svc, "_get_cache_config", return_value={"enabled": True, "ttl_seconds": 300}):
+    with patch.object(
+        svc, "_get_cache_config", return_value={"enabled": True, "ttl_seconds": 300}
+    ):
         with patch("services.git.cache.Repo") as repo_cls:
             repo_cls.return_value.iter_commits.return_value = [mock_commit]
-            with patch("services.git.cache.commit_to_dict", return_value=_SAMPLE_COMMITS[0]):
+            with patch(
+                "services.git.cache.commit_to_dict", return_value=_SAMPLE_COMMITS[0]
+            ):
                 result = svc.get_file_history(2, "/tmp/repo", "README.md")
 
     assert len(result) == 1
@@ -203,10 +218,14 @@ def test_get_commit_details_fetches_from_repo() -> None:
     mock_stats = MagicMock()
     mock_stats.total = {"insertions": 1, "deletions": 2, "lines": 3, "files": 4}
 
-    with patch.object(svc, "_get_cache_config", return_value={"enabled": True, "ttl_seconds": 120}):
+    with patch.object(
+        svc, "_get_cache_config", return_value={"enabled": True, "ttl_seconds": 120}
+    ):
         with patch("services.git.cache.Repo") as repo_cls:
             repo_cls.return_value.commit.return_value = mock_commit
-            with patch("services.git.cache.commit_to_dict", return_value=_SAMPLE_COMMITS[0]):
+            with patch(
+                "services.git.cache.commit_to_dict", return_value=_SAMPLE_COMMITS[0]
+            ):
                 mock_commit.stats = mock_stats
                 result = svc.get_commit_details(1, "/tmp/repo", "abc123")
 

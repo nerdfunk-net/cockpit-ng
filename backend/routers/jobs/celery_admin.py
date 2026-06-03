@@ -203,7 +203,11 @@ async def purge_queue_endpoint(
     try:
         return purge_queue(queue_name, username=current_user.get("username", "unknown"))
     except KeyError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        logger.warning("Queue not found (%s): %s", queue_name, exc)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Queue '{queue_name}' not found",
+        )
     except RuntimeError as exc:
         raise_internal_server_error(logger, "Celery admin operation failed", exc)
 

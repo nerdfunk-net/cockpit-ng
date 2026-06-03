@@ -237,14 +237,22 @@ class DeviceNormalizationService:
                 self.tag_normalizer.process_additional_attributes(
                     device_data, extensions, config
                 )
-                self.tag_normalizer.process_cf2htg_mappings(device_data, extensions, config)
-                self.tag_normalizer.process_tags2htg_mappings(device_data, extensions, config)
-                self.tag_normalizer.process_attr2htg_mappings(device_data, extensions, config)
+                self.tag_normalizer.process_cf2htg_mappings(
+                    device_data, extensions, config
+                )
+                self.tag_normalizer.process_tags2htg_mappings(
+                    device_data, extensions, config
+                )
+                self.tag_normalizer.process_attr2htg_mappings(
+                    device_data, extensions, config
+                )
 
                 logger.info("-" * 80)
                 logger.info("[PROCESSING] field mappings")
                 logger.info("-" * 80)
-                self.field_normalizer.process_field_mappings(device_data, extensions, config)
+                self.field_normalizer.process_field_mappings(
+                    device_data, extensions, config
+                )
 
                 logger.info(
                     "[NORMALIZATION] Successfully normalized device %s", device_name

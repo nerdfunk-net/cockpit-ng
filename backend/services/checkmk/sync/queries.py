@@ -216,7 +216,9 @@ class DeviceQueryService:
                 )
 
             # Normalize the device data using the matched config
-            extensions = self._normalization.normalize_device(device_data, config=device_config)
+            extensions = self._normalization.normalize_device(
+                device_data, config=device_config
+            )
 
             # Convert to dictionary for API response
             normalized_dict = extensions.model_dump()

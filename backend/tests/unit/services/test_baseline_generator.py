@@ -9,8 +9,6 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-pytestmark = pytest.mark.unit
-
 from models.tools import (
     CreateBaselineRequest,
     DistributionConfig,
@@ -47,6 +45,8 @@ from services.network.tools.baseline_generator import (
     validate_manual_distribution,
     write_yaml_with_blank_lines,
 )
+
+pytestmark = pytest.mark.unit
 
 
 def test_parse_comma_list_strips_empty() -> None:

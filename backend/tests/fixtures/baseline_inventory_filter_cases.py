@@ -411,7 +411,12 @@ BASELINE_FILTER_TREES: Dict[str, Tree] = {
                         "operator": "equals",
                         "value": "State A",
                     },
-                    {"id": "2", "field": "status", "operator": "equals", "value": "Active"},
+                    {
+                        "id": "2",
+                        "field": "status",
+                        "operator": "equals",
+                        "value": "Active",
+                    },
                     {
                         "id": "group-2",
                         "type": "group",

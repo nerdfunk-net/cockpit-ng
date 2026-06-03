@@ -34,6 +34,8 @@ interface DefaultRule {
 
 const DEFAULT_RULE: DefaultRule = { id: DEFAULT_RULE_ID, filename: 'checkmk.yaml' }
 
+const EMPTY_PRIORITY_RULES: CheckMKPriorityRule[] = []
+
 interface PriorityRulesPanelProps {
   selectedFilename: string
   onSelectFilename: (filename: string) => void
@@ -43,7 +45,7 @@ export function PriorityRulesPanel({
   selectedFilename,
   onSelectFilename,
 }: PriorityRulesPanelProps) {
-  const { data: rules = [], isLoading } = usePriorityRulesQuery()
+  const { data: rules = EMPTY_PRIORITY_RULES, isLoading } = usePriorityRulesQuery()
   const { createRule, updateRule, deleteRule, reorderRules } =
     usePriorityRulesMutations()
 

@@ -85,9 +85,10 @@ async def create_inventory(
         return InventoryResponse(**inventory)
 
     except ValueError as e:
+        logger.warning("Invalid inventory operation: %s", e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail="Invalid inventory parameters",
         )
     except HTTPException:
         raise
@@ -165,9 +166,10 @@ async def get_inventory(
         return InventoryResponse(**inventory)
 
     except PermissionError as e:
+        logger.warning("Permission denied on inventory operation: %s", e)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
+            detail="Permission denied",
         )
     except HTTPException:
         raise
@@ -265,9 +267,10 @@ async def update_inventory(
         return InventoryResponse(**inventory)
 
     except ValueError as e:
+        logger.warning("Invalid inventory operation: %s", e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail="Invalid inventory parameters",
         )
     except HTTPException:
         raise
@@ -306,9 +309,10 @@ async def delete_inventory(
         )
 
     except ValueError as e:
+        logger.warning("Invalid inventory operation: %s", e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail="Invalid inventory parameters",
         )
     except HTTPException:
         raise
@@ -420,9 +424,10 @@ async def export_inventory(
         )
 
     except PermissionError as e:
+        logger.warning("Permission denied on inventory operation: %s", e)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
+            detail="Permission denied",
         )
     except HTTPException:
         raise
@@ -504,9 +509,10 @@ async def import_inventory(
         return InventoryResponse(**inventory)
 
     except ValueError as e:
+        logger.warning("Invalid inventory operation: %s", e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail="Invalid inventory parameters",
         )
     except HTTPException:
         raise

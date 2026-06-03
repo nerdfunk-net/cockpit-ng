@@ -45,7 +45,9 @@ class TagNormalizer:
             config: Pre-loaded config dict; loads from disk when None
         """
         try:
-            config = config if config is not None else self._config.load_checkmk_config()
+            config = (
+                config if config is not None else self._config.load_checkmk_config()
+            )
             additional_attributes_config = config.get("additional_attributes", {})
 
             device_name = device_data.get("name", "")
@@ -88,7 +90,9 @@ class TagNormalizer:
             config: Pre-loaded config dict; loads from disk when None
         """
         try:
-            config = config if config is not None else self._config.load_checkmk_config()
+            config = (
+                config if config is not None else self._config.load_checkmk_config()
+            )
             cf2htg_config = config.get("cf2htg", {})
             custom_field_data = device_data.get("_custom_field_data", {})
             device_name = device_data.get("name", "")
@@ -125,7 +129,9 @@ class TagNormalizer:
             config: Pre-loaded config dict; loads from disk when None
         """
         try:
-            config = config if config is not None else self._config.load_checkmk_config()
+            config = (
+                config if config is not None else self._config.load_checkmk_config()
+            )
             tags2htg_config = config.get("tags2htg", {})
             device_name = device_data.get("name", "")
 
@@ -178,7 +184,9 @@ class TagNormalizer:
             config: Pre-loaded config dict; loads from disk when None
         """
         try:
-            config = config if config is not None else self._config.load_checkmk_config()
+            config = (
+                config if config is not None else self._config.load_checkmk_config()
+            )
             attr2htg_config = config.get("attr2htg", {})
             device_name = device_data.get("name", "")
 

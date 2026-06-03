@@ -1,13 +1,13 @@
 /**
  * Custom ESLint rule: no-inline-defaults
- * 
+ *
  * Prevents inline object/array literals as default parameters in React components.
  * This prevents unnecessary re-renders caused by reference identity changes.
- * 
+ *
  * ❌ Bad:
  * function Component({ items = [] }) { ... }
  * function Component({ config = {} }) { ... }
- * 
+ *
  * ✅ Good:
  * const EMPTY_ARRAY = []
  * function Component({ items = EMPTY_ARRAY }) { ... }
@@ -22,8 +22,10 @@ const rule = {
       recommended: true,
     },
     messages: {
-      noInlineArray: 'Avoid inline array literal as default parameter. Use a constant instead (e.g., const EMPTY_ARRAY = []).',
-      noInlineObject: 'Avoid inline object literal as default parameter. Use a constant instead (e.g., const EMPTY_OBJECT = {}).',
+      noInlineArray:
+        'Avoid inline array literal as default parameter. Use a constant instead (e.g., const EMPTY_ARRAY = []).',
+      noInlineObject:
+        'Avoid inline object literal as default parameter. Use a constant instead (e.g., const EMPTY_OBJECT = {}).',
     },
     schema: [],
   },
@@ -34,7 +36,7 @@ const rule = {
       'FunctionDeclaration, FunctionExpression, ArrowFunctionExpression'(node) {
         checkParameters(node.params, context)
       },
-      
+
       // Check destructured parameters
       AssignmentPattern(node) {
         if (node.right.type === 'ArrayExpression' && node.right.elements.length === 0) {
@@ -42,7 +44,10 @@ const rule = {
             node: node.right,
             messageId: 'noInlineArray',
           })
-        } else if (node.right.type === 'ObjectExpression' && node.right.properties.length === 0) {
+        } else if (
+          node.right.type === 'ObjectExpression' &&
+          node.right.properties.length === 0
+        ) {
           context.report({
             node: node.right,
             messageId: 'noInlineObject',
@@ -56,7 +61,7 @@ const rule = {
 export default rule
 
 function checkParameters(params, context) {
-  params.forEach(param => {
+  params.forEach((param) => {
     if (param.type === 'AssignmentPattern') {
       const defaultValue = param.right
 
@@ -69,7 +74,10 @@ function checkParameters(params, context) {
       }
 
       // Check for empty object literal: = {}
-      if (defaultValue.type === 'ObjectExpression' && defaultValue.properties.length === 0) {
+      if (
+        defaultValue.type === 'ObjectExpression' &&
+        defaultValue.properties.length === 0
+      ) {
         context.report({
           node: defaultValue,
           messageId: 'noInlineObject',
@@ -79,18 +87,24 @@ function checkParameters(params, context) {
 
     // Handle destructured parameters with defaults
     if (param.type === 'ObjectPattern') {
-      param.properties.forEach(prop => {
+      param.properties.forEach((prop) => {
         if (prop.type === 'Property' && prop.value.type === 'AssignmentPattern') {
           const defaultValue = prop.value.right
-          
-          if (defaultValue.type === 'ArrayExpression' && defaultValue.elements.length === 0) {
+
+          if (
+            defaultValue.type === 'ArrayExpression' &&
+            defaultValue.elements.length === 0
+          ) {
             context.report({
               node: defaultValue,
               messageId: 'noInlineArray',
             })
           }
-          
-          if (defaultValue.type === 'ObjectExpression' && defaultValue.properties.length === 0) {
+
+          if (
+            defaultValue.type === 'ObjectExpression' &&
+            defaultValue.properties.length === 0
+          ) {
             context.report({
               node: defaultValue,
               messageId: 'noInlineObject',

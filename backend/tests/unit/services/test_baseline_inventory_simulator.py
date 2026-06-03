@@ -7,8 +7,6 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = pytest.mark.unit
-
 from services.network.tools.baseline_inventory_simulator import (
     BaselineInventorySimulator,
 )
@@ -19,6 +17,8 @@ from tests.fixtures.baseline_manifest import (
     load_baseline_yaml,
     resolve_baseline_yaml_path,
 )
+
+pytestmark = pytest.mark.unit
 
 MANIFEST_JSON = Path(__file__).resolve().parents[2] / "fixtures/baseline_manifest.json"
 
@@ -38,7 +38,9 @@ def test_simulator_matches_committed_manifest(simulator) -> None:
     for filter_id, expected in manifest.filters.items():
         tree = BASELINE_FILTER_TREES[filter_id]
         actual = simulator.count_for_tree(tree)
-        assert actual == expected, f"{filter_id}: manifest={expected}, simulated={actual}"
+        assert actual == expected, (
+            f"{filter_id}: manifest={expected}, simulated={actual}"
+        )
 
 
 def test_build_manifest_matches_json_file(baseline_yaml_data) -> None:

@@ -2,6 +2,7 @@
 Router for snapshot command template management.
 """
 
+import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -14,6 +15,7 @@ from models.snapshots import (
 )
 from services.network.snapshots import SnapshotTemplateService
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/network/snapshots/templates", tags=["snapshots"])
 
 
@@ -35,7 +37,10 @@ async def create_template(
     try:
         return service.create_template(template, current_user["username"])
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning("Snapshot template validation error: %s", e)
+        raise HTTPException(
+            status_code=400, detail="Invalid snapshot template parameters"
+        )
 
 
 @router.get("", response_model=List[SnapshotCommandTemplateResponse])
@@ -90,7 +95,8 @@ async def update_template(
             raise HTTPException(status_code=404, detail="Template not found")
         return updated
     except ValueError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        logger.warning("Snapshot template permission error: %s", e)
+        raise HTTPException(status_code=403, detail="Permission denied")
 
 
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -110,4 +116,5 @@ async def delete_template(
         if not deleted:
             raise HTTPException(status_code=404, detail="Template not found")
     except ValueError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        logger.warning("Snapshot template permission error: %s", e)
+        raise HTTPException(status_code=403, detail="Permission denied")

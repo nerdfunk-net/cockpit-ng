@@ -31,7 +31,9 @@ class FieldNormalizer:
             config: Pre-loaded config dict; loads from disk when None
         """
         try:
-            config = config if config is not None else self._config.load_checkmk_config()
+            config = (
+                config if config is not None else self._config.load_checkmk_config()
+            )
             mapping_config = config.get("mapping", {})
             device_name = device_data.get("name", "")
 

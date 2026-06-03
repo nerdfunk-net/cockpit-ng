@@ -99,9 +99,7 @@ def job_run_repository_pg(
 @pytest.fixture(scope="session")
 def postgres_engine_servers(postgres_engine_integration):
     """Ensures ``servers`` table exists (``create_all`` for that model only)."""
-    Base.metadata.create_all(
-        postgres_engine_integration, tables=[Server.__table__]
-    )
+    Base.metadata.create_all(postgres_engine_integration, tables=[Server.__table__])
     return postgres_engine_integration
 
 

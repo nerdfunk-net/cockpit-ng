@@ -70,10 +70,10 @@ async def get_repository_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error getting repository status: %s", e)
+        logger.error("Error getting repository status: %s", e, exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to get repository status: {str(e)}",
+            "message": "Failed to get repository status",
         }
 
 

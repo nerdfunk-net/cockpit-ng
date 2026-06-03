@@ -116,7 +116,8 @@ async def create_repository(
 
         return GitRepositoryResponse(**repo_dict)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning("Git repository validation error: %s", e)
+        raise HTTPException(status_code=400, detail="Invalid repository parameters")
     except Exception as e:
         raise_internal_server_error(logger, "Internal error", e)
 
@@ -161,7 +162,8 @@ async def update_repository(
     except HTTPException:
         raise
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning("Git repository validation error: %s", e)
+        raise HTTPException(status_code=400, detail="Invalid repository parameters")
     except Exception as e:
         raise_internal_server_error(logger, "Internal error", e)
 

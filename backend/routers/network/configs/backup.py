@@ -136,7 +136,7 @@ async def trigger_backup(
 
     except ValueError as e:
         logger.error("Validation error triggering backup: %s", e)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Invalid backup request")
     except Exception as e:
         raise_internal_server_error(logger, "Internal error", e)
 
@@ -176,7 +176,7 @@ async def trigger_bulk_backup(
 
     except ValueError as e:
         logger.error("Validation error triggering bulk backup: %s", e)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Invalid bulk backup request")
     except Exception as e:
         raise_internal_server_error(logger, "Internal error", e)
 
@@ -276,7 +276,7 @@ async def download_backup(
 
     except ValueError as e:
         logger.error("Backup not found: %s", e)
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Backup not found")
     except Exception as e:
         raise_internal_server_error(logger, "Internal error", e)
 
@@ -315,6 +315,6 @@ async def restore_backup(
 
     except ValueError as e:
         logger.error("Validation error restoring backup: %s", e)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Invalid restore request")
     except Exception as e:
         raise_internal_server_error(logger, "Internal error", e)

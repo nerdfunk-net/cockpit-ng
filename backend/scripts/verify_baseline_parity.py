@@ -57,9 +57,7 @@ def check_stats(generated: dict, errors: list[str]) -> None:
         )
     for tag, count in EXPECTED_TOTALS["tags"].items():
         if stats.tags.get(tag) != count:
-            errors.append(
-                f"tag {tag}: expected {count}, got {stats.tags.get(tag, 0)}"
-            )
+            errors.append(f"tag {tag}: expected {count}, got {stats.tags.get(tag, 0)}")
     for status, count in EXPECTED_TOTALS["statuses"].items():
         if stats.statuses.get(status) != count:
             errors.append(
@@ -76,9 +74,7 @@ def check_unique_ips(generated: dict, errors: list[str]) -> None:
         errors.append("duplicate primary_ip4 values found in generated baseline")
 
 
-def check_full_metadata(
-    generated: dict, golden: dict, errors: list[str]
-) -> None:
+def check_full_metadata(generated: dict, golden: dict, errors: list[str]) -> None:
     golden_by_name = {d["name"]: d for d in golden.get("devices", [])}
     for device in generated.get("devices", []):
         name = device["name"]

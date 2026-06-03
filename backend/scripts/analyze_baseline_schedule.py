@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import yaml
@@ -14,7 +13,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Analyze golden baseline tag/status schedule")
+    parser = argparse.ArgumentParser(
+        description="Analyze golden baseline tag/status schedule"
+    )
     parser.add_argument(
         "--golden",
         type=Path,

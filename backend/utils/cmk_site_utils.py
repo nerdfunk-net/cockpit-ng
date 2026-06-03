@@ -30,7 +30,11 @@ def get_monitored_site(
     """
     try:
         config_service = service_factory.build_checkmk_config_service()
-        config = checkmk_config if checkmk_config is not None else config_service.load_checkmk_config()
+        config = (
+            checkmk_config
+            if checkmk_config is not None
+            else config_service.load_checkmk_config()
+        )
         site_config = config.get("monitored_site", {})
 
         device_name = device_data.get("name", "")
@@ -146,7 +150,11 @@ def get_device_folder(
 
     try:
         config_service = service_factory.build_checkmk_config_service()
-        config = checkmk_config if checkmk_config is not None else config_service.load_checkmk_config()
+        config = (
+            checkmk_config
+            if checkmk_config is not None
+            else config_service.load_checkmk_config()
+        )
         folders_config = config.get("folders", {})
 
         device_name = device_data.get("name", "")

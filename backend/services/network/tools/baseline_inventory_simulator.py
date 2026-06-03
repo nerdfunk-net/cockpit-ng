@@ -91,7 +91,7 @@ class BaselineInventorySimulator:
             return list(self._devices)
 
         result_ids: Set[str] = set()
-        for index, operation in enumerate(operations):
+        for _index, operation in enumerate(operations):
             op_ids = self._execute_operation(operation)
             op_type = operation.operation_type.upper()
             if not result_ids:
@@ -101,7 +101,11 @@ class BaselineInventorySimulator:
             else:
                 result_ids = result_ids.intersection(op_ids)
 
-        return [self._by_id[device_id] for device_id in result_ids if device_id in self._by_id]
+        return [
+            self._by_id[device_id]
+            for device_id in result_ids
+            if device_id in self._by_id
+        ]
 
     def _execute_operation(self, operation: LogicalOperation) -> Set[str]:
         condition_results: List[Set[str]] = []
@@ -175,13 +179,9 @@ class BaselineInventorySimulator:
             return {d.id for d in self._devices if d.id not in positive}
         return positive
 
-    def _filter_custom_field(
-        self, key: str, value: str, operator: str
-    ) -> Set[str]:
+    def _filter_custom_field(self, key: str, value: str, operator: str) -> Set[str]:
         matched = {
-            d.id
-            for d in self._devices
-            if str(d.custom_fields.get(key, "")) == value
+            d.id for d in self._devices if str(d.custom_fields.get(key, "")) == value
         }
         if operator in ("not_equals", "not_contains"):
             return {d.id for d in self._devices if d.id not in matched}
@@ -211,9 +211,7 @@ class BaselineInventorySimulator:
             }
         if operator in ("not_equals", "not_contains"):
             return {
-                d.id
-                for d in self._devices
-                if self._location_matches_equals(d, value)
+                d.id for d in self._devices if self._location_matches_equals(d, value)
             }
         return set()
 

@@ -55,7 +55,10 @@ async def test_create_cluster_delegates_to_manager() -> None:
         tags=None,
     )
     mock_audit.log_event.assert_called_once()
-    assert mock_audit.log_event.call_args.kwargs["event_type"] == "nautobot-cluster-created"
+    assert (
+        mock_audit.log_event.call_args.kwargs["event_type"]
+        == "nautobot-cluster-created"
+    )
 
 
 @pytest.mark.asyncio

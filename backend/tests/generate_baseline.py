@@ -17,7 +17,9 @@ from services.network.tools.baseline_profiles import profile_output_dir
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate test baseline YAML")
-    parser.add_argument("--name", default="baseline", help="Output filename (without .yaml)")
+    parser.add_argument(
+        "--name", default="baseline", help="Output filename (without .yaml)"
+    )
     parser.add_argument("--profile", help="Profile id (e.g. pytest, demo)")
     parser.add_argument(
         "--output",

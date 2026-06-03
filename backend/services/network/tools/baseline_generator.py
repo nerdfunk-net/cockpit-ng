@@ -339,9 +339,7 @@ def load_golden_baseline(request: CreateBaselineRequest) -> Dict[str, Any]:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
-def apply_golden_metadata(
-    devices: List[Dict[str, Any]], golden_path: Path
-) -> None:
+def apply_golden_metadata(devices: List[Dict[str, Any]], golden_path: Path) -> None:
     """Copy per-device metadata from golden YAML by device name (not IPs)."""
     golden = yaml.safe_load(golden_path.read_text(encoding="utf-8"))
     golden_by_name = {d["name"]: d for d in golden.get("devices", [])}
@@ -510,14 +508,14 @@ def generate_pytest_legacy_dict(request: CreateBaselineRequest) -> Dict[str, Any
         request.number_of_virtual_machines,
     )
     devices = build_devices_pytest(request)
-    golden_path = resolve_golden_path(request) if request.golden_reference_path else None
+    golden_path = (
+        resolve_golden_path(request) if request.golden_reference_path else None
+    )
     if golden_path and golden_path.is_file():
         apply_golden_metadata(devices, golden_path)
     allocate_ips_pytest(devices, prefix_list)
 
-    prefixes_section = [
-        {"prefix": p, "description": p} for p in prefix_list
-    ]
+    prefixes_section = [{"prefix": p, "description": p} for p in prefix_list]
     hierarchy = parse_hierarchy(request.location_hierarchy)
     return {
         "location_types": build_location_types(hierarchy),
@@ -1075,7 +1073,9 @@ def generate_baseline_file(
 
     warnings: List[str] = []
     if request.layout == "pytest_legacy":
-        primary_ips = [d.get("primary_ip4", "").split("/")[0] for d in baseline.get("devices", [])]
+        primary_ips = [
+            d.get("primary_ip4", "").split("/")[0] for d in baseline.get("devices", [])
+        ]
         if len(primary_ips) != len(set(primary_ips)):
             warnings.append("Duplicate primary_ip4 values detected after generation")
 

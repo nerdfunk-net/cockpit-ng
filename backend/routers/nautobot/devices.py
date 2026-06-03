@@ -544,7 +544,7 @@ async def update_device(
         logger.error("Validation error updating device: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail="Invalid device parameters",
         )
     except Exception as e:
         raise_internal_server_error(logger, "Failed to update device: ", e)

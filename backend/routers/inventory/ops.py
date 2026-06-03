@@ -85,7 +85,11 @@ async def rename_group(
             new_path=result["new_path"],
         )
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning("Invalid inventory group rename request: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid group rename parameters",
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -272,9 +276,10 @@ async def resolve_inventory_to_devices(
         }
 
     except PermissionError as e:
+        logger.warning("Permission denied on inventory operation: %s", e)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
+            detail="Permission denied",
         )
     except HTTPException:
         raise
@@ -383,9 +388,10 @@ async def resolve_inventory_to_devices_detailed(
         }
 
     except PermissionError as e:
+        logger.warning("Permission denied on inventory operation: %s", e)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
+            detail="Permission denied",
         )
     except HTTPException:
         raise

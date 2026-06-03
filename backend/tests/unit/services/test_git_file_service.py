@@ -52,7 +52,9 @@ def test_search_files_filters_and_limits(tmp_path) -> None:
         "services.git.file_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
-        with patch("services.git.file_service.git_repo_path", return_value=str(repo_dir)):
+        with patch(
+            "services.git.file_service.git_repo_path", return_value=str(repo_dir)
+        ):
             with patch("services.git.file_service.os.path.exists", return_value=True):
                 result = svc.search_files(1, query="router", limit=10)
 
@@ -142,7 +144,9 @@ def test_get_file_history_returns_cached_result() -> None:
     cache = MagicMock()
     cache.get.return_value = cached
 
-    with patch("services.git.file_service.get_git_repo_by_id", return_value=MagicMock()):
+    with patch(
+        "services.git.file_service.get_git_repo_by_id", return_value=MagicMock()
+    ):
         result = svc.get_file_history(1, "cfg.yaml", cache_service=cache)
 
     assert result is cached
@@ -266,7 +270,9 @@ def test_list_csv_files_filters_by_query(tmp_path) -> None:
         "services.git.file_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
-        with patch("services.git.file_service.git_repo_path", return_value=str(repo_dir)):
+        with patch(
+            "services.git.file_service.git_repo_path", return_value=str(repo_dir)
+        ):
             result = svc.list_csv_files(1, query="devices", limit=10)
 
     assert result["success"] is True
@@ -285,7 +291,9 @@ def test_get_csv_headers_reads_first_row(tmp_path) -> None:
         "services.git.file_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
-        with patch("services.git.file_service.git_repo_path", return_value=str(repo_dir)):
+        with patch(
+            "services.git.file_service.git_repo_path", return_value=str(repo_dir)
+        ):
             result = svc.get_csv_headers(1, "import.csv")
 
     assert result["success"] is True
@@ -335,7 +343,9 @@ def test_list_csv_files_empty_repo(tmp_path) -> None:
         "services.git.file_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
-        with patch("services.git.file_service.git_repo_path", return_value=str(repo_dir)):
+        with patch(
+            "services.git.file_service.git_repo_path", return_value=str(repo_dir)
+        ):
             result = svc.list_csv_files(1)
 
     assert result["success"] is True

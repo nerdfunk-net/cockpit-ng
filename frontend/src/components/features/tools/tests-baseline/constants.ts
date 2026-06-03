@@ -54,9 +54,7 @@ export function buildManualDistributionRows(
 export function profileRequestToFormValues(
   profile: BaselineProfileDetail
 ): TestsBaselineFormValues {
-  const request = profile.request as CreateBaselineRequest & {
-    distribution?: DistributionConfig
-  }
+  const request = profile.request
   const distribution = request.distribution
   const locationCount = request.number_of_locations ?? 3
 

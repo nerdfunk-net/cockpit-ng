@@ -52,7 +52,10 @@ def merge_profile_into_request(request: CreateBaselineRequest) -> CreateBaseline
     profile_request = dict(profile.get("request", {}))
     profile_request.pop("profile", None)
 
-    merged: dict[str, Any] = {**profile_request, **request.model_dump(exclude_unset=True)}
+    merged: dict[str, Any] = {
+        **profile_request,
+        **request.model_dump(exclude_unset=True),
+    }
     merged["profile"] = request.profile
 
     if request.distribution is not None:

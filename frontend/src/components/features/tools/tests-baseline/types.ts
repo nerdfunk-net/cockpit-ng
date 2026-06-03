@@ -49,7 +49,7 @@ export interface BaselineProfileDetail {
     filename?: string
     suggested_import_dir?: string
   }
-  request: Record<string, unknown>
+  request: Partial<CreateBaselineRequest>
 }
 
 export interface BaselineStats {

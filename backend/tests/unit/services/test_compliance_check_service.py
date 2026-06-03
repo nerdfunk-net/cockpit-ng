@@ -48,8 +48,12 @@ def test_check_ssh_login_failure() -> None:
 
 @pytest.mark.unit
 def test_get_snmp_auth_protocol_mapping() -> None:
-    assert ComplianceCheckService._get_snmp_auth_protocol("MD5") == usmHMACMD5AuthProtocol
-    assert ComplianceCheckService._get_snmp_auth_protocol("UNKNOWN") == usmNoAuthProtocol
+    assert (
+        ComplianceCheckService._get_snmp_auth_protocol("MD5") == usmHMACMD5AuthProtocol
+    )
+    assert (
+        ComplianceCheckService._get_snmp_auth_protocol("UNKNOWN") == usmNoAuthProtocol
+    )
 
 
 @pytest.mark.unit
@@ -107,7 +111,9 @@ def test_check_configuration_mock_runs_patterns() -> None:
 @pytest.mark.unit
 def test_get_snmp_priv_protocol_mapping() -> None:
     assert ComplianceCheckService._get_snmp_priv_protocol("AES") == usmAesCfb128Protocol
-    assert ComplianceCheckService._get_snmp_priv_protocol("UNKNOWN") == usmNoPrivProtocol
+    assert (
+        ComplianceCheckService._get_snmp_priv_protocol("UNKNOWN") == usmNoPrivProtocol
+    )
 
 
 @pytest.mark.asyncio

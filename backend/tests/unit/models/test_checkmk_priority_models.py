@@ -29,7 +29,9 @@ def test_expression_condition_rejects_unknown_key() -> None:
 
 @pytest.mark.unit
 def test_expression_condition_field_only_allowed_for_custom_field() -> None:
-    with pytest.raises(ValidationError, match="only allowed when key is 'custom_field'"):
+    with pytest.raises(
+        ValidationError, match="only allowed when key is 'custom_field'"
+    ):
         ExpressionCondition(
             type="condition",
             key="role",

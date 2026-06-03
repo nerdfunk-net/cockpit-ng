@@ -266,8 +266,8 @@ async def save_telegraf_config(
         return {"success": True, "message": "Telegraf configuration saved successfully"}
 
     except Exception as e:
-        logger.error("Error saving Telegraf config: %s", e)
+        logger.error("Error saving Telegraf config: %s", e, exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to save Telegraf config: {str(e)}",
+            "message": "Failed to save Telegraf configuration",
         }

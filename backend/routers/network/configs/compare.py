@@ -37,9 +37,10 @@ async def compare_files(
         try:
             repo = get_git_repo_by_id(file_comparison.repo_id)
         except Exception as e:
-            raise HTTPException(
-                status_code=404, detail=f"Git repository not found: {e}"
+            logger.warning(
+                "Git repository not found (id=%s): %s", file_comparison.repo_id, e
             )
+            raise HTTPException(status_code=404, detail="Git repository not found")
 
         # Initialize result with proper structure for frontend
         file1_content = ""

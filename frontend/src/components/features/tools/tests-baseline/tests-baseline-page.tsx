@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm, useWatch, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Card,
@@ -222,7 +222,7 @@ export function BaselineGenerateForm() {
   }, [locationCount, distributionMode, form])
 
   const onInvalid = useCallback(
-    (errors: typeof form.formState.errors) => {
+    (errors: FieldErrors<TestsBaselineFormValues>) => {
       const firstMessage =
         errors.manual_distribution?.message ??
         errors.number_of_clusters?.message ??

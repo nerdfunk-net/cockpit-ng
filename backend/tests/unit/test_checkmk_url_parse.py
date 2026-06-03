@@ -13,7 +13,13 @@ pytestmark = pytest.mark.unit
     ("url", "site_arg", "protocol", "host", "site"),
     [
         ("http://192.168.178.101:8080", "cmk", "http", "192.168.178.101:8080", "cmk"),
-        ("http://192.168.178.101:8080/cmk", None, "http", "192.168.178.101:8080", "cmk"),
+        (
+            "http://192.168.178.101:8080/cmk",
+            None,
+            "http",
+            "192.168.178.101:8080",
+            "cmk",
+        ),
         (
             "http://192.168.178.101:8080/cmk/check_mk/api/1.0",
             None,

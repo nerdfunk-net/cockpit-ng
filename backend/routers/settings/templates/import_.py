@@ -42,6 +42,10 @@ async def import_templates(
         username = current_user.get("username")
         return import_service.import_templates(import_request, username)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        logger.warning("Template import validation error: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid template import data",
+        )
     except Exception as exc:
         raise_internal_server_error(logger, "Failed to import templates", exc)

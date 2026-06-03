@@ -33,10 +33,10 @@ async def get_nautobot_settings(
         return {"success": True, "data": nautobot_settings}
 
     except Exception as e:
-        logger.error("Error getting Nautobot settings: %s", e)
+        logger.error("Error getting Nautobot settings: %s", e, exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to retrieve Nautobot settings: {str(e)}",
+            "message": "Failed to retrieve Nautobot settings",
         }
 
 
@@ -111,10 +111,10 @@ async def create_nautobot_settings(
             return {"success": False, "message": "Failed to update Nautobot settings"}
 
     except Exception as e:
-        logger.error("Error updating Nautobot settings: %s", e)
+        logger.error("Error updating Nautobot settings: %s", e, exc_info=True)
         return {
             "success": False,
-            "message": f"Failed to update Nautobot settings: {str(e)}",
+            "message": "Failed to update Nautobot settings",
         }
 
 
@@ -139,10 +139,10 @@ async def test_nautobot_connection(
         }
 
     except Exception as e:
-        logger.error("Error testing Nautobot connection: %s", e)
+        logger.error("Error testing Nautobot connection: %s", e, exc_info=True)
         return {
             "success": False,
-            "message": f"Test failed: {str(e)}",
+            "message": "Connection test failed",
             "tested_url": test_request.url,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }

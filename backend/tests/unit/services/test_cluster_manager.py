@@ -52,7 +52,9 @@ async def test_create_cluster_type_minimal_payload() -> None:
 async def test_create_cluster_type_explicit_slug() -> None:
     """Create cluster type uses explicit slug when provided."""
     mock_nb = MagicMock()
-    mock_nb.rest_request = AsyncMock(return_value={"id": CLUSTER_TYPE_ID, "name": "KVM"})
+    mock_nb.rest_request = AsyncMock(
+        return_value={"id": CLUSTER_TYPE_ID, "name": "KVM"}
+    )
     manager = ClusterManager(mock_nb)
 
     await manager.create_cluster_type(
@@ -80,7 +82,9 @@ async def test_create_cluster_type_explicit_slug() -> None:
 async def test_create_cluster_minimal_payload() -> None:
     """Create cluster sends name-only payload to Nautobot POST."""
     mock_nb = MagicMock()
-    mock_nb.rest_request = AsyncMock(return_value={"id": CLUSTER_ID, "name": "lab-cluster"})
+    mock_nb.rest_request = AsyncMock(
+        return_value={"id": CLUSTER_ID, "name": "lab-cluster"}
+    )
     manager = ClusterManager(mock_nb)
 
     result = await manager.create_cluster(name="lab-cluster")
@@ -99,7 +103,9 @@ async def test_create_cluster_minimal_payload() -> None:
 async def test_create_cluster_full_payload() -> None:
     """Create cluster maps optional fields to Nautobot nested id references."""
     mock_nb = MagicMock()
-    mock_nb.rest_request = AsyncMock(return_value={"id": CLUSTER_ID, "name": "full-cluster"})
+    mock_nb.rest_request = AsyncMock(
+        return_value={"id": CLUSTER_ID, "name": "full-cluster"}
+    )
     manager = ClusterManager(mock_nb)
 
     await manager.create_cluster(

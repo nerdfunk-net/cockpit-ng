@@ -134,9 +134,7 @@ class CreateBaselineRequest(BaseModel):
             return self
 
         if self.number_of_locations != 6:
-            raise ValueError(
-                "pytest_legacy layout requires number_of_locations == 6"
-            )
+            raise ValueError("pytest_legacy layout requires number_of_locations == 6")
         dist = self.distribution
         if not dist or dist.mode != "manual":
             raise ValueError(

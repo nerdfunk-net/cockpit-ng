@@ -40,7 +40,9 @@ def _mock_create_task(coro: Coroutine[Any, Any, Any]) -> MagicMock:
     return MagicMock()
 
 
-def _service(mock_db: MagicMock, mock_sync: MagicMock | None = None) -> NB2CMKBackgroundService:
+def _service(
+    mock_db: MagicMock, mock_sync: MagicMock | None = None
+) -> NB2CMKBackgroundService:
     with patch(_PATCH_DB, return_value=mock_db):
         with patch(_PATCH_SYNC, return_value=mock_sync or MagicMock()):
             return NB2CMKBackgroundService()
@@ -68,7 +70,7 @@ async def test_start_devices_diff_job_creates_new_job() -> None:
     mock_db.create_job.return_value = "new-job-id"
     svc = _service(mock_db)
 
-    with patch("asyncio.create_task", side_effect=_mock_create_task) as create_task:
+    with patch("asyncio.create_task", side_effect=_mock_create_task):
         result = await svc.start_devices_diff_job()
 
     assert result.job_id == "new-job-id"

@@ -76,8 +76,8 @@ def _service(
             with patch(_PATCH_SNMP, return_value=snmp):
                 with patch(_PATCH_ENCRYPT) as enc:
                     enc.return_value.encrypt.side_effect = lambda v: f"enc:{v}".encode()
-                    enc.return_value.decrypt.side_effect = (
-                        lambda v: v.decode().replace("enc:", "")
+                    enc.return_value.decrypt.side_effect = lambda v: v.decode().replace(
+                        "enc:", ""
                     )
                     return ComplianceService()
 

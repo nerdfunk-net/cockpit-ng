@@ -47,7 +47,8 @@ async def execute_snapshot(
     try:
         return await service.execute_snapshot(request, current_user["username"])
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning("Snapshot operation validation error: %s", e)
+        raise HTTPException(status_code=400, detail="Invalid snapshot request")
     except Exception as e:
         raise_internal_server_error(logger, "Snapshot execution failed", e)
 
@@ -99,7 +100,8 @@ async def compare_snapshots(
     try:
         return service.compare_snapshots(request)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning("Snapshot operation validation error: %s", e)
+        raise HTTPException(status_code=400, detail="Invalid snapshot request")
     except Exception as e:
         raise_internal_server_error(logger, "Snapshot comparison failed", e)
 
@@ -136,6 +138,7 @@ async def delete_snapshot_with_files(
         if not success:
             raise HTTPException(status_code=404, detail="Snapshot not found")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning("Snapshot operation validation error: %s", e)
+        raise HTTPException(status_code=400, detail="Invalid snapshot request")
     except Exception as e:
         raise_internal_server_error(logger, "Failed to delete snapshot", e)

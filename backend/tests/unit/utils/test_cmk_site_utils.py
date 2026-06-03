@@ -32,7 +32,10 @@ def _device(**kwargs: object) -> dict:
 
 @pytest.mark.unit
 def test_extract_device_ip_strips_cidr() -> None:
-    assert _extract_device_ip({"primary_ip4": {"address": "192.168.1.1/24"}}) == "192.168.1.1"
+    assert (
+        _extract_device_ip({"primary_ip4": {"address": "192.168.1.1/24"}})
+        == "192.168.1.1"
+    )
     assert _extract_device_ip({}) == ""
 
 
@@ -130,7 +133,9 @@ def test_get_device_folder_by_location() -> None:
     with patch(_PATCH_CONFIG, return_value=MagicMock()):
         with patch(
             "utils.cmk_site_utils.parse_folder_value",
-            side_effect=lambda template, _data: template.replace("{{ name }}", "router1"),
+            side_effect=lambda template, _data: template.replace(
+                "{{ name }}", "router1"
+            ),
         ):
             folder = get_device_folder(_device(), checkmk_config=config)
 

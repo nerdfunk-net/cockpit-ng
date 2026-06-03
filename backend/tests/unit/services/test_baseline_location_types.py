@@ -6,8 +6,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-pytestmark = pytest.mark.unit
-
 from services.network.tools.baseline import (
     BaselineImportService,
     content_types_from_api_record,
@@ -15,6 +13,8 @@ from services.network.tools.baseline import (
     normalize_location_type_content_types,
     sort_location_types_by_parent,
 )
+
+pytestmark = pytest.mark.unit
 
 
 def test_normalize_content_types_string() -> None:

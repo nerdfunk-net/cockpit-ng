@@ -187,14 +187,14 @@ async def test_create_locations_uses_status_and_type() -> None:
 @pytest.mark.unit
 async def test_create_manufacturers_creates_new() -> None:
     mock_nb = MagicMock()
-    mock_nb.rest_request = AsyncMock(
-        side_effect=[{"count": 0}, {"id": "mfr-1"}]
-    )
+    mock_nb.rest_request = AsyncMock(side_effect=[{"count": 0}, {"id": "mfr-1"}])
     with patch(_PATCH_NB, return_value=mock_nb):
         with patch(_PATCH_COMMON, return_value=MagicMock()):
             svc = BaselineImportService()
 
-    created = await svc.create_manufacturers([{"name": "Cisco", "description": "vendor"}])
+    created = await svc.create_manufacturers(
+        [{"name": "Cisco", "description": "vendor"}]
+    )
 
     assert created["Cisco"] == "mfr-1"
 
@@ -203,9 +203,7 @@ async def test_create_manufacturers_creates_new() -> None:
 @pytest.mark.unit
 async def test_create_platforms_links_manufacturer() -> None:
     mock_nb = MagicMock()
-    mock_nb.rest_request = AsyncMock(
-        side_effect=[{"count": 0}, {"id": "plat-1"}]
-    )
+    mock_nb.rest_request = AsyncMock(side_effect=[{"count": 0}, {"id": "plat-1"}])
     with patch(_PATCH_NB, return_value=mock_nb):
         with patch(_PATCH_COMMON, return_value=MagicMock()):
             svc = BaselineImportService()

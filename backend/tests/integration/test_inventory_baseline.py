@@ -37,6 +37,7 @@ from utils.inventory_converter import tree_to_operations
 def _filter_tree(filter_id: str) -> dict:
     return BASELINE_FILTER_TREES[filter_id]
 
+
 # =============================================================================
 # Integration Tests - Basic Filtering with Baseline Data
 # =============================================================================
@@ -504,9 +505,7 @@ class TestBaselineOrLogic:
             operations
         )
 
-        baseline_manifest.assert_device_count(
-            devices, "filter_multiple_operations_or"
-        )
+        baseline_manifest.assert_device_count(devices, "filter_multiple_operations_or")
 
         # All devices should be in City A or City B
         for device in devices:

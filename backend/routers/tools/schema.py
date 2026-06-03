@@ -127,7 +127,8 @@ async def get_baseline_profile(profile_id: str) -> Dict[str, Any]:
     try:
         return load_profile(profile_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        logger.warning("Baseline profile not found: %s", e)
+        raise HTTPException(status_code=404, detail="Baseline profile not found")
 
 
 @router.post(
@@ -146,7 +147,9 @@ async def create_baseline_yaml(body: CreateBaselineRequest) -> CreateBaselineRes
         return generate_baseline_file(body)
     except ValueError as e:
         logger.error("Invalid baseline generation request: %s", e)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(
+            status_code=400, detail="Invalid baseline generation parameters"
+        )
     except Exception as e:
         raise_internal_server_error(logger, "Failed to generate baseline YAML", e)
 
@@ -187,11 +190,9 @@ async def create_tests_baseline(
 
     except FileNotFoundError as e:
         logger.error("Baseline directory not found: %s", e)
-        raise HTTPException(
-            status_code=404, detail=f"Baseline directory not found: {str(e)}"
-        )
+        raise HTTPException(status_code=404, detail="Baseline directory not found")
     except ValueError as e:
         logger.error("Invalid baseline data: %s", e)
-        raise HTTPException(status_code=400, detail=f"Invalid baseline data: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid baseline data format")
     except Exception as e:
         raise_internal_server_error(logger, "Failed to create test baseline", e)

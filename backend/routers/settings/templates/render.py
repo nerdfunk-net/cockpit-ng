@@ -32,7 +32,10 @@ async def advanced_render_template(
     except HTTPException:
         raise
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        logger.warning("Template render validation error: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Template rendering failed"
+        )
     except Exception as exc:
         raise_internal_server_error(logger, "Failed to render template", exc)
 
@@ -50,6 +53,9 @@ async def execute_template_and_sync_to_nautobot(
     except HTTPException:
         raise
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        logger.warning("Template execute-and-sync validation error: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Template not found"
+        )
     except Exception as exc:
         raise_internal_server_error(logger, "Failed to execute template and sync", exc)

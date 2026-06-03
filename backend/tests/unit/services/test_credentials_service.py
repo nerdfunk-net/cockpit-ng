@@ -43,7 +43,9 @@ def _service(mock_repo: MagicMock) -> CredentialsService:
     with patch(_PATCH_REPO, return_value=mock_repo):
         with patch(_PATCH_ENCRYPT) as enc:
             enc.return_value.encrypt.side_effect = lambda v: f"enc:{v}".encode()
-            enc.return_value.decrypt.side_effect = lambda v: v.decode().replace("enc:", "")
+            enc.return_value.decrypt.side_effect = lambda v: v.decode().replace(
+                "enc:", ""
+            )
             return CredentialsService()
 
 

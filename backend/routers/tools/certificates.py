@@ -79,7 +79,7 @@ def scan_certificates(
         logger.error("Permission error scanning certificates: %s", e)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Permission denied accessing certificate directory: {e}",
+            detail="Permission denied accessing the certificate directory",
         )
     except Exception as e:
         logger.error("Error scanning certificates: %s", e)

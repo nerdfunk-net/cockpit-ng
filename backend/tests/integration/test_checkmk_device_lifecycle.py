@@ -10,7 +10,11 @@ Run:
 
 import pytest
 
-from services.checkmk.base import CheckMKClientFactory, checkmk_api_base_url, get_checkmk_config
+from services.checkmk.base import (
+    CheckMKClientFactory,
+    checkmk_api_base_url,
+    get_checkmk_config,
+)
 from services.checkmk.client import CheckMKAPIError
 from services.checkmk.config import ConfigService
 from services.checkmk.sync.base import NautobotToCheckMKService

@@ -151,7 +151,11 @@ async def create_job_template(
         return JobTemplateResponse(**template)
 
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning("Job template validation error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid job template parameters",
+        )
     except Exception as e:
         raise_internal_server_error(logger, "Failed to create job template: ", e)
 
@@ -358,7 +362,11 @@ async def update_job_template(
         return JobTemplateResponse(**updated_template)
 
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning("Job template validation error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid job template parameters",
+        )
     except HTTPException:
         raise
     except Exception as e:

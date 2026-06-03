@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-pytestmark = pytest.mark.unit
-
 from models.tools import CreateBaselineRequest
 from services.network.tools.baseline_profiles import (
     list_profiles,
     load_profile,
     merge_profile_into_request,
 )
+
+pytestmark = pytest.mark.unit
 
 
 def test_list_profiles_includes_pytest() -> None:

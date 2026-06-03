@@ -33,7 +33,9 @@ def _service() -> GitOperationsService:
 @pytest.mark.unit
 def test_get_repository_status_when_path_missing() -> None:
     svc = _service()
-    with patch("services.git.operations.get_repo_path", return_value="/nonexistent/repo"):
+    with patch(
+        "services.git.operations.get_repo_path", return_value="/nonexistent/repo"
+    ):
         with patch("services.git.operations.os.path.exists", return_value=False):
             status = svc.get_repository_status(_REPO, repo_id=1)
 
@@ -44,7 +46,9 @@ def test_get_repository_status_when_path_missing() -> None:
 @pytest.mark.unit
 def test_clone_repository_success() -> None:
     svc = _service()
-    with patch("services.git.operations.get_repo_path", return_value="/tmp/clone-target"):
+    with patch(
+        "services.git.operations.get_repo_path", return_value="/tmp/clone-target"
+    ):
         with patch("services.git.operations.os.makedirs"):
             with patch("services.git.operations.set_ssl_env"):
                 with patch("services.git.operations.Repo.clone_from"):
@@ -57,14 +61,18 @@ def test_clone_repository_success() -> None:
 @pytest.mark.unit
 def test_clone_repository_failure_cleans_up() -> None:
     svc = _service()
-    with patch("services.git.operations.get_repo_path", return_value="/tmp/clone-target"):
+    with patch(
+        "services.git.operations.get_repo_path", return_value="/tmp/clone-target"
+    ):
         with patch("services.git.operations.os.makedirs"):
             with patch("services.git.operations.set_ssl_env"):
                 with patch(
                     "services.git.operations.Repo.clone_from",
                     side_effect=RuntimeError("network"),
                 ):
-                    with patch("services.git.operations.os.path.exists", return_value=True):
+                    with patch(
+                        "services.git.operations.os.path.exists", return_value=True
+                    ):
                         with patch("services.git.operations.shutil.rmtree"):
                             result = svc.clone_repository(_REPO)
 
@@ -87,7 +95,9 @@ def test_sync_repository_pull_success() -> None:
                     side_effect=lambda p: p.endswith(".git"),
                 ):
                     with patch("services.git.operations.set_ssl_env"):
-                        with patch("services.git.operations.Repo", return_value=mock_repo):
+                        with patch(
+                            "services.git.operations.Repo", return_value=mock_repo
+                        ):
                             result = svc.sync_repository(_REPO)
 
     assert result.success is True
@@ -108,7 +118,9 @@ def test_sync_repository_clone_auth_error_message() -> None:
                             "services.git.operations.Repo.clone_from",
                             side_effect=gce,
                         ):
-                            with patch("services.git.operations.os.listdir", return_value=[]):
+                            with patch(
+                                "services.git.operations.os.listdir", return_value=[]
+                            ):
                                 with patch("services.git.operations.shutil.rmtree"):
                                     result = svc.sync_repository(_REPO)
 
@@ -138,7 +150,10 @@ def test_get_repository_status_populates_git_fields() -> None:
     with patch("services.git.operations.get_repo_path", return_value="/tmp/repo"):
         with patch("services.git.operations.os.path.exists", return_value=True):
             with patch("services.git.operations.Repo", return_value=mock_repo):
-                with patch("service_factory.build_git_cache_service", return_value=mock_cache_svc):
+                with patch(
+                    "service_factory.build_git_cache_service",
+                    return_value=mock_cache_svc,
+                ):
                     status = svc.get_repository_status(_REPO, repo_id=3)
 
     assert status["is_git_repo"] is True

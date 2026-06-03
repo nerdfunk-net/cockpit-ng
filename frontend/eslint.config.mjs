@@ -1,7 +1,7 @@
 import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
 import tseslint from 'typescript-eslint'
 import reactHooksPlugin from 'eslint-plugin-react-hooks'
-import noInlineDefaults from './eslint-rules/no-inline-defaults.js'
+import noInlineDefaults from './eslint-rules/no-inline-defaults.mjs'
 
 const eslintConfig = [
   ...nextCoreWebVitals,
