@@ -141,7 +141,7 @@ python -m pytest tests/unit/ -q -m unit \
 
 Manual CheckMK dev script `services/checkmk/client/test_client.py` is omitted from coverage metrics.
 
-CI enforces a phased minimum via `[tool.coverage.report] fail_under` in `pyproject.toml` (currently **59%**; target **70%**).
+CI enforces a phased minimum via `[tool.coverage.report] fail_under` in `pyproject.toml` (currently **60%**; target **70%**).
 
 **Phase 2 unit test modules** (compliance, CheckMK priority models, inventory/site utils):
 

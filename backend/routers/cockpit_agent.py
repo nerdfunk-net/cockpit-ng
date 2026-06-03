@@ -148,7 +148,7 @@ def git_pull(
 
         if response["status"] == "error":
             logger.error("Agent %s git-pull error: %s", agent_id, response.get("error"))
-            raise HTTPException(status_code=500, detail="Agent returned an error")
+            raise_internal_server_error(logger, "Agent returned an error response")
 
         if response["status"] == "timeout":
             logger.warning(
@@ -196,7 +196,7 @@ def docker_restart(
             logger.error(
                 "Agent %s docker-restart error: %s", agent_id, response.get("error")
             )
-            raise HTTPException(status_code=500, detail="Agent returned an error")
+            raise_internal_server_error(logger, "Agent returned an error response")
 
         if response["status"] == "timeout":
             logger.warning(

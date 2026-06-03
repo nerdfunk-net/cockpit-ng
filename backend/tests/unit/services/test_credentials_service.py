@@ -257,3 +257,48 @@ def test_get_ssh_key_path_returns_existing_file(tmp_path) -> None:
         path = svc.get_ssh_key_path(1)
 
     assert path == str(key_file)
+
+
+@pytest.mark.unit
+def test_export_ssh_keys_to_filesystem_writes_all_keys(tmp_path) -> None:
+    mock_repo = MagicMock()
+    mock_repo.get_by_type.return_value = [
+        _cred(type="ssh_key", name="key-a", ssh_key_encrypted=b"enc:line1"),
+        _cred(type="ssh_key", name="key-b", ssh_key_encrypted=None),
+    ]
+    svc = _service(mock_repo)
+
+    exported = svc.export_ssh_keys_to_filesystem(output_dir=str(tmp_path))
+
+    assert len(exported) == 1
+    assert os.path.exists(exported[0])
+
+
+@pytest.mark.unit
+def test_export_single_ssh_key_returns_none_for_password_cred() -> None:
+    mock_repo = MagicMock()
+    mock_repo.get_by_id.return_value = _cred(type="password")
+    svc = _service(mock_repo)
+    assert svc.export_single_ssh_key(1) is None
+
+
+@pytest.mark.unit
+def test_get_ssh_key_credentials_lists_ssh_type() -> None:
+    mock_repo = MagicMock()
+    mock_repo.get_by_type.return_value = [_cred(type="ssh_key")]
+    svc = _service(mock_repo)
+
+    items = svc.get_ssh_key_credentials()
+
+    assert len(items) == 1
+    mock_repo.get_by_type.assert_called_once_with("ssh_key")
+
+
+@pytest.mark.unit
+def test_to_dict_marks_expired_status() -> None:
+    mock_repo = MagicMock()
+    svc = _service(mock_repo)
+    yesterday = (datetime.now(timezone.utc).date() - timedelta(days=1)).isoformat()
+    result = svc._to_dict(_cred(valid_until=yesterday))
+
+    assert result["status"] == "expired"

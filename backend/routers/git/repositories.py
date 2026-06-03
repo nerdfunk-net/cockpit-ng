@@ -146,14 +146,12 @@ async def update_repository(
 
         success = git_repo_manager.update_repository(repo_id, repo_data)
         if not success:
-            raise HTTPException(status_code=500, detail="Failed to update repository")
+            raise_internal_server_error(logger, "Failed to update repository")
 
         # Get the updated repository
         updated_repo = git_repo_manager.get_repository(repo_id)
         if not updated_repo:
-            raise HTTPException(
-                status_code=500, detail="Failed to retrieve updated repository"
-            )
+            raise_internal_server_error(logger, "Failed to retrieve updated repository")
 
         # Convert updated repository data
         repo_dict = dict(updated_repo)
@@ -183,7 +181,7 @@ async def delete_repository(
 
         success = git_repo_manager.delete_repository(repo_id, hard_delete=hard_delete)
         if not success:
-            raise HTTPException(status_code=500, detail="Failed to delete repository")
+            raise_internal_server_error(logger, "Failed to delete repository")
 
         action = "deleted" if hard_delete else "deactivated"
         return {"message": f"Repository {action} successfully"}

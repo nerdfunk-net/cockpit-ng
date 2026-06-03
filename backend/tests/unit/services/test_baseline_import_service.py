@@ -11,6 +11,7 @@ from services.network.tools.baseline import BaselineImportService
 
 _PATCH_NB = "service_factory.build_nautobot_service"
 _PATCH_COMMON = "services.network.tools.baseline.DeviceCommonService"
+_PATCH_IMPORT = "services.network.tools.baseline.DeviceImportService"  # skip test only
 
 
 def _service() -> BaselineImportService:
@@ -352,3 +353,232 @@ async def test_create_location_types_patches_content_types() -> None:
     assert created["Site"] == "lt-1"
     patch_call = mock_nb.rest_request.await_args_list[-1]
     assert "virtualization.cluster" in patch_call.kwargs["data"]["content_types"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_devices_imports_via_import_service() -> None:
+    mock_nb = MagicMock()
+    with patch(_PATCH_NB, return_value=mock_nb):
+        with patch(_PATCH_COMMON, return_value=MagicMock()):
+            svc = BaselineImportService()
+
+    with patch(
+        "services.nautobot.devices.import_service.DeviceImportService.import_device",
+        new_callable=AsyncMock,
+        return_value={"device_id": "dev-uuid", "created": True},
+    ) as mock_import:
+        created = await svc.create_devices(
+            [
+                {
+                    "name": "router1",
+                    "device_type": "networkA",
+                    "location": "Site A",
+                    "roles": ["Network"],
+                    "interfaces": [
+                        {
+                            "name": "eth0",
+                            "ip_address": "10.0.0.1/24",
+                            "type": "1000base-t",
+                        }
+                    ],
+                    "primary_ip4": "10.0.0.1/24",
+                }
+            ]
+        )
+
+    assert created["router1"] == "dev-uuid"
+    mock_import.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_devices_skips_when_role_missing() -> None:
+    mock_nb = MagicMock()
+    with patch(_PATCH_NB, return_value=mock_nb):
+        with patch(_PATCH_COMMON, return_value=MagicMock()):
+            with patch(_PATCH_IMPORT, return_value=MagicMock()):
+                svc = BaselineImportService()
+
+    created = await svc.create_devices([{"name": "orphan", "device_type": "x"}])
+
+    assert created == {}
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_cluster_groups_creates_new() -> None:
+    mock_nb = MagicMock()
+    mock_nb.rest_request = AsyncMock(
+        side_effect=[{"count": 0}, {"id": "cg-1"}]
+    )
+    with patch(_PATCH_NB, return_value=mock_nb):
+        with patch(_PATCH_COMMON, return_value=MagicMock()):
+            svc = BaselineImportService()
+
+    created = await svc.create_cluster_groups([{"name": "Default", "description": "d"}])
+
+    assert created["Default"] == "cg-1"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_cluster_types_uses_cluster_manager() -> None:
+    mock_nb = MagicMock()
+    mock_nb.rest_request = AsyncMock(return_value={"count": 0})
+    with patch(_PATCH_NB, return_value=mock_nb):
+        with patch(_PATCH_COMMON, return_value=MagicMock()):
+            svc = BaselineImportService()
+
+    with patch(
+        "services.nautobot.managers.cluster_manager.ClusterManager.create_cluster_type",
+        new_callable=AsyncMock,
+        return_value={"id": "ct-1"},
+    ) as mock_create_type:
+        created = await svc.create_cluster_types(
+            [{"name": "cluster-type", "slug": "cluster-type"}]
+        )
+
+    assert created["cluster-type"] == "ct-1"
+    mock_create_type.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_clusters_uses_cluster_manager() -> None:
+    mock_nb = MagicMock()
+    mock_nb.rest_request = AsyncMock(return_value={"count": 0})
+    with patch(_PATCH_NB, return_value=mock_nb):
+        with patch(_PATCH_COMMON, return_value=MagicMock()):
+            svc = BaselineImportService()
+            svc.created_resources["cluster_types"] = {"cluster-type": "ct-1"}
+            svc.created_resources["cluster_groups"] = {"Default": "cg-1"}
+            svc.created_resources["locations"] = {"Site A": "loc-1"}
+
+    with patch(
+        "services.nautobot.managers.cluster_manager.ClusterManager.create_cluster",
+        new_callable=AsyncMock,
+        return_value={"id": "cl-1"},
+    ) as mock_create_cluster:
+        created = await svc.create_clusters(
+            [
+                {
+                    "name": "Cluster A",
+                    "cluster_type": "cluster-type",
+                    "cluster_group": "Default",
+                    "location": "Site A",
+                }
+            ]
+        )
+
+    assert created["Cluster A"] == "cl-1"
+    mock_create_cluster.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_baseline_runs_role_step(tmp_path) -> None:
+    (tmp_path / "baseline.yaml").write_text(
+        yaml.dump(
+            {
+                "roles": [
+                    {
+                        "name": "Network",
+                        "description": "net",
+                        "content_types": ["dcim.device"],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    mock_nb = MagicMock()
+    with patch(_PATCH_NB, return_value=mock_nb):
+        with patch(_PATCH_COMMON, return_value=MagicMock()):
+            svc = BaselineImportService()
+
+    with patch.object(
+        svc, "create_roles", AsyncMock(return_value={"Network": "role-1"})
+    ) as mock_roles:
+        summary = await svc.create_baseline(directory=str(tmp_path))
+
+    assert summary["success"] is True
+    assert summary["created"]["roles"] == 1
+    mock_roles.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_baseline_returns_failure_on_load_error() -> None:
+    mock_nb = MagicMock()
+    with patch(_PATCH_NB, return_value=mock_nb):
+        svc = BaselineImportService()
+
+    with patch.object(
+        svc, "load_baseline_files", AsyncMock(side_effect=RuntimeError("boom"))
+    ):
+        summary = await svc.create_baseline(directory="/tmp")
+
+    assert summary["success"] is False
+    assert "boom" in summary["message"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_virtual_machines_skips_missing_cluster() -> None:
+    mock_nb = MagicMock()
+    mock_nb.rest_request = AsyncMock(return_value={"count": 0})
+    with patch(_PATCH_NB, return_value=mock_nb):
+        svc = BaselineImportService()
+        svc.created_resources["clusters"] = {}
+
+    created = await svc.create_virtual_machines(
+        [{"name": "vm1", "cluster": "Missing"}]
+    )
+
+    assert created == {}
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_virtual_machines_reuses_existing() -> None:
+    mock_nb = MagicMock()
+    mock_nb.rest_request = AsyncMock(
+        return_value={"count": 1, "results": [{"id": "vm-existing"}]}
+    )
+    with patch(_PATCH_NB, return_value=mock_nb):
+        svc = BaselineImportService()
+
+    created = await svc.create_virtual_machines([{"name": "vm1", "cluster": "C1"}])
+
+    assert created["vm1"] == "vm-existing"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_virtual_machines_creates_via_manager() -> None:
+    mock_nb = MagicMock()
+    mock_nb.rest_request = AsyncMock(return_value={"count": 0})
+    with patch(_PATCH_NB, return_value=mock_nb):
+        svc = BaselineImportService()
+        svc.created_resources["clusters"] = {"Cluster A": "cl-1"}
+        svc.created_resources["roles"] = {"VM Role": "role-1"}
+
+    with patch.object(svc, "get_status_uuid", AsyncMock(return_value="status-uuid")):
+        with patch(
+            "services.nautobot.managers.vm_manager.VirtualMachineManager.create_virtual_machine",
+            new_callable=AsyncMock,
+            return_value={"id": "vm-new"},
+        ) as mock_create_vm:
+            created = await svc.create_virtual_machines(
+                [
+                    {
+                        "name": "vm-new",
+                        "cluster": "Cluster A",
+                        "roles": ["VM Role"],
+                    }
+                ]
+            )
+
+    assert created["vm-new"] == "vm-new"
+    mock_create_vm.assert_awaited_once()

@@ -215,7 +215,7 @@ async def sync_repository(
             return {"success": True, "message": message, "repository_path": repo_path}
         else:
             git_repo_manager.update_sync_status(repo_id, f"error: {message}")
-            raise HTTPException(status_code=500, detail=message)
+            raise_internal_server_error(logger, "Repository sync failed")
 
     except HTTPException:
         raise
@@ -341,7 +341,7 @@ async def remove_and_sync_repository(
             return {"success": True, "message": message, "repository_path": repo_path}
         else:
             git_repo_manager.update_sync_status(repo_id, f"error: {message}")
-            raise HTTPException(status_code=500, detail=message)
+            raise_internal_server_error(logger, "Repository sync failed")
 
     except HTTPException:
         raise

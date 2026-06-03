@@ -294,3 +294,81 @@ async def test_render_agent_template_with_inventory_devices() -> None:
                         )
 
     assert "count: 1" in result.rendered_content
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_render_agent_template_undefined_jinja_variable() -> None:
+    svc = AgentTemplateRenderService()
+
+    with patch(_PATCH_DEVICE_QUERY, return_value=MagicMock()):
+        with patch(_PATCH_CHECKMK_CONFIG, return_value=MagicMock()):
+            with pytest.raises(ValueError, match="Undefined variable"):
+                await svc.render_agent_template(
+                    template_content="hello {{ not_defined.attr }}\n",
+                    inventory_id=None,
+                    pass_snmp_mapping=False,
+                    user_variables={},
+                )
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_populate_nautobot_variable_locations() -> None:
+    svc = AgentTemplateRenderService()
+    mock_nb = MagicMock()
+    mock_nb.graphql_query = AsyncMock(
+        return_value={"data": {"locations": [{"id": "1", "name": "DC"}]}}
+    )
+
+    with patch(_PATCH_NAUTOBOT, return_value=mock_nb):
+        with patch(_PATCH_NAUTOBOT_META, return_value=MagicMock()):
+            result = await svc._populate_nautobot_variable(
+                {"metadata": {"nautobot_source": "locations"}}
+            )
+
+    assert result == [{"id": "1", "name": "DC"}]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_populate_inventory_variable_custom_field_subset() -> None:
+    svc = AgentTemplateRenderService()
+    mock_inventory = MagicMock()
+    mock_inventory.analyze_inventory = AsyncMock(
+        return_value={
+            "custom_fields": {"site": ["DC1", "DC2"], "other": []},
+        }
+    )
+
+    with patch("service_factory.build_inventory_service", return_value=mock_inventory):
+        result = await svc._populate_inventory_variable(
+            {
+                "metadata": {
+                    "inventory_id": 3,
+                    "inventory_data_type": "custom_fields",
+                    "inventory_custom_field": "site",
+                }
+            },
+            username="bob",
+        )
+
+    assert result == ["DC1", "DC2"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_render_agent_template_includes_path_in_context() -> None:
+    svc = AgentTemplateRenderService()
+
+    with patch(_PATCH_DEVICE_QUERY, return_value=MagicMock()):
+        with patch(_PATCH_CHECKMK_CONFIG, return_value=MagicMock()):
+            result = await svc.render_agent_template(
+                template_content="path={{ path }}\n",
+                inventory_id=None,
+                pass_snmp_mapping=False,
+                user_variables={},
+                path="/etc/agent",
+            )
+
+    assert result.rendered_content.strip() == "path=/etc/agent"

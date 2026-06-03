@@ -102,8 +102,8 @@ omit = [
 precision = 2
 show_missing = true
 skip_covered = false
-# Phased gate: 59 after baseline tests included in -m unit (2026-06); target 70
-fail_under = 59
+# Phased gate: 60 after profile/priority/sync facade tests (2026-06); target 70
+fail_under = 60
 
 exclude_lines = [
     "pragma: no cover",

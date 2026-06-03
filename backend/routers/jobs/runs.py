@@ -533,7 +533,7 @@ async def cancel_job_run(
         if updated:
             return {"message": f"Job run {run_id} cancelled", "job_run": updated}
 
-        raise HTTPException(status_code=500, detail="Failed to cancel job run")
+        raise_internal_server_error(logger, "Failed to cancel job run")
 
     except HTTPException:
         raise
@@ -662,7 +662,7 @@ async def delete_job_run(
         if deleted:
             return {"message": f"Job run {run_id} deleted", "deleted": True}
 
-        raise HTTPException(status_code=500, detail="Failed to delete job run")
+        raise_internal_server_error(logger, "Failed to delete job run")
 
     except HTTPException:
         raise

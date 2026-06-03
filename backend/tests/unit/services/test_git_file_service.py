@@ -350,3 +350,37 @@ def test_list_csv_files_empty_repo(tmp_path) -> None:
 
     assert result["success"] is True
     assert result["data"]["total_count"] == 0
+
+
+@pytest.mark.unit
+def test_get_directory_files_missing_directory() -> None:
+    svc = GitFileService()
+    mock_repo = MagicMock()
+
+    with patch(
+        "services.git.file_service.git_repo_manager.get_repository",
+        return_value=_REPO,
+    ):
+        with patch("services.git.file_service.git_repo_path", return_value="/missing"):
+            with patch("services.git.file_service.os.path.exists", return_value=False):
+                with patch(
+                    "services.git.file_service.get_git_repo_by_id",
+                    return_value=mock_repo,
+                ):
+                    result = svc.get_directory_files(1, path="subdir")
+
+    assert result["directory_exists"] is False
+    assert result["files"] == []
+
+
+@pytest.mark.unit
+def test_get_csv_headers_repo_not_found() -> None:
+    svc = GitFileService()
+    with patch(
+        "services.git.file_service.git_repo_manager.get_repository",
+        return_value=None,
+    ):
+        with pytest.raises(HTTPException) as exc:
+            svc.get_csv_headers(1, "data.csv")
+
+    assert exc.value.status_code == 404
