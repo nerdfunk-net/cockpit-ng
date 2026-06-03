@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from models.nb2cmk import DeviceExtensions
 from utils.cmk_site_utils import get_device_folder, get_monitored_site
@@ -29,11 +29,16 @@ class DeviceNormalizationService:
         self.tag_normalizer = TagNormalizer(self.field_normalizer, self.ip_normalizer)
         self._config = service_factory.build_checkmk_config_service()
 
-    def normalize_device(self, device_data: Dict[str, Any]) -> DeviceExtensions:
+    def normalize_device(
+        self,
+        device_data: Dict[str, Any],
+        config: Optional[Dict[str, Any]] = None,
+    ) -> DeviceExtensions:
         """Normalize device data from Nautobot for CheckMK comparison.
 
         Args:
             device_data: Device data from Nautobot GraphQL query
+            config: Pre-loaded CheckMK config dict; loads from disk when None
 
         Returns:
             DeviceExtensions object with normalized configuration
@@ -158,7 +163,7 @@ class DeviceNormalizationService:
                 logger.info("-" * 80)
                 logger.info("[PROCESSING] site determination")
                 logger.info("-" * 80)
-                extensions.attributes["site"] = get_monitored_site(device_data, None)
+                extensions.attributes["site"] = get_monitored_site(device_data, config)
                 logger.info(
                     "[NORMALIZATION] Determined site for device %s: %s",
                     device_name,
@@ -180,7 +185,7 @@ class DeviceNormalizationService:
                 logger.info("-" * 80)
                 logger.info("[PROCESSING] folder determination")
                 logger.info("-" * 80)
-                extensions.folder = get_device_folder(device_data, None)
+                extensions.folder = get_device_folder(device_data, config)
                 logger.info(
                     "[NORMALIZATION] Determined folder for device %s: %s",
                     device_name,
@@ -230,16 +235,16 @@ class DeviceNormalizationService:
                 logger.info("[PROCESSING] tags and host tag group mappings")
                 logger.info("-" * 80)
                 self.tag_normalizer.process_additional_attributes(
-                    device_data, extensions
+                    device_data, extensions, config
                 )
-                self.tag_normalizer.process_cf2htg_mappings(device_data, extensions)
-                self.tag_normalizer.process_tags2htg_mappings(device_data, extensions)
-                self.tag_normalizer.process_attr2htg_mappings(device_data, extensions)
+                self.tag_normalizer.process_cf2htg_mappings(device_data, extensions, config)
+                self.tag_normalizer.process_tags2htg_mappings(device_data, extensions, config)
+                self.tag_normalizer.process_attr2htg_mappings(device_data, extensions, config)
 
                 logger.info("-" * 80)
                 logger.info("[PROCESSING] field mappings")
                 logger.info("-" * 80)
-                self.field_normalizer.process_field_mappings(device_data, extensions)
+                self.field_normalizer.process_field_mappings(device_data, extensions, config)
 
                 logger.info(
                     "[NORMALIZATION] Successfully normalized device %s", device_name

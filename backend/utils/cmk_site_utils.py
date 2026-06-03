@@ -23,13 +23,14 @@ def get_monitored_site(
 
     Args:
         device_data: Device data from Nautobot
+        checkmk_config: Pre-loaded config dict; loads from disk when None
 
     Returns:
         CheckMK site name
     """
     try:
         config_service = service_factory.build_checkmk_config_service()
-        config = config_service.load_checkmk_config()
+        config = checkmk_config if checkmk_config is not None else config_service.load_checkmk_config()
         site_config = config.get("monitored_site", {})
 
         device_name = device_data.get("name", "")
@@ -95,11 +96,12 @@ def get_monitored_site(
 
         # 5. Return default site
         logger.debug("Returning default site for device '%s'", device_name)
-        return config_service.get_default_site()
+        default_site = config.get("monitored_site", {}).get("default", "cmk")
+        return default_site
 
     except Exception as e:
         logger.error("Error determining site for device: %s", e)
-        return config_service.get_default_site()
+        return service_factory.build_checkmk_config_service().get_default_site()
 
 
 def get_device_site_from_normalized_data(normalized_data: Dict[str, Any]) -> str:
@@ -136,7 +138,7 @@ def get_device_folder(
 
     Args:
         device_data: Device data from Nautobot
-        checkmk_config: Optional CheckMK configuration (unused, for compatibility)
+        checkmk_config: Pre-loaded config dict; loads from disk when None
 
     Returns:
         CheckMK folder path
@@ -144,7 +146,7 @@ def get_device_folder(
 
     try:
         config_service = service_factory.build_checkmk_config_service()
-        config = config_service.load_checkmk_config()
+        config = checkmk_config if checkmk_config is not None else config_service.load_checkmk_config()
         folders_config = config.get("folders", {})
 
         device_name = device_data.get("name", "")

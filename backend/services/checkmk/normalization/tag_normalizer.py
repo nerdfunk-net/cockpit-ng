@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from models.nb2cmk import DeviceExtensions
 from utils.cmk_folder_utils import _resolve_location_type_filter, _resolve_plain_field
@@ -32,16 +32,20 @@ class TagNormalizer:
         self._config = service_factory.build_checkmk_config_service()
 
     def process_additional_attributes(
-        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+        self,
+        device_data: Dict[str, Any],
+        extensions: DeviceExtensions,
+        config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Process additional attributes configuration.
 
         Args:
             device_data: Device data from Nautobot
             extensions: Extensions object to update
+            config: Pre-loaded config dict; loads from disk when None
         """
         try:
-            config = self._config.load_checkmk_config()
+            config = config if config is not None else self._config.load_checkmk_config()
             additional_attributes_config = config.get("additional_attributes", {})
 
             device_name = device_data.get("name", "")
@@ -71,16 +75,20 @@ class TagNormalizer:
             # Don't fail the whole process, just log the error
 
     def process_cf2htg_mappings(
-        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+        self,
+        device_data: Dict[str, Any],
+        extensions: DeviceExtensions,
+        config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Process Custom Field to Host Tag Group mappings.
 
         Args:
             device_data: Device data from Nautobot
             extensions: Extensions object to update
+            config: Pre-loaded config dict; loads from disk when None
         """
         try:
-            config = self._config.load_checkmk_config()
+            config = config if config is not None else self._config.load_checkmk_config()
             cf2htg_config = config.get("cf2htg", {})
             custom_field_data = device_data.get("_custom_field_data", {})
             device_name = device_data.get("name", "")
@@ -104,16 +112,20 @@ class TagNormalizer:
             # Don't fail the whole process, just log the error
 
     def process_tags2htg_mappings(
-        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+        self,
+        device_data: Dict[str, Any],
+        extensions: DeviceExtensions,
+        config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Process Tags to Host Tag Group mappings.
 
         Args:
             device_data: Device data from Nautobot
             extensions: Extensions object to update
+            config: Pre-loaded config dict; loads from disk when None
         """
         try:
-            config = self._config.load_checkmk_config()
+            config = config if config is not None else self._config.load_checkmk_config()
             tags2htg_config = config.get("tags2htg", {})
             device_name = device_data.get("name", "")
 
@@ -150,7 +162,10 @@ class TagNormalizer:
             # Don't fail the whole process, just log the error
 
     def process_attr2htg_mappings(
-        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+        self,
+        device_data: Dict[str, Any],
+        extensions: DeviceExtensions,
+        config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Process Attribute to Host Tag Group mappings.
 
@@ -160,9 +175,10 @@ class TagNormalizer:
         Args:
             device_data: Device data from Nautobot
             extensions: Extensions object to update
+            config: Pre-loaded config dict; loads from disk when None
         """
         try:
-            config = self._config.load_checkmk_config()
+            config = config if config is not None else self._config.load_checkmk_config()
             attr2htg_config = config.get("attr2htg", {})
             device_name = device_data.get("name", "")
 

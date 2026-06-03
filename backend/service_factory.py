@@ -231,6 +231,13 @@ def build_device_normalization_service():
     return DeviceNormalizationService()
 
 
+def build_priority_rule_evaluator():
+    """Create a fresh PriorityRuleEvaluator instance."""
+    from services.checkmk.priority_rule_evaluator import PriorityRuleEvaluator
+
+    return PriorityRuleEvaluator()
+
+
 # ---------------------------------------------------------------------------
 # Git services
 # ---------------------------------------------------------------------------

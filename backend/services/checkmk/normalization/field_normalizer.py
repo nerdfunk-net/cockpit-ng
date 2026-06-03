@@ -1,7 +1,7 @@
 """Field normalization for device data."""
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from models.nb2cmk import DeviceExtensions
 from utils.cmk_folder_utils import _resolve_location_type_filter, _resolve_plain_field
@@ -18,16 +18,20 @@ class FieldNormalizer:
         self._config = service_factory.build_checkmk_config_service()
 
     def process_field_mappings(
-        self, device_data: Dict[str, Any], extensions: DeviceExtensions
+        self,
+        device_data: Dict[str, Any],
+        extensions: DeviceExtensions,
+        config: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Process field mappings from Nautobot to CheckMK attributes.
 
         Args:
             device_data: Device data from Nautobot
             extensions: Extensions object to update
+            config: Pre-loaded config dict; loads from disk when None
         """
         try:
-            config = self._config.load_checkmk_config()
+            config = config if config is not None else self._config.load_checkmk_config()
             mapping_config = config.get("mapping", {})
             device_name = device_data.get("name", "")
 

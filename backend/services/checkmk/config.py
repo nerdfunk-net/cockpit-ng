@@ -22,8 +22,11 @@ class ConfigService:
         self._checkmk_config: Optional[Dict[str, Any]] = None
         self._snmp_mapping: Optional[Dict[str, Any]] = None
         self._queries: Optional[Dict[str, Any]] = None
+        self._named_configs: Dict[str, Dict[str, Any]] = {}
         # Updated path: services/checkmk/config.py -> backend/ -> project_root/config/
         self._config_dir = Path(__file__).parent.parent.parent.parent / "config"
+        # Priority-rule YAML files live in config/checkmk/ (managed via the settings UI)
+        self._checkmk_dir = self._config_dir / "checkmk"
 
     def load_checkmk_config(self, force_reload: bool = False) -> Dict[str, Any]:
         """Load CheckMK configuration from YAML file.
@@ -176,9 +179,46 @@ class ConfigService:
             logger.error("Error getting ignore attributes: %s", e)
             return []
 
+    def load_config_file(
+        self, filename: str, force_reload: bool = False
+    ) -> Dict[str, Any]:
+        """Load a priority-rule configuration file from config/checkmk/.
+
+        Args:
+            filename: Filename (e.g. "role_network.yaml") — must not contain path separators
+            force_reload: If True, bypass the per-filename cache
+
+        Returns:
+            Parsed YAML dict
+
+        Raises:
+            FileNotFoundError: If the file does not exist in config/checkmk/
+            yaml.YAMLError: If YAML parsing fails
+        """
+        if filename not in self._named_configs or force_reload:
+            config_path = self._checkmk_dir / filename
+            try:
+                with open(config_path) as f:
+                    self._named_configs[filename] = yaml.safe_load(f) or {}
+                logger.info("Loaded named config '%s' from %s", filename, config_path)
+            except FileNotFoundError:
+                logger.error(
+                    "Named config file not found: %s (checkmk config dir: %s)",
+                    filename,
+                    self._checkmk_dir,
+                )
+                raise FileNotFoundError(
+                    f"Priority rule config file '{filename}' not found in {self._checkmk_dir}"
+                )
+            except yaml.YAMLError as e:
+                logger.error("Error parsing named config '%s': %s", filename, e)
+                raise
+        return self._named_configs[filename]
+
     def reload_config(self) -> None:
         """Reload all cached configuration files."""
         self._checkmk_config = None
         self._snmp_mapping = None
         self._queries = None
+        self._named_configs = {}
         logger.info("Configuration cache cleared, will reload on next access")

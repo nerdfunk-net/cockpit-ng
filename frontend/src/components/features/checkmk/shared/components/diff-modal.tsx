@@ -54,9 +54,20 @@ export function DiffModal({
           ) : diffResult ? (
             <div className="space-y-4">
               {/* Header with status */}
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Generated: {new Date(diffResult.timestamp).toLocaleString()}
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="text-sm text-muted-foreground">
+                    Generated: {new Date(diffResult.timestamp).toLocaleString()}
+                  </div>
+                  {(() => {
+                    const matchedRule = diffResult.differences.normalized_config.internal?.matched_rule
+                    if (!matchedRule) return null
+                    return (
+                      <Badge variant="outline" className="text-slate-700 border-slate-400 bg-slate-50 font-mono text-xs">
+                        Priority Rule: {matchedRule.filename}{matchedRule.is_default ? ' (default)' : ''}
+                      </Badge>
+                    )
+                  })()}
                 </div>
                 <Badge
                   variant={

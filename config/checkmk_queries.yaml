@@ -29,6 +29,12 @@ queries:
         role {
           name
         }
+        device_type {
+          model
+          manufacturer {
+            name
+          }
+        }
         platform {
           name
         }

@@ -22,12 +22,16 @@ async def _sync_one_device(nb2cmk_service, device_id: str) -> Dict[str, Any]:
     enclosing Celery task spins up only one event loop per iteration.
 
     Returns a result dict with keys: ``device_id``, ``hostname``, ``operation``
-    (``"skip"`` | ``"update"`` | ``"add"``), ``success``, ``message``.
+    (``"skip"`` | ``"update"`` | ``"add"``), ``success``, ``message``,
+    ``priority_rule`` (filename of matched rule, or ``None`` for default config).
     Raises on unrecoverable errors so the caller can mark the device as failed.
     """
     normalized_data = await nb2cmk_service.get_device_normalized(device_id)
     ip_address = normalized_data.get("attributes", {}).get("ipaddress", "")
     hostname_fallback = normalized_data.get("internal", {}).get("hostname", device_id)
+
+    matched_rule = normalized_data.get("internal", {}).get("matched_rule", {})
+    priority_rule = None if matched_rule.get("is_default") else matched_rule.get("filename")
 
     if not ip_address:
         logger.info(
@@ -41,6 +45,7 @@ async def _sync_one_device(nb2cmk_service, device_id: str) -> Dict[str, Any]:
             "operation": "skip",
             "success": False,
             "message": "Skipped: no primary IPv4 address",
+            "priority_rule": priority_rule,
         }
 
     try:
@@ -51,6 +56,7 @@ async def _sync_one_device(nb2cmk_service, device_id: str) -> Dict[str, Any]:
             "operation": "update",
             "success": True,
             "message": getattr(result, "message", "Updated"),
+            "priority_rule": priority_rule,
         }
     except Exception as update_error:
         # If the device does not yet exist in CheckMK, fall back to add.
@@ -64,6 +70,7 @@ async def _sync_one_device(nb2cmk_service, device_id: str) -> Dict[str, Any]:
                 "operation": "add",
                 "success": True,
                 "message": getattr(result, "message", "Added"),
+                "priority_rule": priority_rule,
             }
         raise
 

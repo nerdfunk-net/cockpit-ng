@@ -109,6 +109,13 @@ export interface StatusMessage {
   text: string
 }
 
+export interface MatchedRule {
+  id: number | null
+  filename: string
+  priority_order: number | null
+  is_default: boolean
+}
+
 // Diff types
 export interface DiffResult {
   device_id: string
@@ -119,6 +126,13 @@ export interface DiffResult {
     normalized_config: {
       folder: string
       attributes: Record<string, unknown>
+      internal?: {
+        hostname?: string
+        role?: string
+        status?: string
+        location?: string
+        matched_rule?: MatchedRule
+      }
     }
     checkmk_config: {
       folder: string
