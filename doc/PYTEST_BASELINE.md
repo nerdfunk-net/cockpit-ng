@@ -9,7 +9,7 @@
 | **Related docs** | `backend/tests/BASELINE_TEST_DATA.md`, `backend/tests/README.md`, `doc/TESTING-GUIDE.md` |
 | **Canonical data** | `contributing-data/tests_baseline/baseline.yaml` (`backend/tests/baseline.yaml` is a symlink) |
 | **Golden metadata** | `backend/tests/baseline.golden.yaml` (tag/status/location parity reference) |
-| **Import path** | `contributing-data/tests_baseline/*.yaml` via `TestBaselineService` (`BASELINE_DIR` env override) |
+| **Import path** | `contributing-data/tests_baseline/*.yaml` via `BaselineImportService` (`BASELINE_DIR` env override) |
 | **Generator (today)** | `backend/services/network/tools/baseline_generator.py`, UI: Tools → Baseline Management |
 
 ---
@@ -497,7 +497,7 @@ else:
 
 ## 9. Import path and environment
 
-### 9.1 `TestBaselineService`
+### 9.1 `BaselineImportService`
 
 **File**: `backend/services/network/tools/baseline.py`
 

@@ -20,7 +20,7 @@ from models.tools import (
     CreateBaselineResponse,
     ImportBaselineRequest,
 )
-from services.network.tools.baseline import TestBaselineService
+from services.network.tools.baseline import BaselineImportService
 from services.network.tools.baseline_generator import generate_baseline_file
 from services.network.tools.baseline_profiles import list_profiles, load_profile
 
@@ -172,7 +172,7 @@ async def create_tests_baseline(
     Existing resources are skipped (idempotent operation).
     """
     try:
-        service = TestBaselineService()
+        service = BaselineImportService()
         directory = body.directory if body else None
         result = await service.create_baseline(directory=directory)
 

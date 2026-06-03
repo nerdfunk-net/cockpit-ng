@@ -45,5 +45,6 @@ def load_test_env(*, override: bool = True) -> bool:
     return True
 
 
-def test_env_path() -> Path:
+def get_test_env_path() -> Path:
+    """Path to ``backend/.env.test`` (not a pytest test — do not prefix with ``test_``)."""
     return TEST_ENV_PATH

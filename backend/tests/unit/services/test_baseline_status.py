@@ -10,9 +10,7 @@ from services.network.tools.baseline import (
     STATUS_CONTENT_TYPE_VM,
     STATUS_CONTENT_TYPE_VM_INTERFACE,
 )
-from services.network.tools.baseline import (
-    TestBaselineService as BaselineImportService,
-)
+from services.network.tools.baseline import BaselineImportService
 
 VM_STATUS_ID = "11111111-1111-1111-1111-111111111111"
 IFACE_STATUS_ID = "22222222-2222-2222-2222-222222222222"

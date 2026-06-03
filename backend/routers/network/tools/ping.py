@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from core.auth import verify_token
 from core.safe_http_errors import raise_internal_server_error
 from core.schema_manager import SchemaManager
-from services.network.tools.baseline import TestBaselineService
+from services.network.tools.baseline import BaselineImportService
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ async def create_tests_baseline() -> Dict[str, Any]:
     Existing resources are skipped (idempotent operation).
     """
     try:
-        service = TestBaselineService()
+        service = BaselineImportService()
         result = await service.create_baseline()
 
         if not result.get("success"):

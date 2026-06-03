@@ -111,8 +111,8 @@ def sort_location_types_by_parent(
     return sorted_list
 
 
-class TestBaselineService:
-    """Service to load and create test baseline data in Nautobot."""
+class BaselineImportService:
+    """Service to load and create baseline test data in Nautobot."""
 
     def __init__(self):
         import service_factory

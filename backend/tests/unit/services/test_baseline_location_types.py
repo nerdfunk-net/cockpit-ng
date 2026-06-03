@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from services.network.tools.baseline import (
-    TestBaselineService,
+    BaselineImportService,
     content_types_from_api_record,
     normalize_content_types,
     normalize_location_type_content_types,
@@ -57,7 +57,7 @@ def test_sort_location_types_by_parent() -> None:
 
 @pytest.mark.asyncio
 async def test_create_location_types_patches_existing_content_types() -> None:
-    service = TestBaselineService.__new__(TestBaselineService)
+    service = BaselineImportService.__new__(BaselineImportService)
     service.nautobot = MagicMock()
     service.nautobot.rest_request = AsyncMock(
         side_effect=[
@@ -98,7 +98,7 @@ async def test_create_location_types_patches_existing_content_types() -> None:
 
 @pytest.mark.asyncio
 async def test_create_location_types_skips_patch_when_content_types_match() -> None:
-    service = TestBaselineService.__new__(TestBaselineService)
+    service = BaselineImportService.__new__(BaselineImportService)
     service.nautobot = MagicMock()
     service.nautobot.rest_request = AsyncMock(
         return_value={
