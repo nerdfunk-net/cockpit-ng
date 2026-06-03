@@ -232,7 +232,7 @@ class VirtualMachineManager:
             interface_data["mtu"] = mtu
         if description is not None:
             interface_data["description"] = description
-        if mode is not None:
+        if mode is not None and mode != "none":
             interface_data["mode"] = mode
         if untagged_vlan_id:
             interface_data["untagged_vlan"] = {"id": untagged_vlan_id}
@@ -454,7 +454,7 @@ class VirtualMachineManager:
         if description:
             interface_data["description"] = description
 
-        if mode:
+        if mode and mode != "none":
             interface_data["mode"] = mode
 
         if untagged_vlan_id:

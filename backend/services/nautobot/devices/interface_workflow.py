@@ -440,7 +440,19 @@ class InterfaceManagerService:
         ]
         for field in optional_fields:
             if field in interface and interface[field] is not None:
+                # "none" is the UI sentinel for "no mode"; Nautobot rejects it
+                if field == "mode" and interface[field] == "none":
+                    continue
                 interface_payload[field] = interface[field]
+
+        # Nautobot REST API requires VLAN references as {"id": uuid}
+        untagged_vlan = interface.get("untagged_vlan")
+        if untagged_vlan and untagged_vlan != "none":
+            interface_payload["untagged_vlan"] = {"id": untagged_vlan}
+
+        tagged_vlans = interface.get("tagged_vlans")
+        if tagged_vlans:
+            interface_payload["tagged_vlans"] = [{"id": vid} for vid in tagged_vlans]
 
         existing_id = await self.common.resolve_interface_by_name(
             device_id=device_id,

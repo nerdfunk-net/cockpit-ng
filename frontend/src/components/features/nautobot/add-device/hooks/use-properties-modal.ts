@@ -17,11 +17,11 @@ export function usePropertiesModal(): PropertiesModalHook {
   const [currentInterfaceId, setCurrentInterfaceId] = useState<string | null>(null)
   const [locationName, setLocationName] = useState<string | undefined>(undefined)
 
-  // Fetch VLANs when modal is open
+  // Fetch VLANs when modal is open; locationName is an optional filter, not required
   const { data: vlans = EMPTY_VLANS, isLoading: isLoadingVlans } = useVlansQuery({
     locationName,
     includeGlobal: true,
-    enabled: showModal && !!locationName,
+    enabled: showModal,
   })
 
   const openModal = useCallback((interfaceId: string, location?: string) => {

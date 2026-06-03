@@ -736,7 +736,7 @@ class DeviceCreationService:
                 interface_dict["mac_address"] = interface.mac_address
             if interface.mtu:
                 interface_dict["mtu"] = interface.mtu
-            if interface.mode:
+            if interface.mode and interface.mode != "none":
                 interface_dict["mode"] = interface.mode
             if interface.untagged_vlan:
                 interface_dict["untagged_vlan"] = interface.untagged_vlan

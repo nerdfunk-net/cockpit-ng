@@ -152,9 +152,13 @@ export function InterfacePropertiesModal({
                   <Label className="text-xs">Mode</Label>
                   <Select
                     value={watch(`interfaces.${interfaceIndex}.mode`) || 'none'}
-                    onValueChange={value =>
+                    onValueChange={value => {
                       setValue(`interfaces.${interfaceIndex}.mode`, value)
-                    }
+                      if (value === 'none') {
+                        setValue(`interfaces.${interfaceIndex}.untagged_vlan`, '')
+                        setValue(`interfaces.${interfaceIndex}.tagged_vlans`, [])
+                      }
+                    }}
                   >
                     <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
                       <SelectValue placeholder="Select mode" />
@@ -242,8 +246,7 @@ export function InterfacePropertiesModal({
                         ))}
                     </SelectContent>
                   </Select>
-                  {watch(`interfaces.${interfaceIndex}.tagged_vlans`)?.length &&
-                    watch(`interfaces.${interfaceIndex}.tagged_vlans`)!.length > 0 && (
+                  {(watch(`interfaces.${interfaceIndex}.tagged_vlans`)?.length ?? 0) > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {watch(`interfaces.${interfaceIndex}.tagged_vlans`)!.map(
                           vlanId => {
