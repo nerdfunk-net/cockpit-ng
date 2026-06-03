@@ -23,6 +23,7 @@ const navigationSectionTitles = [
   'CheckMK',
   'Agents',
   'Network',
+  'Server & Clients',
   'Jobs',
   'Settings',
 ]
