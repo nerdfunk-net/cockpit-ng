@@ -148,13 +148,20 @@ def execute_compare_devices(
                     if has_differences:
                         differences_found += 1
 
-                    # Get device name from normalized config
+                    # Get device name and priority rule from normalized config
                     device_name = device_id  # Default to UUID
+                    priority_rule = None
                     if comparison_result.normalized_config:
                         internal = comparison_result.normalized_config.get(
                             "internal", {}
                         )
                         device_name = internal.get("hostname", device_id)
+                        matched_rule = internal.get("matched_rule", {})
+                        priority_rule = (
+                            None
+                            if matched_rule.get("is_default")
+                            else matched_rule.get("filename")
+                        )
 
                     # Filter diff to remove ignored attributes (same as manual job)
                     raw_diff = comparison_result.diff or ""
@@ -184,10 +191,10 @@ def execute_compare_devices(
                     results.append(
                         {
                             "device_id": device_id,
-                            "device_name": device_name,
-                            "status": "completed",
+                            "hostname": device_name,
                             "checkmk_status": comparison_result.result,
                             "has_differences": has_differences,
+                            "priority_rule": priority_rule,
                         }
                     )
                 else:
@@ -205,7 +212,10 @@ def execute_compare_devices(
                     results.append(
                         {
                             "device_id": device_id,
-                            "status": "failed",
+                            "hostname": device_id,
+                            "checkmk_status": "error",
+                            "has_differences": False,
+                            "priority_rule": None,
                             "error": "No comparison result",
                         }
                     )
@@ -225,7 +235,14 @@ def execute_compare_devices(
                     ignored_attributes=[],
                 )
                 results.append(
-                    {"device_id": device_id, "status": "failed", "error": error_msg}
+                    {
+                        "device_id": device_id,
+                        "hostname": device_id,
+                        "checkmk_status": "error",
+                        "has_differences": False,
+                        "priority_rule": None,
+                        "error": error_msg,
+                    }
                 )
 
         # Update final progress
@@ -253,6 +270,7 @@ def execute_compare_devices(
             "failed": failed_count,
             "differences_found": differences_found,
             "job_id": job_id,
+            "results": results,
         }
 
     except Exception as e:

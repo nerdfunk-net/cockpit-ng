@@ -730,6 +730,48 @@ export function isSetPrimaryIpJobResult(
 }
 
 // ============================================================================
+// Compare Devices Job Result Types (CheckMK Compare)
+// ============================================================================
+
+export interface CompareJobDeviceResult {
+  device_id: string
+  hostname: string
+  checkmk_status: 'equal' | 'diff' | 'host_not_found' | 'error'
+  has_differences: boolean
+  priority_rule: string | null
+  error?: string
+}
+
+export interface CompareJobResult {
+  success: boolean
+  message: string
+  total: number
+  completed: number
+  failed: number
+  differences_found: number
+  job_id: string
+  results: CompareJobDeviceResult[]
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown
+}
+
+/**
+ * Check if result is a compare_devices job result.
+ * Unique discriminator: has differences_found + completed + job_id starting with "scheduled_compare_".
+ */
+export function isCompareJobResult(
+  result: Record<string, unknown>
+): result is CompareJobResult {
+  return (
+    'differences_found' in result &&
+    'completed' in result &&
+    'job_id' in result &&
+    typeof result.job_id === 'string' &&
+    result.job_id.startsWith('scheduled_compare_')
+  )
+}
+
+// ============================================================================
 // Utility Functions
 // ============================================================================
 

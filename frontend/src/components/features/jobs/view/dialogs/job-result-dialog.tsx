@@ -14,6 +14,7 @@ import {
   JobRun,
   isBackupJobResult,
   isSyncJobResult,
+  isCompareJobResult,
   isRunCommandsJobResult,
   isExportDevicesJobResult,
   isBulkOnboardJobResult,
@@ -40,6 +41,7 @@ import { IPAddressesResultView } from '../results/ip-addresses-result'
 import { CsvImportResultView } from '../results/csv-import-result'
 import { PingAgentResultView } from '../results/ping-agent-result'
 import { SetPrimaryIpResultView } from '../results/set-primary-ip-result'
+import { CompareJobResultView } from '../results/compare-job-result'
 import { GenericJobResultView } from '../results/generic-job-result'
 
 interface JobResultDialogProps {
@@ -98,6 +100,10 @@ function renderJobResult(
 
   if (isBackupJobResult(result)) {
     return <BackupJobResultView result={result} />
+  }
+
+  if (isCompareJobResult(result)) {
+    return <CompareJobResultView result={result} />
   }
 
   if (isSyncJobResult(result)) {
