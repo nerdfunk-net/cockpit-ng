@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 from services.network.tools.baseline import (
     DEFAULT_TAG_CONTENT_TYPES,
     desired_tag_content_types,

@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 
 def test_merge_injects_default_cluster_type_when_clusters_without_types() -> None:
     """Legacy YAML with clusters but no cluster_types gets a default entry."""

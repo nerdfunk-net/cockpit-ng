@@ -97,10 +97,11 @@ Repository tests under `tests/integration/repositories/` run SQL against a **rea
 |------|----------------|
 | `integration/repositories/test_client_data_repository_pg.py` | `ClientDataRepository` — L2-only devices, session history, retention cleanup |
 | `integration/repositories/test_job_run_repository_pg.py` | `JobRunRepository` — status aggregates, recent backup window |
+| `integration/repositories/test_servers_repository_pg.py` | `ServersRepository` — summary `load_only`, `ilike` search escaping, `JSONB` |
 
 Package notes: [integration/repositories/README.md](integration/repositories/README.md).
 
-**Safety:** Use a **dedicated** database (for example `cockpit_test`), not production or your normal dev Cockpit DB. Tests **truncate** client-data tables before each test and **delete all rows** from `job_runs` before each job-run test.
+**Safety:** Use a **dedicated** database (for example `cockpit_test`), not production or your normal dev Cockpit DB. Tests **truncate** client-data tables before each client-data test, **truncate** `servers` before each servers-repository test, and **delete all rows** from `job_runs` before each job-run test.
 
 **Start PostgreSQL** (example with Docker; match host/port/name/user/password in `.env.test`):
 
@@ -123,6 +124,45 @@ Required for **`job_runs`** (job-run tests skip if the table is missing). Client
 cd backend
 set -a && source .env.test && set +a
 python -c "from core.database import init_db; init_db()"
+```
+
+### Unit test coverage (pyproject scope)
+
+Coverage tracks `services`, `models`, `tasks`, and `utils` (see `[tool.coverage.run]` in `pyproject.toml`). Routers and repositories are excluded until dedicated unit tests exist.
+
+```bash
+cd backend
+
+# Canonical coverage check (matches CI; phased gate fail_under in pyproject.toml)
+python -m pytest tests/unit/ -q -m unit \
+  --cov=services --cov=models --cov=tasks --cov=utils \
+  --cov-report=term-missing
+```
+
+Manual CheckMK dev script `services/checkmk/client/test_client.py` is omitted from coverage metrics.
+
+CI enforces a phased minimum via `[tool.coverage.report] fail_under` in `pyproject.toml` (currently **59%**; target **70%**).
+
+**Phase 2 unit test modules** (compliance, CheckMK priority models, inventory/site utils):
+
+```bash
+python -m pytest tests/unit/services/test_compliance_service.py \
+  tests/unit/models/test_checkmk_priority_models.py \
+  tests/unit/utils/test_inventory_resolver.py \
+  tests/unit/utils/test_cmk_site_utils.py \
+  tests/unit/utils/test_nautobot_helpers.py \
+  tests/unit/utils/test_netmiko_platform_mapper.py -v -m unit
+```
+
+**Phase 1 unit test modules** (git cache/operations, agent template render, NB2CMK background, Redis cache, credentials):
+
+```bash
+python -m pytest tests/unit/services/test_git_cache_service.py \
+  tests/unit/services/test_git_operations_service.py \
+  tests/unit/services/test_template_render_service.py \
+  tests/unit/services/test_nb2cmk_background_service.py \
+  tests/unit/services/test_redis_cache_service.py \
+  tests/unit/services/test_credentials_service.py -v -m unit
 ```
 
 ### Run PostgreSQL tests
@@ -196,7 +236,7 @@ curl -sS -X POST "$NAUTOBOT_HOST/api/graphql/" \
 ## Test Statistics
 
 - **Total Tests**: 1,387 (1,158 `unit`, remainder `integration` / `postgres` / other markers)
-- **Server inventory tests**: 47 (`test_servers_service`, `test_servers_models`, `test_servers_router`)
+- **Server inventory tests**: 63 unit (`test_servers_service`, `test_servers_models`, `test_servers_router`) + 6 PostgreSQL (`test_servers_repository_pg`, when `TEST_DATABASE_URL` is set)
 - **Execution Time**: Unit-only runs typically complete in seconds (full suite with coverage is longer)
 - **Pass Rate**: 100% when run in a correctly configured environment
 - **External Dependencies**: None for unit tests (all mocked or dependency-injected fakes)
@@ -573,15 +613,16 @@ def _downtime_request(hostname: str, comment: str = "Maintenance") -> SimpleName
 
 ---
 
-### 6. Server Inventory Tests (47 tests)
+### 6. Server Inventory Tests (63 unit + 6 PostgreSQL)
 
 Offline unit tests for the **Server** feature (`/api/servers`), used by the frontend Server page (`server-page.tsx`). Ansible fact gathering and Nautobot device/VM sync use other APIs; these tests cover the Cockpit server registry (PostgreSQL `servers` table).
 
 | File | Tests | Layer |
 |------|-------|--------|
 | `unit/services/test_servers_service.py` | 18 | `ServersService` |
-| `unit/models/test_servers_models.py` | 14 | Pydantic request/response schemas |
-| `unit/core/test_servers_router.py` | 15 | FastAPI `/api/servers` routes |
+| `unit/models/test_servers_models.py` | 23 | Pydantic request/response schemas, `normalize_contacts` |
+| `unit/core/test_servers_router.py` | 22 | FastAPI `/api/servers` routes |
+| `integration/repositories/test_servers_repository_pg.py` | 6 | `ServersRepository` (requires `TEST_DATABASE_URL`) |
 
 #### `test_servers_service.py` (18 tests)
 
@@ -601,22 +642,30 @@ def _make_service() -> tuple[ServersService, MagicMock]:
     return ServersService(repository=mock_repo), mock_repo
 ```
 
-#### `test_servers_models.py` (14 tests)
+#### `test_servers_models.py` (23 tests)
 
 **What is tested:**
 - **CreateServerRequest** — hostname, `primary_ipv4`, `nautobot_uuid`, `ansible_facts` size cap (512 KB), `AnsibleCredentials` (SSH key vs password + `credential_id` rules)
 - **UpdateServerRequest** — partial updates, `cluster`, `selected_interfaces`
+- **normalize_contacts** — `None`, legacy dict, array, invalid type
 - **ListServersResponse** — `servers`, `total`, `total_all`
 
-#### `test_servers_router.py` (15 tests)
+#### `test_servers_router.py` (22 tests)
 
 **What is tested:**
 - **GET** `/api/servers` — summaries, `?q=` search, `total` / `total_all`, deprecated `group_by` validation (400), sanitized 5xx
-- **GET** `/api/servers/{id}` — 200 with `ansible_facts`, 404
-- **POST** `/api/servers` — 201, 422 validation (invalid IP)
-- **PUT** `/api/servers/{id}` — 200, 404
+- **GET** `/api/servers/{id}` — 200 with `ansible_facts`, 404, sanitized 5xx
+- **POST** `/api/servers` — 201, 422 validation (invalid IP), sanitized 5xx
+- **PUT** `/api/servers/{id}` — 200, 404, sanitized 5xx
 - **DELETE** `/api/servers/{id}` — 204, 404
-- **403** when RBAC denies `servers:read`
+- **403** when RBAC denies `servers:read`, `servers:write`, or `servers:delete`
+
+#### `test_servers_repository_pg.py` (6 tests, PostgreSQL)
+
+**What is tested:**
+- **count_all**, **list_summaries** — substring search, hostname ordering
+- **ilike** escaping — literal `%` and `_` in hostnames
+- **load_only** — `ansible_facts` deferred on summary rows
 
 **How it is tested:**
 - `TestClient` + `app.dependency_overrides` for `verify_token` and `get_servers_service`
@@ -630,8 +679,13 @@ python -m pytest tests/unit/services/test_servers_service.py \
 ```
 
 **Not covered here (by design):**
-- `ServersRepository.list_summaries` SQL / `JSONB` — requires PostgreSQL (`TEST_DATABASE_URL`); SQLite cannot compile `JSONB` columns
 - Nautobot add/update/delete and Cockpit Agent `setup` — separate routers and frontend utilities (`parse-ansible-facts.ts` has its own Vitest tests)
+
+**PostgreSQL repository tests** (skipped without `TEST_DATABASE_URL`):
+
+```bash
+pytest tests/integration/repositories/test_servers_repository_pg.py -v -m postgres
+```
 
 ---
 
@@ -794,9 +848,9 @@ tests/
 ├── unit/
 │   ├── core/
 │   │   ├── test_router_5xx_sanitization.py
-│   │   └── test_servers_router.py          # Server API routes (15 tests)
+│   │   └── test_servers_router.py          # Server API routes (22 tests)
 │   ├── models/
-│   │   └── test_servers_models.py          # Server Pydantic schemas (14 tests)
+│   │   └── test_servers_models.py          # Server Pydantic schemas (23 tests)
 │   └── services/
 │       ├── test_ansible_inventory_service.py
 │       ├── test_checkmk_activation_service.py
@@ -814,7 +868,8 @@ tests/
 │   │   ├── conftest.py
 │   │   ├── README.md
 │   │   ├── test_client_data_repository_pg.py
-│   │   └── test_job_run_repository_pg.py
+│   │   ├── test_job_run_repository_pg.py
+│   │   └── test_servers_repository_pg.py
 │   └── workflows/
 │       └── test_nb2cmk_sync_workflow.py
 ├── test_device_common_service.py        # Utility service tests
@@ -1164,20 +1219,19 @@ Quick reference: [QUICK_START_INTEGRATION_TESTS.md](QUICK_START_INTEGRATION_TEST
 ## Future Enhancements
 
 Potential areas for expansion:
-1. `ServersRepository` PostgreSQL integration tests (`list_summaries` search escaping, `JSONB` columns) when `TEST_DATABASE_URL` is set
-2. Additional repository layer tests (with in-memory database)
-3. More edge case coverage for device creation workflows
-4. Performance testing for bulk operations
-5. Contract testing for external API integrations
-6. Mutation testing to verify test quality
-7. ✅ **COMPLETED**: Integration tests with real Nautobot instance
+1. Additional repository layer tests (with in-memory database)
+2. More edge case coverage for device creation workflows
+3. Performance testing for bulk operations
+4. Contract testing for external API integrations
+5. Mutation testing to verify test quality
+6. ✅ **COMPLETED**: Integration tests with real Nautobot instance
 
 ---
 
-**Last Updated**: 2026-06-02
+**Last Updated**: 2026-06-03
 **Test Suite Version**: 1.5
 **Total Tests**: 1,387 collected (1,158 `unit`) + integration suites (ansible-inventory baseline, device operations, repository PG tests when configured)
-**Server inventory**: 47 unit tests (`test_servers_service`, `test_servers_models`, `test_servers_router`)
+**Server inventory**: 63 unit tests (`test_servers_service`, `test_servers_models`, `test_servers_router`) + 6 PostgreSQL (`test_servers_repository_pg` when configured)
 **Integration Test Suites**:
 - Ansible Inventory (26 tests) - Baseline data validation with logical operations
 - Device Operations (6 tests) - Add Device and Bulk Edit workflows

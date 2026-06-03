@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from services.network.tools.baseline_inventory_simulator import (
     BaselineInventorySimulator,
 )

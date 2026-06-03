@@ -13,9 +13,11 @@ from models.servers import (
     AnsibleCredentials,
     CreateServerRequest,
     ListServersResponse,
+    ServerContact,
     ServerResponse,
     ServerSummaryResponse,
     UpdateServerRequest,
+    normalize_contacts,
 )
 
 _CONTACT_ROLE = {
@@ -220,6 +222,46 @@ def test_update_server_missing_contact_role_raises() -> None:
                 }
             ]
         )
+
+
+# ── normalize_contacts ─────────────────────────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_normalize_contacts_none() -> None:
+    """None contact input stays None."""
+    assert normalize_contacts(None) is None
+
+
+@pytest.mark.unit
+def test_normalize_contacts_legacy_dict() -> None:
+    """Legacy single-object contact becomes a one-element list."""
+    result = normalize_contacts(_CONTACT_ENTRY)
+    assert result is not None
+    assert len(result) == 1
+    assert isinstance(result[0], ServerContact)
+    assert result[0].name == "ops@example.com"
+
+
+@pytest.mark.unit
+def test_normalize_contacts_array() -> None:
+    """Array contact input is validated as a list of ServerContact."""
+    second = {
+        "id": "a13b79fe-264f-40a3-91ed-9e93dd45a5d5",
+        "name": "billing@example.com",
+        "role": _CONTACT_ROLE,
+    }
+    result = normalize_contacts([_CONTACT_ENTRY, second])
+    assert result is not None
+    assert len(result) == 2
+    assert result[1].name == "billing@example.com"
+
+
+@pytest.mark.unit
+def test_normalize_contacts_invalid_type_raises() -> None:
+    """Non-object contact values raise ValueError."""
+    with pytest.raises(ValueError, match="contact must be an object or a list"):
+        normalize_contacts("not-a-contact")
 
 
 # ── Response models ────────────────────────────────────────────────────────────

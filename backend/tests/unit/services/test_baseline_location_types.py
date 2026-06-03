@@ -6,6 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from services.network.tools.baseline import (
     BaselineImportService,
     content_types_from_api_record,

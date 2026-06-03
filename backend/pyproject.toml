@@ -94,12 +94,16 @@ omit = [
     "*/migrations/*",
     "*/venv/*",
     "*/.venv/*",
+    # Manual / dev scripts (not production API surface)
+    "services/checkmk/client/test_client.py",
 ]
 
 [tool.coverage.report]
 precision = 2
 show_missing = true
 skip_covered = false
+# Phased gate: 59 after baseline tests included in -m unit (2026-06); target 70
+fail_under = 59
 
 exclude_lines = [
     "pragma: no cover",

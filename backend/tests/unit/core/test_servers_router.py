@@ -377,3 +377,122 @@ def test_list_servers_forbidden_without_permission(client: TestClient) -> None:
 
     assert resp.status_code == 403
     mock_service.list_summaries.assert_not_called()
+
+
+@pytest.mark.unit
+def test_create_server_forbidden_without_permission(client: TestClient) -> None:
+    """Create returns 403 when RBAC denies servers:write."""
+    mock_service = MagicMock()
+
+    with _auth_context(client, mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=False)
+        resp = client.post(
+            "/api/servers",
+            json={"hostname": "new-host"},
+            headers=_AUTH_HEADERS,
+        )
+
+    app.dependency_overrides.clear()
+
+    assert resp.status_code == 403
+    mock_service.create.assert_not_called()
+
+
+@pytest.mark.unit
+def test_update_server_forbidden_without_permission(client: TestClient) -> None:
+    """Update returns 403 when RBAC denies servers:write."""
+    mock_service = MagicMock()
+
+    with _auth_context(client, mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=False)
+        resp = client.put(
+            "/api/servers/1",
+            json={"hostname": "renamed"},
+            headers=_AUTH_HEADERS,
+        )
+
+    app.dependency_overrides.clear()
+
+    assert resp.status_code == 403
+    mock_service.update.assert_not_called()
+
+
+@pytest.mark.unit
+def test_delete_server_forbidden_without_permission(client: TestClient) -> None:
+    """Delete returns 403 when RBAC denies servers:delete."""
+    mock_service = MagicMock()
+
+    with _auth_context(client, mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=False)
+        resp = client.delete("/api/servers/1", headers=_AUTH_HEADERS)
+
+    app.dependency_overrides.clear()
+
+    assert resp.status_code == 403
+    mock_service.delete.assert_not_called()
+
+
+# ── 5xx sanitization ───────────────────────────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_get_server_internal_error_is_sanitized(client: TestClient) -> None:
+    """Unexpected errors on detail return the safe 5xx shape."""
+    mock_service = MagicMock()
+    mock_service.get_by_id.side_effect = RuntimeError("db-secret")
+
+    with _auth_context(client, mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.get("/api/servers/1", headers=_AUTH_HEADERS)
+
+    app.dependency_overrides.clear()
+
+    assert resp.status_code == 500
+    body = resp.json()
+    assert body["detail"]["message"] == "An internal error occurred"
+    assert "error_id" in body["detail"]
+    assert "db-secret" not in resp.text
+
+
+@pytest.mark.unit
+def test_create_server_internal_error_is_sanitized(client: TestClient) -> None:
+    """Unexpected errors on create return the safe 5xx shape."""
+    mock_service = MagicMock()
+    mock_service.create.side_effect = RuntimeError("insert-failed")
+
+    with _auth_context(client, mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.post(
+            "/api/servers",
+            json={"hostname": "new-host"},
+            headers=_AUTH_HEADERS,
+        )
+
+    app.dependency_overrides.clear()
+
+    assert resp.status_code == 500
+    body = resp.json()
+    assert body["detail"]["message"] == "An internal error occurred"
+    assert "insert-failed" not in resp.text
+
+
+@pytest.mark.unit
+def test_update_server_internal_error_is_sanitized(client: TestClient) -> None:
+    """Unexpected errors on update return the safe 5xx shape."""
+    mock_service = MagicMock()
+    mock_service.update.side_effect = RuntimeError("update-failed")
+
+    with _auth_context(client, mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.put(
+            "/api/servers/1",
+            json={"hostname": "renamed"},
+            headers=_AUTH_HEADERS,
+        )
+
+    app.dependency_overrides.clear()
+
+    assert resp.status_code == 500
+    body = resp.json()
+    assert body["detail"]["message"] == "An internal error occurred"
+    assert "update-failed" not in resp.text

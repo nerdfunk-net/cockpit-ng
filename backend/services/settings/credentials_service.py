@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from config import settings as config_settings
@@ -18,6 +18,11 @@ from services.settings.exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _utc_now() -> datetime:
+    """Naive UTC timestamp for DB columns (replaces deprecated datetime.utcnow())."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class CredentialsService:
@@ -55,7 +60,7 @@ class CredentialsService:
         ssh_private_key: Optional[str] = None,
         ssh_passphrase: Optional[str] = None,
     ) -> Dict[str, Any]:
-        now = datetime.utcnow()
+        now = _utc_now()
         new_cred = self._repo.create(
             name=name,
             username=username,
@@ -94,7 +99,7 @@ class CredentialsService:
         existing = self._repo.get_by_id(cred_id)
         if not existing:
             raise CredentialNotFoundError(cred_id)
-        kwargs: Dict[str, Any] = {"updated_at": datetime.utcnow()}
+        kwargs: Dict[str, Any] = {"updated_at": _utc_now()}
         if name is not None:
             kwargs["name"] = name
         if username is not None:

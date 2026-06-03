@@ -17,6 +17,7 @@ from sqlalchemy.orm import sessionmaker
 
 from core.database import Base
 from core.models.client_data import ClientHostname, ClientIpAddress, ClientMacAddress
+from core.models.servers import Server
 
 
 def _require_pg_url() -> str:
@@ -93,3 +94,33 @@ def job_run_repository_pg(
     from repositories.jobs.job_run_repository import JobRunRepository
 
     return JobRunRepository()
+
+
+@pytest.fixture(scope="session")
+def postgres_engine_servers(postgres_engine_integration):
+    """Ensures ``servers`` table exists (``create_all`` for that model only)."""
+    Base.metadata.create_all(
+        postgres_engine_integration, tables=[Server.__table__]
+    )
+    return postgres_engine_integration
+
+
+@pytest.fixture
+def servers_repository_pg(postgres_engine_servers, monkeypatch):
+    """``ServersRepository`` using a session factory bound to the test engine."""
+    import core.database as db_mod
+
+    with postgres_engine_servers.begin() as conn:
+        conn.execute(text("TRUNCATE TABLE servers RESTART IDENTITY CASCADE"))
+
+    make_session = sessionmaker(bind=postgres_engine_servers)
+
+    def _test_get_db_session():
+        return make_session()
+
+    # BaseRepository binds get_db_session at import time in repositories.base.
+    monkeypatch.setattr(db_mod, "get_db_session", _test_get_db_session)
+    monkeypatch.setattr("repositories.base.get_db_session", _test_get_db_session)
+    from repositories.servers.servers_repository import ServersRepository
+
+    return ServersRepository()
