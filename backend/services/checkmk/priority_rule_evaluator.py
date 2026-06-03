@@ -84,6 +84,10 @@ class PriorityRuleEvaluator:
             if key == "ip_prefix":
                 return self._device_ip_in_prefix(device_data, value)
 
+            # tag is a list-membership check against the device's tags
+            if key == "tag":
+                return self._device_has_tag(device_data, value)
+
             device_value = self._extract_device_value(device_data, key, field)
             return device_value.lower() == value.lower()
         except Exception:
@@ -166,3 +170,17 @@ class PriorityRuleEvaluator:
         except ValueError:
             logger.debug("ip_prefix evaluation error: ip=%s cidr=%s", ip_str, cidr)
             return False
+
+    def _device_has_tag(self, device_data: Dict[str, Any], tag_name: str) -> bool:
+        """Return True when any of the device's tags matches tag_name (case-insensitive)."""
+        if not tag_name:
+            return False
+        tags = device_data.get("tags") or []
+        if not isinstance(tags, list):
+            return False
+        target = tag_name.lower()
+        return any(
+            (t.get("name") or "").lower() == target
+            for t in tags
+            if isinstance(t, dict)
+        )

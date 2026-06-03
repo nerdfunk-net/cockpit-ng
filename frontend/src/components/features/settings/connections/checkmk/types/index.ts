@@ -59,6 +59,7 @@ export type ExpressionKey =
   | 'platform'
   | 'custom_field'
   | 'ip_prefix'
+  | 'tag'
 
 export interface ExpressionCondition {
   type: 'condition'

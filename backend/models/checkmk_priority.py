@@ -17,6 +17,7 @@ SUPPORTED_KEYS = frozenset(
         "platform",
         "custom_field",
         "ip_prefix",
+        "tag",
     }
 )
 

@@ -38,6 +38,7 @@ export const SUPPORTED_EXPRESSION_KEYS = [
   { value: 'platform', label: 'Platform' },
   { value: 'custom_field', label: 'Custom Field' },
   { value: 'ip_prefix', label: 'IP Prefix' },
+  { value: 'tag', label: 'Tag' },
 ] as const
 
 export const DEFAULT_PRIORITY_RULE_FILENAME = 'checkmk.yaml' as const
