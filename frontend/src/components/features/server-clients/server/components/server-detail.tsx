@@ -44,6 +44,10 @@ import { useRefreshServerFacts } from '../hooks/use-refresh-server-facts'
 import { useRemoveServer } from '../hooks/use-remove-server'
 import { useUpdateServerToNautobot } from '../hooks/use-update-server-to-nautobot'
 import { NautobotUuidRow } from './nautobot-uuid-row'
+import {
+  formatServerInterfaceDisplay,
+  formatServerPrimaryIpv4Display,
+} from '../utils/format-interface-address'
 import type { SelectedInterface, ServerLocation, ServerResponse } from '../types'
 
 interface MountEntry {
@@ -232,6 +236,10 @@ export function ServerDetail({ server, onShowFacts, onRemoved }: ServerDetailPro
   )
 
   const selectedInterfaces: SelectedInterface[] = server.selected_interfaces ?? []
+  const primaryIpv4Display = useMemo(
+    () => formatServerPrimaryIpv4Display(server),
+    [server]
+  )
 
   const distribution = [server.distribution_release, server.distribution_version]
     .filter(Boolean)
@@ -261,7 +269,7 @@ export function ServerDetail({ server, onShowFacts, onRemoved }: ServerDetailPro
           <FactRow label="Hostname" value={server.hostname} />
           <FactRow label="Virtual Machine" value={server.is_virtual ? 'Yes' : 'No'} />
           {server.is_virtual ? <ClusterRow server={server} /> : null}
-          <FactRow label="Primary IPv4" value={server.primary_ipv4} />
+          <FactRow label="Primary IPv4" value={primaryIpv4Display ?? server.primary_ipv4} />
           <FactRow label="Interface" value={server.primary_interface} />
           <FactRow label="OS Family" value={server.os_family} />
           <FactRow label="Architecture" value={server.architecture} />
@@ -338,17 +346,17 @@ export function ServerDetail({ server, onShowFacts, onRemoved }: ServerDetailPro
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedInterfaces.map((iface, i) => (
-                    <tr key={iface.name} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-3 py-2 font-mono text-gray-800">{iface.name}</td>
-                      <td className="px-3 py-2 text-gray-600">
-                        {iface.address
-                          ? `${iface.address}${iface.prefix ? `/${iface.prefix}` : ''}`
-                          : <span className="italic text-gray-400">—</span>
-                        }
-                      </td>
-                    </tr>
-                  ))}
+                  {selectedInterfaces.map((iface, i) => {
+                    const ipDisplay = formatServerInterfaceDisplay(server, iface)
+                    return (
+                      <tr key={iface.name} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-3 py-2 font-mono text-gray-800">{iface.name}</td>
+                        <td className="px-3 py-2 text-gray-600">
+                          {ipDisplay ?? <span className="italic text-gray-400">—</span>}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

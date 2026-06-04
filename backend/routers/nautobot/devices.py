@@ -546,6 +546,19 @@ async def update_device(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid device parameters",
         )
+    except NautobotAPIError as e:
+        error_msg = str(e)
+        if "status 400" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=extract_nautobot_error_detail(error_msg),
+            ) from e
+        raise_internal_server_error(
+            logger,
+            "Failed to update device (Nautobot API error)",
+            e,
+            extra={"device_id": device_id},
+        )
     except Exception as e:
         raise_internal_server_error(logger, "Failed to update device: ", e)
 

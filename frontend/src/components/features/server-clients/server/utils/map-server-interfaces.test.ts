@@ -73,6 +73,20 @@ describe('resolveServerInterfaceSources', () => {
     })
     expect(resolveServerInterfaceSources(server)[0]?.address).toBe('45.136.30.143')
   })
+
+  it('merges netmask from hostvars ansible_eth0 when selected row has address only', () => {
+    const server = baseServer({
+      selected_interfaces: [{ name: 'eth0', address: '192.168.178.240' }],
+      primary_interface: 'eth0',
+      primary_ipv4: '192.168.178.240',
+      ansible_facts: {
+        ansible_eth0: {
+          ipv4: { address: '192.168.178.240', netmask: '255.255.255.0' },
+        },
+      },
+    })
+    expect(resolveServerInterfaceSources(server)[0]?.netmask).toBe('255.255.255.0')
+  })
 })
 
 describe('mapServerInterfaces', () => {
@@ -93,6 +107,41 @@ describe('mapServerInterfaces', () => {
         }),
       ],
     })
+  })
+
+  it('maps primary interface with /24 from hostvars netmask when prefix is missing', () => {
+    const server = baseServer({
+      selected_interfaces: null,
+      primary_interface: 'eth0',
+      primary_ipv4: '192.168.178.240',
+      ansible_facts: {
+        ansible_eth0: {
+          ipv4: { address: '192.168.178.240', netmask: '255.255.255.0' },
+        },
+      },
+    })
+    const result = mapServerInterfaces({ server, defaults: DEFAULTS })
+    expect(result[0]?.ip_addresses[0]).toMatchObject({
+      address: '192.168.178.240/24',
+      is_primary: true,
+    })
+  })
+
+  it('maps primary interface with /24 from ansible_default_ipv4 when iface facts are absent', () => {
+    const server = baseServer({
+      selected_interfaces: null,
+      primary_interface: 'eth0',
+      primary_ipv4: '192.168.178.240',
+      ansible_facts: {
+        ansible_default_ipv4: {
+          address: '192.168.178.240',
+          interface: 'eth0',
+          netmask: '255.255.255.0',
+        },
+      },
+    })
+    const result = mapServerInterfaces({ server, defaults: DEFAULTS })
+    expect(result[0]?.ip_addresses[0]?.address).toBe('192.168.178.240/24')
   })
   it('maps interfaces with namespace, status, and primary IP flag', () => {
     const result = mapServerInterfaces({ server: baseServer(), defaults: DEFAULTS })

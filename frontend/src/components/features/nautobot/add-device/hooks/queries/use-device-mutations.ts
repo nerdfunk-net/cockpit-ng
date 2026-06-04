@@ -3,6 +3,7 @@ import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
 import type { DeviceUpdatePayload } from '@/components/features/server-clients/server/utils/build-nautobot-payload'
+import { parseProxyApiErrorMessage } from '@/lib/parse-proxy-api-error'
 import type { DeviceSubmissionData, DeviceSubmissionResult } from '../../types'
 
 interface DeviceUpdateResult {
@@ -64,24 +65,9 @@ export function useDeviceMutations() {
           summary,
         }
       } catch (error) {
-        let errorMessage = error instanceof Error ? error.message : 'Unknown error'
-
-        // Extract detail from JSON error responses (e.g. "API Error 400: {"detail":"..."}")
-        const jsonMatch = errorMessage.match(/API Error \d+: (.+)/)
-        if (jsonMatch?.[1]) {
-          try {
-            const parsed = JSON.parse(jsonMatch[1])
-            if (parsed.detail) {
-              errorMessage = parsed.detail
-            }
-          } catch {
-            // Not valid JSON, use original message
-          }
-        }
-
         return {
           success: false,
-          message: errorMessage,
+          message: parseProxyApiErrorMessage(error),
           messageType: 'error',
         }
       }
@@ -145,21 +131,9 @@ export function useDeviceMutations() {
           messageType: hasWarnings ? 'warning' : 'success',
         }
       } catch (error) {
-        let errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        const jsonMatch = errorMessage.match(/API Error \d+: (.+)/)
-        if (jsonMatch?.[1]) {
-          try {
-            const parsed = JSON.parse(jsonMatch[1])
-            if (parsed.detail) {
-              errorMessage = parsed.detail
-            }
-          } catch {
-            // keep original
-          }
-        }
         return {
           success: false,
-          message: errorMessage,
+          message: parseProxyApiErrorMessage(error),
           messageType: 'error',
         }
       }
@@ -200,19 +174,7 @@ export function useDeviceMutations() {
           message: response.message || 'Device deleted from Nautobot',
         }
       } catch (error) {
-        let errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        const jsonMatch = errorMessage.match(/API Error \d+: (.+)/)
-        if (jsonMatch?.[1]) {
-          try {
-            const parsed = JSON.parse(jsonMatch[1])
-            if (parsed.detail) {
-              errorMessage = parsed.detail
-            }
-          } catch {
-            // keep original
-          }
-        }
-        return { success: false, message: errorMessage }
+        return { success: false, message: parseProxyApiErrorMessage(error) }
       }
     },
     onSuccess: result => {

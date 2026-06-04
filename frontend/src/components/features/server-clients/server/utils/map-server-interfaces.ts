@@ -2,7 +2,7 @@ import type { DefaultsFields } from '@/components/features/settings/common/types
 import type { InterfaceData } from '@/components/features/nautobot/add-device/types'
 import type { SelectedInterface, ServerResponse } from '../types'
 import { formatInterfaceAddress, isPrimaryInterfaceAddress } from './format-interface-address'
-import { getIpv4FromFacts } from './get-ipv4-from-facts'
+import { getDefaultIpv4FromFacts, getIpv4FromFacts, mergeInterfaceWithFacts } from './get-ipv4-from-facts'
 
 export interface MappedNautobotInterface {
   id: string
@@ -84,29 +84,22 @@ export function resolveServerInterfaceSources(server: ServerResponse): SelectedI
 
   const existingIdx = fromSelected.findIndex(i => i.name?.trim() === primaryName)
   const factsIpv4 = getIpv4FromFacts(server, primaryName)
+  const defaultIpv4 = getDefaultIpv4FromFacts(server)
 
   if (existingIdx >= 0) {
-    const existing = fromSelected[existingIdx]!
-    fromSelected[existingIdx] = {
-      ...existing,
-      address: existing.address?.trim() || factsIpv4?.address || primaryIp,
-      netmask: existing.netmask ?? factsIpv4?.netmask,
-      prefix: existing.prefix ?? factsIpv4?.prefix,
-      broadcast: existing.broadcast ?? factsIpv4?.broadcast,
-      network: existing.network ?? factsIpv4?.network,
-    }
+    fromSelected[existingIdx] = mergeInterfaceWithFacts(server, fromSelected[existingIdx]!)
     return fromSelected
   }
 
   return [
-    {
+    mergeInterfaceWithFacts(server, {
       name: primaryName,
-      address: factsIpv4?.address ?? primaryIp,
-      netmask: factsIpv4?.netmask,
-      prefix: factsIpv4?.prefix,
-      broadcast: factsIpv4?.broadcast,
-      network: factsIpv4?.network,
-    },
+      address: factsIpv4?.address ?? defaultIpv4?.address ?? primaryIp,
+      netmask: factsIpv4?.netmask ?? defaultIpv4?.netmask,
+      prefix: factsIpv4?.prefix ?? defaultIpv4?.prefix,
+      broadcast: factsIpv4?.broadcast ?? defaultIpv4?.broadcast,
+      network: factsIpv4?.network ?? defaultIpv4?.network,
+    }),
     ...fromSelected,
   ]
 }
@@ -115,7 +108,9 @@ export function resolveServerInterfaceSources(server: ServerResponse): SelectedI
 export function mapServerInterfaces(
   options: MapServerInterfacesOptions
 ): MappedNautobotInterface[] {
-  const interfaces = resolveServerInterfaceSources(options.server)
+  const interfaces = resolveServerInterfaceSources(options.server).map(iface =>
+    mergeInterfaceWithFacts(options.server, iface)
+  )
   return interfaces
     .map((iface, index) => mapSingleInterface(iface, index, options))
     .filter((iface): iface is MappedNautobotInterface => iface !== null)

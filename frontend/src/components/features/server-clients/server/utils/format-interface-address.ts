@@ -1,4 +1,5 @@
-import type { SelectedInterface } from '../types'
+import type { SelectedInterface, ServerResponse } from '../types'
+import { mergeInterfaceWithFacts } from './get-ipv4-from-facts'
 
 function netmaskToCidr(netmask: string): number | undefined {
   const parts = netmask.split('.').map(Number)
@@ -37,6 +38,27 @@ export function formatInterfaceAddress(iface: SelectedInterface): string | undef
 
 function normalizeIpForCompare(value: string): string {
   return value.split('/')[0]?.trim() ?? value.trim()
+}
+
+/** CIDR display for a server interface row (merges Ansible facts). */
+export function formatServerInterfaceDisplay(
+  server: ServerResponse,
+  iface: SelectedInterface
+): string | undefined {
+  return formatInterfaceAddress(mergeInterfaceWithFacts(server, iface))
+}
+
+/** CIDR display for the server's primary IPv4 (facts + primary_interface). */
+export function formatServerPrimaryIpv4Display(server: ServerResponse): string | undefined {
+  const primaryIp = server.primary_ipv4?.trim()
+  if (!primaryIp) return undefined
+
+  const primaryName = server.primary_interface?.trim()
+  if (primaryName) {
+    return formatServerInterfaceDisplay(server, { name: primaryName, address: primaryIp })
+  }
+
+  return formatInterfaceAddress({ name: '', address: primaryIp })
 }
 
 export function isPrimaryInterfaceAddress(

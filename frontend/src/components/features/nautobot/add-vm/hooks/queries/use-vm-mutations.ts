@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
+import { parseProxyApiErrorMessage } from '@/lib/parse-proxy-api-error'
 import type { VmUpdatePayload } from '@/components/features/server-clients/server/utils/build-nautobot-payload'
 import type { VMFormValues } from '../use-vm-form'
 
@@ -121,7 +122,7 @@ export function useVMMutations() {
       } catch (error) {
         return {
           success: false,
-          message: `Failed to create VM: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: parseProxyApiErrorMessage(error),
           messageType: 'error',
         }
       }
@@ -191,7 +192,7 @@ export function useVMMutations() {
       } catch (error) {
         return {
           success: false,
-          message: `Failed to update VM: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: parseProxyApiErrorMessage(error),
           messageType: 'error',
         }
       }

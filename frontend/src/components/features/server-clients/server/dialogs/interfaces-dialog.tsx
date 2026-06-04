@@ -13,15 +13,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2, Network } from 'lucide-react'
 import { useServerMutations } from '@/hooks/queries/use-server-mutations'
 import { useToast } from '@/hooks/use-toast'
+import { formatServerInterfaceDisplay } from '../utils/format-interface-address'
+import { getIpv4FromFacts } from '../utils/get-ipv4-from-facts'
 import type { SelectedInterface, ServerResponse } from '../types'
-
-interface Ipv4Info {
-  address?: string
-  netmask?: string
-  broadcast?: string
-  network?: string
-  prefix?: string
-}
 
 interface InterfacesDialogProps {
   open: boolean
@@ -39,16 +33,6 @@ function extractInterfaces(server: ServerResponse): string[] {
     []
 
   return names.filter((n) => n !== 'lo')
-}
-
-function getIpv4(server: ServerResponse, ifaceName: string): Ipv4Info | undefined {
-  const ansibleFacts = server.ansible_facts?.ansible_facts as Record<string, unknown> | undefined
-  const rawFacts = server.ansible_facts?.facts as Record<string, unknown> | undefined
-
-  return (
-    ((ansibleFacts?.[ifaceName] as Record<string, unknown> | undefined)?.ipv4 as Ipv4Info | undefined) ??
-    ((rawFacts?.[`ansible_${ifaceName}`] as Record<string, unknown> | undefined)?.ipv4 as Ipv4Info | undefined)
-  )
 }
 
 export function InterfacesDialog({ open, onOpenChange, server }: InterfacesDialogProps) {
@@ -87,7 +71,7 @@ export function InterfacesDialog({ open, onOpenChange, server }: InterfacesDialo
     const selected: SelectedInterface[] = availableInterfaces
       .filter((name) => selectedNames.has(name))
       .map((name) => {
-        const ipv4 = getIpv4(server, name)
+        const ipv4 = getIpv4FromFacts(server, name)
         return {
           name,
           address: ipv4?.address,
@@ -138,7 +122,7 @@ export function InterfacesDialog({ open, onOpenChange, server }: InterfacesDialo
                 </thead>
                 <tbody>
                   {availableInterfaces.map((name, i) => {
-                    const ipv4 = getIpv4(server, name)
+                    const ipv4 = getIpv4FromFacts(server, name)
                     const checked = selectedNames.has(name)
                     return (
                       <tr
@@ -155,10 +139,14 @@ export function InterfacesDialog({ open, onOpenChange, server }: InterfacesDialo
                         </td>
                         <td className="px-3 py-2.5 font-mono text-gray-800">{name}</td>
                         <td className="px-3 py-2.5 text-gray-500">
-                          {ipv4?.address
-                            ? `${ipv4.address}${ipv4.prefix ? `/${ipv4.prefix}` : ''}`
-                            : <span className="italic text-gray-300">—</span>
-                          }
+                          {formatServerInterfaceDisplay(server, {
+                            name,
+                            address: ipv4?.address,
+                            netmask: ipv4?.netmask,
+                            broadcast: ipv4?.broadcast,
+                            network: ipv4?.network,
+                            prefix: ipv4?.prefix,
+                          }) ?? <span className="italic text-gray-300">—</span>}
                         </td>
                       </tr>
                     )
