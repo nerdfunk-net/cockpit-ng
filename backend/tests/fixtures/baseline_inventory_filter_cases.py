@@ -35,7 +35,7 @@ BASELINE_FILTER_TREES: Dict[str, Tree] = {
         "type": "root",
         "internalLogic": "AND",
         "items": [
-            {"id": "1", "field": "role", "operator": "equals", "value": "server"}
+            {"id": "1", "field": "role", "operator": "equals", "value": "Server"}
         ],
     },
     "filter_by_platform_cisco_ios": {

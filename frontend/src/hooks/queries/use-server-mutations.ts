@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
+import { parseProxyApiErrorMessage } from '@/lib/parse-proxy-api-error'
 import type {
   AnsibleCredentials,
   SelectedInterface,
@@ -70,7 +71,7 @@ export function useServerMutations() {
     onError: (error: Error) => {
       toast({
         title: 'Failed to save server',
-        description: error.message,
+        description: parseProxyApiErrorMessage(error),
         variant: 'destructive',
       })
     },
@@ -89,7 +90,7 @@ export function useServerMutations() {
     onError: (error: Error) => {
       toast({
         title: 'Failed to update server',
-        description: error.message,
+        description: parseProxyApiErrorMessage(error),
         variant: 'destructive',
       })
     },
@@ -105,7 +106,7 @@ export function useServerMutations() {
     onError: (error: Error) => {
       toast({
         title: 'Failed to remove server',
-        description: error.message,
+        description: parseProxyApiErrorMessage(error),
         variant: 'destructive',
       })
     },

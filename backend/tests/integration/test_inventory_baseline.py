@@ -11,7 +11,7 @@ Test Data Summary (from tests/baseline.yaml):
   - State A contains: City A (21) + Another City A (18) = 39 devices
   - State B contains: City B (20) + Another City B (20) = 40 devices
   - State C contains: City C (16) + Another City C (25) = 41 devices
-- Roles: Network (100), server (20)
+- Roles: Network (100), Server (20)
 - Status: Active (66), Offline (54)
 - Tags: Production (39), Staging (52), lab (29)
 - Platforms: Cisco IOS (100), ServerPlatform (20)
@@ -125,7 +125,7 @@ class TestBaselineBasicFiltering:
                     "id": "1",
                     "field": "role",
                     "operator": "equals",
-                    "value": "server",
+                    "value": "Server",
                 }
             ],
         }
@@ -139,7 +139,7 @@ class TestBaselineBasicFiltering:
         baseline_manifest.assert_device_count(devices, "filter_by_role_server")
 
         for device in devices:
-            assert device.role == "server"
+            assert device.role == "Server"
 
     @pytest.mark.asyncio
     async def test_filter_by_platform_cisco_ios(

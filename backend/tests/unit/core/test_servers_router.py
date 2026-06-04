@@ -455,6 +455,34 @@ def test_get_server_internal_error_is_sanitized(client: TestClient) -> None:
 
 
 @pytest.mark.unit
+def test_create_server_duplicate_hostname_returns_400(client: TestClient) -> None:
+    """Duplicate hostname returns a clear 400 message instead of sanitized 500."""
+    from sqlalchemy.exc import IntegrityError
+
+    mock_service = MagicMock()
+    mock_service.create.side_effect = IntegrityError(
+        "insert",
+        {},
+        Exception('duplicate key value violates unique constraint "uq_servers_hostname"'),
+    )
+
+    hostname = "v2202503262298326986.nicesrv.de"
+    with _auth_context(client, mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.post(
+            "/api/servers",
+            json={"hostname": hostname},
+            headers=_AUTH_HEADERS,
+        )
+
+    app.dependency_overrides.clear()
+
+    assert resp.status_code == 400
+    assert hostname in resp.json()["detail"]
+    assert "already exists" in resp.json()["detail"].lower()
+
+
+@pytest.mark.unit
 def test_create_server_internal_error_is_sanitized(client: TestClient) -> None:
     """Unexpected errors on create return the safe 5xx shape."""
     mock_service = MagicMock()

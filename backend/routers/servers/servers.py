@@ -12,9 +12,13 @@ Endpoints:
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from core.auth import require_permission
+from core.db_errors import (
+    duplicate_server_hostname_message,
+    is_duplicate_server_hostname_error,
+)
 from core.safe_http_errors import raise_internal_server_error
 from dependencies import get_servers_service
 from models.servers import (
@@ -94,6 +98,14 @@ def create_server(
         server = service.create(request)
         return ServerResponse.model_validate(server)
     except Exception as exc:
+        if is_duplicate_server_hostname_error(exc):
+            logger.warning(
+                "Duplicate server hostname on create: %s", request.hostname
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=duplicate_server_hostname_message(request.hostname),
+            ) from exc
         raise_internal_server_error(logger, "Failed to create server", exc)
 
 
@@ -113,6 +125,17 @@ def update_server(
     except HTTPException:
         raise
     except Exception as exc:
+        if is_duplicate_server_hostname_error(exc):
+            hostname = request.hostname or ""
+            logger.warning(
+                "Duplicate server hostname on update (id=%s): %s",
+                server_id,
+                hostname,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=duplicate_server_hostname_message(hostname),
+            ) from exc
         raise_internal_server_error(logger, "Failed to update server", exc)
 
 

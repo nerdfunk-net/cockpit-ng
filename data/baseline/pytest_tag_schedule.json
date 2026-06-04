@@ -704,139 +704,139 @@
     "location": "City C",
     "tag": "Staging",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-02",
     "location": "City A",
     "tag": "Staging",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-03",
     "location": "Another City C",
     "tag": "Staging",
     "status": "Active",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-04",
     "location": "Another City C",
     "tag": "lab",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-05",
     "location": "Another City B",
     "tag": "Staging",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-06",
     "location": "Another City A",
     "tag": "Production",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-07",
     "location": "City C",
     "tag": "lab",
     "status": "Active",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-08",
     "location": "Another City B",
     "tag": "Staging",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-09",
     "location": "City B",
     "tag": "Staging",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-10",
     "location": "City C",
     "tag": "Production",
     "status": "Active",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-11",
     "location": "Another City C",
     "tag": "Staging",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-12",
     "location": "Another City C",
     "tag": "lab",
     "status": "Active",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-13",
     "location": "City B",
     "tag": "Production",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-14",
     "location": "Another City C",
     "tag": "lab",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-15",
     "location": "Another City B",
     "tag": "lab",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-16",
     "location": "City B",
     "tag": "Staging",
     "status": "Active",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-17",
     "location": "City B",
     "tag": "Production",
     "status": "Active",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-18",
     "location": "Another City A",
     "tag": "Production",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-19",
     "location": "City A",
     "tag": "Production",
     "status": "Active",
-    "role": "server"
+    "role": "Server"
   },
   {
     "name": "server-20",
     "location": "City B",
     "tag": "Production",
     "status": "Offline",
-    "role": "server"
+    "role": "Server"
   }
 ]

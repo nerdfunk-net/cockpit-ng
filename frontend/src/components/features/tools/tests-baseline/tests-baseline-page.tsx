@@ -43,6 +43,7 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import {
   buildManualDistributionRows,
+  DEFAULT_BASELINE_CUSTOM_FIELDS,
   DEFAULT_FORM_VALUES,
   profileRequestToFormValues,
 } from './constants'
@@ -446,12 +447,14 @@ export function BaselineGenerateForm() {
                     <FormLabel>Custom fields</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="net=netA,checkmk_site=siteA"
+                        placeholder={DEFAULT_BASELINE_CUSTOM_FIELDS}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Comma-separated key=value pairs applied to devices and VMs
+                      Comma-separated key=value pairs (net, checkmk_site,
+                      free_textfield, last_backup, snmp_credentials) applied to
+                      devices and VMs when not using golden parity
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

@@ -136,7 +136,7 @@ Update **incorrect** docstrings in `test_device_operations_real_nautobot.py` dur
 | Field | Value |
 |-------|-------|
 | Network role name | `Network` |
-| Server role name | `server` (lowercase — tests filter `"server"`) |
+| Server role name | `Server` (tests filter `"Server"`) |
 | Extra role in YAML | `lab` (role definition present; not required for 120-device counts) |
 | Network device type | `networkA` / `NetworkInc` |
 | Server device type | `serverA` / `ServerInc` |
@@ -192,6 +192,8 @@ Use existing `IpAllocator` extended with **cross-device uniqueness tracking** fo
 
 **Definitions** (match current YAML): `net`, `checkmk_site`, `free_textfield`, `last_backup`, `snmp_credentials` with choices `netA|netB|netC`, `siteA|siteB|siteC`, etc.
 
+**Form template** (editable in Generate → Custom fields): `net=netA,checkmk_site=siteA,free_textfield=Device in City A,last_backup=2025-02-20,snmp_credentials=credA` (see `data/baseline/profiles/pytest.json`).
+
 **Per-device values**: follow golden YAML pattern (`free_textfield: Network device in City A`, etc.) when using golden parity mode.
 
 **Integration tests to fix** (do not encode invalid select values):
@@ -227,7 +229,7 @@ Use this when implementing or refactoring tests.
 |-------------|---------------:|----------------|
 | `test_filter_by_location_city_a` | 21 | location = City A |
 | `test_filter_by_role_network` | 100 | role = Network |
-| `test_filter_by_role_server` | 20 | role = server |
+| `test_filter_by_role_server` | 20 | role = Server |
 | `test_filter_by_platform_cisco_ios` | 100 | platform = Cisco IOS |
 | `test_filter_by_tag_production` | 39 | tag = Production |
 | `test_filter_by_tag_staging` | 52 | tag = Staging |
@@ -348,10 +350,10 @@ Ansible inventory preview returns **leaf location name** on `device.location` fo
     "server_device_index_width": 2,
     "prefixes": "192.168.178.0/24,192.168.179.0/24,192.168.180.0/24,192.168.181.0/24",
     "network_device_role": "Network",
-    "server_role": "server",
+    "server_role": "Server",
     "vm_role": "Virtual Machine",
     "tags": "Production,Staging,lab",
-    "custom_fields": "",
+    "custom_fields": "net=netA,checkmk_site=siteA,free_textfield=Device in City A,last_backup=2025-02-20,snmp_credentials=credA",
     "location_hierarchy": "Country -> State -> City -> Building -> Room",
     "number_of_locations": 6,
     "number_of_network_devices": 100,
@@ -694,7 +696,7 @@ layout: pytest_legacy
 naming_scheme: sequential
 devices: 100 network + 20 server
 locations: City A, Another City A, City B, Another City B, City C, Another City C
-roles: Network, server
+roles: Network, Server
 tags: Production (39), Staging (52), lab (29)
 statuses: Active (66), Offline (54)
 anchors: lab-100, server-20

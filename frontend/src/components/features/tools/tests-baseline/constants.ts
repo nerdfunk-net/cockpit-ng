@@ -11,6 +11,10 @@ export const DEFAULT_DISTRIBUTION: DistributionConfig = {
   by_location: [],
 }
 
+/** Device/VM custom field template (key=value pairs, comma-separated). */
+export const DEFAULT_BASELINE_CUSTOM_FIELDS =
+  'net=netA,checkmk_site=siteA,free_textfield=Device in City A,last_backup=2025-02-20,snmp_credentials=credA'
+
 export const DEFAULT_FORM_VALUES: CreateBaselineRequest = {
   name: 'baseline',
   prefixes:
@@ -19,7 +23,7 @@ export const DEFAULT_FORM_VALUES: CreateBaselineRequest = {
   server_role: 'Server',
   vm_role: 'Virtual Machine',
   tags: 'Production,Staging,lab',
-  custom_fields: '',
+  custom_fields: DEFAULT_BASELINE_CUSTOM_FIELDS,
   location_hierarchy: 'Country -> State -> City -> Building',
   number_of_locations: 3,
   number_of_network_devices: 10,

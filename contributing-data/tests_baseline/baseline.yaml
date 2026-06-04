@@ -121,10 +121,11 @@ roles:
   description: This device is a network device
   content_types:
   - dcim.device
-- name: server
+- name: Server
   description: This device is a server
   content_types:
   - dcim.device
+  - virtualization.virtualmachine
 - name: lab
   description: This is a lab device
   content_types:
@@ -2750,7 +2751,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: City C
   status: Offline
   tags:
@@ -2771,7 +2772,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: City A
   status: Offline
   tags:
@@ -2792,7 +2793,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: Another City C
   status: Active
   tags:
@@ -2813,7 +2814,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: Another City C
   status: Offline
   tags:
@@ -2834,7 +2835,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: Another City B
   status: Offline
   tags:
@@ -2855,7 +2856,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: Another City A
   status: Offline
   tags:
@@ -2876,7 +2877,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: City C
   status: Active
   tags:
@@ -2897,7 +2898,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: Another City B
   status: Offline
   tags:
@@ -2918,7 +2919,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: City B
   status: Offline
   tags:
@@ -2939,7 +2940,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: City C
   status: Active
   tags:
@@ -2960,7 +2961,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: Another City C
   status: Offline
   tags:
@@ -2981,7 +2982,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: Another City C
   status: Active
   tags:
@@ -3002,7 +3003,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: City B
   status: Offline
   tags:
@@ -3023,7 +3024,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: Another City C
   status: Offline
   tags:
@@ -3044,7 +3045,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: Another City B
   status: Offline
   tags:
@@ -3065,7 +3066,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: City B
   status: Active
   tags:
@@ -3086,7 +3087,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: City B
   status: Active
   tags:
@@ -3107,7 +3108,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: Another City A
   status: Offline
   tags:
@@ -3128,7 +3129,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: City A
   status: Active
   tags:
@@ -3149,7 +3150,7 @@ devices:
   device_type: serverA
   platform: ServerPlatform
   roles:
-  - server
+  - Server
   location: City B
   status: Offline
   tags:

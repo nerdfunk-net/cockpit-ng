@@ -33,6 +33,9 @@ def test_merge_profile_overrides_defaults() -> None:
     assert merged.number_of_network_devices == 100
     assert merged.number_of_servers == 20
     assert merged.metadata_mode == "golden_parity"
+    assert merged.server_role == "Server"
+    assert "net=netA" in merged.custom_fields
+    assert "checkmk_site=siteA" in merged.custom_fields
 
 
 def test_merge_unknown_profile_raises() -> None:

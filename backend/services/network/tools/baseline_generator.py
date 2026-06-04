@@ -414,10 +414,6 @@ def build_pytest_metadata(request: CreateBaselineRequest) -> Dict[str, Any]:
             "content_types": ["dcim.device"],
         }
     )
-    for role in metadata["roles"]:
-        if role["name"] == request.server_role:
-            role["name"] = "server"
-            role["description"] = "This device is a server"
     metadata["custom_field_choices"] = {
         "net": [
             {"value": "netA", "label": "Network A"},
@@ -620,7 +616,7 @@ def build_default_metadata(
         {
             "name": server_role,
             "description": "Server device role",
-            "content_types": ["dcim.device"],
+            "content_types": ["dcim.device", "virtualization.virtualmachine"],
         },
         {
             "name": vm_role,

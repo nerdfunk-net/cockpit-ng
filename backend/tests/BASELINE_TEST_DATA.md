@@ -218,7 +218,7 @@ All other devices have NO custom fields set.
 ### Test: Filter by role "Network"
 **Expected**: 100 devices (all lab-XX)
 
-### Test: Filter by role "server"
+### Test: Filter by role "Server"
 **Expected**: 20 devices (all server-XX)
 
 ### Test: Filter by tag "Production"
@@ -239,7 +239,7 @@ All other devices have NO custom fields set.
 ### Test: Filter location="City A" AND role="Network"
 **Expected**: 49 devices (lab-01 to lab-49)
 
-### Test: Filter location="City A" AND role="server"
+### Test: Filter location="City A" AND role="Server"
 **Expected**: 9 devices (server-01 to server-09)
 
 ### Test: Filter location="City B" AND tag="Production"
