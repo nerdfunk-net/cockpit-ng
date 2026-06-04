@@ -1,15 +1,20 @@
 """
-Integration tests for CheckMK device lifecycle: Create → Compare → Sync → Delete.
+Integration tests for CheckMK device lifecycle: Compare → Create → Compare → Sync → Delete.
 
-Prerequisites: ``backend/.env.test`` with CheckMK (and Nautobot for compare tests).
+Prerequisites: ``backend/.env.test`` with CheckMK and Nautobot (baseline with lab-001).
 See ``.env.test.example``.
 
 Run:
     pytest tests/integration/test_checkmk_device_lifecycle.py -v -m "integration and checkmk"
 """
 
-import pytest
+from contextlib import contextmanager
+from unittest.mock import MagicMock, patch
 
+import pytest
+from fastapi.testclient import TestClient
+
+from core.auth import verify_token
 from services.checkmk.base import (
     CheckMKClientFactory,
     checkmk_api_base_url,
@@ -21,6 +26,9 @@ from services.checkmk.sync.base import NautobotToCheckMKService
 from services.settings.manager import SettingsManager as _SM
 
 settings_manager = _SM()
+
+# Baseline device used for pre-sync compare (must exist in Nautobot, not in CheckMK yet)
+BASELINE_COMPARE_DEVICE_NAME = "lab-001"
 
 # Suppress InsecureRequestWarning for self-signed certificates in test environment
 # This is expected when testing against CheckMK instances with self-signed certificates
@@ -58,6 +66,48 @@ def config_service():
 def nb2cmk_service():
     """Get Nautobot to CheckMK service instance."""
     return NautobotToCheckMKService()
+
+
+async def _resolve_nautobot_device_id(nautobot_service, device_name: str) -> str:
+    """Return the Nautobot UUID for a device by name."""
+    query = f"""
+    query {{
+      devices(name: "{device_name}") {{
+        id
+        name
+      }}
+    }}
+    """
+    result = await nautobot_service.graphql_query(query, {})
+    if "errors" in result:
+        pytest.skip(f"GraphQL error resolving {device_name}: {result['errors']}")
+
+    devices = result.get("data", {}).get("devices", [])
+    if not devices:
+        pytest.skip(f"Device '{device_name}' not found in Nautobot baseline")
+
+    return devices[0]["id"]
+
+
+@contextmanager
+def _authenticated_api_client():
+    """TestClient with auth/RBAC bypass for nb2cmk compare endpoints."""
+    from main import app
+
+    def override_verify_token() -> dict:
+        return {"username": "admin", "user_id": 1, "permissions": 0xFFFFFFFF}
+
+    mock_rbac_service = MagicMock()
+    mock_rbac_service.has_permission.return_value = True
+    mock_rbac = patch(
+        "service_factory.build_rbac_service",
+        return_value=mock_rbac_service,
+    )
+
+    app.dependency_overrides[verify_token] = override_verify_token
+    with mock_rbac:
+        yield TestClient(app)
+    app.dependency_overrides.clear()
 
 
 # Test device configurations to create in CheckMK
@@ -151,6 +201,56 @@ class TestCheckMKDeviceLifecycle:
                     print("  ✅ Activated changes (deletions)")
                 except Exception as e:
                     print(f"  ⚠️ Failed to activate changes: {e}")
+
+    # =========================================================================
+    # Step 0: Compare baseline device before CheckMK sync (host not in CheckMK)
+    # =========================================================================
+
+    @pytest.mark.asyncio
+    @pytest.mark.nautobot
+    async def test_00_compare_baseline_device_not_in_checkmk(
+        self, nautobot_service, checkmk_client
+    ):
+        """
+        Compare a baseline Nautobot device via REST before any test hosts exist in CheckMK.
+
+        GET /api/nb2cmk/device/{device_id}/compare must report host_not_found when
+        CheckMK returns 404 for the host (e.g. lab-001).
+        """
+        device_name = BASELINE_COMPARE_DEVICE_NAME
+        device_id = await _resolve_nautobot_device_id(nautobot_service, device_name)
+
+        print(
+            f"\n🔍 Pre-sync compare: {device_name} (Nautobot ID: {device_id})"
+        )
+
+        # Preconditions: device exists in Nautobot but not in CheckMK
+        try:
+            checkmk_client.get_host(device_name)
+            pytest.fail(
+                f"Device '{device_name}' already exists in CheckMK; "
+                "remove it before running lifecycle tests"
+            )
+        except CheckMKAPIError as exc:
+            if exc.status_code != 404:
+                raise
+
+        print(f"  ✅ CheckMK confirms host '{device_name}' is not present (404)")
+
+        with _authenticated_api_client() as client:
+            response = client.get(f"/api/nb2cmk/device/{device_id}/compare")
+
+        assert response.status_code == 200, response.text
+        payload = response.json()
+
+        print(f"  Compare API result: {payload.get('result')}")
+        print(f"  Diff: {payload.get('diff')}")
+
+        assert payload["result"] == "host_not_found"
+        assert device_name in payload["diff"]
+        assert "not found in CheckMK" in payload["diff"]
+        assert payload.get("checkmk_config") is None
+        assert payload.get("normalized_config")
 
     # =========================================================================
     # Step 1: Create Test Devices in CheckMK
