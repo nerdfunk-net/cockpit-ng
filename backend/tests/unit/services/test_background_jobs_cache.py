@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tests.helpers.asyncio_run import mock_asyncio_run_returning
 from services.background_jobs.device_cache_jobs import cache_all_devices_task
 from services.background_jobs.location_cache_jobs import cache_all_locations_task
+from tests.helpers.asyncio_run import mock_asyncio_run_returning
 
 
 @pytest.mark.unit

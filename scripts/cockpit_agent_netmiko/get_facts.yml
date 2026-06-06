@@ -1,0 +1,10 @@
+  - name: Gather and save server facts
+    hosts: all
+    gather_facts: true
+
+    tasks:
+      - name: Save facts to local file
+        delegate_to: localhost
+        copy:
+          content: "{{ hostvars[inventory_hostname] | to_nice_json }}"
+          dest: "{{ facts_dest | default('facts.json') }}"

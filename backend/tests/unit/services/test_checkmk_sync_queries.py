@@ -118,7 +118,9 @@ async def test_get_device_normalized_success_with_matched_rule() -> None:
             "service_factory.build_device_normalization_service",
             return_value=normalization,
         ),
-        patch("service_factory.build_priority_rule_evaluator", return_value=rule_evaluator),
+        patch(
+            "service_factory.build_priority_rule_evaluator", return_value=rule_evaluator
+        ),
     ):
         svc = DeviceQueryService()
 

@@ -8,8 +8,10 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
 from core.auth import require_permission
+from core.database import get_db
 from core.safe_http_errors import raise_internal_server_error
 from models.settings import AgentsSettingsRequest, AgentsTestRequest
 
@@ -39,9 +41,13 @@ async def get_agents_settings(
 async def create_agents_settings(
     agents_request: AgentsSettingsRequest,
     current_user: dict = Depends(require_permission("settings.nautobot", "write")),
+    db: Session = Depends(get_db),
 ):
     """Create/Update Agents settings via POST."""
     try:
+        from repositories.cockpit_agent.cockpit_agent_repository import (
+            CockpitAgentRepository,
+        )
         from services.settings.manager import SettingsManager
 
         settings_manager = SettingsManager()
@@ -50,6 +56,15 @@ async def create_agents_settings(
         success = settings_manager.update_agents_settings(settings_dict)
 
         if success:
+            # Sync Netmiko shared secrets to the settings table so that
+            # CockpitAgentService._get_agent_secret() can retrieve them.
+            agent_repo = CockpitAgentRepository(db)
+            for agent in agents_request.agents:
+                if agent.type == "netmiko" and agent.agent_id and agent.shared_secret:
+                    agent_repo.set_agent_shared_secret(
+                        agent.agent_id, agent.shared_secret
+                    )
+
             return {
                 "success": True,
                 "message": "Agents settings updated successfully",

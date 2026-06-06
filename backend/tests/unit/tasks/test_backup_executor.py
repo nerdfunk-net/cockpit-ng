@@ -135,7 +135,9 @@ def test_execute_backup_sequential_success(tmp_path) -> None:
 
     mock_git = MagicMock()
     mock_git.get_repo_path.return_value = repo_dir
-    mock_git.open_or_clone.return_value = MagicMock(active_branch="main", head=MagicMock(commit=MagicMock(hexsha="abcdef12")))
+    mock_git.open_or_clone.return_value = MagicMock(
+        active_branch="main", head=MagicMock(commit=MagicMock(hexsha="abcdef12"))
+    )
     mock_git.pull.return_value = pull_result
     mock_git.commit_and_push.return_value = commit_result
 
@@ -187,7 +189,12 @@ def test_execute_backup_parallel_returns_running_status() -> None:
     }
     credentials.get_decrypted_password.return_value = "secret"
 
-    repository = {"id": 123, "name": "configs", "url": "https://x.git", "branch": "main"}
+    repository = {
+        "id": 123,
+        "name": "configs",
+        "url": "https://x.git",
+        "branch": "main",
+    }
     repo_dir = MagicMock()
     repo_dir.exists.return_value = True
     repo_dir.parent = MagicMock()
@@ -213,14 +220,20 @@ def test_execute_backup_parallel_returns_running_status() -> None:
 
     mock_chord_result = MagicMock()
     mock_chord_result.id = "chord-123"
-    mock_chord_builder = MagicMock(return_value=MagicMock(return_value=mock_chord_result))
+    mock_chord_builder = MagicMock(
+        return_value=MagicMock(return_value=mock_chord_result)
+    )
 
     with (
         patch("service_factory.build_git_service", return_value=mock_git),
         patch("service_factory.build_git_auth_service", return_value=mock_git_auth),
         patch("service_factory.build_credentials_service", return_value=credentials),
-        patch("service_factory.build_job_schedule_service", return_value=schedule_service),
-        patch("service_factory.build_job_template_service", return_value=template_service),
+        patch(
+            "service_factory.build_job_schedule_service", return_value=schedule_service
+        ),
+        patch(
+            "service_factory.build_job_template_service", return_value=template_service
+        ),
         patch(
             "services.git.shared_utils.git_repo_manager",
             MagicMock(get_repository=MagicMock(return_value=repository)),

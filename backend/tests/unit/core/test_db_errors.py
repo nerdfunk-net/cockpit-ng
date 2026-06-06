@@ -23,7 +23,9 @@ def test_is_duplicate_server_hostname_error_detects_constraint_name() -> None:
     exc = IntegrityError(
         "insert",
         {},
-        Exception('duplicate key value violates unique constraint "uq_servers_hostname"'),
+        Exception(
+            'duplicate key value violates unique constraint "uq_servers_hostname"'
+        ),
     )
     assert is_duplicate_server_hostname_error(exc) is True
 

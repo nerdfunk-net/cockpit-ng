@@ -36,7 +36,9 @@ def _service() -> GitConnectionService:
     svc = GitConnectionService()
     svc._auth.resolve_credentials = MagicMock(return_value=("git-user", "secret", None))
     svc._auth.build_auth_url = MagicMock(
-        side_effect=lambda url, user, token: f"https://{user}:{token}@example.com/org/repo.git"
+        side_effect=lambda url,
+        user,
+        token: f"https://{user}:{token}@example.com/org/repo.git"
     )
     return svc
 

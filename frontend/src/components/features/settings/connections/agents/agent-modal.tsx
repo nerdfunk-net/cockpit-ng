@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -17,13 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, RefreshCw } from 'lucide-react'
 import type { Agent, AgentType, GitRepository } from './types'
 
 const AGENT_TYPE_LABELS: Record<AgentType, string> = {
   generic: 'Generic',
   'git-based': 'Git-based',
   ansible: 'Ansible',
+  netmiko: 'Netmiko',
 }
 
 interface AgentModalProps {
@@ -42,6 +43,15 @@ const EMPTY_FORM: Agent = {
   description: '',
   type: 'generic',
   git_repository_id: null,
+  shared_secret: '',
+}
+
+function generateSecret(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
 export function AgentModal({
@@ -54,6 +64,7 @@ export function AgentModal({
 }: AgentModalProps) {
   const [formData, setFormData] = useState<Agent>(EMPTY_FORM)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [showSecret, setShowSecret] = useState(false)
 
   useEffect(() => {
     if (agent) {
@@ -61,6 +72,7 @@ export function AgentModal({
         ...agent,
         agent_id: agent.agent_id || '',
         type: agent.type ?? 'generic',
+        shared_secret: agent.shared_secret || '',
       })
     } else {
       setFormData({
@@ -69,9 +81,11 @@ export function AgentModal({
       })
     }
     setErrors({})
+    setShowSecret(false)
   }, [agent, isOpen])
 
   const isGitRepoRequired = formData.type === 'git-based'
+  const isNetmiko = formData.type === 'netmiko'
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -88,16 +102,35 @@ export function AgentModal({
       newErrors.git_repository_id = 'Git repository is required for git-based agents'
     }
 
+    if (isNetmiko && !formData.shared_secret?.trim()) {
+      newErrors.shared_secret = 'Shared secret is required for Netmiko agents'
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleTypeChange = (value: AgentType) => {
-    setFormData(prev => ({ ...prev, type: value }))
-    if (errors.git_repository_id) {
-      setErrors(prev => ({ ...prev, git_repository_id: '' }))
+  const handleTypeChange = useCallback((value: AgentType) => {
+    setFormData(prev => ({
+      ...prev,
+      type: value,
+      // Clear type-specific fields when switching types
+      shared_secret: value === 'netmiko' ? prev.shared_secret : '',
+      git_repository_id: value === 'netmiko' ? null : prev.git_repository_id,
+    }))
+    setErrors(prev => ({
+      ...prev,
+      git_repository_id: '',
+      shared_secret: '',
+    }))
+  }, [])
+
+  const handleGenerateSecret = useCallback(() => {
+    setFormData(prev => ({ ...prev, shared_secret: generateSecret() }))
+    if (errors.shared_secret) {
+      setErrors(prev => ({ ...prev, shared_secret: '' }))
     }
-  }
+  }, [errors.shared_secret])
 
   const handleSave = () => {
     if (validateForm()) {
@@ -127,7 +160,7 @@ export function AgentModal({
             </Label>
             <Input
               id="agent-id"
-              placeholder="e.g., grafana-01, telegraf-prod, smokeping-main"
+              placeholder="e.g., grafana-01, telegraf-prod, netmiko-probe-01"
               value={formData.agent_id}
               onChange={e => setFormData({ ...formData, agent_id: e.target.value })}
               className={errors.agent_id ? 'border-red-500' : ''}
@@ -147,7 +180,7 @@ export function AgentModal({
             </Label>
             <Input
               id="agent-name"
-              placeholder="e.g., Grafana, Telegraf, Smokeping"
+              placeholder="e.g., Grafana, Telegraf, Netmiko Probe"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
               className={errors.name ? 'border-red-500' : ''}
@@ -192,73 +225,138 @@ export function AgentModal({
                 ? 'Git-based agents deploy configuration from a Git repository (required).'
                 : formData.type === 'ansible'
                   ? 'Ansible agents run playbooks, optionally sourced from a Git repository.'
-                  : 'Generic agents can optionally use a Git repository for configuration.'}
+                  : formData.type === 'netmiko'
+                    ? 'Netmiko agents connect directly to network devices via SSH from an isolated network segment.'
+                    : 'Generic agents can optionally use a Git repository for configuration.'}
             </p>
           </div>
 
-          {/* Git Repository */}
-          <div className="space-y-2">
-            <Label htmlFor="agent-git-repo">
-              Configuration Repository{' '}
-              {isGitRepoRequired && <span className="text-red-500">*</span>}
-            </Label>
-            {loadingGitRepos ? (
-              <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-gray-50">
-                <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
-                <span className="text-sm text-gray-600">Loading repositories...</span>
-              </div>
-            ) : gitRepositories.length > 0 ? (
-              <>
-                <Select
-                  value={formData.git_repository_id?.toString() || ''}
-                  onValueChange={value =>
-                    setFormData({
-                      ...formData,
-                      git_repository_id: parseInt(value) || null,
-                    })
-                  }
-                >
-                  <SelectTrigger
-                    id="agent-git-repo"
-                    className={`h-auto min-h-[44px] ${errors.git_repository_id ? 'border-red-500' : ''}`}
+          {/* Netmiko: Shared Secret */}
+          {isNetmiko && (
+            <div className="space-y-2">
+              <Label htmlFor="agent-shared-secret">
+                Shared Secret <span className="text-red-500">*</span>
+              </Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="agent-shared-secret"
+                    type={showSecret ? 'text' : 'password'}
+                    placeholder="64-character hex secret"
+                    value={formData.shared_secret || ''}
+                    onChange={e =>
+                      setFormData({ ...formData, shared_secret: e.target.value })
+                    }
+                    className={`pr-10 font-mono text-sm ${errors.shared_secret ? 'border-red-500' : ''}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSecret(v => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label={showSecret ? 'Hide secret' : 'Show secret'}
                   >
-                    <SelectValue placeholder={isGitRepoRequired ? 'Select a repository' : 'Select a repository (optional)'} />
-                  </SelectTrigger>
-                  <SelectContent className="max-w-[550px]">
-                    {gitRepositories.map(repo => (
-                      <SelectItem
-                        key={repo.id}
-                        value={repo.id.toString()}
-                        className="cursor-pointer focus:bg-blue-50 focus:text-gray-900"
-                      >
-                        <div className="flex flex-col py-1">
-                          <span className="font-medium">{repo.name}</span>
-                          <span className="text-xs text-muted-foreground mt-0.5">
-                            {repo.url} • branch: {repo.branch}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.git_repository_id && (
-                  <p className="text-xs text-red-500">{errors.git_repository_id}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {isGitRepoRequired
-                    ? 'Required for git-based agents. Only repositories with category "Agent" are shown.'
-                    : 'Optional. Only repositories with category "Agent" are shown.'}
-                </p>
-              </>
-            ) : (
-              <div className="p-4 border border-amber-200 rounded-md bg-amber-50">
-                <p className="text-sm text-amber-800">
-                  <strong>No repositories found.</strong> Please add an Agent repository
-                  in Settings → Git Management.
-                </p>
+                    {showSecret ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateSecret}
+                  className="shrink-0 gap-1.5"
+                  title="Generate a random secret"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Generate
+                </Button>
               </div>
-            )}
-          </div>
+              {errors.shared_secret && (
+                <p className="text-xs text-red-500">{errors.shared_secret}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                This value must match{' '}
+                <code className="bg-gray-100 px-1 rounded">COCKPIT_SHARED_SECRET</code>{' '}
+                in the agent&apos;s <code className="bg-gray-100 px-1 rounded">.env</code>{' '}
+                file. Used to sign and authenticate all Redis messages.
+              </p>
+            </div>
+          )}
+
+          {/* Git Repository (hidden for netmiko agents) */}
+          {!isNetmiko && (
+            <div className="space-y-2">
+              <Label htmlFor="agent-git-repo">
+                Configuration Repository{' '}
+                {isGitRepoRequired && <span className="text-red-500">*</span>}
+              </Label>
+              {loadingGitRepos ? (
+                <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-gray-50">
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
+                  <span className="text-sm text-gray-600">Loading repositories...</span>
+                </div>
+              ) : gitRepositories.length > 0 ? (
+                <>
+                  <Select
+                    value={formData.git_repository_id?.toString() || ''}
+                    onValueChange={value =>
+                      setFormData({
+                        ...formData,
+                        git_repository_id: parseInt(value) || null,
+                      })
+                    }
+                  >
+                    <SelectTrigger
+                      id="agent-git-repo"
+                      className={`h-auto min-h-[44px] ${errors.git_repository_id ? 'border-red-500' : ''}`}
+                    >
+                      <SelectValue
+                        placeholder={
+                          isGitRepoRequired
+                            ? 'Select a repository'
+                            : 'Select a repository (optional)'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-w-[550px]">
+                      {gitRepositories.map(repo => (
+                        <SelectItem
+                          key={repo.id}
+                          value={repo.id.toString()}
+                          className="cursor-pointer focus:bg-blue-50 focus:text-gray-900"
+                        >
+                          <div className="flex flex-col py-1">
+                            <span className="font-medium">{repo.name}</span>
+                            <span className="text-xs text-muted-foreground mt-0.5">
+                              {repo.url} • branch: {repo.branch}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.git_repository_id && (
+                    <p className="text-xs text-red-500">{errors.git_repository_id}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {isGitRepoRequired
+                      ? 'Required for git-based agents. Only repositories with category "Agent" are shown.'
+                      : 'Optional. Only repositories with category "Agent" are shown.'}
+                  </p>
+                </>
+              ) : (
+                <div className="p-4 border border-amber-200 rounded-md bg-amber-50">
+                  <p className="text-sm text-amber-800">
+                    <strong>No repositories found.</strong> Please add an Agent repository
+                    in Settings → Git Management.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>

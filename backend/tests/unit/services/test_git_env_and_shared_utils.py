@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi import HTTPException
 
-from services.git.env import set_ssl_env
 from services.git import shared_utils
+from services.git.env import set_ssl_env
 
 
 @pytest.mark.unit

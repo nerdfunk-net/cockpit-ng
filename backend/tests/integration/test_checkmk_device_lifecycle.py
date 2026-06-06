@@ -220,9 +220,7 @@ class TestCheckMKDeviceLifecycle:
         device_name = BASELINE_COMPARE_DEVICE_NAME
         device_id = await _resolve_nautobot_device_id(nautobot_service, device_name)
 
-        print(
-            f"\n🔍 Pre-sync compare: {device_name} (Nautobot ID: {device_id})"
-        )
+        print(f"\n🔍 Pre-sync compare: {device_name} (Nautobot ID: {device_id})")
 
         # Preconditions: device exists in Nautobot but not in CheckMK
         try:

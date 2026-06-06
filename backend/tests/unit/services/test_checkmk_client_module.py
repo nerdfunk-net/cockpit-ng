@@ -72,9 +72,7 @@ async def test_legacy_test_connection_from_settings() -> None:
         verify_ssl=True,
     )
 
-    with patch(
-        "services.checkmk.base.get_checkmk_config", return_value=fake_config
-    ):
+    with patch("services.checkmk.base.get_checkmk_config", return_value=fake_config):
         svc = mod.CheckMKConnectionService()
         svc.test_connection = AsyncMock(return_value=(True, "ok"))
         result = await svc.test_connection_from_settings()

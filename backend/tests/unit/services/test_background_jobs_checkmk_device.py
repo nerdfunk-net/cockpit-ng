@@ -6,11 +6,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from tests.helpers.asyncio_run import (
-    mock_asyncio_run_raising,
-    mock_asyncio_run_returning,
-    mock_asyncio_run_sequence,
-)
 from services.background_jobs.checkmk_device_jobs import (
     _activate_checkmk_changes,
     _update_or_add_in_checkmk,
@@ -19,6 +14,11 @@ from services.background_jobs.checkmk_device_jobs import (
     update_device_in_checkmk_task,
 )
 from services.checkmk.exceptions import CheckMKAPIError
+from tests.helpers.asyncio_run import (
+    mock_asyncio_run_raising,
+    mock_asyncio_run_returning,
+    mock_asyncio_run_sequence,
+)
 
 
 def _operation_result(**kwargs: object) -> MagicMock:
@@ -191,7 +191,9 @@ def test_sync_devices_device_failure_records_checkmk_api_error() -> None:
         ),
         patch.object(sync_devices_to_checkmk_task, "update_state"),
     ):
-        out = sync_devices_to_checkmk_task.run(["dev-bad"], activate_changes_after_sync=False)
+        out = sync_devices_to_checkmk_task.run(
+            ["dev-bad"], activate_changes_after_sync=False
+        )
 
     assert out["failed_count"] == 1
     assert out["success_count"] == 0
@@ -217,7 +219,9 @@ def test_add_device_already_exists_message() -> None:
         patch("service_factory.build_nb2cmk_service"),
         patch(
             "services.background_jobs.checkmk_device_jobs.asyncio.run",
-            side_effect=mock_asyncio_run_raising(Exception("Host already exists in CheckMK")),
+            side_effect=mock_asyncio_run_raising(
+                Exception("Host already exists in CheckMK")
+            ),
         ),
         patch.object(add_device_to_checkmk_task, "update_state"),
     ):

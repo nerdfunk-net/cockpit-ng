@@ -3,6 +3,9 @@ Service for Grafana Agent management
 Handles Redis Pub/Sub communication and command tracking
 """
 
+import base64
+import hashlib
+import hmac
 import json
 import logging
 import time
@@ -10,6 +13,7 @@ import uuid
 from typing import Dict, List, Optional
 
 import redis
+from cryptography.fernet import Fernet
 from sqlalchemy.orm import Session
 
 from config import settings
@@ -35,6 +39,40 @@ class CockpitAgentService:
             socket_keepalive=True,
         )
 
+    def _get_agent_secret(self, agent_id: str) -> Optional[str]:
+        """Look up the HMAC shared secret for a Netmiko agent from the settings table."""
+        return self.repository.get_agent_shared_secret(agent_id)
+
+    @staticmethod
+    def _fernet_key(secret: str) -> bytes:
+        """Derive a 32-byte Fernet key from an arbitrary shared secret string."""
+        raw = hashlib.sha256(secret.encode()).digest()
+        return base64.urlsafe_b64encode(raw)
+
+    def _sign_and_encrypt_command(self, command_message: dict, secret: str) -> dict:
+        """
+        1. Fernet-encrypt params["password"] if present (device SSH credential).
+        2. Add HMAC-SHA256 signature over the entire message payload.
+
+        The signature covers the message after password encryption so the agent can
+        verify integrity *before* decrypting the password.
+        """
+        msg = {**command_message}
+
+        # Encrypt device password if present
+        if msg.get("params", {}).get("password"):
+            f = Fernet(self._fernet_key(secret))
+            encrypted = f.encrypt(msg["params"]["password"].encode()).decode()
+            msg = {**msg, "params": {**msg["params"], "password": encrypted}}
+
+        # Sign the message (without the auth field)
+        timestamp = msg["timestamp"]
+        canonical = json.dumps(msg, sort_keys=True)
+        data_to_sign = f"{canonical}:{timestamp}".encode()
+        signature = hmac.new(secret.encode(), data_to_sign, hashlib.sha256).hexdigest()
+
+        return {**msg, "auth": {"signature": signature}}
+
     def send_command(
         self,
         agent_id: str,
@@ -58,7 +96,12 @@ class CockpitAgentService:
             "sender": "cockpit-backend",
         }
 
-        # Save to database
+        # Sign and encrypt if a shared secret is configured for this agent
+        secret = self._get_agent_secret(agent_id)
+        if secret:
+            command_message = self._sign_and_encrypt_command(command_message, secret)
+
+        # Save to database (save original params, not the encrypted version)
         try:
             self.repository.save_command(
                 agent_id=agent_id,
@@ -357,4 +400,115 @@ class CockpitAgentService:
         )
 
         # Wait for response
+        return self.wait_for_response(agent_id, command_id, timeout)
+
+    # ------------------------------------------------------------------
+    # Netmiko agent convenience methods
+    # ------------------------------------------------------------------
+
+    def _netmiko_online_check(self, agent_id: str) -> Optional[dict]:
+        """Return an error dict if the agent is offline, else None."""
+        if not self.check_agent_online(agent_id):
+            return {"status": "error", "error": "Agent is offline or not responding"}
+        return None
+
+    def send_netmiko_execute_commands(
+        self,
+        agent_id: str,
+        ip_address: str,
+        device_type: str,
+        username: str,
+        password: str,
+        commands: List[str],
+        sent_by: str,
+        *,
+        enable_mode: bool = False,
+        write_config: bool = False,
+        use_textfsm: bool = False,
+        privileged: bool = False,
+        timeout: int = 120,
+    ) -> dict:
+        """Execute arbitrary commands on a device via a Netmiko agent."""
+        err = self._netmiko_online_check(agent_id)
+        if err:
+            return err
+
+        command_id = self.send_command(
+            agent_id=agent_id,
+            command="execute_commands",
+            params={
+                "ip_address": ip_address,
+                "device_type": device_type,
+                "username": username,
+                "password": password,
+                "commands": commands,
+                "enable_mode": enable_mode,
+                "write_config": write_config,
+                "use_textfsm": use_textfsm,
+                "privileged": privileged,
+            },
+            sent_by=sent_by,
+        )
+        return self.wait_for_response(agent_id, command_id, timeout)
+
+    def send_netmiko_get_running_config(
+        self,
+        agent_id: str,
+        ip_address: str,
+        device_type: str,
+        username: str,
+        password: str,
+        sent_by: str,
+        *,
+        privileged: bool = False,
+        timeout: int = 120,
+    ) -> dict:
+        """Retrieve running configuration from a device via a Netmiko agent."""
+        err = self._netmiko_online_check(agent_id)
+        if err:
+            return err
+
+        command_id = self.send_command(
+            agent_id=agent_id,
+            command="get_running_config",
+            params={
+                "ip_address": ip_address,
+                "device_type": device_type,
+                "username": username,
+                "password": password,
+                "privileged": privileged,
+            },
+            sent_by=sent_by,
+        )
+        return self.wait_for_response(agent_id, command_id, timeout)
+
+    def send_netmiko_get_startup_config(
+        self,
+        agent_id: str,
+        ip_address: str,
+        device_type: str,
+        username: str,
+        password: str,
+        sent_by: str,
+        *,
+        privileged: bool = False,
+        timeout: int = 120,
+    ) -> dict:
+        """Retrieve startup configuration from a device via a Netmiko agent."""
+        err = self._netmiko_online_check(agent_id)
+        if err:
+            return err
+
+        command_id = self.send_command(
+            agent_id=agent_id,
+            command="get_startup_config",
+            params={
+                "ip_address": ip_address,
+                "device_type": device_type,
+                "username": username,
+                "password": password,
+                "privileged": privileged,
+            },
+            sent_by=sent_by,
+        )
         return self.wait_for_response(agent_id, command_id, timeout)

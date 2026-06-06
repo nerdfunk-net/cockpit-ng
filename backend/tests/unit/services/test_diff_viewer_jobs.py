@@ -6,10 +6,13 @@ from unittest.mock import patch
 
 import pytest
 
-from tests.helpers.asyncio_run import mock_asyncio_run_raising, mock_asyncio_run_returning
 from services.background_jobs.diff_viewer_jobs import (
     _build_diff_device,
     get_diff_between_nb_checkmk_task,
+)
+from tests.helpers.asyncio_run import (
+    mock_asyncio_run_raising,
+    mock_asyncio_run_returning,
 )
 
 

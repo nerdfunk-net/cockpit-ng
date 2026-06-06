@@ -1,0 +1,24 @@
+[Unit]
+Description=Cockpit Netmiko Agent
+After=network.target
+
+[Service]
+Type=simple
+User=cockpit-agent
+Group=docker
+WorkingDirectory=/opt/cockpit-agent-ansible
+ExecStart=/opt/cockpit-agent-ansible/venv/bin/python agent.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+EnvironmentFile=/opt/cockpit-agent-ansible/.env
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -8,20 +8,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from tasks.execution.set_primary_ip_executor import (
-    _extract_ip_objects,
     _execute_interface_name_scaffold,
+    _extract_ip_objects,
     execute_set_primary_ip,
 )
 
 _PATCH_DB = "core.database.SessionLocal"
 _PATCH_AGENT = "services.cockpit_agent.cockpit_agent_service.CockpitAgentService"
-_PATCH_RESOLVE = (
-    "tasks.execution.set_primary_ip_executor._resolve_devices_with_ip_ids"
-)
+_PATCH_RESOLVE = "tasks.execution.set_primary_ip_executor._resolve_devices_with_ip_ids"
 _PATCH_PERSISTENCE = "service_factory.build_inventory_persistence_service"
-_PATCH_DEVICE_SVC = (
-    "services.nautobot.devices.common.DeviceCommonService"
-)
+_PATCH_DEVICE_SVC = "services.nautobot.devices.common.DeviceCommonService"
 
 
 def _db_mock() -> MagicMock:
@@ -260,7 +256,10 @@ def test_execute_ip_reachable_marks_unreachable_devices() -> None:
 
 @pytest.mark.unit
 def test_execute_ip_reachable_agent_offline() -> None:
-    with patch(_PATCH_RESOLVE, return_value=[{"device_name": "r1", "device_id": "d1", "ip_objects": []}]):
+    with patch(
+        _PATCH_RESOLVE,
+        return_value=[{"device_name": "r1", "device_id": "d1", "ip_objects": []}],
+    ):
         with patch(_PATCH_DB, return_value=_db_mock()):
             with patch(_PATCH_AGENT) as agent_cls:
                 agent_cls.return_value.check_agent_online.return_value = False
@@ -278,7 +277,10 @@ def test_execute_ip_reachable_agent_offline() -> None:
 
 @pytest.mark.unit
 def test_execute_ip_reachable_ping_timeout() -> None:
-    with patch(_PATCH_RESOLVE, return_value=[{"device_name": "r1", "device_id": "d1", "ip_objects": []}]):
+    with patch(
+        _PATCH_RESOLVE,
+        return_value=[{"device_name": "r1", "device_id": "d1", "ip_objects": []}],
+    ):
         with patch(_PATCH_DB, return_value=_db_mock()):
             with patch(_PATCH_AGENT) as agent_cls:
                 agent_cls.return_value.check_agent_online.return_value = True

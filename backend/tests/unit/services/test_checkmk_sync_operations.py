@@ -70,7 +70,9 @@ async def test_add_device_success(ops: DeviceSyncOperations) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_update_device_moves_host_when_folder_changes(ops: DeviceSyncOperations) -> None:
+async def test_update_device_moves_host_when_folder_changes(
+    ops: DeviceSyncOperations,
+) -> None:
     ops.query_service.get_device_normalized = AsyncMock(
         return_value=_normalized(folder="/new-site")
     )
@@ -104,7 +106,9 @@ async def test_update_device_moves_host_when_folder_changes(ops: DeviceSyncOpera
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_update_device_host_not_found_in_checkmk(ops: DeviceSyncOperations) -> None:
+async def test_update_device_host_not_found_in_checkmk(
+    ops: DeviceSyncOperations,
+) -> None:
     from services.checkmk.exceptions import CheckMKAPIError
 
     ops.query_service.get_device_normalized = AsyncMock(return_value=_normalized())

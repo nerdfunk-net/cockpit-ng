@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-from fastapi import HTTPException
 
 from services.nautobot.common.exceptions import (
     NautobotDuplicateResourceError,

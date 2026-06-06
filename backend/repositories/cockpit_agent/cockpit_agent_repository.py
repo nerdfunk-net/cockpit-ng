@@ -8,7 +8,7 @@ from typing import List, Optional
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from core.models import CockpitAgentCommand
+from core.models import CockpitAgentCommand, Setting
 
 
 class CockpitAgentRepository:
@@ -118,3 +118,43 @@ class CockpitAgentRepository:
             query = query.filter(CockpitAgentCommand.agent_id == agent_id)
 
         return query.count()
+
+    def get_agent_shared_secret(self, agent_id: str) -> Optional[str]:
+        """
+        Retrieve the HMAC shared secret for a Cockpit Netmiko agent.
+        Stored in the settings table: category='cockpit_agent_shared_secrets', key=agent_id.
+        """
+        row = (
+            self.db.query(Setting)
+            .filter(
+                Setting.category == "cockpit_agent_shared_secrets",
+                Setting.key == agent_id,
+            )
+            .first()
+        )
+        return row.value if row else None
+
+    def set_agent_shared_secret(self, agent_id: str, secret: str) -> None:
+        """
+        Upsert the HMAC shared secret for a Cockpit Netmiko agent.
+        """
+        row = (
+            self.db.query(Setting)
+            .filter(
+                Setting.category == "cockpit_agent_shared_secrets",
+                Setting.key == agent_id,
+            )
+            .first()
+        )
+        if row:
+            row.value = secret
+        else:
+            row = Setting(
+                category="cockpit_agent_shared_secrets",
+                key=agent_id,
+                value=secret,
+                value_type="string",
+                description=f"HMAC shared secret for Cockpit Netmiko agent '{agent_id}'",
+            )
+            self.db.add(row)
+        self.db.commit()

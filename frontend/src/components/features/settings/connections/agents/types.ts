@@ -1,4 +1,4 @@
-export type AgentType = 'generic' | 'git-based' | 'ansible'
+export type AgentType = 'generic' | 'git-based' | 'ansible' | 'netmiko'
 
 export interface Agent {
   id: string
@@ -7,6 +7,7 @@ export interface Agent {
   description: string
   type: AgentType
   git_repository_id: number | null
+  shared_secret?: string
 }
 
 export interface AgentsSettings {

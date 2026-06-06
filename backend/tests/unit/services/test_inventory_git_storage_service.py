@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -103,7 +103,12 @@ async def test_list_inventories_reads_json_files(tmp_path: Path) -> None:
                 "name": "prod",
                 "description": "d",
                 "conditions": [
-                    {"field": "role", "operator": "equals", "value": "core", "logic": "and"}
+                    {
+                        "field": "role",
+                        "operator": "equals",
+                        "value": "core",
+                        "logic": "and",
+                    }
                 ],
             }
         )

@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import io
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 _PATCH_PARAMIKO = "services.network.scanning.authenticators.ssh.paramiko"
 _PATCH_NETMIKO_MOD = "services.network.scanning.authenticators.netmiko.ConnectHandler"
-_PATCH_NAPALM_DRIVER = "services.network.scanning.authenticators.napalm.get_network_driver"
+_PATCH_NAPALM_DRIVER = (
+    "services.network.scanning.authenticators.napalm.get_network_driver"
+)
 
 
 def _mock_ssh_client(
@@ -68,8 +69,7 @@ async def test_ssh_authenticator_detects_cisco() -> None:
     from services.network.scanning.authenticators.ssh import SshAuthenticator
 
     show_version = (
-        "Router1 uptime is 10 days, 2 hours\n"
-        "Cisco IOS Software, Version 15.2\n"
+        "Router1 uptime is 10 days, 2 hours\nCisco IOS Software, Version 15.2\n"
     )
     client = _mock_ssh_client(show_version_stdout=show_version)
 
@@ -185,9 +185,7 @@ async def test_netmiko_authenticator_detects_network_device() -> None:
     ]
 
     with patch(_PATCH_NETMIKO_MOD, return_value=connection):
-        result = await NetmikoAuthenticator().authenticate(
-            "10.0.0.6", "admin", "pw"
-        )
+        result = await NetmikoAuthenticator().authenticate("10.0.0.6", "admin", "pw")
 
     assert result is not None
     assert result["hostname"] == "SW1"
@@ -208,9 +206,7 @@ async def test_netmiko_authenticator_detects_linux_device_type() -> None:
             "services.network.scanning.authenticators.netmiko._DEVICE_TYPES",
             ["linux"],
         ):
-            result = await NetmikoAuthenticator().authenticate(
-                "10.0.0.7", "root", "pw"
-            )
+            result = await NetmikoAuthenticator().authenticate("10.0.0.7", "root", "pw")
 
     assert result is not None
     assert result["device_type"] == "linux"
@@ -245,9 +241,7 @@ async def test_napalm_authenticator_returns_facts_on_success() -> None:
             "services.network.scanning.authenticators.napalm._CISCO_DRIVERS",
             ["ios"],
         ):
-            result = await NapalmAuthenticator().authenticate(
-                "10.0.0.8", "admin", "pw"
-            )
+            result = await NapalmAuthenticator().authenticate("10.0.0.8", "admin", "pw")
 
     assert result == {"hostname": "R1", "platform": "ios"}
     device.open.assert_called_once()

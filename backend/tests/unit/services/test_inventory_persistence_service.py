@@ -41,7 +41,9 @@ def service(repo: MagicMock) -> InventoryPersistenceService:
 
 
 @pytest.mark.unit
-def test_create_inventory_success(service: InventoryPersistenceService, repo: MagicMock) -> None:
+def test_create_inventory_success(
+    service: InventoryPersistenceService, repo: MagicMock
+) -> None:
     repo.get_by_name.return_value = None
     repo.create.return_value = _inventory_model(id=10)
 
@@ -64,7 +66,9 @@ def test_create_inventory_requires_name(service: InventoryPersistenceService) ->
 
 
 @pytest.mark.unit
-def test_create_inventory_duplicate_name(service: InventoryPersistenceService, repo: MagicMock) -> None:
+def test_create_inventory_duplicate_name(
+    service: InventoryPersistenceService, repo: MagicMock
+) -> None:
     repo.get_by_name.return_value = _inventory_model()
 
     with pytest.raises(ValueError, match="already exists"):

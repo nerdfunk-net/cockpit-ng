@@ -22,6 +22,10 @@ class DeviceCommand(BaseModel):
     write_config: bool = Field(default=False)
     use_textfsm: bool = Field(default=False)
     session_id: Optional[str] = Field(default=None)
+    agent_id: Optional[str] = Field(
+        default=None,
+        description="If set, route execution through a Cockpit agent instead of direct SSH",
+    )
 
 
 class CommandResult(BaseModel):

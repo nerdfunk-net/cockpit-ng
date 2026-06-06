@@ -409,9 +409,7 @@ async def test_create_devices_skips_when_role_missing() -> None:
 @pytest.mark.unit
 async def test_create_cluster_groups_creates_new() -> None:
     mock_nb = MagicMock()
-    mock_nb.rest_request = AsyncMock(
-        side_effect=[{"count": 0}, {"id": "cg-1"}]
-    )
+    mock_nb.rest_request = AsyncMock(side_effect=[{"count": 0}, {"id": "cg-1"}])
     with patch(_PATCH_NB, return_value=mock_nb):
         with patch(_PATCH_COMMON, return_value=MagicMock()):
             svc = BaselineImportService()
@@ -532,9 +530,7 @@ async def test_create_virtual_machines_skips_missing_cluster() -> None:
         svc = BaselineImportService()
         svc.created_resources["clusters"] = {}
 
-    created = await svc.create_virtual_machines(
-        [{"name": "vm1", "cluster": "Missing"}]
-    )
+    created = await svc.create_virtual_machines([{"name": "vm1", "cluster": "Missing"}])
 
     assert created == {}
 

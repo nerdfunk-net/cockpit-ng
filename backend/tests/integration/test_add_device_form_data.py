@@ -204,7 +204,9 @@ async def get_form_resource_ids(nautobot) -> dict:
     }
 
 
-async def get_or_create_vlan(nautobot, vid: int, name: str, status_id: str) -> tuple[str, bool]:
+async def get_or_create_vlan(
+    nautobot, vid: int, name: str, status_id: str
+) -> tuple[str, bool]:
     """Return (vlan_id, was_created) for the given VID, creating it if absent."""
     query = f"""
     query {{
@@ -816,7 +818,9 @@ class TestAddDeviceFormData:
         if result.get("device_id"):
             device_ids.append(result["device_id"])
 
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
 
         iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
         mode_value = self._normalize_mode(iface.get("mode"))
@@ -855,7 +859,9 @@ class TestAddDeviceFormData:
         if result.get("device_id"):
             device_ids.append(result["device_id"])
 
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
 
         iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
         mode_value = self._normalize_mode(iface.get("mode"))
@@ -866,7 +872,9 @@ class TestAddDeviceFormData:
         )
         assert iface.get("tagged_vlans") == []
 
-        logger.info("✓ Interface created with mode=access and untagged VLAN %s", VLAN_100_VID)
+        logger.info(
+            "✓ Interface created with mode=access and untagged VLAN %s", VLAN_100_VID
+        )
 
     @pytest.mark.asyncio
     async def test_interface_vlan_mode_tagged_with_vlans(
@@ -896,7 +904,9 @@ class TestAddDeviceFormData:
         if result.get("device_id"):
             device_ids.append(result["device_id"])
 
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
 
         iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
         mode_value = self._normalize_mode(iface.get("mode"))
@@ -940,17 +950,24 @@ class TestAddDeviceFormData:
         if result.get("device_id"):
             device_ids.append(result["device_id"])
 
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
 
         iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
         mode_value = self._normalize_mode(iface.get("mode"))
-        assert mode_value == "tagged-all", f"Expected mode 'tagged-all', got '{mode_value}'"
+        assert mode_value == "tagged-all", (
+            f"Expected mode 'tagged-all', got '{mode_value}'"
+        )
         assert iface.get("untagged_vlan") is not None, "untagged_vlan must be set"
         assert iface["untagged_vlan"]["vid"] == VLAN_100_VID, (
             f"Expected VID {VLAN_100_VID}, got {iface['untagged_vlan']['vid']}"
         )
 
-        logger.info("✓ Interface created with mode=tagged-all and untagged VLAN %s", VLAN_100_VID)
+        logger.info(
+            "✓ Interface created with mode=tagged-all and untagged VLAN %s",
+            VLAN_100_VID,
+        )
 
     # ------------------------------------------------------------------
     # Interface metadata tests (MAC address, MTU, description)
@@ -978,7 +995,9 @@ class TestAddDeviceFormData:
         if result.get("device_id"):
             device_ids.append(result["device_id"])
 
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
 
         iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
         stored = iface.get("mac_address")
@@ -1011,7 +1030,9 @@ class TestAddDeviceFormData:
         if result.get("device_id"):
             device_ids.append(result["device_id"])
 
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
 
         iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
         assert iface.get("mtu") == IFACE_MTU, (
@@ -1042,14 +1063,18 @@ class TestAddDeviceFormData:
         if result.get("device_id"):
             device_ids.append(result["device_id"])
 
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
 
         iface = await self._fetch_interface(real_nautobot_service, result["device_id"])
         assert iface.get("description") == IFACE_DESCRIPTION, (
             f"Expected description '{IFACE_DESCRIPTION}', got '{iface.get('description')}'"
         )
 
-        logger.info("✓ Interface description '%s' persisted correctly", IFACE_DESCRIPTION)
+        logger.info(
+            "✓ Interface description '%s' persisted correctly", IFACE_DESCRIPTION
+        )
 
     @pytest.mark.asyncio
     async def test_add_device_with_two_interfaces(
@@ -1114,7 +1139,9 @@ class TestAddDeviceFormData:
         if result.get("device_id"):
             device_ids.append(result["device_id"])
 
-        assert result["success"] is True, f"Device creation failed: {result.get('message')}"
+        assert result["success"] is True, (
+            f"Device creation failed: {result.get('message')}"
+        )
 
         summary = result["summary"]
         assert summary["interfaces_created"] == 2, (
@@ -1141,15 +1168,21 @@ class TestAddDeviceFormData:
         assert len(ifaces) == 2, f"Expected 2 interfaces in Nautobot, got {len(ifaces)}"
 
         by_name = {i["name"]: i for i in ifaces}
-        assert INTERFACE_NAME in by_name, f"'{INTERFACE_NAME}' not found in {list(by_name)}"
-        assert INTERFACE_NAME_2 in by_name, f"'{INTERFACE_NAME_2}' not found in {list(by_name)}"
+        assert INTERFACE_NAME in by_name, (
+            f"'{INTERFACE_NAME}' not found in {list(by_name)}"
+        )
+        assert INTERFACE_NAME_2 in by_name, (
+            f"'{INTERFACE_NAME_2}' not found in {list(by_name)}"
+        )
 
-        assert any(ip["address"] == IP_ADDRESS for ip in by_name[INTERFACE_NAME]["ip_addresses"]), (
-            f"{IP_ADDRESS} not assigned to {INTERFACE_NAME}"
-        )
-        assert any(ip["address"] == IP_ADDRESS_2 for ip in by_name[INTERFACE_NAME_2]["ip_addresses"]), (
-            f"{IP_ADDRESS_2} not assigned to {INTERFACE_NAME_2}"
-        )
+        assert any(
+            ip["address"] == IP_ADDRESS
+            for ip in by_name[INTERFACE_NAME]["ip_addresses"]
+        ), f"{IP_ADDRESS} not assigned to {INTERFACE_NAME}"
+        assert any(
+            ip["address"] == IP_ADDRESS_2
+            for ip in by_name[INTERFACE_NAME_2]["ip_addresses"]
+        ), f"{IP_ADDRESS_2} not assigned to {INTERFACE_NAME_2}"
 
         # Track the shared prefix for cleanup
         prefix_result = await real_nautobot_service.graphql_query(
@@ -1161,5 +1194,8 @@ class TestAddDeviceFormData:
 
         logger.info(
             "✓ Device created with two interfaces: %s (%s) and %s (%s)",
-            INTERFACE_NAME, IP_ADDRESS, INTERFACE_NAME_2, IP_ADDRESS_2,
+            INTERFACE_NAME,
+            IP_ADDRESS,
+            INTERFACE_NAME_2,
+            IP_ADDRESS_2,
         )

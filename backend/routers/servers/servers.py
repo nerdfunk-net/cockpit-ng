@@ -99,9 +99,7 @@ def create_server(
         return ServerResponse.model_validate(server)
     except Exception as exc:
         if is_duplicate_server_hostname_error(exc):
-            logger.warning(
-                "Duplicate server hostname on create: %s", request.hostname
-            )
+            logger.warning("Duplicate server hostname on create: %s", request.hostname)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=duplicate_server_hostname_message(request.hostname),

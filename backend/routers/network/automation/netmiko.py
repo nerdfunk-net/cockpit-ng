@@ -9,8 +9,10 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
 from core.auth import require_permission
+from core.database import get_db
 from core.safe_http_errors import raise_internal_server_error
 from dependencies import (
     get_device_query_service,
@@ -24,6 +26,7 @@ from models.netmiko import (
     TemplateExecutionRequest,
     TemplateExecutionResponse,
 )
+from services.cockpit_agent.cockpit_agent_service import CockpitAgentService
 from services.nautobot.client import NautobotService
 from services.nautobot.devices.query import DeviceQueryService
 
@@ -67,8 +70,14 @@ async def execute_commands(
     request: DeviceCommand,
     current_user: dict = Depends(require_permission("network.netmiko", "execute")),
     netmiko_service=Depends(get_netmiko_service),
+    db: Session = Depends(get_db),
 ) -> CommandExecutionResponse:
-    """Execute commands on multiple network devices using Netmiko."""
+    """Execute commands on multiple network devices using Netmiko.
+
+    When request.agent_id is set, commands are routed through a Cockpit Netmiko
+    agent instead of a direct SSH connection from the backend server.  This is
+    required for devices that are only reachable from the agent's network segment.
+    """
     if not request.devices:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No devices provided"
@@ -91,6 +100,17 @@ async def execute_commands(
         request.password,
     )
 
+    # --- Agent-based execution path ---
+    if request.agent_id:
+        return await _execute_via_agent(
+            request=request,
+            username=username,
+            password=password,
+            current_user=current_user,
+            db=db,
+        )
+
+    # --- Direct Netmiko execution path ---
     session_id, results = await netmiko_service.execute_commands(
         devices=request.devices,
         commands=request.commands,
@@ -123,6 +143,109 @@ async def execute_commands(
         successful=successful,
         failed=len(results) - successful - cancelled,
         cancelled=cancelled,
+    )
+
+
+async def _execute_via_agent(
+    request: DeviceCommand,
+    username: str,
+    password: str,
+    current_user: dict,
+    db: Session,
+) -> CommandExecutionResponse:
+    """Route Netmiko command execution through a Cockpit agent."""
+    import asyncio
+
+    agent_service = CockpitAgentService(db)
+    agent_id = request.agent_id
+    session_id = request.session_id or str(uuid.uuid4())
+
+    loop = asyncio.get_event_loop()
+    results: List[Dict[str, Any]] = []
+
+    for device in request.devices:
+        ip_address = device.get("primary_ip4") or device.get("ip", "")
+        device_type = device.get("platform", "cisco_ios")
+
+        if not ip_address:
+            results.append(
+                {
+                    "device": device.get("name", "unknown"),
+                    "success": False,
+                    "output": "",
+                    "error": "No IP address found for device",
+                    "command_outputs": {},
+                }
+            )
+            continue
+
+        try:
+            response = await loop.run_in_executor(
+                None,
+                lambda ip=ip_address,
+                dt=device_type: agent_service.send_netmiko_execute_commands(
+                    agent_id=agent_id,
+                    ip_address=ip,
+                    device_type=dt,
+                    username=username,
+                    password=password,
+                    commands=request.commands,
+                    sent_by=current_user["username"],
+                    enable_mode=request.enable_mode,
+                    write_config=request.write_config,
+                    use_textfsm=request.use_textfsm,
+                ),
+            )
+        except Exception as exc:
+            logger.error("Agent command failed for device %s: %s", ip_address, exc)
+            response = {"status": "error", "error": str(exc)}
+
+        if response.get("status") == "success" and isinstance(
+            response.get("output"), dict
+        ):
+            raw = response["output"]
+            results.append(
+                {
+                    "device": raw.get("device", ip_address),
+                    "success": True,
+                    "output": raw.get("output", ""),
+                    "error": None,
+                    "command_outputs": raw.get("command_outputs", {}),
+                }
+            )
+        else:
+            results.append(
+                {
+                    "device": ip_address,
+                    "success": False,
+                    "output": "",
+                    "error": response.get(
+                        "error", "Agent returned an unexpected response"
+                    ),
+                    "command_outputs": {},
+                }
+            )
+
+    command_results = [
+        CommandResult(
+            device=r["device"],
+            success=r["success"],
+            output=r["output"],
+            error=r.get("error"),
+            command_outputs=r.get("command_outputs"),
+        )
+        for r in results
+    ]
+
+    successful = sum(1 for r in results if r["success"])
+
+    return CommandExecutionResponse(
+        session_id=session_id,
+        results=command_results,
+        total_devices=len(results),
+        successful=successful,
+        failed=len(results) - successful,
+        cancelled=0,
     )
 
 

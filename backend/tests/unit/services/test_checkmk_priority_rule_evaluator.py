@@ -76,7 +76,9 @@ def test_find_matching_rule_returns_first_match() -> None:
 def test_find_matching_rule_returns_none_when_no_match() -> None:
     mock_repo = MagicMock()
     mock_repo.get_all_ordered.return_value = [
-        _rule(1, "none.yaml", [{"type": "condition", "key": "role", "value": "Switch"}]),
+        _rule(
+            1, "none.yaml", [{"type": "condition", "key": "role", "value": "Switch"}]
+        ),
     ]
 
     assert _evaluator(mock_repo).find_matching_rule(_DEVICE) is None
@@ -145,9 +147,7 @@ def test_evaluate_condition_ip_prefix() -> None:
 def test_evaluate_condition_tag_membership() -> None:
     evaluator = _evaluator(MagicMock())
 
-    assert evaluator._evaluate_condition(
-        _DEVICE, {"key": "tag", "value": "production"}
-    )
+    assert evaluator._evaluate_condition(_DEVICE, {"key": "tag", "value": "production"})
     assert not evaluator._evaluate_condition(_DEVICE, {"key": "tag", "value": "lab"})
 
 

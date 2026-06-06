@@ -448,7 +448,9 @@ def test_create_server_duplicate_hostname_returns_400(client: TestClient) -> Non
     mock_service.create.side_effect = IntegrityError(
         "insert",
         {},
-        Exception('duplicate key value violates unique constraint "uq_servers_hostname"'),
+        Exception(
+            'duplicate key value violates unique constraint "uq_servers_hostname"'
+        ),
     )
 
     hostname = "v2202503262298326986.nicesrv.de"

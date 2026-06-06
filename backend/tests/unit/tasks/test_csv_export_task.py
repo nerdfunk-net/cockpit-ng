@@ -65,9 +65,7 @@ def test_run_csv_export_rejects_empty_properties() -> None:
 @pytest.mark.unit
 def test_run_csv_export_repository_not_found() -> None:
     mock_nb = MagicMock()
-    mock_nb.graphql_query = AsyncMock(
-        return_value={"data": {"devices": [_device()]}}
-    )
+    mock_nb.graphql_query = AsyncMock(return_value={"data": {"devices": [_device()]}})
 
     with patch(_PATCH_GRAPHQL, return_value=mock_nb):
         with patch(_PATCH_REPO_MGR) as mgr:
@@ -123,19 +121,17 @@ def test_run_csv_export_success_writes_and_commits(tmp_path: Path) -> None:
         with patch(_PATCH_REPO_MGR) as mgr:
             mgr.get_repository.return_value = repository
             with patch(_PATCH_GIT, return_value=mock_git):
-                with patch(
-                    "services.git.paths.repo_path", return_value=repo_dir
-                ):
+                with patch("services.git.paths.repo_path", return_value=repo_dir):
                     with patch("git.Repo", return_value=mock_git_repo):
                         with patch(_PATCH_JRS, return_value=mock_jrs):
                             result = _run_csv_export(
-                            task_ctx,
-                            device_ids=["dev-1"],
-                            properties=["name", "serial"],
-                            repo_id=1,
-                            file_path="exports/devices.csv",
-                            job_run_id=42,
-                        )
+                                task_ctx,
+                                device_ids=["dev-1"],
+                                properties=["name", "serial"],
+                                repo_id=1,
+                                file_path="exports/devices.csv",
+                                job_run_id=42,
+                            )
 
     assert result["success"] is True
     assert result["exported_devices"] == 1
@@ -167,9 +163,9 @@ def test_run_csv_export_marks_job_failed_on_exception() -> None:
 
 @pytest.mark.unit
 def test_csv_export_task_wrapper_delegates() -> None:
-    task = MagicMock()
-
-    with patch("tasks.csv_export_task._run_csv_export", return_value={"success": True}) as run:
+    with patch(
+        "tasks.csv_export_task._run_csv_export", return_value={"success": True}
+    ) as run:
         result = csv_export_task.run(
             ["dev-1"],
             ["name"],

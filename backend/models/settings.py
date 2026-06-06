@@ -93,8 +93,9 @@ class Agent(BaseModel):
     agent_id: Optional[str] = None
     name: str
     description: str
-    type: Literal["generic", "git-based", "ansible"] = "generic"
+    type: Literal["generic", "git-based", "ansible", "netmiko"] = "generic"
     git_repository_id: Optional[int] = None
+    shared_secret: Optional[str] = None
 
     @model_validator(mode="after")
     def git_repo_required_for_git_based(self) -> Agent:

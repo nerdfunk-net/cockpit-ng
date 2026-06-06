@@ -42,7 +42,9 @@ async def test_get_devices_for_sync_delegates(facade: NautobotToCheckMKService) 
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_get_device_normalized_delegates(facade: NautobotToCheckMKService) -> None:
+async def test_get_device_normalized_delegates(
+    facade: NautobotToCheckMKService,
+) -> None:
     facade.query_service.get_device_normalized = AsyncMock(return_value={"id": "1"})
 
     result = await facade.get_device_normalized("dev-1")
@@ -127,7 +129,9 @@ async def test_update_device_in_checkmk_delegates(
     facade: NautobotToCheckMKService,
 ) -> None:
     expected = MagicMock()
-    facade.operations_service.update_device_in_checkmk = AsyncMock(return_value=expected)
+    facade.operations_service.update_device_in_checkmk = AsyncMock(
+        return_value=expected
+    )
 
     result = await facade.update_device_in_checkmk("dev-4")
 

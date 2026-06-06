@@ -111,9 +111,7 @@ def test_update_user_password_updates_existing_credential() -> None:
             ok = svc.update_user_password("alice", "new-secret")
 
     assert ok is True
-    cred_mgr.update_credential.assert_called_once_with(
-        cred_id=9, password="new-secret"
-    )
+    cred_mgr.update_credential.assert_called_once_with(cred_id=9, password="new-secret")
     cred_mgr.create_credential.assert_not_called()
 
 

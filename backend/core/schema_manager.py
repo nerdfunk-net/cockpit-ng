@@ -43,9 +43,7 @@ class SchemaManager:
             "missing_columns": [
                 {"table": t, "column": c} for t, c in diff.missing_columns
             ],
-            "extra_columns": [
-                {"table": t, "column": c} for t, c in diff.extra_columns
-            ],
+            "extra_columns": [{"table": t, "column": c} for t, c in diff.extra_columns],
             "column_diffs": [
                 {
                     "table": cd.table,
@@ -63,14 +61,10 @@ class SchemaManager:
             "missing_indexes": [
                 {"table": t, "index": i} for t, i in diff.missing_indexes
             ],
-            "extra_indexes": [
-                {"table": t, "index": i} for t, i in diff.extra_indexes
-            ],
+            "extra_indexes": [{"table": t, "index": i} for t, i in diff.extra_indexes],
         }
 
-    def _apply_column_diffs(
-        self, diff: SchemaDiff, force: bool
-    ) -> Dict[str, Any]:
+    def _apply_column_diffs(self, diff: SchemaDiff, force: bool) -> Dict[str, Any]:
         applied: List[str] = []
         skipped: List[str] = []
         errors: List[str] = []
@@ -105,9 +99,7 @@ class SchemaManager:
                     )
                     applied.append(f"{cd.table}.{cd.column} ({change})")
                 except Exception as e:
-                    logger.error(
-                        "Failed to alter %s.%s: %s", cd.table, cd.column, e
-                    )
+                    logger.error("Failed to alter %s.%s: %s", cd.table, cd.column, e)
                     errors.append(f"{cd.table}.{cd.column}: failed to apply")
 
         return {"applied": applied, "skipped": skipped, "errors": errors}

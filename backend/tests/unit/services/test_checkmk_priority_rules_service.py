@@ -10,8 +10,8 @@ from fastapi import HTTPException
 
 from models.checkmk_priority import (
     CheckMKPriorityRuleCreate,
-    CheckMKPriorityRuleUpdate,
     CheckMKPriorityRulesReorderRequest,
+    CheckMKPriorityRuleUpdate,
     ExpressionCondition,
     ExpressionConnector,
 )

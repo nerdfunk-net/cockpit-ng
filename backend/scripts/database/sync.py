@@ -30,12 +30,12 @@ import logging  # noqa: E402
 # Suppress library noise; the script prints its own structured output.
 logging.basicConfig(level=logging.WARNING)
 
-from sqlalchemy import inspect as sa_inspect, text  # noqa: E402
+from sqlalchemy import inspect as sa_inspect  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 
 from core.database import Base, engine  # noqa: E402
 from migrations.auto_schema import (  # noqa: E402
     AutoSchemaMigration,
-    ColumnDiff,
     SchemaDiff,
 )
 
@@ -78,7 +78,9 @@ def _report(diff: SchemaDiff, table_filter: str | None = None) -> None:
             safety = "[safe]" if cd.safe else "[risky — use --force to apply]"
             print(f"  ~ CHANGED   {cd.table}.{cd.column}   {change_str}  {safety}")
         for table, col in diff.extra_columns:
-            print(f"  ⚠ EXTRA     {table}.{col}  [use --migrate --drop-columns to remove]")
+            print(
+                f"  ⚠ EXTRA     {table}.{col}  [use --migrate --drop-columns to remove]"
+            )
         print()
 
     if diff.missing_indexes or diff.extra_indexes:
@@ -188,8 +190,9 @@ def _migrate(
     for cd in diff.column_diffs:
         if not cd.safe and not force:
             risky_desc = (
-                f"{cd.db_type} → {cd.model_type}" if cd.type_changed
-                else f"NULL → NOT NULL"
+                f"{cd.db_type} → {cd.model_type}"
+                if cd.type_changed
+                else "NULL → NOT NULL"
             )
             print(
                 f"  ⚠ Skipped risky change: {cd.table}.{cd.column} "
@@ -215,7 +218,8 @@ def _migrate(
                     conn.execute(text(f"ALTER TABLE {cd.table} {stmt}"))
                     conn.commit()
             change = (
-                f"{cd.db_type} → {cd.model_type}" if cd.type_changed
+                f"{cd.db_type} → {cd.model_type}"
+                if cd.type_changed
                 else "nullable changed"
             )
             print(f"  ✓ Changed: {cd.table}.{cd.column} ({change})")
@@ -319,7 +323,9 @@ def main() -> None:
         print()
         print("Applying changes...")
         print()
-        _migrate(diff, auto, force=args.force, drop=args.drop, drop_columns=args.drop_columns)
+        _migrate(
+            diff, auto, force=args.force, drop=args.drop, drop_columns=args.drop_columns
+        )
 
     # Non-zero exit when check mode finds actionable differences.
     if not args.migrate and diff.has_differences:

@@ -7,12 +7,9 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from git.exc import GitCommandError
 
 _PATCH_SF = "service_factory"
-_PATCH_AGENTS_REPO = (
-    "repositories.settings.settings_repository.AgentsSettingRepository"
-)
+_PATCH_AGENTS_REPO = "repositories.settings.settings_repository.AgentsSettingRepository"
 _PATCH_GIT_REPO = "repositories.git.git_repository_repository.GitRepositoryRepository"
 
 

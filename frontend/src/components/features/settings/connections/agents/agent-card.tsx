@@ -1,18 +1,20 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Edit2, Trash2, GitBranch } from 'lucide-react'
+import { Edit2, GitBranch, KeyRound, Trash2 } from 'lucide-react'
 import type { Agent, AgentType, GitRepository } from './types'
 
 const TYPE_BADGE_CLASSES: Record<AgentType, string> = {
   generic: 'bg-white/20 text-white border-white/30',
   'git-based': 'bg-blue-600/80 text-white border-blue-400/50',
   ansible: 'bg-amber-500/80 text-white border-amber-400/50',
+  netmiko: 'bg-emerald-500/80 text-white border-emerald-400/50',
 }
 
 const TYPE_LABELS: Record<AgentType, string> = {
   generic: 'Generic',
   'git-based': 'Git-based',
   ansible: 'Ansible',
+  netmiko: 'Netmiko',
 }
 
 interface AgentCardProps {
@@ -29,6 +31,7 @@ export function AgentCard({
   onRemove,
 }: AgentCardProps) {
   const gitRepo = gitRepositories.find(repo => repo.id === agent.git_repository_id)
+  const agentType = agent.type ?? 'generic'
 
   return (
     <div className="border-0 bg-white rounded-lg shadow-sm">
@@ -38,9 +41,9 @@ export function AgentCard({
             <span className="text-sm font-medium">{agent.name}</span>
             <Badge
               variant="outline"
-              className={`text-xs px-1.5 py-0 ${TYPE_BADGE_CLASSES[agent.type ?? 'generic']}`}
+              className={`text-xs px-1.5 py-0 ${TYPE_BADGE_CLASSES[agentType]}`}
             >
-              {TYPE_LABELS[agent.type ?? 'generic']}
+              {TYPE_LABELS[agentType]}
             </Badge>
           </div>
         </div>
@@ -80,29 +83,56 @@ export function AgentCard({
             </code>
           </div>
 
-          {/* Git Repository */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <GitBranch className="h-4 w-4 text-gray-400" />
-              <span className="text-gray-700 font-medium">Git Repository:</span>
-            </div>
-            {gitRepo ? (
-              <div className="ml-6 p-3 bg-white rounded-md border border-gray-200">
-                <p className="text-sm font-medium text-gray-900">{gitRepo.name}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {gitRepo.url} • branch: {gitRepo.branch}
-                </p>
+          {/* Netmiko agents: shared secret status */}
+          {agentType === 'netmiko' ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <KeyRound className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-700 font-medium">Shared Secret:</span>
               </div>
-            ) : (
-              <div className="ml-6 p-3 bg-amber-50 rounded-md border border-amber-200">
-                <p className="text-sm text-amber-800">
-                  <Badge variant="outline" className="border-amber-400 text-amber-700">
+              <div className="ml-6">
+                {agent.shared_secret ? (
+                  <Badge
+                    variant="outline"
+                    className="border-emerald-400 text-emerald-700 bg-emerald-50"
+                  >
+                    Configured
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="border-amber-400 text-amber-700 bg-amber-50"
+                  >
                     Not configured
                   </Badge>
-                </p>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            /* Other agent types: git repository */
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <GitBranch className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-700 font-medium">Git Repository:</span>
+              </div>
+              {gitRepo ? (
+                <div className="ml-6 p-3 bg-white rounded-md border border-gray-200">
+                  <p className="text-sm font-medium text-gray-900">{gitRepo.name}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {gitRepo.url} • branch: {gitRepo.branch}
+                  </p>
+                </div>
+              ) : (
+                <div className="ml-6 p-3 bg-amber-50 rounded-md border border-amber-200">
+                  <p className="text-sm text-amber-800">
+                    <Badge variant="outline" className="border-amber-400 text-amber-700">
+                      Not configured
+                    </Badge>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
