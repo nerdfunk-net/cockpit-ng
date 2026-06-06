@@ -114,6 +114,7 @@ def init_db():
         logger.info("Loaded %s model definitions", len(Base.metadata.tables))
 
         # Auto-sync schema: create missing tables, columns, and indexes.
+        from config import settings
         from migrations.auto_schema import AutoSchemaMigration
 
         auto = AutoSchemaMigration(engine, Base)
@@ -134,6 +135,24 @@ def init_db():
             )
         else:
             logger.info("Database schema is up to date")
+
+        # Optionally apply risky column changes (type casts, NOT NULL additions).
+        # Only when APPLY_RISKY_DATABASE_MIGRATION=true in .env — defaults to false.
+        if settings.apply_risky_migrations:
+            from core.schema_manager import SchemaManager
+
+            logger.warning(
+                "APPLY_RISKY_DATABASE_MIGRATION=true — applying risky column changes"
+            )
+            manager = SchemaManager()
+            risky_result = manager.perform_migration(force=True)
+            applied = risky_result.get("column_changes_applied", [])
+            if applied:
+                for change in applied:
+                    logger.info("Risky change applied: %s", change)
+            errors = risky_result.get("errors", [])
+            for err in errors:
+                logger.error("Risky migration error: %s", err)
 
         logger.info(
             "Database initialized successfully (%s tables)", len(Base.metadata.tables)

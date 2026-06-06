@@ -58,7 +58,7 @@ def _report(diff: SchemaDiff, table_filter: str | None = None) -> None:
         for t in diff.missing_tables:
             print(f"  ✗ MISSING   {t}")
         for t in diff.extra_tables:
-            print(f"  ⚠ EXTRA     {t}  [not dropped]")
+            print(f"  ⚠ EXTRA     {t}  [use --migrate --drop to remove]")
         print()
 
     if diff.missing_columns or diff.extra_columns or diff.column_diffs:
@@ -78,7 +78,7 @@ def _report(diff: SchemaDiff, table_filter: str | None = None) -> None:
             safety = "[safe]" if cd.safe else "[risky — use --force to apply]"
             print(f"  ~ CHANGED   {cd.table}.{cd.column}   {change_str}  {safety}")
         for table, col in diff.extra_columns:
-            print(f"  ⚠ EXTRA     {table}.{col}  [not dropped]")
+            print(f"  ⚠ EXTRA     {table}.{col}  [use --migrate --drop-columns to remove]")
         print()
 
     if diff.missing_indexes or diff.extra_indexes:
@@ -123,8 +123,39 @@ def _report(diff: SchemaDiff, table_filter: str | None = None) -> None:
     print("=" * _WIDTH)
 
 
-def _migrate(diff: SchemaDiff, auto: AutoSchemaMigration, force: bool) -> None:
+def _migrate(
+    diff: SchemaDiff,
+    auto: AutoSchemaMigration,
+    force: bool,
+    drop: bool = False,
+    drop_columns: bool = False,
+) -> None:
     tables_created = columns_added = types_changed = indexes_created = skipped = 0
+    tables_dropped = columns_dropped = 0
+
+    if drop:
+        for table_name in diff.extra_tables:
+            try:
+                with auto.engine.connect() as conn:
+                    conn.execute(text(f"DROP TABLE {table_name}"))
+                    conn.commit()
+                print(f"  ✓ Dropped table: {table_name}")
+                tables_dropped += 1
+            except Exception as e:
+                print(f"  ✗ Failed to drop table {table_name}: {e}")
+
+    if drop_columns:
+        for table_name, col_name in diff.extra_columns:
+            try:
+                with auto.engine.connect() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {table_name} DROP COLUMN {col_name}")
+                    )
+                    conn.commit()
+                print(f"  ✓ Dropped column: {table_name}.{col_name}")
+                columns_dropped += 1
+            except Exception as e:
+                print(f"  ✗ Failed to drop column {table_name}.{col_name}: {e}")
 
     for table_name in diff.missing_tables:
         try:
@@ -208,6 +239,10 @@ def _migrate(diff: SchemaDiff, auto: AutoSchemaMigration, force: bool) -> None:
     print()
     print("=" * _WIDTH)
     applied = []
+    if tables_dropped:
+        applied.append(f"{tables_dropped} table(s) dropped")
+    if columns_dropped:
+        applied.append(f"{columns_dropped} column(s) dropped")
     if tables_created:
         applied.append(f"{tables_created} table(s) created")
     if columns_added:
@@ -248,6 +283,17 @@ def main() -> None:
         help="With --migrate: also apply risky type changes (may cause data loss).",
     )
     parser.add_argument(
+        "--drop",
+        action="store_true",
+        help="With --migrate: drop tables that exist in the database but not in any model.",
+    )
+    parser.add_argument(
+        "--drop-columns",
+        action="store_true",
+        dest="drop_columns",
+        help="With --migrate: drop columns that exist in the database but not in any model.",
+    )
+    parser.add_argument(
         "--table",
         metavar="TABLE",
         help="Focus analysis on a specific table name.",
@@ -256,6 +302,10 @@ def main() -> None:
 
     if args.force and not args.migrate:
         parser.error("--force requires --migrate")
+    if args.drop and not args.migrate:
+        parser.error("--drop requires --migrate")
+    if args.drop_columns and not args.migrate:
+        parser.error("--drop-columns requires --migrate")
 
     # Import all models so they register with Base.metadata.
     from core import models  # noqa: F401
@@ -269,7 +319,7 @@ def main() -> None:
         print()
         print("Applying changes...")
         print()
-        _migrate(diff, auto, force=args.force)
+        _migrate(diff, auto, force=args.force, drop=args.drop, drop_columns=args.drop_columns)
 
     # Non-zero exit when check mode finds actionable differences.
     if not args.migrate and diff.has_differences:

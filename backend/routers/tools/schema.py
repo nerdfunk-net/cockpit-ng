@@ -36,38 +36,26 @@ router = APIRouter(
 @router.get("/schema/status", dependencies=[Depends(verify_token)])
 async def get_schema_status() -> Dict[str, Any]:
     """
-    Get the status of the database schema compared to the defined models.
-    Also includes information about the versioned migration system.
+    Compare SQLAlchemy model definitions against the live database schema.
+    Returns missing/extra tables, columns, indexes, and column type diffs.
     """
     manager = SchemaManager()
     return manager.get_schema_status()
 
 
-@router.get("/schema/migrations", dependencies=[Depends(verify_token)])
-async def get_applied_migrations() -> Dict[str, Any]:
-    """
-    Get list of all applied versioned migrations from the migration system.
-    Returns empty list if migration system hasn't been initialized.
-    """
-    manager = SchemaManager()
-    migrations = manager.get_applied_migrations()
-    return {
-        "migrations": migrations,
-        "count": len(migrations),
-    }
-
-
 @router.post("/schema/migrate", dependencies=[Depends(verify_token)])
-async def migrate_schema() -> Dict[str, Any]:
+async def migrate_schema(force: bool = False) -> Dict[str, Any]:
     """
-    Perform database migration to match the defined models.
-    Only adds missing tables and columns.
+    Apply schema changes.
 
-    WARNING: This is for emergency use only. For production, prefer creating
-    versioned migrations in backend/migrations/versions/
+    Always applied: missing tables, columns, indexes, safe type widening.
+    Only with force=true: risky type casts and NOT NULL additions.
+
+    Alternative: set APPLY_RISKY_DATABASE_MIGRATION=true in .env to apply
+    risky changes automatically at startup.
     """
     manager = SchemaManager()
-    return manager.perform_migration()
+    return manager.perform_migration(force=force)
 
 
 @router.post("/rbac/seed", dependencies=[Depends(verify_token)])

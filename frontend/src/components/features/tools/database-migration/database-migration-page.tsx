@@ -32,52 +32,51 @@ import {
   CheckCircle,
   RefreshCw,
   ArrowLeft,
+  ArrowRight,
+  Info,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
 
-// Types for API response
-interface MissingColumn {
+interface ColumnDiff {
   table: string
   column: string
-  type: string
-  nullable: boolean
-  default: string | null
+  db_type: string
+  model_type: string
+  type_changed: boolean
+  nullable_changed: boolean
+  db_nullable: boolean
+  model_nullable: boolean
+  safe: boolean
 }
 
-interface MigrationSystemInfo {
-  active: boolean
-  applied_migrations_count: number
-  last_migration: {
-    name: string
-    applied_at: string
-    description: string
-    execution_time_ms: number
-  } | null
+interface SchemaItem {
+  table: string
+  column?: string
+  index?: string
 }
 
 interface SchemaStatus {
   is_up_to_date: boolean
   missing_tables: string[]
-  missing_columns: MissingColumn[]
-  migration_system: MigrationSystemInfo
-  warnings: string[]
-}
-
-interface AppliedMigration {
-  name: string
-  applied_at: string
-  description: string
-  execution_time_ms: number
+  extra_tables: string[]
+  missing_columns: SchemaItem[]
+  extra_columns: SchemaItem[]
+  column_diffs: ColumnDiff[]
+  missing_indexes: SchemaItem[]
+  extra_indexes: SchemaItem[]
 }
 
 interface MigrationResponse {
   success: boolean
   message: string
-  changes: string[]
+  tables_created: number
+  columns_added: number
+  indexes_created: number
+  column_changes_applied: string[]
+  column_changes_skipped: string[]
   errors: string[]
-  warnings?: string[]
 }
 
 interface SeedRbacResponse {
@@ -86,14 +85,30 @@ interface SeedRbacResponse {
   output: string
 }
 
+const EMPTY_DIFFS: ColumnDiff[] = []
+
+function columnDiffDescription(cd: ColumnDiff): string {
+  const parts: string[] = []
+  if (cd.type_changed) parts.push(`${cd.db_type} → ${cd.model_type}`)
+  if (cd.nullable_changed) {
+    parts.push(
+      cd.model_nullable ? 'NOT NULL → NULL' : 'NULL → NOT NULL'
+    )
+  }
+  return parts.join(', ')
+}
+
 export default function DatabaseMigrationPage() {
   const { apiCall } = useApi()
   const [status, setStatus] = useState<SchemaStatus | null>(null)
-  const [appliedMigrations, setAppliedMigrations] = useState<AppliedMigration[]>([])
   const [loading, setLoading] = useState(true)
   const [migrating, setMigrating] = useState(false)
   const [migrationResult, setMigrationResult] = useState<MigrationResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Force apply state
+  const [showForceDialog, setShowForceDialog] = useState(false)
+  const [forceConfirmed, setForceConfirmed] = useState(false)
 
   // RBAC seeding state
   const [showSeedDialog, setShowSeedDialog] = useState(false)
@@ -102,84 +117,101 @@ export default function DatabaseMigrationPage() {
   const [seeding, setSeeding] = useState(false)
   const [removeExisting, setRemoveExisting] = useState(false)
 
+  const riskyDiffs = useMemo(
+    () => status?.column_diffs.filter(cd => !cd.safe) ?? EMPTY_DIFFS,
+    [status]
+  )
+  const safeDiffs = useMemo(
+    () => status?.column_diffs.filter(cd => cd.safe) ?? EMPTY_DIFFS,
+    [status]
+  )
+  const hasSafeChanges = useMemo(
+    () =>
+      !!(
+        status &&
+        (status.missing_tables.length > 0 ||
+          status.missing_columns.length > 0 ||
+          status.missing_indexes.length > 0 ||
+          safeDiffs.length > 0)
+      ),
+    [status, safeDiffs]
+  )
+
   const fetchStatus = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
       const data = await apiCall<SchemaStatus>('tools/schema/status')
       setStatus(data)
-
-      // Fetch applied migrations if system is active
-      if (data.migration_system?.active) {
-        const migrationsData = await apiCall<{ migrations: AppliedMigration[] }>(
-          'tools/schema/migrations'
-        )
-        setAppliedMigrations(migrationsData.migrations)
-      }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'An error occurred fetching status'
-      setError(errorMessage)
+      setError(err instanceof Error ? err.message : 'Failed to fetch schema status')
     } finally {
       setLoading(false)
     }
   }, [apiCall])
 
-  const handleMigrate = async () => {
-    setMigrating(true)
-    setMigrationResult(null)
-    try {
-      const data = await apiCall<MigrationResponse>('tools/schema/migrate', {
-        method: 'POST',
-      })
-      setMigrationResult(data)
-      if (data.success) {
-        await fetchStatus() // Refresh status on success
-        // Show dialog asking if user wants to seed RBAC
-        setShowSeedDialog(true)
+  const runMigration = useCallback(
+    async (force: boolean) => {
+      setMigrating(true)
+      setMigrationResult(null)
+      try {
+        const data = await apiCall<MigrationResponse>(
+          `tools/schema/migrate${force ? '?force=true' : ''}`,
+          { method: 'POST' }
+        )
+        setMigrationResult(data)
+        if (data.success) {
+          await fetchStatus()
+          setShowSeedDialog(true)
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Network or server error'
+        setMigrationResult({
+          success: false,
+          message: msg,
+          tables_created: 0,
+          columns_added: 0,
+          indexes_created: 0,
+          column_changes_applied: [],
+          column_changes_skipped: [],
+          errors: [msg],
+        })
+      } finally {
+        setMigrating(false)
       }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Network or server error during migration'
-      setMigrationResult({
-        success: false,
-        message: errorMessage,
-        changes: [],
-        errors: [errorMessage],
-      })
-    } finally {
-      setMigrating(false)
-    }
-  }
+    },
+    [apiCall, fetchStatus]
+  )
 
-  const handleSeedRbac = async () => {
+  const handleSync = useCallback(() => runMigration(false), [runMigration])
+
+  const handleForceConfirm = useCallback(async () => {
+    setShowForceDialog(false)
+    setForceConfirmed(false)
+    await runMigration(true)
+  }, [runMigration])
+
+  const handleSeedRbac = useCallback(async () => {
     setShowSeedDialog(false)
     setSeedResult(null)
     setSeeding(true)
     try {
       const data = await apiCall<SeedRbacResponse>(
         `tools/rbac/seed?remove_existing=${removeExisting}`,
-        {
-          method: 'POST',
-        }
+        { method: 'POST' }
       )
       setSeedResult(data)
       setShowSeedOutputModal(true)
-      // Reset the checkbox after seeding
       setRemoveExisting(false)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to seed RBAC'
-      setSeedResult({
-        success: false,
-        message: errorMessage,
-        output: `Error: ${errorMessage}`,
-      })
+      const msg = err instanceof Error ? err.message : 'Failed to seed RBAC'
+      setSeedResult({ success: false, message: msg, output: `Error: ${msg}` })
       setShowSeedOutputModal(true)
       setRemoveExisting(false)
     } finally {
       setSeeding(false)
     }
-  }
+  }, [apiCall, removeExisting])
 
   useEffect(() => {
     fetchStatus()
@@ -202,146 +234,35 @@ export default function DatabaseMigrationPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Database Migration</h1>
               <p className="text-gray-500 text-sm">
-                Compare and synchronize database schema
+                Compare and synchronize database schema against SQLAlchemy models
               </p>
             </div>
           </div>
         </div>
 
-        {/* Migration System Info Card */}
-        {status?.migration_system && (
-          <Card className="border-purple-200 bg-purple-50/50">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="w-5 h-5 text-purple-600" />
-                  Versioned Migration System
-                </CardTitle>
-                <Badge
-                  variant={status.migration_system.active ? 'default' : 'secondary'}
-                >
-                  {status.migration_system.active ? 'Active' : 'Not Initialized'}
-                </Badge>
-              </div>
-              <CardDescription>
-                Automatic migrations that run on application startup
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {status.migration_system.active ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-white rounded-lg p-3 border">
-                        <div className="text-sm text-gray-500">Applied Migrations</div>
-                        <div className="text-2xl font-bold text-purple-600">
-                          {status.migration_system.applied_migrations_count}
-                        </div>
-                      </div>
-                      {status.migration_system.last_migration && (
-                        <div className="bg-white rounded-lg p-3 border">
-                          <div className="text-sm text-gray-500">Last Migration</div>
-                          <div className="text-lg font-semibold text-gray-900">
-                            {status.migration_system.last_migration.name}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {new Date(
-                              status.migration_system.last_migration.applied_at
-                            ).toLocaleString()}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {appliedMigrations.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium mb-2">Migration History</h4>
-                        <div className="border rounded-lg overflow-hidden">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="bg-gray-50">
-                                <TableHead>Migration</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead>Applied</TableHead>
-                                <TableHead className="text-right">Time</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {appliedMigrations.map(migration => (
-                                <TableRow key={migration.name}>
-                                  <TableCell className="font-mono text-sm">
-                                    {migration.name}
-                                  </TableCell>
-                                  <TableCell className="text-sm">
-                                    {migration.description}
-                                  </TableCell>
-                                  <TableCell className="text-sm text-gray-500">
-                                    {new Date(
-                                      migration.applied_at
-                                    ).toLocaleDateString()}
-                                  </TableCell>
-                                  <TableCell className="text-sm text-gray-500 text-right">
-                                    {migration.execution_time_ms}ms
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <Alert className="status-warning">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Migration System Not Initialized</AlertTitle>
-                    <AlertDescription>
-                      The versioned migration system hasn&apos;t been set up yet. It
-                      will be initialized on the next application restart.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Warnings */}
-        {status?.warnings && status.warnings.length > 0 && (
-          <Alert className="status-warning">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Important Notes</AlertTitle>
-            <AlertDescription className="space-y-2">
-              {status.warnings.map(warning => (
-                <p key={warning} className="flex items-start gap-2">
-                  <span className="mt-0.5">•</span>
-                  <span>{warning}</span>
-                </p>
-              ))}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Status Card */}
+        {/* Schema Status Card */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Manual Schema Migration</CardTitle>
+              <CardTitle>Schema Status</CardTitle>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={fetchStatus}
                 disabled={loading}
               >
-                <RefreshCw
-                  className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`}
-                />
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
             <CardDescription>
-              Emergency tool for ad-hoc schema fixes. Prefer creating versioned
-              migrations for production.
+              Detected differences between the live database and SQLAlchemy model
+              definitions. Missing items are created on sync. Risky column changes
+              require force apply or{' '}
+              <code className="text-xs bg-gray-100 px-1 rounded">
+                APPLY_RISKY_DATABASE_MIGRATION=true
+              </code>{' '}
+              in <code className="text-xs bg-gray-100 px-1 rounded">.env</code>.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -359,148 +280,359 @@ export default function DatabaseMigrationPage() {
               </div>
             ) : status ? (
               <div className="space-y-6">
+                {/* Status Banner */}
                 <div
-                  className={`p-4 rounded-lg flex items-center gap-3 ${status.is_up_to_date ? 'status-success border' : 'status-warning border'}`}
+                  className={`p-4 rounded-lg flex items-center gap-3 border ${
+                    status.is_up_to_date ? 'status-success' : 'status-warning'
+                  }`}
                 >
                   {status.is_up_to_date ? (
-                    <CheckCircle className="w-6 h-6" />
+                    <CheckCircle className="w-6 h-6 shrink-0" />
                   ) : (
-                    <AlertTriangle className="w-6 h-6" />
+                    <AlertTriangle className="w-6 h-6 shrink-0" />
                   )}
                   <div>
                     <p className="font-semibold text-lg">
                       {status.is_up_to_date
-                        ? 'Database is up to date'
+                        ? 'Schema is in sync'
                         : 'Schema differences detected'}
                     </p>
                     <p className="text-sm opacity-90">
                       {status.is_up_to_date
-                        ? 'All tables and columns match the application definition.'
-                        : `${status.missing_tables.length} missing tables and ${status.missing_columns.length} missing columns found.`}
+                        ? 'All model definitions match the live database.'
+                        : `${status.missing_tables.length} missing table(s), ${status.missing_columns.length} missing column(s), ${status.column_diffs.length} column change(s), ${status.missing_indexes.length} missing index(es).`}
                     </p>
                   </div>
                 </div>
 
-                {!status.is_up_to_date && (
-                  <div className="space-y-6">
-                    {/* Missing Tables */}
-                    {status.missing_tables.length > 0 && (
-                      <div>
-                        <h3 className="font-medium mb-3 flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-red-500" />
-                          Missing Tables ({status.missing_tables.length})
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                          {status.missing_tables.map(table => (
-                            <div
-                              key={table}
-                              className="bg-white border rounded px-3 py-2 text-sm font-mono text-gray-600 shadow-sm"
-                            >
-                              {table}
-                            </div>
-                          ))}
+                {/* Missing Tables */}
+                {status.missing_tables.length > 0 && (
+                  <section>
+                    <h3 className="font-medium mb-2 flex items-center gap-2 text-sm">
+                      <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                      Missing Tables ({status.missing_tables.length})
+                      <span className="text-gray-400 font-normal">— will be created on sync</span>
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {status.missing_tables.map(t => (
+                        <div
+                          key={t}
+                          className="bg-white border rounded px-3 py-1.5 text-sm font-mono text-gray-700 shadow-sm"
+                        >
+                          {t}
                         </div>
-                      </div>
-                    )}
-
-                    {/* Missing Columns */}
-                    {status.missing_columns.length > 0 && (
-                      <div>
-                        <h3 className="font-medium mb-3 flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-amber-500" />
-                          Missing Columns ({status.missing_columns.length})
-                        </h3>
-                        <div className="border rounded-lg overflow-hidden">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="bg-gray-50">
-                                <TableHead>Table</TableHead>
-                                <TableHead>Column</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Details</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {status.missing_columns.map(col => (
-                                <TableRow key={`${col.table}-${col.column}`}>
-                                  <TableCell className="font-medium">
-                                    {col.table}
-                                  </TableCell>
-                                  <TableCell className="font-mono text-blue-600">
-                                    {col.column}
-                                  </TableCell>
-                                  <TableCell className="text-gray-500">
-                                    {col.type}
-                                  </TableCell>
-                                  <TableCell className="text-xs text-gray-500">
-                                    {col.nullable ? (
-                                      <Badge variant="outline">Nullable</Badge>
-                                    ) : (
-                                      <Badge variant="secondary">Required</Badge>
-                                    )}
-                                    {col.default && (
-                                      <span className="ml-2">
-                                        Default: {col.default}
-                                      </span>
-                                    )}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="pt-4 border-t flex justify-end">
-                      <Button
-                        onClick={handleMigrate}
-                        disabled={migrating}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        {migrating ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                            Applying Changes...
-                          </>
-                        ) : (
-                          <>
-                            <Database className="w-4 h-4 mr-2" />
-                            Update Database Structure
-                          </>
-                        )}
-                      </Button>
+                      ))}
                     </div>
+                  </section>
+                )}
+
+                {/* Missing Columns */}
+                {status.missing_columns.length > 0 && (
+                  <section>
+                    <h3 className="font-medium mb-2 flex items-center gap-2 text-sm">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                      Missing Columns ({status.missing_columns.length})
+                      <span className="text-gray-400 font-normal">— will be added on sync</span>
+                    </h3>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead>Table</TableHead>
+                            <TableHead>Column</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {status.missing_columns.map(item => (
+                            <TableRow key={`${item.table}-${item.column}`}>
+                              <TableCell className="font-medium">{item.table}</TableCell>
+                              <TableCell className="font-mono text-blue-600">
+                                {item.column}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </section>
+                )}
+
+                {/* Missing Indexes */}
+                {status.missing_indexes.length > 0 && (
+                  <section>
+                    <h3 className="font-medium mb-2 flex items-center gap-2 text-sm">
+                      <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                      Missing Indexes ({status.missing_indexes.length})
+                      <span className="text-gray-400 font-normal">— will be created on sync</span>
+                    </h3>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead>Table</TableHead>
+                            <TableHead>Index</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {status.missing_indexes.map(item => (
+                            <TableRow key={`${item.table}-${item.index}`}>
+                              <TableCell className="font-medium">{item.table}</TableCell>
+                              <TableCell className="font-mono text-purple-600">
+                                {item.index}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </section>
+                )}
+
+                {/* Safe Column Changes */}
+                {safeDiffs.length > 0 && (
+                  <section>
+                    <h3 className="font-medium mb-2 flex items-center gap-2 text-sm">
+                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                      Safe Column Changes ({safeDiffs.length})
+                      <span className="text-gray-400 font-normal">— applied on sync</span>
+                    </h3>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead>Table</TableHead>
+                            <TableHead>Column</TableHead>
+                            <TableHead>Change</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {safeDiffs.map(cd => (
+                            <TableRow key={`${cd.table}-${cd.column}`}>
+                              <TableCell className="font-medium">{cd.table}</TableCell>
+                              <TableCell className="font-mono text-blue-600">
+                                {cd.column}
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-600">
+                                <span className="flex items-center gap-1">
+                                  <span className="font-mono">{cd.db_type}</span>
+                                  <ArrowRight className="w-3 h-3 shrink-0" />
+                                  <span className="font-mono">{cd.model_type}</span>
+                                  {cd.nullable_changed && (
+                                    <span className="ml-1 text-gray-400">
+                                      {cd.model_nullable ? '(drop NOT NULL)' : '(add NOT NULL)'}
+                                    </span>
+                                  )}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </section>
+                )}
+
+                {/* Risky Column Changes */}
+                {riskyDiffs.length > 0 && (
+                  <section>
+                    <h3 className="font-medium mb-2 flex items-center gap-2 text-sm">
+                      <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                      Risky Column Changes ({riskyDiffs.length})
+                      <Badge variant="destructive" className="text-xs ml-1">
+                        Force required
+                      </Badge>
+                    </h3>
+                    <Alert className="mb-2 border-red-200 bg-red-50 text-red-800">
+                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                      <AlertDescription className="text-sm">
+                        These changes may cause data loss (type casts) or fail if existing
+                        rows contain NULL values (NOT NULL addition). Use Force Apply or set{' '}
+                        <code className="bg-red-100 px-1 rounded text-xs">
+                          APPLY_RISKY_DATABASE_MIGRATION=true
+                        </code>{' '}
+                        in <code className="bg-red-100 px-1 rounded text-xs">.env</code>.
+                        Alternatively, run{' '}
+                        <code className="bg-red-100 px-1 rounded text-xs">
+                          python scripts/database/sync.py --migrate --force
+                        </code>
+                        .
+                      </AlertDescription>
+                    </Alert>
+                    <div className="border border-red-200 rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-red-50">
+                            <TableHead>Table</TableHead>
+                            <TableHead>Column</TableHead>
+                            <TableHead>Change</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {riskyDiffs.map(cd => (
+                            <TableRow key={`${cd.table}-${cd.column}`}>
+                              <TableCell className="font-medium">{cd.table}</TableCell>
+                              <TableCell className="font-mono text-red-600">
+                                {cd.column}
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-600">
+                                <span className="flex items-center gap-1">
+                                  <span className="font-mono">{cd.db_type}</span>
+                                  <ArrowRight className="w-3 h-3 shrink-0" />
+                                  <span className="font-mono">{cd.model_type}</span>
+                                  {cd.nullable_changed && (
+                                    <span className="ml-1 text-gray-400">
+                                      {cd.model_nullable ? '(drop NOT NULL)' : '(add NOT NULL)'}
+                                    </span>
+                                  )}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </section>
+                )}
+
+                {/* Extra items — informational */}
+                {(status.extra_tables.length > 0 ||
+                  status.extra_columns.length > 0 ||
+                  status.extra_indexes.length > 0) && (
+                  <section>
+                    <h3 className="font-medium mb-2 flex items-center gap-2 text-sm text-gray-500">
+                      <Info className="w-4 h-4 shrink-0" />
+                      Extra items in database (not in models)
+                      <span className="font-normal">— informational only, not removed</span>
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {status.extra_tables.length > 0 && (
+                        <div className="bg-gray-50 border rounded-lg p-3">
+                          <p className="text-xs font-medium text-gray-500 mb-2">
+                            Tables ({status.extra_tables.length})
+                          </p>
+                          <div className="space-y-1">
+                            {status.extra_tables.map(t => (
+                              <div key={t} className="text-sm font-mono text-gray-600">
+                                {t}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {status.extra_columns.length > 0 && (
+                        <div className="bg-gray-50 border rounded-lg p-3">
+                          <p className="text-xs font-medium text-gray-500 mb-2">
+                            Columns ({status.extra_columns.length})
+                          </p>
+                          <div className="space-y-1">
+                            {status.extra_columns.map(item => (
+                              <div
+                                key={`${item.table}-${item.column}`}
+                                className="text-sm font-mono text-gray-600"
+                              >
+                                {item.table}.{item.column}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {status.extra_indexes.length > 0 && (
+                        <div className="bg-gray-50 border rounded-lg p-3">
+                          <p className="text-xs font-medium text-gray-500 mb-2">
+                            Indexes ({status.extra_indexes.length})
+                          </p>
+                          <div className="space-y-1">
+                            {status.extra_indexes.map(item => (
+                              <div
+                                key={`${item.table}-${item.index}`}
+                                className="text-sm font-mono text-gray-600"
+                              >
+                                {item.index}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                )}
+
+                {/* Action Bar */}
+                {!status.is_up_to_date && (
+                  <div className="pt-4 border-t flex items-center justify-end gap-3">
+                    {riskyDiffs.length > 0 && (
+                      <Button
+                        variant="destructive"
+                        onClick={() => setShowForceDialog(true)}
+                        disabled={migrating}
+                      >
+                        <AlertTriangle className="w-4 h-4 mr-2" />
+                        Force Apply ({riskyDiffs.length} risky)
+                      </Button>
+                    )}
+                    <Button
+                      onClick={handleSync}
+                      disabled={migrating || !hasSafeChanges}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {migrating ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Applying…
+                        </>
+                      ) : (
+                        <>
+                          <Database className="w-4 h-4 mr-2" />
+                          Sync Schema
+                        </>
+                      )}
+                    </Button>
                   </div>
                 )}
 
-                {/* Migration Result Report */}
+                {/* Migration Result */}
                 {migrationResult && (
                   <div
-                    className={`mt-6 p-4 rounded-lg border ${migrationResult.success ? 'status-info' : 'status-error'}`}
+                    className={`p-4 rounded-lg border ${
+                      migrationResult.success ? 'status-info' : 'status-error'
+                    }`}
                   >
-                    <h3 className="font-semibold mb-2">{migrationResult.message}</h3>
-                    {migrationResult.warnings &&
-                      migrationResult.warnings.length > 0 && (
-                        <div className="mb-3 bg-amber-50 border border-amber-200 rounded p-3">
-                          <p className="text-xs font-bold uppercase text-amber-700 mb-1">
-                            ⚠️ Warnings:
-                          </p>
-                          <ul className="list-disc list-inside text-sm space-y-1 text-amber-800">
-                            {migrationResult.warnings.map(warning => (
-                              <li key={warning}>{warning}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    {migrationResult.changes.length > 0 && (
+                    <p className="font-semibold mb-2">{migrationResult.message}</p>
+                    {(migrationResult.tables_created > 0 ||
+                      migrationResult.columns_added > 0 ||
+                      migrationResult.indexes_created > 0) && (
+                      <ul className="text-sm space-y-0.5 mb-2 text-gray-700">
+                        {migrationResult.tables_created > 0 && (
+                          <li>✓ {migrationResult.tables_created} table(s) created</li>
+                        )}
+                        {migrationResult.columns_added > 0 && (
+                          <li>✓ {migrationResult.columns_added} column(s) added</li>
+                        )}
+                        {migrationResult.indexes_created > 0 && (
+                          <li>✓ {migrationResult.indexes_created} index(es) created</li>
+                        )}
+                      </ul>
+                    )}
+                    {migrationResult.column_changes_applied.length > 0 && (
                       <div className="mb-2">
                         <p className="text-xs font-bold uppercase text-gray-500 mb-1">
-                          Changes Applied:
+                          Column changes applied:
                         </p>
-                        <ul className="list-disc list-inside text-sm space-y-1 text-gray-700">
-                          {migrationResult.changes.map(change => (
-                            <li key={change}>{change}</li>
+                        <ul className="text-sm space-y-0.5 text-gray-700">
+                          {migrationResult.column_changes_applied.map(c => (
+                            <li key={c}>✓ {c}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {migrationResult.column_changes_skipped.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-xs font-bold uppercase text-amber-600 mb-1">
+                          Skipped (risky — use Force Apply):
+                        </p>
+                        <ul className="text-sm space-y-0.5 text-amber-800">
+                          {migrationResult.column_changes_skipped.map(c => (
+                            <li key={c}>⚠ {c}</li>
                           ))}
                         </ul>
                       </div>
@@ -510,9 +642,9 @@ export default function DatabaseMigrationPage() {
                         <p className="text-xs font-bold uppercase text-red-500 mb-1">
                           Errors:
                         </p>
-                        <ul className="list-disc list-inside text-sm space-y-1 text-red-700">
-                          {migrationResult.errors.map(err => (
-                            <li key={err}>{err}</li>
+                        <ul className="text-sm space-y-0.5 text-red-700">
+                          {migrationResult.errors.map(e => (
+                            <li key={e}>✗ {e}</li>
                           ))}
                         </ul>
                       </div>
@@ -524,7 +656,7 @@ export default function DatabaseMigrationPage() {
           </CardContent>
         </Card>
 
-        {/* RBAC Seeding Card - Always available */}
+        {/* RBAC Seeding Card */}
         <Card>
           <CardHeader>
             <CardTitle>RBAC System Seeding</CardTitle>
@@ -541,20 +673,15 @@ export default function DatabaseMigrationPage() {
                 <AlertDescription className="space-y-2">
                   <p>This process will:</p>
                   <ul className="list-disc list-inside ml-2 space-y-1 text-sm">
-                    <li>
-                      Create or update all default permissions for system resources
-                    </li>
-                    <li>
-                      Create system roles (admin, operator, network_engineer, viewer)
-                    </li>
+                    <li>Create or update all default permissions for system resources</li>
+                    <li>Create system roles (admin, operator, network_engineer, viewer)</li>
                     <li>Assign appropriate permissions to each role</li>
                     <li>
-                      Migrate any legacy permissions (network.inventory →
-                      general.inventory)
+                      Migrate any legacy permissions (network.inventory → general.inventory)
                     </li>
                   </ul>
                   <p className="mt-2 font-medium">
-                    Safe to run multiple times - existing data will be preserved.
+                    Safe to run multiple times — existing data will be preserved.
                   </p>
                 </AlertDescription>
               </Alert>
@@ -611,7 +738,7 @@ export default function DatabaseMigrationPage() {
                     {seeding ? (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        {removeExisting ? 'Removing & Reseeding...' : 'Seeding RBAC...'}
+                        {removeExisting ? 'Removing & Reseeding…' : 'Seeding RBAC…'}
                       </>
                     ) : (
                       <>
@@ -626,15 +753,81 @@ export default function DatabaseMigrationPage() {
           </CardContent>
         </Card>
 
-        {/* Seed RBAC Confirmation Dialog */}
+        {/* Force Apply Confirmation Dialog */}
+        <Dialog open={showForceDialog} onOpenChange={setShowForceDialog}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-red-600 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                Force Apply Risky Changes
+              </DialogTitle>
+              <DialogDescription>
+                The following changes may cause data loss or fail on rows with incompatible
+                values. This cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div className="border border-red-200 rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-red-50">
+                      <TableHead className="text-xs">Column</TableHead>
+                      <TableHead className="text-xs">Change</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {riskyDiffs.map(cd => (
+                      <TableRow key={`${cd.table}-${cd.column}`}>
+                        <TableCell className="text-sm font-mono">
+                          {cd.table}.{cd.column}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {columnDiffDescription(cd)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="flex items-center space-x-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="force-confirm"
+                  checked={forceConfirmed}
+                  onChange={e => setForceConfirmed(e.target.checked)}
+                  className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+                <label
+                  htmlFor="force-confirm"
+                  className="text-sm font-medium text-gray-700 cursor-pointer select-none"
+                >
+                  I understand this may cause irreversible data loss
+                </label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowForceDialog(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={!forceConfirmed}
+                onClick={handleForceConfirm}
+              >
+                Apply Risky Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* RBAC Seed Confirmation Dialog */}
         <Dialog open={showSeedDialog} onOpenChange={setShowSeedDialog}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Seed RBAC System?</DialogTitle>
               <DialogDescription>
-                The database migration was successful. Would you like to seed the RBAC
-                system with default permissions and roles? This will ensure all
-                permissions are up-to-date with the new database schema.
+                The database was synchronized successfully. Would you like to seed the
+                RBAC system with default permissions and roles?
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -651,14 +844,12 @@ export default function DatabaseMigrationPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Seed RBAC Output Modal */}
+        {/* RBAC Seed Output Modal */}
         <Dialog open={showSeedOutputModal} onOpenChange={setShowSeedOutputModal}>
           <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>
-                {seedResult?.success
-                  ? '✅ RBAC Seeding Complete'
-                  : '❌ RBAC Seeding Failed'}
+                {seedResult?.success ? '✅ RBAC Seeding Complete' : '❌ RBAC Seeding Failed'}
               </DialogTitle>
               <DialogDescription>{seedResult?.message}</DialogDescription>
             </DialogHeader>

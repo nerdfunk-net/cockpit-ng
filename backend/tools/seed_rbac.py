@@ -10,6 +10,7 @@ import argparse
 import sys
 
 import service_factory as _sf
+from services.auth.exceptions import RBACConflictError, RBACConstraintError
 
 rbac = _sf.build_rbac_service()
 user_db = _sf.build_user_service()
@@ -218,7 +219,7 @@ def remove_all_rbac_data(verbose: bool = True):
                 deleted_roles += 1
                 if verbose:
                     print(f"  ✓ Deleted role: {role['name']}")
-            except ValueError as e:
+            except (ValueError, RBACConstraintError) as e:
                 # System roles can't be deleted normally, use repository directly
                 if "Cannot delete system role" in str(e):
                     from repositories.auth.rbac_repository import RBACRepository
@@ -386,7 +387,7 @@ def seed_permissions(verbose: bool = True):
             created_count += 1
             if verbose:
                 print(f"  ✓ Created permission: {resource}:{action}")
-        except ValueError as e:
+        except (ValueError, RBACConflictError) as e:
             if verbose:
                 print(f"  - Skipped: {e}")
 
@@ -421,7 +422,7 @@ def seed_roles(verbose: bool = True):
             role_objects[name] = role
             if verbose:
                 print(f"  ✓ Created role: {name}")
-        except ValueError as e:
+        except (ValueError, RBACConflictError) as e:
             if verbose:
                 print(f"  - Skipped: {e}")
             role = rbac.get_role_by_name(name)

@@ -315,18 +315,48 @@ class AutoSchemaMigration:
                         )
                     )
 
-            # Missing indexes
-            existing_idx_names = self.get_existing_indexes(table_name)
+            # Indexes -------------------------------------------------------
+            # Fetch full index info so we can inspect uniqueness and columns.
+            db_indexes = {
+                idx["name"]: idx
+                for idx in self.inspector.get_indexes(table_name)
+            }
+            existing_idx_names = set(db_indexes.keys())
             model_idx_names = {idx.name for idx in table.indexes if idx.name}
+
+            # Build the column-sets that back unique constraints in the model.
+            # PostgreSQL implements UNIQUE constraints as indexes, but SQLAlchemy
+            # stores them in table.constraints (not table.indexes), so we must
+            # check both to avoid false "extra index" reports.
+            from sqlalchemy import UniqueConstraint
+
+            model_unique_col_sets: Set[frozenset] = set()
+            for constraint in table.constraints:
+                if isinstance(constraint, UniqueConstraint) and constraint.columns:
+                    model_unique_col_sets.add(
+                        frozenset(c.name for c in constraint.columns)
+                    )
+            for col in table.columns:
+                if col.unique and not col.primary_key:
+                    model_unique_col_sets.add(frozenset([col.name]))
 
             for idx in sorted(table.indexes, key=lambda i: i.name or ""):
                 if idx.name and idx.name not in existing_idx_names:
                     diff.missing_indexes.append((table_name, idx.name))
 
-            # Extra indexes (skip primary-key backing indexes)
             for idx_name in sorted(existing_idx_names - model_idx_names):
-                if not idx_name.endswith("_pkey"):
-                    diff.extra_indexes.append((table_name, idx_name))
+                # Skip primary-key backing indexes.
+                if idx_name.endswith("_pkey"):
+                    continue
+                # Skip unique-constraint backing indexes that match a model
+                # UniqueConstraint — PostgreSQL names these automatically (e.g.
+                # "roles_name_key") and they don't appear in table.indexes.
+                idx_info = db_indexes[idx_name]
+                if idx_info.get("unique"):
+                    col_set = frozenset(idx_info.get("column_names", []))
+                    if col_set in model_unique_col_sets:
+                        continue
+                diff.extra_indexes.append((table_name, idx_name))
 
         return diff
 
