@@ -10,6 +10,7 @@ See ``README.md`` in this directory for CI and safety notes.
 from __future__ import annotations
 
 import os
+from urllib.parse import urlparse
 
 import pytest
 from sqlalchemy import create_engine, inspect, text
@@ -26,6 +27,24 @@ def _require_pg_url() -> str:
         pytest.skip(
             "PostgreSQL repository tests require TEST_DATABASE_URL (postgresql+psycopg2://...)."
         )
+
+    # Safety guard: refuse to run against the production database.
+    # Compare host + port + database path after stripping driver prefixes.
+    try:
+        from config import settings
+
+        def _netloc(raw: str) -> tuple[str, str | None, str]:
+            p = urlparse(raw)
+            return (p.hostname or "", str(p.port) if p.port else None, p.path)
+
+        if _netloc(url) == _netloc(settings.database_url):
+            pytest.fail(
+                "TEST_DATABASE_URL points at the production database. "
+                "Repository integration tests must use a dedicated test database."
+            )
+    except Exception:
+        pass  # if settings can't be loaded, proceed — the URL check is best-effort
+
     return url
 
 

@@ -58,10 +58,10 @@ describe('resolveServerInterfaceSources', () => {
     const server = baseServer({
       selected_interfaces: null,
       primary_interface: 'eth0',
-      primary_ipv4: '45.136.30.143',
+      primary_ipv4: '10.10.10.10',
     })
     expect(resolveServerInterfaceSources(server)).toEqual([
-      { name: 'eth0', address: '45.136.30.143' },
+      { name: 'eth0', address: '10.10.10.10' },
     ])
   })
 
@@ -69,9 +69,9 @@ describe('resolveServerInterfaceSources', () => {
     const server = baseServer({
       selected_interfaces: [{ name: 'eth0' }],
       primary_interface: 'eth0',
-      primary_ipv4: '45.136.30.143',
+      primary_ipv4: '10.10.10.10',
     })
-    expect(resolveServerInterfaceSources(server)[0]?.address).toBe('45.136.30.143')
+    expect(resolveServerInterfaceSources(server)[0]?.address).toBe('10.10.10.10')
   })
 
   it('merges netmask from hostvars ansible_eth0 when selected row has address only', () => {
@@ -94,7 +94,7 @@ describe('mapServerInterfaces', () => {
     const server = baseServer({
       selected_interfaces: null,
       primary_interface: 'eth0',
-      primary_ipv4: '45.136.30.143',
+      primary_ipv4: '10.10.10.10',
     })
     const result = mapServerInterfaces({ server, defaults: DEFAULTS })
     expect(result).toHaveLength(1)
@@ -102,7 +102,7 @@ describe('mapServerInterfaces', () => {
       name: 'eth0',
       ip_addresses: [
         expect.objectContaining({
-          address: '45.136.30.143/32',
+          address: '10.10.10.10/32',
           is_primary: true,
         }),
       ],

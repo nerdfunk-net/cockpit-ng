@@ -5,9 +5,11 @@ All tests run offline — ServersService is overridden via FastAPI dependency in
 
 from __future__ import annotations
 
+from contextlib import ExitStack, contextmanager
 from datetime import datetime, timezone
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from typing import Generator
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -23,8 +25,22 @@ _AUTH_HEADERS = {"Authorization": "Bearer test-token"}
 
 
 @pytest.fixture
-def client() -> TestClient:
-    return TestClient(app)
+def client() -> Generator[TestClient, None, None]:
+    """TestClient with lifespan fully mocked — no real DB or external connections."""
+    with ExitStack() as stack:
+        mock_nb = stack.enter_context(patch("service_factory.build_nautobot_service"))
+        stack.enter_context(patch("service_factory.build_oidc_service"))
+        stack.enter_context(patch("service_factory.build_cache_service"))
+        mock_bg = stack.enter_context(
+            patch("service_factory.build_nb2cmk_background_service")
+        )
+        stack.enter_context(patch("main._startup_services", new=AsyncMock()))
+        stack.enter_context(patch("main._shutdown_event"))
+        mock_nb.return_value.startup = AsyncMock()
+        mock_nb.return_value.shutdown = AsyncMock()
+        mock_bg.return_value.shutdown = AsyncMock()
+        with TestClient(app) as c:
+            yield c
 
 
 def _summary(**kwargs: object) -> SimpleNamespace:
@@ -70,8 +86,9 @@ def _detail(**kwargs: object) -> SimpleNamespace:
     return SimpleNamespace(**defaults)
 
 
-def _auth_context(client: TestClient, mock_service: MagicMock):
-    """Context manager: auth + RBAC + service override."""
+@contextmanager
+def _auth_context(mock_service: MagicMock) -> Generator[MagicMock, None, None]:
+    """Context manager: wires auth + RBAC + service override and guarantees cleanup."""
 
     def override_verify_token() -> dict:
         return {"user_id": 1, "username": "tester", "permissions": 0}
@@ -79,7 +96,11 @@ def _auth_context(client: TestClient, mock_service: MagicMock):
     app.dependency_overrides[verify_token] = override_verify_token
     app.dependency_overrides[get_servers_service] = lambda: mock_service
 
-    return patch("service_factory.build_rbac_service")
+    try:
+        with patch("service_factory.build_rbac_service") as rbac_mock:
+            yield rbac_mock
+    finally:
+        app.dependency_overrides.clear()
 
 
 # ── GET /api/servers ───────────────────────────────────────────────────────────
@@ -95,11 +116,9 @@ def test_list_servers_returns_summaries(client: TestClient) -> None:
     ]
     mock_service.count_all.return_value = 5
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.get("/api/servers", headers=_AUTH_HEADERS)
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 200
     body = resp.json()
@@ -117,11 +136,9 @@ def test_list_servers_passes_search_query(client: TestClient) -> None:
     mock_service.list_summaries.return_value = []
     mock_service.count_all.return_value = 0
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.get("/api/servers?q=web", headers=_AUTH_HEADERS)
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 200
     mock_service.list_summaries.assert_called_once_with(search="web")
@@ -132,14 +149,12 @@ def test_list_servers_invalid_group_by_returns_400(client: TestClient) -> None:
     """Deprecated group_by query rejects unknown fields."""
     mock_service = MagicMock()
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.get(
             "/api/servers?group_by=hostname",
             headers=_AUTH_HEADERS,
         )
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 400
     assert "Invalid group_by" in resp.json()["detail"]
@@ -152,14 +167,12 @@ def test_list_servers_valid_group_by_allowed(client: TestClient) -> None:
     mock_service.list_summaries.return_value = []
     mock_service.count_all.return_value = 0
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.get(
             "/api/servers?group_by=location",
             headers=_AUTH_HEADERS,
         )
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 200
 
@@ -170,11 +183,9 @@ def test_list_servers_internal_error_is_sanitized(client: TestClient) -> None:
     mock_service = MagicMock()
     mock_service.list_summaries.side_effect = RuntimeError("db-secret")
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.get("/api/servers", headers=_AUTH_HEADERS)
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 500
     body = resp.json()
@@ -191,11 +202,9 @@ def test_get_server_returns_detail(client: TestClient) -> None:
     mock_service = MagicMock()
     mock_service.get_by_id.return_value = _detail()
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.get("/api/servers/1", headers=_AUTH_HEADERS)
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 200
     body = resp.json()
@@ -210,11 +219,9 @@ def test_get_server_not_found_returns_404(client: TestClient) -> None:
     mock_service = MagicMock()
     mock_service.get_by_id.return_value = None
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.get("/api/servers/999", headers=_AUTH_HEADERS)
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 404
     assert resp.json()["detail"] == "Server not found"
@@ -235,11 +242,9 @@ def test_create_server_returns_201(client: TestClient) -> None:
         "is_virtual": False,
     }
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.post("/api/servers", json=payload, headers=_AUTH_HEADERS)
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 201
     assert resp.json()["hostname"] == "new-host"
@@ -251,15 +256,13 @@ def test_create_server_validation_error_returns_422(client: TestClient) -> None:
     """Invalid body is rejected before the service runs."""
     mock_service = MagicMock()
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.post(
             "/api/servers",
             json={"hostname": "x", "primary_ipv4": "not-an-ip"},
             headers=_AUTH_HEADERS,
         )
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 422
     mock_service.create.assert_not_called()
@@ -282,15 +285,13 @@ def test_update_server_returns_updated_record(client: TestClient) -> None:
     }
     mock_service.update.return_value = _detail(contact=[new_contact])
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.put(
             "/api/servers/1",
             json={"contact": [new_contact]},
             headers=_AUTH_HEADERS,
         )
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 200
     assert resp.json()["contact"] == [{**new_contact, "association_id": None}]
@@ -303,7 +304,7 @@ def test_update_server_not_found_returns_404(client: TestClient) -> None:
     mock_service = MagicMock()
     mock_service.update.return_value = None
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.put(
             "/api/servers/999",
@@ -322,8 +323,6 @@ def test_update_server_not_found_returns_404(client: TestClient) -> None:
             headers=_AUTH_HEADERS,
         )
 
-    app.dependency_overrides.clear()
-
     assert resp.status_code == 404
 
 
@@ -336,11 +335,9 @@ def test_delete_server_returns_204(client: TestClient) -> None:
     mock_service = MagicMock()
     mock_service.delete.return_value = True
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.delete("/api/servers/1", headers=_AUTH_HEADERS)
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 204
     mock_service.delete.assert_called_once_with(1)
@@ -352,11 +349,9 @@ def test_delete_server_not_found_returns_404(client: TestClient) -> None:
     mock_service = MagicMock()
     mock_service.delete.return_value = False
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.delete("/api/servers/999", headers=_AUTH_HEADERS)
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 404
 
@@ -369,11 +364,9 @@ def test_list_servers_forbidden_without_permission(client: TestClient) -> None:
     """List returns 403 when RBAC denies servers:read."""
     mock_service = MagicMock()
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=False)
         resp = client.get("/api/servers", headers=_AUTH_HEADERS)
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 403
     mock_service.list_summaries.assert_not_called()
@@ -384,15 +377,13 @@ def test_create_server_forbidden_without_permission(client: TestClient) -> None:
     """Create returns 403 when RBAC denies servers:write."""
     mock_service = MagicMock()
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=False)
         resp = client.post(
             "/api/servers",
             json={"hostname": "new-host"},
             headers=_AUTH_HEADERS,
         )
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 403
     mock_service.create.assert_not_called()
@@ -403,15 +394,13 @@ def test_update_server_forbidden_without_permission(client: TestClient) -> None:
     """Update returns 403 when RBAC denies servers:write."""
     mock_service = MagicMock()
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=False)
         resp = client.put(
             "/api/servers/1",
             json={"hostname": "renamed"},
             headers=_AUTH_HEADERS,
         )
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 403
     mock_service.update.assert_not_called()
@@ -422,11 +411,9 @@ def test_delete_server_forbidden_without_permission(client: TestClient) -> None:
     """Delete returns 403 when RBAC denies servers:delete."""
     mock_service = MagicMock()
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=False)
         resp = client.delete("/api/servers/1", headers=_AUTH_HEADERS)
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 403
     mock_service.delete.assert_not_called()
@@ -441,11 +428,9 @@ def test_get_server_internal_error_is_sanitized(client: TestClient) -> None:
     mock_service = MagicMock()
     mock_service.get_by_id.side_effect = RuntimeError("db-secret")
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.get("/api/servers/1", headers=_AUTH_HEADERS)
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 500
     body = resp.json()
@@ -467,15 +452,13 @@ def test_create_server_duplicate_hostname_returns_400(client: TestClient) -> Non
     )
 
     hostname = "v2202503262298326986.nicesrv.de"
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.post(
             "/api/servers",
             json={"hostname": hostname},
             headers=_AUTH_HEADERS,
         )
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 400
     assert hostname in resp.json()["detail"]
@@ -488,15 +471,13 @@ def test_create_server_internal_error_is_sanitized(client: TestClient) -> None:
     mock_service = MagicMock()
     mock_service.create.side_effect = RuntimeError("insert-failed")
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.post(
             "/api/servers",
             json={"hostname": "new-host"},
             headers=_AUTH_HEADERS,
         )
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 500
     body = resp.json()
@@ -510,15 +491,13 @@ def test_update_server_internal_error_is_sanitized(client: TestClient) -> None:
     mock_service = MagicMock()
     mock_service.update.side_effect = RuntimeError("update-failed")
 
-    with _auth_context(client, mock_service) as rbac:
+    with _auth_context(mock_service) as rbac:
         rbac.return_value.has_permission = MagicMock(return_value=True)
         resp = client.put(
             "/api/servers/1",
             json={"hostname": "renamed"},
             headers=_AUTH_HEADERS,
         )
-
-    app.dependency_overrides.clear()
 
     assert resp.status_code == 500
     body = resp.json()
