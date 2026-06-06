@@ -3,12 +3,118 @@ Automatic schema migration.
 Compares SQLAlchemy models with actual database schema and applies changes.
 """
 
+import re
+import logging
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Set, Tuple
+
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
-from typing import Dict, Set
-import logging
 
 logger = logging.getLogger(__name__)
+
+# Tables that are not part of the application models and should be ignored.
+_SKIP_TABLES = {"schema_migrations", "alembic_version"}
+
+
+def normalize_pg_type(type_str: str) -> str:
+    """Normalize a PostgreSQL type string to a canonical form for comparison."""
+    t = type_str.upper().strip()
+
+    if t.startswith("VARCHAR") or t.startswith("CHARACTER VARYING"):
+        match = re.search(r"\((\d+)\)", t)
+        return f"VARCHAR({match.group(1)})" if match else "VARCHAR"
+
+    if t in ("INTEGER", "INT", "INT4"):
+        return "INTEGER"
+    if t in ("BIGINT", "INT8"):
+        return "BIGINT"
+    if t in ("SMALLINT", "INT2"):
+        return "SMALLINT"
+
+    if "TIMESTAMP" in t:
+        if "TIME ZONE" in t or t == "TIMESTAMPTZ":
+            return "TIMESTAMP WITH TIME ZONE"
+        return "TIMESTAMP"
+
+    if t in ("BOOLEAN", "BOOL"):
+        return "BOOLEAN"
+    if t in ("FLOAT", "FLOAT4", "FLOAT8", "REAL", "DOUBLE PRECISION"):
+        return "FLOAT"
+    if t in ("SERIAL", "SERIAL4"):
+        return "INTEGER"
+    if t == "BIGSERIAL":
+        return "BIGINT"
+
+    return t
+
+
+def _is_safe_type_change(from_type: str, to_type: str) -> bool:
+    """True when the type change carries no data-loss risk."""
+    if from_type == to_type:
+        return True
+    if from_type.startswith("VARCHAR") and to_type == "TEXT":
+        return True
+    if from_type.startswith("VARCHAR") and to_type.startswith("VARCHAR"):
+        m1 = re.search(r"\((\d+)\)", from_type)
+        m2 = re.search(r"\((\d+)\)", to_type)
+        if m1 and m2:
+            return int(m2.group(1)) > int(m1.group(1))
+    if from_type == "TIMESTAMP" and to_type == "TIMESTAMP WITH TIME ZONE":
+        return True
+    if from_type == "INTEGER" and to_type == "BIGINT":
+        return True
+    if from_type == "SMALLINT" and to_type in ("INTEGER", "BIGINT"):
+        return True
+    return False
+
+
+@dataclass
+class ColumnDiff:
+    table: str
+    column: str
+    db_type: str
+    model_type: str
+    db_nullable: bool
+    model_nullable: bool
+
+    @property
+    def type_changed(self) -> bool:
+        return self.db_type != self.model_type
+
+    @property
+    def nullable_changed(self) -> bool:
+        return self.db_nullable != self.model_nullable
+
+    @property
+    def safe(self) -> bool:
+        """True if the change can be applied without data-loss risk."""
+        # Adding a NOT NULL constraint is risky when the column may have NULLs.
+        if self.nullable_changed and not self.model_nullable:
+            return False
+        if not self.type_changed:
+            return True
+        return _is_safe_type_change(self.db_type, self.model_type)
+
+
+@dataclass
+class SchemaDiff:
+    missing_tables: List[str] = field(default_factory=list)
+    extra_tables: List[str] = field(default_factory=list)
+    missing_columns: List[Tuple[str, str]] = field(default_factory=list)
+    extra_columns: List[Tuple[str, str]] = field(default_factory=list)
+    column_diffs: List[ColumnDiff] = field(default_factory=list)
+    missing_indexes: List[Tuple[str, str]] = field(default_factory=list)
+    extra_indexes: List[Tuple[str, str]] = field(default_factory=list)
+
+    @property
+    def has_differences(self) -> bool:
+        return bool(
+            self.missing_tables
+            or self.missing_columns
+            or self.column_diffs
+            or self.missing_indexes
+        )
 
 
 class AutoSchemaMigration:
@@ -43,59 +149,85 @@ class AutoSchemaMigration:
             return set()
 
     def sqlalchemy_type_to_sql(self, column) -> str:
-        """Convert SQLAlchemy column type to PostgreSQL SQL type."""
+        """Convert SQLAlchemy column type to PostgreSQL SQL type string."""
+        return self._type_to_canonical(column.type)
+
+    def _type_to_canonical(self, type_obj) -> str:
+        """
+        Convert a SQLAlchemy type object to a canonical PostgreSQL type string.
+
+        Accepts type objects from both model column definitions and the
+        SQLAlchemy inspector — using isinstance rather than str() avoids
+        dialect-specific rendering differences (e.g. str(TIMESTAMP(tz=True))
+        can return "DATETIME" under the default dialect instead of
+        "TIMESTAMP WITH TIME ZONE").
+        """
         from sqlalchemy import (
-            Integer,
-            String,
-            Text,
+            BigInteger,
             Boolean,
             DateTime,
+            Float,
+            Integer,
             LargeBinary,
+            Numeric,
+            SmallInteger,
+            String,
+            Text,
         )
 
-        col_type = column.type
+        try:
+            from sqlalchemy.dialects.postgresql import JSON, JSONB
+        except ImportError:
+            JSONB = None  # type: ignore[assignment]
+            JSON = None  # type: ignore[assignment]
 
-        # Handle String types with length
-        if isinstance(col_type, String):
-            if col_type.length:
-                sql_type = f"VARCHAR({col_type.length})"
-            else:
-                sql_type = "VARCHAR(255)"
-        elif isinstance(col_type, Integer):
-            sql_type = "INTEGER"
-        elif isinstance(col_type, Text):
-            sql_type = "TEXT"
-        elif isinstance(col_type, Boolean):
-            sql_type = "BOOLEAN"
-        elif isinstance(col_type, DateTime):
-            if getattr(col_type, "timezone", False):
-                sql_type = "TIMESTAMP WITH TIME ZONE"
-            else:
-                sql_type = "TIMESTAMP"
-        elif isinstance(col_type, LargeBinary):
-            sql_type = "BYTEA"
-        else:
-            # Fallback to string representation
-            sql_type = str(col_type)
+        if JSONB and isinstance(type_obj, JSONB):
+            return "JSONB"
+        if JSON and isinstance(type_obj, JSON):
+            return "JSON"
+        # String / VARCHAR — check before Text since Text is a subclass of String
+        if isinstance(type_obj, Text):
+            return "TEXT"
+        if isinstance(type_obj, String):
+            return f"VARCHAR({type_obj.length})" if type_obj.length else "TEXT"
+        if isinstance(type_obj, BigInteger):
+            return "BIGINT"
+        if isinstance(type_obj, SmallInteger):
+            return "SMALLINT"
+        if isinstance(type_obj, Integer):
+            return "INTEGER"
+        if isinstance(type_obj, Boolean):
+            return "BOOLEAN"
+        if isinstance(type_obj, DateTime):
+            return (
+                "TIMESTAMP WITH TIME ZONE"
+                if getattr(type_obj, "timezone", False)
+                else "TIMESTAMP"
+            )
+        if isinstance(type_obj, LargeBinary):
+            return "BYTEA"
+        if isinstance(type_obj, Float):
+            return "FLOAT"
+        if isinstance(type_obj, Numeric):
+            return "NUMERIC"
+        # Fallback: normalize whatever str() returns
+        return normalize_pg_type(str(type_obj))
 
-        return sql_type
+    # Keep old name as alias for callers that passed a column object.
+    def _sqlalchemy_type_to_canonical(self, column) -> str:
+        return self._type_to_canonical(column.type)
 
     def get_column_definition(self, column) -> str:
         """Generate SQL column definition from SQLAlchemy column."""
-        sql_type = self.sqlalchemy_type_to_sql(column)
-
-        # Build column definition
+        sql_type = self._sqlalchemy_type_to_canonical(column)
         parts = [sql_type]
 
-        # Handle nullable
         if not column.nullable:
             parts.append("NOT NULL")
 
-        # Handle defaults
         if column.default is not None:
             default_value = column.default
             if hasattr(default_value, "arg"):
-                # Handle server_default with func.now()
                 if "now()" in str(default_value.arg).lower():
                     parts.append("DEFAULT CURRENT_TIMESTAMP")
                 elif isinstance(default_value.arg, bool):
@@ -105,12 +237,102 @@ class AutoSchemaMigration:
                 elif isinstance(default_value.arg, str):
                     parts.append(f"DEFAULT '{default_value.arg}'")
         elif column.server_default is not None:
-            # Handle server defaults
             default_text = str(column.server_default.arg)
             if "now()" in default_text.lower():
                 parts.append("DEFAULT CURRENT_TIMESTAMP")
 
         return " ".join(parts)
+
+    # ------------------------------------------------------------------
+    # Schema analysis (used by sync.py)
+    # ------------------------------------------------------------------
+
+    def analyze(self, table_filter: Optional[str] = None) -> SchemaDiff:
+        """
+        Compare SQLAlchemy model definitions against the live database schema.
+
+        Returns a SchemaDiff describing all detected differences.
+        Does NOT modify the database.
+        """
+        diff = SchemaDiff()
+        existing_tables = self.get_existing_tables()
+
+        model_tables = {
+            k: v
+            for k, v in self.base.metadata.tables.items()
+            if k not in _SKIP_TABLES
+        }
+        if table_filter:
+            model_tables = {k: v for k, v in model_tables.items() if k == table_filter}
+
+        model_table_names = set(model_tables.keys())
+
+        diff.missing_tables = sorted(model_table_names - existing_tables)
+        diff.extra_tables = sorted(
+            (existing_tables - model_table_names) - _SKIP_TABLES
+        )
+
+        for table_name, table in sorted(model_tables.items()):
+            if table_name not in existing_tables:
+                continue
+
+            db_cols = {
+                c["name"]: c for c in self.inspector.get_columns(table_name)
+            }
+            model_cols = {c.name: c for c in table.columns}
+
+            # Missing columns (in model, absent from DB)
+            for col_name in sorted(set(model_cols) - set(db_cols)):
+                col = model_cols[col_name]
+                if not col.primary_key:
+                    diff.missing_columns.append((table_name, col_name))
+
+            # Extra columns (in DB, absent from model)
+            for col_name in sorted(set(db_cols) - set(model_cols)):
+                diff.extra_columns.append((table_name, col_name))
+
+            # Type / nullability changes for columns present in both
+            for col_name in sorted(set(model_cols) & set(db_cols)):
+                model_col = model_cols[col_name]
+                if model_col.primary_key:
+                    continue
+                db_col = db_cols[col_name]
+
+                model_type = self._type_to_canonical(model_col.type)
+                db_type = self._type_to_canonical(db_col["type"])
+                model_nullable = bool(model_col.nullable)
+                db_nullable = bool(db_col["nullable"])
+
+                if model_type != db_type or model_nullable != db_nullable:
+                    diff.column_diffs.append(
+                        ColumnDiff(
+                            table=table_name,
+                            column=col_name,
+                            db_type=db_type,
+                            model_type=model_type,
+                            db_nullable=db_nullable,
+                            model_nullable=model_nullable,
+                        )
+                    )
+
+            # Missing indexes
+            existing_idx_names = self.get_existing_indexes(table_name)
+            model_idx_names = {idx.name for idx in table.indexes if idx.name}
+
+            for idx in sorted(table.indexes, key=lambda i: i.name or ""):
+                if idx.name and idx.name not in existing_idx_names:
+                    diff.missing_indexes.append((table_name, idx.name))
+
+            # Extra indexes (skip primary-key backing indexes)
+            for idx_name in sorted(existing_idx_names - model_idx_names):
+                if not idx_name.endswith("_pkey"):
+                    diff.extra_indexes.append((table_name, idx_name))
+
+        return diff
+
+    # ------------------------------------------------------------------
+    # Schema application (used by startup and sync.py --migrate)
+    # ------------------------------------------------------------------
 
     def create_missing_tables(self) -> int:
         """Create tables that exist in models but not in database."""
@@ -123,10 +345,8 @@ class AutoSchemaMigration:
 
         created_count = 0
         for table_name in missing_tables:
-            # Skip the migration tracking table (created separately)
-            if table_name == "schema_migrations":
+            if table_name in _SKIP_TABLES:
                 continue
-
             try:
                 logger.info("Creating missing table: %s", table_name)
                 table = self.base.metadata.tables[table_name]
@@ -144,12 +364,7 @@ class AutoSchemaMigration:
         added_count = 0
 
         for table_name, table in self.base.metadata.tables.items():
-            # Skip if table doesn't exist yet
-            if table_name not in existing_tables:
-                continue
-
-            # Skip migration tracking table
-            if table_name == "schema_migrations":
+            if table_name not in existing_tables or table_name in _SKIP_TABLES:
                 continue
 
             existing_columns = self.get_existing_columns(table_name)
@@ -163,7 +378,6 @@ class AutoSchemaMigration:
                 try:
                     column = model_columns[col_name]
 
-                    # Skip primary key columns
                     if column.primary_key:
                         logger.warning(
                             "Skipping primary key column %s in %s", col_name, table_name
@@ -198,32 +412,31 @@ class AutoSchemaMigration:
         created_count = 0
 
         for table_name, table in self.base.metadata.tables.items():
-            # Skip if table doesn't exist
-            if table_name not in existing_tables:
-                continue
-
-            # Skip migration tracking table
-            if table_name == "schema_migrations":
+            if table_name not in existing_tables or table_name in _SKIP_TABLES:
                 continue
 
             existing_indexes = self.get_existing_indexes(table_name)
 
-            # Get model indexes
             for index in table.indexes:
                 if index.name and index.name not in existing_indexes:
                     try:
-                        logger.info("Creating index %s on %s", index.name, table_name)
+                        logger.info(
+                            "Creating index %s on %s", index.name, table_name
+                        )
                         index.create(bind=self.engine)
                         created_count += 1
                         logger.info("✓ Created index: %s", index.name)
                     except Exception as e:
-                        logger.warning("✗ Failed to create index %s: %s", index.name, e)
+                        logger.warning(
+                            "✗ Failed to create index %s: %s", index.name, e
+                        )
 
         return created_count
 
     def run(self) -> Dict[str, int]:
         """
-        Execute the automatic schema migration.
+        Execute automatic schema synchronization (safe operations only).
+        Called on application startup.
         Returns statistics about changes made.
         """
         results = {
@@ -233,15 +446,11 @@ class AutoSchemaMigration:
         }
 
         try:
-            # Step 1: Create missing tables
             results["tables_created"] = self.create_missing_tables()
-
-            # Step 2: Add missing columns
+            # Re-inspect after table creation so column checks see the new tables.
+            self.inspector = inspect(self.engine)
             results["columns_added"] = self.add_missing_columns()
-
-            # Step 3: Create missing indexes
             results["indexes_created"] = self.create_missing_indexes()
-
         except Exception as e:
             logger.error("Schema migration failed: %s", e)
             raise

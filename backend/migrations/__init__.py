@@ -1,12 +1,13 @@
 """
-Database migration system for Cockpit.
+Database schema synchronization for Cockpit.
 
-Provides versioned migrations that are automatically discovered and executed
-from the migrations/versions/ directory.
+AutoSchemaMigration compares SQLAlchemy models against the live PostgreSQL
+schema and applies missing tables, columns, and indexes on startup.
+
+For interactive checking and applying schema differences, use:
+    python scripts/database/sync.py
 """
 
-from .runner import MigrationRunner
-from .base import BaseMigration
-from .auto_schema import AutoSchemaMigration
+from .auto_schema import AutoSchemaMigration, ColumnDiff, SchemaDiff
 
-__all__ = ["MigrationRunner", "BaseMigration", "AutoSchemaMigration"]
+__all__ = ["AutoSchemaMigration", "ColumnDiff", "SchemaDiff"]

@@ -113,13 +113,12 @@ def init_db():
 
         logger.info("Loaded %s model definitions", len(Base.metadata.tables))
 
-        # Run automatic migrations using the migration runner
-        from migrations.runner import MigrationRunner
+        # Auto-sync schema: create missing tables, columns, and indexes.
+        from migrations.auto_schema import AutoSchemaMigration
 
-        runner = MigrationRunner(engine, Base)
-        migration_results = runner.run_migrations()
+        auto = AutoSchemaMigration(engine, Base)
+        migration_results = auto.run()
 
-        # Log migration results
         total_changes = (
             migration_results.get("tables_created", 0)
             + migration_results.get("columns_added", 0)
@@ -128,13 +127,13 @@ def init_db():
 
         if total_changes > 0:
             logger.info(
-                "Database migration completed: %s tables created, %s columns added, %s indexes created",
+                "Schema sync: %s table(s) created, %s column(s) added, %s index(es) created",
                 migration_results["tables_created"],
                 migration_results["columns_added"],
                 migration_results["indexes_created"],
             )
         else:
-            logger.info("Database schema is up to date - no migrations needed")
+            logger.info("Database schema is up to date")
 
         logger.info(
             "Database initialized successfully (%s tables)", len(Base.metadata.tables)
