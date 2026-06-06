@@ -11,6 +11,7 @@ from fastapi.responses import PlainTextResponse
 
 from core.auth import require_permission
 from dependencies import get_cache_service
+from models.git_content_search import GitContentSearchRequest
 from services.git.file_service import GitFileService
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,16 @@ async def search_repository_files(
     current_user: dict = Depends(require_permission("git.repositories", "read")),
 ):
     return _git_file_service.search_files(repo_id, query, limit)
+
+
+@router.post("/files/content-search")
+async def search_repository_file_content(
+    repo_id: int,
+    request: GitContentSearchRequest,
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
+):
+    """Search for a string inside config file contents."""
+    return _git_file_service.search_file_content(repo_id, request)
 
 
 @router.get("/files/{commit_hash}/commit")

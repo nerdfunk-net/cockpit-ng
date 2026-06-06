@@ -44,6 +44,23 @@ export const queryKeys = {
     ) => [...queryKeys.git.all, 'fileCompare', repoId, filePath1, filePath2] as const,
     fileContent: (repoId: number | null, filePath: string | null) =>
       [...queryKeys.git.all, 'fileContent', repoId, filePath] as const,
+    contentSearch: (
+      repoId: number | null,
+      params?: {
+        query: string
+        path_filter?: string
+        include_history?: boolean
+        diff_mode?: boolean
+        commit1?: string | null
+        commit2?: string | null
+        case_sensitive?: boolean
+        limit?: number
+        offset?: number
+      }
+    ) =>
+      params
+        ? ([...queryKeys.git.all, 'contentSearch', repoId, params] as const)
+        : ([...queryKeys.git.all, 'contentSearch', repoId] as const),
   },
 
   // Celery Jobs

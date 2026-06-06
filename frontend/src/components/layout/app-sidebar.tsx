@@ -124,6 +124,7 @@ const navigationSections: NavSection[] = [
         icon: FileText,
         children: [
           { label: 'View', href: '/configs', icon: Eye },
+          { label: 'Search', href: '/configs/search', icon: Search },
           { label: 'Backup', href: '/backup', icon: Save },
         ],
       },
