@@ -136,6 +136,30 @@ def init_db():
         else:
             logger.info("Database schema is up to date")
 
+        # Optionally apply safe column type changes (e.g. VARCHAR widening).
+        # Only when APPLY_SAFE_DATABASE_MIGRATION=true in .env — defaults to false.
+        if settings.apply_safe_migrations and not settings.apply_risky_migrations:
+            from core.schema_manager import SchemaManager
+
+            logger.info(
+                "APPLY_SAFE_DATABASE_MIGRATION=true — applying safe column type changes"
+            )
+            manager = SchemaManager()
+            safe_result = manager.perform_migration(force=False)
+            applied = safe_result.get("column_changes_applied", [])
+            if applied:
+                for change in applied:
+                    logger.info("Safe column change applied: %s", change)
+            skipped = safe_result.get("column_changes_skipped", [])
+            if skipped:
+                logger.warning(
+                    "Risky column changes skipped (set APPLY_RISKY_DATABASE_MIGRATION=true to apply): %s",
+                    skipped,
+                )
+            errors = safe_result.get("errors", [])
+            for err in errors:
+                logger.error("Safe migration error: %s", err)
+
         # Optionally apply risky column changes (type casts, NOT NULL additions).
         # Only when APPLY_RISKY_DATABASE_MIGRATION=true in .env — defaults to false.
         if settings.apply_risky_migrations:

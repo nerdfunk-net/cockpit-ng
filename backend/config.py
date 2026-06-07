@@ -128,6 +128,8 @@ class Settings:
     celery_max_workers: int = int(os.getenv("CELERY_MAX_WORKERS", "4"))
 
     # Schema migration behaviour
+    # Set to true to apply safe column type changes (e.g. VARCHAR widening) at startup.
+    apply_safe_migrations: bool = get_env_bool("APPLY_SAFE_DATABASE_MIGRATION", False)
     # Set to true to also apply risky column changes (type casts, NOT NULL additions)
     # at startup.  Default is false — safe-only auto-sync runs regardless.
     apply_risky_migrations: bool = get_env_bool("APPLY_RISKY_DATABASE_MIGRATION", False)
