@@ -314,6 +314,12 @@ class JobTemplateBase(BaseModel):
         True,
         description="Whether to include a header row in the CSV export",
     )
+    # Backup Agent (backup type)
+    backup_agent_id: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Cockpit agent ID for agent-based backup (backup type); None = use Celery worker directly",
+    )
     # Ping Agent (ping_agent type)
     ping_agent_id: Optional[str] = Field(
         None,
@@ -419,6 +425,8 @@ class JobTemplateUpdate(BaseModel):
     csv_export_delimiter: Optional[str] = Field(None, max_length=10)
     csv_export_quote_char: Optional[str] = Field(None, max_length=10)
     csv_export_include_headers: Optional[bool] = None
+    # Backup Agent
+    backup_agent_id: Optional[str] = Field(None, max_length=255)
     # Ping Agent
     ping_agent_id: Optional[str] = Field(None, max_length=255)
     # Set Primary IP

@@ -93,9 +93,11 @@ def execute_backup(
         write_timestamp_to_custom_field = False
         timestamp_custom_field_name = None
         parallel_tasks = 1  # Default to sequential execution
+        backup_agent_id = None  # None = direct SSH via Celery; set = use cockpit agent
 
         if job_parameters:
             config_repository_id = job_parameters.get("config_repository_id")
+            backup_agent_id = job_parameters.get("backup_agent_id", backup_agent_id)
             logger.info(
                 "Config repository ID from job_parameters: %s", config_repository_id
             )
@@ -125,6 +127,7 @@ def execute_backup(
                             "timestamp_custom_field_name"
                         )
                         parallel_tasks = template.get("parallel_tasks", 1)
+                        backup_agent_id = template.get("backup_agent_id")
                         logger.info(
                             "Config repository ID from template: %s",
                             config_repository_id,
@@ -145,6 +148,7 @@ def execute_backup(
                             "Timestamp custom field name: %s",
                             timestamp_custom_field_name,
                         )
+                        logger.info("Backup agent ID: %s", backup_agent_id)
 
         if not config_repository_id:
             logger.error("ERROR: No config_repository_id found")
@@ -270,6 +274,14 @@ def execute_backup(
                 "credential_info": credential_info,
             }
 
+        # Also read backup_agent_id from directly passed template (non-schedule path)
+        if backup_agent_id is None and template:
+            backup_agent_id = template.get("backup_agent_id")
+
+        logger.info(
+            "Backup mode: %s",
+            "agent (%s)" % backup_agent_id if backup_agent_id else "direct SSH",
+        )
         logger.info("✓ All inputs validated successfully")
 
         task_context.update_state(
@@ -360,8 +372,56 @@ def execute_backup(
 
         total_devices = len(device_ids)
 
-        # Use chord pattern for parallel execution
-        if parallel_tasks > 1:
+        from services.nautobot.configs.backup import DeviceBackupService
+
+        backup_service = DeviceBackupService()
+
+        # Agent-based backup: always sequential (one device at a time via agent)
+        if backup_agent_id:
+            logger.info(
+                "Using agent-based backup via agent %s (sequential)", backup_agent_id
+            )
+
+            from core.database import get_db_session
+
+            for idx, device_id in enumerate(device_ids, 1):
+                progress = 20 + int((idx / total_devices) * 70)
+                task_context.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "current": progress,
+                        "total": 100,
+                        "status": f"Backing up device {idx}/{total_devices} via agent...",
+                    },
+                )
+
+                db = get_db_session()
+                try:
+                    device_backup_info = backup_service.backup_single_device_via_agent(
+                        agent_id=backup_agent_id,
+                        db=db,
+                        device_id=device_id,
+                        device_index=idx,
+                        total_devices=total_devices,
+                        repo_dir=repo_dir,
+                        username=username,
+                        password=password,
+                        current_date=current_date,
+                        backup_running_config_path=backup_running_config_path,
+                        backup_startup_config_path=backup_startup_config_path,
+                        job_run_id=job_run_id,
+                    )
+                finally:
+                    db.close()
+
+                info_dict = device_backup_info.to_dict()
+                if device_backup_info.is_successful():
+                    backed_up_devices.append(info_dict)
+                else:
+                    failed_devices.append(info_dict)
+
+        # Use chord pattern for parallel execution (Celery/direct-SSH)
+        elif parallel_tasks > 1:
             logger.info(
                 "Using parallel execution with %s workers (chord pattern)",
                 parallel_tasks,
@@ -419,42 +479,39 @@ def execute_backup(
                 "chord_id": backup_chord.id,
             }
 
-        # Sequential execution (fallback for parallel_tasks = 1)
-        logger.info("Using sequential execution")
+        else:
+            # Sequential execution via direct SSH
+            logger.info("Using sequential execution (direct SSH)")
 
-        from services.nautobot.configs.backup import DeviceBackupService
+            for idx, device_id in enumerate(device_ids, 1):
+                progress = 20 + int((idx / total_devices) * 70)
+                task_context.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "current": progress,
+                        "total": 100,
+                        "status": f"Backing up device {idx}/{total_devices} ({device_id[:8]})...",
+                    },
+                )
 
-        backup_service = DeviceBackupService()
+                device_backup_info = backup_service.backup_single_device(
+                    device_id=device_id,
+                    device_index=idx,
+                    total_devices=total_devices,
+                    repo_dir=repo_dir,
+                    username=username,
+                    password=password,
+                    current_date=current_date,
+                    backup_running_config_path=backup_running_config_path,
+                    backup_startup_config_path=backup_startup_config_path,
+                    job_run_id=job_run_id,
+                )
 
-        for idx, device_id in enumerate(device_ids, 1):
-            progress = 20 + int((idx / total_devices) * 70)
-            task_context.update_state(
-                state="PROGRESS",
-                meta={
-                    "current": progress,
-                    "total": 100,
-                    "status": f"Backing up device {idx}/{total_devices} ({device_id[:8]})...",
-                },
-            )
-
-            device_backup_info = backup_service.backup_single_device(
-                device_id=device_id,
-                device_index=idx,
-                total_devices=total_devices,
-                repo_dir=repo_dir,
-                username=username,
-                password=password,
-                current_date=current_date,
-                backup_running_config_path=backup_running_config_path,
-                backup_startup_config_path=backup_startup_config_path,
-                job_run_id=job_run_id,
-            )
-
-            info_dict = device_backup_info.to_dict()
-            if device_backup_info.is_successful():
-                backed_up_devices.append(info_dict)
-            else:
-                failed_devices.append(info_dict)
+                info_dict = device_backup_info.to_dict()
+                if device_backup_info.is_successful():
+                    backed_up_devices.append(info_dict)
+                else:
+                    failed_devices.append(info_dict)
 
         logger.info("\n" + "=" * 80)
         logger.info("BACKUP SUMMARY")

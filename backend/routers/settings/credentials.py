@@ -86,7 +86,7 @@ def create_credential(
             ssh_passphrase=payload.ssh_passphrase,
         )
         audit_log.log_event(
-            username=current_user.get("sub"),
+            username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="credential-created",
             message=f"Credential '{payload.name}' created",
@@ -123,7 +123,7 @@ def update_credential(
             ssh_passphrase=payload.ssh_passphrase,
         )
         audit_log.log_event(
-            username=current_user.get("sub"),
+            username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="credential-updated",
             message=f"Credential '{payload.name}' updated",
@@ -149,7 +149,7 @@ def delete_credential(
     try:
         cred_mgr.delete_credential(cred_id)
         audit_log.log_event(
-            username=current_user.get("sub"),
+            username=current_user.get("username"),
             user_id=current_user.get("user_id"),
             event_type="credential-deleted",
             message=f"Credential '{cred_id}' deleted",

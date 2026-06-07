@@ -114,6 +114,9 @@ class JobTemplate(Base):
     parallel_tasks = Column(
         Integer, nullable=False, default=1
     )  # Number of parallel tasks for backup execution (backup type)
+    backup_agent_id = Column(
+        String(255), nullable=True
+    )  # Cockpit agent ID for agent-based backup (backup type); None = use Celery worker directly
     deploy_template_id = Column(
         Integer, nullable=True
     )  # ID of the agent template to deploy (deploy_agent type)

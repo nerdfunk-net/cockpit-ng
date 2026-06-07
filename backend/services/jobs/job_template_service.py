@@ -78,6 +78,7 @@ class JobTemplateService:
         csv_export_delimiter: Optional[str] = None,
         csv_export_quote_char: Optional[str] = None,
         csv_export_include_headers: bool = True,
+        backup_agent_id: Optional[str] = None,
         ping_agent_id: Optional[str] = None,
         set_primary_ip_strategy: Optional[str] = None,
         set_primary_ip_agent_id: Optional[str] = None,
@@ -169,6 +170,7 @@ class JobTemplateService:
             csv_export_delimiter=csv_export_delimiter,
             csv_export_quote_char=csv_export_quote_char,
             csv_export_include_headers=csv_export_include_headers,
+            backup_agent_id=backup_agent_id,
             ping_agent_id=ping_agent_id,
             set_primary_ip_strategy=set_primary_ip_strategy,
             set_primary_ip_agent_id=set_primary_ip_agent_id,
@@ -273,6 +275,7 @@ class JobTemplateService:
         csv_export_delimiter: Optional[str] = None,
         csv_export_quote_char: Optional[str] = None,
         csv_export_include_headers: Optional[bool] = None,
+        backup_agent_id: Optional[str] = None,
         ping_agent_id: Optional[str] = None,
         set_primary_ip_strategy: Optional[str] = None,
         set_primary_ip_agent_id: Optional[str] = None,
@@ -412,6 +415,8 @@ class JobTemplateService:
             update_data["csv_export_quote_char"] = csv_export_quote_char
         if csv_export_include_headers is not None:
             update_data["csv_export_include_headers"] = csv_export_include_headers
+        # backup_agent_id is always written: None clears it (switches back to Celery)
+        update_data["backup_agent_id"] = backup_agent_id
         if ping_agent_id is not None:
             update_data["ping_agent_id"] = ping_agent_id
         if set_primary_ip_strategy is not None:
@@ -633,6 +638,7 @@ class JobTemplateService:
             "csv_export_delimiter": template.csv_export_delimiter,
             "csv_export_quote_char": template.csv_export_quote_char,
             "csv_export_include_headers": template.csv_export_include_headers,
+            "backup_agent_id": template.backup_agent_id,
             "ping_agent_id": template.ping_agent_id,
             "set_primary_ip_strategy": template.set_primary_ip_strategy,
             "set_primary_ip_agent_id": template.set_primary_ip_agent_id,

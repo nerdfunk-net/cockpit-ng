@@ -1,3 +1,5 @@
+'use client'
+
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import {
@@ -9,7 +11,8 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { FileText, Clock, Zap } from 'lucide-react'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { FileText, Clock, Zap, Bot, Server } from 'lucide-react'
 
 interface CustomField {
   id: string
@@ -20,6 +23,12 @@ interface CustomField {
     value: string
     label: string
   }
+}
+
+interface CockpitAgent {
+  agent_id: string
+  hostname: string
+  status: string
 }
 
 interface BackupJobTemplateProps {
@@ -33,6 +42,10 @@ interface BackupJobTemplateProps {
   setFormTimestampCustomFieldName: (value: string) => void
   formParallelTasks: number
   setFormParallelTasks: (value: number) => void
+  formBackupAgentId: string
+  setFormBackupAgentId: (value: string) => void
+  netmikoAgents: CockpitAgent[]
+  loadingAgents: boolean
   customFields: CustomField[]
 }
 
@@ -47,8 +60,22 @@ export function BackupJobTemplate({
   setFormTimestampCustomFieldName,
   formParallelTasks,
   setFormParallelTasks,
+  formBackupAgentId,
+  setFormBackupAgentId,
+  netmikoAgents,
+  loadingAgents,
   customFields,
 }: BackupJobTemplateProps) {
+  const executionMode = formBackupAgentId ? 'agent' : 'celery'
+
+  const handleExecutionModeChange = (mode: string) => {
+    if (mode === 'celery') {
+      setFormBackupAgentId('')
+    } else if (mode === 'agent' && netmikoAgents.length > 0) {
+      setFormBackupAgentId(netmikoAgents[0]?.agent_id ?? '')
+    }
+  }
+
   return (
     <>
       {/* Backup Paths Section */}
@@ -203,46 +230,133 @@ export function BackupJobTemplate({
         </p>
       </div>
 
-      {/* Parallel Execution Section */}
-      <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-purple-600" />
-          <Label className="text-sm font-semibold text-purple-900">
-            Parallel Execution
-          </Label>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label
-              htmlFor="parallel-tasks"
-              className="text-sm text-purple-900 font-medium"
-            >
-              Number of Parallel Tasks
+      {/* Execution Engine Section — only shown when at least one Netmiko agent is available */}
+      {netmikoAgents.length > 0 && (
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Server className="h-4 w-4 text-indigo-600" />
+            <Label className="text-sm font-semibold text-indigo-900">
+              Execution Engine
             </Label>
-            <Badge variant="secondary" className="text-xs">
-              {formParallelTasks === 1 ? 'Sequential' : `${formParallelTasks} workers`}
-            </Badge>
           </div>
-          <Input
-            id="parallel-tasks"
-            type="number"
-            min="1"
-            max="50"
-            value={formParallelTasks}
-            onChange={e => {
-              const value = parseInt(e.target.value) || 1
-              setFormParallelTasks(Math.min(50, Math.max(1, value)))
-            }}
-            className="h-9 bg-white border-purple-200 focus:ring-purple-500 focus:border-purple-500"
-          />
-          <p className="text-xs text-purple-600 leading-relaxed">
-            <span className="font-semibold">Recommended:</span> 1 = sequential (safe,
-            slow), 5-10 = moderate parallel execution, 20+ = high parallel execution
-            (requires sufficient Celery workers)
-          </p>
+
+          <RadioGroup
+            value={executionMode}
+            onValueChange={handleExecutionModeChange}
+            className="space-y-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="celery" id="exec-celery" />
+              <Label htmlFor="exec-celery" className="text-sm text-indigo-900 cursor-pointer font-medium">
+                Celery Worker
+              </Label>
+              <span className="text-xs text-indigo-600">
+                — direct SSH from the backend (parallel execution supported)
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="agent" id="exec-agent" />
+              <Label htmlFor="exec-agent" className="text-sm text-indigo-900 cursor-pointer font-medium">
+                Netmiko Agent
+              </Label>
+              <span className="text-xs text-indigo-600">
+                — route SSH through a remote cockpit agent (sequential)
+              </span>
+            </div>
+          </RadioGroup>
+
+          {executionMode === 'agent' && (
+            <div className="space-y-1.5 pt-1">
+              <Label className="text-xs text-indigo-700">
+                Select Agent <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formBackupAgentId}
+                onValueChange={setFormBackupAgentId}
+                disabled={loadingAgents}
+              >
+                <SelectTrigger
+                  className={`h-9 bg-white ${
+                    !formBackupAgentId
+                      ? 'border-red-300'
+                      : 'border-indigo-200'
+                  }`}
+                >
+                  <SelectValue placeholder="Select agent…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {netmikoAgents.map(agent => (
+                    <SelectItem key={agent.agent_id} value={agent.agent_id}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="h-4 w-4 text-gray-500" />
+                        <span>{agent.hostname}</span>
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs ${
+                            agent.status === 'online'
+                              ? 'bg-green-100 text-green-700'
+                              : agent.status === 'offline'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}
+                        >
+                          {agent.status}
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!formBackupAgentId && (
+                <p className="text-xs text-red-600 font-medium">Please select an agent</p>
+              )}
+            </div>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* Parallel Execution Section — hidden when agent mode is active */}
+      {!formBackupAgentId && (
+        <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-purple-600" />
+            <Label className="text-sm font-semibold text-purple-900">
+              Parallel Execution
+            </Label>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="parallel-tasks"
+                className="text-sm text-purple-900 font-medium"
+              >
+                Number of Parallel Tasks
+              </Label>
+              <Badge variant="secondary" className="text-xs">
+                {formParallelTasks === 1 ? 'Sequential' : `${formParallelTasks} workers`}
+              </Badge>
+            </div>
+            <Input
+              id="parallel-tasks"
+              type="number"
+              min="1"
+              max="50"
+              value={formParallelTasks}
+              onChange={e => {
+                const value = parseInt(e.target.value) || 1
+                setFormParallelTasks(Math.min(50, Math.max(1, value)))
+              }}
+              className="h-9 bg-white border-purple-200 focus:ring-purple-500 focus:border-purple-500"
+            />
+            <p className="text-xs text-purple-600 leading-relaxed">
+              <span className="font-semibold">Recommended:</span> 1 = sequential (safe,
+              slow), 5-10 = moderate parallel execution, 20+ = high parallel execution
+              (requires sufficient Celery workers)
+            </p>
+          </div>
+        </div>
+      )}
     </>
   )
 }

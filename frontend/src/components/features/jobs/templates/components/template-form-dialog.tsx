@@ -25,6 +25,7 @@ import {
   useCsvImportNautobotQuery,
   EMPTY_CSV_IMPORT_NAUTOBOT_DATA,
 } from '../hooks/use-csv-import-nautobot-query'
+import { useAgentsQuery } from '@/hooks/queries/use-agents-query'
 import {
   EMPTY_IP_STATUSES,
   EMPTY_IP_TAGS,
@@ -181,6 +182,8 @@ export function TemplateFormDialog({
   const [formCollectIpAddress, setFormCollectIpAddress] = useState(true)
   const [formCollectMacAddress, setFormCollectMacAddress] = useState(true)
   const [formCollectHostname, setFormCollectHostname] = useState(true)
+  // Backup Agent (backup type)
+  const [formBackupAgentId, setFormBackupAgentId] = useState('')
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
   const { data: ipStatuses = EMPTY_IP_STATUSES, isLoading: loadingIpStatuses } =
@@ -220,6 +223,18 @@ export function TemplateFormDialog({
   const { data: csvExportRepos = EMPTY_REPOS } = useCsvExportRepos({
     enabled: isCsvExport,
   })
+
+  // Netmiko agents from settings (type === 'netmiko') — shown regardless of online status
+  const { data: allConfiguredAgents, isLoading: loadingAgents } = useAgentsQuery({
+    enabled: formJobType === 'backup',
+  })
+  const netmikoAgents = useMemo(
+    () =>
+      (allConfiguredAgents ?? [])
+        .filter(a => a.type === 'netmiko' && a.agent_id)
+        .map(a => ({ agent_id: a.agent_id!, hostname: a.name, status: 'configured' as const })),
+    [allConfiguredAgents]
+  )
 
   // Pre-fill delimiter/quoteChar from Nautobot defaults when entering csv_import mode.
   // Only applies when creating a new template — never overwrite values loaded from an existing template.
@@ -310,6 +325,7 @@ export function TemplateFormDialog({
     setFormCollectIpAddress(true)
     setFormCollectMacAddress(true)
     setFormCollectHostname(true)
+    setFormBackupAgentId('')
   }, [])
 
   // Load editing template data
@@ -418,6 +434,7 @@ export function TemplateFormDialog({
       setFormCsvExportIncludeHeaders(editingTemplate.csv_export_include_headers ?? true)
       setFormSetPrimaryIpStrategy(editingTemplate.set_primary_ip_strategy || '')
       setFormSetPrimaryIpAgentId(editingTemplate.set_primary_ip_agent_id || '')
+      setFormBackupAgentId(editingTemplate.backup_agent_id ?? '')
       setFormCollectIpAddress(editingTemplate.collect_ip_address ?? true)
       setFormCollectMacAddress(editingTemplate.collect_mac_address ?? true)
       setFormCollectHostname(editingTemplate.collect_hostname ?? true)
@@ -532,6 +549,7 @@ export function TemplateFormDialog({
         formJobType === 'backup' || formJobType === 'get_client_data'
           ? formParallelTasks
           : undefined,
+      backup_agent_id: formJobType === 'backup' ? formBackupAgentId || null : undefined,
       activate_changes_after_sync:
         formJobType === 'sync_devices' ? formActivateChangesAfterSync : undefined,
       use_last_compare_run:
@@ -776,6 +794,10 @@ export function TemplateFormDialog({
               setFormTimestampCustomFieldName={setFormTimestampCustomFieldName}
               formParallelTasks={formParallelTasks}
               setFormParallelTasks={setFormParallelTasks}
+              formBackupAgentId={formBackupAgentId}
+              setFormBackupAgentId={setFormBackupAgentId}
+              netmikoAgents={netmikoAgents}
+              loadingAgents={loadingAgents}
               customFields={customFields}
             />
           )}

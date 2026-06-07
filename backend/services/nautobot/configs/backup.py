@@ -240,6 +240,168 @@ class DeviceBackupService:
 
         return device_backup_info
 
+    def backup_single_device_via_agent(
+        self,
+        agent_id: str,
+        db,
+        device_id: str,
+        device_index: int,
+        total_devices: int,
+        repo_dir: Path,
+        username: str,
+        password: str,
+        current_date: str,
+        backup_running_config_path: Optional[str] = None,
+        backup_startup_config_path: Optional[str] = None,
+        job_run_id: Optional[int] = None,
+    ) -> DeviceBackupInfo:
+        """
+        Backup a single device via a Cockpit Netmiko agent instead of direct SSH.
+
+        Steps mirror backup_single_device() except SSH is replaced by agent commands.
+        """
+        from services.cockpit_agent.cockpit_agent_service import CockpitAgentService
+
+        logger.info("\n%s", "=" * 60)
+        logger.info(
+            "Device %s/%s (via agent %s): %s",
+            device_index,
+            total_devices,
+            agent_id,
+            device_id,
+        )
+        logger.info("%s", "=" * 60)
+
+        device_backup_info = DeviceBackupInfo(device_id=device_id)
+
+        try:
+            # Step 1: Fetch device info from Nautobot (same as direct backup)
+            device = self.config_service.fetch_device_from_nautobot(
+                device_id=device_id, full_details=True, device_index=device_index
+            )
+
+            device_name = device.get("name", device_id)
+            primary_ip = (
+                device.get("primary_ip4", {}).get("address", "").split("/")[0]
+                if device.get("primary_ip4")
+                else None
+            )
+            platform = (
+                device.get("platform", {}).get("name", "unknown")
+                if device.get("platform")
+                else "unknown"
+            )
+
+            device_backup_info.device_name = device_name
+            device_backup_info.device_ip = primary_ip
+            device_backup_info.platform = platform
+            device_backup_info.nautobot_fetch_success = True
+
+            # Step 2: Map platform to Netmiko device type
+            device_type = self.platform_mapper.map_to_netmiko(platform)
+            logger.info("[%s] Netmiko device type: %s", device_index, device_type)
+
+            # Step 3: Retrieve configs via Cockpit agent
+            agent_svc = CockpitAgentService(db)
+
+            logger.info(
+                "[%s] Sending get_running_config to agent %s for %s (%s)",
+                device_index,
+                agent_id,
+                device_name,
+                primary_ip,
+            )
+            running_response = agent_svc.send_netmiko_get_running_config(
+                agent_id=agent_id,
+                ip_address=primary_ip,
+                device_type=device_type,
+                username=username,
+                password=password,
+                sent_by="backup-job",
+            )
+
+            if running_response.get("status") not in ("success", "ok"):
+                raise RuntimeError(
+                    "Agent failed to retrieve running config: %s"
+                    % running_response.get("error", running_response.get("status"))
+                )
+
+            raw_output = running_response.get("output", "")
+            # Agent wraps the config in a dict: {"device": ..., "output": "<config>", ...}
+            if isinstance(raw_output, dict):
+                running_config = raw_output.get("output", "") or ""
+            else:
+                running_config = raw_output or ""
+            device_backup_info.ssh_connection_success = True
+
+            logger.info(
+                "[%s] Sending get_startup_config to agent %s for %s",
+                device_index,
+                agent_id,
+                device_name,
+            )
+            startup_response = agent_svc.send_netmiko_get_startup_config(
+                agent_id=agent_id,
+                ip_address=primary_ip,
+                device_type=device_type,
+                username=username,
+                password=password,
+                sent_by="backup-job",
+            )
+
+            startup_config = ""
+            if startup_response.get("status") in ("success", "ok"):
+                raw_startup = startup_response.get("output", "")
+                if isinstance(raw_startup, dict):
+                    startup_config = raw_startup.get("output", "") or ""
+                else:
+                    startup_config = raw_startup or ""
+            else:
+                logger.warning(
+                    "[%s] Startup config not retrieved via agent: %s",
+                    device_index,
+                    startup_response.get("error", startup_response.get("status")),
+                )
+
+            # Step 4: Update success flags
+            if running_config:
+                device_backup_info.running_config_success = True
+                device_backup_info.running_config_bytes = len(running_config)
+
+            if startup_config:
+                device_backup_info.startup_config_success = True
+                device_backup_info.startup_config_bytes = len(startup_config)
+
+            # Step 5: Save configs to disk (identical to direct backup)
+            save_result = self.config_service.save_configs_to_disk(
+                running_config=running_config,
+                startup_config=startup_config,
+                device=device,
+                repo_path=repo_dir,
+                current_date=current_date,
+                running_template=backup_running_config_path,
+                startup_template=backup_startup_config_path,
+                device_index=device_index,
+            )
+
+            device_backup_info.running_config_file = save_result["running_file"]
+            device_backup_info.startup_config_file = save_result["startup_file"]
+
+            logger.info(
+                "[%s] ✓ Agent backup completed for %s", device_index, device_name
+            )
+
+        except Exception as e:
+            logger.error(
+                "[%s] ✗ Exception during agent backup: %s",
+                device_index,
+                e,
+                exc_info=True,
+            )
+            device_backup_info.error = str(e)
+
+        return device_backup_info
+
     def update_nautobot_timestamps(
         self,
         devices: List[dict],

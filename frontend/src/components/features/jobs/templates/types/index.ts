@@ -72,6 +72,8 @@ export interface JobTemplate {
   csv_import_format?: string
   csv_import_add_prefixes?: boolean
   csv_import_default_prefix_length?: string
+  // Backup Agent (backup type)
+  backup_agent_id?: string | null
   // Ping Agent (ping_agent type)
   ping_agent_id?: string | null
   // Set Primary IP (set_primary_ip type)
