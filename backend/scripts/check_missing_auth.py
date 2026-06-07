@@ -28,17 +28,17 @@ from pathlib import Path
 ALLOW_LIST: frozenset[str] = frozenset(
     {
         # ── Login / token endpoints ──────────────────────────────────────────
-        "routers/auth/auth.py:login",           # credential submission, no token yet
-        "routers/auth/auth.py:refresh_token",   # refresh uses cookie, no Bearer required
-        "routers/auth/auth.py:logout",          # clears cookie; no Bearer required
+        "routers/auth/auth.py:login",  # credential submission, no token yet
+        "routers/auth/auth.py:refresh_token",  # refresh uses cookie, no Bearer required
+        "routers/auth/auth.py:logout",  # clears cookie; no Bearer required
         # ── OIDC flow (browser redirect, no token yet) ───────────────────────
         "routers/auth/oidc.py:check_oidc_enabled",  # UI feature-flag probe
         "routers/auth/oidc.py:get_oidc_providers",  # login-page provider list
-        "routers/auth/oidc.py:oidc_login",          # redirect to IdP
-        "routers/auth/oidc.py:oidc_test_login",     # test IdP redirect
-        "routers/auth/oidc.py:oidc_callback",       # IdP posts back here
-        "routers/auth/oidc.py:oidc_logout",         # OIDC session teardown
-        "routers/auth/oidc.py:get_oidc_debug_info", # OIDC config debug probe
+        "routers/auth/oidc.py:oidc_login",  # redirect to IdP
+        "routers/auth/oidc.py:oidc_test_login",  # test IdP redirect
+        "routers/auth/oidc.py:oidc_callback",  # IdP posts back here
+        "routers/auth/oidc.py:oidc_logout",  # OIDC session teardown
+        "routers/auth/oidc.py:get_oidc_debug_info",  # OIDC config debug probe
     }
 )
 
@@ -104,9 +104,7 @@ def _is_router_decorator(decorator: ast.expr) -> bool:
     return isinstance(func, ast.Attribute) and func.attr in _ROUTER_METHODS
 
 
-def _scan_file(
-    path: Path, backend_root: Path
-) -> list[tuple[str, int, str]]:
+def _scan_file(path: Path, backend_root: Path) -> list[tuple[str, int, str]]:
     try:
         src = path.read_text(encoding="utf-8")
         tree = ast.parse(src)

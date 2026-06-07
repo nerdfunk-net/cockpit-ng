@@ -65,7 +65,7 @@ _SAFE_CONTEXT = re.compile(
     r"os\.(?:getenv|environ)|"  # value comes from environment
     r"==\s*[\"']|[\"']\s*==|"  # equality comparison
     r"!=\s*[\"']|[\"']\s*!=|"  # inequality comparison
-    r"\braise\b",               # exception message, not a binding
+    r"\braise\b",  # exception message, not a binding
 )
 
 # ── Scan scope ────────────────────────────────────────────────────────────────

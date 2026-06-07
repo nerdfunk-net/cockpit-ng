@@ -18,7 +18,12 @@ logger = logging.getLogger(__name__)
 class RedisCacheService:
     """Redis-based cache service with automatic serialization and TTL support."""
 
-    def __init__(self, redis_url: str, key_prefix: str = "cockpit-cache", ssl_params: Optional[Dict] = None):
+    def __init__(
+        self,
+        redis_url: str,
+        key_prefix: str = "cockpit-cache",
+        ssl_params: Optional[Dict] = None,
+    ):
         """Initialize Redis cache service.
 
         Args:
@@ -26,7 +31,9 @@ class RedisCacheService:
             key_prefix: Prefix for all cache keys to avoid collisions
             ssl_params: Optional SSL kwargs forwarded to redis.from_url()
         """
-        self._redis = redis.from_url(redis_url, decode_responses=True, **(ssl_params or {}))
+        self._redis = redis.from_url(
+            redis_url, decode_responses=True, **(ssl_params or {})
+        )
         self._prefix = key_prefix
         self._stats_key = f"{key_prefix}:stats"
         self._start_time_key = f"{key_prefix}:start_time"
