@@ -27,6 +27,7 @@ class AgentConfig:
         self.redis_port = int(os.getenv("REDIS_PORT", "6379"))
         self.redis_password = os.getenv("REDIS_PASSWORD")
         self.redis_db = int(os.getenv("REDIS_DB", "0"))
+        self.redis_ssl = os.getenv("REDIS_SSL", "false").lower() in ("true", "1", "yes")
 
         # Agent identity - must match Cockpit configuration
         self.agent_id = os.getenv("AGENT_ID") or socket.gethostname()

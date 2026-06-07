@@ -65,7 +65,11 @@ async def start_scan(
 
 
 @router.get("/{job_id}/status", response_model=ScanStatusResponse)
-async def get_scan_status(job_id: str, scan_service=Depends(get_scan_service)):
+async def get_scan_status(
+    job_id: str,
+    current_user: dict = Depends(require_permission("scan", "execute")),
+    scan_service=Depends(get_scan_service),
+):
     """Get status and results of a scan job."""
     job = await scan_service.get_job(job_id)
 
@@ -101,7 +105,11 @@ async def get_scan_status(job_id: str, scan_service=Depends(get_scan_service)):
 
 
 @router.delete("/{job_id}")
-async def delete_scan_job(job_id: str, scan_service=Depends(get_scan_service)):
+async def delete_scan_job(
+    job_id: str,
+    current_user: dict = Depends(require_permission("scan", "execute")),
+    scan_service=Depends(get_scan_service),
+):
     """Delete a scan job (cleanup endpoint)."""
     job = await scan_service.get_job(job_id)
 
@@ -117,7 +125,10 @@ async def delete_scan_job(job_id: str, scan_service=Depends(get_scan_service)):
 
 
 @router.get("/jobs")
-async def list_scan_jobs(scan_service=Depends(get_scan_service)):
+async def list_scan_jobs(
+    current_user: dict = Depends(require_permission("scan", "execute")),
+    scan_service=Depends(get_scan_service),
+):
     """List all active scan jobs."""
     scan_service._purge_expired()
 

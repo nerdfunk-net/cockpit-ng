@@ -248,8 +248,7 @@ class DeviceBackupService:
         device_index: int,
         total_devices: int,
         repo_dir: Path,
-        username: str,
-        password: str,
+        credential_id: int,
         current_date: str,
         backup_running_config_path: Optional[str] = None,
         backup_startup_config_path: Optional[str] = None,
@@ -315,8 +314,7 @@ class DeviceBackupService:
                 agent_id=agent_id,
                 ip_address=primary_ip,
                 device_type=device_type,
-                username=username,
-                password=password,
+                credential_id=credential_id,
                 sent_by="backup-job",
             )
 
@@ -344,8 +342,7 @@ class DeviceBackupService:
                 agent_id=agent_id,
                 ip_address=primary_ip,
                 device_type=device_type,
-                username=username,
-                password=password,
+                credential_id=credential_id,
                 sent_by="backup-job",
             )
 

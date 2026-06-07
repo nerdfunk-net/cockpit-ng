@@ -45,9 +45,7 @@ async def create_agents_settings(
 ):
     """Create/Update Agents settings via POST."""
     try:
-        from repositories.cockpit_agent.cockpit_agent_repository import (
-            CockpitAgentRepository,
-        )
+        from services.cockpit_agent.cockpit_agent_service import CockpitAgentService
         from services.settings.manager import SettingsManager
 
         settings_manager = SettingsManager()
@@ -58,10 +56,10 @@ async def create_agents_settings(
         if success:
             # Sync Netmiko shared secrets to the settings table so that
             # CockpitAgentService._get_agent_secret() can retrieve them.
-            agent_repo = CockpitAgentRepository(db)
+            agent_service = CockpitAgentService(db)
             for agent in agents_request.agents:
                 if agent.type == "netmiko" and agent.agent_id and agent.shared_secret:
-                    agent_repo.set_agent_shared_secret(
+                    agent_service.set_agent_shared_secret(
                         agent.agent_id, agent.shared_secret
                     )
 

@@ -62,6 +62,7 @@ class CockpitAgent:
                 port=config.redis_port,
                 password=config.redis_password,
                 db=config.redis_db,
+                ssl=config.redis_ssl,
                 decode_responses=True,
                 socket_connect_timeout=5,
                 socket_keepalive=True,

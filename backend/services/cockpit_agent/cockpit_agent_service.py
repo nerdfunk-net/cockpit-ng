@@ -43,6 +43,22 @@ class CockpitAgentService:
         """Look up the HMAC shared secret for a Netmiko agent from the settings table."""
         return self.repository.get_agent_shared_secret(agent_id)
 
+    def _resolve_credential(self, credential_id: int) -> tuple[str, str]:
+        """Fetch username and decrypted password from the credentials table."""
+        import service_factory
+
+        credentials_manager = service_factory.build_credentials_service()
+        credential = credentials_manager.get_credential_by_id(credential_id)
+        if not credential:
+            raise ValueError(f"Credential {credential_id} not found")
+        username = credential.get("username")
+        if not username:
+            raise ValueError(f"Credential {credential_id} has no username")
+        password = credentials_manager.get_decrypted_password(credential_id)
+        if not password:
+            raise ValueError(f"Credential {credential_id} has no password")
+        return username, password
+
     @staticmethod
     def _fernet_key(secret: str) -> bytes:
         """Derive a 32-byte Fernet key from an arbitrary shared secret string."""
@@ -96,18 +112,25 @@ class CockpitAgentService:
             "sender": "cockpit-backend",
         }
 
-        # Sign and encrypt if a shared secret is configured for this agent
+        # Shared secret is required — reject if not configured (Fix 1)
         secret = self._get_agent_secret(agent_id)
-        if secret:
-            command_message = self._sign_and_encrypt_command(command_message, secret)
+        if not secret:
+            raise ValueError(
+                f"No shared secret configured for agent '{agent_id}'. "
+                "Configure the shared secret in Settings → Agents before sending credentials."
+            )
+        command_message = self._sign_and_encrypt_command(command_message, secret)
 
-        # Save to database (save original params, not the encrypted version)
+        # Save to database with sensitive fields redacted
+        params_for_db = {k: v for k, v in params.items() if k != "password"}
+        if "password" in params:
+            params_for_db["password"] = "REDACTED"
         try:
             self.repository.save_command(
                 agent_id=agent_id,
                 command_id=command_id,
                 command=command,
-                params=json.dumps(params),
+                params=json.dumps(params_for_db),
                 sent_by=sent_by,
             )
         except Exception as e:
@@ -317,6 +340,10 @@ class CockpitAgentService:
         """Get command history for all agents"""
         return self.repository.get_all_command_history(limit)
 
+    def set_agent_shared_secret(self, agent_id: str, secret: str) -> None:
+        """Upsert the HMAC shared secret for a Cockpit Netmiko agent."""
+        self.repository.set_agent_shared_secret(agent_id, secret)
+
     def send_git_pull(
         self,
         agent_id: str,
@@ -417,8 +444,7 @@ class CockpitAgentService:
         agent_id: str,
         ip_address: str,
         device_type: str,
-        username: str,
-        password: str,
+        credential_id: int,
         commands: List[str],
         sent_by: str,
         *,
@@ -433,12 +459,14 @@ class CockpitAgentService:
         if err:
             return err
 
+        username, password = self._resolve_credential(credential_id)
         command_id = self.send_command(
             agent_id=agent_id,
             command="execute_commands",
             params={
                 "ip_address": ip_address,
                 "device_type": device_type,
+                "credential_id": credential_id,
                 "username": username,
                 "password": password,
                 "commands": commands,
@@ -456,8 +484,7 @@ class CockpitAgentService:
         agent_id: str,
         ip_address: str,
         device_type: str,
-        username: str,
-        password: str,
+        credential_id: int,
         sent_by: str,
         *,
         privileged: bool = False,
@@ -468,12 +495,14 @@ class CockpitAgentService:
         if err:
             return err
 
+        username, password = self._resolve_credential(credential_id)
         command_id = self.send_command(
             agent_id=agent_id,
             command="get_running_config",
             params={
                 "ip_address": ip_address,
                 "device_type": device_type,
+                "credential_id": credential_id,
                 "username": username,
                 "password": password,
                 "privileged": privileged,
@@ -487,8 +516,7 @@ class CockpitAgentService:
         agent_id: str,
         ip_address: str,
         device_type: str,
-        username: str,
-        password: str,
+        credential_id: int,
         sent_by: str,
         *,
         privileged: bool = False,
@@ -499,12 +527,14 @@ class CockpitAgentService:
         if err:
             return err
 
+        username, password = self._resolve_credential(credential_id)
         command_id = self.send_command(
             agent_id=agent_id,
             command="get_startup_config",
             params={
                 "ip_address": ip_address,
                 "device_type": device_type,
+                "credential_id": credential_id,
                 "username": username,
                 "password": password,
                 "privileged": privileged,
