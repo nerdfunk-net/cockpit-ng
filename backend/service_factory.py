@@ -344,7 +344,7 @@ def build_cache_service():
     from config import settings
     from services.settings.cache import RedisCacheService
 
-    return RedisCacheService(redis_url=settings.redis_url, key_prefix="cockpit-cache")
+    return RedisCacheService(redis_url=settings.redis_url, key_prefix="cockpit-cache", ssl_params=settings.redis_ssl_params)
 
 
 # ---------------------------------------------------------------------------

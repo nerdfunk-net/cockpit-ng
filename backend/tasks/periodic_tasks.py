@@ -21,7 +21,7 @@ def _get_last_cache_run(cache_type: str) -> Optional[datetime]:
 
         from config import settings
 
-        r = redis.from_url(settings.redis_url)
+        r = redis.from_url(settings.redis_url, **settings.redis_ssl_params)
         key = "cockpit-ng:cache:last_run:%s" % cache_type
         value = r.get(key)
         if value:
@@ -39,7 +39,7 @@ def _set_last_cache_run(cache_type: str, ts: datetime) -> None:
 
         from config import settings
 
-        r = redis.from_url(settings.redis_url)
+        r = redis.from_url(settings.redis_url, **settings.redis_ssl_params)
         key = "cockpit-ng:cache:last_run:%s" % cache_type
         r.set(key, ts.isoformat(), ex=604800)  # 7 days TTL
     except Exception as e:
@@ -260,7 +260,7 @@ def cleanup_celery_data_task() -> dict:
         )
 
         # Connect to Redis
-        r = redis.from_url(settings.redis_url)
+        r = redis.from_url(settings.redis_url, **settings.redis_ssl_params)
 
         # Count and remove old task results
         removed_results = 0

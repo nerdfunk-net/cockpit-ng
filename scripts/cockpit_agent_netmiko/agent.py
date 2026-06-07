@@ -66,6 +66,7 @@ class CockpitAgent:
                 decode_responses=True,
                 socket_connect_timeout=5,
                 socket_keepalive=True,
+                **config.redis_ssl_kwargs,
             )
 
             # Test connection

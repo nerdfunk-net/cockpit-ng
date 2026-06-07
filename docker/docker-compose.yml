@@ -20,6 +20,10 @@ services:
       - cockpit-network
 
   # Redis Message Broker
+  # TLS mode (disabled by default): to enable Redis TLS set COCKPIT_REDIS_TLS=true in .env
+  # and extend the command with --tls-port 6380 --port 0 --tls-cert-file /tls/redis.crt
+  # --tls-key-file /tls/redis.key --tls-ca-cert-file /tls/ca.crt, then mount your certs
+  # volume (e.g. ./tls:/tls:ro) and update the healthcheck to use --tls --cacert /tls/ca.crt.
   redis:
     image: redis:7-alpine
     container_name: cockpit-redis
@@ -68,6 +72,7 @@ services:
       - COCKPIT_REDIS_HOST=redis
       - COCKPIT_REDIS_PORT=6379
       - COCKPIT_REDIS_PASSWORD=${COCKPIT_REDIS_PASSWORD:-changeme}
+      - COCKPIT_REDIS_TLS=${COCKPIT_REDIS_TLS:-false}
 
       # Celery Configuration
       - CELERY_BROKER_URL=redis://:${COCKPIT_REDIS_PASSWORD:-changeme}@redis:6379/0
@@ -135,6 +140,7 @@ services:
       - COCKPIT_REDIS_HOST=redis
       - COCKPIT_REDIS_PORT=6379
       - COCKPIT_REDIS_PASSWORD=${COCKPIT_REDIS_PASSWORD:-changeme}
+      - COCKPIT_REDIS_TLS=${COCKPIT_REDIS_TLS:-false}
 
       # Celery Configuration
       - CELERY_BROKER_URL=redis://:${COCKPIT_REDIS_PASSWORD:-changeme}@redis:6379/0
@@ -191,6 +197,7 @@ services:
       - COCKPIT_REDIS_HOST=redis
       - COCKPIT_REDIS_PORT=6379
       - COCKPIT_REDIS_PASSWORD=${COCKPIT_REDIS_PASSWORD:-changeme}
+      - COCKPIT_REDIS_TLS=${COCKPIT_REDIS_TLS:-false}
 
       # Celery Configuration
       - CELERY_BROKER_URL=redis://:${COCKPIT_REDIS_PASSWORD:-changeme}@redis:6379/0
@@ -246,6 +253,7 @@ services:
       - COCKPIT_REDIS_HOST=redis
       - COCKPIT_REDIS_PORT=6379
       - COCKPIT_REDIS_PASSWORD=${COCKPIT_REDIS_PASSWORD:-changeme}
+      - COCKPIT_REDIS_TLS=${COCKPIT_REDIS_TLS:-false}
 
       # Celery Configuration
       - CELERY_BROKER_URL=redis://:${COCKPIT_REDIS_PASSWORD:-changeme}@redis:6379/0

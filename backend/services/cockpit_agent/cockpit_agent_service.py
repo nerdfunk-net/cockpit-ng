@@ -37,6 +37,7 @@ class CockpitAgentService:
             decode_responses=True,
             socket_connect_timeout=5,
             socket_keepalive=True,
+            **settings.redis_ssl_params,
         )
 
     def _get_agent_secret(self, agent_id: str) -> Optional[str]:
@@ -174,7 +175,10 @@ class CockpitAgentService:
         try:
             # Create separate Redis client for subscription (can't use same client for pub/sub)
             redis_sub = redis.from_url(
-                settings.redis_url, decode_responses=True, socket_timeout=_POLL_INTERVAL
+                settings.redis_url,
+                decode_responses=True,
+                socket_timeout=_POLL_INTERVAL,
+                **settings.redis_ssl_params,
             )
             pubsub = redis_sub.pubsub()
             pubsub.subscribe(response_channel)

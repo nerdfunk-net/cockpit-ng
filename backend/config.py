@@ -71,25 +71,49 @@ class Settings:
         os.path.join(os.path.dirname(os.path.dirname(__file__)), "data"),
     )
 
+    # Redis TLS Configuration (disabled by default)
+    redis_tls: bool = get_env_bool("COCKPIT_REDIS_TLS", False)
+    redis_tls_verify: bool = get_env_bool("COCKPIT_REDIS_TLS_VERIFY", True)
+    redis_tls_ca_cert: str = os.getenv("COCKPIT_REDIS_TLS_CA_CERT", "")
+    redis_tls_cert: str = os.getenv("COCKPIT_REDIS_TLS_CERT", "")
+    redis_tls_key: str = os.getenv("COCKPIT_REDIS_TLS_KEY", "")
+
     # Celery and Redis Configuration
     # Build Redis URL from components or use direct URL if provided
     @property
     def redis_url(self) -> str:
         """Build Redis URL from individual components or use direct URL."""
-        # Check if REDIS_URL is explicitly set
-        if os.getenv("REDIS_URL"):
-            return os.getenv("REDIS_URL")
+        scheme = "rediss" if self.redis_tls else "redis"
 
-        # Build from components
+        # If REDIS_URL is explicitly set, enforce the correct scheme
+        if explicit := os.getenv("REDIS_URL"):
+            if self.redis_tls and explicit.startswith("redis://"):
+                return "rediss://" + explicit[8:]
+            return explicit
+
         redis_host = os.getenv("COCKPIT_REDIS_HOST", "localhost")
         redis_port = os.getenv("COCKPIT_REDIS_PORT", "6379")
         redis_password = os.getenv("COCKPIT_REDIS_PASSWORD", "")
 
-        # Format: redis://[:password@]host:port/db
         if redis_password:
-            return f"redis://:{redis_password}@{redis_host}:{redis_port}/0"
-        else:
-            return f"redis://{redis_host}:{redis_port}/0"
+            return f"{scheme}://:{redis_password}@{redis_host}:{redis_port}/0"
+        return f"{scheme}://{redis_host}:{redis_port}/0"
+
+    @property
+    def redis_ssl_params(self) -> dict:
+        """Return SSL kwargs for redis client connections when TLS is enabled."""
+        if not self.redis_tls:
+            return {}
+        params: dict = {
+            "ssl_cert_reqs": "required" if self.redis_tls_verify else "none",
+        }
+        if self.redis_tls_ca_cert:
+            params["ssl_ca_certs"] = self.redis_tls_ca_cert
+        if self.redis_tls_cert:
+            params["ssl_certfile"] = self.redis_tls_cert
+        if self.redis_tls_key:
+            params["ssl_keyfile"] = self.redis_tls_key
+        return params
 
     @property
     def celery_broker_url(self) -> str:

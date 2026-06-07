@@ -25,6 +25,11 @@ class AgentConfig:
         self.redis_port = int(os.getenv("REDIS_PORT", "6379"))
         self.redis_password = os.getenv("REDIS_PASSWORD")
         self.redis_db = int(os.getenv("REDIS_DB", "0"))
+        self.redis_ssl = os.getenv("REDIS_SSL", "false").lower() in ("true", "1", "yes")
+        self.redis_tls_verify = os.getenv("REDIS_TLS_VERIFY", "true").lower() in ("true", "1", "yes")
+        self.redis_tls_ca_cert = os.getenv("REDIS_TLS_CA_CERT", "")
+        self.redis_tls_cert = os.getenv("REDIS_TLS_CERT", "")
+        self.redis_tls_key = os.getenv("REDIS_TLS_KEY", "")
 
         # Agent identity - must match Cockpit configuration
         self.agent_id = os.getenv("AGENT_ID") or socket.gethostname()
@@ -43,6 +48,22 @@ class AgentConfig:
 
         # Agent metadata
         self.agent_version = "1.0.0"
+
+    @property
+    def redis_ssl_kwargs(self) -> dict:
+        """Return SSL kwargs for redis.Redis() when TLS is enabled."""
+        if not self.redis_ssl:
+            return {}
+        params: dict = {
+            "ssl_cert_reqs": "required" if self.redis_tls_verify else "none",
+        }
+        if self.redis_tls_ca_cert:
+            params["ssl_ca_certs"] = self.redis_tls_ca_cert
+        if self.redis_tls_cert:
+            params["ssl_certfile"] = self.redis_tls_cert
+        if self.redis_tls_key:
+            params["ssl_keyfile"] = self.redis_tls_key
+        return params
 
     def get_command_channel(self) -> str:
         """Get the Redis channel name for receiving commands"""

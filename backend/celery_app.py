@@ -137,6 +137,12 @@ celery_app.conf.update(
     task_default_routing_key="default",
 )
 
+# Apply Redis TLS settings to Celery broker and result backend if TLS is enabled
+if settings.redis_tls:
+    ssl_params = settings.redis_ssl_params
+    celery_app.conf.broker_use_ssl = ssl_params
+    celery_app.conf.redis_backend_use_ssl = ssl_params
+
 # Import beat schedule (periodic tasks)
 try:
     from beat_schedule import CELERY_BEAT_SCHEDULE
