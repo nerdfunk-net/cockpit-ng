@@ -139,7 +139,7 @@ export function AgentModal({
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onCancel()}>
       <DialogContent className="sm:max-w-[600px]">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 px-6 -mt-6 -mx-6 mb-4 rounded-t-lg">
+        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 -mt-6 -mx-6 mb-4 rounded-t-lg">
           <DialogTitle className="text-white">
             {agent ? 'Edit Agent' : 'Add New Agent'}
           </DialogTitle>
@@ -249,7 +249,7 @@ export function AgentModal({
                 <button
                   type="button"
                   onClick={() => setShowSecret(v => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   aria-label={showSecret ? 'Hide secret' : 'Show secret'}
                 >
                   {showSecret ? (
@@ -290,9 +290,9 @@ export function AgentModal({
                 {isGitRepoRequired && <span className="text-red-500">*</span>}
               </Label>
               {loadingGitRepos ? (
-                <div className="flex items-center space-x-2 p-3 border border-gray-300 rounded-md bg-gray-50">
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
-                  <span className="text-sm text-gray-600">Loading repositories...</span>
+                <div className="flex items-center gap-2 p-3 border border-blue-200 rounded-md bg-blue-50">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="text-sm text-blue-800">Loading repositories...</span>
                 </div>
               ) : gitRepositories.length > 0 ? (
                 <>

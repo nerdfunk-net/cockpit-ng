@@ -10,6 +10,9 @@ import {
 } from '@/components/ui/select'
 import type { GitRepository } from '@/hooks/queries/use-git-repositories-query'
 
+const SELECT_TRIGGER_CLASS =
+  'w-full border-2 border-slate-300 bg-white text-foreground shadow-sm focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-200'
+
 interface RepositorySelectorProps {
   repositories: GitRepository[]
   selectedRepositoryId: number | null
@@ -33,7 +36,11 @@ export function RepositorySelector({
         }}
         disabled={isLoading || repositories.length === 0}
       >
-        <SelectTrigger id="config-search-repo" aria-label="Select git repository">
+        <SelectTrigger
+          id="config-search-repo"
+          className={SELECT_TRIGGER_CLASS}
+          aria-label="Select git repository"
+        >
           <SelectValue
             placeholder={
               isLoading

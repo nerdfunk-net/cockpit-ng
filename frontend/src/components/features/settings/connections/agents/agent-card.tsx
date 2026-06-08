@@ -35,9 +35,9 @@ export function AgentCard({
 
   return (
     <div className="border-0 bg-white rounded-lg shadow-sm">
-      <div className="bg-gradient-to-r from-purple-400/80 to-purple-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
-        <div className="flex items-center space-x-2 flex-1">
-          <div className="flex items-center space-x-2 flex-1">
+      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+        <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center gap-2 flex-1">
             <span className="text-sm font-medium">{agent.name}</span>
             <Badge
               variant="outline"
@@ -69,15 +69,15 @@ export function AgentCard({
         </div>
       </div>
 
-      <div className="p-4 bg-gradient-to-b from-white to-gray-50">
+      <div className="p-6 bg-gradient-to-b from-white to-gray-50">
         {agent.description && (
-          <p className="text-sm text-gray-600 mb-4">{agent.description}</p>
+          <p className="text-sm text-muted-foreground mb-4">{agent.description}</p>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Agent ID */}
           <div className="flex items-start gap-2 text-sm">
-            <span className="text-gray-500 font-medium min-w-[80px]">Agent ID:</span>
+            <span className="text-muted-foreground font-medium min-w-[80px]">Agent ID:</span>
             <code className="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono">
               {agent.agent_id || '(not set)'}
             </code>
@@ -86,22 +86,16 @@ export function AgentCard({
           {/* Shared secret status (all agent types) */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
-              <KeyRound className="h-4 w-4 text-gray-400" />
-              <span className="text-gray-700 font-medium">Shared Secret:</span>
+              <KeyRound className="h-4 w-4 text-blue-600" />
+              <span className="font-medium">Shared Secret:</span>
             </div>
             <div className="ml-6">
               {agent.shared_secret ? (
-                <Badge
-                  variant="outline"
-                  className="border-emerald-400 text-emerald-700 bg-emerald-50"
-                >
+                <Badge className="bg-green-100 text-green-800 border-green-300">
                   Configured
                 </Badge>
               ) : (
-                <Badge
-                  variant="outline"
-                  className="border-amber-400 text-amber-700 bg-amber-50"
-                >
+                <Badge className="bg-amber-100 text-amber-800 border-amber-300">
                   Not configured
                 </Badge>
               )}
@@ -112,23 +106,21 @@ export function AgentCard({
           {agentType !== 'netmiko' && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
-                <GitBranch className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-700 font-medium">Git Repository:</span>
+                <GitBranch className="h-4 w-4 text-blue-600" />
+                <span className="font-medium">Git Repository:</span>
               </div>
               {gitRepo ? (
-                <div className="ml-6 p-3 bg-white rounded-md border border-gray-200">
-                  <p className="text-sm font-medium text-gray-900">{gitRepo.name}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                <div className="ml-6 p-3 bg-blue-50 rounded-md border border-blue-200">
+                  <p className="text-sm font-medium text-slate-900">{gitRepo.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
                     {gitRepo.url} • branch: {gitRepo.branch}
                   </p>
                 </div>
               ) : (
                 <div className="ml-6 p-3 bg-amber-50 rounded-md border border-amber-200">
-                  <p className="text-sm text-amber-800">
-                    <Badge variant="outline" className="border-amber-400 text-amber-700">
-                      Not configured
-                    </Badge>
-                  </p>
+                  <Badge className="bg-amber-100 text-amber-800 border-amber-300">
+                    Not configured
+                  </Badge>
                 </div>
               )}
             </div>

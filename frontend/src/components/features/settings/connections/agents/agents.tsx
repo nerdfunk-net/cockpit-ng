@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
-import { Loader2, CheckCircle, XCircle, BarChart3, Plus } from 'lucide-react'
+import { Loader2, CheckCircle2, XCircle, BarChart3, Plus } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AgentCard } from './agent-card'
 import { AgentModal } from './agent-modal'
 import { HelpDialog, HelpButton } from './help-dialog'
@@ -190,8 +191,23 @@ export default function AgentsSettingsForm() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-blue-100 p-2 rounded-lg">
+              <BarChart3 className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Agents Configuration</h1>
+              <p className="text-muted-foreground mt-2">
+                Configure external monitoring and observability agents
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
       </div>
     )
   }
@@ -204,43 +220,54 @@ export default function AgentsSettingsForm() {
             <BarChart3 className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Agents Configuration</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold text-slate-900">Agents Configuration</h1>
+            <p className="text-muted-foreground mt-2">
               Configure external monitoring and observability agents
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <HelpButton onClick={() => setIsHelpDialogOpen(true)} />
-          <Button onClick={handleAddAgent} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
+          <Button
+            onClick={handleAddAgent}
+            disabled={status === 'saving'}
+            className="flex items-center gap-2"
+          >
+            {status === 'saving' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
             Add New Agent
           </Button>
         </div>
       </div>
 
       {message && (
-        <div
+        <Alert
           className={cn(
-            'flex items-center gap-2 p-4 rounded-md',
             status === 'success'
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
+              ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'
           )}
         >
           {status === 'success' ? (
-            <CheckCircle className="h-5 w-5" />
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
           ) : (
-            <XCircle className="h-5 w-5" />
+            <XCircle className="h-4 w-4 text-red-600" />
           )}
-          <span>{message}</span>
-        </div>
+          <AlertDescription
+            className={status === 'success' ? 'text-green-800' : 'text-red-800'}
+          >
+            {message}
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Agents List */}
       <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
         <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             <span className="text-sm font-medium">Configured Agents</span>
           </div>
@@ -252,12 +279,12 @@ export default function AgentsSettingsForm() {
           {agents.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <div className="flex justify-center mb-4">
-                <div className="bg-gray-100 p-4 rounded-full">
-                  <BarChart3 className="h-8 w-8 text-gray-400" />
+                <div className="bg-blue-100 p-4 rounded-full">
+                  <BarChart3 className="h-8 w-8 text-blue-600" />
                 </div>
               </div>
               <p className="text-lg font-medium">No Agents Configured</p>
-              <p className="text-sm mt-1 max-w-md mx-auto">
+              <p className="text-sm mt-1 max-w-md mx-auto text-muted-foreground">
                 Get started by adding your first agent. Configure monitoring tools like
                 Grafana, Telegraf, or Smokeping to keep your infrastructure observable.
               </p>

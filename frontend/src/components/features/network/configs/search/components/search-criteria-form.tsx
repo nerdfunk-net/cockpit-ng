@@ -12,6 +12,9 @@ import { CommitRangePicker } from './commit-range-picker'
 import type { GitRepository } from '@/hooks/queries/use-git-repositories-query'
 import type { SearchCriteria } from '../types'
 
+const SEARCH_INPUT_CLASS =
+  'border-2 border-slate-300 bg-white text-foreground shadow-sm placeholder:text-slate-500 focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-200'
+
 interface SearchCriteriaFormProps {
   repositories: GitRepository[]
   selectedRepositoryId: number | null
@@ -65,6 +68,7 @@ export function SearchCriteriaForm({
             <Label htmlFor="search-query">Search string</Label>
             <Input
               id="search-query"
+              className={SEARCH_INPUT_CLASS}
               placeholder="e.g. snmp-server community"
               value={criteria.query}
               onChange={event => onCriteriaChange({ query: event.target.value })}
@@ -83,7 +87,7 @@ export function SearchCriteriaForm({
               <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="path-filter"
-                className="pl-9"
+                className={`pl-9 ${SEARCH_INPUT_CLASS}`}
                 placeholder="e.g. site-a/* or *.cfg"
                 value={criteria.pathFilter}
                 onChange={event => onCriteriaChange({ pathFilter: event.target.value })}
