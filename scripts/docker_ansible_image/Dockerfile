@@ -23,6 +23,7 @@ RUN if [ -n "$HTTP_PROXY" ] || [ -n "$HTTPS_PROXY" ]; then \
     && apt-get update && apt-get install -y --no-install-recommends \
        ansible \
        openssh-client \
+       sshpass \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
     && rm -f /etc/apt/apt.conf.d/01proxy || true

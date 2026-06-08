@@ -54,11 +54,11 @@ async def create_agents_settings(
         success = settings_manager.update_agents_settings(settings_dict)
 
         if success:
-            # Sync Netmiko shared secrets to the settings table so that
+            # Sync shared secrets for all agent types so that
             # CockpitAgentService._get_agent_secret() can retrieve them.
             agent_service = CockpitAgentService(db)
             for agent in agents_request.agents:
-                if agent.type == "netmiko" and agent.agent_id and agent.shared_secret:
+                if agent.agent_id and agent.shared_secret:
                     agent_service.set_agent_shared_secret(
                         agent.agent_id, agent.shared_secret
                     )

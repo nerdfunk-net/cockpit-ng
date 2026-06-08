@@ -102,8 +102,8 @@ export function AgentModal({
       newErrors.git_repository_id = 'Git repository is required for git-based agents'
     }
 
-    if (isNetmiko && !formData.shared_secret?.trim()) {
-      newErrors.shared_secret = 'Shared secret is required for Netmiko agents'
+    if (!formData.shared_secret?.trim()) {
+      newErrors.shared_secret = 'Shared secret is required'
     }
 
     setErrors(newErrors)
@@ -114,8 +114,6 @@ export function AgentModal({
     setFormData(prev => ({
       ...prev,
       type: value,
-      // Clear type-specific fields when switching types
-      shared_secret: value === 'netmiko' ? prev.shared_secret : '',
       git_repository_id: value === 'netmiko' ? null : prev.git_repository_id,
     }))
     setErrors(prev => ({
@@ -231,60 +229,58 @@ export function AgentModal({
             </p>
           </div>
 
-          {/* Netmiko: Shared Secret */}
-          {isNetmiko && (
-            <div className="space-y-2">
-              <Label htmlFor="agent-shared-secret">
-                Shared Secret <span className="text-red-500">*</span>
-              </Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="agent-shared-secret"
-                    type={showSecret ? 'text' : 'password'}
-                    placeholder="64-character hex secret"
-                    value={formData.shared_secret || ''}
-                    onChange={e =>
-                      setFormData({ ...formData, shared_secret: e.target.value })
-                    }
-                    className={`pr-10 font-mono text-sm ${errors.shared_secret ? 'border-red-500' : ''}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowSecret(v => !v)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    aria-label={showSecret ? 'Hide secret' : 'Show secret'}
-                  >
-                    {showSecret ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-                <Button
+          {/* Shared Secret (all agent types) */}
+          <div className="space-y-2">
+            <Label htmlFor="agent-shared-secret">
+              Shared Secret <span className="text-red-500">*</span>
+            </Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  id="agent-shared-secret"
+                  type={showSecret ? 'text' : 'password'}
+                  placeholder="64-character hex secret"
+                  value={formData.shared_secret || ''}
+                  onChange={e =>
+                    setFormData({ ...formData, shared_secret: e.target.value })
+                  }
+                  className={`pr-10 font-mono text-sm ${errors.shared_secret ? 'border-red-500' : ''}`}
+                />
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateSecret}
-                  className="shrink-0 gap-1.5"
-                  title="Generate a random secret"
+                  onClick={() => setShowSecret(v => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label={showSecret ? 'Hide secret' : 'Show secret'}
                 >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  Generate
-                </Button>
+                  {showSecret ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
-              {errors.shared_secret && (
-                <p className="text-xs text-red-500">{errors.shared_secret}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                This value must match{' '}
-                <code className="bg-gray-100 px-1 rounded">COCKPIT_SHARED_SECRET</code>{' '}
-                in the agent&apos;s <code className="bg-gray-100 px-1 rounded">.env</code>{' '}
-                file. Used to sign and authenticate all Redis messages.
-              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateSecret}
+                className="shrink-0 gap-1.5"
+                title="Generate a random secret"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Generate
+              </Button>
             </div>
-          )}
+            {errors.shared_secret && (
+              <p className="text-xs text-red-500">{errors.shared_secret}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              This value must match{' '}
+              <code className="bg-gray-100 px-1 rounded">COCKPIT_SHARED_SECRET</code>{' '}
+              in the agent&apos;s <code className="bg-gray-100 px-1 rounded">.env</code>{' '}
+              file. Used to sign and authenticate all Redis messages.
+            </p>
+          </div>
 
           {/* Git Repository (hidden for netmiko agents) */}
           {!isNetmiko && (

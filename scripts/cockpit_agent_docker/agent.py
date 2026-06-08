@@ -5,6 +5,8 @@ Listens for commands via Redis Pub/Sub and executes them locally
 """
 
 import asyncio
+import hashlib
+import hmac
 import json
 import logging
 import signal
@@ -177,6 +179,44 @@ class CockpitAgent:
         except Exception as e:
             logger.error(f"Failed to send response: {e}")
 
+    def _verify_message_auth(self, command_data: dict) -> bool:
+        """Verify HMAC-SHA256 signature and replay-protection timestamp."""
+        auth = command_data.get("auth")
+        if not auth or not isinstance(auth, dict):
+            logger.warning("Rejected message: missing auth field")
+            return False
+
+        signature = auth.get("signature", "")
+        timestamp = command_data.get("timestamp")
+
+        if not signature or timestamp is None:
+            logger.warning("Rejected message: missing signature or timestamp")
+            return False
+
+        age = abs(time.time() - int(timestamp))
+        if age > 300:
+            logger.warning("Rejected message: timestamp too old (%ds)", age)
+            return False
+
+        payload = {k: v for k, v in command_data.items() if k != "auth"}
+        canonical = json.dumps(payload, sort_keys=True)
+        data_to_sign = f"{canonical}:{timestamp}".encode()
+
+        expected = hmac.new(
+            config.shared_secret.encode(),
+            data_to_sign,
+            hashlib.sha256,
+        ).hexdigest()
+
+        if not hmac.compare_digest(expected, signature):
+            logger.warning(
+                "Rejected message: HMAC signature mismatch (command_id=%s)",
+                command_data.get("command_id"),
+            )
+            return False
+
+        return True
+
     async def _handle_message(self, message):
         """Handle incoming Pub/Sub message"""
         if message["type"] != "message":
@@ -188,6 +228,10 @@ class CockpitAgent:
             # Validate command structure
             if not all(key in command_data for key in ["command_id", "command"]):
                 logger.error(f"Invalid command structure: {command_data}")
+                return
+
+            # Verify HMAC signature
+            if not self._verify_message_auth(command_data):
                 return
 
             # Execute command

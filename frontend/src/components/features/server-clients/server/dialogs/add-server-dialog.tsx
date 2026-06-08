@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Select,
   SelectContent,
@@ -25,13 +25,16 @@ import {
 import { AlertCircle, Bot, Loader2, Server } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/hooks/use-toast'
-import { useSshCredentialsQuery, type SshCredential } from '@/hooks/queries/use-ssh-credentials-query'
+import { usePasswordCredentialsQuery, type PasswordCredential } from '@/hooks/queries/use-ssh-credentials-query'
 import { useServerMutations } from '@/hooks/queries/use-server-mutations'
 import type { Agent } from '@/components/features/settings/connections/agents/types'
 import { parseAnsibleFacts } from '../utils/parse-ansible-facts'
 import type { AnsibleCredentials, ServerResponse } from '../types'
 
+type AuthType = 'ssh_key' | 'ssh_key_passphrase' | 'credentials'
+
 const EMPTY_AGENTS: Agent[] = []
+const EMPTY_CREDENTIALS: PasswordCredential[] = []
 
 /** Higher-contrast fields on light gradient dialog backgrounds (see doc/STYLE_GUIDE_DESIGN.md). */
 const FIELD_INPUT_CLASS =
@@ -53,25 +56,19 @@ interface CommandResponse {
   execution_time_ms: number
 }
 
-interface CredentialPasswordResponse {
-  password: string
-}
-
-const EMPTY_CREDENTIALS: SshCredential[] = []
-
 export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServerDialogProps) {
   const { apiCall } = useApi()
   const { toast } = useToast()
   const { createServer } = useServerMutations()
 
   const [hostname, setHostname] = useState('')
-  const [useSSHKey, setUseSSHKey] = useState(false)
+  const [authType, setAuthType] = useState<AuthType>('ssh_key')
   const [sshUser, setSshUser] = useState('root')
   const [selectedCredentialId, setSelectedCredentialId] = useState<string>('')
   const [selectedAgentId, setSelectedAgentId] = useState<string>('')
   const [isGettingFacts, setIsGettingFacts] = useState(false)
 
-  const { data: sshCredentials = EMPTY_CREDENTIALS, isLoading: isLoadingCreds } = useSshCredentialsQuery({
+  const { data: credentials = EMPTY_CREDENTIALS, isLoading: isLoadingCreds } = usePasswordCredentialsQuery({
     enabled: open,
   })
 
@@ -90,60 +87,56 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
   useEffect(() => {
     if (!open) {
       setHostname('')
-      setUseSSHKey(false)
+      setAuthType('ssh_key')
       setSshUser('root')
       setSelectedCredentialId('')
       setSelectedAgentId('')
     }
   }, [open])
 
+  // Clear credential selection when switching auth modes
+  useEffect(() => {
+    setSelectedCredentialId('')
+  }, [authType])
+
   const selectedCredential = useMemo(
-    () => sshCredentials.find((c) => String(c.id) === selectedCredentialId) ?? null,
-    [sshCredentials, selectedCredentialId]
+    () => credentials.find((c) => String(c.id) === selectedCredentialId) ?? null,
+    [credentials, selectedCredentialId]
   )
+
+  const needsCredential = authType === 'ssh_key_passphrase' || authType === 'credentials'
 
   const canGetFacts = useMemo(() => {
     if (!hostname.trim() || !selectedAgentId || isGettingFacts) return false
-    if (!useSSHKey && !selectedCredentialId) return false
+    if (authType === 'ssh_key' && !sshUser.trim()) return false
+    if (needsCredential && !selectedCredentialId) return false
     return true
-  }, [hostname, selectedAgentId, useSSHKey, selectedCredentialId, isGettingFacts])
+  }, [hostname, selectedAgentId, isGettingFacts, authType, sshUser, needsCredential, selectedCredentialId])
 
   const handleGetFacts = useCallback(async () => {
     if (!canGetFacts) return
 
     setIsGettingFacts(true)
     try {
-      let ansiblePassword: string | undefined
-      let ansibleUser: string
+      const useSSHKey = authType !== 'credentials'
 
-      if (useSSHKey) {
-        ansibleUser = sshUser.trim() || 'root'
-      } else {
-        if (!selectedCredential) return
-        ansibleUser = selectedCredential.username
-        const pwResp = await apiCall<CredentialPasswordResponse>(
-          `credentials/${selectedCredential.id}/password`
-        )
-        ansiblePassword = pwResp.password
-      }
-
-      const params: Record<string, unknown> = {
+      const body: Record<string, unknown> = {
+        agent_id: selectedAgentId,
         ip_address: hostname.trim(),
-        ansible_user: ansibleUser,
         use_sshkey: useSSHKey,
-      }
-      if (ansiblePassword !== undefined) {
-        params.ansible_password = ansiblePassword
+        ansible_port: 22,
+        timeout: 60,
       }
 
-      const result = await apiCall<CommandResponse>('cockpit-agent/command', {
+      if (authType === 'ssh_key') {
+        body.ansible_user = sshUser.trim() || 'root'
+      } else {
+        body.credential_id = Number(selectedCredentialId)
+      }
+
+      const result = await apiCall<CommandResponse>('cockpit-agent/ansible/get-facts', {
         method: 'POST',
-        body: JSON.stringify({
-          agent_id: selectedAgentId,
-          command: 'get_facts',
-          params,
-          timeout: 60,
-        }),
+        body: JSON.stringify(body),
       })
 
       if (result.status !== 'success') {
@@ -155,13 +148,17 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
         return
       }
 
-      const target = hostname.trim()
+      const ansibleUser =
+        authType === 'ssh_key'
+          ? (sshUser.trim() || 'root')
+          : (selectedCredential?.username ?? '')
+
       const ansibleCredentials: AnsibleCredentials = {
-        target,
+        target: hostname.trim(),
         agent_id: selectedAgentId,
         use_sshkey: useSSHKey,
         ansible_user: ansibleUser,
-        credential_id: useSSHKey ? null : selectedCredential?.id ?? null,
+        credential_id: needsCredential ? (selectedCredential?.id ?? null) : null,
       }
 
       const serverData = {
@@ -176,18 +173,24 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
       toast({ title: 'Server added', description: saved.hostname })
       onServerAdded(saved)
       onOpenChange(false)
-    } catch {
-      // Error toast is shown by useServerMutations createServer.onError
+    } catch (err: unknown) {
+      toast({
+        title: 'Failed to gather facts',
+        description: err instanceof Error ? err.message : 'An unexpected error occurred',
+        variant: 'destructive',
+      })
     } finally {
       setIsGettingFacts(false)
     }
   }, [
     canGetFacts,
-    useSSHKey,
+    authType,
     sshUser,
     selectedCredential,
+    selectedCredentialId,
     hostname,
     selectedAgentId,
+    needsCredential,
     apiCall,
     toast,
     createServer,
@@ -247,59 +250,51 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="add-server-cred" className="text-sm font-medium text-gray-700">
-              SSH credential
-            </Label>
-            <Select
-              value={selectedCredentialId}
-              onValueChange={setSelectedCredentialId}
-              disabled={useSSHKey || isLoadingCreds || isGettingFacts}
-            >
-              <SelectTrigger id="add-server-cred" className={FIELD_SELECT_TRIGGER_CLASS}>
-                <SelectValue
-                  placeholder={
-                    isLoadingCreds
-                      ? 'Loading…'
-                      : sshCredentials.length === 0
-                        ? 'No SSH credentials found'
-                        : 'Select credential'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {sshCredentials.map((cred) => (
-                  <SelectItem key={cred.id} value={String(cred.id)}>
-                    {cred.name}
-                    <span className="ml-1 text-xs text-muted-foreground">({cred.username})</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-gray-500">
-              Stored credentials from Settings. Not used when SSH key authentication is enabled.
-            </p>
-          </div>
-
-          <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-4 shadow-sm">
-            <Checkbox
-              id="add-server-sshkey"
-              checked={useSSHKey}
-              onCheckedChange={(checked) => setUseSSHKey(checked === true)}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-gray-700">Authentication method</Label>
+            <RadioGroup
+              value={authType}
+              onValueChange={(v) => setAuthType(v as AuthType)}
               disabled={isGettingFacts}
-              className="mt-0.5 border-gray-400 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
-            />
-            <div className="flex-1 space-y-1">
-              <Label htmlFor="add-server-sshkey" className="cursor-pointer text-sm font-medium text-gray-800">
-                Use SSH key
-              </Label>
-              <p className="text-xs text-gray-600">
-                Authenticate with the agent&apos;s configured SSH key instead of a stored password.
-              </p>
-            </div>
+              className="space-y-2"
+            >
+              <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                <RadioGroupItem value="ssh_key" id="auth-ssh-key" className="mt-0.5" />
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="auth-ssh-key" className="cursor-pointer text-sm font-medium text-gray-800">
+                    SSH key (no passphrase)
+                  </Label>
+                  <p className="text-xs text-gray-600">
+                    Use the agent&apos;s configured SSH key with no passphrase protection.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                <RadioGroupItem value="ssh_key_passphrase" id="auth-ssh-passphrase" className="mt-0.5" />
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="auth-ssh-passphrase" className="cursor-pointer text-sm font-medium text-gray-800">
+                    SSH key with passphrase
+                  </Label>
+                  <p className="text-xs text-gray-600">
+                    SSH key protected by a passphrase stored in the credentials vault.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                <RadioGroupItem value="credentials" id="auth-credentials" className="mt-0.5" />
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="auth-credentials" className="cursor-pointer text-sm font-medium text-gray-800">
+                    Username &amp; password
+                  </Label>
+                  <p className="text-xs text-gray-600">
+                    Authenticate using a stored username and password credential.
+                  </p>
+                </div>
+              </div>
+            </RadioGroup>
           </div>
 
-          {useSSHKey ? (
+          {authType === 'ssh_key' ? (
             <div className="space-y-2">
               <Label htmlFor="add-server-sshuser" className="text-sm font-medium text-gray-700">
                 SSH username
@@ -313,7 +308,43 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
                 className={FIELD_INPUT_CLASS}
               />
             </div>
-          ) : null}
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="add-server-cred" className="text-sm font-medium text-gray-700">
+                {authType === 'ssh_key_passphrase' ? 'Passphrase credential' : 'Login credential'}
+              </Label>
+              <Select
+                value={selectedCredentialId}
+                onValueChange={setSelectedCredentialId}
+                disabled={isLoadingCreds || isGettingFacts}
+              >
+                <SelectTrigger id="add-server-cred" className={FIELD_SELECT_TRIGGER_CLASS}>
+                  <SelectValue
+                    placeholder={
+                      isLoadingCreds
+                        ? 'Loading…'
+                        : credentials.length === 0
+                          ? 'No credentials found'
+                          : 'Select credential'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {credentials.map((cred) => (
+                    <SelectItem key={cred.id} value={String(cred.id)}>
+                      {cred.name}
+                      <span className="ml-1 text-xs text-muted-foreground">({cred.username})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                {authType === 'ssh_key_passphrase'
+                  ? 'The password field of this credential is used as the SSH key passphrase.'
+                  : 'Stored credentials from Settings → Credentials.'}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="add-server-agent" className="text-sm font-medium text-gray-700">

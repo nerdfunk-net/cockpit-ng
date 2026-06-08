@@ -41,7 +41,7 @@ class CockpitAgentService:
         )
 
     def _get_agent_secret(self, agent_id: str) -> Optional[str]:
-        """Look up the HMAC shared secret for a Netmiko agent from the settings table."""
+        """Look up the HMAC shared secret for a Cockpit agent from the settings table."""
         return self.repository.get_agent_shared_secret(agent_id)
 
     def _resolve_credential(self, credential_id: int) -> tuple[str, str]:
@@ -68,19 +68,22 @@ class CockpitAgentService:
 
     def _sign_and_encrypt_command(self, command_message: dict, secret: str) -> dict:
         """
-        1. Fernet-encrypt params["password"] if present (device SSH credential).
+        1. Fernet-encrypt any sensitive password/passphrase params in-place.
         2. Add HMAC-SHA256 signature over the entire message payload.
 
-        The signature covers the message after password encryption so the agent can
-        verify integrity *before* decrypting the password.
+        Encrypted fields keep their original key names so agents look them up
+        by the same name and decrypt before use. The signature covers the message
+        after encryption so agents verify integrity before decrypting.
         """
         msg = {**command_message}
+        params = dict(msg.get("params", {}))
 
-        # Encrypt device password if present
-        if msg.get("params", {}).get("password"):
-            f = Fernet(self._fernet_key(secret))
-            encrypted = f.encrypt(msg["params"]["password"].encode()).decode()
-            msg = {**msg, "params": {**msg["params"], "password": encrypted}}
+        f = Fernet(self._fernet_key(secret))
+        for field in ("password", "ansible_password", "ssh_passphrase"):
+            if params.get(field):
+                params[field] = f.encrypt(params[field].encode()).decode()
+
+        msg = {**msg, "params": params}
 
         # Sign the message (without the auth field)
         timestamp = msg["timestamp"]
@@ -123,9 +126,10 @@ class CockpitAgentService:
         command_message = self._sign_and_encrypt_command(command_message, secret)
 
         # Save to database with sensitive fields redacted
-        params_for_db = {k: v for k, v in params.items() if k != "password"}
-        if "password" in params:
-            params_for_db["password"] = "REDACTED"
+        _SENSITIVE = {"password", "ansible_password", "ssh_passphrase"}
+        params_for_db = {
+            k: ("REDACTED" if k in _SENSITIVE else v) for k, v in params.items()
+        }
         try:
             self.repository.save_command(
                 agent_id=agent_id,
@@ -157,46 +161,54 @@ class CockpitAgentService:
 
         return command_id
 
-    def wait_for_response(
-        self, agent_id: str, command_id: str, timeout: int = 30
-    ) -> dict:
+    # Short per-read socket timeout.  Keeping this at 1 s means the blocking
+    # recv loop wakes up frequently enough that Ctrl-C / graceful shutdown can
+    # interrupt it, while still avoiding a busy-poll.
+    _POLL_INTERVAL = 1
+
+    def _open_subscription(self, agent_id: str) -> tuple:
         """
-        Wait for response from agent
-        Subscribes to response channel and blocks until response or timeout
+        Open a Redis pub/sub subscription for agent responses.
+
+        Must be called BEFORE send_command to avoid a race where the agent
+        responds before the caller has started listening.
+
+        Returns (redis_client, pubsub) — caller is responsible for cleanup.
         """
         response_channel = f"cockpit-agent-response:{agent_id}"
+        redis_sub = redis.from_url(
+            settings.redis_url,
+            decode_responses=True,
+            socket_timeout=self._POLL_INTERVAL,
+            **settings.redis_ssl_params,
+        )
+        pubsub = redis_sub.pubsub()
+        pubsub.subscribe(response_channel)
+        return redis_sub, pubsub
 
-        # Use a short per-read socket timeout so the loop can check elapsed time
-        # without blocking indefinitely.  The total budget is enforced by comparing
-        # wall-clock time against `timeout`; the socket-level value only limits how
-        # long a single blocking recv can take before we re-check.
-        _POLL_INTERVAL = 5  # seconds per blocking read attempt
-
+    def _drain_response(
+        self,
+        redis_sub,
+        pubsub,
+        command_id: str,
+        timeout: int,
+    ) -> dict:
+        """
+        Block until the agent publishes a response for *command_id*, then return it.
+        Always closes *pubsub* and *redis_sub* before returning.
+        """
+        start_time = time.time()
         try:
-            # Create separate Redis client for subscription (can't use same client for pub/sub)
-            redis_sub = redis.from_url(
-                settings.redis_url,
-                decode_responses=True,
-                socket_timeout=_POLL_INTERVAL,
-                **settings.redis_ssl_params,
-            )
-            pubsub = redis_sub.pubsub()
-            pubsub.subscribe(response_channel)
-
-            # Wait for response
-            start_time = time.time()
             while time.time() - start_time < timeout:
                 try:
                     message = pubsub.get_message(
-                        ignore_subscribe_messages=True, timeout=_POLL_INTERVAL
+                        ignore_subscribe_messages=True, timeout=self._POLL_INTERVAL
                     )
                 except redis.exceptions.TimeoutError:
-                    # No message within the poll window — check elapsed time and retry.
                     continue
 
                 if message is None:
                     continue
-
                 if message.get("type") != "message":
                     continue
 
@@ -226,7 +238,6 @@ class CockpitAgentService:
                     if isinstance(raw_output, (dict, list))
                     else raw_output
                 )
-                # Update database with result
                 self.repository.update_command_result(
                     command_id=command_id,
                     status=response_data.get("status"),
@@ -234,24 +245,14 @@ class CockpitAgentService:
                     error=response_data.get("error"),
                     execution_time_ms=response_data.get("execution_time_ms"),
                 )
-
-                pubsub.unsubscribe()
-                pubsub.close()
-                redis_sub.close()
                 return response_data
 
-            # Timeout occurred
-            pubsub.unsubscribe()
-            pubsub.close()
-            redis_sub.close()
-
-            # Update database status to timeout
+            # Timeout
             self.repository.update_command_result(
                 command_id=command_id,
                 status="timeout",
                 error=f"Response timeout after {timeout}s",
             )
-
             return {
                 "command_id": command_id,
                 "status": "timeout",
@@ -264,6 +265,42 @@ class CockpitAgentService:
                 command_id=command_id, status="error", error=str(e)
             )
             raise
+        finally:
+            pubsub.unsubscribe()
+            pubsub.close()
+            redis_sub.close()
+
+    def send_command_and_wait(
+        self,
+        agent_id: str,
+        command: str,
+        params: dict,
+        sent_by: str,
+        timeout: int = 30,
+    ) -> dict:
+        """
+        Subscribe to the response channel, send the command, then wait for the reply.
+
+        Subscribing first prevents the race condition where an agent responds
+        before the caller has started listening (common for fast error paths
+        such as pre-flight checks that return in < 1 ms).
+        """
+        redis_sub, pubsub = self._open_subscription(agent_id)
+        command_id = self.send_command(agent_id, command, params, sent_by)
+        return self._drain_response(redis_sub, pubsub, command_id, timeout)
+
+    def wait_for_response(
+        self, agent_id: str, command_id: str, timeout: int = 30
+    ) -> dict:
+        """
+        Wait for response from agent by command_id.
+
+        Prefer send_command_and_wait for new call sites — it subscribes before
+        sending and avoids the race condition described there.  This method is
+        kept for callers that must separate send from wait.
+        """
+        redis_sub, pubsub = self._open_subscription(agent_id)
+        return self._drain_response(redis_sub, pubsub, command_id, timeout)
 
     def get_agent_status(self, agent_id: str) -> Optional[Dict]:
         """
@@ -345,7 +382,7 @@ class CockpitAgentService:
         return self.repository.get_all_command_history(limit)
 
     def set_agent_shared_secret(self, agent_id: str, secret: str) -> None:
-        """Upsert the HMAC shared secret for a Cockpit Netmiko agent."""
+        """Upsert the HMAC shared secret for a Cockpit agent."""
         self.repository.set_agent_shared_secret(agent_id, secret)
 
     def send_git_pull(
@@ -359,23 +396,16 @@ class CockpitAgentService:
         """
         Convenience method: Send git pull command and wait for response
         """
-        # Check agent is online
         if not self.check_agent_online(agent_id):
-            return {
-                "status": "error",
-                "error": "Agent is offline or not responding",
-            }
+            return {"status": "error", "error": "Agent is offline or not responding"}
 
-        # Send command
-        command_id = self.send_command(
+        return self.send_command_and_wait(
             agent_id=agent_id,
             command="git_pull",
             params={"repository_path": repository_path, "branch": branch},
             sent_by=sent_by,
+            timeout=timeout,
         )
-
-        # Wait for response
-        return self.wait_for_response(agent_id, command_id, timeout)
 
     def send_ping(
         self,
@@ -396,14 +426,13 @@ class CockpitAgentService:
                 "execution_time_ms": 0,
             }
 
-        command_id = self.send_command(
+        return self.send_command_and_wait(
             agent_id=agent_id,
             command="ping",
             params={"devices": devices},
             sent_by=sent_by,
+            timeout=timeout,
         )
-
-        return self.wait_for_response(agent_id, command_id, timeout)
 
     def send_docker_restart(
         self,
@@ -415,23 +444,86 @@ class CockpitAgentService:
         Convenience method: Send docker restart command and wait for response
         Container name is configured in agent's .env file
         """
-        # Check agent is online
         if not self.check_agent_online(agent_id):
-            return {
-                "status": "error",
-                "error": "Agent is offline or not responding",
-            }
+            return {"status": "error", "error": "Agent is offline or not responding"}
 
-        # Send command (container_name from agent's .env)
-        command_id = self.send_command(
+        return self.send_command_and_wait(
             agent_id=agent_id,
             command="docker_restart",
             params={},
             sent_by=sent_by,
+            timeout=timeout,
         )
 
-        # Wait for response
-        return self.wait_for_response(agent_id, command_id, timeout)
+    # ------------------------------------------------------------------
+    # Ansible agent convenience methods
+    # ------------------------------------------------------------------
+
+    def send_ansible_get_facts(
+        self,
+        agent_id: str,
+        ip_address: str,
+        use_sshkey: bool,
+        sent_by: str,
+        *,
+        ansible_user: Optional[str] = None,
+        credential_id: Optional[int] = None,
+        ansible_port: int = 22,
+        timeout: int = 60,
+    ) -> dict:
+        """
+        Resolve auth credentials server-side, then send get_facts to an Ansible agent.
+
+        Three auth modes:
+          SSH key (no passphrase): use_sshkey=True, credential_id=None, ansible_user required
+          SSH key with passphrase: use_sshkey=True, credential_id set (password = passphrase)
+          Username/password:       use_sshkey=False, credential_id set
+        """
+        if not self.check_agent_online(agent_id):
+            return {"status": "error", "error": "Agent is offline or not responding"}
+
+        params: Dict = {
+            "ip_address": ip_address,
+            "use_sshkey": use_sshkey,
+            "ansible_port": ansible_port,
+        }
+
+        if use_sshkey and credential_id is None:
+            if not ansible_user:
+                raise ValueError(
+                    "ansible_user is required for SSH key auth without a credential"
+                )
+            params["ansible_user"] = ansible_user
+        elif credential_id is not None:
+            import service_factory
+
+            creds_svc = service_factory.build_credentials_service()
+            cred = creds_svc.get_credential_by_id(credential_id)
+            if not cred:
+                raise ValueError(f"Credential {credential_id} not found")
+            params["ansible_user"] = cred.get("username") or ansible_user
+            if not params["ansible_user"]:
+                raise ValueError(f"Credential {credential_id} has no username")
+            secret = creds_svc.get_decrypted_password(credential_id)
+            if use_sshkey:
+                # SSH key with passphrase — password field holds the passphrase
+                if secret:
+                    params["ssh_passphrase"] = secret
+            else:
+                # Username/password auth
+                if not secret:
+                    raise ValueError(f"Credential {credential_id} has no password")
+                params["ansible_password"] = secret
+        else:
+            raise ValueError("credential_id is required when use_sshkey is False")
+
+        return self.send_command_and_wait(
+            agent_id=agent_id,
+            command="get_facts",
+            params=params,
+            sent_by=sent_by,
+            timeout=timeout,
+        )
 
     # ------------------------------------------------------------------
     # Netmiko agent convenience methods
@@ -464,7 +556,7 @@ class CockpitAgentService:
             return err
 
         username, password = self._resolve_credential(credential_id)
-        command_id = self.send_command(
+        return self.send_command_and_wait(
             agent_id=agent_id,
             command="execute_commands",
             params={
@@ -480,8 +572,8 @@ class CockpitAgentService:
                 "privileged": privileged,
             },
             sent_by=sent_by,
+            timeout=timeout,
         )
-        return self.wait_for_response(agent_id, command_id, timeout)
 
     def send_netmiko_get_running_config(
         self,
@@ -500,7 +592,7 @@ class CockpitAgentService:
             return err
 
         username, password = self._resolve_credential(credential_id)
-        command_id = self.send_command(
+        return self.send_command_and_wait(
             agent_id=agent_id,
             command="get_running_config",
             params={
@@ -512,8 +604,8 @@ class CockpitAgentService:
                 "privileged": privileged,
             },
             sent_by=sent_by,
+            timeout=timeout,
         )
-        return self.wait_for_response(agent_id, command_id, timeout)
 
     def send_netmiko_get_startup_config(
         self,
@@ -532,7 +624,7 @@ class CockpitAgentService:
             return err
 
         username, password = self._resolve_credential(credential_id)
-        command_id = self.send_command(
+        return self.send_command_and_wait(
             agent_id=agent_id,
             command="get_startup_config",
             params={
@@ -544,5 +636,5 @@ class CockpitAgentService:
                 "privileged": privileged,
             },
             sent_by=sent_by,
+            timeout=timeout,
         )
-        return self.wait_for_response(agent_id, command_id, timeout)

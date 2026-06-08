@@ -121,7 +121,7 @@ class CockpitAgentRepository:
 
     def get_agent_shared_secret(self, agent_id: str) -> Optional[str]:
         """
-        Retrieve the HMAC shared secret for a Cockpit Netmiko agent.
+        Retrieve the HMAC shared secret for a Cockpit agent.
         Stored in the settings table: category='cockpit_agent_shared_secrets', key=agent_id.
         """
         row = (
@@ -136,7 +136,7 @@ class CockpitAgentRepository:
 
     def set_agent_shared_secret(self, agent_id: str, secret: str) -> None:
         """
-        Upsert the HMAC shared secret for a Cockpit Netmiko agent.
+        Upsert the HMAC shared secret for a Cockpit agent.
         """
         row = (
             self.db.query(Setting)
@@ -154,7 +154,7 @@ class CockpitAgentRepository:
                 key=agent_id,
                 value=secret,
                 value_type="string",
-                description=f"HMAC shared secret for Cockpit Netmiko agent '{agent_id}'",
+                description=f"HMAC shared secret for Cockpit agent '{agent_id}'",
             )
             self.db.add(row)
         self.db.commit()

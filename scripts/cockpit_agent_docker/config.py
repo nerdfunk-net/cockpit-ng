@@ -2,11 +2,13 @@
 Configuration management for Cockpit Agent
 """
 
+import base64
+import hashlib
 import logging
 import os
 import socket
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -42,6 +44,14 @@ class AgentConfig:
         self.docker_container_names = [
             n.strip() for n in docker_names.split(",") if n.strip()
         ]
+
+        # Shared secret for HMAC authentication (required)
+        self.shared_secret = os.getenv("COCKPIT_SHARED_SECRET", "")
+        if self.shared_secret:
+            raw = hashlib.sha256(self.shared_secret.encode()).digest()
+            self.fernet_key: bytes = base64.urlsafe_b64encode(raw)
+        else:
+            self.fernet_key = b""
 
         # Operational settings
         self.heartbeat_interval = int(os.getenv("HEARTBEAT_INTERVAL", "30"))
@@ -87,13 +97,12 @@ class AgentConfig:
         """Validate configuration"""
         if not self.redis_host:
             return False, "REDIS_HOST is required"
-
+        if not self.shared_secret:
+            return False, "COCKPIT_SHARED_SECRET is required"
         if not self.git_repo_paths:
             return False, "GIT_REPO_PATH is required"
-
         if not self.docker_container_names:
             return False, "DOCKER_CONTAINER_NAME is required"
-
         return True, None
 
 

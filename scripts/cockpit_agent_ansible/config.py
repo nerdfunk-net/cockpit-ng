@@ -2,6 +2,8 @@
 Configuration management for Cockpit Ansible Agent
 """
 
+import base64
+import hashlib
 import logging
 import os
 import socket
@@ -42,6 +44,14 @@ class AgentConfig:
         self.ansible_host_key_checking = (
             os.getenv("ANSIBLE_HOST_KEY_CHECKING", "False").lower() in ("true", "1", "yes")
         )
+
+        # Shared secret for HMAC authentication (required)
+        self.shared_secret = os.getenv("COCKPIT_SHARED_SECRET", "")
+        if self.shared_secret:
+            raw = hashlib.sha256(self.shared_secret.encode()).digest()
+            self.fernet_key: bytes = base64.urlsafe_b64encode(raw)
+        else:
+            self.fernet_key = b""
 
         # Operational settings
         self.heartbeat_interval = int(os.getenv("HEARTBEAT_INTERVAL", "30"))
@@ -85,6 +95,8 @@ class AgentConfig:
         """Validate configuration"""
         if not self.redis_host:
             return False, "REDIS_HOST is required"
+        if not self.shared_secret:
+            return False, "COCKPIT_SHARED_SECRET is required"
         if self.ansible_timeout < 1:
             return False, "ANSIBLE_TIMEOUT must be >= 1"
         return True, None

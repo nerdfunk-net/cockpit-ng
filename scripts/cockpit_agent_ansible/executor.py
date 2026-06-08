@@ -7,14 +7,29 @@ import asyncio
 import json
 import logging
 import os
+import re
+import shlex
+import shutil
+import stat
 import tempfile
 import time
 from pathlib import Path
 from typing import Callable, Dict, Optional
 
+from cryptography.fernet import Fernet, InvalidToken
+
 from config import config
 
 logger = logging.getLogger(__name__)
+
+
+def _decrypt_password(encrypted: str) -> str:
+    """Fernet-decrypt a password that was encrypted by the backend."""
+    try:
+        f = Fernet(config.fernet_key)
+        return f.decrypt(encrypted.encode()).decode()
+    except InvalidToken as e:
+        raise ValueError("Failed to decrypt — shared secret mismatch or tampered data") from e
 
 
 class CommandExecutor:
@@ -90,27 +105,30 @@ class CommandExecutor:
         """
         Gather Ansible facts from a target host and return the JSON data.
 
-        Expected params:
-        {
-            "ip_address": "192.168.1.1",                      # required
-            "ansible_user": "root",                           # required
-            "ansible_password": "secret",                     # required unless use_sshkey is set
-            "use_sshkey": true,                               # required unless ansible_password is set
-            "ansible_ssh_private_key_file": "/path/to/key",   # optional (uses default key when use_sshkey=true)
-            "ansible_port": 22                                # optional (default: 22)
-        }
+        Auth modes (mutually exclusive):
+          SSH key (no passphrase):
+            use_sshkey=true, ansible_user required, no ansible_password/ssh_passphrase
+          SSH key with passphrase (Fernet-encrypted by backend):
+            use_sshkey=true, ansible_user required, ssh_passphrase=<encrypted>
+          Username/password (Fernet-encrypted by backend):
+            use_sshkey=false, ansible_user required, ansible_password=<encrypted>
 
-        Returns:
-        {
-            "facts": { <full hostvars dict> },
-            "ip_address": "192.168.1.1",
-            "hostname": "router1.example.com"
-        }
+        Optional:
+            ansible_ssh_private_key_file  — override default SSH identity file
+            ansible_port                  — default 22
         """
         ip_address = params.get("ip_address")
         ansible_user = params.get("ansible_user")
-        ansible_password = params.get("ansible_password")
         use_sshkey = params.get("use_sshkey", False)
+
+        # Decrypt Fernet-encrypted fields sent by the backend
+        ansible_password: Optional[str] = None
+        if params.get("ansible_password"):
+            ansible_password = _decrypt_password(params["ansible_password"])
+
+        ssh_passphrase: Optional[str] = None
+        if params.get("ssh_passphrase"):
+            ssh_passphrase = _decrypt_password(params["ssh_passphrase"])
 
         if not ip_address:
             return {"status": "error", "error": "ip_address is required", "output": None}
@@ -123,6 +141,17 @@ class CommandExecutor:
                 "output": None,
             }
 
+        if ansible_password and not shutil.which("sshpass"):
+            return {
+                "status": "error",
+                "error": (
+                    "sshpass is not installed on this agent host. "
+                    "Ansible requires sshpass for password-based SSH authentication. "
+                    "Install it with: apt-get install sshpass  or  yum install sshpass"
+                ),
+                "output": None,
+            }
+
         ansible_port = int(params.get("ansible_port", 22))
         playbook_path = Path(config.ansible_playbook_dir) / "get_facts.yml"
 
@@ -130,6 +159,8 @@ class CommandExecutor:
             prefix="cockpit_facts_", suffix=".json", delete=False
         ) as tmp:
             facts_dest = tmp.name
+
+        askpass_script: Optional[str] = None
 
         try:
             extra_vars = (
@@ -154,9 +185,23 @@ class CommandExecutor:
             env = os.environ.copy()
             env["ANSIBLE_HOST_KEY_CHECKING"] = "True" if config.ansible_host_key_checking else "False"
 
+            if ssh_passphrase:
+                # Use SSH_ASKPASS to supply the key passphrase non-interactively.
+                # SSH respects SSH_ASKPASS when DISPLAY is unset and
+                # SSH_ASKPASS_REQUIRE=force is set (OpenSSH ≥ 8.4).
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".sh", delete=False
+                ) as askpass_f:
+                    askpass_f.write(f"#!/bin/sh\necho {shlex.quote(ssh_passphrase)}\n")
+                    askpass_script = askpass_f.name
+                os.chmod(askpass_script, stat.S_IRWXU)
+                env["SSH_ASKPASS"] = askpass_script
+                env["SSH_ASKPASS_REQUIRE"] = "force"
+                env.pop("DISPLAY", None)
+
             logger.info(
-                f"Running ansible-playbook for {ip_address} "
-                f"(user={ansible_user}, port={ansible_port})"
+                "Running ansible-playbook for %s (user=%s, port=%d)",
+                ip_address, ansible_user, ansible_port,
             )
 
             process = await asyncio.create_subprocess_exec(
@@ -183,15 +228,26 @@ class CommandExecutor:
             stdout_text = stdout.decode("utf-8", errors="replace")
             stderr_text = stderr.decode("utf-8", errors="replace")
 
-            logger.debug(f"ansible-playbook exit={process.returncode}")
+            logger.debug("ansible-playbook exit=%d", process.returncode)
             if stdout_text:
-                logger.debug(f"stdout: {stdout_text[:500]}")
+                logger.debug("stdout: %s", stdout_text[:500])
 
             if process.returncode != 0:
-                logger.error(f"ansible-playbook failed:\n{stderr_text[:1000]}")
+                combined = (stdout_text + "\n" + stderr_text).strip()
+                logger.error("ansible-playbook failed (exit=%d):\n%s", process.returncode, combined[:2000])
+
+                # Extract the most specific fatal/unreachable message from Ansible output.
+                fatal_match = re.search(r'fatal:.*?"msg":\s*"([^"]+)"', combined)
+                if fatal_match:
+                    error_msg = fatal_match.group(1)
+                elif combined:
+                    error_msg = combined
+                else:
+                    error_msg = f"ansible-playbook exited with code {process.returncode}"
+
                 return {
                     "status": "error",
-                    "error": stderr_text or f"ansible-playbook exited with code {process.returncode}",
+                    "error": error_msg,
                     "output": None,
                 }
 
@@ -212,7 +268,7 @@ class CommandExecutor:
                 }
 
             hostname = facts.get("ansible_fqdn") or facts.get("ansible_hostname") or ip_address
-            logger.info(f"Facts gathered for {ip_address} (hostname={hostname})")
+            logger.info("Facts gathered for %s (hostname=%s)", ip_address, hostname)
 
             return {
                 "status": "success",
@@ -225,7 +281,9 @@ class CommandExecutor:
             }
 
         finally:
-            try:
-                os.unlink(facts_dest)
-            except FileNotFoundError:
-                pass
+            for path in (facts_dest, askpass_script):
+                if path:
+                    try:
+                        os.unlink(path)
+                    except FileNotFoundError:
+                        pass

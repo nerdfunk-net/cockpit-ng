@@ -83,33 +83,33 @@ export function AgentCard({
             </code>
           </div>
 
-          {/* Netmiko agents: shared secret status */}
-          {agentType === 'netmiko' ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <KeyRound className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-700 font-medium">Shared Secret:</span>
-              </div>
-              <div className="ml-6">
-                {agent.shared_secret ? (
-                  <Badge
-                    variant="outline"
-                    className="border-emerald-400 text-emerald-700 bg-emerald-50"
-                  >
-                    Configured
-                  </Badge>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className="border-amber-400 text-amber-700 bg-amber-50"
-                  >
-                    Not configured
-                  </Badge>
-                )}
-              </div>
+          {/* Shared secret status (all agent types) */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <KeyRound className="h-4 w-4 text-gray-400" />
+              <span className="text-gray-700 font-medium">Shared Secret:</span>
             </div>
-          ) : (
-            /* Other agent types: git repository */
+            <div className="ml-6">
+              {agent.shared_secret ? (
+                <Badge
+                  variant="outline"
+                  className="border-emerald-400 text-emerald-700 bg-emerald-50"
+                >
+                  Configured
+                </Badge>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="border-amber-400 text-amber-700 bg-amber-50"
+                >
+                  Not configured
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Git repository (non-netmiko agent types) */}
+          {agentType !== 'netmiko' && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <GitBranch className="h-4 w-4 text-gray-400" />

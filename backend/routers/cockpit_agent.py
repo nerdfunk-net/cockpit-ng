@@ -19,6 +19,7 @@ from dependencies import (
 from models.cockpit_agent import (
     AgentListResponse,
     AgentStatusResponse,
+    AnsibleGetFactsRequest,
     CommandHistoryItem,
     CommandHistoryResponse,
     CommandRequest,
@@ -68,16 +69,14 @@ def send_command(
                 detail="Agent is offline or not responding",
             )
 
-        # Send command
-        command_id = service.send_command(
-            agent_id=request.agent_id,
-            command=request.command,
-            params=request.params,
-            sent_by=user.get("sub", "system"),
-        )
-
-        # Fire-and-forget when no timeout requested
+        # Fire-and-forget: send only, no waiting
         if request.timeout is None:
+            command_id = service.send_command(
+                agent_id=request.agent_id,
+                command=request.command,
+                params=request.params,
+                sent_by=user.get("sub", "system"),
+            )
             return {
                 "command_id": command_id,
                 "status": "pending",
@@ -86,10 +85,13 @@ def send_command(
                 "execution_time_ms": 0,
             }
 
-        # Wait for the agent response
-        response = service.wait_for_response(
+        # Subscribe before sending to avoid the race where a fast agent
+        # responds before the caller has started listening.
+        response = service.send_command_and_wait(
             agent_id=request.agent_id,
-            command_id=command_id,
+            command=request.command,
+            params=request.params,
+            sent_by=user.get("sub", "system"),
             timeout=request.timeout,
         )
 
@@ -103,13 +105,86 @@ def send_command(
             )
 
         if response.get("status") == "error":
-            logger.error(
-                "Agent %s returned error: %s", request.agent_id, response.get("error")
+            error_msg = response.get("error") or "Agent returned an error"
+            logger.error("Agent %s returned error: %s", request.agent_id, error_msg)
+            raise HTTPException(status_code=422, detail=error_msg)
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise_internal_server_error(logger, "Internal error", e)
+
+
+@router.post(
+    "/ansible/get-facts",
+    response_model=CommandResponse,
+    dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
+)
+def ansible_get_facts(
+    request: AnsibleGetFactsRequest,
+    user: dict = Depends(verify_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Gather Ansible facts from a target host using a cockpit Ansible agent.
+
+    Credentials are resolved server-side — the frontend passes only a credential_id.
+    Supports three auth modes:
+      - SSH key (no passphrase): use_sshkey=True, ansible_user required, no credential_id
+      - SSH key with passphrase: use_sshkey=True, credential_id set (password = passphrase)
+      - Username/password:       use_sshkey=False, credential_id set
+
+    Sync route — blocking Redis wait runs in Starlette's thread pool.
+    """
+    try:
+        if (
+            request.use_sshkey
+            and request.credential_id is None
+            and not request.ansible_user
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail="ansible_user is required for SSH key auth without a credential",
+            )
+
+        service = CockpitAgentService(db)
+
+        if not service.check_agent_online(request.agent_id):
+            raise HTTPException(
+                status_code=503,
+                detail="Agent is offline or not responding",
+            )
+
+        response = service.send_ansible_get_facts(
+            agent_id=request.agent_id,
+            ip_address=request.ip_address,
+            use_sshkey=request.use_sshkey,
+            sent_by=user.get("sub", "system"),
+            ansible_user=request.ansible_user,
+            credential_id=request.credential_id,
+            ansible_port=request.ansible_port,
+            timeout=request.timeout,
+        )
+
+        if response.get("status") == "timeout":
+            logger.warning(
+                "Ansible agent %s timed out: %s",
+                request.agent_id,
+                response.get("error"),
             )
             raise HTTPException(
-                status_code=500,
-                detail="Agent returned an error",
+                status_code=504,
+                detail="Agent did not respond within the timeout",
             )
+
+        if response.get("status") == "error":
+            error_msg = response.get("error") or "Agent returned an error"
+            logger.error(
+                "Ansible agent %s returned error: %s", request.agent_id, error_msg
+            )
+            raise HTTPException(status_code=422, detail=error_msg)
 
         return response
 

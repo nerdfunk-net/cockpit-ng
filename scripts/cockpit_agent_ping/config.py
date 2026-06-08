@@ -2,6 +2,8 @@
 Configuration management for Cockpit Ping Agent
 """
 
+import base64
+import hashlib
 import logging
 import os
 import socket
@@ -38,6 +40,14 @@ class AgentConfig:
         self.ping_count = int(os.getenv("PING_COUNT", "3"))
         self.ping_timeout = int(os.getenv("PING_TIMEOUT", "5"))
         self.ping_max_concurrency = int(os.getenv("PING_MAX_CONCURRENCY", "50"))
+
+        # Shared secret for HMAC authentication (required)
+        self.shared_secret = os.getenv("COCKPIT_SHARED_SECRET", "")
+        if self.shared_secret:
+            raw = hashlib.sha256(self.shared_secret.encode()).digest()
+            self.fernet_key: bytes = base64.urlsafe_b64encode(raw)
+        else:
+            self.fernet_key = b""
 
         # Operational settings
         self.heartbeat_interval = int(os.getenv("HEARTBEAT_INTERVAL", "30"))
@@ -81,6 +91,8 @@ class AgentConfig:
         """Validate configuration"""
         if not self.redis_host:
             return False, "REDIS_HOST is required"
+        if not self.shared_secret:
+            return False, "COCKPIT_SHARED_SECRET is required"
         if self.ping_count < 1:
             return False, "PING_COUNT must be >= 1"
         if self.ping_timeout < 1:
