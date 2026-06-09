@@ -1,16 +1,25 @@
 'use client'
 
-import { Eye, ExternalLink, FileText } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Eye, ExternalLink, FileText, SlidersHorizontal } from 'lucide-react'
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  type ColumnDef,
+  type VisibilityState,
+  type ColumnSizingState,
+} from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { GitRepository } from '@/hooks/queries/use-git-repositories-query'
 import { buildGitFileWebUrl } from '../utils/build-git-file-web-url'
 import type { ConfigContentSearchData, ConfigContentSearchMatch } from '../types'
@@ -24,6 +33,15 @@ interface SearchResultsTableProps {
   diffCommit2?: string | null
   onPreview: (match: ConfigContentSearchMatch) => void
 }
+
+const COLUMN_LABELS: Record<string, string> = {
+  file_path: 'File',
+  line_content: 'Match',
+  commit: 'Commit',
+  match_source: 'Source',
+}
+
+const EMPTY_MATCHES: ConfigContentSearchMatch[] = []
 
 function sourceBadgeClass(source: ConfigContentSearchMatch['match_source']): string {
   switch (source) {
@@ -45,6 +63,128 @@ export function SearchResultsTable({
   diffCommit2 = null,
   onPreview,
 }: SearchResultsTableProps) {
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
+
+  const columns = useMemo<ColumnDef<ConfigContentSearchMatch>[]>(
+    () => [
+      {
+        id: 'file_path',
+        accessorKey: 'file_path',
+        header: 'File',
+        size: 220,
+        minSize: 80,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs block truncate" title={row.original.file_path}>
+            {row.original.file_path}
+          </span>
+        ),
+      },
+      {
+        id: 'line_number',
+        accessorKey: 'line_number',
+        header: 'Line',
+        size: 60,
+        minSize: 50,
+        enableHiding: false,
+        cell: ({ row }) => row.original.line_number,
+      },
+      {
+        id: 'line_content',
+        accessorKey: 'line_content',
+        header: 'Match',
+        size: 340,
+        minSize: 100,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs block truncate" title={row.original.line_content}>
+            {row.original.line_content}
+          </span>
+        ),
+      },
+      {
+        id: 'commit',
+        accessorKey: 'commit',
+        header: 'Commit',
+        size: 160,
+        minSize: 80,
+        cell: ({ row }) => (
+          <span className="text-xs">
+            {row.original.commit ?? 'HEAD'}
+            {row.original.change_type && (
+              <Badge variant="outline" className="ml-2 text-xs">
+                {row.original.change_type}
+              </Badge>
+            )}
+          </span>
+        ),
+      },
+      {
+        id: 'match_source',
+        accessorKey: 'match_source',
+        header: 'Source',
+        size: 100,
+        minSize: 80,
+        cell: ({ row }) => (
+          <Badge className={sourceBadgeClass(row.original.match_source)}>
+            {row.original.match_source}
+          </Badge>
+        ),
+      },
+      {
+        id: 'actions',
+        header: 'Actions',
+        size: 112,
+        minSize: 80,
+        enableHiding: false,
+        enableResizing: false,
+        cell: ({ row }) => {
+          const match = row.original
+          const gitWebUrl = repository
+            ? buildGitFileWebUrl({ repository, match, diffCommit1, diffCommit2 })
+            : null
+          return (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onPreview(match)}
+                aria-label={`Preview match in ${match.file_path}`}
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+              {gitWebUrl && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  aria-label={`Open ${match.file_path} on git website`}
+                >
+                  <a href={gitWebUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+            </div>
+          )
+        },
+      },
+    ],
+    [repository, diffCommit1, diffCommit2, onPreview],
+  )
+
+  const matches = data?.matches ?? EMPTY_MATCHES
+
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const table = useReactTable({
+    data: matches,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    columnResizeMode: 'onChange',
+    state: { columnVisibility, columnSizing },
+    onColumnVisibilityChange: setColumnVisibility,
+    onColumnSizingChange: setColumnSizing,
+  })
+
   return (
     <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
       <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
@@ -52,13 +192,43 @@ export function SearchResultsTable({
           <FileText className="h-4 w-4" />
           <span className="text-sm font-medium">Search Results</span>
         </div>
-        {data && (
-          <div className="text-xs text-blue-100">
-            {data.total_matches} match{data.total_matches !== 1 ? 'es' : ''} in{' '}
-            {data.files_scanned} file{data.files_scanned !== 1 ? 's' : ''}
-            {data.truncated ? ' (truncated)' : ''}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {data && (
+            <div className="text-xs text-blue-100">
+              {data.total_matches} match{data.total_matches !== 1 ? 'es' : ''} in{' '}
+              {data.files_scanned} file{data.files_scanned !== 1 ? 's' : ''}
+              {data.truncated ? ' (truncated)' : ''}
+            </div>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-white hover:bg-white/20 hover:text-white"
+                aria-label="Toggle columns"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {table
+                .getAllColumns()
+                .filter(col => col.getCanHide())
+                .map(col => (
+                  <DropdownMenuCheckboxItem
+                    key={col.id}
+                    checked={col.getIsVisible()}
+                    onCheckedChange={value => col.toggleVisibility(!!value)}
+                  >
+                    {COLUMN_LABELS[col.id] ?? col.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="p-6 bg-gradient-to-b from-white to-gray-50">
@@ -87,86 +257,54 @@ export function SearchResultsTable({
 
         {!isSearching && data && data.matches.length > 0 && (
           <div className="rounded-md border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>File</TableHead>
-                  <TableHead className="w-16">Line</TableHead>
-                  <TableHead>Match</TableHead>
-                  <TableHead>Commit</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead className="w-28">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.matches.map(match => {
-                  const gitWebUrl = repository
-                    ? buildGitFileWebUrl({ repository, match, diffCommit1, diffCommit2 })
-                    : null
-                  const rowKey = [
-                    match.file_path,
-                    match.line_number,
-                    match.commit ?? 'head',
-                    match.match_source,
-                    match.change_type ?? '',
-                    match.line_content,
-                  ].join('|')
-
-                  return (
-                  <TableRow key={rowKey}>
-                    <TableCell className="font-mono text-xs max-w-[200px] truncate">
-                      {match.file_path}
-                    </TableCell>
-                    <TableCell>{match.line_number}</TableCell>
-                    <TableCell className="font-mono text-xs max-w-[320px] truncate">
-                      {match.line_content}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {match.commit ?? 'HEAD'}
-                      {match.change_type && (
-                        <Badge variant="outline" className="ml-2 text-xs">
-                          {match.change_type}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={sourceBadgeClass(match.match_source)}>
-                        {match.match_source}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onPreview(match)}
-                          aria-label={`Preview match in ${match.file_path}`}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {gitWebUrl && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            asChild
-                            aria-label={`Open ${match.file_path} on git website`}
-                          >
-                            <a
-                              href={gitWebUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </Button>
+            <table
+              style={{ width: table.getCenterTotalSize(), tableLayout: 'fixed' }}
+              className="caption-bottom text-sm"
+            >
+              <thead className="[&_tr]:border-b">
+                {table.getHeaderGroups().map(headerGroup => (
+                  <tr key={headerGroup.id} className="border-b transition-colors hover:bg-muted/50">
+                    {headerGroup.headers.map(header => (
+                      <th
+                        key={header.id}
+                        style={{ width: header.getSize() }}
+                        className="relative select-none h-10 px-2 text-left align-middle font-medium text-muted-foreground overflow-hidden"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getCanResize() && (
+                          <div
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                            className={`absolute right-0 top-0 h-full w-1 cursor-col-resize transition-colors ${
+                              header.column.getIsResizing()
+                                ? 'bg-blue-500'
+                                : 'bg-transparent hover:bg-blue-400'
+                            }`}
+                          />
                         )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody className="[&_tr:last-child]:border-0">
+                {table.getRowModel().rows.map(row => (
+                  <tr key={row.id} className="border-b transition-colors hover:bg-muted/50">
+                    {row.getVisibleCells().map(cell => (
+                      <td
+                        key={cell.id}
+                        style={{ width: cell.column.getSize() }}
+                        className="p-2 align-middle overflow-hidden"
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
