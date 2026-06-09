@@ -6,21 +6,43 @@ correctly.
 
 ---
 
-## Background: What Does `SECRET_KEY` Encrypt?
+## Background: What Is Encrypted, and With Which Key?
 
 There are two completely separate authentication mechanisms in Cockpit:
 
-| Storage | What is stored | Encryption | Affected by `SECRET_KEY`? |
+| Storage | What is stored | Encryption | Affected by encryption key / KDF changes? |
 |---|---|---|---|
 | `users.password` | Cockpit **login** passwords | passlib PBKDF2-SHA256 with a random per-user salt — self-contained in the hash | **No** |
-| `credentials.password_encrypted` | Network device passwords, **Git/GitHub tokens**, API tokens | Fernet symmetric encryption, key derived from `SECRET_KEY` | **Yes** |
-| `credentials.ssh_key_encrypted` | SSH private keys | Fernet symmetric encryption, key derived from `SECRET_KEY` | **Yes** |
-| `credentials.ssh_passphrase_encrypted` | SSH key passphrases | Fernet symmetric encryption, key derived from `SECRET_KEY` | **Yes** |
-| `login_credentials.password_encrypted` | Shared login credentials for network devices | Fernet symmetric encryption, key derived from `SECRET_KEY` | **Yes** |
+| `credentials.password_encrypted` | Network device passwords, **Git/GitHub tokens**, API tokens | Fernet symmetric encryption, key derived from the credential encryption key | **Yes** |
+| `credentials.ssh_key_encrypted` | SSH private keys | Fernet symmetric encryption, key derived from the credential encryption key | **Yes** |
+| `credentials.ssh_passphrase_encrypted` | SSH key passphrases | Fernet symmetric encryption, key derived from the credential encryption key | **Yes** |
+| `login_credentials.password_encrypted` | Shared login credentials for network devices | Fernet symmetric encryption, key derived from the credential encryption key | **Yes** |
+| `snmp_mapping.snmp_v3_auth_password_encrypted` | SNMPv3 auth passwords | Fernet symmetric encryption, key derived from the credential encryption key | **Yes** |
+| `snmp_mapping.snmp_v3_priv_password_encrypted` | SNMPv3 privacy passwords | Fernet symmetric encryption, key derived from the credential encryption key | **Yes** |
 
-**Consequence:** If you change `SECRET_KEY` in `.env`, users can still log in
-(their password hashes are unaffected), but all stored network credentials
-become unreadable until you re-encrypt them with `rotate_key.py`.
+### The credential encryption key
+
+The Fernet key is derived (PBKDF2-HMAC-SHA256) from **two inputs**, both of
+which are part of the derived key — changing **either one** makes all stored
+ciphertext unreadable until re-encrypted with `rotate_key.py`:
+
+1. **The secret**, resolved in this order:
+   - `CREDENTIAL_ENCRYPTION_KEY` env var (dedicated key, recommended — isolates
+     stored credentials from a JWT `SECRET_KEY` compromise), otherwise
+   - `SECRET_KEY` env var (backward-compatible fallback).
+2. **The PBKDF2 iteration count**, from the `KDF_ITERATIONS` env var:
+   - Default: `100000` (legacy value, non-breaking for existing installs).
+   - Recommended (OWASP 2023): `600000` — adopt via the migration below.
+
+Both variables must be **identical on every process** that touches encryption
+(backend, Celery worker, Celery beat). The docker-compose setup passes them
+through to all services.
+
+**Consequence:** If you change `SECRET_KEY` (without a dedicated
+`CREDENTIAL_ENCRYPTION_KEY`), `CREDENTIAL_ENCRYPTION_KEY`, or
+`KDF_ITERATIONS`, users can still log in (their password hashes are
+unaffected), but all stored network credentials become unreadable until you
+re-encrypt them with `rotate_key.py`.
 
 ---
 
@@ -39,7 +61,9 @@ Cockpit stores two kinds of credentials:
 | **Private** | `private` | `"alice"` | Only the owning user |
 
 When you pass `--username alice`, `rotate_key.py` only re-encrypts rows where
-`owner = 'alice'`.  General credentials (owner `NULL`) are **skipped**.
+`owner = 'alice'`.  General credentials (owner `NULL`) are **skipped**, and so
+are the `login_credentials` and `snmp_mapping` tables (they have no owner
+field).
 
 For a complete key rotation you should **always run without `--username`**.
 
@@ -47,8 +71,12 @@ For a complete key rotation you should **always run without `--username`**.
 
 ## Script A — `rotate_key.py`
 
-Re-encrypts all stored network credentials from an old `SECRET_KEY` to a new
-one.
+Re-encrypts all stored network credentials (`credentials`,
+`login_credentials`, and `snmp_mapping` tables) from an old encryption key to
+a new one.  Supports rotating the **key source** (e.g. `SECRET_KEY` →
+`CREDENTIAL_ENCRYPTION_KEY`) and/or the **PBKDF2 iteration count** (legacy
+`100000` → recommended `600000`) in a single pass — including a same-key,
+iterations-only migration.
 
 ### Usage
 
@@ -56,6 +84,8 @@ one.
 python scripts/credential_manager/rotate_key.py \
     --old-key OLD_SECRET \
    [--new-key NEW_SECRET] \
+   [--old-iterations N] \
+   [--new-iterations N] \
    [--username USERNAME] \
    [--dry-run] \
    [--yes]
@@ -65,11 +95,17 @@ python scripts/credential_manager/rotate_key.py \
 
 | Parameter | Required | Description |
 |---|---|---|
-| `--old-key` | **Yes** | The `SECRET_KEY` value that was used when the credentials were originally encrypted. |
-| `--new-key` | No | The new `SECRET_KEY` to encrypt with.  Defaults to the value of `SECRET_KEY` in `.env`. |
-| `--username` | No | Only re-encrypt credentials whose **owner** field equals this Cockpit username.  When set, the `login_credentials` table is skipped (it has no owner field).  **Omit for a full rotation.** |
+| `--old-key` | **Yes** | The secret that was used when the credentials were originally encrypted (usually the current `SECRET_KEY`). |
+| `--new-key` | No | The new secret to encrypt with.  Defaults to `CREDENTIAL_ENCRYPTION_KEY` from `.env` / environment, then `SECRET_KEY`. |
+| `--old-iterations` | No | PBKDF2 iterations used to encrypt the existing data.  Default: `100000` (the legacy value).  If your install already runs with a custom `KDF_ITERATIONS`, pass that value here. |
+| `--new-iterations` | No | PBKDF2 iterations for re-encryption.  Default: `600000` (OWASP 2023 recommendation).  **Deliberately independent of the `KDF_ITERATIONS` env var** so the script always defaults to migrating forward. |
+| `--username` | No | Only re-encrypt credentials whose **owner** field equals this Cockpit username.  When set, the `login_credentials` and `snmp_mapping` tables are skipped (they have no owner field).  **Omit for a full rotation.** |
 | `--dry-run` | No | Print what would be changed without writing anything to the database. |
 | `--yes` | No | Skip the confirmation prompt (useful in automation). |
+
+> The old and new key may be identical as long as the iteration counts differ
+> (iterations-only migration).  The script refuses to run only when key **and**
+> iterations are both unchanged.
 
 ### Exit codes
 
@@ -81,7 +117,75 @@ python scripts/credential_manager/rotate_key.py \
 
 ---
 
-### How to perform a full key rotation
+### Migration 1 — Bump the KDF iterations only (100000 → 600000)
+
+Use this when you keep the same secret but want to adopt the OWASP-recommended
+iteration count.  This is the standard upgrade path for existing installs.
+
+**Step 0 — Back up the database** (at minimum the `credentials`,
+`login_credentials`, and `snmp_mapping` tables).  Keep the backup until the
+smoke test passes.
+
+**Step 1 — Stop the application** (backend, Celery worker, beat) to avoid
+concurrent writes.
+
+**Step 2 — Dry-run**
+
+```bash
+cd backend
+python scripts/credential_manager/rotate_key.py \
+    --old-key "$SECRET_KEY" \
+    --dry-run
+# --old-iterations 100000 and --new-iterations 600000 are the defaults
+```
+
+Confirm `processed > 0` and `failed == 0`.
+
+**Step 3 — Run for real** (drop `--dry-run`, confirm with `y`).
+
+**Step 4 — Set `KDF_ITERATIONS=600000`** in the environment of **every**
+process (backend, Celery worker, beat) — e.g. in `backend/.env` or your
+docker-compose environment.  The script prints this reminder after a
+successful live run.
+
+**Step 5 — Restart and smoke-test**: open a credential in the UI, run a
+token-based git sync, or an SNMP compliance check, and confirm decryption
+works.
+
+---
+
+### Migration 2 — Adopt a dedicated `CREDENTIAL_ENCRYPTION_KEY`
+
+Use this to decouple credential encryption from the JWT `SECRET_KEY`.  Can be
+combined with the iteration bump in one pass.
+
+```bash
+# Generate a new key
+NEW_KEY=$(openssl rand -hex 32)
+
+cd backend
+python scripts/credential_manager/rotate_key.py \
+    --old-key "$SECRET_KEY" \
+    --new-key "$NEW_KEY" \
+    --dry-run        # then run for real
+```
+
+Afterwards set **both** variables for every process and restart:
+
+```bash
+# backend/.env (or docker-compose environment)
+CREDENTIAL_ENCRYPTION_KEY=<the generated key>
+KDF_ITERATIONS=600000
+```
+
+`SECRET_KEY` stays unchanged, so JWT sessions are **not** invalidated.
+
+---
+
+### Migration 3 — Rotate the `SECRET_KEY` (classic key rotation)
+
+Use this when `SECRET_KEY` itself must change and no dedicated
+`CREDENTIAL_ENCRYPTION_KEY` is in use.
 
 **Step 1 — Verify the old key is still in `.env`**
 
@@ -97,6 +201,11 @@ python scripts/credential_manager/rotate_key.py \
     --new-key "new-secret-key" \
     --dry-run
 ```
+
+If your install still runs with the legacy iteration count and you want to
+**keep** it (not recommended), add `--new-iterations 100000`; otherwise the
+rotation also migrates to `600000` and you must set `KDF_ITERATIONS=600000`
+afterwards (see Migration 1, Step 4).
 
 Check the output.  Every credential row that will be touched is listed.
 
@@ -118,7 +227,7 @@ python scripts/credential_manager/rotate_key.py \
 
 Confirm with `y` when prompted.
 
-**Step 5 — Restart the backend**
+**Step 5 — Set `KDF_ITERATIONS` (if migrated) and restart the backend**
 
 ```bash
 python start.py
@@ -126,6 +235,16 @@ python start.py
 
 The application now signs new JWT tokens and decrypts credentials with the new
 key.  Existing browser sessions will be invalidated (users must log in again).
+
+---
+
+### Rollback
+
+Re-encryption is reversible: run the script again with the keys and iteration
+counts swapped (e.g. `--old-iterations 600000 --new-iterations 100000`), or
+restore the pre-migration database backup.  Code and data must always agree:
+reverting the environment variables without re-running the rotation (or vice
+versa) breaks decryption.
 
 ---
 
@@ -142,7 +261,13 @@ python scripts/credential_manager/rotate_key.py \
 ```
 
 Only rows in `credentials` where `owner = 'alice'` are processed.
-General credentials and `login_credentials` are left untouched.
+General credentials, `login_credentials`, and `snmp_mapping` are left
+untouched.
+
+> **Warning:** Do **not** combine `--username` with a key or iteration change
+> you intend to keep — the skipped rows would remain encrypted with the old
+> parameters and become unreadable once the environment is switched.  Use this
+> only when old and new parameters coexist deliberately.
 
 ---
 

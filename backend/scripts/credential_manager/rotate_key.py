@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Re-encrypt stored credentials from an old SECRET_KEY to a new one.
+"""Re-encrypt stored credentials from an old encryption key to a new one.
+
+Supports rotating the key source (SECRET_KEY -> CREDENTIAL_ENCRYPTION_KEY)
+and/or the PBKDF2 iteration count (legacy 100k -> current 600k) in one pass.
 
 Usage:
     python rotate_key.py --old-key OLD_SECRET [--new-key NEW_SECRET] \\
+        [--old-iterations N] [--new-iterations N] \\
         [--username USERNAME] [--dry-run] [--yes]
 
 NOTE: Login passwords in the `users` table use passlib PBKDF2-SHA256 with a
@@ -12,7 +16,8 @@ changes and require no action.
 Only network credentials stored in:
   - credentials          (password_encrypted, ssh_key_encrypted, ssh_passphrase_encrypted)
   - login_credentials    (password_encrypted)
-need to be re-encrypted when SECRET_KEY changes.
+  - snmp_mapping         (snmp_v3_auth_password_encrypted, snmp_v3_priv_password_encrypted)
+need to be re-encrypted when the encryption key changes.
 """
 
 from __future__ import annotations
@@ -28,9 +33,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from config import settings  # noqa: E402
-from core.crypto import EncryptionService  # noqa: E402
+from core.crypto import (  # noqa: E402
+    LEGACY_KDF_ITERATIONS,
+    RECOMMENDED_KDF_ITERATIONS,
+    EncryptionService,
+)
 from core.database import get_db_session  # noqa: E402
-from core.models import Credential, LoginCredential  # noqa: E402
+from core.models import Credential, LoginCredential, SNMPMapping  # noqa: E402
 
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 
@@ -139,6 +148,62 @@ def _rotate_login_credentials(
     return {"processed": processed, "skipped": skipped, "failed": failed}
 
 
+_SNMP_ENCRYPTED_FIELDS = (
+    "snmp_v3_auth_password_encrypted",
+    "snmp_v3_priv_password_encrypted",
+)
+
+
+def _rotate_snmp_credentials(
+    db,
+    old_enc: EncryptionService,
+    new_enc: EncryptionService,
+    dry_run: bool,
+) -> dict:
+    """Re-encrypt all rows in the ``snmp_mapping`` table.
+
+    Returns a dict with counts: processed, skipped, failed.
+    """
+    rows = db.query(SNMPMapping).all()
+    processed = skipped = failed = 0
+
+    for row in rows:
+        row_changed = False
+        row_failed = False
+
+        for field in _SNMP_ENCRYPTED_FIELDS:
+            raw: bytes | None = getattr(row, field)
+            if raw is None:
+                continue
+
+            try:
+                plaintext = old_enc.decrypt(raw)
+            except Exception as exc:
+                print(
+                    f"  WARNING: snmp_mapping id={row.id} field={field}: {exc} — skipping field"
+                )
+                row_failed = True
+                failed += 1
+                continue
+
+            if not dry_run:
+                setattr(row, field, new_enc.encrypt(plaintext))
+            row_changed = True
+
+        if row_failed:
+            # Already counted per-field; don't double-count as processed
+            continue
+
+        if row_changed:
+            tag = "[DRY-RUN] " if dry_run else ""
+            print(f"  {tag}snmp_mapping id={row.id} name={row.name!r}")
+            processed += 1
+        else:
+            skipped += 1
+
+    return {"processed": processed, "skipped": skipped, "failed": failed}
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -158,7 +223,25 @@ def main() -> None:
     parser.add_argument(
         "--new-key",
         default=None,
-        help=("New SECRET_KEY (defaults to the value in .env / SECRET_KEY env var)."),
+        help=(
+            "New encryption key (defaults to CREDENTIAL_ENCRYPTION_KEY, then "
+            "SECRET_KEY, from .env / environment)."
+        ),
+    )
+    # Fixed literal defaults, deliberately independent of the KDF_ITERATIONS
+    # env var: in an environment still pinned to the legacy count, the script
+    # must default to migrating forward, not re-encrypting in place.
+    parser.add_argument(
+        "--old-iterations",
+        type=int,
+        default=LEGACY_KDF_ITERATIONS,
+        help="PBKDF2 iterations used to encrypt existing data (default: 100000).",
+    )
+    parser.add_argument(
+        "--new-iterations",
+        type=int,
+        default=RECOMMENDED_KDF_ITERATIONS,
+        help="PBKDF2 iterations for re-encryption (default: 600000).",
     )
     parser.add_argument(
         "--username",
@@ -182,25 +265,38 @@ def main() -> None:
     args = parser.parse_args()
 
     old_key: str = args.old_key
-    new_key: str = args.new_key or settings.secret_key
+    new_key: str = (
+        args.new_key or settings.credential_encryption_key or settings.secret_key
+    )
 
     if not new_key:
         print(
-            "ERROR: new key could not be determined.  Set SECRET_KEY in .env or pass --new-key."
+            "ERROR: new key could not be determined.  Set CREDENTIAL_ENCRYPTION_KEY "
+            "or SECRET_KEY in .env, or pass --new-key."
         )
         sys.exit(1)
 
-    if old_key == new_key:
-        print("ERROR: --old-key and the new key are identical — nothing to do.")
+    if old_key == new_key and args.old_iterations == args.new_iterations:
+        print(
+            "ERROR: old and new key/iterations are identical — nothing to do. "
+            "To bump only the iteration count, keep the keys equal but pass "
+            "different --old-iterations/--new-iterations."
+        )
         sys.exit(1)
 
-    old_enc = EncryptionService(secret_key=old_key)
-    new_enc = EncryptionService(secret_key=new_key)
+    # Legacy ciphertext was produced with 100_000 PBKDF2 iterations; new
+    # ciphertext uses the current default (600_000). Decrypt with old params,
+    # re-encrypt with new params.
+    old_enc = EncryptionService(secret_key=old_key, iterations=args.old_iterations)
+    new_enc = EncryptionService(secret_key=new_key, iterations=args.new_iterations)
 
     print("=" * 60)
     print("Credential Key Rotation")
     print("=" * 60)
-    print("  Tables:  credentials, login_credentials")
+    print("  Tables:  credentials, login_credentials, snmp_mapping")
+    print(
+        f"  KDF:     {args.old_iterations} -> {args.new_iterations} PBKDF2 iterations"
+    )
     filter_desc = f"owner={args.username!r}" if args.username else "all rows"
     print(f"  Filter:  {filter_desc}")
     mode_desc = "DRY-RUN (no changes will be written)" if args.dry_run else "LIVE"
@@ -232,21 +328,37 @@ def main() -> None:
         if not args.username:
             print("\nProcessing login_credentials table ...")
             login_stats = _rotate_login_credentials(db, old_enc, new_enc, args.dry_run)
+
+            print("\nProcessing snmp_mapping table ...")
+            snmp_stats = _rotate_snmp_credentials(db, old_enc, new_enc, args.dry_run)
         else:
             print(
-                "\nSkipping login_credentials table (no owner field — run without --username to process all rows)."
+                "\nSkipping login_credentials and snmp_mapping tables (no owner "
+                "field — run without --username to process all rows)."
             )
             login_stats = {"processed": 0, "skipped": 0, "failed": 0}
+            snmp_stats = {"processed": 0, "skipped": 0, "failed": 0}
 
         if not args.dry_run:
             db.commit()
             print("\nChanges committed successfully.")
+            print(
+                f"\nIMPORTANT: set KDF_ITERATIONS={args.new_iterations} in the "
+                "environment of every backend/Celery process before restarting, "
+                "otherwise the app will derive the old key and fail to decrypt."
+            )
         else:
             print("\n[DRY-RUN] No changes were written to the database.")
 
-        total_processed = cred_stats["processed"] + login_stats["processed"]
-        total_skipped = cred_stats["skipped"] + login_stats["skipped"]
-        total_failed = cred_stats["failed"] + login_stats["failed"]
+        total_processed = (
+            cred_stats["processed"] + login_stats["processed"] + snmp_stats["processed"]
+        )
+        total_skipped = (
+            cred_stats["skipped"] + login_stats["skipped"] + snmp_stats["skipped"]
+        )
+        total_failed = (
+            cred_stats["failed"] + login_stats["failed"] + snmp_stats["failed"]
+        )
 
         print()
         print("Summary:")
@@ -261,6 +373,12 @@ def main() -> None:
             f"processed={login_stats['processed']}, "
             f"skipped={login_stats['skipped']}, "
             f"failed={login_stats['failed']}"
+        )
+        print(
+            f"  snmp_mapping:      "
+            f"processed={snmp_stats['processed']}, "
+            f"skipped={snmp_stats['skipped']}, "
+            f"failed={snmp_stats['failed']}"
         )
         print(
             f"  TOTAL:             processed={total_processed}, skipped={total_skipped}, failed={total_failed}"

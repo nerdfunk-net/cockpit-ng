@@ -57,6 +57,12 @@ services:
       - NAUTOBOT_TOKEN=${NAUTOBOT_TOKEN:-your_nautobot_token_here}
       - NAUTOBOT_TIMEOUT=${NAUTOBOT_TIMEOUT:-30}
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
+      # Credential-at-rest encryption (must be identical on web/worker/beat).
+      # WARNING: changing KDF_ITERATIONS or CREDENTIAL_ENCRYPTION_KEY on an
+      # existing install requires the re-encryption migration first
+      # (backend/scripts/credential_manager/rotate_key.py).
+      - KDF_ITERATIONS=${KDF_ITERATIONS:-100000}
+      - CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY:-}
       - DATA_DIR=/app/data
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
 
@@ -125,6 +131,12 @@ services:
       - NAUTOBOT_TOKEN=${NAUTOBOT_TOKEN:-your_nautobot_token_here}
       - NAUTOBOT_TIMEOUT=${NAUTOBOT_TIMEOUT:-30}
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
+      # Credential-at-rest encryption (must be identical on web/worker/beat).
+      # WARNING: changing KDF_ITERATIONS or CREDENTIAL_ENCRYPTION_KEY on an
+      # existing install requires the re-encryption migration first
+      # (backend/scripts/credential_manager/rotate_key.py).
+      - KDF_ITERATIONS=${KDF_ITERATIONS:-100000}
+      - CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY:-}
       - DATA_DIR=/app/data
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
 
@@ -182,6 +194,12 @@ services:
       - NAUTOBOT_TOKEN=${NAUTOBOT_TOKEN:-your_nautobot_token_here}
       - NAUTOBOT_TIMEOUT=${NAUTOBOT_TIMEOUT:-30}
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
+      # Credential-at-rest encryption (must be identical on web/worker/beat).
+      # WARNING: changing KDF_ITERATIONS or CREDENTIAL_ENCRYPTION_KEY on an
+      # existing install requires the re-encryption migration first
+      # (backend/scripts/credential_manager/rotate_key.py).
+      - KDF_ITERATIONS=${KDF_ITERATIONS:-100000}
+      - CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY:-}
       - DATA_DIR=/app/data
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
 
@@ -238,6 +256,12 @@ services:
       - NAUTOBOT_TOKEN=${NAUTOBOT_TOKEN:-your_nautobot_token_here}
       - NAUTOBOT_TIMEOUT=${NAUTOBOT_TIMEOUT:-30}
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
+      # Credential-at-rest encryption (must be identical on web/worker/beat).
+      # WARNING: changing KDF_ITERATIONS or CREDENTIAL_ENCRYPTION_KEY on an
+      # existing install requires the re-encryption migration first
+      # (backend/scripts/credential_manager/rotate_key.py).
+      - KDF_ITERATIONS=${KDF_ITERATIONS:-100000}
+      - CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY:-}
       - DATA_DIR=/app/data
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
 

@@ -303,15 +303,15 @@ class NetworkScanService:
                 len(ip_list),
             )
 
-            # Run fping command reading from the temporary file
-            cmd = ["fping"]
+            # Run fping reading targets from the temp file via `-f` (no shell).
+            cmd = ["fping", "-f", temp_file_path]
 
-            logger.info("Running fping command: %s < %s", " ".join(cmd), temp_file_path)
+            logger.info("Running fping command: %s", " ".join(cmd))
 
-            # Use shell=True to support input redirection
+            # Argument-list form, no shell — removes command-injection surface.
             result = subprocess.run(
-                f"fping < {temp_file_path}",
-                shell=True,
+                cmd,
+                shell=False,
                 capture_output=True,
                 timeout=PING_TIMEOUT_SECONDS
                 * 10,  # Allow more time for network scanning

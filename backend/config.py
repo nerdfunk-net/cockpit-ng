@@ -47,6 +47,11 @@ class Settings:
     # Authentication Configuration
     secret_key: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
     algorithm: str = os.getenv("ALGORITHM", "HS256")
+
+    # Credential-at-rest encryption key. Independent of SECRET_KEY so that a
+    # JWT-key compromise does NOT expose stored device credentials. Falls back
+    # to SECRET_KEY when unset for backward compatibility with existing installs.
+    credential_encryption_key: str = os.getenv("CREDENTIAL_ENCRYPTION_KEY", "")
     access_token_expire_minutes: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10")
     )

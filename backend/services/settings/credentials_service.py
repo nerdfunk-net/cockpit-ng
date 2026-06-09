@@ -9,7 +9,7 @@ from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from config import settings as config_settings
-from core.crypto import EncryptionService
+from core.crypto import EncryptionService, resolve_credential_secret
 from core.models import Credential
 from repositories import CredentialsRepository
 from services.settings.exceptions import (
@@ -27,7 +27,11 @@ def _utc_now() -> datetime:
 
 class CredentialsService:
     def __init__(self) -> None:
-        secret = os.getenv("SECRET_KEY") or config_settings.secret_key
+        # Dedicated credential key (CREDENTIAL_ENCRYPTION_KEY) with SECRET_KEY
+        # fallback for backward compatibility (including the config default).
+        secret = resolve_credential_secret(
+            config_settings.credential_encryption_key or config_settings.secret_key
+        )
         self._encryption = EncryptionService(secret)
         self._repo = CredentialsRepository()
 

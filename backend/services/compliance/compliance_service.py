@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import Any, Dict, List, Optional
 
 import yaml
 
 from config import settings as config_settings
-from core.crypto import EncryptionService
+from core.crypto import EncryptionService, resolve_credential_secret
 from repositories.compliance.compliance_repository import (
     LoginCredentialRepository,
     RegexPatternRepository,
@@ -24,7 +23,11 @@ class ComplianceService:
     """Business logic for compliance configuration: regex patterns, login credentials, SNMP."""
 
     def __init__(self) -> None:
-        secret = os.getenv("SECRET_KEY") or config_settings.secret_key
+        # Dedicated credential key (CREDENTIAL_ENCRYPTION_KEY) with SECRET_KEY
+        # fallback for backward compatibility (including the config default).
+        secret = resolve_credential_secret(
+            config_settings.credential_encryption_key or config_settings.secret_key
+        )
         self._encryption = EncryptionService(secret)
         self._regex_repo = RegexPatternRepository()
         self._login_repo = LoginCredentialRepository()

@@ -85,7 +85,8 @@ def _fping_networks(
             len(ip_list),
         )
 
-        # Build fping command with options
+        # Build fping command with options. Targets are read from a file via
+        # `-f` so we never need a shell (no command injection surface).
         cmd = [
             "fping",
             "-c",
@@ -96,17 +97,16 @@ def _fping_networks(
             str(retry),  # Number of retries
             "-i",
             str(interval),  # Interval between packets in ms
+            "-f",
+            temp_file_path,  # Read target list from the temp file
         ]
 
-        logger.debug("Running fping command: %s < %s", " ".join(cmd), temp_file_path)
+        logger.debug("Running fping command: %s", " ".join(cmd))
 
-        # Build full command with input redirection
-        full_cmd = f"{' '.join(cmd)} < {temp_file_path}"
-
-        # Use shell=True to support input redirection
+        # Argument-list form, no shell. fping reads targets from the -f file.
         result = subprocess.run(
-            full_cmd,
-            shell=True,
+            cmd,
+            shell=False,
             capture_output=True,
             timeout=60,  # Allow up to 60 seconds for network scanning
             text=True,

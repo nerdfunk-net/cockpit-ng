@@ -14,6 +14,7 @@ duplication of auth setup logic.
 
 from __future__ import annotations
 
+import base64
 import logging
 import os
 from contextlib import contextmanager
@@ -229,6 +230,54 @@ class GitAuthenticationService:
         except Exception:
             # Be conservative; return original URL on parsing errors
             return url
+
+    def build_basic_auth_header(self, username: Optional[str], token: str) -> str:
+        """Build an HTTP Basic 'Authorization' header value for token auth.
+
+        Returns the full header value, e.g. ``Basic dXNlcjp0b2tlbg==``.
+        The token is never placed in a URL or written to git config on disk.
+        """
+        userinfo = f"{username or 'git'}:{token}"
+        encoded = base64.b64encode(userinfo.encode("utf-8")).decode("ascii")
+        return f"Basic {encoded}"
+
+    @contextmanager
+    def http_auth_config(self, repo, username: Optional[str], token: Optional[str]):
+        """Temporarily inject an Authorization header for a single git network op.
+
+        Uses git's ``http.extraHeader`` config applied to the GitPython command
+        environment so the credential is:
+          * never embedded in the remote URL,
+          * never written to ``.git/config`` on disk beyond the ``with`` block,
+          * scoped only to operations run inside the ``with`` block.
+
+        For SSH auth (no token) this is a no-op pass-through.
+        """
+        if not token:
+            yield
+            return
+
+        header = self.build_basic_auth_header(username, token)
+        # http.extraHeader is read by git for HTTP(S) transports only.
+        with repo.git.custom_environment(GIT_TERMINAL_PROMPT="0"):
+            old_config = repo.git.config(
+                "--get", "http.extraHeader", with_exceptions=False
+            )
+            try:
+                repo.git.config("http.extraHeader", header)
+                yield
+            finally:
+                # Always remove the header from local config.
+                try:
+                    repo.git.config("--unset-all", "http.extraHeader")
+                    if old_config:
+                        repo.git.config("http.extraHeader", old_config)
+                except Exception as exc:
+                    # Surface, never swallow: a lingering header config is a
+                    # security concern and must be visible in logs.
+                    logger.error(
+                        "Failed to clear http.extraHeader after git op: %s", exc
+                    )
 
     def normalize_url(self, url: str) -> str:
         """Normalize a Git URL by removing any userinfo to enable safe comparison.

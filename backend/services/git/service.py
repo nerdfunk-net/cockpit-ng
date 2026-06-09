@@ -31,6 +31,7 @@ Usage:
 from __future__ import annotations
 
 import logging
+import re
 import shutil
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -46,6 +47,13 @@ from services.git.env import set_ssl_env
 from services.git.paths import repo_path as get_repo_path
 
 logger = logging.getLogger(__name__)
+
+_CRED_URL_RE = re.compile(r"//[^/@\s]+:[^/@\s]+@")
+
+
+def _redact(text: str) -> str:
+    """Strip embedded URL credentials (``//user:token@``) from error text."""
+    return _CRED_URL_RE.sub("//***:***@", text or "")
 
 
 @dataclass
@@ -246,6 +254,10 @@ class GitService:
                     token,
                     ssh_key_path,
                 ):
+                    # SECURITY: clone_url may contain embedded credentials for
+                    # token auth (initial clone only — pull/push/fetch use
+                    # http.extraHeader instead). Never log clone_url; the log
+                    # below intentionally uses the clean repository URL.
                     repo = Repo.clone_from(
                         clone_url,
                         target_path,
@@ -284,56 +296,47 @@ class GitService:
 
             with set_ssl_env(repository):
                 with self._auth.setup_auth_environment(repository) as (
-                    auth_url,
+                    auth_url,  # noqa: F841 - retained for SSH path compatibility
                     username,
                     token,
                     ssh_key_path,
                 ):
                     origin = repo.remotes.origin
-                    original_url = None
 
-                    try:
-                        # For token auth, temporarily update remote URL
-                        if token and not ssh_key_path:
-                            original_url = list(origin.urls)[0]
-                            origin.set_url(auth_url)
-
-                        # Perform pull
+                    # Token auth: inject credentials via http.extraHeader for the
+                    # duration of the pull. SSH auth: context manager is a no-op
+                    # (GIT_SSH_COMMAND is already configured by setup_auth_environment).
+                    auth_token = token if not ssh_key_path else None
+                    with self._auth.http_auth_config(repo, username, auth_token):
                         pull_info = origin.pull(branch)
-                        commits_pulled = len(pull_info) if pull_info else 0
 
-                        logger.info(
-                            "Pulled %s commits from %s",
-                            commits_pulled,
-                            repository.get("name"),
-                        )
+                    commits_pulled = len(pull_info) if pull_info else 0
 
-                        return PullResult(
-                            success=True,
-                            message=f"Successfully pulled {commits_pulled} commits",
-                            commits_pulled=commits_pulled,
-                            branch=branch,
-                        )
-                    finally:
-                        # Restore original URL for token auth
-                        if original_url:
-                            try:
-                                origin.set_url(original_url)
-                            except Exception:
-                                pass
+                    logger.info(
+                        "Pulled %s commits from %s",
+                        commits_pulled,
+                        repository.get("name"),
+                    )
+
+                    return PullResult(
+                        success=True,
+                        message=f"Successfully pulled {commits_pulled} commits",
+                        commits_pulled=commits_pulled,
+                        branch=branch,
+                    )
 
         except GitCommandError as e:
             logger.error("Git pull failed: %s", e)
             return PullResult(
                 success=False,
-                message=f"Pull failed: {str(e)}",
+                message=f"Pull failed: {_redact(str(e))}",
                 branch=repository.get("branch", "main"),
             )
         except Exception as e:
             logger.error("Unexpected error during pull: %s", e)
             return PullResult(
                 success=False,
-                message=f"Unexpected error: {str(e)}",
+                message=f"Unexpected error: {_redact(str(e))}",
                 branch=repository.get("branch", "main"),
             )
 
@@ -364,53 +367,42 @@ class GitService:
 
             with set_ssl_env(repository):
                 with self._auth.setup_auth_environment(repository) as (
-                    auth_url,
+                    auth_url,  # noqa: F841 - retained for SSH path compatibility
                     username,
                     token,
                     ssh_key_path,
                 ):
                     origin = repo.remotes.origin
-                    original_url = None
 
-                    try:
-                        # For token auth, temporarily update remote URL
-                        if token and not ssh_key_path:
-                            original_url = list(origin.urls)[0]
-                            origin.set_url(auth_url)
-
-                        # Perform push
+                    # Token auth: inject credentials via http.extraHeader only for
+                    # the push call. SSH auth: no-op (GIT_SSH_COMMAND already set).
+                    auth_token = token if not ssh_key_path else None
+                    with self._auth.http_auth_config(repo, username, auth_token):
                         push_info = origin.push(refspec=f"{push_branch}:{push_branch}")
 
-                        # Check push result
-                        if push_info:
-                            for info in push_info:
-                                if info.flags & info.ERROR:
-                                    return PushResult(
-                                        success=False,
-                                        message=f"Push failed: {info.summary}",
-                                        pushed=False,
-                                        branch=push_branch,
-                                    )
+                    # Check push result
+                    if push_info:
+                        for info in push_info:
+                            if info.flags & info.ERROR:
+                                return PushResult(
+                                    success=False,
+                                    message=f"Push failed: {info.summary}",
+                                    pushed=False,
+                                    branch=push_branch,
+                                )
 
-                        logger.info(
-                            "Successfully pushed to %s branch %s",
-                            repository.get("name"),
-                            push_branch,
-                        )
+                    logger.info(
+                        "Successfully pushed to %s branch %s",
+                        repository.get("name"),
+                        push_branch,
+                    )
 
-                        return PushResult(
-                            success=True,
-                            message=f"Successfully pushed to {push_branch}",
-                            pushed=True,
-                            branch=push_branch,
-                        )
-                    finally:
-                        # Restore original URL for token auth
-                        if original_url:
-                            try:
-                                origin.set_url(original_url)
-                            except Exception:
-                                pass
+                    return PushResult(
+                        success=True,
+                        message=f"Successfully pushed to {push_branch}",
+                        pushed=True,
+                        branch=push_branch,
+                    )
 
         except GitCommandError as e:
             err_str = str(e)
@@ -421,7 +413,7 @@ class GitService:
             elif "rejected" in err_str.lower():
                 message = "Push rejected. Try pulling first to merge remote changes."
             else:
-                message = f"Push failed: {err_str}"
+                message = f"Push failed: {_redact(err_str)}"
 
             return PushResult(
                 success=False,
@@ -433,7 +425,7 @@ class GitService:
             logger.error("Unexpected error during push: %s", e)
             return PushResult(
                 success=False,
-                message=f"Unexpected error: {str(e)}",
+                message=f"Unexpected error: {_redact(str(e))}",
                 pushed=False,
                 branch=branch or repository.get("branch", "main"),
             )
@@ -620,38 +612,30 @@ class GitService:
 
             with set_ssl_env(repository):
                 with self._auth.setup_auth_environment(repository) as (
-                    auth_url,
+                    auth_url,  # noqa: F841 - retained for SSH path compatibility
                     username,
                     token,
                     ssh_key_path,
                 ):
                     origin = repo.remotes.origin
-                    original_url = None
 
-                    try:
-                        if token and not ssh_key_path:
-                            original_url = list(origin.urls)[0]
-                            origin.set_url(auth_url)
-
+                    # Token auth: inject credentials via http.extraHeader only for
+                    # the fetch call. SSH auth: no-op (GIT_SSH_COMMAND already set).
+                    auth_token = token if not ssh_key_path else None
+                    with self._auth.http_auth_config(repo, username, auth_token):
                         origin.fetch()
 
-                        logger.info("Fetched updates from %s", repository.get("name"))
-                        return GitResult(
-                            success=True,
-                            message="Successfully fetched updates",
-                        )
-                    finally:
-                        if original_url:
-                            try:
-                                origin.set_url(original_url)
-                            except Exception:
-                                pass
+                    logger.info("Fetched updates from %s", repository.get("name"))
+                    return GitResult(
+                        success=True,
+                        message="Successfully fetched updates",
+                    )
 
         except Exception as e:
             logger.error("Fetch failed: %s", e)
             return GitResult(
                 success=False,
-                message=f"Fetch failed: {str(e)}",
+                message=f"Fetch failed: {_redact(str(e))}",
             )
 
     def get_status(
