@@ -101,11 +101,12 @@ def verify_api_key(x_api_key: Optional[str] = None) -> dict:
         )
 
     try:
+        from core.api_keys import hash_api_key
         from repositories.auth.profile_repository import ProfileRepository
         from services.auth.user_management import get_user_by_username
 
         profile_repo = ProfileRepository()
-        profile = profile_repo.get_by_api_key(x_api_key)
+        profile = profile_repo.get_by_api_key_hash(hash_api_key(x_api_key))
 
         if not profile:
             raise HTTPException(

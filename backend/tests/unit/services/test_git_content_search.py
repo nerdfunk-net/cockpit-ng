@@ -38,7 +38,7 @@ def test_search_file_content_repo_not_found() -> None:
     request = GitContentSearchRequest(query="interface")
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_search_service.git_repo_manager.get_repository",
         return_value=None,
     ):
         with pytest.raises(HTTPException) as exc:
@@ -64,14 +64,14 @@ def test_search_file_content_current_mode(tmp_path) -> None:
     mock_repo.head.commit.hexsha = "a" * 40
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_search_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
         with patch(
-            "services.git.file_service.git_repo_path", return_value=str(repo_dir)
+            "services.git.file_search_service.git_repo_path", return_value=str(repo_dir)
         ):
             with patch(
-                "services.git.file_service.get_git_repo_by_id",
+                "services.git.file_search_service.get_git_repo_by_id",
                 return_value=mock_repo,
             ):
                 with patch("config.settings") as settings:
@@ -110,14 +110,14 @@ def test_search_file_content_path_filter_excludes_files(tmp_path) -> None:
     mock_repo.head.commit.hexsha = "a" * 40
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_search_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
         with patch(
-            "services.git.file_service.git_repo_path", return_value=str(repo_dir)
+            "services.git.file_search_service.git_repo_path", return_value=str(repo_dir)
         ):
             with patch(
-                "services.git.file_service.get_git_repo_by_id",
+                "services.git.file_search_service.get_git_repo_by_id",
                 return_value=mock_repo,
             ):
                 with patch("config.settings") as settings:
@@ -151,14 +151,14 @@ def test_search_file_content_history_mode(tmp_path) -> None:
     request = GitContentSearchRequest(query="legacy", include_history=True)
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_search_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
         with patch(
-            "services.git.file_service.git_repo_path", return_value=str(repo_dir)
+            "services.git.file_search_service.git_repo_path", return_value=str(repo_dir)
         ):
             with patch(
-                "services.git.file_service.get_git_repo_by_id",
+                "services.git.file_search_service.get_git_repo_by_id",
                 return_value=mock_repo,
             ):
                 with patch("config.settings") as settings:
@@ -202,11 +202,11 @@ def test_search_file_content_diff_mode_finds_changed_lines() -> None:
     mock_repo.commit.side_effect = resolve_commit
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_search_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
         with patch(
-            "services.git.file_service.get_git_repo_by_id",
+            "services.git.file_search_service.get_git_repo_by_id",
             return_value=mock_repo,
         ):
             with patch("config.settings") as settings:
@@ -250,11 +250,11 @@ def test_search_file_content_diff_mode_ignores_unchanged_lines() -> None:
     mock_repo.commit.side_effect = resolve_commit
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_search_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
         with patch(
-            "services.git.file_service.get_git_repo_by_id",
+            "services.git.file_search_service.get_git_repo_by_id",
             return_value=mock_repo,
         ):
             with patch("config.settings") as settings:

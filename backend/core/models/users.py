@@ -44,7 +44,9 @@ class UserProfile(Base):
     realname = Column(String(255))
     email = Column(String(255))
     debug_mode = Column(Boolean, nullable=False, default=False)
-    api_key = Column(String(255))
+    # Stores sha256(api_key) hex digest (64 chars), never the raw key.
+    # Indexed because every API-key auth does an equality lookup here.
+    api_key = Column(String(255), index=True)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -558,6 +558,7 @@ python scripts/check_asyncio_run.py
 python scripts/check_http_500_leaks.py
 python scripts/check_router_repositories.py
 python scripts/check_text_sql.py
+python scripts/check_blocking_http_in_async.py
 
 # Ruff (line-length = 88, rules in backend/pyproject.toml) — run before committing
 # or after larger backend changes; from backend/:

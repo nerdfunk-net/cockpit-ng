@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Set
 
+from utils.time import utc_now_naive
+
 """Network Scan service for ICMP ping discovery operations.
 
 Extracted from scan_service.py to provide standalone network discovery functionality.
@@ -35,7 +37,7 @@ class NetworkScanResult:
     alive_hosts: List[str] = field(default_factory=list)
     unreachable_hosts: List[str] = field(default_factory=list)
     scan_duration: float = 0.0
-    started_at: datetime = field(default_factory=datetime.utcnow)
+    started_at: datetime = field(default_factory=utc_now_naive)
     completed_at: Optional[datetime] = None
     error_message: Optional[str] = None
 
@@ -80,7 +82,7 @@ class NetworkScanService:
         Returns:
             NetworkScanResult with scan results and metadata
         """
-        start_time = datetime.utcnow()
+        start_time = utc_now_naive()
 
         # Validate and expand CIDR to target IPs
         try:
@@ -93,7 +95,7 @@ class NetworkScanService:
                 total_targets=0,
                 error_message=f"Invalid CIDR: {str(e)}",
                 started_at=start_time,
-                completed_at=datetime.utcnow(),
+                completed_at=utc_now_naive(),
             )
 
         # Initialize progress tracking
@@ -129,7 +131,7 @@ class NetworkScanService:
             # Calculate unreachable hosts
             unreachable_hosts = [ip for ip in targets if ip not in alive_hosts]
 
-            end_time = datetime.utcnow()
+            end_time = utc_now_naive()
             scan_duration = (end_time - start_time).total_seconds()
 
             result = NetworkScanResult(
@@ -160,7 +162,7 @@ class NetworkScanService:
                 total_targets=len(targets),
                 error_message=str(e),
                 started_at=start_time,
-                completed_at=datetime.utcnow(),
+                completed_at=utc_now_naive(),
             )
         finally:
             # Clean up progress tracking

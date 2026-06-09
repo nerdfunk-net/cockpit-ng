@@ -93,9 +93,9 @@ def main():
 
     # Update or create admin user
     try:
-        from datetime import datetime
+        from utils.time import utc_now
 
-        now = datetime.utcnow().isoformat()
+        now = utc_now().isoformat()
 
         if admin_exists:
             # Update existing admin user with password and admin permissions

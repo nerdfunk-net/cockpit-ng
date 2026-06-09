@@ -10,6 +10,7 @@ from sqlalchemy import case, desc, func, select
 
 from core.models import JobRun
 from repositories.base import BaseRepository
+from utils.time import utc_now_naive
 
 
 def _to_dict(job_run: JobRun) -> Dict[str, Any]:
@@ -314,7 +315,7 @@ class JobRunRepository(BaseRepository[JobRun]):
             )
             if job_run:
                 job_run.status = "running"
-                job_run.started_at = datetime.utcnow()
+                job_run.started_at = utc_now_naive()
                 job_run.celery_task_id = celery_task_id
                 session.commit()
                 session.refresh(job_run)
@@ -339,7 +340,7 @@ class JobRunRepository(BaseRepository[JobRun]):
             )
             if job_run:
                 job_run.status = "completed"
-                job_run.completed_at = datetime.utcnow()
+                job_run.completed_at = utc_now_naive()
                 if result:
                     job_run.result = result
                 session.commit()
@@ -365,7 +366,7 @@ class JobRunRepository(BaseRepository[JobRun]):
             )
             if job_run:
                 job_run.status = "failed"
-                job_run.completed_at = datetime.utcnow()
+                job_run.completed_at = utc_now_naive()
                 job_run.error_message = error_message
                 session.commit()
                 session.refresh(job_run)
@@ -388,7 +389,7 @@ class JobRunRepository(BaseRepository[JobRun]):
             )
             if job_run:
                 job_run.status = "cancelled"
-                job_run.completed_at = datetime.utcnow()
+                job_run.completed_at = utc_now_naive()
                 session.commit()
                 session.refresh(job_run)
                 return _to_dict(job_run)
@@ -407,7 +408,7 @@ class JobRunRepository(BaseRepository[JobRun]):
 
         session = get_db_session()
         try:
-            cutoff = datetime.utcnow() - timedelta(days=days)
+            cutoff = utc_now_naive() - timedelta(days=days)
             result = (
                 session.query(self.model).filter(self.model.queued_at < cutoff).delete()
             )
@@ -427,7 +428,7 @@ class JobRunRepository(BaseRepository[JobRun]):
 
         session = get_db_session()
         try:
-            cutoff = datetime.utcnow() - timedelta(hours=hours)
+            cutoff = utc_now_naive() - timedelta(hours=hours)
             result = (
                 session.query(self.model)
                 .filter(

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
 from config import settings as config_settings
@@ -16,13 +16,9 @@ from services.settings.exceptions import (
     CredentialMissingFieldError,
     CredentialNotFoundError,
 )
+from utils.time import utc_now_naive as _utc_now
 
 logger = logging.getLogger(__name__)
-
-
-def _utc_now() -> datetime:
-    """Naive UTC timestamp for DB columns (replaces deprecated datetime.utcnow())."""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class CredentialsService:

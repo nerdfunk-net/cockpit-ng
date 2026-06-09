@@ -373,6 +373,18 @@ async def _startup_services():
         logger.error("Failed to initialize database tables: %s", e)
         raise
 
+    # One-time data migration: hash any plaintext API keys at rest.
+    # Idempotent (already-hashed values are skipped), so safe on every startup.
+    try:
+        from repositories.auth.profile_repository import ProfileRepository
+
+        migrated = ProfileRepository().hash_plaintext_api_keys()
+        if migrated:
+            logger.info("Hashed %s plaintext API key(s) at rest", migrated)
+    except Exception as e:
+        logger.error("Failed to hash plaintext API keys: %s", e)
+        raise
+
     # Ensure built-in Celery queues exist
     try:
         from services.settings.manager import SettingsManager

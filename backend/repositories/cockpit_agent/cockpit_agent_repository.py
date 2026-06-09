@@ -2,13 +2,13 @@
 Repository for Grafana Agent command history
 """
 
-from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from core.models import CockpitAgentCommand, Setting
+from utils.time import utc_now_naive
 
 
 class CockpitAgentRepository:
@@ -34,7 +34,7 @@ class CockpitAgentRepository:
             command=command,
             params=params,
             status="pending",
-            sent_at=datetime.utcnow(),
+            sent_at=utc_now_naive(),
             sent_by=sent_by,
         )
 
@@ -68,7 +68,7 @@ class CockpitAgentRepository:
         command_record.output = output
         command_record.error = error
         command_record.execution_time_ms = execution_time_ms
-        command_record.completed_at = datetime.utcnow()
+        command_record.completed_at = utc_now_naive()
 
         self.db.commit()
         self.db.refresh(command_record)

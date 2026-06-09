@@ -18,6 +18,8 @@ Each sub-router handles a specific domain:
 - ipam_ip_address_to_interface: IP address to interface assignments
 - dcim_interfaces: DCIM interface CRUD operations
 - clusters: Virtualization cluster management
+- virtual_machines: Virtual machine CRUD operations
+- virtual_interfaces: Virtual interface operations
 """
 
 from fastapi import APIRouter
@@ -43,6 +45,8 @@ from .tags import router as tags_router
 from .taxonomy import router as taxonomy_router
 from .utils import router as nautobot_utils_router
 from .virtual_chassis import router as virtual_chassis_router
+from .virtual_interfaces import router as virtual_interfaces_router
+from .virtual_machines import router as virtual_machines_router
 
 # Create main Nautobot router
 router = APIRouter(prefix="/api/nautobot")
@@ -66,6 +70,8 @@ router.include_router(ipam_addresses_router)
 router.include_router(ipam_ip_address_to_interface_router)
 router.include_router(dcim_interfaces_router)
 router.include_router(clusters_router)
+router.include_router(virtual_machines_router)
+router.include_router(virtual_interfaces_router)
 router.include_router(virtual_chassis_router)
 router.include_router(rack_reservations_router)
 router.include_router(rack_mappings_router)

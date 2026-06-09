@@ -48,11 +48,11 @@ class ProfileRepository(BaseRepository[UserProfile]):
         finally:
             db.close()
 
-    def get_by_api_key(self, api_key: str) -> Optional[UserProfile]:
-        """Get profile by API key.
+    def get_by_api_key_hash(self, api_key_hash: str) -> Optional[UserProfile]:
+        """Get profile by API key hash.
 
         Args:
-            api_key: API key to search for
+            api_key_hash: sha256 hex digest of the presented API key
 
         Returns:
             UserProfile if found, None otherwise
@@ -62,11 +62,47 @@ class ProfileRepository(BaseRepository[UserProfile]):
             return (
                 db.query(UserProfile)
                 .filter(
-                    UserProfile.api_key == api_key,
+                    UserProfile.api_key == api_key_hash,
                     UserProfile.api_key.isnot(None),
                 )
                 .first()
             )
+        finally:
+            db.close()
+
+    def hash_plaintext_api_keys(self) -> int:
+        """One-time data migration: replace plaintext API keys with hashes.
+
+        Idempotent — values that already look like sha256 hex digests are
+        left untouched, so this is safe to run on every startup.
+
+        Returns:
+            Number of profiles whose api_key was hashed.
+        """
+        from core.api_keys import hash_api_key, is_api_key_hash
+
+        db = get_db_session()
+        try:
+            profiles = (
+                db.query(UserProfile)
+                .filter(
+                    UserProfile.api_key.isnot(None),
+                    UserProfile.api_key != "",
+                )
+                .all()
+            )
+            migrated = 0
+            for profile in profiles:
+                if is_api_key_hash(profile.api_key):
+                    continue
+                profile.api_key = hash_api_key(profile.api_key)
+                migrated += 1
+            if migrated:
+                db.commit()
+            return migrated
+        except Exception:
+            db.rollback()
+            raise
         finally:
             db.close()
 

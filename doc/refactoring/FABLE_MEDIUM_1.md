@@ -2,7 +2,12 @@
 
 **Source analysis:** `doc/FABLE_ANALYSIS.md` §1.4, §1.5, §1.6, §2.1, §3.1, §3.4
 **Date:** 2026-06-09
-**Status:** Ready to implement
+**Status:** Implemented (2026-06-10) — all six issues; see notes below
+> Implementation deviations: §2 data migration runs as an idempotent startup step
+> (`ProfileRepository.hash_plaintext_api_keys()` in `main.py`) because the versioned
+> migration runner described in `migrations/README.md` is not implemented; §5.C
+> VM-create orchestration went into `services/nautobot/virtualization/vm_create_service.py`
+> (mirroring `VirtualMachineUpdateService`) rather than into `VirtualMachineManager`.
 
 This plan covers the six **MEDIUM** issues from the backend analysis. Each section is self-contained with exact file locations, before/after code, rationale, and a verification checklist.
 

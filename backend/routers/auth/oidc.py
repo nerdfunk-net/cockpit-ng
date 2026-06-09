@@ -5,7 +5,7 @@ OIDC authentication router for OpenID Connect integration with multiple provider
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import Union
 
@@ -25,6 +25,7 @@ from models.auth import (
 )
 from services.auth.login_recording_service import LoginRecordingService
 from services.settings.manager import SettingsManager as _SM
+from utils.time import utc_now
 
 settings_manager = _SM()
 
@@ -524,7 +525,7 @@ async def get_oidc_debug_info(oidc_service=Depends(get_oidc_service)):
                 "auto_create_users": global_settings.get("auto_create_users", True),
                 "update_user_info": global_settings.get("update_user_info", True),
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:

@@ -128,7 +128,9 @@ class ProfileResponse(BaseModel):
     username: str
     realname: str
     email: str
-    api_key: Optional[str]
+    # Only the sha256 digest is stored server-side, so the raw key can never
+    # be returned — clients get a presence flag instead.
+    api_key_set: bool = False
     personal_credentials: Optional[List[PersonalCredentialData]] = []
 
 

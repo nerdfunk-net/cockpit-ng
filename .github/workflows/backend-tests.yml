@@ -60,11 +60,14 @@ jobs:
           python scripts/check_http_500_leaks.py
           python scripts/check_router_repositories.py
           python scripts/check_text_sql.py
+          python scripts/check_blocking_http_in_async.py
 
       - name: Apply database schema
         run: python -c "from core.database import init_db; init_db()"
 
       - name: Pytest (unit + repository PostgreSQL integration)
+        # Coverage flags kept in sync with [tool.pytest.ini_options] addopts so
+        # the fail_under gate in pyproject.toml enforces in CI, not just locally.
         run: |
           python -m pytest tests/unit tests/integration/repositories \
-            -o addopts='-v --tb=short --strict-markers'
+            -o addopts='-v --tb=short --strict-markers --cov=services --cov=models --cov=tasks --cov=utils --cov-report=term'

@@ -53,9 +53,11 @@ export interface PersonalCredential {
 
 interface TokensCredentialsTabProps {
   apiKey: string
+  apiKeySet: boolean
   personalCredentials: PersonalCredential[]
   onApiKeyChange: (value: string) => void
   onGenerateApiKey: () => void
+  onRemoveApiKey: () => void
   onAddCredential: () => void
   onRemoveCredential: (id: string) => void
   onUpdateCredential: (
@@ -71,9 +73,11 @@ interface TokensCredentialsTabProps {
 
 export function TokensCredentialsTab({
   apiKey,
+  apiKeySet,
   personalCredentials,
   onApiKeyChange,
   onGenerateApiKey,
+  onRemoveApiKey,
   onAddCredential,
   onRemoveCredential,
   onUpdateCredential,
@@ -106,7 +110,11 @@ export function TokensCredentialsTab({
               type="text"
               value={apiKey}
               onChange={e => onApiKeyChange(e.target.value)}
-              placeholder="Enter your 42-character API key"
+              placeholder={
+                apiKeySet
+                  ? 'API key configured — enter a new key to replace it'
+                  : 'Enter your 42-character API key'
+              }
               className="font-mono text-sm"
               maxLength={42}
             />
@@ -120,10 +128,24 @@ export function TokensCredentialsTab({
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
+            {apiKeySet && (
+              <Button
+                type="button"
+                variant="outline"
+                size="default"
+                onClick={onRemoveApiKey}
+                className="shrink-0 px-3"
+                title="Remove API key"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           <div className="flex items-center justify-between text-sm">
             <p className="text-slate-500">
-              Leave empty for no API key, or enter exactly 42 characters
+              {apiKeySet && apiKey.length === 0
+                ? 'An API key is configured. For security it cannot be displayed — generate or enter a new key to replace it.'
+                : 'Leave empty for no API key, or enter exactly 42 characters'}
             </p>
             <span
               className={`font-mono ${

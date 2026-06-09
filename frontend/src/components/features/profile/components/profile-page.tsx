@@ -17,7 +17,10 @@ interface ProfileData {
   username: string
   realname: string
   email: string
+  // Raw key being entered in this session; the server stores only a hash,
+  // so an existing key can never be read back — only api_key_set is returned.
   api_key: string
+  api_key_set: boolean
   personal_credentials: PersonalCredential[]
 }
 
@@ -34,8 +37,12 @@ export function ProfilePage() {
     realname: '',
     email: '',
     api_key: '',
+    api_key_set: false,
     personal_credentials: [],
   })
+  // Only send api_key on save when the user actually changed it, so an
+  // untouched (always-empty) field never clears a configured key.
+  const [apiKeyChanged, setApiKeyChanged] = useState(false)
 
   const [passwords, setPasswords] = useState({
     newPassword: '',
@@ -62,11 +69,13 @@ export function ProfilePage() {
 
         if (response.ok) {
           const data = await response.json()
+          setApiKeyChanged(false)
           setFormData({
             username: data.username || user.username,
             realname: data.realname || '',
             email: data.email || '',
-            api_key: data.api_key || '',
+            api_key: '',
+            api_key_set: !!data.api_key_set,
             personal_credentials: (data.personal_credentials || []).map(
               (cred: {
                 id: string
@@ -104,6 +113,7 @@ export function ProfilePage() {
             realname: '',
             email: '',
             api_key: '',
+            api_key_set: false,
             personal_credentials: [],
           })
         }
@@ -114,6 +124,7 @@ export function ProfilePage() {
           realname: '',
           email: '',
           api_key: '',
+          api_key_set: false,
           personal_credentials: [],
         })
       } finally {
@@ -155,7 +166,18 @@ export function ProfilePage() {
     for (let i = 0; i < 42; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length))
     }
+    setApiKeyChanged(true)
     setFormData(prev => ({ ...prev, api_key: result }))
+  }
+
+  const handleApiKeyChange = (value: string) => {
+    setApiKeyChanged(true)
+    setFormData(prev => ({ ...prev, api_key: value }))
+  }
+
+  const removeApiKey = () => {
+    setApiKeyChanged(true)
+    setFormData(prev => ({ ...prev, api_key: '', api_key_set: false }))
   }
 
   const generateCredentialId = () => {
@@ -257,7 +279,7 @@ export function ProfilePage() {
       return
     }
 
-    const apiKeyError = validateApiKey(formData.api_key)
+    const apiKeyError = apiKeyChanged ? validateApiKey(formData.api_key) : ''
     if (apiKeyError) {
       toast({
         title: 'Validation Error',
@@ -272,7 +294,7 @@ export function ProfilePage() {
       const updateData: {
         realname: string
         email: string
-        api_key: string
+        api_key?: string
         personal_credentials: {
           id: string
           name: string
@@ -286,7 +308,6 @@ export function ProfilePage() {
       } = {
         realname: formData.realname,
         email: formData.email,
-        api_key: formData.api_key,
         personal_credentials: formData.personal_credentials.map(cred => {
           const baseCredential = {
             id: cred.id,
@@ -315,6 +336,11 @@ export function ProfilePage() {
         }),
       }
 
+      if (apiKeyChanged) {
+        // Empty string clears the configured key; omitted leaves it unchanged.
+        updateData.api_key = formData.api_key
+      }
+
       if (passwords.newPassword) {
         updateData.password = passwords.newPassword
       }
@@ -330,6 +356,14 @@ export function ProfilePage() {
 
       if (response.ok) {
         const responseData = await response.json()
+
+        if (apiKeyChanged) {
+          setApiKeyChanged(false)
+          setFormData(prev => ({
+            ...prev,
+            api_key_set: !!responseData.api_key_set,
+          }))
+        }
 
         if (responseData.personal_credentials) {
           setFormData(prev => ({
@@ -452,11 +486,11 @@ export function ProfilePage() {
           <TabsContent value="tokens" className="space-y-4">
             <TokensCredentialsTab
               apiKey={formData.api_key}
+              apiKeySet={formData.api_key_set}
               personalCredentials={formData.personal_credentials}
-              onApiKeyChange={value =>
-                setFormData(prev => ({ ...prev, api_key: value }))
-              }
+              onApiKeyChange={handleApiKeyChange}
               onGenerateApiKey={generateApiKey}
+              onRemoveApiKey={removeApiKey}
               onAddCredential={addPersonalCredential}
               onRemoveCredential={removePersonalCredential}
               onUpdateCredential={updatePersonalCredential}
@@ -490,7 +524,9 @@ export function ProfilePage() {
             disabled={
               isSaving ||
               !!passwordError ||
-              (formData.api_key.length > 0 && formData.api_key.length !== 42)
+              (apiKeyChanged &&
+                formData.api_key.length > 0 &&
+                formData.api_key.length !== 42)
             }
             className="min-w-[120px] bg-green-600 hover:bg-green-700 text-white"
           >

@@ -9,8 +9,15 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP"]
+select = ["E", "F", "I", "B", "UP", "DTZ"]
 ignore = [
+    # Naive-datetime baseline (42 pre-existing sites, tracked separately).
+    # DTZ003/DTZ004 stay enforced: datetime.utcnow()/utcfromtimestamp() are
+    # banned — use utils.time.utc_now() / utc_now_naive() instead.
+    "DTZ001",
+    "DTZ005",
+    "DTZ011",
+    "DTZ901",
     # FastAPI: Depends() / Header() / Query() in function default args is intentional
     "B008",
     # Typing modernisation (List→list, Optional→X|None, Union→X|Y) needs
@@ -104,8 +111,10 @@ omit = [
 precision = 2
 show_missing = true
 skip_covered = false
-# Phased gate: 60 after profile/priority/sync facade tests (2026-06); target 70
-fail_under = 60
+# Phased gate toward the 80% project standard.
+# 2026-06: 60 → 70 (measured 72.60% after path-containment + time-helper tests).
+# Next: 70 → 80 once large-file splits add focused unit tests.
+fail_under = 70
 
 exclude_lines = [
     "pragma: no cover",

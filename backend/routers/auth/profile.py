@@ -75,7 +75,7 @@ async def get_profile(current_user: str = Depends(get_current_username)):
             username=user["username"],
             realname=user["realname"],
             email=user["email"] or "",
-            api_key=profile.get("api_key"),
+            api_key_set=bool(profile.get("api_key_set")),
             personal_credentials=personal_credentials,
         )
     except HTTPException:
@@ -299,7 +299,7 @@ async def update_profile(
             realname=updated_user["realname"],
             email=updated_user["email"] or "",
             debug=updated_user["debug"],
-            api_key=profile.get("api_key"),
+            api_key_set=bool(profile.get("api_key_set")),
             personal_credentials=personal_credentials,
         )
 

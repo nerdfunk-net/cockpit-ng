@@ -48,6 +48,7 @@ class _FakeJobTemplate:
         self.backup_startup_config_path: Optional[str] = kwargs.get(
             "backup_startup_config_path"
         )
+        self.backup_agent_id: Optional[str] = kwargs.get("backup_agent_id")
         self.write_timestamp_to_custom_field: bool = kwargs.get(
             "write_timestamp_to_custom_field", False
         )

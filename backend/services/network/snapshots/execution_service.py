@@ -4,7 +4,6 @@ Service for executing snapshots on devices.
 
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -17,6 +16,7 @@ from services.git.repository_service import (
 )
 from services.git.service import GitService
 from services.network.automation.netmiko import NetmikoService
+from utils.time import utc_now_naive
 
 logger = logging.getLogger(__name__)
 
@@ -267,11 +267,11 @@ class SnapshotExecutionService:
         self.snapshot_repo.update_snapshot_status(
             snapshot_id=snapshot.id,
             status="running",
-            started_at=datetime.utcnow(),
+            started_at=utc_now_naive(),
         )
 
         # Prepare timestamp for file paths
-        timestamp = datetime.utcnow().isoformat().replace(":", "-").split(".")[0]
+        timestamp = utc_now_naive().isoformat().replace(":", "-").split(".")[0]
 
         # Prepare commands list (just the command strings for netmiko)
         command_list = [cmd.command for cmd in request.commands]
@@ -363,7 +363,7 @@ class SnapshotExecutionService:
                         git_file_path=file_path,
                         git_commit_hash=commit_hash,
                         parsed_data=json_content,
-                        completed_at=datetime.utcnow(),
+                        completed_at=utc_now_naive(),
                     )
                     self.snapshot_repo.increment_success_count(snapshot.id)
                 else:
@@ -373,7 +373,7 @@ class SnapshotExecutionService:
                         result_id=result_id,
                         status="failed",
                         error_message=error_msg,
-                        completed_at=datetime.utcnow(),
+                        completed_at=utc_now_naive(),
                     )
                     self.snapshot_repo.increment_failed_count(snapshot.id)
 
@@ -385,7 +385,7 @@ class SnapshotExecutionService:
                     result_id=dev_result["result_id"],
                     status="failed",
                     error_message=str(e),
-                    completed_at=datetime.utcnow(),
+                    completed_at=utc_now_naive(),
                 )
             self.snapshot_repo.increment_failed_count(snapshot.id, len(device_results))
 
@@ -393,7 +393,7 @@ class SnapshotExecutionService:
             self.snapshot_repo.update_snapshot_status(
                 snapshot_id=snapshot.id,
                 status="failed",
-                completed_at=datetime.utcnow(),
+                completed_at=utc_now_naive(),
             )
             raise
 
@@ -401,7 +401,7 @@ class SnapshotExecutionService:
         self.snapshot_repo.update_snapshot_status(
             snapshot_id=snapshot.id,
             status="completed",
-            completed_at=datetime.utcnow(),
+            completed_at=utc_now_naive(),
         )
 
         # Return final snapshot

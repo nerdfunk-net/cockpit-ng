@@ -18,6 +18,9 @@ def service() -> CockpitAgentService:
         redis_factory.return_value = MagicMock()
         svc = CockpitAgentService(db)
     svc.repository = MagicMock()
+    # Commands are HMAC-signed/encrypted with the agent's shared secret,
+    # which must be a real string (MagicMock breaks hashing).
+    svc.repository.get_agent_shared_secret.return_value = "test-shared-secret"
     return svc
 
 
@@ -63,10 +66,9 @@ def test_send_git_pull_offline_agent(service: CockpitAgentService) -> None:
 def test_send_git_pull_success(service: CockpitAgentService) -> None:
     with (
         patch.object(service, "check_agent_online", return_value=True),
-        patch.object(service, "send_command", return_value="cmd-1"),
         patch.object(
             service,
-            "wait_for_response",
+            "send_command_and_wait",
             return_value={"status": "success", "output": "ok"},
         ),
     ):

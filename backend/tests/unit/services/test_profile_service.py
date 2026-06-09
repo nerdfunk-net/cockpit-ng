@@ -57,7 +57,7 @@ def test_get_user_profile_defaults_when_missing() -> None:
         "realname": "",
         "email": "",
         "debug": False,
-        "api_key": None,
+        "api_key_set": False,
     }
 
 
@@ -96,6 +96,41 @@ def test_update_user_profile_creates_when_missing() -> None:
     create_kwargs = mock_repo.create.call_args.kwargs
     assert create_kwargs["username"] == "carol"
     assert create_kwargs["debug_mode"] is True
+
+
+@pytest.mark.unit
+def test_update_user_profile_stores_api_key_hash_not_plaintext() -> None:
+    from core.api_keys import hash_api_key
+
+    raw_key = "a" * 42
+    existing = _profile()
+    mock_repo = MagicMock()
+    mock_repo.get_by_username.return_value = existing
+    mock_repo.update.return_value = _profile(api_key=hash_api_key(raw_key))
+
+    with patch(_PATCH_REPO, mock_repo):
+        result = svc.update_user_profile("alice", api_key=raw_key)
+
+    update_kwargs = mock_repo.update.call_args.kwargs
+    assert update_kwargs["api_key"] == hash_api_key(raw_key)
+    assert update_kwargs["api_key"] != raw_key
+    # Response exposes presence only, never the stored value.
+    assert result["api_key_set"] is True
+    assert "api_key" not in result
+
+
+@pytest.mark.unit
+def test_update_user_profile_empty_api_key_clears_it() -> None:
+    existing = _profile(api_key="somehash")
+    mock_repo = MagicMock()
+    mock_repo.get_by_username.return_value = existing
+    mock_repo.update.return_value = _profile(api_key="")
+
+    with patch(_PATCH_REPO, mock_repo):
+        result = svc.update_user_profile("alice", api_key="")
+
+    assert mock_repo.update.call_args.kwargs["api_key"] == ""
+    assert result["api_key_set"] is False
 
 
 @pytest.mark.unit

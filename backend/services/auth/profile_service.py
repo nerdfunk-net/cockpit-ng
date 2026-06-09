@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+from core.api_keys import hash_api_key
 from core.models import UserProfile
 from repositories import ProfileRepository
+from utils.time import utc_now_naive
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,8 @@ def _profile_to_dict(profile: UserProfile) -> Dict[str, Any]:
         "realname": profile.realname,
         "email": profile.email,
         "debug": profile.debug_mode,
-        "api_key": profile.api_key,
+        # Only the sha256 digest is stored, so expose presence, not the value.
+        "api_key_set": bool(profile.api_key),
         "created_at": profile.created_at.isoformat() if profile.created_at else None,
         "updated_at": profile.updated_at.isoformat() if profile.updated_at else None,
     }
@@ -36,7 +38,7 @@ def get_user_profile(username: str) -> Optional[Dict[str, Any]]:
         "realname": "",
         "email": "",
         "debug": False,
-        "api_key": None,
+        "api_key_set": False,
     }
 
 
@@ -49,7 +51,7 @@ def update_user_profile(
 ) -> Dict[str, Any]:
     existing = _profile_repo.get_by_username(username)
     # Naive UTC for DB columns (same pattern as credentials_service)
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = utc_now_naive()
     if existing:
         update_kwargs: Dict[str, Any] = {"updated_at": now}
         if realname is not None:
@@ -59,7 +61,8 @@ def update_user_profile(
         if debug_mode is not None:
             update_kwargs["debug_mode"] = debug_mode
         if api_key is not None:
-            update_kwargs["api_key"] = api_key
+            # Empty string clears the key; otherwise store only the hash.
+            update_kwargs["api_key"] = hash_api_key(api_key) if api_key else ""
         updated = _profile_repo.update(existing.id, **update_kwargs)
         return _profile_to_dict(updated)
     new_profile = _profile_repo.create(
@@ -67,7 +70,7 @@ def update_user_profile(
         realname=realname or "",
         email=email or "",
         debug_mode=debug_mode if debug_mode is not None else False,
-        api_key=api_key,
+        api_key=hash_api_key(api_key) if api_key else api_key,
         created_at=now,
         updated_at=now,
     )

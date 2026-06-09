@@ -16,7 +16,7 @@ _REPO = {"id": 1, "name": "templates"}
 def test_search_files_repo_not_found() -> None:
     svc = GitFileService()
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_list_service.git_repo_manager.get_repository",
         return_value=None,
     ):
         with pytest.raises(HTTPException) as exc:
@@ -29,11 +29,15 @@ def test_search_files_repo_not_found() -> None:
 def test_search_files_returns_empty_when_path_missing() -> None:
     svc = GitFileService()
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_list_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
-        with patch("services.git.file_service.git_repo_path", return_value="/missing"):
-            with patch("services.git.file_service.os.path.exists", return_value=False):
+        with patch(
+            "services.git.file_list_service.git_repo_path", return_value="/missing"
+        ):
+            with patch(
+                "services.git.file_list_service.os.path.exists", return_value=False
+            ):
                 result = svc.search_files(1)
 
     assert result["success"] is True
@@ -49,13 +53,15 @@ def test_search_files_filters_and_limits(tmp_path) -> None:
 
     svc = GitFileService()
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_list_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
         with patch(
-            "services.git.file_service.git_repo_path", return_value=str(repo_dir)
+            "services.git.file_list_service.git_repo_path", return_value=str(repo_dir)
         ):
-            with patch("services.git.file_service.os.path.exists", return_value=True):
+            with patch(
+                "services.git.file_list_service.os.path.exists", return_value=True
+            ):
                 result = svc.search_files(1, query="router", limit=10)
 
     assert result["success"] is True
@@ -67,7 +73,7 @@ def test_search_files_filters_and_limits(tmp_path) -> None:
 def test_search_files_handles_unexpected_error() -> None:
     svc = GitFileService()
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_list_service.git_repo_manager.get_repository",
         side_effect=RuntimeError("disk error"),
     ):
         result = svc.search_files(1)
@@ -87,7 +93,9 @@ def test_get_commit_files_lists_config_files() -> None:
     mock_commit.tree.traverse.return_value = [item]
     mock_repo.commit.return_value = mock_commit
 
-    with patch("services.git.file_service.get_git_repo_by_id", return_value=mock_repo):
+    with patch(
+        "services.git.file_history_service.get_git_repo_by_id", return_value=mock_repo
+    ):
         with patch("config.settings") as settings:
             settings.allowed_file_extensions = [".cfg"]
             files = svc.get_commit_files(1, "abc123")
@@ -105,7 +113,9 @@ def test_get_commit_files_returns_single_file_content() -> None:
     mock_commit.tree.__truediv__.return_value = blob
     mock_repo.commit.return_value = mock_commit
 
-    with patch("services.git.file_service.get_git_repo_by_id", return_value=mock_repo):
+    with patch(
+        "services.git.file_history_service.get_git_repo_by_id", return_value=mock_repo
+    ):
         result = svc.get_commit_files(1, "abc123def456", file_path="router.cfg")
 
     assert result["content"] == "interface lo0"
@@ -130,7 +140,9 @@ def test_get_file_last_commit_returns_metadata() -> None:
     mock_commit.tree.__truediv__.return_value = blob
     mock_repo.iter_commits.return_value = [mock_commit]
 
-    with patch("services.git.file_service.get_git_repo_by_id", return_value=mock_repo):
+    with patch(
+        "services.git.file_history_service.get_git_repo_by_id", return_value=mock_repo
+    ):
         result = svc.get_file_last_commit(1, "router.cfg")
 
     assert result["file_exists"] is True
@@ -145,7 +157,7 @@ def test_get_file_history_returns_cached_result() -> None:
     cache.get.return_value = cached
 
     with patch(
-        "services.git.file_service.get_git_repo_by_id", return_value=MagicMock()
+        "services.git.file_history_service.get_git_repo_by_id", return_value=MagicMock()
     ):
         result = svc.get_file_history(1, "cfg.yaml", cache_service=cache)
 
@@ -166,7 +178,9 @@ def test_get_file_history_builds_commit_list() -> None:
     mock_commit.tree.__getitem__ = MagicMock(return_value=MagicMock())
     mock_repo.iter_commits.return_value = [mock_commit]
 
-    with patch("services.git.file_service.get_git_repo_by_id", return_value=mock_repo):
+    with patch(
+        "services.git.file_history_service.get_git_repo_by_id", return_value=mock_repo
+    ):
         result = svc.get_file_history(1, "router.cfg", cache_enabled=False)
 
     assert result["total_commits"] == 1
@@ -181,10 +195,12 @@ def test_get_file_content_reads_text_file(tmp_path) -> None:
     svc = GitFileService()
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_read_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
-        with patch("services.git.file_service.git_repo_path", return_value=repo_dir):
+        with patch(
+            "services.git.file_read_service.git_repo_path", return_value=repo_dir
+        ):
             content = svc.get_file_content(1, "data.txt", username="alice")
 
     assert content == "hello"
@@ -198,10 +214,12 @@ def test_get_file_content_parsed_yaml(tmp_path) -> None:
     svc = GitFileService()
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_read_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
-        with patch("services.git.file_service.git_repo_path", return_value=repo_dir):
+        with patch(
+            "services.git.file_read_service.git_repo_path", return_value=repo_dir
+        ):
             result = svc.get_file_content_parsed(1, "vars.yaml")
 
     assert result["parsed"]["key"] == 42
@@ -216,10 +234,12 @@ def test_get_directory_tree_lists_nested_dirs(tmp_path) -> None:
     svc = GitFileService()
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_list_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
-        with patch("services.git.file_service.git_repo_path", return_value=repo_dir):
+        with patch(
+            "services.git.file_list_service.git_repo_path", return_value=repo_dir
+        ):
             tree = svc.get_directory_tree(1, path="configs")
 
     assert tree["type"] == "directory"
@@ -243,12 +263,14 @@ def test_get_directory_files_lists_files_with_commit(tmp_path) -> None:
     mock_repo.iter_commits.return_value = [mock_commit]
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_list_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
-        with patch("services.git.file_service.git_repo_path", return_value=repo_dir):
+        with patch(
+            "services.git.file_list_service.git_repo_path", return_value=repo_dir
+        ):
             with patch(
-                "services.git.file_service.get_git_repo_by_id",
+                "services.git.file_list_service.get_git_repo_by_id",
                 return_value=mock_repo,
             ):
                 result = svc.get_directory_files(1, path="")
@@ -267,11 +289,11 @@ def test_list_csv_files_filters_by_query(tmp_path) -> None:
     svc = GitFileService()
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_read_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
         with patch(
-            "services.git.file_service.git_repo_path", return_value=str(repo_dir)
+            "services.git.file_read_service.git_repo_path", return_value=str(repo_dir)
         ):
             result = svc.list_csv_files(1, query="devices", limit=10)
 
@@ -288,11 +310,11 @@ def test_get_csv_headers_reads_first_row(tmp_path) -> None:
     svc = GitFileService()
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_read_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
         with patch(
-            "services.git.file_service.git_repo_path", return_value=str(repo_dir)
+            "services.git.file_read_service.git_repo_path", return_value=str(repo_dir)
         ):
             result = svc.get_csv_headers(1, "import.csv")
 
@@ -307,10 +329,12 @@ def test_get_file_content_rejects_path_outside_repo(tmp_path) -> None:
     svc = GitFileService()
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_read_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
-        with patch("services.git.file_service.git_repo_path", return_value=repo_dir):
+        with patch(
+            "services.git.file_read_service.git_repo_path", return_value=repo_dir
+        ):
             with pytest.raises(HTTPException) as exc:
                 svc.get_file_content(1, "../../etc/passwd")
 
@@ -325,7 +349,9 @@ def test_get_commit_files_raises_404_for_missing_file() -> None:
     mock_commit.tree.__truediv__.side_effect = KeyError("missing")
     mock_repo.commit.return_value = mock_commit
 
-    with patch("services.git.file_service.get_git_repo_by_id", return_value=mock_repo):
+    with patch(
+        "services.git.file_history_service.get_git_repo_by_id", return_value=mock_repo
+    ):
         with pytest.raises(HTTPException) as exc:
             svc.get_commit_files(1, "abc123", file_path="missing.cfg")
 
@@ -340,11 +366,11 @@ def test_list_csv_files_empty_repo(tmp_path) -> None:
     svc = GitFileService()
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_read_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
         with patch(
-            "services.git.file_service.git_repo_path", return_value=str(repo_dir)
+            "services.git.file_read_service.git_repo_path", return_value=str(repo_dir)
         ):
             result = svc.list_csv_files(1)
 
@@ -358,13 +384,17 @@ def test_get_directory_files_missing_directory() -> None:
     mock_repo = MagicMock()
 
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_list_service.git_repo_manager.get_repository",
         return_value=_REPO,
     ):
-        with patch("services.git.file_service.git_repo_path", return_value="/missing"):
-            with patch("services.git.file_service.os.path.exists", return_value=False):
+        with patch(
+            "services.git.file_list_service.git_repo_path", return_value="/missing"
+        ):
+            with patch(
+                "services.git.file_list_service.os.path.exists", return_value=False
+            ):
                 with patch(
-                    "services.git.file_service.get_git_repo_by_id",
+                    "services.git.file_list_service.get_git_repo_by_id",
                     return_value=mock_repo,
                 ):
                     result = svc.get_directory_files(1, path="subdir")
@@ -377,7 +407,7 @@ def test_get_directory_files_missing_directory() -> None:
 def test_get_csv_headers_repo_not_found() -> None:
     svc = GitFileService()
     with patch(
-        "services.git.file_service.git_repo_manager.get_repository",
+        "services.git.file_read_service.git_repo_manager.get_repository",
         return_value=None,
     ):
         with pytest.raises(HTTPException) as exc:

@@ -9,7 +9,6 @@ See: doc/refactoring/REFACTORING_INVENTORY.md — Step 2 / Step 4a
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -27,6 +26,7 @@ from models.inventory import (
     UpdateInventoryRequest,
 )
 from services.inventory.persistence_service import InventoryPersistenceService
+from utils.time import utc_now
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/inventory", tags=["inventory"])
@@ -385,7 +385,7 @@ async def export_inventory(
                 "name": inventory["name"],
                 "description": inventory.get("description", ""),
                 "scope": inventory["scope"],
-                "exportedAt": datetime.utcnow().isoformat() + "Z",
+                "exportedAt": utc_now().isoformat().replace("+00:00", "Z"),
                 "exportedBy": username,
                 "originalId": inventory["id"],
             },
