@@ -287,8 +287,8 @@ class SnapshotComparisonService:
         }
 
         return SnapshotCompareResponse(
-            snapshot1=SnapshotListResponse.from_orm(snapshot1),
-            snapshot2=SnapshotListResponse.from_orm(snapshot2),
+            snapshot1=SnapshotListResponse.model_validate(snapshot1),
+            snapshot2=SnapshotListResponse.model_validate(snapshot2),
             devices=device_comparisons,
             summary=summary,
         )

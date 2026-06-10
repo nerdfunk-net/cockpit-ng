@@ -115,10 +115,10 @@ class SnapshotTemplateService:
             raise ValueError("You don't have permission to update this template")
 
         # Prepare update data
-        update_dict = template_data.dict(exclude_unset=True)
+        update_dict = template_data.model_dump(exclude_unset=True)
         commands = None
         if "commands" in update_dict and update_dict["commands"] is not None:
-            commands = [cmd.dict() for cmd in update_dict["commands"]]
+            commands = [cmd.model_dump() for cmd in update_dict["commands"]]
             del update_dict["commands"]
 
         # Update template
