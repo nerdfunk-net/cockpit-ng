@@ -24,6 +24,7 @@ class ClientIpAddressCreate(BaseModel):
     ip_address: str
     mac_address: Optional[str] = None
     interface: Optional[str] = None
+    vrf: Optional[str] = None
     device_name: str
     device_ip: Optional[str] = None
 
@@ -95,6 +96,7 @@ class ClientDataTableRow(BaseModel):
     mac_address: Optional[str] = None
     port: Optional[str] = None
     vlan: Optional[str] = None
+    vrf: Optional[str] = None
     ip_address: Optional[str] = None
     hostname: Optional[str] = None
     device_name: str

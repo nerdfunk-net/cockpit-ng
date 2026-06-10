@@ -21,6 +21,7 @@ interface ColumnFilters {
   macAddress: string
   port: string
   vlan: string
+  vrf: string
   hostname: string
   deviceName: string
 }
@@ -30,6 +31,7 @@ const INITIAL_FILTERS: ColumnFilters = {
   macAddress: '',
   port: '',
   vlan: '',
+  vrf: '',
   hostname: '',
   deviceName: '',
 }
@@ -76,6 +78,7 @@ export function ClientsPage() {
       macAddress: debouncedFilters.macAddress || undefined,
       port: debouncedFilters.port || undefined,
       vlan: debouncedFilters.vlan || undefined,
+      vrf: debouncedFilters.vrf || undefined,
       hostname: debouncedFilters.hostname || undefined,
       page,
       pageSize: tablePageSize,

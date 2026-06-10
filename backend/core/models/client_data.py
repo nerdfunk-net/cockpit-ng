@@ -22,6 +22,7 @@ class ClientIpAddress(Base):
         String(20), nullable=True
     )  # dotted-quad format (e.g. aabb.cc00.0100), join key to ClientMacAddress
     interface = Column(String(255), nullable=True)  # ARP interface
+    vrf = Column(String(64), nullable=True)  # VRF name; None = default VRF
     device_name = Column(String(255), nullable=False)  # source network device name
     device_ip = Column(String(45), nullable=True)  # primary IP of the source device
     collected_at = Column(
@@ -32,6 +33,7 @@ class ClientIpAddress(Base):
         Index("idx_client_ip_session", "session_id"),
         Index("idx_client_ip_device", "device_name"),
         Index("idx_client_ip_mac", "mac_address"),
+        Index("idx_client_ip_vrf", "vrf"),
     )
 
 

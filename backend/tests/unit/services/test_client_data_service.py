@@ -64,6 +64,7 @@ def test_get_client_data_delegates_all_filters():
         mac_address="aa:bb:cc:dd:ee:ff",
         port="eth0",
         vlan="100",
+        vrf=None,
         hostname="myhost",
         page=2,
         page_size=25,

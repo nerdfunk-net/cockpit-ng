@@ -96,6 +96,7 @@ def test_parse_arp_and_mac_textfsm_rows() -> None:
             "ip_address": "10.0.0.10",
             "mac_address": "aabb.cc00.0100",
             "interface": "Gi0/1",
+            "vrf": None,
             "device_name": "switch-01",
             "device_ip": "10.0.0.1",
         }

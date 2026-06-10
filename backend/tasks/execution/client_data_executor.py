@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Commands to run on devices
 CMD_SHOW_IP_ARP = "show ip arp"
+CMD_SHOW_IP_VRF = "show ip vrf"
 CMD_SHOW_MAC_TABLE = "show mac address-table"
 
 
@@ -175,10 +176,11 @@ def execute_get_client_data(
             }
 
         # -------------------------------------------------------------------------
-        # Build command list based on flags
+        # Build phase-1 command list based on flags
         # -------------------------------------------------------------------------
         commands: List[str] = []
         if collect_ip_address:
+            commands.append(CMD_SHOW_IP_VRF)
             commands.append(CMD_SHOW_IP_ARP)
         if collect_mac_address:
             commands.append(CMD_SHOW_MAC_TABLE)
@@ -333,6 +335,7 @@ def execute_get_client_data(
                 mac_rows: List[dict] = []
                 hostname_rows: List[dict] = []
 
+                # Parse default-VRF ARP entries (vrf=None)
                 if collect_ip_address and CMD_SHOW_IP_ARP in command_outputs:
                     arp_rows = _parse_arp_output(
                         command_outputs[CMD_SHOW_IP_ARP],
@@ -341,7 +344,65 @@ def execute_get_client_data(
                         session_id,
                         idx,
                         total_devices,
+                        vrf=None,
                     )
+
+                # Discover VRFs and collect per-VRF ARP (phase 2)
+                if collect_ip_address and CMD_SHOW_IP_VRF in command_outputs:
+                    vrf_names = _parse_vrf_output(
+                        command_outputs[CMD_SHOW_IP_VRF], device_name
+                    )
+                    if vrf_names:
+                        vrf_commands = [f"{CMD_SHOW_IP_ARP} vrf {v}" for v in vrf_names]
+                        logger.info(
+                            "[%s/%s] Found %s VRF(s) on %s — running per-VRF ARP",
+                            idx,
+                            total_devices,
+                            len(vrf_names),
+                            device_name,
+                        )
+                        try:
+                            _vrf_session_id, vrf_results = _asyncio.run(
+                                _netmiko.execute_commands(
+                                    devices=[
+                                        {"ip": host_ip, "platform": platform_slug}
+                                    ],
+                                    commands=vrf_commands,
+                                    username=username,
+                                    password=password,
+                                    use_textfsm=True,
+                                )
+                            )
+                            if vrf_results and vrf_results[0].get("success", False):
+                                vrf_outputs = vrf_results[0].get("command_outputs", {})
+                                for vrf in vrf_names:
+                                    cmd = f"{CMD_SHOW_IP_ARP} vrf {vrf}"
+                                    if cmd in vrf_outputs:
+                                        vrf_arp_rows = _parse_arp_output(
+                                            vrf_outputs[cmd],
+                                            device_name,
+                                            host_ip,
+                                            session_id,
+                                            idx,
+                                            total_devices,
+                                            vrf=vrf,
+                                        )
+                                        arp_rows.extend(vrf_arp_rows)
+                                        logger.info(
+                                            "[%s/%s] VRF %s — %s ARP entries",
+                                            idx,
+                                            total_devices,
+                                            vrf,
+                                            len(vrf_arp_rows),
+                                        )
+                        except Exception as vrf_exc:
+                            logger.warning(
+                                "[%s/%s] VRF ARP collection failed on %s: %s",
+                                idx,
+                                total_devices,
+                                device_name,
+                                vrf_exc,
+                            )
 
                 if collect_mac_address and CMD_SHOW_MAC_TABLE in command_outputs:
                     mac_rows = _parse_mac_output(
@@ -516,6 +577,7 @@ def _parse_arp_output(
     session_id: str,
     idx: int,
     total: int,
+    vrf: Optional[str] = None,
 ) -> List[dict]:
     """Parse TextFSM-structured ARP output into DB row dicts.
 
@@ -523,6 +585,7 @@ def _parse_arp_output(
         protocol, ip_address, age, mac_address, type, interface
 
     Falls back gracefully when TextFSM template is unavailable.
+    vrf is None for the default VRF, or the VRF name for VRF-specific results.
     """
     if not isinstance(output, list):
         logger.warning(
@@ -551,12 +614,49 @@ def _parse_arp_output(
                 "ip_address": ip,
                 "mac_address": _normalise_mac(mac) if mac else None,
                 "interface": interface or None,
+                "vrf": vrf,
                 "device_name": device_name,
                 "device_ip": device_ip or None,
             }
         )
 
     return rows
+
+
+def _parse_vrf_output(output: Any, device_name: str) -> List[str]:
+    """Parse 'show ip vrf' output and return a list of VRF names.
+
+    Handles both TextFSM structured output (list of dicts with NAME key)
+    and raw text fallback (lines after the header row).
+    """
+    if isinstance(output, list):
+        vrfs = []
+        for entry in output:
+            name = (entry.get("name") or entry.get("NAME") or "").strip()
+            if name:
+                vrfs.append(name)
+        return vrfs
+
+    if not isinstance(output, str) or not output.strip():
+        return []
+
+    vrfs = []
+    header_found = False
+    for line in output.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if not header_found:
+            if "Name" in line and "Default RD" in line:
+                header_found = True
+            continue
+        parts = stripped.split()
+        if parts:
+            vrfs.append(parts[0])
+
+    if vrfs:
+        logger.debug("Parsed %s VRF(s) from %s: %s", len(vrfs), device_name, vrfs)
+    return vrfs
 
 
 def _parse_mac_output(

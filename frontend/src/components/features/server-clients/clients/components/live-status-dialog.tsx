@@ -37,6 +37,7 @@ interface ArpEntry {
   mac_address: string
   type: string
   interface: string
+  vrf?: string
 }
 
 interface MacEntry {
@@ -59,6 +60,32 @@ interface CommandResult {
   output: string
   error?: string
   command_outputs?: Record<string, unknown>
+}
+
+// ── VRF helpers ────────────────────────────────────────────────────────────────
+
+function parseVrfNames(output: unknown): string[] {
+  if (Array.isArray(output)) {
+    return (output as Record<string, string>[])
+      .map(e => e.name || e.NAME || '')
+      .filter(Boolean)
+  }
+  if (typeof output === 'string' && output.trim()) {
+    const vrfs: string[] = []
+    let headerFound = false
+    for (const line of output.split('\n')) {
+      const stripped = line.trim()
+      if (!stripped) continue
+      if (!headerFound) {
+        if (line.includes('Name') && line.includes('Default RD')) headerFound = true
+        continue
+      }
+      const name = stripped.split(/\s+/)[0]
+      if (name) vrfs.push(name)
+    }
+    return vrfs
+  }
+  return []
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
@@ -132,35 +159,71 @@ export function LiveStatusDialog({ device, onClose }: LiveStatusDialogProps) {
 
     setStep('loading')
     try {
-      const response = await apiCall<{ results: CommandResult[] }>(
+      // ── Phase 1: VRF discovery + default ARP + MAC table ──────────────────
+      const phase1 = await apiCall<{ results: CommandResult[] }>(
         'netmiko/execute-commands',
         {
           method: 'POST',
           body: {
             devices: [{ ip, platform: 'cisco_ios' }],
-            commands: ['show ip arp', 'show mac address-table'],
+            commands: ['show ip vrf', 'show ip arp', 'show mac address-table'],
             credential_id: selectedCredId,
             use_textfsm: true,
           },
         }
       )
 
-      const result = response.results[0]
-      if (!result?.success) {
-        setErrorMsg(result?.error || result?.output || 'Command execution failed.')
+      const r1 = phase1.results[0]
+      if (!r1?.success) {
+        setErrorMsg(r1?.error || r1?.output || 'Command execution failed.')
         setStep('error')
         return
       }
 
-      const co = result.command_outputs
-      const arp = Array.isArray(co?.['show ip arp'])
-        ? (co!['show ip arp'] as ArpEntry[])
+      const co1 = r1.command_outputs ?? {}
+      const mac: MacEntry[] = Array.isArray(co1['show mac address-table'])
+        ? (co1['show mac address-table'] as MacEntry[])
         : []
-      const mac = Array.isArray(co?.['show mac address-table'])
-        ? (co!['show mac address-table'] as MacEntry[])
+      const defaultArp: ArpEntry[] = Array.isArray(co1['show ip arp'])
+        ? (co1['show ip arp'] as ArpEntry[])
         : []
+      const vrfNames = parseVrfNames(co1['show ip vrf'])
 
-      setResults({ arp, mac })
+      // ── Phase 2: per-VRF ARP (only when VRFs are present) ─────────────────
+      let vrfArp: ArpEntry[] = []
+      if (vrfNames.length > 0) {
+        try {
+          const vrfCommands = vrfNames.map(v => `show ip arp vrf ${v}`)
+          const phase2 = await apiCall<{ results: CommandResult[] }>(
+            'netmiko/execute-commands',
+            {
+              method: 'POST',
+              body: {
+                devices: [{ ip, platform: 'cisco_ios' }],
+                commands: vrfCommands,
+                credential_id: selectedCredId,
+                use_textfsm: true,
+              },
+            }
+          )
+          const r2 = phase2.results[0]
+          if (r2?.success) {
+            const co2 = r2.command_outputs ?? {}
+            for (const vrf of vrfNames) {
+              const cmd = `show ip arp vrf ${vrf}`
+              if (Array.isArray(co2[cmd])) {
+                vrfArp = vrfArp.concat(
+                  (co2[cmd] as ArpEntry[]).map(e => ({ ...e, vrf }))
+                )
+              }
+            }
+          }
+        } catch {
+          // Phase 2 failure is non-fatal — phase 1 results are still shown
+        }
+      }
+
+      setResults({ arp: [...defaultArp, ...vrfArp], mac })
       setStep('results')
     } catch (err) {
       setErrorMsg((err as Error).message || 'Request failed.')
@@ -315,6 +378,9 @@ function LoadingStep({ deviceName }: { deviceName: string }) {
       <p className="text-sm text-muted-foreground">
         Connecting to <strong>{deviceName}</strong> and executing commands…
       </p>
+      <p className="text-xs text-muted-foreground">
+        VRF discovery is included — this may require a second connection.
+      </p>
     </div>
   )
 }
@@ -440,6 +506,8 @@ function ArpTable({ rows }: { rows: ArpEntry[] }) {
     )
   }
 
+  const hasVrf = rows.some(r => r.vrf)
+
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200">
       <table className="w-full text-xs">
@@ -455,6 +523,9 @@ function ArpTable({ rows }: { rows: ArpEntry[] }) {
             <th className="text-left px-3 py-2 font-semibold text-gray-700">
               Interface
             </th>
+            {hasVrf && (
+              <th className="text-left px-3 py-2 font-semibold text-gray-700">VRF</th>
+            )}
             <th className="text-left px-3 py-2 font-semibold text-gray-700">
               Protocol
             </th>
@@ -462,9 +533,9 @@ function ArpTable({ rows }: { rows: ArpEntry[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {rows.map(row => (
+          {rows.map((row, i) => (
             <tr
-              key={`${row.ip_address}-${row.interface}`}
+              key={`${row.ip_address}-${row.interface}-${row.vrf ?? ''}-${i}`}
               className="hover:bg-gray-50 transition-colors"
             >
               <td className="px-3 py-2 font-mono text-gray-800">{row.ip_address}</td>
@@ -473,6 +544,9 @@ function ArpTable({ rows }: { rows: ArpEntry[] }) {
                 {row.age === '-' ? '—' : `${row.age} min`}
               </td>
               <td className="px-3 py-2 text-gray-600">{row.interface}</td>
+              {hasVrf && (
+                <td className="px-3 py-2 text-gray-600">{row.vrf ?? '—'}</td>
+              )}
               <td className="px-3 py-2 text-gray-500">{row.protocol}</td>
               <td className="px-3 py-2 text-gray-500">{row.type}</td>
             </tr>

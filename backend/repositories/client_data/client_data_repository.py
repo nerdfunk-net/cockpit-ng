@@ -107,6 +107,7 @@ def _client_data_combined_cte():
             ClientIpAddress.mac_address,
             ClientIpAddress.ip_address,
             ClientIpAddress.interface,
+            ClientIpAddress.vrf,
             ClientIpAddress.device_name,
             ClientIpAddress.session_id,
             ClientIpAddress.collected_at,
@@ -179,6 +180,7 @@ def _client_data_combined_cte():
             p.c.device_name,
             func.coalesce(mt.c.port, ae.c.interface).label("port"),
             mt.c.vlan,
+            ae.c.vrf,
             func.coalesce(ae.c.ip_address, bim.c.ip_address).label("ip_address"),
             hfi.c.hostname,
             p.c.session_id,
@@ -309,6 +311,7 @@ class ClientDataRepository:
         mac_address: Optional[str] = None,
         port: Optional[str] = None,
         vlan: Optional[str] = None,
+        vrf: Optional[str] = None,
         hostname: Optional[str] = None,
         page: int = 1,
         page_size: int = 50,
@@ -373,6 +376,12 @@ class ClientDataRepository:
             )
             params["vlan"] = vlan
 
+        if vrf:
+            conditions.append(
+                combined.c.vrf.ilike(func.concat("%", bindparam("vrf"), "%"))
+            )
+            params["vrf"] = vrf
+
         if hostname:
             conditions.append(
                 combined.c.hostname.ilike(func.concat("%", bindparam("hostname"), "%"))
@@ -390,6 +399,7 @@ class ClientDataRepository:
             combined.c.mac_address,
             combined.c.port,
             combined.c.vlan,
+            combined.c.vrf,
             combined.c.ip_address,
             combined.c.hostname,
             combined.c.device_name,
@@ -417,11 +427,12 @@ class ClientDataRepository:
                 "mac_address": row[0],
                 "port": row[1],
                 "vlan": row[2],
-                "ip_address": row[3],
-                "hostname": row[4],
-                "device_name": row[5],
-                "session_id": row[6],
-                "collected_at": row[7].isoformat() if row[7] else None,
+                "vrf": row[3],
+                "ip_address": row[4],
+                "hostname": row[5],
+                "device_name": row[6],
+                "session_id": row[7],
+                "collected_at": row[8].isoformat() if row[8] else None,
             }
             for row in rows
         ]

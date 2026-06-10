@@ -21,6 +21,7 @@ export interface ClientDataItem {
   mac_address: string | null
   port: string | null
   vlan: string | null
+  vrf: string | null
   hostname: string | null
   device_name: string
   session_id: string
@@ -40,6 +41,7 @@ export interface ClientDataFilters {
   macAddress?: string
   port?: string
   vlan?: string
+  vrf?: string
   hostname?: string
   page?: number
   pageSize?: number
@@ -78,6 +80,7 @@ export function useClientDataQuery(filters: ClientDataFilters = DEFAULT_FILTERS)
     macAddress,
     port,
     vlan,
+    vrf,
     hostname,
     page = 1,
     pageSize = 50,
@@ -90,11 +93,12 @@ export function useClientDataQuery(filters: ClientDataFilters = DEFAULT_FILTERS)
       mac_address: macAddress,
       port,
       vlan,
+      vrf,
       hostname,
       page,
       page_size: pageSize,
     }),
-    [deviceName, ipAddress, macAddress, port, vlan, hostname, page, pageSize]
+    [deviceName, ipAddress, macAddress, port, vlan, vrf, hostname, page, pageSize]
   )
 
   return useQuery({
@@ -106,6 +110,7 @@ export function useClientDataQuery(filters: ClientDataFilters = DEFAULT_FILTERS)
       if (macAddress) params.set('mac_address', macAddress)
       if (port) params.set('port', port)
       if (vlan) params.set('vlan', vlan)
+      if (vrf) params.set('vrf', vrf)
       if (hostname) params.set('hostname', hostname)
       params.set('page', String(page))
       params.set('page_size', String(pageSize))
