@@ -149,7 +149,7 @@ async def delete_device(
 async def offboard_device(
     device_id: str,
     request: OffboardDeviceRequest,
-    current_user: dict = Depends(require_permission("devices.offboard", "execute")),
+    current_user: dict = Depends(require_permission("nautobot.offboard", "execute")),
     offboarding_service: OffboardingService = Depends(get_offboarding_service),
 ):
     """Offboard a device by removing it or applying configured offboarding values.

@@ -159,6 +159,7 @@ compliance.check:execute
 configs:read
 configs.backup:execute
 configs.compare:execute
+configs.search:execute
 
 # Network
 network.backup:{read, write}
@@ -176,8 +177,8 @@ git.operations:execute
 
 # Devices
 scan:execute
-devices.onboard:execute
-devices.offboard:execute
+nautobot.onboard:execute
+nautobot.offboard:execute
 
 # Settings
 settings.cache:{read, write}
@@ -219,7 +220,7 @@ Four system roles are created at startup. System roles (`is_system=True`) cannot
 ### `network_engineer`
 - Full network operations access
 - Read-only for system settings
-- Includes: netmiko execute, git operations, onboarding
+- Includes: netmiko execute, git operations, onboarding, offboarding, configs search
 
 ### `viewer`
 - Read-only access to most resources

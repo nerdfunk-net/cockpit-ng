@@ -26,7 +26,7 @@ router = APIRouter(prefix="/api/celery", tags=["celery-device-tasks"])
 @handle_celery_errors("onboard device")
 async def trigger_onboard_device(
     request: OnboardDeviceRequest,
-    current_user: dict = Depends(require_permission("devices.onboard", "execute")),
+    current_user: dict = Depends(require_permission("nautobot.onboard", "execute")),
 ):
     from tasks.onboard_device_task import onboard_device_task
 
@@ -62,7 +62,7 @@ async def trigger_onboard_device(
 @handle_celery_errors("bulk onboard devices")
 async def trigger_bulk_onboard_devices(
     request: BulkOnboardDevicesRequest,
-    current_user: dict = Depends(require_permission("devices.onboard", "execute")),
+    current_user: dict = Depends(require_permission("nautobot.onboard", "execute")),
 ):
     from tasks.bulk_onboard_task import bulk_onboard_devices_task
 

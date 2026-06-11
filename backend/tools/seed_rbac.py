@@ -310,6 +310,7 @@ def seed_permissions(verbose: bool = True):
         ("configs", "read", "View device configurations"),
         ("configs.backup", "execute", "Execute configuration backups"),
         ("configs.compare", "execute", "Compare configurations"),
+        ("configs.search", "execute", "Search configuration file content"),
         # Network backup permissions
         ("network.backup", "read", "View device backup status and history"),
         ("network.backup", "write", "Execute device configuration backups"),
@@ -339,8 +340,8 @@ def seed_permissions(verbose: bool = True):
         ("git.operations", "execute", "Execute git operations (commit, push, pull)"),
         # Scan & Add permissions
         ("scan", "execute", "Execute network scans"),
-        ("devices.onboard", "execute", "Onboard new devices"),
-        ("devices.offboard", "execute", "Offboard devices"),
+        ("nautobot.onboard", "execute", "Onboard new devices"),
+        ("nautobot.offboard", "execute", "Offboard devices"),
         # Settings permissions
         ("settings.cache", "read", "View cache settings"),
         ("settings.cache", "write", "Modify cache settings"),
@@ -499,8 +500,8 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "snapshots:write",
         # Scan & Add
         "scan:execute",
-        "devices.onboard:execute",
-        "devices.offboard:execute",
+        "nautobot.onboard:execute",
+        "nautobot.offboard:execute",
         # Settings (read-only)
         "settings.cache:read",
         "settings.credentials:read",
@@ -546,6 +547,7 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "configs:read",
         "configs.backup:execute",
         "configs.compare:execute",
+        "configs.search:execute",
         # Network Backup (full access)
         "network.backup:read",
         "network.backup:write",
@@ -573,7 +575,8 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "git.operations:execute",
         # Scan & Add
         "scan:execute",
-        "devices.onboard:execute",
+        "nautobot.onboard:execute",
+        "nautobot.offboard:execute",
         # Settings (read-only)
         "settings.cache:read",
         "settings.credentials:read",

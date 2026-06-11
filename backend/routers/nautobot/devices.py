@@ -327,7 +327,7 @@ async def check_ip(
 @router.post("/devices/onboard", summary="⚙️ Nautobot Job: Onboard Device")
 def onboard_device(
     request: DeviceOnboardRequest,
-    current_user: dict = Depends(require_permission("devices.onboard", "execute")),
+    current_user: dict = Depends(require_permission("nautobot.onboard", "execute")),
 ):
     """Onboard a new device to Nautobot.
 

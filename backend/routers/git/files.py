@@ -34,7 +34,7 @@ async def search_repository_files(
 async def search_repository_file_content(
     repo_id: int,
     request: GitContentSearchRequest,
-    current_user: dict = Depends(require_permission("git.repositories", "read")),
+    current_user: dict = Depends(require_permission("configs.search", "execute")),
 ):
     """Search for a string inside config file contents."""
     return _git_file_service.search_file_content(repo_id, request)
