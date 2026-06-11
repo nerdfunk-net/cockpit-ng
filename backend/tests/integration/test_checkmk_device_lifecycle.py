@@ -104,10 +104,12 @@ def _authenticated_api_client():
         return_value=mock_rbac_service,
     )
 
-    app.dependency_overrides[verify_token] = override_verify_token
-    with mock_rbac:
-        yield TestClient(app)
-    app.dependency_overrides.clear()
+    try:
+        app.dependency_overrides[verify_token] = override_verify_token
+        with mock_rbac:
+            yield TestClient(app)
+    finally:
+        app.dependency_overrides.clear()
 
 
 # Test device configurations to create in CheckMK

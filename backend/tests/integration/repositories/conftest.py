@@ -86,7 +86,15 @@ def client_data_repository_pg(postgres_engine_client_data, monkeypatch):
     import core.database as db_mod
 
     make_session = sessionmaker(bind=postgres_engine_client_data)
-    monkeypatch.setattr(db_mod, "get_db_session", lambda: make_session())
+    factory = lambda: make_session()  # noqa: E731
+
+    # Patch both the module-level attribute AND the local name already bound
+    # inside the repository module via ``from core.database import get_db_session``.
+    monkeypatch.setattr(db_mod, "get_db_session", factory)
+    monkeypatch.setattr(
+        "repositories.client_data.client_data_repository.get_db_session", factory
+    )
+
     from repositories.client_data.client_data_repository import ClientDataRepository
 
     return ClientDataRepository()

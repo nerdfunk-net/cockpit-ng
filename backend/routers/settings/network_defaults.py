@@ -46,7 +46,7 @@ async def update_network_defaults(
         from services.settings.manager import SettingsManager
 
         settings_manager = SettingsManager()
-        success = settings_manager.update_network_defaults(defaults_request.dict())
+        success = settings_manager.update_network_defaults(defaults_request.model_dump())
 
         if success:
             return {
