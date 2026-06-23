@@ -134,7 +134,9 @@ class TestLoadParserTemplates:
             "template_type": "textfsm",
             "name": "show-ip-int",
         }
-        svc._template_manager.get_template_content.return_value = "Value INTF (\\S+)\n\nStart\n  ^\\S -> Record"
+        svc._template_manager.get_template_content.return_value = (
+            "Value INTF (\\S+)\n\nStart\n  ^\\S -> Record"
+        )
 
         import services.network.scanning.service as mod
 

@@ -12,14 +12,18 @@ _PATCH_SF = "service_factory.build_nautobot_service"
 
 def _make_svc(graphql_result=None, rest_exc=None):
     nb = MagicMock()
-    nb.graphql_query = AsyncMock(return_value=graphql_result or {"data": {"ip_addresses": []}})
+    nb.graphql_query = AsyncMock(
+        return_value=graphql_result or {"data": {"ip_addresses": []}}
+    )
     if rest_exc:
         nb.rest_request = AsyncMock(side_effect=rest_exc)
     else:
         nb.rest_request = AsyncMock(return_value=None)
 
     with patch(_PATCH_SF, return_value=nb):
-        from services.nautobot.ip_addresses.ip_address_query_service import IPAddressQueryService
+        from services.nautobot.ip_addresses.ip_address_query_service import (
+            IPAddressQueryService,
+        )
 
         svc = IPAddressQueryService()
     return svc, nb
@@ -40,7 +44,9 @@ class TestResolveDateTemplate:
             _resolve_date_template,
         )
 
-        expected = (date.today() - __import__("datetime").timedelta(days=14)).isoformat()
+        expected = (
+            date.today() - __import__("datetime").timedelta(days=14)
+        ).isoformat()
         assert _resolve_date_template("{today-14}") == expected
 
     def test_today_plus_offset(self):
@@ -184,9 +190,6 @@ class TestUpdateIpAddress:
             tag_id="tag-id",
             description="test",
         )
-        call_args = nb.rest_request.call_args
-        data = call_args[1].get("data") or call_args[0][1] if call_args[0] else call_args.kwargs.get("data")
-        # Just verify rest_request was called once
         nb.rest_request.assert_called_once()
 
 

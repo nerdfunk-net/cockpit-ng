@@ -16,9 +16,7 @@ class TestFilterDeviceProperties:
             "platform": "cisco_ios",
             "primary_ip4": {
                 "address": "10.0.0.1/24",
-                "parent": {
-                    "namespace": {"name": "global"}
-                },
+                "parent": {"namespace": {"name": "global"}},
             },
             "custom_fields": {"owner": "team-a"},
         }
@@ -75,7 +73,9 @@ class TestFilterDeviceProperties:
     def test_mixed_properties_and_namespace(self):
         devices = [self._device()]
         result = filter_device_properties(devices, ["name", "namespace", "status"])
-        assert result == [{"name": "router-01", "namespace": "global", "status": "active"}]
+        assert result == [
+            {"name": "router-01", "namespace": "global", "status": "active"}
+        ]
 
     def test_multiple_devices(self):
         d1 = self._device(name="r1")

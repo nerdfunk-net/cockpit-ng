@@ -22,11 +22,7 @@ def _make_resolver(graphql_result=None, raise_exc=None):
 class TestResolveByField:
     @pytest.mark.asyncio
     async def test_returns_id_when_resource_found(self):
-        result = {
-            "data": {
-                "platforms": [{"id": "abc-123"}]
-            }
-        }
+        result = {"data": {"platforms": [{"id": "abc-123"}]}}
         resolver = _make_resolver(result)
         value = await resolver._resolve_by_field("platforms", "name", "ios")
         assert value == "abc-123"
@@ -73,7 +69,9 @@ class TestResolveByField:
     async def test_custom_return_field(self):
         result = {"data": {"platforms": [{"name": "ios"}]}}
         resolver = _make_resolver(result)
-        value = await resolver._resolve_by_field("platforms", "id", "abc", return_field="name")
+        value = await resolver._resolve_by_field(
+            "platforms", "id", "abc", return_field="name"
+        )
         assert value == "ios"
 
     @pytest.mark.asyncio

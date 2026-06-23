@@ -13,9 +13,11 @@ _PATCH_RENDER_SVC = "service_factory.build_agent_template_render_service"
 _PATCH_GIT_REPO = "repositories.git.git_repository_repository.GitRepositoryRepository"
 _PATCH_AGENTS_REPO = "repositories.settings.settings_repository.AgentsSettingRepository"
 _PATCH_DEPLOY = "services.agents.deployment_service.AgentDeploymentService.deploy"
-_PATCH_DEPLOY_MULTI = "services.agents.deployment_service.AgentDeploymentService.deploy_multi"
+_PATCH_DEPLOY_MULTI = (
+    "services.agents.deployment_service.AgentDeploymentService.deploy_multi"
+)
 
-from tasks.agent_deploy_tasks import deploy_agent_task
+from tasks.agent_deploy_tasks import deploy_agent_task  # noqa: E402
 
 
 @pytest.mark.unit
@@ -87,7 +89,11 @@ class TestDeployAgentTaskMultiTemplate:
             stack.enter_context(patch(_PATCH_GIT_REPO))
             stack.enter_context(patch(_PATCH_AGENTS_REPO))
             stack.enter_context(
-                patch(_PATCH_DEPLOY_MULTI, new_callable=AsyncMock, return_value=deploy_result)
+                patch(
+                    _PATCH_DEPLOY_MULTI,
+                    new_callable=AsyncMock,
+                    return_value=deploy_result,
+                )
             )
             result = deploy_agent_task.run(
                 template_id=None,

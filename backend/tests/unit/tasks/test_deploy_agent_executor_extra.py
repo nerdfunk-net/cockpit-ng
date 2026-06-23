@@ -23,7 +23,9 @@ _PATCH_GIT_REPO = "repositories.git.git_repository_repository.GitRepositoryRepos
 _PATCH_AGENTS_REPO = "repositories.settings.settings_repository.AgentsSettingRepository"
 _PATCH_INVENTORY_SVC = "service_factory.build_inventory_persistence_service"
 _PATCH_DEPLOY = "services.agents.deployment_service.AgentDeploymentService.deploy"
-_PATCH_DEPLOY_MULTI = "services.agents.deployment_service.AgentDeploymentService.deploy_multi"
+_PATCH_DEPLOY_MULTI = (
+    "services.agents.deployment_service.AgentDeploymentService.deploy_multi"
+)
 
 _BASE_TEMPLATE = {
     "name": "deploy",
@@ -114,7 +116,11 @@ class TestDeployTemplatesJsonString:
         with ExitStack() as stack:
             _all_patches(stack)
             stack.enter_context(
-                patch(_PATCH_DEPLOY_MULTI, new_callable=AsyncMock, return_value=deploy_result)
+                patch(
+                    _PATCH_DEPLOY_MULTI,
+                    new_callable=AsyncMock,
+                    return_value=deploy_result,
+                )
             )
             result = execute_deploy_agent(
                 schedule_id=None,

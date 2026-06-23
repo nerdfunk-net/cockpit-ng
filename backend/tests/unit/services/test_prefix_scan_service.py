@@ -77,7 +77,10 @@ class TestExecuteWithPrefixes:
                 patch("tasks.ping_network_task._fping_networks", return_value=alive)
             )
             stack.enter_context(
-                patch("tasks.ping_network_task._condense_ip_ranges", side_effect=lambda x: x)
+                patch(
+                    "tasks.ping_network_task._condense_ip_ranges",
+                    side_effect=lambda x: x,
+                )
             )
             stack.enter_context(
                 patch("tasks.ping_network_task._resolve_dns", return_value=None)
@@ -107,13 +110,19 @@ class TestExecuteWithPrefixes:
         with ExitStack() as stack:
             stack.enter_context(patch(_PATCH_JRS, return_value=_jrs_mock()))
             stack.enter_context(
-                patch("tasks.ping_network_task._expand_cidr_to_ips", return_value=["10.0.0.1"])
+                patch(
+                    "tasks.ping_network_task._expand_cidr_to_ips",
+                    return_value=["10.0.0.1"],
+                )
             )
             stack.enter_context(
                 patch("tasks.ping_network_task._fping_networks", return_value=alive)
             )
             stack.enter_context(
-                patch("tasks.ping_network_task._condense_ip_ranges", side_effect=lambda x: x)
+                patch(
+                    "tasks.ping_network_task._condense_ip_ranges",
+                    side_effect=lambda x: x,
+                )
             )
             stack.enter_context(patch("tasks.ping_network_task._resolve_dns", dns_mock))
             result = svc.execute(
@@ -134,15 +143,23 @@ class TestExecuteWithPrefixes:
         with ExitStack() as stack:
             stack.enter_context(patch(_PATCH_JRS, return_value=_jrs_mock()))
             stack.enter_context(
-                patch("tasks.ping_network_task._expand_cidr_to_ips", return_value=["10.0.0.1"])
+                patch(
+                    "tasks.ping_network_task._expand_cidr_to_ips",
+                    return_value=["10.0.0.1"],
+                )
             )
             stack.enter_context(
                 patch("tasks.ping_network_task._fping_networks", return_value=set())
             )
             stack.enter_context(
-                patch("tasks.ping_network_task._condense_ip_ranges", side_effect=lambda x: x)
+                patch(
+                    "tasks.ping_network_task._condense_ip_ranges",
+                    side_effect=lambda x: x,
+                )
             )
-            stack.enter_context(patch("tasks.ping_network_task._resolve_dns", return_value=None))
+            stack.enter_context(
+                patch("tasks.ping_network_task._resolve_dns", return_value=None)
+            )
             svc.execute(
                 custom_field_name="cf",
                 custom_field_value="v",
@@ -161,7 +178,9 @@ class TestExecuteWithPrefixes:
                 side_effect=RuntimeError("expand failed"),
             ):
                 # Must also patch _fping_networks to avoid import error
-                with patch("tasks.ping_network_task._fping_networks", return_value=set()):
+                with patch(
+                    "tasks.ping_network_task._fping_networks", return_value=set()
+                ):
                     with patch(
                         "tasks.ping_network_task._condense_ip_ranges",
                         side_effect=lambda x: x,
@@ -172,7 +191,9 @@ class TestExecuteWithPrefixes:
                             explicit_prefixes=["10.0.0.0/24"],
                         )
 
-        assert result["success"] is True  # expand errors are caught per-prefix, not global
+        assert (
+            result["success"] is True
+        )  # expand errors are caught per-prefix, not global
 
     def test_nautobot_update_called_when_response_field_set(self):
         svc = _make_svc()
@@ -184,16 +205,24 @@ class TestExecuteWithPrefixes:
         with ExitStack() as stack:
             stack.enter_context(patch(_PATCH_JRS, return_value=_jrs_mock()))
             stack.enter_context(
-                patch("tasks.ping_network_task._expand_cidr_to_ips", return_value=["10.0.0.1"])
+                patch(
+                    "tasks.ping_network_task._expand_cidr_to_ips",
+                    return_value=["10.0.0.1"],
+                )
             )
             stack.enter_context(
                 patch("tasks.ping_network_task._fping_networks", return_value=alive)
             )
             stack.enter_context(
-                patch("tasks.ping_network_task._condense_ip_ranges", side_effect=lambda x: x)
+                patch(
+                    "tasks.ping_network_task._condense_ip_ranges",
+                    side_effect=lambda x: x,
+                )
             )
-            stack.enter_context(patch("tasks.ping_network_task._resolve_dns", return_value=None))
-            result = svc.execute(
+            stack.enter_context(
+                patch("tasks.ping_network_task._resolve_dns", return_value=None)
+            )
+            svc.execute(
                 custom_field_name="cf",
                 custom_field_value="v",
                 explicit_prefixes=["10.0.0.0/30"],
@@ -272,7 +301,6 @@ class TestFetchPrefixesByCustomField:
 @pytest.mark.unit
 class TestUpdatePrefixLastScan:
     def _make_requests_mock(self, prefix_results=None, containment_results=None):
-        import requests
 
         get_mock = MagicMock()
         patch_mock = MagicMock()
@@ -280,13 +308,14 @@ class TestUpdatePrefixLastScan:
         get_mock.return_value.raise_for_status = MagicMock()
         patch_mock.return_value.raise_for_status = MagicMock()
 
-        get_calls = [0]
-
         def _get(url, **kwargs):
             r = MagicMock()
             r.raise_for_status = MagicMock()
             if "prefix=" in str(kwargs.get("params", {})):
-                r.json.return_value = {"results": prefix_results or [{"id": "pfx-1", "prefix": "10.0.0.0/24"}]}
+                r.json.return_value = {
+                    "results": prefix_results
+                    or [{"id": "pfx-1", "prefix": "10.0.0.0/24"}]
+                }
             else:
                 r.json.return_value = {"results": containment_results or []}
             return r
@@ -303,7 +332,9 @@ class TestUpdatePrefixLastScan:
             r.raise_for_status = MagicMock()
             params = kwargs.get("params", {})
             if "prefix" in params:
-                r.json.return_value = {"results": [{"id": "pfx-1", "prefix": "10.0.0.0/24"}]}
+                r.json.return_value = {
+                    "results": [{"id": "pfx-1", "prefix": "10.0.0.0/24"}]
+                }
             else:
                 r.json.return_value = {"results": []}
             return r

@@ -51,7 +51,9 @@ from sqlalchemy import text  # noqa: E402
 from sqlalchemy.engine import URL as EngineURL  # noqa: E402
 
 from core.database import engine  # noqa: E402
-from repositories.client_data.client_data_repository import ClientDataRepository  # noqa: E402
+from repositories.client_data.client_data_repository import (  # noqa: E402
+    ClientDataRepository,
+)
 
 
 def _print_connection_info() -> None:
@@ -65,7 +67,11 @@ def _print_connection_info() -> None:
     with engine.connect() as conn:
         db_name = conn.execute(text("SELECT current_database()")).scalar()
         print(f"DB name  : {db_name}")
-        for table in ("client_mac_addresses", "client_ip_addresses", "client_hostnames"):
+        for table in (
+            "client_mac_addresses",
+            "client_ip_addresses",
+            "client_hostnames",
+        ):
             count = conn.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
             print(f"  {table}: {count} rows")
 
@@ -88,7 +94,7 @@ def _mac_records(session_id: str, collected_at: datetime) -> list[dict]:
     rows = []
 
     # sw-access-01 — VLAN 10 and 20
-    for i, (mac, vlan, port) in enumerate(
+    for _i, (mac, vlan, port) in enumerate(
         [
             ("aabb.cc00.0101", "10", "GigabitEthernet1/0/1"),
             ("aabb.cc00.0102", "10", "GigabitEthernet1/0/2"),

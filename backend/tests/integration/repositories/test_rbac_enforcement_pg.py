@@ -205,9 +205,7 @@ class TestTokenEnforcement:
             {"sub": user.username, "user_id": user.id, "permissions": 1},
             expires_delta=timedelta(seconds=-1),
         )
-        resp = app_client.get(
-            _READ_URL, headers={"Authorization": f"Bearer {token}"}
-        )
+        resp = app_client.get(_READ_URL, headers={"Authorization": f"Bearer {token}"})
         assert resp.status_code == 401
 
 
@@ -260,7 +258,7 @@ class TestPermissionEnforcement:
         user = _seed_user(db, "denied")
         role = _seed_role(db, "viewer")
         perm = _seed_permission(db, "settings.nautobot", "read")
-        _grant_to_role(db, role, perm)   # role grants read
+        _grant_to_role(db, role, perm)  # role grants read
         _assign_role(db, user, role)
         _override(db, user, perm, granted=False)  # user-level deny wins
 
@@ -301,5 +299,7 @@ class TestPermissionEnforcement:
         _grant_to_role(db, role, perm)
         _assign_role(db, user, role)
 
-        resp = app_client.get(_READ_URL, headers=_bearer(user))  # needs settings.nautobot:read
+        resp = app_client.get(
+            _READ_URL, headers=_bearer(user)
+        )  # needs settings.nautobot:read
         assert resp.status_code == 403

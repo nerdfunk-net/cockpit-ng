@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-_PATCH_TEMPLATE_REPO = "services.network.snapshots.execution_service.SnapshotTemplateRepository"
+_PATCH_TEMPLATE_REPO = (
+    "services.network.snapshots.execution_service.SnapshotTemplateRepository"
+)
 _PATCH_SNAPSHOT_REPO = "services.network.snapshots.execution_service.SnapshotRepository"
 _PATCH_GIT_MANAGER = "services.network.snapshots.execution_service.GitRepositoryManager"
 _PATCH_NETMIKO = "services.network.snapshots.execution_service.NetmikoService"
@@ -22,7 +24,9 @@ def _make_svc():
         patch(_PATCH_NETMIKO),
         patch(_PATCH_GIT),
     ):
-        from services.network.snapshots.execution_service import SnapshotExecutionService
+        from services.network.snapshots.execution_service import (
+            SnapshotExecutionService,
+        )
 
         return SnapshotExecutionService()
 
@@ -48,7 +52,13 @@ def _mk_execute_request(credential_id=None, username="admin", password="secret")
         description="desc",
         git_repository_id=1,
         snapshot_path="snapshots/{device_name}/{timestamp}.json",
-        devices=[{"name": "router-01", "primary_ip4": {"address": "10.0.0.1/24"}, "platform": {"name": "cisco_ios"}}],
+        devices=[
+            {
+                "name": "router-01",
+                "primary_ip4": {"address": "10.0.0.1/24"},
+                "platform": {"name": "cisco_ios"},
+            }
+        ],
         commands=[SnapshotCommandCreate(command="show version", use_textfsm=False)],
         credential_id=credential_id,
         username=username if credential_id is None else None,
@@ -60,23 +70,34 @@ def _mk_execute_request(credential_id=None, username="admin", password="secret")
 class TestRenderPath:
     def test_replaces_device_name(self):
         svc = _make_svc()
-        result = svc._render_path("{device_name}/config.json", {"name": "router-01"}, "2026-01-01")
+        result = svc._render_path(
+            "{device_name}/config.json", {"name": "router-01"}, "2026-01-01"
+        )
         assert result == "router-01/config.json"
 
     def test_replaces_timestamp(self):
         svc = _make_svc()
-        result = svc._render_path("snap/{timestamp}.json", {"name": "r"}, "2026-01-01T12-00-00")
+        result = svc._render_path(
+            "snap/{timestamp}.json", {"name": "r"}, "2026-01-01T12-00-00"
+        )
         assert result == "snap/2026-01-01T12-00-00.json"
 
     def test_replaces_template_name(self):
         svc = _make_svc()
-        result = svc._render_path("{template_name}/{device_name}.json", {"name": "r"}, "ts", template_name="cisco")
+        result = svc._render_path(
+            "{template_name}/{device_name}.json",
+            {"name": "r"},
+            "ts",
+            template_name="cisco",
+        )
         assert result == "cisco/r.json"
 
     def test_replaces_custom_fields(self):
         svc = _make_svc()
         device = {"name": "r", "custom_fields": {"site": "dc1"}}
-        result = svc._render_path("{custom_field.site}/{device_name}.json", device, "ts")
+        result = svc._render_path(
+            "{custom_field.site}/{device_name}.json", device, "ts"
+        )
         assert result == "dc1/r.json"
 
     def test_string_device_fallback(self):
@@ -86,7 +107,9 @@ class TestRenderPath:
 
     def test_no_template_name_placeholder_skipped(self):
         svc = _make_svc()
-        result = svc._render_path("{device_name}.json", {"name": "r"}, "ts", template_name="cisco")
+        result = svc._render_path(
+            "{device_name}.json", {"name": "r"}, "ts", template_name="cisco"
+        )
         assert result == "r.json"
 
 
@@ -211,7 +234,9 @@ class TestSaveToGit:
         svc._git.commit_and_push.return_value = git_result
 
         with patch("services.git.paths.repo_path", return_value=str(tmp_path)):
-            result = svc._save_to_git(1, "snaps/router.json", '{"data": 1}', "snapshot commit")
+            result = svc._save_to_git(
+                1, "snaps/router.json", '{"data": 1}', "snapshot commit"
+            )
 
         assert result == "abc123"
 
@@ -220,7 +245,9 @@ class TestSaveToGit:
         repo_data = _mk_repo_data()
         svc.git_manager.get_repository.return_value = repo_data
 
-        git_result = SimpleNamespace(success=False, commit_sha=None, message="push failed")
+        git_result = SimpleNamespace(
+            success=False, commit_sha=None, message="push failed"
+        )
         svc._git.open_or_clone.return_value = MagicMock()
         svc._git.commit_and_push.return_value = git_result
 
@@ -288,7 +315,9 @@ class TestExecuteSnapshot:
                 "command_outputs": {"show version": "Cisco IOS"},
             }
         ]
-        svc._netmiko.execute_commands = AsyncMock(return_value=("session-1", netmiko_result))
+        svc._netmiko.execute_commands = AsyncMock(
+            return_value=("session-1", netmiko_result)
+        )
         svc._save_to_git = MagicMock(return_value="abc123")
 
         from models.snapshots import SnapshotResponse
@@ -308,7 +337,9 @@ class TestExecuteSnapshot:
         svc = self._make_full_svc()
 
         netmiko_result = [{"success": False, "error": "connection refused"}]
-        svc._netmiko.execute_commands = AsyncMock(return_value=("session-1", netmiko_result))
+        svc._netmiko.execute_commands = AsyncMock(
+            return_value=("session-1", netmiko_result)
+        )
 
         from models.snapshots import SnapshotResponse
 
@@ -324,7 +355,9 @@ class TestExecuteSnapshot:
     @pytest.mark.asyncio
     async def test_netmiko_exception_marks_all_failed_and_re_raises(self):
         svc = self._make_full_svc()
-        svc._netmiko.execute_commands = AsyncMock(side_effect=RuntimeError("netmiko crash"))
+        svc._netmiko.execute_commands = AsyncMock(
+            side_effect=RuntimeError("netmiko crash")
+        )
 
         with pytest.raises(RuntimeError, match="netmiko crash"):
             await svc.execute_snapshot(_mk_execute_request(), "alice")

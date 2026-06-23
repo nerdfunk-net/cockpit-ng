@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -70,12 +70,16 @@ class TestCreateTemplate:
             svc.create_template(_create_request(), "alice")
 
     def test_raises_when_user_owns_same_name(self, svc):
-        svc.repo.get_by_name.return_value = _mk_template(scope="private", created_by="alice")
+        svc.repo.get_by_name.return_value = _mk_template(
+            scope="private", created_by="alice"
+        )
         with pytest.raises(ValueError, match="already exists"):
             svc.create_template(_create_request(), "alice")
 
     def test_does_not_raise_when_other_user_owns_private(self, svc):
-        svc.repo.get_by_name.return_value = _mk_template(scope="private", created_by="bob")
+        svc.repo.get_by_name.return_value = _mk_template(
+            scope="private", created_by="bob"
+        )
         tmpl = _mk_template()
         svc.repo.create_template.return_value = tmpl
 
@@ -141,7 +145,9 @@ class TestUpdateTemplate:
         assert svc.update_template(99, _update_request(name="new"), "alice") is None
 
     def test_raises_if_private_and_not_owner(self, svc):
-        svc.repo.get_by_id.return_value = _mk_template(scope="private", created_by="bob")
+        svc.repo.get_by_id.return_value = _mk_template(
+            scope="private", created_by="bob"
+        )
         with pytest.raises(ValueError, match="permission"):
             svc.update_template(1, _update_request(name="x"), "alice")
 
@@ -174,12 +180,16 @@ class TestDeleteTemplate:
         assert svc.delete_template(99, "alice") is False
 
     def test_raises_if_private_and_not_owner(self, svc):
-        svc.repo.get_by_id.return_value = _mk_template(scope="private", created_by="bob")
+        svc.repo.get_by_id.return_value = _mk_template(
+            scope="private", created_by="bob"
+        )
         with pytest.raises(ValueError, match="permission"):
             svc.delete_template(1, "alice")
 
     def test_deletes_owned_private_template(self, svc):
-        svc.repo.get_by_id.return_value = _mk_template(scope="private", created_by="alice")
+        svc.repo.get_by_id.return_value = _mk_template(
+            scope="private", created_by="alice"
+        )
         svc.repo.delete_template.return_value = True
         assert svc.delete_template(1, "alice") is True
 

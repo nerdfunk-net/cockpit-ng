@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -49,7 +49,9 @@ def _mk_result(
 @pytest.fixture
 def svc():
     with patch(_PATCH_REPO):
-        from services.network.snapshots.comparison_service import SnapshotComparisonService
+        from services.network.snapshots.comparison_service import (
+            SnapshotComparisonService,
+        )
 
         return SnapshotComparisonService()
 
