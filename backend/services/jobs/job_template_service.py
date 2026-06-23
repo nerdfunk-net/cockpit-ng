@@ -62,6 +62,8 @@ class JobTemplateService:
         ip_mark_status: Optional[str] = None,
         ip_mark_tag: Optional[str] = None,
         ip_mark_description: Optional[str] = None,
+        ip_remove_skip_assigned: Optional[bool] = True,
+        ip_remove_skip_reserved: Optional[bool] = True,
         csv_import_repo_id: Optional[int] = None,
         csv_import_file_path: Optional[str] = None,
         csv_import_type: Optional[str] = None,
@@ -157,6 +159,8 @@ class JobTemplateService:
             ip_mark_status=ip_mark_status,
             ip_mark_tag=ip_mark_tag,
             ip_mark_description=ip_mark_description,
+            ip_remove_skip_assigned=ip_remove_skip_assigned,
+            ip_remove_skip_reserved=ip_remove_skip_reserved,
             csv_import_repo_id=csv_import_repo_id,
             csv_import_file_path=csv_import_file_path,
             csv_import_type=csv_import_type,
@@ -265,6 +269,8 @@ class JobTemplateService:
         ip_mark_status: Optional[str] = None,
         ip_mark_tag: Optional[str] = None,
         ip_mark_description: Optional[str] = None,
+        ip_remove_skip_assigned: Optional[bool] = None,
+        ip_remove_skip_reserved: Optional[bool] = None,
         csv_import_repo_id: Optional[int] = None,
         csv_import_file_path: Optional[str] = None,
         csv_import_type: Optional[str] = None,
@@ -388,6 +394,10 @@ class JobTemplateService:
             update_data["ip_mark_tag"] = ip_mark_tag
         if ip_mark_description is not None:
             update_data["ip_mark_description"] = ip_mark_description
+        if ip_remove_skip_assigned is not None:
+            update_data["ip_remove_skip_assigned"] = ip_remove_skip_assigned
+        if ip_remove_skip_reserved is not None:
+            update_data["ip_remove_skip_reserved"] = ip_remove_skip_reserved
         if csv_import_repo_id is not None:
             update_data["csv_import_repo_id"] = csv_import_repo_id
         if csv_import_file_path is not None:
@@ -625,6 +635,8 @@ class JobTemplateService:
             "ip_mark_status": template.ip_mark_status,
             "ip_mark_tag": template.ip_mark_tag,
             "ip_mark_description": template.ip_mark_description,
+            "ip_remove_skip_assigned": template.ip_remove_skip_assigned,
+            "ip_remove_skip_reserved": template.ip_remove_skip_reserved,
             "csv_import_repo_id": template.csv_import_repo_id,
             "csv_import_file_path": template.csv_import_file_path,
             "csv_import_type": template.csv_import_type,

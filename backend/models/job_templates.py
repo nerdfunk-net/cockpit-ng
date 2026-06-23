@@ -244,6 +244,15 @@ class JobTemplateBase(BaseModel):
         None,
         description="Description text to write to matching IPs (only applies when ip_action='mark')",
     )
+    # Remove action options
+    ip_remove_skip_assigned: Optional[bool] = Field(
+        True,
+        description="When True, skip IPs assigned to interfaces during removal (only applies when ip_action='remove')",
+    )
+    ip_remove_skip_reserved: Optional[bool] = Field(
+        True,
+        description="When True, skip IPs with status 'Reserved' during removal (only applies when ip_action='remove')",
+    )
     # CSV Import (csv_import type)
     csv_import_repo_id: Optional[int] = Field(
         None, description="Git repository ID for the CSV source (type=csv_imports)"
@@ -422,6 +431,8 @@ class JobTemplateUpdate(BaseModel):
     ip_mark_status: Optional[str] = Field(None, max_length=255)
     ip_mark_tag: Optional[str] = Field(None, max_length=255)
     ip_mark_description: Optional[str] = None
+    ip_remove_skip_assigned: Optional[bool] = None
+    ip_remove_skip_reserved: Optional[bool] = None
     # CSV Import
     csv_import_repo_id: Optional[int] = None
     csv_import_file_path: Optional[str] = Field(None, max_length=500)

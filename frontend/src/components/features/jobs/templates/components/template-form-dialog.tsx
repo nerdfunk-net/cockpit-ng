@@ -149,6 +149,7 @@ export function TemplateFormDialog({
   const [formIpMarkDescription, setFormIpMarkDescription] = useState('')
   // Remove action options
   const [formIpRemoveSkipAssigned, setFormIpRemoveSkipAssigned] = useState(true)
+  const [formIpRemoveSkipReserved, setFormIpRemoveSkipReserved] = useState(true)
   // CSV Import
   const [formCsvImportRepoId, setFormCsvImportRepoId] = useState<number | null>(null)
   const [formCsvImportFilePath, setFormCsvImportFilePath] = useState('')
@@ -302,6 +303,7 @@ export function TemplateFormDialog({
     setFormIpMarkTag('')
     setFormIpMarkDescription('')
     setFormIpRemoveSkipAssigned(true)
+    setFormIpRemoveSkipReserved(true)
     setFormCsvImportRepoId(null)
     setFormCsvImportFilePath('')
     setFormCsvImportType('')
@@ -417,6 +419,7 @@ export function TemplateFormDialog({
       setFormIpMarkTag(editingTemplate.ip_mark_tag || '')
       setFormIpMarkDescription(editingTemplate.ip_mark_description || '')
       setFormIpRemoveSkipAssigned(editingTemplate.ip_remove_skip_assigned ?? true)
+      setFormIpRemoveSkipReserved(editingTemplate.ip_remove_skip_reserved ?? true)
       setFormCsvImportRepoId(editingTemplate.csv_import_repo_id || null)
       setFormCsvImportFilePath(editingTemplate.csv_import_file_path || '')
       setFormCsvImportType(editingTemplate.csv_import_type || '')
@@ -653,6 +656,10 @@ export function TemplateFormDialog({
         formJobType === 'ip_addresses' && formIpAction === 'remove'
           ? formIpRemoveSkipAssigned
           : undefined,
+      ip_remove_skip_reserved:
+        formJobType === 'ip_addresses' && formIpAction === 'remove'
+          ? formIpRemoveSkipReserved
+          : undefined,
       // CSV Import fields
       csv_import_repo_id:
         formJobType === 'csv_import' ? formCsvImportRepoId || undefined : undefined,
@@ -885,6 +892,8 @@ export function TemplateFormDialog({
               setFormIpMarkDescription={setFormIpMarkDescription}
               formIpRemoveSkipAssigned={formIpRemoveSkipAssigned}
               setFormIpRemoveSkipAssigned={setFormIpRemoveSkipAssigned}
+              formIpRemoveSkipReserved={formIpRemoveSkipReserved}
+              setFormIpRemoveSkipReserved={setFormIpRemoveSkipReserved}
               ipStatuses={ipStatuses}
               ipTags={ipTags}
               loadingMarkOptions={loadingIpStatuses || loadingIpTags}

@@ -54,6 +54,7 @@ export interface JobTemplate {
   ip_mark_description?: string
   // Remove action options
   ip_remove_skip_assigned?: boolean
+  ip_remove_skip_reserved?: boolean
   // CSV Export (csv_export type)
   csv_export_repo_id?: number
   csv_export_file_path?: string

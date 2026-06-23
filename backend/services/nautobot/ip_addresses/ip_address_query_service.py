@@ -76,6 +76,7 @@ class IPAddressQueryService:
         filter_value: str,
         filter_type: Optional[str] = None,
         include_null: bool = False,
+        exclude_reserved: bool = False,
     ) -> List[Dict[str, Any]]:
         """List IP addresses using a dynamic GraphQL filter.
 
@@ -95,11 +96,12 @@ class IPAddressQueryService:
 
         filter_key = self._build_filter_key(filter_field, filter_type)
         extra_field = self._build_selection_fields(filter_field)
+        reserved_filter = ', status__n: "Reserved"' if exclude_reserved else ""
 
         # Primary query: IPs that match the given filter
         primary_query = f"""
         {{
-          ip_addresses({filter_key}: "{filter_value}") {{
+          ip_addresses({filter_key}: "{filter_value}"{reserved_filter}) {{
             id
             address
             mask_length
@@ -152,7 +154,7 @@ class IPAddressQueryService:
             null_key = f"{filter_field}__isnull"
             null_query = f"""
             {{
-              ip_addresses({null_key}: true) {{
+              ip_addresses({null_key}: true{reserved_filter}) {{
                 id
                 address
                 mask_length

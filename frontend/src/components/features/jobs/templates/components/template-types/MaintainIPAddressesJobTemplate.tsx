@@ -40,6 +40,8 @@ interface MaintainIPAddressesJobTemplateProps {
   // Remove action options
   formIpRemoveSkipAssigned: boolean
   setFormIpRemoveSkipAssigned: (value: boolean) => void
+  formIpRemoveSkipReserved: boolean
+  setFormIpRemoveSkipReserved: (value: boolean) => void
   ipStatuses: IpAddressStatus[]
   ipTags: IpAddressTag[]
   loadingMarkOptions: boolean
@@ -100,6 +102,8 @@ export function MaintainIPAddressesJobTemplate({
   setFormIpMarkDescription,
   formIpRemoveSkipAssigned,
   setFormIpRemoveSkipAssigned,
+  formIpRemoveSkipReserved,
+  setFormIpRemoveSkipReserved,
   ipStatuses,
   ipTags,
   loadingMarkOptions,
@@ -178,6 +182,26 @@ export function MaintainIPAddressesJobTemplate({
               <p className="text-xs text-red-700 mt-0.5">
                 When enabled, IP addresses that are currently assigned to an interface
                 will be skipped and not deleted.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <Switch
+              id="ip-remove-skip-reserved"
+              checked={formIpRemoveSkipReserved}
+              onCheckedChange={setFormIpRemoveSkipReserved}
+            />
+            <div>
+              <Label
+                htmlFor="ip-remove-skip-reserved"
+                className="text-sm text-red-900 cursor-pointer"
+              >
+                Skip Reserved IP-Addresses
+              </Label>
+              <p className="text-xs text-red-700 mt-0.5">
+                When enabled, IP addresses with status &quot;Reserved&quot; will be skipped
+                and not deleted.
               </p>
             </div>
           </div>

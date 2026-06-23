@@ -47,6 +47,7 @@ def execute_ip_addresses(
         mark_tag = template.get("ip_mark_tag") or None
         mark_description = template.get("ip_mark_description") or None
         remove_skip_assigned = template.get("ip_remove_skip_assigned", True)
+        remove_skip_reserved = template.get("ip_remove_skip_reserved", True)
 
     if not filter_field or not filter_value:
         return {
@@ -106,6 +107,7 @@ def execute_ip_addresses(
                 filter_value=filter_value,
                 filter_type=filter_type,
                 include_null=include_null,
+                exclude_reserved=remove_skip_reserved,
             )
             total = len(ip_addresses)
             deleted = 0
@@ -175,6 +177,7 @@ def execute_ip_addresses(
                 "filter_value": filter_value,
                 "include_null": include_null,
                 "remove_skip_assigned": remove_skip_assigned,
+                "remove_skip_reserved": remove_skip_reserved,
                 "total": total,
                 "skipped": skipped,
                 "deleted": deleted,
