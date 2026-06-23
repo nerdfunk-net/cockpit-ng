@@ -24,6 +24,9 @@ def scan_prefixes_task(
     executed_by: str = "unknown",
     scan_max_ips: Optional[int] = None,
     explicit_prefixes: Optional[List[str]] = None,
+    condition_type: str = "custom_field",
+    location_name: Optional[str] = None,
+    cidr: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Celery task wrapper — delegates to PrefixScanService."""
     return _scan_service.execute(
@@ -41,4 +44,7 @@ def scan_prefixes_task(
         job_run_id=None,
         scan_max_ips=scan_max_ips,
         explicit_prefixes=explicit_prefixes,
+        condition_type=condition_type,
+        location_name=location_name,
+        cidr=cidr,
     )

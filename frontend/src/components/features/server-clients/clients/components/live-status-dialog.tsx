@@ -533,9 +533,9 @@ function ArpTable({ rows }: { rows: ArpEntry[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {rows.map((row, i) => (
+          {rows.map((row) => (
             <tr
-              key={`${row.ip_address}-${row.interface}-${row.vrf ?? ''}-${i}`}
+              key={`${row.ip_address}-${row.interface}-${row.vrf ?? ''}`}
               className="hover:bg-gray-50 transition-colors"
             >
               <td className="px-3 py-2 font-mono text-gray-800">{row.ip_address}</td>

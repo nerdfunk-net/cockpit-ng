@@ -44,6 +44,9 @@ class JobTemplateService:
         scan_response_custom_field_name: Optional[str] = None,
         scan_set_reachable_ip_active: bool = True,
         scan_max_ips: Optional[int] = None,
+        scan_condition_type: Optional[str] = None,
+        scan_location_name: Optional[str] = None,
+        scan_cidr: Optional[str] = None,
         parallel_tasks: int = 1,
         deploy_template_id: Optional[int] = None,
         deploy_agent_id: Optional[str] = None,
@@ -136,6 +139,9 @@ class JobTemplateService:
             scan_response_custom_field_name=scan_response_custom_field_name,
             scan_set_reachable_ip_active=scan_set_reachable_ip_active,
             scan_max_ips=scan_max_ips,
+            scan_condition_type=scan_condition_type,
+            scan_location_name=scan_location_name,
+            scan_cidr=scan_cidr,
             parallel_tasks=parallel_tasks,
             deploy_template_id=deploy_template_id,
             deploy_agent_id=deploy_agent_id,
@@ -241,6 +247,9 @@ class JobTemplateService:
         scan_response_custom_field_name: Optional[str] = None,
         scan_set_reachable_ip_active: Optional[bool] = None,
         scan_max_ips: Optional[int] = None,
+        scan_condition_type: Optional[str] = None,
+        scan_location_name: Optional[str] = None,
+        scan_cidr: Optional[str] = None,
         parallel_tasks: Optional[int] = None,
         deploy_template_id: Optional[int] = None,
         deploy_agent_id: Optional[str] = None,
@@ -343,6 +352,12 @@ class JobTemplateService:
             update_data["scan_set_reachable_ip_active"] = scan_set_reachable_ip_active
         if scan_max_ips is not None:
             update_data["scan_max_ips"] = scan_max_ips
+        if scan_condition_type is not None:
+            update_data["scan_condition_type"] = scan_condition_type
+        if scan_location_name is not None:
+            update_data["scan_location_name"] = scan_location_name
+        if scan_cidr is not None:
+            update_data["scan_cidr"] = scan_cidr
         if parallel_tasks is not None:
             update_data["parallel_tasks"] = parallel_tasks
         if deploy_template_id is not None:
@@ -584,6 +599,9 @@ class JobTemplateService:
             "scan_response_custom_field_name": template.scan_response_custom_field_name,
             "scan_set_reachable_ip_active": template.scan_set_reachable_ip_active,
             "scan_max_ips": template.scan_max_ips,
+            "scan_condition_type": template.scan_condition_type,
+            "scan_location_name": template.scan_location_name,
+            "scan_cidr": template.scan_cidr,
             "parallel_tasks": template.parallel_tasks,
             "deploy_template_id": template.deploy_template_id,
             "deploy_agent_id": template.deploy_agent_id,

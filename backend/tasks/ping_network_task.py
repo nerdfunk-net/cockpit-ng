@@ -5,6 +5,7 @@ Pings CIDR networks and optionally resolves DNS names.
 
 import ipaddress
 import logging
+import math
 import os
 import socket
 import subprocess
@@ -101,14 +102,34 @@ def _fping_networks(
             temp_file_path,  # Read target list from the temp file
         ]
 
-        logger.debug("Running fping command: %s", " ".join(cmd))
+        logger.info("Running fping command: %s", " ".join(cmd))
+        logger.info(
+            "Scanning %s IPs: count=%s timeout=%sms retry=%s interval=%sms",
+            len(ip_list),
+            count,
+            timeout,
+            retry,
+            interval,
+        )
+
+        # Dynamic timeout: fping rate-limits to one packet every `interval` ms
+        # globally, so a full sweep takes at least num_ips * interval * count / 1000 s.
+        # Give 3× headroom for unreachable-host wait times and retries, min 120 s.
+        theoretical_s = math.ceil(len(ip_list) * interval * count / 1000)
+        subprocess_timeout = max(120, theoretical_s * 3 + 60)
+        logger.info(
+            "fping subprocess timeout: %s s (theoretical=%s s, ips=%s)",
+            subprocess_timeout,
+            theoretical_s,
+            len(ip_list),
+        )
 
         # Argument-list form, no shell. fping reads targets from the -f file.
         result = subprocess.run(
             cmd,
             shell=False,
             capture_output=True,
-            timeout=60,  # Allow up to 60 seconds for network scanning
+            timeout=subprocess_timeout,
             text=True,
         )
 
@@ -188,8 +209,41 @@ def _fping_networks(
                 "Alive IPs: %s", sorted(list(alive_ips))[:50]
             )  # Log first 50 alive IPs
 
-    except subprocess.TimeoutExpired:
-        logger.warning("fping command timed out")
+    except subprocess.TimeoutExpired as exc:
+        logger.error(
+            "fping timed out after %s s scanning %s IPs. Command: %s. "
+            "Hint: reduce scan_max_ips or lower interval_ms to speed up scans.",
+            subprocess_timeout,
+            len(ip_list),
+            " ".join(cmd),
+        )
+        # Salvage any partial output buffered before the process was killed
+        partial = ""
+        if exc.stdout:
+            partial += (
+                exc.stdout
+                if isinstance(exc.stdout, str)
+                else exc.stdout.decode("utf-8", errors="replace")
+            )
+        if exc.stderr:
+            partial += (
+                exc.stderr
+                if isinstance(exc.stderr, str)
+                else exc.stderr.decode("utf-8", errors="replace")
+            )
+        if partial:
+            logger.info("Parsing %s bytes of partial fping output", len(partial))
+            for line in partial.strip().split("\n"):
+                line = line.strip()
+                if "xmt/rcv/%loss" in line:
+                    parts = line.split()
+                    if parts and _is_valid_ip(parts[0]):
+                        try:
+                            rcv_count = int(line.split("=")[1].strip().split("/")[1])
+                            if rcv_count > 0:
+                                alive_ips.add(parts[0])
+                        except (IndexError, ValueError):
+                            pass
     except FileNotFoundError:
         logger.error("fping command not found. Please install fping")
     except Exception as e:

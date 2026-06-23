@@ -156,6 +156,21 @@ class JobTemplateBase(BaseModel):
         ge=1,
         description="Maximum number of IPs to scan per job (only applies to scan_prefixes type)",
     )
+    scan_condition_type: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="Scan condition type: 'custom_field', 'location', or 'cidr' (only applies to scan_prefixes type)",
+    )
+    scan_location_name: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Location name to filter prefixes by (only applies to scan_prefixes type with condition_type='location')",
+    )
+    scan_cidr: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="CIDR notation to filter prefixes by, e.g. '10.0.0.0/8' (only applies to scan_prefixes type with condition_type='cidr')",
+    )
     parallel_tasks: int = Field(
         1,
         ge=1,
@@ -389,6 +404,9 @@ class JobTemplateUpdate(BaseModel):
     scan_response_custom_field_name: Optional[str] = Field(None, max_length=255)
     scan_set_reachable_ip_active: Optional[bool] = None
     scan_max_ips: Optional[int] = Field(None, ge=1)
+    scan_condition_type: Optional[str] = Field(None, max_length=50)
+    scan_location_name: Optional[str] = Field(None, max_length=255)
+    scan_cidr: Optional[str] = Field(None, max_length=50)
     parallel_tasks: Optional[int] = Field(None, ge=1, le=50)
     deploy_template_id: Optional[int] = None
     deploy_agent_id: Optional[str] = Field(None, max_length=255)

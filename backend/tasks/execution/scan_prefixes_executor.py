@@ -59,8 +59,13 @@ def execute_scan_prefixes(
         custom_field_value = template.get("scan_custom_field_value")
         response_custom_field_name = template.get("scan_response_custom_field_name")
         set_reachable_ip_active = template.get("scan_set_reachable_ip_active", True)
+        condition_type = template.get("scan_condition_type") or "custom_field"
+        location_name = template.get("scan_location_name")
+        scan_cidr = template.get("scan_cidr")
 
-        if not custom_field_name or not custom_field_value:
+        if condition_type in (None, "custom_field") and (
+            not custom_field_name or not custom_field_value
+        ):
             return {
                 "success": False,
                 "error": "Missing custom field name or value in template",
@@ -75,7 +80,12 @@ def execute_scan_prefixes(
         scan_max_ips = template.get("scan_max_ips")
 
         logger.info(
-            "Scanning prefixes with %s=%s", custom_field_name, custom_field_value
+            "Scanning prefixes with condition_type=%s (custom_field=%s/%s, location=%s, cidr=%s)",
+            condition_type,
+            custom_field_name,
+            custom_field_value,
+            location_name,
+            scan_cidr,
         )
         logger.info(
             "Scan options: resolve_dns=%s, ping_count=%s, timeout=%sms, retries=%s, interval=%sms, max_ips=%s",
@@ -105,6 +115,9 @@ def execute_scan_prefixes(
             task_context=None,
             scan_max_ips=scan_max_ips,
             job_run_id=None,
+            condition_type=condition_type,
+            location_name=location_name,
+            cidr=scan_cidr,
         )
 
         logger.info("=" * 80)

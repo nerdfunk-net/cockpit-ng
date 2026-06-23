@@ -135,6 +135,13 @@ const scanPrefixesTemplateSchema = z.object({
   scan_custom_field_value: z.string().optional(),
   scan_response_custom_field_name: z.string().optional(),
   scan_max_ips: z.number().min(1).max(10000).optional(),
+  scan_condition_type: z.enum(['custom_field', 'location', 'cidr']).optional(),
+  scan_location_name: z.string().optional(),
+  scan_cidr: z
+    .string()
+    .regex(/^\d{1,3}(\.\d{1,3}){3}\/\d{1,2}$/, 'Enter a valid CIDR (e.g. 10.0.0.0/8)')
+    .optional()
+    .or(z.literal('')),
   is_global: z.boolean(),
 })
 

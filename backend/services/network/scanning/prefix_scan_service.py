@@ -18,8 +18,8 @@ class PrefixScanService:
 
     def execute(
         self,
-        custom_field_name: str,
-        custom_field_value: str,
+        custom_field_name: Optional[str] = None,
+        custom_field_value: Optional[str] = None,
         response_custom_field_name: Optional[str] = None,
         set_reachable_ip_active: bool = True,
         resolve_dns: bool = False,
@@ -32,6 +32,9 @@ class PrefixScanService:
         scan_max_ips: Optional[int] = None,
         explicit_prefixes: Optional[List[str]] = None,
         job_run_id: Optional[int] = None,
+        condition_type: str = "custom_field",
+        location_name: Optional[str] = None,
+        cidr: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Entry point. Replaces _execute_scan_prefixes() in the task file.
@@ -47,9 +50,14 @@ class PrefixScanService:
 
         try:
             if job_run_id is None and task_context:
+                if condition_type == "location":
+                    job_label = "location=%s" % location_name
+                elif condition_type == "cidr":
+                    job_label = "cidr=%s" % cidr
+                else:
+                    job_label = "%s=%s" % (custom_field_name, custom_field_value)
                 job_run = _jrs.create_job_run(
-                    job_name="Scan Prefixes (%s=%s)"
-                    % (custom_field_name, custom_field_value),
+                    job_name="Scan Prefixes (%s)" % job_label,
                     job_type="scan_prefixes",
                     triggered_by="manual",
                     executed_by=executed_by,
@@ -60,9 +68,12 @@ class PrefixScanService:
                 _jrs.mark_started(job_run_id, task_context.request.id)
 
             logger.info(
-                "Scan prefixes task started: custom_field=%s, value=%s, max_ips=%s",
+                "Scan prefixes task started: condition_type=%s, custom_field=%s/%s, location=%s, cidr=%s, max_ips=%s",
+                condition_type,
                 custom_field_name,
                 custom_field_value,
+                location_name,
+                cidr,
                 scan_max_ips,
             )
 
@@ -71,19 +82,43 @@ class PrefixScanService:
                 cidrs = explicit_prefixes
                 logger.info("Using %s explicit prefixes provided", len(cidrs))
             else:
-                if task_context:
-                    task_context.update_state(
-                        state="PROGRESS",
-                        meta={
-                            "status": "Fetching prefixes with %s=%s..."
-                            % (custom_field_name, custom_field_value),
-                            "current": 0,
-                            "total": 1,
-                        },
+                if condition_type == "location":
+                    if task_context:
+                        task_context.update_state(
+                            state="PROGRESS",
+                            meta={
+                                "status": "Fetching prefixes for location=%s..."
+                                % location_name,
+                                "current": 0,
+                                "total": 1,
+                            },
+                        )
+                    cidrs = self._fetch_prefixes_by_location(location_name)
+                elif condition_type == "cidr":
+                    if task_context:
+                        task_context.update_state(
+                            state="PROGRESS",
+                            meta={
+                                "status": "Fetching prefixes for CIDR=%s..." % cidr,
+                                "current": 0,
+                                "total": 1,
+                            },
+                        )
+                    cidrs = self._fetch_prefixes_by_cidr(cidr)
+                else:
+                    if task_context:
+                        task_context.update_state(
+                            state="PROGRESS",
+                            meta={
+                                "status": "Fetching prefixes with %s=%s..."
+                                % (custom_field_name, custom_field_value),
+                                "current": 0,
+                                "total": 1,
+                            },
+                        )
+                    cidrs = self._fetch_prefixes_by_custom_field(
+                        custom_field_name, custom_field_value
                     )
-                cidrs = self._fetch_prefixes_by_custom_field(
-                    custom_field_name, custom_field_value
-                )
 
             if not cidrs:
                 result = {
@@ -444,6 +479,95 @@ class PrefixScanService:
 
         except Exception as e:
             logger.error("Error fetching prefixes from Nautobot: %s", e, exc_info=True)
+            return []
+
+    def _fetch_prefixes_by_location(self, location_name: Optional[str]) -> List[str]:
+        """GraphQL query: return list of CIDR strings for prefixes in the given location."""
+        import service_factory
+
+        if not location_name:
+            logger.warning("No location_name provided for prefix fetch")
+            return []
+
+        nautobot_service = service_factory.build_nautobot_service()
+
+        query = (
+            """
+    query {
+      prefixes(location: "%s") {
+        prefix
+      }
+    }
+    """
+            % location_name
+        )
+
+        try:
+            logger.info("Fetching prefixes for location=%s", location_name)
+            result = asyncio.run(nautobot_service.graphql_query(query))
+
+            if not result or "data" not in result:
+                logger.error(
+                    "Failed to fetch prefixes from Nautobot for location=%s",
+                    location_name,
+                )
+                return []
+
+            prefixes_data = result.get("data", {}).get("prefixes", [])
+            prefixes = [p.get("prefix") for p in prefixes_data if p.get("prefix")]
+
+            logger.info(
+                "Found %s prefixes for location=%s", len(prefixes), location_name
+            )
+            return prefixes
+
+        except Exception as e:
+            logger.error(
+                "Error fetching prefixes by location from Nautobot: %s",
+                e,
+                exc_info=True,
+            )
+            return []
+
+    def _fetch_prefixes_by_cidr(self, cidr: Optional[str]) -> List[str]:
+        """GraphQL query: return list of CIDR strings matching the given prefix filter."""
+        import service_factory
+
+        if not cidr:
+            logger.warning("No CIDR provided for prefix fetch")
+            return []
+
+        nautobot_service = service_factory.build_nautobot_service()
+
+        query = (
+            """
+    query {
+      prefixes(prefix: "%s") {
+        prefix
+      }
+    }
+    """
+            % cidr
+        )
+
+        try:
+            logger.info("Fetching prefixes for CIDR=%s", cidr)
+            result = asyncio.run(nautobot_service.graphql_query(query))
+
+            if not result or "data" not in result:
+                logger.error("Failed to fetch prefixes from Nautobot for CIDR=%s", cidr)
+                return []
+
+            prefixes_data = result.get("data", {}).get("prefixes", [])
+            prefixes = [p.get("prefix") for p in prefixes_data if p.get("prefix")]
+
+            logger.info("Found %s prefixes for CIDR=%s", len(prefixes), cidr)
+            return prefixes
+
+        except Exception as e:
+            logger.error(
+                "Error fetching prefixes by CIDR from Nautobot: %s", e, exc_info=True
+            )
             return []
 
     def _update_ip_in_nautobot(

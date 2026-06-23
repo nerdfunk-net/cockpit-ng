@@ -32,6 +32,9 @@ export interface JobTemplate {
   scan_response_custom_field_name?: string
   scan_set_reachable_ip_active?: boolean
   scan_max_ips?: number
+  scan_condition_type?: string
+  scan_location_name?: string
+  scan_cidr?: string
   parallel_tasks?: number
   deploy_template_id?: number
   deploy_agent_id?: string

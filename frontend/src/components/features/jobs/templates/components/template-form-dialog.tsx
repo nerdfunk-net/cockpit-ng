@@ -121,6 +121,9 @@ export function TemplateFormDialog({
     useState('')
   const [formScanSetReachableIpActive, setFormScanSetReachableIpActive] = useState(true)
   const [formScanMaxIps, setFormScanMaxIps] = useState('')
+  const [formScanConditionType, setFormScanConditionType] = useState('custom_field')
+  const [formScanLocationName, setFormScanLocationName] = useState('')
+  const [formScanCidr, setFormScanCidr] = useState('')
   const [formDeployAgentId, setFormDeployAgentId] = useState('')
   const [formDeployTemplateEntries, setFormDeployTemplateEntries] = useState<
     DeployTemplateEntryData[]
@@ -364,6 +367,9 @@ export function TemplateFormDialog({
         editingTemplate.scan_set_reachable_ip_active ?? true
       )
       setFormScanMaxIps(editingTemplate.scan_max_ips?.toString() || '')
+      setFormScanConditionType(editingTemplate.scan_condition_type || 'custom_field')
+      setFormScanLocationName(editingTemplate.scan_location_name || '')
+      setFormScanCidr(editingTemplate.scan_cidr || '')
       setFormDeployAgentId(editingTemplate.deploy_agent_id || '')
       // Load multi-template entries: prefer deploy_templates, fall back to single legacy fields
       if (
@@ -586,6 +592,11 @@ export function TemplateFormDialog({
         formJobType === 'scan_prefixes' && formScanMaxIps
           ? parseInt(formScanMaxIps)
           : undefined,
+      scan_condition_type:
+        formJobType === 'scan_prefixes' ? formScanConditionType : undefined,
+      scan_location_name:
+        formJobType === 'scan_prefixes' ? formScanLocationName : undefined,
+      scan_cidr: formJobType === 'scan_prefixes' ? formScanCidr : undefined,
       // Legacy single-template fields (populated from first entry for backward compat)
       deploy_template_id:
         formJobType === 'deploy_agent' && formDeployTemplateEntries[0]?.templateId
@@ -845,6 +856,12 @@ export function TemplateFormDialog({
               setFormScanSetReachableIpActive={setFormScanSetReachableIpActive}
               formScanMaxIps={formScanMaxIps}
               setFormScanMaxIps={setFormScanMaxIps}
+              formScanConditionType={formScanConditionType}
+              setFormScanConditionType={setFormScanConditionType}
+              formScanLocationName={formScanLocationName}
+              setFormScanLocationName={setFormScanLocationName}
+              formScanCidr={formScanCidr}
+              setFormScanCidr={setFormScanCidr}
             />
           )}
 

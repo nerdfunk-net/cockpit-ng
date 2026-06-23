@@ -111,6 +111,15 @@ class JobTemplate(Base):
     scan_max_ips = Column(
         Integer
     )  # Maximum number of IPs to scan per job (scan_prefixes type)
+    scan_condition_type = Column(
+        String(50), nullable=True
+    )  # Condition type: 'custom_field' | 'location' | 'cidr' (scan_prefixes type)
+    scan_location_name = Column(
+        String(255), nullable=True
+    )  # Location name for GraphQL prefix filter (scan_prefixes type)
+    scan_cidr = Column(
+        String(50), nullable=True
+    )  # CIDR notation for prefix filter, e.g. "10.0.0.0/8" (scan_prefixes type)
     parallel_tasks = Column(
         Integer, nullable=False, default=1
     )  # Number of parallel tasks for backup execution (backup type)

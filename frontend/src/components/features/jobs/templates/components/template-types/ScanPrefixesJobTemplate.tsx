@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Radar, Network } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 
@@ -25,6 +26,12 @@ interface CustomField {
     value: string
     display: string
   }>
+}
+
+interface NautobotLocation {
+  id: string
+  name: string
+  description?: string
 }
 
 interface ScanPrefixesJobTemplateProps {
@@ -48,9 +55,16 @@ interface ScanPrefixesJobTemplateProps {
   setFormScanSetReachableIpActive: (value: boolean) => void
   formScanMaxIps: string
   setFormScanMaxIps: (value: string) => void
+  formScanConditionType: string
+  setFormScanConditionType: (value: string) => void
+  formScanLocationName: string
+  setFormScanLocationName: (value: string) => void
+  formScanCidr: string
+  setFormScanCidr: (value: string) => void
 }
 
 const EMPTY_CUSTOM_FIELDS: CustomField[] = []
+const EMPTY_LOCATIONS: NautobotLocation[] = []
 
 export function ScanPrefixesJobTemplate({
   formScanResolveDns,
@@ -73,18 +87,24 @@ export function ScanPrefixesJobTemplate({
   setFormScanSetReachableIpActive,
   formScanMaxIps,
   setFormScanMaxIps,
+  formScanConditionType,
+  setFormScanConditionType,
+  formScanLocationName,
+  setFormScanLocationName,
+  formScanCidr,
+  setFormScanCidr,
 }: ScanPrefixesJobTemplateProps) {
   const token = useAuthStore(state => state.token)
   const [customFields, setCustomFields] = useState<CustomField[]>(EMPTY_CUSTOM_FIELDS)
+  const [locations, setLocations] = useState<NautobotLocation[]>(EMPTY_LOCATIONS)
   const [selectedFieldChoices, setSelectedFieldChoices] = useState<
     Array<{ value: string; display: string }>
   >([])
   const [loadingCustomFields, setLoadingCustomFields] = useState(false)
+  const [loadingLocations, setLoadingLocations] = useState(false)
 
-  // Fetch custom fields for ipam.prefix
   const fetchCustomFields = useCallback(async () => {
     if (!token) return
-
     setLoadingCustomFields(true)
     try {
       const response = await fetch('/api/proxy/api/nautobot/custom-fields/prefixes', {
@@ -93,7 +113,6 @@ export function ScanPrefixesJobTemplate({
           'Content-Type': 'application/json',
         },
       })
-
       if (response.ok) {
         const data = await response.json()
         setCustomFields(data || [])
@@ -105,11 +124,37 @@ export function ScanPrefixesJobTemplate({
     }
   }, [token])
 
+  const fetchLocations = useCallback(async () => {
+    if (!token) return
+    setLoadingLocations(true)
+    try {
+      const response = await fetch('/api/proxy/api/nautobot/locations', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setLocations(data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching locations:', error)
+    } finally {
+      setLoadingLocations(false)
+    }
+  }, [token])
+
   useEffect(() => {
     fetchCustomFields()
   }, [fetchCustomFields])
 
-  // When a custom field is selected, check if it has choices
+  useEffect(() => {
+    if (formScanConditionType === 'location') {
+      fetchLocations()
+    }
+  }, [formScanConditionType, fetchLocations])
+
   useEffect(() => {
     if (formScanCustomFieldName) {
       const field = customFields.find(f => f.key === formScanCustomFieldName)
@@ -130,96 +175,187 @@ export function ScanPrefixesJobTemplate({
 
   return (
     <>
-      {/* Custom Field Selection Section */}
+      {/* Scan Conditions Section */}
       <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Network className="h-4 w-4 text-purple-600" />
-          <Label className="text-sm font-semibold text-purple-900">
-            Prefix Custom Fields
-          </Label>
+          <Label className="text-sm font-semibold text-purple-900">Scan Conditions</Label>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Condition type selector */}
+        <div className="space-y-2">
+          <Label className="text-sm text-purple-900">Condition Type</Label>
+          <RadioGroup
+            value={formScanConditionType || 'custom_field'}
+            onValueChange={setFormScanConditionType}
+            className="flex gap-6"
+          >
+            <div className="flex items-center gap-2">
+              <RadioGroupItem
+                value="custom_field"
+                id="condition-custom-field"
+                className="border-purple-400 text-purple-600"
+              />
+              <Label htmlFor="condition-custom-field" className="text-sm text-purple-900 cursor-pointer font-normal">
+                Custom Field
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem
+                value="location"
+                id="condition-location"
+                className="border-purple-400 text-purple-600"
+              />
+              <Label htmlFor="condition-location" className="text-sm text-purple-900 cursor-pointer font-normal">
+                Location
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem
+                value="cidr"
+                id="condition-cidr"
+                className="border-purple-400 text-purple-600"
+              />
+              <Label htmlFor="condition-cidr" className="text-sm text-purple-900 cursor-pointer font-normal">
+                CIDR
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {/* Custom Field mode */}
+        {(!formScanConditionType || formScanConditionType === 'custom_field') && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="custom-field-name" className="text-sm text-purple-900">
+                Scan Condition
+              </Label>
+              <Select
+                value={formScanCustomFieldName}
+                onValueChange={setFormScanCustomFieldName}
+                disabled={loadingCustomFields}
+              >
+                <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
+                  <SelectValue
+                    placeholder={
+                      loadingCustomFields ? 'Loading...' : 'Select custom field...'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {customFields.map(field => (
+                    <SelectItem key={field.key} value={field.key}>
+                      {field.label} ({field.type.label})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-purple-700">
+                Select the custom field on prefixes to filter by (content_type: ipam.prefix)
+              </p>
+            </div>
+
+            {formScanCustomFieldName && (
+              <div className="space-y-2">
+                <Label htmlFor="custom-field-value" className="text-sm text-purple-900">
+                  Custom Field Value
+                </Label>
+                {getSelectedFieldType() === 'boolean' ? (
+                  <Select
+                    value={formScanCustomFieldValue}
+                    onValueChange={setFormScanCustomFieldValue}
+                  >
+                    <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
+                      <SelectValue placeholder="Select value..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">True</SelectItem>
+                      <SelectItem value="false">False</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : selectedFieldChoices.length > 0 ? (
+                  <Select
+                    value={formScanCustomFieldValue}
+                    onValueChange={setFormScanCustomFieldValue}
+                  >
+                    <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
+                      <SelectValue placeholder="Select value..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedFieldChoices.map(choice => (
+                        <SelectItem key={choice.value} value={choice.value}>
+                          {choice.display}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="custom-field-value"
+                    type="text"
+                    value={formScanCustomFieldValue}
+                    onChange={e => setFormScanCustomFieldValue(e.target.value)}
+                    placeholder="Enter value..."
+                    className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+                  />
+                )}
+                <p className="text-xs text-purple-700">
+                  Prefixes with this custom field value will be scanned
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Location mode */}
+        {formScanConditionType === 'location' && (
           <div className="space-y-2">
-            <Label htmlFor="custom-field-name" className="text-sm text-purple-900">
-              Scan Condition
+            <Label htmlFor="scan-location" className="text-sm text-purple-900">
+              Location
             </Label>
             <Select
-              value={formScanCustomFieldName}
-              onValueChange={setFormScanCustomFieldName}
-              disabled={loadingCustomFields}
+              value={formScanLocationName}
+              onValueChange={setFormScanLocationName}
+              disabled={loadingLocations}
             >
               <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
                 <SelectValue
-                  placeholder={
-                    loadingCustomFields ? 'Loading...' : 'Select custom field...'
-                  }
+                  placeholder={loadingLocations ? 'Loading...' : 'Select location...'}
                 />
               </SelectTrigger>
               <SelectContent>
-                {customFields.map(field => (
-                  <SelectItem key={field.key} value={field.key}>
-                    {field.label} ({field.type.label})
+                {locations.map(loc => (
+                  <SelectItem key={loc.id} value={loc.name}>
+                    {loc.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-purple-700">
-              Select the custom field on prefixes to filter by (content_type:
-              ipam.prefix)
+              Prefixes assigned to this location will be scanned
             </p>
           </div>
+        )}
 
-          {formScanCustomFieldName && (
-            <div className="space-y-2">
-              <Label htmlFor="custom-field-value" className="text-sm text-purple-900">
-                Custom Field Value
-              </Label>
-              {getSelectedFieldType() === 'boolean' ? (
-                <Select
-                  value={formScanCustomFieldValue}
-                  onValueChange={setFormScanCustomFieldValue}
-                >
-                  <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
-                    <SelectValue placeholder="Select value..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">True</SelectItem>
-                    <SelectItem value="false">False</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : selectedFieldChoices.length > 0 ? (
-                <Select
-                  value={formScanCustomFieldValue}
-                  onValueChange={setFormScanCustomFieldValue}
-                >
-                  <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
-                    <SelectValue placeholder="Select value..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedFieldChoices.map(choice => (
-                      <SelectItem key={choice.value} value={choice.value}>
-                        {choice.display}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id="custom-field-value"
-                  type="text"
-                  value={formScanCustomFieldValue}
-                  onChange={e => setFormScanCustomFieldValue(e.target.value)}
-                  placeholder="Enter value..."
-                  className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
-                />
-              )}
-              <p className="text-xs text-purple-700">
-                Prefixes with this custom field value will be scanned
-              </p>
-            </div>
-          )}
-        </div>
+        {/* CIDR mode */}
+        {formScanConditionType === 'cidr' && (
+          <div className="space-y-2">
+            <Label htmlFor="scan-cidr" className="text-sm text-purple-900">
+              CIDR
+            </Label>
+            <Input
+              id="scan-cidr"
+              type="text"
+              value={formScanCidr}
+              onChange={e => setFormScanCidr(e.target.value)}
+              placeholder="e.g. 10.0.0.0/8"
+              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+            />
+            <p className="text-xs text-purple-700">
+              Prefixes matching this CIDR notation will be scanned
+            </p>
+          </div>
+        )}
 
         {/* Response Custom Field */}
         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-purple-200">
@@ -251,8 +387,7 @@ export function ScanPrefixesJobTemplate({
               </SelectContent>
             </Select>
             <p className="text-xs text-purple-700">
-              Optional: Write scan results to this custom field (content_type:
-              ipam.prefix)
+              Optional: Write scan results to this custom field (content_type: ipam.prefix)
             </p>
           </div>
         </div>
