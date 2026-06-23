@@ -155,8 +155,12 @@ class JobTemplate(Base):
     ip_mark_tag = Column(String(255), nullable=True)  # Nautobot tag UUID
     ip_mark_description = Column(Text, nullable=True)  # Description to write
     # Remove action options (only relevant when ip_action == "remove")
-    ip_remove_skip_assigned = Column(Boolean, nullable=True)  # skip IPs assigned to an interface
-    ip_remove_skip_reserved = Column(Boolean, nullable=True)  # skip IPs with status "Reserved"
+    ip_remove_skip_assigned = Column(
+        Boolean, nullable=True
+    )  # skip IPs assigned to an interface
+    ip_remove_skip_reserved = Column(
+        Boolean, nullable=True
+    )  # skip IPs with status "Reserved"
     # CSV Import (csv_import type)
     csv_import_repo_id = Column(Integer, nullable=True)
     csv_import_file_path = Column(String(500), nullable=True)

@@ -301,7 +301,6 @@ class TestFetchPrefixesByCustomField:
 @pytest.mark.unit
 class TestUpdatePrefixLastScan:
     def _make_requests_mock(self, prefix_results=None, containment_results=None):
-
         get_mock = MagicMock()
         patch_mock = MagicMock()
 
