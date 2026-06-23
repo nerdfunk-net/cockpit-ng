@@ -33,6 +33,8 @@ Network management dashboard for NetDevOps with Nautobot & CheckMK integration, 
 6. Register in main.py → app.include_router({domain}_router)
 ```
 
+**End-to-end wiring rule:** When adding or modifying any config field or feature, trace and wire it through ALL layers — SQLAlchemy model, Pydantic schema, repository, service, router parameter lists, and frontend form. Before declaring done, verify the value actually persists to the database. Missing the router or service layer is the most common cause of silent persistence failures.
+
 ### Frontend Structure
 ```
 /components/features/{domain}/
@@ -568,6 +570,36 @@ ruff check --fix .     # lint + auto-fix
 
 When implementing configuration changes, include verification steps that confirm the change works (e.g., run a quick test, check logs, or validate config loads)
 
+### Config File Paths
+- CheckMK config files go in `./config/checkmk/` — **not** `./config/`
+- Always use the exact target path when writing config files; the wrong directory silently creates files in the wrong location
+
+## Definition of Done
+
+Before reporting a task complete, ALL of the following must pass:
+
+**Backend:**
+```bash
+cd backend
+ruff format .
+ruff check --fix .
+pytest -q
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm run lint
+```
+
+Do not declare done if any lint error, type error, or test failure remains. Fix it first.
+
+## Testing Conventions
+
+- **Test database:** Seed scripts and integration tests must target `cockpit_test` via `.env.test`, never the dev database (`.env`)
+- **Test isolation:** Always clean up `app.dependency_overrides` in test teardown (use `finally` or a pytest fixture) — leaked overrides cause flaky results across test runs
+- **Verify at runtime:** After fixing an endpoint bug, hit the endpoint with a real request (not just assert the test passes) to confirm it works end-to-end
+
 ## Nautobot Services Architecture
 
 **IMPORTANT:** Nautobot services follow a specialized pattern for external API integration.
@@ -754,14 +786,10 @@ ip_id = await ip_manager.ensure_ip_address_exists(...)
 - ❌ Storing query data in `useState` (use `useMemo` for derived state)
 - ❌ Forgetting to invalidate cache after mutations
 
-## Suggested CLAUDE.md Additions
-
 ## Task Completion
 
-When removing features or debugging issues, always complete the full removal/fix cycle including: 1) Remove all related code, 2) Update configuration files, 3) Clean up imports/dependencies, 4) Verify no references remain with grep
+When removing features or debugging issues, complete the full removal/fix cycle: 1) Remove all related code, 2) Update configuration files, 3) Clean up imports/dependencies, 4) Verify no references remain with grep.
 
 ## Python Conventions
 
-For Python/Celery projects: Always add inline documentation comments when modifying queue configurations, task decorators, or worker settings
-
-
+For Python/Celery projects: Always add inline documentation comments when modifying queue configurations, task decorators, or worker settings.
