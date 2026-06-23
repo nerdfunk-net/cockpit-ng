@@ -11,6 +11,11 @@ export interface ValidationError {
   column?: number
 }
 
+export interface SnmpEntryError {
+  entryKey: string
+  errors: string[]
+}
+
 export interface ValidationResponse {
   success: boolean
   valid: boolean

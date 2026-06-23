@@ -20,12 +20,14 @@ import {
 import { useSnmpMappingQuery } from './hooks/use-snmp-mapping-query'
 import { useSnmpMutations } from './hooks/use-snmp-mutations'
 import { SnmpValidationDialog } from './dialogs/snmp-validation-dialog'
+import { SnmpSemanticValidationDialog } from './dialogs/snmp-semantic-validation-dialog'
 import { SnmpHelpDialog } from './dialogs/snmp-help-dialog'
 import { GitImportDialog } from './dialogs/git-import-dialog'
 import { NetworkDefaultsTab } from './tabs/network-defaults-tab'
 import { ServerDefaultsTab } from './tabs/server-defaults-tab'
-import type { ValidationError } from './types'
+import type { ValidationError, SnmpEntryError } from './types'
 import { SNMP_FILE_NAME, EMPTY_STRING } from './utils/constants'
+import { validateSnmpSemantics } from './utils/snmp-semantic-validation'
 
 export default function CommonSettingsForm() {
   // TanStack Query - no manual state management needed
@@ -39,6 +41,8 @@ export default function CommonSettingsForm() {
   const [showValidationDialog, setShowValidationDialog] = useState(false)
   const [showHelpDialog, setShowHelpDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [snmpSemanticErrors, setSnmpSemanticErrors] = useState<SnmpEntryError[]>([])
+  const [showSemanticDialog, setShowSemanticDialog] = useState(false)
 
   // Update local content when query data changes
   useEffect(() => {
@@ -50,6 +54,11 @@ export default function CommonSettingsForm() {
     try {
       setValidationError(null)
       await validateYaml.mutateAsync(localContent)
+      const semanticErrors = validateSnmpSemantics(localContent)
+      if (semanticErrors.length > 0) {
+        setSnmpSemanticErrors(semanticErrors)
+        setShowSemanticDialog(true)
+      }
     } catch (error) {
       setValidationError(error as ValidationError)
       setShowValidationDialog(true)
@@ -57,6 +66,10 @@ export default function CommonSettingsForm() {
   }, [localContent, validateYaml])
 
   const handleSave = useCallback(async () => {
+    await saveMapping.mutateAsync(localContent)
+  }, [localContent, saveMapping])
+
+  const handleSaveAnyway = useCallback(async () => {
     await saveMapping.mutateAsync(localContent)
   }, [localContent, saveMapping])
 
@@ -230,6 +243,13 @@ export default function CommonSettingsForm() {
         open={showValidationDialog}
         onOpenChange={setShowValidationDialog}
         error={validationError}
+      />
+
+      <SnmpSemanticValidationDialog
+        open={showSemanticDialog}
+        onOpenChange={setShowSemanticDialog}
+        errors={snmpSemanticErrors}
+        onSaveAnyway={handleSaveAnyway}
       />
 
       <SnmpHelpDialog open={showHelpDialog} onOpenChange={setShowHelpDialog} />
