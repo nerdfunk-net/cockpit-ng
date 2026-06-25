@@ -73,19 +73,18 @@ export function DeployTemplateEntryComponent({
   loadingInventories,
   loadingTemplates,
 }: DeployTemplateEntryProps) {
-  const token = useAuthStore(state => state.token)
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
   const [templateDetail, setTemplateDetail] = useState<TemplateDetail | null>(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
 
   // Fetch template detail when templateId changes
   const fetchTemplateDetail = useCallback(
     async (templateId: number) => {
-      if (!token) return
+      if (!isAuthenticated) return
       setLoadingDetail(true)
       try {
         const response = await fetch(`/api/proxy/api/templates/${templateId}`, {
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         })
@@ -104,7 +103,7 @@ export function DeployTemplateEntryComponent({
         setLoadingDetail(false)
       }
     },
-    [token, entry, index, onChange]
+    [isAuthenticated, entry, index, onChange]
   )
 
   useEffect(() => {
@@ -115,7 +114,7 @@ export function DeployTemplateEntryComponent({
     }
     // Only re-fetch when templateId changes, not on every entry change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entry.templateId, token])
+  }, [entry.templateId, isAuthenticated])
 
   const customVariables = useMemo(() => {
     if (!templateDetail?.variables) return []

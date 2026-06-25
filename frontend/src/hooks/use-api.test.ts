@@ -13,9 +13,17 @@ describe('useApi', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Reset auth store
+    // Default: any unmocked fetch call resolves with 200 OK (e.g. the logout fire-and-forget)
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: () => Promise.resolve({}),
+    })
+
+    // Reset auth store (token is always null with httpOnly cookie approach)
     useAuthStore.setState({
-      token: 'test-token',
+      token: null,
       user: {
         id: '1',
         username: 'testuser',
@@ -47,11 +55,13 @@ describe('useApi', () => {
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
-          Authorization: 'Bearer test-token',
           'Content-Type': 'application/json',
         }),
       })
     )
+    // Authorization header must NOT be set — it's injected server-side by the proxy
+    const callHeaders = mockFetch.mock.calls[0]![1]!.headers
+    expect(callHeaders.Authorization).toBeUndefined()
     expect(data).toEqual(mockData)
   })
 
@@ -145,7 +155,8 @@ describe('useApi', () => {
 
     // User should still be authenticated
     expect(useAuthStore.getState().isAuthenticated).toBe(true)
-    expect(useAuthStore.getState().token).toBe('test-token')
+    // Token is always null (httpOnly cookie, not stored in JS)
+    expect(useAuthStore.getState().token).toBeNull()
   })
 
   it('should handle generic API errors', async () => {
@@ -194,13 +205,15 @@ describe('useApi', () => {
       expect.objectContaining({
         headers: expect.objectContaining({
           'X-Custom-Header': 'custom-value',
-          Authorization: 'Bearer test-token',
         }),
       })
     )
+    // Authorization header must NOT be set — injected by proxy server-side
+    const callHeaders = mockFetch.mock.calls[0]![1]!.headers
+    expect(callHeaders.Authorization).toBeUndefined()
   })
 
-  it('should handle requests without auth token', async () => {
+  it('should never include Authorization header regardless of auth state', async () => {
     useAuthStore.setState({ token: null, user: null, isAuthenticated: false })
 
     mockFetch.mockResolvedValueOnce({

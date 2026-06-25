@@ -18,13 +18,10 @@ interface NautobotDeviceRaw {
  * Fetch all devices from Nautobot and convert to DiffDevice format
  */
 export async function fetchNautobotDevices(
-  token: string,
   reload = false
 ): Promise<{ devices: DiffDevice[]; total: number }> {
   const url = `/api/proxy/nautobot/devices?limit=10000${reload ? '&reload=true' : ''}`
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await fetch(url)
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || 'Failed to fetch Nautobot devices')
@@ -48,13 +45,10 @@ export async function fetchNautobotDevices(
 /**
  * Start the diff task between Nautobot and CheckMK
  */
-export const startDiffTask = async (token: string): Promise<{ task_id: string }> => {
+export const startDiffTask = async (): Promise<{ task_id: string }> => {
   const response = await fetch('/api/proxy/celery/tasks/get-diff-between-nb-checkmk', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
   })
 
   if (!response.ok) {

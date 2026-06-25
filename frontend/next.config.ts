@@ -16,9 +16,8 @@ const nextConfig: NextConfig = {
     },
   },
   
-  // For Docker builds, treat lint/type errors as warnings
   typescript: {
-    ignoreBuildErrors: process.env.DOCKER_BUILD === "true",
+    ignoreBuildErrors: false,
   },
 
   // Air-gapped environment optimizations

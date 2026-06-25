@@ -36,7 +36,6 @@ import {
   FileText,
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
-import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import type { GitRepository, GitFile, GitRepoStatus, ImportStep } from '../types'
 import {
@@ -250,25 +249,9 @@ export function GitImportDialog({
     try {
       setImportLoading(true)
 
-      // Get auth token
-      const token = useAuthStore.getState().token
-      if (!token) {
-        toast({
-          title: 'Error',
-          description: 'Not authenticated',
-          variant: 'destructive',
-        })
-        return
-      }
-
       // Read file content
       const fileResponse = await fetch(
-        `/api/proxy/git/${data.repositoryId}/file-content?path=${encodeURIComponent(data.filePath)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/api/proxy/git/${data.repositoryId}/file-content?path=${encodeURIComponent(data.filePath)}`
       )
 
       if (!fileResponse.ok) {

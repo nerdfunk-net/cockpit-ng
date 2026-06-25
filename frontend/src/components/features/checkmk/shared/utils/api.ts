@@ -1,5 +1,6 @@
 /**
  * API layer for CheckMK shared operations
+ * Authorization is injected server-side by the proxy from the httpOnly cookie.
  */
 
 export interface Job {
@@ -9,18 +10,9 @@ export interface Job {
   processed_devices: number
 }
 
-/**
- * Fetch available completed jobs
- */
-export const fetchJobs = async (
-  token: string,
-  limit = 50
-): Promise<{ jobs: Job[] }> => {
+export const fetchJobs = async (limit = 50): Promise<{ jobs: Job[] }> => {
   const response = await fetch(`/api/proxy/nb2cmk/jobs?limit=${limit}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
   })
 
   if (!response.ok) {
@@ -30,15 +22,9 @@ export const fetchJobs = async (
   return response.json()
 }
 
-/**
- * Load job results by job ID
- */
-export const loadJobResults = async (token: string, jobId: string) => {
+export const loadJobResults = async (jobId: string) => {
   const response = await fetch(`/api/proxy/nb2cmk/jobs/${jobId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
   })
 
   if (!response.ok) {
@@ -49,16 +35,10 @@ export const loadJobResults = async (token: string, jobId: string) => {
   return response.json()
 }
 
-/**
- * Clear all comparison results
- */
-export const clearResults = async (token: string) => {
+export const clearResults = async () => {
   const response = await fetch('/api/proxy/nb2cmk/jobs/clear', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
   })
 
   if (!response.ok) {
@@ -69,18 +49,10 @@ export const clearResults = async (token: string) => {
   return response.json()
 }
 
-/**
- * Start a new device comparison job using Celery
- */
-export const startComparisonJob = async (
-  token: string
-): Promise<{ task_id: string; job_id?: string }> => {
+export const startComparisonJob = async (): Promise<{ task_id: string; job_id?: string }> => {
   const response = await fetch('/api/proxy/celery/tasks/compare-nautobot-and-checkmk', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(null),
   })
 

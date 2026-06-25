@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { ExportDevicesJobResult, formatBytes } from '../types/job-results'
-import { useAuthStore } from '@/lib/auth-store'
 
 interface ExportDevicesResultViewProps {
   result: ExportDevicesJobResult
@@ -21,27 +20,15 @@ export function ExportDevicesResultView({
   result,
   taskId,
 }: ExportDevicesResultViewProps) {
-  const token = useAuthStore(state => state.token)
-
   const handleDownload = async () => {
     if (!taskId) {
       alert('Task ID not available')
       return
     }
 
-    if (!token) {
-      alert('Not authenticated')
-      return
-    }
-
     try {
       const response = await fetch(
-        `/api/proxy/api/celery/tasks/export-devices/${taskId}/download`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/api/proxy/api/celery/tasks/export-devices/${taskId}/download`
       )
 
       if (!response.ok) {

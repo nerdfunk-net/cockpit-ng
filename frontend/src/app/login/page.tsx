@@ -100,19 +100,16 @@ export default function LoginPage() {
         )
       }
 
-      if (data.access_token) {
-        login(data.access_token, {
-          id: data.user?.id?.toString() || '1',
-          username: data.user?.username || username,
-          email: data.user?.email,
-          roles: data.user?.roles || [],
-          permissions: data.user?.permissions,
-        })
+      // Token is now set as an httpOnly cookie by the server; just store user info
+      login({
+        id: data.user?.id?.toString() || '1',
+        username: data.user?.username || username,
+        email: data.user?.email,
+        roles: data.user?.roles || [],
+        permissions: data.user?.permissions,
+      })
 
-        router.push('/')
-      } else {
-        throw new Error('No access token received')
-      }
+      router.push('/')
     } catch (err) {
       console.error('Login error:', err)
       if (err instanceof TypeError && err.message.includes('fetch')) {

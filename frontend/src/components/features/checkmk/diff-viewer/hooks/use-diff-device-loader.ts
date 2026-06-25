@@ -1,7 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
 import { startDiffTask, fetchNautobotDevices } from '../utils/diff-viewer.api'
-import { useAuthStore } from '@/lib/auth-store'
 import type { DiffDevice, DiffTaskResult, DiffDataSnapshot } from '../types'
 import type { CeleryTaskStatus } from '../../shared/types'
 
@@ -19,7 +18,6 @@ interface DiffTaskState {
 
 export function useDiffDeviceLoader() {
   const { apiCall } = useApi()
-  const token = useAuthStore(state => state.token)
   const [state, setState] = useState<DiffTaskState>({
     devices: EMPTY_ARRAY,
     totalNautobot: 0,
@@ -62,7 +60,6 @@ export function useDiffDeviceLoader() {
   )
 
   const runDiff = useCallback(async () => {
-    if (!token) return
 
     setState(prev => ({
       ...prev,
@@ -72,7 +69,7 @@ export function useDiffDeviceLoader() {
     }))
 
     try {
-      const { task_id } = await startDiffTask(token)
+      const { task_id } = await startDiffTask()
       const result = await pollTask(task_id)
 
       if (result) {
@@ -95,14 +92,13 @@ export function useDiffDeviceLoader() {
         taskStatus: 'FAILURE',
       }))
     }
-  }, [token, pollTask])
+  }, [pollTask])
 
   const loadNautobotDevices = useCallback(
     async (reload = false) => {
-      if (!token) return
-      setState(prev => ({ ...prev, loading: true, error: null, taskStatus: null }))
+        setState(prev => ({ ...prev, loading: true, error: null, taskStatus: null }))
       try {
-        const { devices, total } = await fetchNautobotDevices(token, reload)
+        const { devices, total } = await fetchNautobotDevices(reload)
         setState({
           devices,
           totalNautobot: total,
@@ -123,7 +119,7 @@ export function useDiffDeviceLoader() {
         }))
       }
     },
-    [token]
+    []
   )
 
   const restoreData = useCallback((snapshot: DiffDataSnapshot) => {

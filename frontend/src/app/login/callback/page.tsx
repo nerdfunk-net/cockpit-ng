@@ -90,24 +90,21 @@ function OIDCCallbackContent() {
           return
         }
 
-        if (data.access_token) {
-          login(data.access_token, {
-            id: data.user?.id?.toString() || '1',
-            username: data.user?.username || 'unknown',
-            email: data.user?.email,
-            roles: data.user?.roles || [],
-            permissions: data.user?.permissions,
-          })
+        // Token is now set as an httpOnly cookie by the proxy; just store user info
+        login({
+          id: data.user?.id?.toString() || '1',
+          username: data.user?.username || 'unknown',
+          email: data.user?.email,
+          roles: data.user?.roles || [],
+          permissions: data.user?.permissions,
+        })
 
-          setStatus('success')
+        setStatus('success')
 
-          // Redirect to dashboard after brief delay
-          setTimeout(() => {
-            router.push('/')
-          }, 1000)
-        } else {
-          throw new Error('No access token received')
-        }
+        // Redirect to dashboard after brief delay
+        setTimeout(() => {
+          router.push('/')
+        }, 1000)
       } catch (err) {
         console.error('OIDC callback error:', err)
         setError(err instanceof Error ? err.message : 'Authentication failed')

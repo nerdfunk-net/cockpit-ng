@@ -6,7 +6,6 @@ import { useToast } from '@/hooks/use-toast'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Card, CardContent } from '@/components/ui/card'
-import { useAuthStore } from '@/lib/auth-store'
 import { useApi } from '@/hooks/use-api'
 import { DiffViewerHeader } from './components/diff-viewer-header'
 import { DiffDeviceTable } from './components/diff-device-table'
@@ -23,7 +22,6 @@ import type { DiffDevice } from './types'
 import type { Device, CeleryTaskResponse } from '../shared/types'
 
 export default function DiffViewerPage() {
-  const token = useAuthStore(state => state.token)
   const { apiCall } = useApi()
   const { toast } = useToast()
   const { statusMessage, showMessage, clearMessage } = useStatusMessages()
@@ -70,7 +68,6 @@ export default function DiffViewerPage() {
 
   // Job management for comparison results overlay
   const jobManagement = useJobManagement(
-    token,
     async loadedDevices => {
       // Overlay comparison results onto diff devices
       overlayComparisonResults(loadedDevices)

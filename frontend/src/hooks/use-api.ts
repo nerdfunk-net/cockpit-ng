@@ -12,20 +12,16 @@ const EMPTY_OPTIONS: ApiOptions = {}
 const EMPTY_HEADERS: Record<string, string> = {}
 
 export function useApi() {
-  const { token, logout } = useAuthStore()
+  const { logout } = useAuthStore()
   const router = useRouter()
 
-  // Use refs to access current values without recreating apiCall
-  const tokenRef = useRef(token)
   const logoutRef = useRef(logout)
   const routerRef = useRef(router)
 
-  // Keep refs in sync with current values
   useEffect(() => {
-    tokenRef.current = token
     logoutRef.current = logout
     routerRef.current = router
-  }, [token, logout, router])
+  }, [logout, router])
 
   const apiCall = useCallback(
     async <T = unknown>(
@@ -38,14 +34,9 @@ export function useApi() {
         ...headers,
       }
 
-      // Only set Content-Type to application/json if body is not FormData
+      // Authorization is injected server-side by the proxy from the httpOnly cookie
       if (!(body instanceof FormData)) {
         defaultHeaders['Content-Type'] = 'application/json'
-      }
-
-      // Use ref to get current token value
-      if (tokenRef.current) {
-        defaultHeaders.Authorization = `Bearer ${tokenRef.current}`
       }
 
       const fetchOptions: RequestInit = {
@@ -55,7 +46,6 @@ export function useApi() {
 
       if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
         if (body instanceof FormData) {
-          // Let browser set Content-Type with boundary for FormData
           fetchOptions.body = body
         } else {
           fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body)
@@ -67,20 +57,16 @@ export function useApi() {
       if (!response.ok) {
         const errorText = await response.text()
 
-        // Handle authentication failures (401) - redirect to login
         if (response.status === 401) {
-          logoutRef.current() // Clear invalid token
-          // Use window.location.replace to ensure clean redirect without URL parameters
+          logoutRef.current()
           if (typeof window !== 'undefined') {
             setTimeout(() => {
               window.location.replace('/login')
             }, 100)
           }
-          // Return a rejected promise that components can handle gracefully
           return Promise.reject(new Error('Session expired, redirecting to login...'))
         }
 
-        // Extract the `detail` field from FastAPI error JSON when present
         let errorMessage = `API Error ${response.status}`
         try {
           const errorData = JSON.parse(errorText)
@@ -95,7 +81,6 @@ export function useApi() {
         throw new Error(errorMessage)
       }
 
-      // Handle empty responses
       const contentType = response.headers.get('content-type')
       if (contentType && contentType.includes('application/json')) {
         return response.json()
@@ -104,8 +89,7 @@ export function useApi() {
       }
     },
     []
-  ) // Empty dependencies - all values accessed via refs
+  )
 
-  // Memoize the return object to ensure stable reference
   return useMemo(() => ({ apiCall }), [apiCall])
 }

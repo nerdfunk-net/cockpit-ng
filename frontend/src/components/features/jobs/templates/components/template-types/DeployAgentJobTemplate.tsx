@@ -79,7 +79,7 @@ export function DeployAgentJobTemplate({
   savedInventories,
   loadingInventories,
 }: DeployAgentJobTemplateProps) {
-  const token = useAuthStore(state => state.token)
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
 
   // Defensive: ensure entries is always a valid array (guards against HMR/state mismatch)
   const entries = useMemo(
@@ -110,12 +110,11 @@ export function DeployAgentJobTemplate({
 
   // Fetch agent templates (category=agent)
   const fetchTemplates = useCallback(async () => {
-    if (!token) return
+    if (!isAuthenticated) return
     setLoadingTemplates(true)
     try {
       const response = await fetch('/api/proxy/api/templates?category=agent', {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
@@ -128,16 +127,15 @@ export function DeployAgentJobTemplate({
     } finally {
       setLoadingTemplates(false)
     }
-  }, [token])
+  }, [isAuthenticated])
 
   // Fetch agents from settings
   const fetchAgents = useCallback(async () => {
-    if (!token) return
+    if (!isAuthenticated) return
     setLoadingAgents(true)
     try {
       const response = await fetch('/api/proxy/settings/agents', {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
@@ -155,7 +153,7 @@ export function DeployAgentJobTemplate({
     } finally {
       setLoadingAgents(false)
     }
-  }, [token])
+  }, [isAuthenticated])
 
   useEffect(() => {
     fetchTemplates()

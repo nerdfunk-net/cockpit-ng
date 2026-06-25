@@ -8,19 +8,14 @@ export function cn(...inputs: ClassValue[]) {
 const EMPTY_INIT: RequestInit = {}
 
 // API Request Helper - Always use Next.js API routes
+// Authorization is injected server-side by the proxy from the httpOnly cookie
 export async function apiRequest(endpoint: string, options: RequestInit = EMPTY_INIT) {
   if (typeof window === 'undefined') return null
-
-  const token = localStorage.getItem('cockpit-auth')
-  const authData = token ? JSON.parse(token) : null
 
   const config: RequestInit = {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(authData?.state?.token && {
-        Authorization: `Bearer ${authData.state.token}`,
-      }),
       ...options.headers,
     },
   }
@@ -31,8 +26,6 @@ export async function apiRequest(endpoint: string, options: RequestInit = EMPTY_
   const response = await fetch(url, config)
 
   if (response.status === 401) {
-    // Token expired, redirect to login
-    localStorage.removeItem('cockpit-auth')
     window.location.href = '/login'
     return
   }

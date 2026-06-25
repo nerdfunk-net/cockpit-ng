@@ -94,7 +94,7 @@ export function ScanPrefixesJobTemplate({
   formScanCidr,
   setFormScanCidr,
 }: ScanPrefixesJobTemplateProps) {
-  const token = useAuthStore(state => state.token)
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
   const [customFields, setCustomFields] = useState<CustomField[]>(EMPTY_CUSTOM_FIELDS)
   const [locations, setLocations] = useState<NautobotLocation[]>(EMPTY_LOCATIONS)
   const [selectedFieldChoices, setSelectedFieldChoices] = useState<
@@ -104,12 +104,11 @@ export function ScanPrefixesJobTemplate({
   const [loadingLocations, setLoadingLocations] = useState(false)
 
   const fetchCustomFields = useCallback(async () => {
-    if (!token) return
+    if (!isAuthenticated) return
     setLoadingCustomFields(true)
     try {
       const response = await fetch('/api/proxy/api/nautobot/custom-fields/prefixes', {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
@@ -122,15 +121,14 @@ export function ScanPrefixesJobTemplate({
     } finally {
       setLoadingCustomFields(false)
     }
-  }, [token])
+  }, [isAuthenticated])
 
   const fetchLocations = useCallback(async () => {
-    if (!token) return
+    if (!isAuthenticated) return
     setLoadingLocations(true)
     try {
       const response = await fetch('/api/proxy/api/nautobot/locations', {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
@@ -143,7 +141,7 @@ export function ScanPrefixesJobTemplate({
     } finally {
       setLoadingLocations(false)
     }
-  }, [token])
+  }, [isAuthenticated])
 
   useEffect(() => {
     fetchCustomFields()

@@ -86,7 +86,7 @@ export default function AddCertificatePage() {
   const [modalSuccess, setModalSuccess] = useState(true)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const token = useAuthStore(state => state.token)
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
   const { confirmDialog, openConfirm } = useConfirmDialog()
 
   const scanCertificates = useCallback(async () => {
@@ -94,11 +94,7 @@ export default function AddCertificatePage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/proxy/certificates/scan', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      const response = await fetch('/api/proxy/certificates/scan')
 
       if (!response.ok) {
         throw new Error(`Failed to scan certificates: ${response.statusText}`)
@@ -119,13 +115,13 @@ export default function AddCertificatePage() {
       setScanning(false)
       setLoading(false)
     }
-  }, [token])
+  }, [])
 
   useEffect(() => {
-    if (token) {
+    if (isAuthenticated) {
       scanCertificates()
     }
-  }, [token, scanCertificates])
+  }, [isAuthenticated, scanCertificates])
 
   const handleUploadClick = () => {
     fileInputRef.current?.click()
@@ -151,7 +147,6 @@ export default function AddCertificatePage() {
       const response = await fetch('/api/proxy/certificates/upload', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
         },
         body: formData,
       })
@@ -216,8 +211,7 @@ export default function AddCertificatePage() {
         const response = await fetch('/api/proxy/certificates/add-to-system', {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+              'Content-Type': 'application/json',
           },
           body: JSON.stringify({ filename }),
         })
@@ -274,8 +268,7 @@ export default function AddCertificatePage() {
             {
               method: 'DELETE',
               headers: {
-                Authorization: `Bearer ${token}`,
-              },
+                    },
             }
           )
 

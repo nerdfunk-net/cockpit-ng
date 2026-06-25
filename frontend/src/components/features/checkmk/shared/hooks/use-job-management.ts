@@ -130,7 +130,6 @@ function transformDeviceResult(result: DeviceResult, index: number): Device {
  * Hook for managing job operations and job results
  */
 export function useJobManagement(
-  token: string | null,
   onJobsLoaded?: (devices: Device[]) => void,
   onError?: (message: string) => void,
   onSuccess?: (message: string) => void
@@ -142,10 +141,8 @@ export function useJobManagement(
 
   // Fetch available completed jobs
   const fetchAvailableJobs = useCallback(async () => {
-    if (!token) return
-
     try {
-      const data = await fetchJobs(token, 50)
+      const data = await fetchJobs(50)
 
       // Filter only completed COMPARE jobs (exclude sync jobs) with processed devices
       const completedJobs = data.jobs
@@ -169,20 +166,20 @@ export function useJobManagement(
         onError('Failed to fetch available jobs')
       }
     }
-  }, [token, onError])
+  }, [onError])
 
   // Load job results
   const loadJobResults = useCallback(
     async (jobId?: string) => {
       const targetJobId = jobId || selectedJobId
 
-      if (!targetJobId || !token || targetJobId === 'no-jobs') {
+      if (!targetJobId || targetJobId === 'no-jobs') {
         return
       }
 
       setLoadingResults(true)
       try {
-        const data = await apiLoadJobResults(token, targetJobId)
+        const data = await apiLoadJobResults(targetJobId)
 
         // Extract device results and transform to Device format
         const deviceResults = data.job?.device_results || []
@@ -211,15 +208,13 @@ export function useJobManagement(
         setLoadingResults(false)
       }
     },
-    [selectedJobId, token, onJobsLoaded, onSuccess, onError]
+    [selectedJobId, onJobsLoaded, onSuccess, onError]
   )
 
   // Clear all results
   const clearResults = useCallback(async () => {
-    if (!token) return false
-
     try {
-      const data = await apiClearResults(token)
+      const data = await apiClearResults()
 
       // Refresh the job list
       await fetchAvailableJobs()
@@ -240,19 +235,12 @@ export function useJobManagement(
       }
       return false
     }
-  }, [token, fetchAvailableJobs, onSuccess, onError])
+  }, [fetchAvailableJobs, onSuccess, onError])
 
   // Start new comparison job
   const startNewJob = useCallback(async () => {
-    if (!token) {
-      if (onError) {
-        onError('Authentication required')
-      }
-      return null
-    }
-
     try {
-      const result = await apiStartComparisonJob(token)
+      const result = await apiStartComparisonJob()
 
       if (onSuccess) {
         onSuccess('Device comparison job started successfully')
@@ -267,15 +255,12 @@ export function useJobManagement(
       }
       return null
     }
-  }, [token, onSuccess, onError])
+  }, [onSuccess, onError])
 
   // Load jobs on mount
   useEffect(() => {
-    if (token) {
-      fetchAvailableJobs()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
+    fetchAvailableJobs()
+  }, [fetchAvailableJobs])
 
   return useMemo(
     () => ({

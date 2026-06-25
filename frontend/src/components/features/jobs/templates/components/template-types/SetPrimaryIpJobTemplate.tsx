@@ -43,17 +43,16 @@ export function SetPrimaryIpJobTemplate({
   formAgentId,
   setFormAgentId,
 }: SetPrimaryIpJobTemplateProps) {
-  const token = useAuthStore(state => state.token)
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
   const [agents, setAgents] = useState<CockpitAgent[]>(EMPTY_AGENTS)
   const [loadingAgents, setLoadingAgents] = useState(false)
 
   const fetchAgents = useCallback(async () => {
-    if (!token) return
+    if (!isAuthenticated) return
     setLoadingAgents(true)
     try {
       const response = await fetch('/api/proxy/cockpit-agent/list', {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
@@ -66,7 +65,7 @@ export function SetPrimaryIpJobTemplate({
     } finally {
       setLoadingAgents(false)
     }
-  }, [token])
+  }, [isAuthenticated])
 
   useEffect(() => {
     fetchAgents()

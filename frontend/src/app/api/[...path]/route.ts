@@ -64,22 +64,22 @@ async function handleRequest(
       ? originalPath.slice('/api/'.length)
       : pathSegments.join('/')
 
-    // Build the backend URL
-    // For special FastAPI endpoints (docs, openapi.json, redoc), proxy directly without /api/ prefix
-    // For regular API calls, keep the /api/ prefix
-    let backendPath: string
-
-    if (
+    const DOCS_ENABLED = process.env.NODE_ENV !== 'production'
+    const isDocsPath =
       pathAfterApi === 'docs' ||
       pathAfterApi === 'redoc' ||
       pathAfterApi === 'openapi.json' ||
       pathAfterApi.startsWith('docs/') ||
       pathAfterApi.startsWith('redoc/')
-    ) {
-      // Swagger/ReDoc endpoints - proxy to backend root
+
+    if (isDocsPath && !DOCS_ENABLED) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+
+    let backendPath: string
+    if (isDocsPath) {
       backendPath = pathAfterApi
     } else {
-      // Regular API calls - keep /api/ prefix
       backendPath = `api/${pathAfterApi}`
     }
 
@@ -98,17 +98,13 @@ async function handleRequest(
     // Get headers from the original request
     const headers: Record<string, string> = {}
 
-    // Copy important headers
+    // Copy safe headers only
     const headersToCopy = [
       'authorization',
       'content-type',
       'accept',
       'user-agent',
-      'cookie',
-      'referer',
       'x-forwarded-for',
-      'x-forwarded-proto',
-      'x-forwarded-host',
     ]
 
     headersToCopy.forEach(headerName => {

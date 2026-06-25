@@ -44,16 +44,6 @@ export default function RootLayout({
           // eslint-disable-next-line @next/next/no-css-tags
           <link rel="stylesheet" href="/airgap-fallback.css" media="all" />
         )}
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-            :root {
-              --font-geist-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-              --font-geist-mono: 'SF Mono', Monaco, Inconsolata, 'Roboto Mono', Consolas, 'Courier New', monospace;
-            }
-          `,
-          }}
-        />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <StrictMode>
