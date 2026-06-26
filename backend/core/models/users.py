@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -47,6 +48,7 @@ class UserProfile(Base):
     # Stores sha256(api_key) hex digest (64 chars), never the raw key.
     # Indexed because every API-key auth does an equality lookup here.
     api_key = Column(String(255), index=True)
+    dashboard_layout = Column(JSONB, nullable=True)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

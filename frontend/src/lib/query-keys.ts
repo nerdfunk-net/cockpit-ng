@@ -473,4 +473,17 @@ export const queryKeys = {
     all: ['agents'] as const,
     list: () => [...queryKeys.agents.all, 'list'] as const,
   },
+
+  // Dashboard
+  dashboard: {
+    all: ['dashboard'] as const,
+    layout: () => [...queryKeys.dashboard.all, 'layout'] as const,
+    nautobotStats: () => [...queryKeys.dashboard.all, 'nautobot-stats'] as const,
+    checkmkStats: () => [...queryKeys.dashboard.all, 'checkmk-stats'] as const,
+    jobStats: () => [...queryKeys.dashboard.all, 'job-stats'] as const,
+    deviceBackup: () => [...queryKeys.dashboard.all, 'device-backup'] as const,
+    checkmkSync: () => [...queryKeys.dashboard.all, 'checkmk-sync'] as const,
+    scanPrefix: () => [...queryKeys.dashboard.all, 'scan-prefix'] as const,
+    ipAddresses: () => [...queryKeys.dashboard.all, 'ip-addresses'] as const,
+  },
 }

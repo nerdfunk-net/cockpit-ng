@@ -109,6 +109,14 @@ def update_user_password(username: str, new_password: str) -> bool:
         return False
 
 
+def get_dashboard_layout(username: str) -> Optional[Dict[str, Any]]:
+    return _profile_repo.get_dashboard_layout(username)
+
+
+def update_dashboard_layout(username: str, layout: Dict[str, Any]) -> Dict[str, Any]:
+    return _profile_repo.set_dashboard_layout(username, layout)
+
+
 def delete_user_profile(username: str) -> bool:
     try:
         return _profile_repo.delete_by_username(username)

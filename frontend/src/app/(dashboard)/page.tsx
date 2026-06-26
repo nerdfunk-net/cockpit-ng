@@ -1,5 +1,5 @@
-import DashboardOverview from '@/components/layout/dashboard-overview'
+import { DashboardPage } from '@/components/features/dashboard/dashboard-page'
 
-export default function Home() {
-  return <DashboardOverview />
+export default function DashboardRoute() {
+  return <DashboardPage />
 }

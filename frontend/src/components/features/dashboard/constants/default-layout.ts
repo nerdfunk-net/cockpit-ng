@@ -1,0 +1,43 @@
+import type { DashboardLayoutDoc } from '../types/dashboard'
+
+export const DEFAULT_LAYOUT: DashboardLayoutDoc = {
+  version: 1,
+  layouts: {
+    lg: [
+      { i: 'nautobot-devices', x: 0, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'nautobot-locations', x: 2, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'nautobot-ip-addresses', x: 4, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'nautobot-prefixes', x: 6, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'checkmk-hosts', x: 8, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'failed-jobs', x: 0, y: 3, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'device-backup', x: 2, y: 3, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'checkmk-sync', x: 4, y: 3, w: 4, h: 4, minW: 3, minH: 3 },
+      { i: 'network-scan', x: 8, y: 3, w: 2, h: 4, minW: 2, minH: 3 },
+      { i: 'stale-ip-addresses', x: 0, y: 6, w: 4, h: 3, minW: 3, minH: 2 },
+    ],
+    md: [
+      { i: 'nautobot-devices', x: 0, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'nautobot-locations', x: 2, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'nautobot-ip-addresses', x: 4, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'nautobot-prefixes', x: 6, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'checkmk-hosts', x: 0, y: 3, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'failed-jobs', x: 2, y: 3, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'device-backup', x: 4, y: 3, w: 2, h: 3, minW: 2, minH: 2 },
+      { i: 'checkmk-sync', x: 6, y: 3, w: 2, h: 4, minW: 2, minH: 3 },
+      { i: 'network-scan', x: 0, y: 6, w: 4, h: 4, minW: 3, minH: 3 },
+      { i: 'stale-ip-addresses', x: 4, y: 6, w: 4, h: 3, minW: 3, minH: 2 },
+    ],
+    sm: [
+      { i: 'nautobot-devices', x: 0, y: 0, w: 3, h: 3, minW: 2, minH: 2 },
+      { i: 'nautobot-locations', x: 3, y: 0, w: 3, h: 3, minW: 2, minH: 2 },
+      { i: 'nautobot-ip-addresses', x: 0, y: 3, w: 3, h: 3, minW: 2, minH: 2 },
+      { i: 'nautobot-prefixes', x: 3, y: 3, w: 3, h: 3, minW: 2, minH: 2 },
+      { i: 'checkmk-hosts', x: 0, y: 6, w: 3, h: 3, minW: 2, minH: 2 },
+      { i: 'failed-jobs', x: 3, y: 6, w: 3, h: 3, minW: 2, minH: 2 },
+      { i: 'device-backup', x: 0, y: 9, w: 3, h: 3, minW: 2, minH: 2 },
+      { i: 'checkmk-sync', x: 3, y: 9, w: 3, h: 4, minW: 3, minH: 3 },
+      { i: 'network-scan', x: 0, y: 13, w: 6, h: 4, minW: 4, minH: 3 },
+      { i: 'stale-ip-addresses', x: 0, y: 17, w: 6, h: 3, minW: 4, minH: 2 },
+    ],
+  },
+}

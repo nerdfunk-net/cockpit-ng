@@ -106,6 +106,40 @@ class ProfileRepository(BaseRepository[UserProfile]):
         finally:
             db.close()
 
+    def get_dashboard_layout(self, username: str) -> Optional[dict]:
+        """Return the stored dashboard layout dict, or None if not set."""
+        db = get_db_session()
+        try:
+            profile = (
+                db.query(UserProfile).filter(UserProfile.username == username).first()
+            )
+            if profile is None:
+                return None
+            return profile.dashboard_layout
+        finally:
+            db.close()
+
+    def set_dashboard_layout(self, username: str, layout: dict) -> dict:
+        """Persist layout for username, creating the profile row if absent."""
+        db = get_db_session()
+        try:
+            profile = (
+                db.query(UserProfile).filter(UserProfile.username == username).first()
+            )
+            if profile is None:
+                profile = UserProfile(username=username, dashboard_layout=layout)
+                db.add(profile)
+            else:
+                profile.dashboard_layout = layout
+            db.commit()
+            db.refresh(profile)
+            return profile.dashboard_layout
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+
     def delete_by_username(self, username: str) -> bool:
         """Delete profile by username.
 

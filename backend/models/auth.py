@@ -140,3 +140,12 @@ class ProfileUpdateRequest(BaseModel):
     password: Optional[str] = None
     api_key: Optional[str] = None
     personal_credentials: Optional[List[PersonalCredentialData]] = []
+
+
+class DashboardLayoutResponse(BaseModel):
+    success: bool = True
+    data: Optional[Dict[str, Any]] = None
+
+
+class DashboardLayoutUpdateRequest(BaseModel):
+    layout: Dict[str, Any]

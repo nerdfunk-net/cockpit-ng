@@ -11,7 +11,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 import service_factory
 import services.auth.profile_service as profile_manager
 from core.auth import get_current_username
-from models.auth import PersonalCredentialData, ProfileResponse, ProfileUpdateRequest
+from core.safe_http_errors import raise_internal_server_error
+from models.auth import (
+    DashboardLayoutResponse,
+    DashboardLayoutUpdateRequest,
+    PersonalCredentialData,
+    ProfileResponse,
+    ProfileUpdateRequest,
+)
 
 credentials_manager = service_factory.build_credentials_service()
 
@@ -310,4 +317,37 @@ async def update_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update profile",
+        )
+
+
+@router.get("/dashboard-layout", response_model=DashboardLayoutResponse)
+async def get_dashboard_layout(current_user: str = Depends(get_current_username)):
+    """Get current user's saved dashboard layout."""
+    try:
+        layout = profile_manager.get_dashboard_layout(current_user)
+        return DashboardLayoutResponse(success=True, data=layout)
+    except Exception as exc:
+        raise_internal_server_error(
+            logger,
+            "Error fetching dashboard layout",
+            exc,
+            extra={"username": current_user},
+        )
+
+
+@router.put("/dashboard-layout", response_model=DashboardLayoutResponse)
+async def update_dashboard_layout(
+    body: DashboardLayoutUpdateRequest,
+    current_user: str = Depends(get_current_username),
+):
+    """Persist current user's dashboard layout."""
+    try:
+        saved = profile_manager.update_dashboard_layout(current_user, body.layout)
+        return DashboardLayoutResponse(success=True, data=saved)
+    except Exception as exc:
+        raise_internal_server_error(
+            logger,
+            "Error saving dashboard layout",
+            exc,
+            extra={"username": current_user},
         )
