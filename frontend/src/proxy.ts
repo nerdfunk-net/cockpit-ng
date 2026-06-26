@@ -57,8 +57,9 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Run on all routes except Next.js internals, static assets, login, and auth API
-    '/((?!_next/static|_next/image|favicon.ico|fonts|login|api/auth).*)',
+    // Run on all routes except Next.js internals, static assets, login, and auth endpoints
+    // (both /api/auth/* Next.js routes and /api/proxy/auth/* backend proxied auth routes)
+    '/((?!_next/static|_next/image|favicon.ico|fonts|login|api/auth|api/proxy/auth).*)',
     '/api/docs/:path*',
     '/api/redoc/:path*',
     '/api/openapi.json',
