@@ -7,7 +7,7 @@ import { useJobStatsQuery } from '@/hooks/queries/use-job-stats-query'
 export function FailedJobsWidget() {
   const { data, isLoading, isError } = useJobStatsQuery()
 
-  const failed = data?.job_runs.failed ?? 0
+  const failed = data?.job_runs?.failed ?? 0
 
   return (
     <Card className="analytics-card border-0 h-full transition-all duration-300 hover:shadow-analytics-lg">
