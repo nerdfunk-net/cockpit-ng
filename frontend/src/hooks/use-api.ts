@@ -71,7 +71,12 @@ export function useApi() {
         try {
           const errorData = JSON.parse(errorText)
           if (errorData.detail) {
-            errorMessage = String(errorData.detail)
+            const detail = errorData.detail
+            if (typeof detail === 'object' && detail !== null && typeof detail.message === 'string') {
+              errorMessage = detail.message
+            } else {
+              errorMessage = String(detail)
+            }
           } else if (errorText) {
             errorMessage = `${errorMessage}: ${errorText}`
           }

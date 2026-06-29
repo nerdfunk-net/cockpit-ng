@@ -136,8 +136,8 @@ Every permission follows the pattern:
 | Permission | Description |
 |------------|-------------|
 | `scan:execute` | Run network scans |
-| `devices.onboard:execute` | Onboard new devices |
-| `devices.offboard:execute` | Offboard devices |
+| `nautobot.onboard:execute` | Onboard new devices |
+| `nautobot.offboard:execute` | Offboard devices |
 
 ### Cockpit Agents
 
@@ -210,7 +210,7 @@ Has every permission. Intended for system administrators only.
 
 Can manage devices, configurations, and scheduled jobs. Cannot modify system settings or user accounts.
 
-Key permissions: `nautobot.devices:*`, `checkmk.devices:*`, `configs:read`, `configs.backup:execute`, `network.backup:*`, `jobs:*`, `scan:execute`, `devices.onboard:execute`
+Key permissions: `nautobot.devices:*`, `checkmk.devices:*`, `configs:read`, `configs.backup:execute`, `network.backup:*`, `jobs:*`, `scan:execute`, `nautobot.onboard:execute`
 
 Settings access: read-only (`settings.nautobot:read`, `settings.checkmk:read`, `settings.cache:read`)
 
