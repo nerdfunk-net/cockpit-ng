@@ -37,7 +37,7 @@ export function AnsibleFactsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[85vh] flex flex-col">
+      <DialogContent className="!max-w-[calc(72rem*1.2)] sm:!max-w-[calc(72rem*1.2)] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileJson className="h-5 w-5 text-blue-600" />
