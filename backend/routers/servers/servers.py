@@ -2,11 +2,13 @@
 Router for server management.
 
 Endpoints:
-  GET    /api/servers           – list all servers (optional ?group_by=<field>)
-  GET    /api/servers/{id}      – single server
-  POST   /api/servers           – create server
-  PUT    /api/servers/{id}      – update server
-  DELETE /api/servers/{id}      – delete server
+  GET    /api/servers                              – list all servers (optional ?group_by=<field>)
+  GET    /api/servers/{id}                          – single server
+  POST   /api/servers                               – create server
+  PUT    /api/servers/{id}                          – update server
+  DELETE /api/servers/{id}                          – delete server
+  GET    /api/servers/{id}/facts/history            – list Ansible facts history entries
+  GET    /api/servers/{id}/facts/history/{hist_id}  – single Ansible facts history entry
 """
 
 import logging
@@ -24,6 +26,9 @@ from dependencies import get_servers_service
 from models.servers import (
     CreateServerRequest,
     ListServersResponse,
+    ServerFactsHistoryDetail,
+    ServerFactsHistoryEntry,
+    ServerFactsHistoryListResponse,
     ServerResponse,
     ServerSummaryResponse,
     UpdateServerRequest,
@@ -135,6 +140,51 @@ def update_server(
                 detail=duplicate_server_hostname_message(hostname),
             ) from exc
         raise_internal_server_error(logger, "Failed to update server", exc)
+
+
+@router.get("/{server_id}/facts/history", response_model=ServerFactsHistoryListResponse)
+def get_server_facts_history(
+    server_id: int,
+    _: dict = Depends(require_permission("servers", "read")),
+    service: ServersService = Depends(get_servers_service),
+) -> ServerFactsHistoryListResponse:
+    """Return the Ansible facts history for a server, newest first."""
+    try:
+        server = service.get_by_id(server_id)
+        if server is None:
+            raise HTTPException(status_code=404, detail="Server not found")
+        entries = service.get_facts_history(server_id)
+        return ServerFactsHistoryListResponse(
+            entries=[ServerFactsHistoryEntry.model_validate(e) for e in entries]
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise_internal_server_error(logger, "Failed to get server facts history", exc)
+
+
+@router.get(
+    "/{server_id}/facts/history/{history_id}",
+    response_model=ServerFactsHistoryDetail,
+)
+def get_server_facts_history_entry(
+    server_id: int,
+    history_id: int,
+    _: dict = Depends(require_permission("servers", "read")),
+    service: ServersService = Depends(get_servers_service),
+) -> ServerFactsHistoryDetail:
+    """Return a single historical Ansible facts snapshot."""
+    try:
+        entry = service.get_facts_history_entry(server_id, history_id)
+        if entry is None:
+            raise HTTPException(status_code=404, detail="History entry not found")
+        return ServerFactsHistoryDetail.model_validate(entry)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise_internal_server_error(
+            logger, "Failed to get server facts history entry", exc
+        )
 
 
 @router.delete("/{server_id}", status_code=204)

@@ -10,24 +10,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { ServerResponse } from '../types'
 
 interface AnsibleFactsModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  server: ServerResponse | null
+  label: string
+  facts: Record<string, unknown> | null | undefined
 }
 
 export function AnsibleFactsModal({
   open,
   onOpenChange,
-  server,
+  label,
+  facts,
 }: AnsibleFactsModalProps) {
   const [copied, setCopied] = useState(false)
 
-  const json = server?.ansible_facts
-    ? JSON.stringify(server.ansible_facts, null, 2)
-    : null
+  const json = facts ? JSON.stringify(facts, null, 2) : null
 
   const handleCopy = async () => {
     if (!json) return
@@ -38,11 +37,11 @@ export function AnsibleFactsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileJson className="h-5 w-5 text-blue-600" />
-            Ansible Facts — {server?.hostname}
+            Ansible Facts — {label}
           </DialogTitle>
         </DialogHeader>
 

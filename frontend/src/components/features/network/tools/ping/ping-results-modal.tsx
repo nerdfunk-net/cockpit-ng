@@ -13,7 +13,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Loader2, CheckCircle, XCircle, Wifi, WifiOff, X } from 'lucide-react'
-import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
 
 const EMPTY_NETWORKS: NetworkResult[] = []
@@ -50,7 +49,6 @@ interface PingResultsModalProps {
 }
 
 export default function PingResultsModal({ taskId, onClose }: PingResultsModalProps) {
-  const { token } = useAuthStore()
   const { toast } = useToast()
 
   const [taskStatus, setTaskStatus] = useState<string>('PENDING')
@@ -61,11 +59,7 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
   // Fetch task status
   const fetchTaskStatus = useCallback(async () => {
     try {
-      const response = await fetch(`/api/proxy/celery/tasks/${taskId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      const response = await fetch(`/api/proxy/celery/tasks/${taskId}`)
 
       if (!response.ok) {
         throw new Error('Failed to fetch task status')
@@ -105,7 +99,7 @@ export default function PingResultsModal({ taskId, onClose }: PingResultsModalPr
         variant: 'destructive',
       })
     }
-  }, [taskId, token, toast])
+  }, [taskId, toast])
 
   // Poll task status
   useEffect(() => {

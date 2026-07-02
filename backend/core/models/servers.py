@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 
@@ -38,3 +38,24 @@ class Server(Base):
         onupdate=func.now(),
         nullable=False,
     )
+
+
+class ServerFactsHistory(Base):
+    """Historical snapshots of Ansible facts gathered for a server."""
+
+    __tablename__ = "server_facts_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(
+        Integer,
+        ForeignKey("servers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    ansible_facts = Column(JSONB, nullable=False)
+    content_hash = Column(String(64), nullable=False)
+    recorded_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (Index("idx_server_facts_history_server_id", "server_id"),)

@@ -5,6 +5,8 @@ All tests run offline.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import pytest
 from pydantic import ValidationError
 
@@ -14,6 +16,9 @@ from models.servers import (
     CreateServerRequest,
     ListServersResponse,
     ServerContact,
+    ServerFactsHistoryDetail,
+    ServerFactsHistoryEntry,
+    ServerFactsHistoryListResponse,
     ServerResponse,
     ServerSummaryResponse,
     UpdateServerRequest,
@@ -279,3 +284,37 @@ def test_list_servers_response_shape() -> None:
     assert resp.total == 1
     assert resp.total_all == 10
     assert resp.servers[0].hostname == "web01"
+
+
+# ── Facts history models ────────────────────────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_server_facts_history_entry_excludes_facts_blob() -> None:
+    """ServerFactsHistoryEntry only carries id and recorded_at."""
+    entry = ServerFactsHistoryEntry(
+        id=1, recorded_at=datetime(2024, 6, 1, tzinfo=timezone.utc)
+    )
+    assert entry.id == 1
+    assert not hasattr(entry, "ansible_facts")
+
+
+@pytest.mark.unit
+def test_server_facts_history_detail_carries_facts() -> None:
+    """ServerFactsHistoryDetail includes the full ansible_facts payload."""
+    detail = ServerFactsHistoryDetail(
+        id=1,
+        recorded_at=datetime(2024, 6, 1, tzinfo=timezone.utc),
+        ansible_facts={"ansible_hostname": "web01"},
+    )
+    assert detail.ansible_facts == {"ansible_hostname": "web01"}
+
+
+@pytest.mark.unit
+def test_server_facts_history_list_response_shape() -> None:
+    """ServerFactsHistoryListResponse wraps a list of entries."""
+    entry = ServerFactsHistoryEntry(
+        id=1, recorded_at=datetime(2024, 6, 1, tzinfo=timezone.utc)
+    )
+    resp = ServerFactsHistoryListResponse(entries=[entry])
+    assert resp.entries[0].id == 1

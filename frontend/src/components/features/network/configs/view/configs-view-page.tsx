@@ -14,7 +14,6 @@ import {
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { useApi } from '@/hooks/use-api'
-import { useAuthStore } from '@/lib/auth-store'
 import { useGitTreeQuery } from '@/hooks/queries/use-git-tree-query'
 import { FileTree } from './components/file-tree'
 import { FileList } from './components/file-list'
@@ -30,7 +29,6 @@ const EMPTY_SELECTED_FILES = new Set<string>()
 
 export default function ConfigsViewPage() {
   const { apiCall } = useApi()
-  const { token } = useAuthStore()
 
   // State
   const [repositories, setRepositories] = useState<Repository[]>(EMPTY_ARRAY)
@@ -248,19 +246,9 @@ export default function ConfigsViewPage() {
       if (!selectedRepository || !file.path) return
 
       try {
-        const headers: Record<string, string> = {
-          Accept: 'text/plain',
-        }
-
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`
-        }
-
         const response = await fetch(
           `/api/proxy/git/${selectedRepository}/file-content?path=${encodeURIComponent(file.path)}`,
-          {
-            headers,
-          }
+          { headers: { Accept: 'text/plain' } }
         )
 
         if (!response.ok) {
@@ -283,7 +271,7 @@ export default function ConfigsViewPage() {
         alert('Failed to download file')
       }
     },
-    [selectedRepository, token]
+    [selectedRepository]
   )
 
   const handleCloseHistory = useCallback(() => {

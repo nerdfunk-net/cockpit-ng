@@ -8,6 +8,7 @@ import { useServerQuery } from '@/hooks/queries/use-server-query'
 import { useServersQuery } from '@/hooks/queries/use-servers-query'
 
 import { AnsibleFactsModal } from './dialogs/ansible-facts-modal'
+import { FactsHistoryDialog } from './dialogs/facts-history-dialog'
 import { AddServerDialog } from './dialogs/add-server-dialog'
 import { ServerDetail } from './components/server-detail'
 import { ServerTree } from './components/server-tree'
@@ -21,6 +22,7 @@ export function ServerPage() {
   const [groupBy, setGroupBy] = useState<GroupByField>('location')
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(EMPTY_SET)
   const [factsOpen, setFactsOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
 
   const debouncedSearch = useDebounce(nameFilter, 300)
@@ -68,6 +70,10 @@ export function ServerPage() {
 
   const handleShowFacts = useCallback(() => {
     setFactsOpen(true)
+  }, [])
+
+  const handleShowHistory = useCallback(() => {
+    setHistoryOpen(true)
   }, [])
 
   const handleServerRemoved = useCallback(() => {
@@ -157,6 +163,7 @@ export function ServerPage() {
                 <ServerDetail
                   server={selectedServer}
                   onShowFacts={handleShowFacts}
+                  onShowHistory={handleShowHistory}
                   onRemoved={handleServerRemoved}
                 />
               ) : (
@@ -174,7 +181,16 @@ export function ServerPage() {
       <AnsibleFactsModal
         open={factsOpen}
         onOpenChange={setFactsOpen}
-        server={selectedServer ?? null}
+        label={selectedServer?.hostname ?? ''}
+        facts={selectedServer?.ansible_facts}
+      />
+
+      {/* Facts History Dialog */}
+      <FactsHistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        serverId={selectedId}
+        hostname={selectedServer?.hostname ?? ''}
       />
 
       {/* Add Server Dialog */}

@@ -76,12 +76,7 @@ export function useBackupMutations() {
       backupId: string
     }) => {
       const response = await fetch(
-        `/api/proxy/network/configs/backup/download/${deviceId}/${backupId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        }
+        `/api/proxy/network/configs/backup/download/${deviceId}/${backupId}`
       )
 
       if (!response.ok) {

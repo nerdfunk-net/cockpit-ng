@@ -42,8 +42,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { useAuthStore } from '@/lib/auth-store'
-
 import { HostDetailsDialog } from './dialogs/host-details-dialog'
 import { InventoryDialog } from './dialogs/inventory-dialog'
 import { DeviceSyncDialog } from './dialogs/device-sync-dialog'
@@ -61,11 +59,6 @@ import { useNautobotSync } from './hooks/use-nautobot-sync'
 import type { CheckMKHost, FilterOptions } from './types'
 
 export default function HostsInventoryPage() {
-  const { isAuthenticated, token } = useAuthStore()
-
-  // Derived authentication state
-  const authReady = isAuthenticated && !!token
-
   // Custom hooks
   const { statusMessage, showMessage, clearMessage } = useStatusMessage()
   const {
@@ -85,9 +78,7 @@ export default function HostsInventoryPage() {
     isLoading,
     error: queryError,
     refetch,
-  } = useCheckmkHostsQuery({
-    enabled: authReady,
-  })
+  } = useCheckmkHostsQuery()
 
   // Extract hosts from query data
   const hosts = useMemo(() => data?.hosts || [], [data])
@@ -163,16 +154,12 @@ export default function HostsInventoryPage() {
     void loadCheckmkConfig()
   }, [loadCheckmkConfig])
 
-  // TanStack Query automatically loads hosts when authReady is true (enabled prop)
-
-  if (!authReady || (isLoading && hosts.length === 0)) {
+  if (isLoading && hosts.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {!authReady ? 'Establishing authentication...' : 'Loading hosts...'}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">Loading hosts...</p>
         </div>
       </div>
     )

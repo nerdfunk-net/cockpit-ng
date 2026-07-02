@@ -291,3 +291,26 @@ class ListServersResponse(BaseModel):
     servers: List[ServerSummaryResponse]
     total: int
     total_all: int
+
+
+class ServerFactsHistoryEntry(BaseModel):
+    """Lightweight history row for the facts-history list (excludes the facts blob)."""
+
+    id: int
+    recorded_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ServerFactsHistoryDetail(BaseModel):
+    """A single historical Ansible facts snapshot."""
+
+    id: int
+    recorded_at: datetime
+    ansible_facts: Optional[Dict[str, Any]] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServerFactsHistoryListResponse(BaseModel):
+    entries: List[ServerFactsHistoryEntry]

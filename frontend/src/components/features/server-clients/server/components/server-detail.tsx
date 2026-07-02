@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FileJson,
   HardDrive,
+  History,
   Loader2,
   Network,
   Pencil,
@@ -61,6 +62,7 @@ interface MountEntry {
 interface ServerDetailProps {
   server: ServerResponse
   onShowFacts: () => void
+  onShowHistory: () => void
   onRemoved: () => void
 }
 
@@ -190,7 +192,12 @@ function LocationRow({ server }: { server: ServerResponse }) {
   )
 }
 
-export function ServerDetail({ server, onShowFacts, onRemoved }: ServerDetailProps) {
+export function ServerDetail({
+  server,
+  onShowFacts,
+  onShowHistory,
+  onRemoved,
+}: ServerDetailProps) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [alsoRemoveFromNautobot, setAlsoRemoveFromNautobot] = useState(false)
   const [interfacesOpen, setInterfacesOpen] = useState(false)
@@ -253,14 +260,24 @@ export function ServerDetail({ server, onShowFacts, onRemoved }: ServerDetailPro
           <Server className="h-4 w-4" />
           <span className="text-sm font-medium">{server.hostname}</span>
         </div>
-        <button
-          onClick={onShowFacts}
-          title="Show Ansible Facts"
-          className="flex items-center gap-1.5 text-xs text-blue-100 hover:text-white transition-colors"
-        >
-          <FileJson className="h-4 w-4" />
-          <span>Show Facts</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onShowHistory}
+            title="Show Facts History"
+            className="flex items-center gap-1.5 text-xs text-blue-100 hover:text-white transition-colors"
+          >
+            <History className="h-4 w-4" />
+            <span>Show History</span>
+          </button>
+          <button
+            onClick={onShowFacts}
+            title="Show Ansible Facts"
+            className="flex items-center gap-1.5 text-xs text-blue-100 hover:text-white transition-colors"
+          >
+            <FileJson className="h-4 w-4" />
+            <span>Show Facts</span>
+          </button>
+        </div>
       </div>
 
       {/* Facts grid */}

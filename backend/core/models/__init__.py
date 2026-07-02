@@ -9,7 +9,7 @@ from core.models.jobs import Job, JobRun, JobSchedule, JobTemplate
 from core.models.nb2cmk import NB2CMKJob, NB2CMKJobResult, NB2CMKSync
 from core.models.rack import RackDeviceMapping
 from core.models.rbac import Permission, Role, RolePermission, UserPermission, UserRole
-from core.models.servers import Server
+from core.models.servers import Server, ServerFactsHistory
 from core.models.settings import (
     AgentsSetting,
     CacheSetting,
@@ -95,4 +95,5 @@ __all__ = [
     "ClientHostname",
     # Servers
     "Server",
+    "ServerFactsHistory",
 ]

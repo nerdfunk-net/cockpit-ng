@@ -25,7 +25,7 @@ interface ProfileData {
 }
 
 export function ProfilePage() {
-  const { user, token } = useAuthStore()
+  const user = useAuthStore(state => state.user)
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -54,7 +54,7 @@ export function ProfilePage() {
   // Load profile data
   useEffect(() => {
     const loadProfile = async () => {
-      if (!user || !token) {
+      if (!user) {
         return
       }
 
@@ -62,7 +62,6 @@ export function ProfilePage() {
       try {
         const response = await fetch('/api/proxy/profile', {
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         })
@@ -133,7 +132,7 @@ export function ProfilePage() {
     }
 
     loadProfile()
-  }, [user, token])
+  }, [user])
 
   const validatePasswords = () => {
     if (passwords.newPassword || passwords.confirmPassword) {
@@ -348,7 +347,6 @@ export function ProfilePage() {
       const response = await fetch('/api/proxy/profile', {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(updateData),

@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useFileHistoryQuery } from '@/hooks/queries/use-file-history-query'
-import { useAuthStore } from '@/lib/auth-store'
 
 interface FileHistoryDialogProps {
   isOpen: boolean
@@ -39,7 +38,6 @@ export function FileHistoryDialog({
     content: string
   } | null>(null)
   const [isLoadingView, setIsLoadingView] = useState(false)
-  const { token } = useAuthStore()
 
   const { data, isLoading, error } = useFileHistoryQuery(repoId, filePath, {
     enabled: isOpen && !!repoId && !!filePath,
@@ -91,17 +89,9 @@ export function FileHistoryDialog({
 
       setIsLoadingView(true)
       try {
-        const headers: Record<string, string> = {
-          Accept: 'application/json',
-        }
-
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`
-        }
-
         const response = await fetch(
           `/api/proxy/git/${repoId}/files/${commitHash}/commit?file_path=${encodeURIComponent(filePath)}`,
-          { headers }
+          { headers: { Accept: 'application/json' } }
         )
 
         if (!response.ok) {
@@ -117,7 +107,7 @@ export function FileHistoryDialog({
         setIsLoadingView(false)
       }
     },
-    [repoId, filePath, token]
+    [repoId, filePath]
   )
 
   const handleDownloadFile = useCallback(
@@ -125,17 +115,9 @@ export function FileHistoryDialog({
       if (!repoId || !filePath) return
 
       try {
-        const headers: Record<string, string> = {
-          Accept: 'application/json',
-        }
-
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`
-        }
-
         const response = await fetch(
           `/api/proxy/git/${repoId}/files/${commitHash}/commit?file_path=${encodeURIComponent(filePath)}`,
-          { headers }
+          { headers: { Accept: 'application/json' } }
         )
 
         if (!response.ok) {
@@ -158,7 +140,7 @@ export function FileHistoryDialog({
         alert('Failed to download file')
       }
     },
-    [repoId, filePath, token]
+    [repoId, filePath]
   )
 
   const formatDate = useMemo(() => {

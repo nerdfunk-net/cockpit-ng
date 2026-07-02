@@ -326,6 +326,130 @@ def test_update_server_not_found_returns_404(client: TestClient) -> None:
     assert resp.status_code == 404
 
 
+# ── GET /api/servers/{id}/facts/history ────────────────────────────────────────
+
+
+def _history_entry(**kwargs: object) -> SimpleNamespace:
+    defaults: dict = {"id": 1, "recorded_at": _NOW}
+    defaults.update(kwargs)
+    return SimpleNamespace(**defaults)
+
+
+def _history_detail(**kwargs: object) -> SimpleNamespace:
+    defaults: dict = {
+        "id": 1,
+        "recorded_at": _NOW,
+        "ansible_facts": {"ansible_hostname": "web01"},
+    }
+    defaults.update(kwargs)
+    return SimpleNamespace(**defaults)
+
+
+@pytest.mark.unit
+def test_get_server_facts_history_returns_entries(client: TestClient) -> None:
+    """History list endpoint returns lightweight entries, newest first."""
+    mock_service = MagicMock()
+    mock_service.get_by_id.return_value = _detail()
+    mock_service.get_facts_history.return_value = [
+        _history_entry(id=2, recorded_at=_NOW),
+        _history_entry(id=1, recorded_at=_NOW),
+    ]
+
+    with _auth_context(mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.get("/api/servers/1/facts/history", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body["entries"]) == 2
+    assert body["entries"][0]["id"] == 2
+    assert "ansible_facts" not in body["entries"][0]
+    mock_service.get_facts_history.assert_called_once_with(1)
+
+
+@pytest.mark.unit
+def test_get_server_facts_history_server_not_found_returns_404(
+    client: TestClient,
+) -> None:
+    """History list returns 404 when the server itself doesn't exist."""
+    mock_service = MagicMock()
+    mock_service.get_by_id.return_value = None
+
+    with _auth_context(mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.get("/api/servers/999/facts/history", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 404
+    mock_service.get_facts_history.assert_not_called()
+
+
+@pytest.mark.unit
+def test_get_server_facts_history_forbidden_without_permission(
+    client: TestClient,
+) -> None:
+    """History list returns 403 when RBAC denies servers:read."""
+    mock_service = MagicMock()
+
+    with _auth_context(mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=False)
+        resp = client.get("/api/servers/1/facts/history", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 403
+    mock_service.get_by_id.assert_not_called()
+
+
+# ── GET /api/servers/{id}/facts/history/{history_id} ───────────────────────────
+
+
+@pytest.mark.unit
+def test_get_server_facts_history_entry_returns_detail(client: TestClient) -> None:
+    """History detail endpoint returns the full historical facts snapshot."""
+    mock_service = MagicMock()
+    mock_service.get_facts_history_entry.return_value = _history_detail()
+
+    with _auth_context(mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.get("/api/servers/1/facts/history/1", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["ansible_facts"]["ansible_hostname"] == "web01"
+    mock_service.get_facts_history_entry.assert_called_once_with(1, 1)
+
+
+@pytest.mark.unit
+def test_get_server_facts_history_entry_not_found_returns_404(
+    client: TestClient,
+) -> None:
+    """History detail returns 404 when the entry doesn't exist or isn't scoped to the server."""
+    mock_service = MagicMock()
+    mock_service.get_facts_history_entry.return_value = None
+
+    with _auth_context(mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.get("/api/servers/1/facts/history/999", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 404
+
+
+@pytest.mark.unit
+def test_get_server_facts_history_entry_internal_error_is_sanitized(
+    client: TestClient,
+) -> None:
+    """Unexpected errors on history detail return the safe 5xx shape."""
+    mock_service = MagicMock()
+    mock_service.get_facts_history_entry.side_effect = RuntimeError("db-secret")
+
+    with _auth_context(mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.get("/api/servers/1/facts/history/1", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 500
+    body = resp.json()
+    assert body["detail"]["message"] == "An internal error occurred"
+    assert "db-secret" not in resp.text
+
+
 # ── DELETE /api/servers/{id} ───────────────────────────────────────────────────
 
 

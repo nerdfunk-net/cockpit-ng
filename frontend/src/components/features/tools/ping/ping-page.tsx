@@ -15,7 +15,6 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react'
-import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import PingResultsModal from '@/components/features/network/tools/ping/ping-results-modal'
 
@@ -64,7 +63,6 @@ const validateCIDR = (cidr: string): string => {
 }
 
 export default function PingToolPage() {
-  const { token } = useAuthStore()
   const { toast } = useToast()
 
   // State for CIDR inputs
@@ -158,7 +156,6 @@ export default function PingToolPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           cidrs: validCidrs,
@@ -195,7 +192,7 @@ export default function PingToolPage() {
     } finally {
       setIsSubmitting(false)
     }
-  }, [cidrInputs, resolveDns, token, toast, count, timeout, retry, interval])
+  }, [cidrInputs, resolveDns, toast, count, timeout, retry, interval])
 
   return (
     <>

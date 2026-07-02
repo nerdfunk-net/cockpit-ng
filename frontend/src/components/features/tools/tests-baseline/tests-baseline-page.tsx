@@ -39,7 +39,6 @@ import {
 } from '@/components/ui/table'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { ChevronDown, ChevronRight, FlaskConical, Loader2 } from 'lucide-react'
-import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
 import {
   buildManualDistributionRows,
@@ -120,7 +119,6 @@ function formValuesToRequest(values: TestsBaselineFormValues): CreateBaselineReq
 }
 
 export function BaselineGenerateForm() {
-  const { token } = useAuthStore()
   const { toast } = useToast()
   const [showDistribution, setShowDistribution] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -147,12 +145,9 @@ export function BaselineGenerateForm() {
   })
 
   useEffect(() => {
-    if (!token) return
     void (async () => {
       try {
-        const response = await fetch('/api/proxy/tools/baseline-profiles', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const response = await fetch('/api/proxy/tools/baseline-profiles')
         if (response.ok) {
           const data = (await response.json()) as BaselineProfileSummary[]
           setProfiles(data)
@@ -161,7 +156,7 @@ export function BaselineGenerateForm() {
         // Profiles are optional for the form
       }
     })()
-  }, [token])
+  }, [])
 
   const applyProfile = useCallback(
     async (profileId: string) => {
@@ -177,11 +172,7 @@ export function BaselineGenerateForm() {
         })
         return
       }
-      if (!token) return
-      const response = await fetch(
-        `/api/proxy/tools/baseline-profiles/${profileId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      const response = await fetch(`/api/proxy/tools/baseline-profiles/${profileId}`)
       if (!response.ok) {
         throw new Error('Failed to load profile')
       }
@@ -192,7 +183,7 @@ export function BaselineGenerateForm() {
         setShowDistribution(true)
       }
     },
-    [form, token]
+    [form]
   )
 
   const locationCount = useWatch({
@@ -248,16 +239,11 @@ export function BaselineGenerateForm() {
       setIsSubmitting(true)
       setLastResult(null)
       try {
-        if (!token) {
-          throw new Error('Not authenticated')
-        }
-
         const body = formValuesToRequest(values)
         const response = await fetch('/api/proxy/tools/create-baseline', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(body),
         })
@@ -292,7 +278,7 @@ export function BaselineGenerateForm() {
         setIsSubmitting(false)
       }
     },
-    [token, toast]
+    [toast]
   )
 
   return (

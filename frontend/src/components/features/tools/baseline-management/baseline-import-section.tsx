@@ -12,7 +12,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Upload, Loader2, BookOpen, ExternalLink } from 'lucide-react'
-import { useAuthStore } from '@/lib/auth-store'
 import { useToast } from '@/hooks/use-toast'
 
 function CodeBlock({ children }: { children: string }) {
@@ -44,22 +43,16 @@ function Step({
 }
 
 export default function BaselineImportSection() {
-  const { token } = useAuthStore()
   const { toast } = useToast()
   const [isImporting, setIsImporting] = useState(false)
 
   const handleImportBaseline = useCallback(async () => {
     setIsImporting(true)
     try {
-      if (!token) {
-        throw new Error('Not authenticated')
-      }
-
       const response = await fetch('/api/proxy/tools/tests-baseline', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
       })
 
@@ -95,7 +88,7 @@ export default function BaselineImportSection() {
     } finally {
       setIsImporting(false)
     }
-  }, [token, toast])
+  }, [toast])
 
   return (
     <div className="space-y-6">

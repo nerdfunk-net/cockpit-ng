@@ -466,6 +466,10 @@ export const queryKeys = {
         ? ([...queryKeys.servers.all, 'list', filters] as const)
         : ([...queryKeys.servers.all, 'list'] as const),
     detail: (id: number) => [...queryKeys.servers.all, 'detail', id] as const,
+    factsHistory: (id: number) =>
+      [...queryKeys.servers.all, 'detail', id, 'facts-history'] as const,
+    factsHistoryDetail: (id: number, historyId: number) =>
+      [...queryKeys.servers.factsHistory(id), historyId] as const,
   },
 
   // Agents settings
