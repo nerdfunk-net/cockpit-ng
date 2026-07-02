@@ -136,6 +136,8 @@ async def create_job_template(
             collect_hostname=template_data.collect_hostname
             if template_data.collect_hostname is not None
             else True,
+            facts_prefixes=template_data.facts_prefixes,
+            facts_agent_id=template_data.facts_agent_id,
             is_global=template_data.is_global,
         )
 
@@ -347,6 +349,8 @@ async def update_job_template(
             collect_ip_address=update_data.collect_ip_address,
             collect_mac_address=update_data.collect_mac_address,
             collect_hostname=update_data.collect_hostname,
+            facts_prefixes=update_data.facts_prefixes,
+            facts_agent_id=update_data.facts_agent_id,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

@@ -101,4 +101,5 @@ export interface ScheduleFormData {
   is_active: boolean
   is_global: boolean
   credential_id?: number | null
+  job_parameters?: Record<string, unknown> | null
 }

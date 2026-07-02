@@ -113,6 +113,19 @@ class TestCreateJobTemplate:
         )
         assert result["csv_import_column_mapping"] == mapping
 
+    def test_get_server_facts_fields_round_trip(self, svc: JobTemplateService) -> None:
+        prefixes = ["192.168.178.0/24", "10.0.0.0/24"]
+        result = svc.create_job_template(
+            name="get-facts",
+            job_type="get_server_facts",
+            user_id=1,
+            created_by="alice",
+            facts_prefixes=prefixes,
+            facts_agent_id="agent-1",
+        )
+        assert result["facts_prefixes"] == prefixes
+        assert result["facts_agent_id"] == "agent-1"
+
 
 # ===========================================================================
 # get_job_template / get_job_template_by_name
@@ -230,6 +243,21 @@ class TestUpdateJobTemplate:
             created["id"], deploy_custom_variables=new_vars
         )
         assert updated["deploy_custom_variables"] == new_vars
+
+    def test_update_get_server_facts_fields(self, svc: JobTemplateService) -> None:
+        created = svc.create_job_template(
+            name="get-facts",
+            job_type="get_server_facts",
+            user_id=1,
+            created_by="alice",
+        )
+        updated = svc.update_job_template(
+            created["id"],
+            facts_prefixes=["172.16.0.0/24"],
+            facts_agent_id="agent-2",
+        )
+        assert updated["facts_prefixes"] == ["172.16.0.0/24"]
+        assert updated["facts_agent_id"] == "agent-2"
 
     def test_no_op_update_returns_current(self, svc: JobTemplateService) -> None:
         created = _create_backup(svc)

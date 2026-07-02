@@ -50,9 +50,11 @@ import { CsvImportJobTemplate } from './template-types/CsvImportJobTemplate'
 import { CsvExportJobTemplate } from './template-types/CsvExportJobTemplate'
 import { SetPrimaryIpJobTemplate } from './template-types/SetPrimaryIpJobTemplate'
 import { GetClientDataJobTemplate } from './template-types/GetClientDataJobTemplate'
+import { GetServerFactsJobTemplate } from './template-types/GetServerFactsJobTemplate'
 import { CsvImportMappingDialog } from './template-types/CsvImportMappingDialog'
 import { CsvImportDefaultsPanel } from './csv-import-defaults-panel'
 import type { DeployTemplateEntryData } from './template-types/DeployTemplateEntry'
+import type { FactsPrefixEntry } from './template-types/GetServerFactsJobTemplate'
 import type {
   JobTemplate,
   JobType,
@@ -188,6 +190,11 @@ export function TemplateFormDialog({
   const [formCollectHostname, setFormCollectHostname] = useState(true)
   // Backup Agent (backup type)
   const [formBackupAgentId, setFormBackupAgentId] = useState('')
+  // Get Server Facts
+  const [formFactsPrefixEntries, setFormFactsPrefixEntries] = useState<
+    FactsPrefixEntry[]
+  >([{ _key: generateEntryKey(), value: '' }])
+  const [formFactsAgentId, setFormFactsAgentId] = useState('')
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
   const { data: ipStatuses = EMPTY_IP_STATUSES, isLoading: loadingIpStatuses } =
@@ -228,14 +235,21 @@ export function TemplateFormDialog({
     enabled: isCsvExport,
   })
 
-  // Netmiko agents from settings (type === 'netmiko') — shown regardless of online status
+  // Agents from settings — shown regardless of online status
   const { data: allConfiguredAgents, isLoading: loadingAgents } = useAgentsQuery({
-    enabled: formJobType === 'backup',
+    enabled: formJobType === 'backup' || formJobType === 'get_server_facts',
   })
   const netmikoAgents = useMemo(
     () =>
       (allConfiguredAgents ?? [])
         .filter(a => a.type === 'netmiko' && a.agent_id)
+        .map(a => ({ agent_id: a.agent_id!, hostname: a.name, status: 'configured' as const })),
+    [allConfiguredAgents]
+  )
+  const ansibleAgents = useMemo(
+    () =>
+      (allConfiguredAgents ?? [])
+        .filter(a => a.type === 'ansible' && a.agent_id)
         .map(a => ({ agent_id: a.agent_id!, hostname: a.name, status: 'configured' as const })),
     [allConfiguredAgents]
   )
@@ -331,6 +345,8 @@ export function TemplateFormDialog({
     setFormCollectMacAddress(true)
     setFormCollectHostname(true)
     setFormBackupAgentId('')
+    setFormFactsPrefixEntries([{ _key: generateEntryKey(), value: '' }])
+    setFormFactsAgentId('')
   }, [])
 
   // Load editing template data
@@ -447,6 +463,15 @@ export function TemplateFormDialog({
       setFormCollectIpAddress(editingTemplate.collect_ip_address ?? true)
       setFormCollectMacAddress(editingTemplate.collect_mac_address ?? true)
       setFormCollectHostname(editingTemplate.collect_hostname ?? true)
+      setFormFactsPrefixEntries(
+        editingTemplate.facts_prefixes && editingTemplate.facts_prefixes.length > 0
+          ? editingTemplate.facts_prefixes.map(v => ({
+              _key: generateEntryKey(),
+              value: v,
+            }))
+          : [{ _key: generateEntryKey(), value: '' }]
+      )
+      setFormFactsAgentId(editingTemplate.facts_agent_id || '')
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
@@ -507,6 +532,10 @@ export function TemplateFormDialog({
         return false
       if (!formInventoryName) return false
     }
+    if (formJobType === 'get_server_facts') {
+      const validPrefixes = formFactsPrefixEntries.filter(e => e.value.trim())
+      if (validPrefixes.length === 0 || !formFactsAgentId) return false
+    }
     return true
   }, [
     formName,
@@ -531,6 +560,8 @@ export function TemplateFormDialog({
     formCsvExportProperties,
     formSetPrimaryIpStrategy,
     formSetPrimaryIpAgentId,
+    formFactsPrefixEntries,
+    formFactsAgentId,
   ])
 
   const handleSubmit = async () => {
@@ -720,6 +751,12 @@ export function TemplateFormDialog({
         formJobType === 'get_client_data' ? formCollectMacAddress : undefined,
       collect_hostname:
         formJobType === 'get_client_data' ? formCollectHostname : undefined,
+      facts_prefixes:
+        formJobType === 'get_server_facts'
+          ? formFactsPrefixEntries.map(e => e.value.trim()).filter(Boolean)
+          : undefined,
+      facts_agent_id:
+        formJobType === 'get_server_facts' ? formFactsAgentId || undefined : undefined,
       is_global: formIsGlobal,
     }
 
@@ -782,12 +819,13 @@ export function TemplateFormDialog({
             />
           )}
 
-          {/* Inventory - Not for scan_prefixes, deploy_agent, ip_addresses, csv_import, or csv_export */}
+          {/* Inventory - Not for scan_prefixes, deploy_agent, ip_addresses, csv_import, csv_export, or get_server_facts */}
           {formJobType !== 'scan_prefixes' &&
             formJobType !== 'deploy_agent' &&
             formJobType !== 'ip_addresses' &&
             formJobType !== 'csv_import' &&
-            formJobType !== 'csv_export' && (
+            formJobType !== 'csv_export' &&
+            formJobType !== 'get_server_facts' && (
               <JobTemplateInventorySection
                 formInventorySource={formInventorySource}
                 setFormInventorySource={setFormInventorySource}
@@ -1006,6 +1044,17 @@ export function TemplateFormDialog({
               setCollectHostname={setFormCollectHostname}
               parallelTasks={formParallelTasks}
               setParallelTasks={setFormParallelTasks}
+            />
+          )}
+
+          {formJobType === 'get_server_facts' && (
+            <GetServerFactsJobTemplate
+              formFactsPrefixEntries={formFactsPrefixEntries}
+              setFormFactsPrefixEntries={setFormFactsPrefixEntries}
+              formFactsAgentId={formFactsAgentId}
+              setFormFactsAgentId={setFormFactsAgentId}
+              ansibleAgents={ansibleAgents}
+              loadingAgents={loadingAgents}
             />
           )}
         </div>

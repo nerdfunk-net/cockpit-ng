@@ -87,6 +87,9 @@ export interface JobTemplate {
   collect_ip_address?: boolean
   collect_mac_address?: boolean
   collect_hostname?: boolean
+  // Get Server Facts (get_server_facts type)
+  facts_prefixes?: string[]
+  facts_agent_id?: string | null
   is_global: boolean
   user_id?: number
   created_by?: string

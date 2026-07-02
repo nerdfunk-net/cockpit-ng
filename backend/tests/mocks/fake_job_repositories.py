@@ -78,6 +78,9 @@ class _FakeJobTemplate:
             "scan_set_reachable_ip_active", True
         )
         self.scan_max_ips: Optional[int] = kwargs.get("scan_max_ips")
+        self.scan_condition_type: Optional[str] = kwargs.get("scan_condition_type")
+        self.scan_location_name: Optional[str] = kwargs.get("scan_location_name")
+        self.scan_cidr: Optional[str] = kwargs.get("scan_cidr")
         self.parallel_tasks: int = kwargs.get("parallel_tasks", 1)
         self.deploy_template_id: Optional[int] = kwargs.get("deploy_template_id")
         self.deploy_agent_id: Optional[str] = kwargs.get("deploy_agent_id")
@@ -95,6 +98,12 @@ class _FakeJobTemplate:
         self.ip_mark_status: Optional[str] = kwargs.get("ip_mark_status")
         self.ip_mark_tag: Optional[str] = kwargs.get("ip_mark_tag")
         self.ip_mark_description: Optional[str] = kwargs.get("ip_mark_description")
+        self.ip_remove_skip_assigned: Optional[bool] = kwargs.get(
+            "ip_remove_skip_assigned", True
+        )
+        self.ip_remove_skip_reserved: Optional[bool] = kwargs.get(
+            "ip_remove_skip_reserved", True
+        )
         self.csv_import_repo_id: Optional[int] = kwargs.get("csv_import_repo_id")
         self.csv_import_file_path: Optional[str] = kwargs.get("csv_import_file_path")
         self.csv_import_type: Optional[str] = kwargs.get("csv_import_type")
@@ -138,6 +147,8 @@ class _FakeJobTemplate:
         self.collect_ip_address: bool = kwargs.get("collect_ip_address", True)
         self.collect_mac_address: bool = kwargs.get("collect_mac_address", True)
         self.collect_hostname: bool = kwargs.get("collect_hostname", True)
+        self.facts_prefixes: Optional[str] = kwargs.get("facts_prefixes")
+        self.facts_agent_id: Optional[str] = kwargs.get("facts_agent_id")
         self.is_global: bool = kwargs.get("is_global", False)
         self.user_id: Optional[int] = kwargs.get("user_id")
         self.created_by: Optional[str] = kwargs.get("created_by")

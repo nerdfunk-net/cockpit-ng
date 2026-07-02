@@ -37,6 +37,7 @@ export const JOB_TYPE_LABELS: Record<string, string> = {
   ping_agent: 'Ping Agent',
   set_primary_ip: 'Set Primary IP',
   get_client_data: 'Get Client Data',
+  get_server_facts: 'Get Server Facts',
 } as const
 
 export const JOB_TYPE_COLORS: Record<string, string> = {
@@ -53,6 +54,7 @@ export const JOB_TYPE_COLORS: Record<string, string> = {
   ping_agent: 'bg-sky-500',
   set_primary_ip: 'bg-cyan-600',
   get_client_data: 'bg-emerald-500',
+  get_server_facts: 'bg-indigo-500',
 } as const
 
 export const CSV_EXPORT_PROPERTIES: {

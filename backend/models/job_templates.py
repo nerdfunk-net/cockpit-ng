@@ -21,6 +21,7 @@ JobTemplateType = Literal[
     "ping_agent",
     "set_primary_ip",
     "get_client_data",
+    "get_server_facts",
 ]
 
 # Inventory source options
@@ -374,6 +375,16 @@ class JobTemplateBase(BaseModel):
         True,
         description="Resolve hostnames via DNS for collected IP addresses (only applies to get_client_data type)",
     )
+    # Get Server Facts (get_server_facts type)
+    facts_prefixes: Optional[List[str]] = Field(
+        None,
+        description="CIDR prefixes to scan, e.g. ['192.168.178.0/24'] (only applies to get_server_facts type)",
+    )
+    facts_agent_id: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Cockpit agent ID (type='ansible') used to gather facts (only applies to get_server_facts type)",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -465,6 +476,9 @@ class JobTemplateUpdate(BaseModel):
     collect_ip_address: Optional[bool] = None
     collect_mac_address: Optional[bool] = None
     collect_hostname: Optional[bool] = None
+    # Get Server Facts
+    facts_prefixes: Optional[List[str]] = None
+    facts_agent_id: Optional[str] = Field(None, max_length=255)
     is_global: Optional[bool] = None
 
 

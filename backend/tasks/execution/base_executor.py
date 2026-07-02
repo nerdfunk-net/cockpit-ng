@@ -47,6 +47,7 @@ def execute_job_type(
     from .csv_export_executor import execute_csv_export
     from .csv_import_executor import execute_csv_import
     from .deploy_agent_executor import execute_deploy_agent
+    from .get_server_facts_executor import execute_get_server_facts
     from .ip_addresses_executor import execute_ip_addresses
     from .ping_agent_executor import execute_ping_agent
     from .scan_prefixes_executor import execute_scan_prefixes
@@ -68,6 +69,7 @@ def execute_job_type(
         "ping_agent": execute_ping_agent,
         "set_primary_ip": execute_set_primary_ip,
         "get_client_data": execute_get_client_data,
+        "get_server_facts": execute_get_server_facts,
     }
 
     executor = job_executors.get(job_type)

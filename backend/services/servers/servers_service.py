@@ -41,6 +41,10 @@ class ServersService:
     def get_by_id(self, server_id: int) -> Optional[Server]:
         return self._repo.get_by_id(server_id)
 
+    def get_by_hostname(self, hostname: str) -> Optional[Server]:
+        matches = self._repo.filter(hostname=hostname)
+        return matches[0] if matches else None
+
     def create(self, data: "CreateServerRequest") -> Server:
         fields = data.model_dump()
         if fields.get("is_virtual") is None:

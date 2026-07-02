@@ -14,6 +14,8 @@ export const DEFAULT_SCHEDULE = {
   is_active: true,
   is_global: false,
   credential_id: null,
+  facts_auth_type: 'ssh_key' as const,
+  facts_ansible_user: 'root',
 }
 
 export const SCHEDULE_TYPE_LABELS: Record<string, string> = {
