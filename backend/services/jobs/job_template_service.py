@@ -92,6 +92,8 @@ class JobTemplateService:
         collect_hostname: bool = True,
         facts_prefixes: Optional[List[str]] = None,
         facts_agent_id: Optional[str] = None,
+        open_ports_prefixes: Optional[List[str]] = None,
+        open_ports_agent_id: Optional[str] = None,
         is_global: bool = False,
     ) -> Dict[str, Any]:
         if self._repo.check_name_exists(name, user_id if not is_global else None):
@@ -118,6 +120,9 @@ class JobTemplateService:
         )
         facts_prefixes_json = (
             json.dumps(facts_prefixes) if facts_prefixes is not None else None
+        )
+        open_ports_prefixes_json = (
+            json.dumps(open_ports_prefixes) if open_ports_prefixes is not None else None
         )
 
         template = self._repo.create(
@@ -194,6 +199,8 @@ class JobTemplateService:
             collect_hostname=collect_hostname,
             facts_prefixes=facts_prefixes_json,
             facts_agent_id=facts_agent_id,
+            open_ports_prefixes=open_ports_prefixes_json,
+            open_ports_agent_id=open_ports_agent_id,
             is_global=is_global,
             user_id=user_id if not is_global else None,
             created_by=created_by,
@@ -306,6 +313,8 @@ class JobTemplateService:
         collect_hostname: Optional[bool] = None,
         facts_prefixes: Optional[List[str]] = None,
         facts_agent_id: Optional[str] = None,
+        open_ports_prefixes: Optional[List[str]] = None,
+        open_ports_agent_id: Optional[str] = None,
         is_global: Optional[bool] = None,
         user_id: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
@@ -467,6 +476,10 @@ class JobTemplateService:
             update_data["facts_prefixes"] = json.dumps(facts_prefixes)
         if facts_agent_id is not None:
             update_data["facts_agent_id"] = facts_agent_id
+        if open_ports_prefixes is not None:
+            update_data["open_ports_prefixes"] = json.dumps(open_ports_prefixes)
+        if open_ports_agent_id is not None:
+            update_data["open_ports_agent_id"] = open_ports_agent_id
         if is_global is not None:
             update_data["is_global"] = is_global
             if is_global:
@@ -579,6 +592,11 @@ class JobTemplateService:
                 "value": "get_server_facts",
                 "label": "Get Server Facts",
                 "description": "Scan IP prefixes, gather Ansible facts from reachable hosts, and store them as Server records",
+            },
+            {
+                "value": "get_open_ports",
+                "label": "Get Open Ports",
+                "description": "Scan IP prefixes and record open TCP/UDP ports via a Cockpit Ansible agent",
             },
         ]
 
@@ -697,6 +715,12 @@ class JobTemplateService:
                 json.loads(template.facts_prefixes) if template.facts_prefixes else None
             ),
             "facts_agent_id": template.facts_agent_id,
+            "open_ports_prefixes": (
+                json.loads(template.open_ports_prefixes)
+                if template.open_ports_prefixes
+                else None
+            ),
+            "open_ports_agent_id": template.open_ports_agent_id,
             "is_global": template.is_global,
             "user_id": template.user_id,
             "created_by": template.created_by,

@@ -96,7 +96,7 @@ class CockpitAgent:
                 "last_heartbeat": now,
                 "version": config.agent_version,
                 "agent_id": config.agent_id,
-                "capabilities": "echo,git_pull,git_status,docker_restart",
+                "capabilities": ",".join(self.executor.handlers.keys()),
                 "started_at": now,
                 "commands_executed": 0,
             }
@@ -114,7 +114,8 @@ class CockpitAgent:
             return
 
         try:
-            self.heartbeat_thread = HeartbeatThread(self.redis_client)
+            capabilities = ",".join(self.executor.handlers.keys())
+            self.heartbeat_thread = HeartbeatThread(self.redis_client, capabilities)
             self.heartbeat_thread.start()
             logger.info("Heartbeat thread started")
         except Exception as e:
@@ -172,7 +173,9 @@ class CockpitAgent:
         publish_progress = self._make_progress_publisher(command_id)
 
         # Execute command
-        result = await self.executor.execute(command, params, publish_progress=publish_progress)
+        result = await self.executor.execute(
+            command, params, publish_progress=publish_progress
+        )
 
         # Increment counter
         if self.heartbeat_thread:

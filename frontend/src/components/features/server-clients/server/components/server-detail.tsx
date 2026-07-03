@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  DoorOpen,
   FileJson,
   HardDrive,
   History,
@@ -14,6 +15,7 @@ import {
   Network,
   Pencil,
   FileSearch,
+  Radar,
   RefreshCw,
   Server,
   Settings2,
@@ -41,7 +43,9 @@ import { useServerMutations } from '@/hooks/queries/use-server-mutations'
 import { InterfacesDialog } from '../dialogs/interfaces-dialog'
 import { ClusterRow } from './cluster-row'
 import { ContactRow } from './contact-row'
+import { PortBindingBadge } from './port-binding-badge'
 import { useRefreshServerFacts } from '../hooks/use-refresh-server-facts'
+import { useRefreshServerOpenPorts } from '../hooks/use-refresh-server-open-ports'
 import { useRemoveServer } from '../hooks/use-remove-server'
 import { useUpdateServerToNautobot } from '../hooks/use-update-server-to-nautobot'
 import { NautobotUuidRow } from './nautobot-uuid-row'
@@ -215,6 +219,7 @@ export function ServerDetail({
     nautobotResourceLabel,
   } = useRemoveServer(server, onRemoved)
   const { refreshFacts, isRefreshing, canRefreshFacts } = useRefreshServerFacts(server)
+  const { scanOpenPorts, isScanning, canScanOpenPorts } = useRefreshServerOpenPorts(server)
 
   const handleConfirmOpenChange = useCallback((open: boolean) => {
     setConfirmOpen(open)
@@ -243,6 +248,9 @@ export function ServerDetail({
   )
 
   const selectedInterfaces: SelectedInterface[] = server.selected_interfaces ?? []
+  const tcpPorts = server.open_ports?.tcp_ports ?? []
+  const udpPorts = server.open_ports?.udp_ports ?? []
+  const hasOpenPorts = tcpPorts.length > 0 || udpPorts.length > 0
   const primaryIpv4Display = useMemo(
     () => formatServerPrimaryIpv4Display(server),
     [server]
@@ -263,7 +271,7 @@ export function ServerDetail({
         <div className="flex items-center gap-3">
           <button
             onClick={onShowHistory}
-            title="Show Facts History"
+            title="Show Facts and Open Ports History"
             className="flex items-center gap-1.5 text-xs text-blue-100 hover:text-white transition-colors"
           >
             <History className="h-4 w-4" />
@@ -382,34 +390,106 @@ export function ServerDetail({
           )}
         </div>
 
+        {/* Open Ports section */}
+        {hasOpenPorts && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <DoorOpen className="h-4 w-4 text-gray-400" />
+              <span className="text-sm font-medium text-gray-700">Open Ports</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs text-gray-500 uppercase tracking-wide">
+                  TCP ({tcpPorts.length})
+                </span>
+                {tcpPorts.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {tcpPorts.map((binding) => (
+                      <PortBindingBadge
+                        key={`${binding.address}:${binding.port}`}
+                        binding={binding}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-400 italic">None</span>
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs text-gray-500 uppercase tracking-wide">
+                  UDP ({udpPorts.length})
+                </span>
+                {udpPorts.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {udpPorts.map((binding) => (
+                      <PortBindingBadge
+                        key={`${binding.address}:${binding.port}`}
+                        binding={binding}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-400 italic">None</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <ContactRow server={server} />
 
         {/* Actions */}
         <div className="pt-2 border-t border-gray-200 flex justify-between items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8"
-            disabled={!canRefreshFacts || isRefreshing || isRemoving}
-            title={
-              canRefreshFacts
-                ? 'Re-gather Ansible facts using stored connection settings'
-                : 'No stored Ansible connection settings for this server'
-            }
-            onClick={() => void refreshFacts()}
-          >
-            {isRefreshing ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                Gathering…
-              </>
-            ) : (
-              <>
-                <FileSearch className="h-3.5 w-3.5 mr-1.5" />
-                Get Facts
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8"
+              disabled={!canRefreshFacts || isRefreshing || isScanning || isRemoving}
+              title={
+                canRefreshFacts
+                  ? 'Re-gather Ansible facts using stored connection settings'
+                  : 'No stored Ansible connection settings for this server'
+              }
+              onClick={() => void refreshFacts()}
+            >
+              {isRefreshing ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                  Gathering…
+                </>
+              ) : (
+                <>
+                  <FileSearch className="h-3.5 w-3.5 mr-1.5" />
+                  Get Facts
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8"
+              disabled={!canScanOpenPorts || isScanning || isRefreshing || isRemoving}
+              title={
+                canScanOpenPorts
+                  ? 'Scan open TCP/UDP ports using stored connection settings'
+                  : 'No stored Ansible connection settings for this server'
+              }
+              onClick={() => void scanOpenPorts()}
+            >
+              {isScanning ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                  Scanning…
+                </>
+              ) : (
+                <>
+                  <Radar className="h-3.5 w-3.5 mr-1.5" />
+                  Get Open Ports
+                </>
+              )}
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             {canUpdate ? (
               <Button
@@ -419,6 +499,7 @@ export function ServerDetail({
                 disabled={
                   isUpdatingNautobot ||
                   isRefreshing ||
+                  isScanning ||
                   defaultsLoading ||
                   (!server.is_virtual && deviceDropdownsLoading)
                 }
@@ -441,7 +522,7 @@ export function ServerDetail({
               variant="destructive"
               size="sm"
               onClick={() => setConfirmOpen(true)}
-              disabled={isRemoving || isRefreshing}
+              disabled={isRemoving || isRefreshing || isScanning}
               className="h-8 px-3"
             >
               <Trash2 className="h-3.5 w-3.5 mr-1.5" />

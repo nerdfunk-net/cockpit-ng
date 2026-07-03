@@ -64,6 +64,7 @@ describe('formatServerPrimaryIpv4Display', () => {
       },
       ansible_credentials: null,
       selected_interfaces: null,
+      open_ports: null,
       created_at: null,
       updated_at: null,
     }

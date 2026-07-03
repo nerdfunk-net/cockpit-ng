@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from models.servers import (
     _ANSIBLE_FACTS_MAX_BYTES,
+    _OPEN_PORTS_MAX_BYTES,
     AnsibleCredentials,
     CreateServerRequest,
     ListServersResponse,
@@ -19,6 +20,9 @@ from models.servers import (
     ServerFactsHistoryDetail,
     ServerFactsHistoryEntry,
     ServerFactsHistoryListResponse,
+    ServerOpenPortsHistoryDetail,
+    ServerOpenPortsHistoryEntry,
+    ServerOpenPortsHistoryListResponse,
     ServerResponse,
     ServerSummaryResponse,
     UpdateServerRequest,
@@ -93,6 +97,24 @@ def test_create_server_ansible_facts_over_limit_raises() -> None:
     huge = {"data": "x" * (_ANSIBLE_FACTS_MAX_BYTES + 1)}
     with pytest.raises(ValidationError, match="ansible_facts exceeds"):
         CreateServerRequest(hostname="web01", ansible_facts=huge)
+
+
+@pytest.mark.unit
+def test_create_server_open_ports_within_limit() -> None:
+    """open_ports under the size cap are accepted."""
+    req = CreateServerRequest(
+        hostname="web01",
+        open_ports={"tcp_ports": [22, 80], "udp_ports": [123]},
+    )
+    assert req.open_ports is not None
+
+
+@pytest.mark.unit
+def test_create_server_open_ports_over_limit_raises() -> None:
+    """open_ports larger than 512 KB are rejected."""
+    huge = {"data": "x" * (_OPEN_PORTS_MAX_BYTES + 1)}
+    with pytest.raises(ValidationError, match="open_ports exceeds"):
+        CreateServerRequest(hostname="web01", open_ports=huge)
 
 
 @pytest.mark.unit
@@ -317,4 +339,38 @@ def test_server_facts_history_list_response_shape() -> None:
         id=1, recorded_at=datetime(2024, 6, 1, tzinfo=timezone.utc)
     )
     resp = ServerFactsHistoryListResponse(entries=[entry])
+    assert resp.entries[0].id == 1
+
+
+# ── Open ports history models ────────────────────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_server_open_ports_history_entry_excludes_ports_blob() -> None:
+    """ServerOpenPortsHistoryEntry only carries id and recorded_at."""
+    entry = ServerOpenPortsHistoryEntry(
+        id=1, recorded_at=datetime(2024, 6, 1, tzinfo=timezone.utc)
+    )
+    assert entry.id == 1
+    assert not hasattr(entry, "open_ports")
+
+
+@pytest.mark.unit
+def test_server_open_ports_history_detail_carries_ports() -> None:
+    """ServerOpenPortsHistoryDetail includes the full open_ports payload."""
+    detail = ServerOpenPortsHistoryDetail(
+        id=1,
+        recorded_at=datetime(2024, 6, 1, tzinfo=timezone.utc),
+        open_ports={"tcp_ports": [22, 80], "udp_ports": [123]},
+    )
+    assert detail.open_ports == {"tcp_ports": [22, 80], "udp_ports": [123]}
+
+
+@pytest.mark.unit
+def test_server_open_ports_history_list_response_shape() -> None:
+    """ServerOpenPortsHistoryListResponse wraps a list of entries."""
+    entry = ServerOpenPortsHistoryEntry(
+        id=1, recorded_at=datetime(2024, 6, 1, tzinfo=timezone.utc)
+    )
+    resp = ServerOpenPortsHistoryListResponse(entries=[entry])
     assert resp.entries[0].id == 1

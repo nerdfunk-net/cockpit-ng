@@ -18,9 +18,31 @@ def _make_service() -> tuple[ServersService, MagicMock, MagicMock]:
     mock_repo = MagicMock()
     mock_history_repo = MagicMock()
     return (
-        ServersService(repository=mock_repo, history_repository=mock_history_repo),
+        ServersService(
+            repository=mock_repo,
+            history_repository=mock_history_repo,
+            open_ports_history_repository=MagicMock(),
+        ),
         mock_repo,
         mock_history_repo,
+    )
+
+
+def _make_service_with_ports() -> tuple[
+    ServersService, MagicMock, MagicMock, MagicMock
+]:
+    mock_repo = MagicMock()
+    mock_history_repo = MagicMock()
+    mock_open_ports_history_repo = MagicMock()
+    return (
+        ServersService(
+            repository=mock_repo,
+            history_repository=mock_history_repo,
+            open_ports_history_repository=mock_open_ports_history_repo,
+        ),
+        mock_repo,
+        mock_history_repo,
+        mock_open_ports_history_repo,
     )
 
 
@@ -35,6 +57,7 @@ def _server(**kwargs: object) -> SimpleNamespace:
         "contact": None,
         "is_virtual": False,
         "ansible_facts": None,
+        "open_ports": None,
     }
     defaults.update(kwargs)
     return SimpleNamespace(**defaults)
@@ -437,4 +460,88 @@ def test_get_facts_history_entry_delegates_to_history_repo() -> None:
     result = svc.get_facts_history_entry(1, 42)
 
     mock_history_repo.get_by_id_scoped.assert_called_once_with(1, 42)
+    assert result == "entry"
+
+
+# ── open ports history ───────────────────────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_create_with_open_ports_records_history() -> None:
+    """create() writes an initial history row when open_ports is provided."""
+    svc, mock_repo, _, mock_ports_history_repo = _make_service_with_ports()
+    mock_repo.create.return_value = _server(id=5)
+
+    data = CreateServerRequest(hostname="vm01", open_ports={"tcp_ports": [22]})
+    svc.create(data)
+
+    mock_ports_history_repo.create.assert_called_once()
+    kwargs = mock_ports_history_repo.create.call_args.kwargs
+    assert kwargs["server_id"] == 5
+    assert kwargs["open_ports"] == {"tcp_ports": [22]}
+    assert isinstance(kwargs["content_hash"], str)
+
+
+@pytest.mark.unit
+def test_create_without_open_ports_skips_history() -> None:
+    """create() does not write a ports history row when no open_ports is supplied."""
+    svc, mock_repo, _, mock_ports_history_repo = _make_service_with_ports()
+    mock_repo.create.return_value = _server(id=6)
+
+    svc.create(CreateServerRequest(hostname="bare01"))
+
+    mock_ports_history_repo.create.assert_not_called()
+
+
+@pytest.mark.unit
+def test_update_with_changed_open_ports_records_history() -> None:
+    """update() writes a history row when open_ports differs from the stored value."""
+    svc, mock_repo, _, mock_ports_history_repo = _make_service_with_ports()
+    mock_repo.get_by_id.return_value = _server(id=1, open_ports={"tcp_ports": [22]})
+    mock_repo.update.return_value = _server(id=1, open_ports={"tcp_ports": [22, 80]})
+
+    data = UpdateServerRequest(open_ports={"tcp_ports": [22, 80]})
+    svc.update(1, data)
+
+    mock_ports_history_repo.create.assert_called_once()
+    kwargs = mock_ports_history_repo.create.call_args.kwargs
+    assert kwargs["server_id"] == 1
+    assert kwargs["open_ports"] == {"tcp_ports": [22, 80]}
+
+
+@pytest.mark.unit
+def test_update_with_unchanged_open_ports_skips_history() -> None:
+    """update() does not write a ports history row when open_ports is byte-identical."""
+    svc, mock_repo, _, mock_ports_history_repo = _make_service_with_ports()
+    same_ports = {"tcp_ports": [22]}
+    mock_repo.get_by_id.return_value = _server(id=1, open_ports=same_ports)
+    mock_repo.update.return_value = _server(id=1, open_ports=same_ports)
+
+    data = UpdateServerRequest(open_ports=same_ports)
+    svc.update(1, data)
+
+    mock_ports_history_repo.create.assert_not_called()
+
+
+@pytest.mark.unit
+def test_get_open_ports_history_delegates_to_history_repo() -> None:
+    """get_open_ports_history forwards to the open-ports history repository."""
+    svc, mock_repo, _, mock_ports_history_repo = _make_service_with_ports()
+    mock_ports_history_repo.get_by_server_id.return_value = ["entry1", "entry2"]
+
+    result = svc.get_open_ports_history(1)
+
+    mock_ports_history_repo.get_by_server_id.assert_called_once_with(1)
+    assert result == ["entry1", "entry2"]
+
+
+@pytest.mark.unit
+def test_get_open_ports_history_entry_delegates_to_history_repo() -> None:
+    """get_open_ports_history_entry forwards to the repository, scoped by server."""
+    svc, mock_repo, _, mock_ports_history_repo = _make_service_with_ports()
+    mock_ports_history_repo.get_by_id_scoped.return_value = "entry"
+
+    result = svc.get_open_ports_history_entry(1, 42)
+
+    mock_ports_history_repo.get_by_id_scoped.assert_called_once_with(1, 42)
     assert result == "entry"

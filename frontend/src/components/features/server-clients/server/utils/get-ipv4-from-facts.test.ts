@@ -27,6 +27,7 @@ function serverWithFacts(ansible_facts: Record<string, unknown>): ServerResponse
     ansible_facts,
     ansible_credentials: null,
     selected_interfaces: null,
+    open_ports: null,
     created_at: null,
     updated_at: null,
   }

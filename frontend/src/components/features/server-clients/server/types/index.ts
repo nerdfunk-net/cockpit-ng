@@ -39,6 +39,22 @@ export interface AnsibleCredentials {
   credential_id?: number | null
 }
 
+/**
+ * A single listening port and the address it is bound to.
+ * address "0.0.0.0" / "::" / "*" means the port is reachable on every
+ * interface; anything else (e.g. "127.0.0.1", "::1") is bound to one interface only.
+ */
+export interface PortBinding {
+  address: string
+  port: number
+}
+
+/** Open TCP/UDP ports discovered by the get_open_ports agent command. */
+export interface ServerOpenPorts {
+  tcp_ports: PortBinding[]
+  udp_ports: PortBinding[]
+}
+
 /** Lightweight server row from GET /api/servers (no ansible_facts). */
 export interface ServerSummaryResponse {
   id: number
@@ -71,6 +87,7 @@ export interface ServerResponse {
   ansible_facts: Record<string, unknown> | null
   ansible_credentials: AnsibleCredentials | null
   selected_interfaces: SelectedInterface[] | null
+  open_ports: ServerOpenPorts | null
   created_at: string | null
   updated_at: string | null
 }

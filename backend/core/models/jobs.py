@@ -224,6 +224,13 @@ class JobTemplate(Base):
     facts_agent_id = Column(
         String(255), nullable=True
     )  # Cockpit agent ID (must be type='ansible') used to gather facts (get_server_facts type)
+    # Get Open Ports (get_open_ports type)
+    open_ports_prefixes = Column(
+        Text, nullable=True
+    )  # JSON array of CIDR strings, e.g. ["192.168.178.0/24"] (get_open_ports type)
+    open_ports_agent_id = Column(
+        String(255), nullable=True
+    )  # Cockpit agent ID (must be type='ansible') used to scan ports (get_open_ports type)
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

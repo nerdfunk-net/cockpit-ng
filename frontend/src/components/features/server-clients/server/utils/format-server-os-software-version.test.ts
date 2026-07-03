@@ -28,6 +28,7 @@ function server(overrides: Partial<ServerResponse> = EMPTY_OVERRIDES): ServerRes
     ansible_facts: null,
     ansible_credentials: null,
     selected_interfaces: null,
+    open_ports: null,
     created_at: null,
     updated_at: null,
     ...overrides,

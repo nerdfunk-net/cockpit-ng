@@ -470,6 +470,10 @@ export const queryKeys = {
       [...queryKeys.servers.all, 'detail', id, 'facts-history'] as const,
     factsHistoryDetail: (id: number, historyId: number) =>
       [...queryKeys.servers.factsHistory(id), historyId] as const,
+    openPortsHistory: (id: number) =>
+      [...queryKeys.servers.all, 'detail', id, 'open-ports-history'] as const,
+    openPortsHistoryDetail: (id: number, historyId: number) =>
+      [...queryKeys.servers.openPortsHistory(id), historyId] as const,
   },
 
   // Agents settings

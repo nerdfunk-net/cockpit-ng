@@ -8,7 +8,7 @@ import { useServerQuery } from '@/hooks/queries/use-server-query'
 import { useServersQuery } from '@/hooks/queries/use-servers-query'
 
 import { AnsibleFactsModal } from './dialogs/ansible-facts-modal'
-import { FactsHistoryDialog } from './dialogs/facts-history-dialog'
+import { HistoryDialog } from './dialogs/history-dialog'
 import { AddServerDialog } from './dialogs/add-server-dialog'
 import { ServerDetail } from './components/server-detail'
 import { ServerTree } from './components/server-tree'
@@ -185,8 +185,8 @@ export function ServerPage() {
         facts={selectedServer?.ansible_facts}
       />
 
-      {/* Facts History Dialog */}
-      <FactsHistoryDialog
+      {/* History Dialog (Facts + Open Ports) */}
+      <HistoryDialog
         open={historyOpen}
         onOpenChange={setHistoryOpen}
         serverId={selectedId}

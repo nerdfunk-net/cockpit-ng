@@ -138,6 +138,8 @@ async def create_job_template(
             else True,
             facts_prefixes=template_data.facts_prefixes,
             facts_agent_id=template_data.facts_agent_id,
+            open_ports_prefixes=template_data.open_ports_prefixes,
+            open_ports_agent_id=template_data.open_ports_agent_id,
             is_global=template_data.is_global,
         )
 
@@ -351,6 +353,8 @@ async def update_job_template(
             collect_hostname=update_data.collect_hostname,
             facts_prefixes=update_data.facts_prefixes,
             facts_agent_id=update_data.facts_agent_id,
+            open_ports_prefixes=update_data.open_ports_prefixes,
+            open_ports_agent_id=update_data.open_ports_agent_id,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

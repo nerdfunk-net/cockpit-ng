@@ -126,6 +126,19 @@ class TestCreateJobTemplate:
         assert result["facts_prefixes"] == prefixes
         assert result["facts_agent_id"] == "agent-1"
 
+    def test_get_open_ports_fields_round_trip(self, svc: JobTemplateService) -> None:
+        prefixes = ["192.168.178.0/24", "10.0.0.0/24"]
+        result = svc.create_job_template(
+            name="get-open-ports",
+            job_type="get_open_ports",
+            user_id=1,
+            created_by="alice",
+            open_ports_prefixes=prefixes,
+            open_ports_agent_id="agent-1",
+        )
+        assert result["open_ports_prefixes"] == prefixes
+        assert result["open_ports_agent_id"] == "agent-1"
+
 
 # ===========================================================================
 # get_job_template / get_job_template_by_name
@@ -258,6 +271,21 @@ class TestUpdateJobTemplate:
         )
         assert updated["facts_prefixes"] == ["172.16.0.0/24"]
         assert updated["facts_agent_id"] == "agent-2"
+
+    def test_update_get_open_ports_fields(self, svc: JobTemplateService) -> None:
+        created = svc.create_job_template(
+            name="get-open-ports",
+            job_type="get_open_ports",
+            user_id=1,
+            created_by="alice",
+        )
+        updated = svc.update_job_template(
+            created["id"],
+            open_ports_prefixes=["172.16.0.0/24"],
+            open_ports_agent_id="agent-2",
+        )
+        assert updated["open_ports_prefixes"] == ["172.16.0.0/24"]
+        assert updated["open_ports_agent_id"] == "agent-2"
 
     def test_no_op_update_returns_current(self, svc: JobTemplateService) -> None:
         created = _create_backup(svc)

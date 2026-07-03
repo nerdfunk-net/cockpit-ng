@@ -9,6 +9,8 @@ Endpoints:
   DELETE /api/servers/{id}                          – delete server
   GET    /api/servers/{id}/facts/history            – list Ansible facts history entries
   GET    /api/servers/{id}/facts/history/{hist_id}  – single Ansible facts history entry
+  GET    /api/servers/{id}/open-ports/history       – list open-ports history entries
+  GET    /api/servers/{id}/open-ports/history/{hist_id} – single open-ports history entry
 """
 
 import logging
@@ -29,6 +31,9 @@ from models.servers import (
     ServerFactsHistoryDetail,
     ServerFactsHistoryEntry,
     ServerFactsHistoryListResponse,
+    ServerOpenPortsHistoryDetail,
+    ServerOpenPortsHistoryEntry,
+    ServerOpenPortsHistoryListResponse,
     ServerResponse,
     ServerSummaryResponse,
     UpdateServerRequest,
@@ -184,6 +189,56 @@ def get_server_facts_history_entry(
     except Exception as exc:
         raise_internal_server_error(
             logger, "Failed to get server facts history entry", exc
+        )
+
+
+@router.get(
+    "/{server_id}/open-ports/history",
+    response_model=ServerOpenPortsHistoryListResponse,
+)
+def get_server_open_ports_history(
+    server_id: int,
+    _: dict = Depends(require_permission("servers", "read")),
+    service: ServersService = Depends(get_servers_service),
+) -> ServerOpenPortsHistoryListResponse:
+    """Return the open-ports history for a server, newest first."""
+    try:
+        server = service.get_by_id(server_id)
+        if server is None:
+            raise HTTPException(status_code=404, detail="Server not found")
+        entries = service.get_open_ports_history(server_id)
+        return ServerOpenPortsHistoryListResponse(
+            entries=[ServerOpenPortsHistoryEntry.model_validate(e) for e in entries]
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise_internal_server_error(
+            logger, "Failed to get server open ports history", exc
+        )
+
+
+@router.get(
+    "/{server_id}/open-ports/history/{history_id}",
+    response_model=ServerOpenPortsHistoryDetail,
+)
+def get_server_open_ports_history_entry(
+    server_id: int,
+    history_id: int,
+    _: dict = Depends(require_permission("servers", "read")),
+    service: ServersService = Depends(get_servers_service),
+) -> ServerOpenPortsHistoryDetail:
+    """Return a single historical open-ports snapshot."""
+    try:
+        entry = service.get_open_ports_history_entry(server_id, history_id)
+        if entry is None:
+            raise HTTPException(status_code=404, detail="History entry not found")
+        return ServerOpenPortsHistoryDetail.model_validate(entry)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise_internal_server_error(
+            logger, "Failed to get server open ports history entry", exc
         )
 
 

@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic.networks import IPvAnyAddress
 
 _ANSIBLE_FACTS_MAX_BYTES = 512 * 1024  # 512 KB
+_OPEN_PORTS_MAX_BYTES = 512 * 1024  # 512 KB
 
 _UUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -140,6 +141,7 @@ class ServerResponse(BaseModel):
     ansible_facts: Optional[Dict[str, Any]] = None
     ansible_credentials: Optional[AnsibleCredentials] = None
     selected_interfaces: Optional[List[Dict[str, Any]]] = None
+    open_ports: Optional[Dict[str, Any]] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -168,6 +170,7 @@ class CreateServerRequest(BaseModel):
     is_virtual: Optional[bool] = None
     ansible_facts: Optional[Dict[str, Any]] = None
     ansible_credentials: Optional[AnsibleCredentials] = None
+    open_ports: Optional[Dict[str, Any]] = None
 
     @model_validator(mode="after")
     def validate_ansible_credentials_auth(self) -> "CreateServerRequest":
@@ -222,6 +225,18 @@ class CreateServerRequest(BaseModel):
             )
         return v
 
+    @field_validator("open_ports", mode="before")
+    @classmethod
+    def validate_open_ports_size(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        size = len(json.dumps(v).encode())
+        if size > _OPEN_PORTS_MAX_BYTES:
+            raise ValueError(
+                f"open_ports exceeds maximum allowed size of {_OPEN_PORTS_MAX_BYTES // 1024} KB"
+            )
+        return v
+
 
 class UpdateServerRequest(BaseModel):
     hostname: Optional[str] = Field(None, min_length=1, max_length=255)
@@ -241,6 +256,7 @@ class UpdateServerRequest(BaseModel):
     ansible_facts: Optional[Dict[str, Any]] = None
     ansible_credentials: Optional[AnsibleCredentials] = None
     selected_interfaces: Optional[List[Dict[str, Any]]] = None
+    open_ports: Optional[Dict[str, Any]] = None
     cluster: Optional[ServerCluster] = None
 
     @field_validator("primary_ipv4", mode="before")
@@ -286,6 +302,18 @@ class UpdateServerRequest(BaseModel):
             )
         return v
 
+    @field_validator("open_ports", mode="before")
+    @classmethod
+    def validate_open_ports_size(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        size = len(json.dumps(v).encode())
+        if size > _OPEN_PORTS_MAX_BYTES:
+            raise ValueError(
+                f"open_ports exceeds maximum allowed size of {_OPEN_PORTS_MAX_BYTES // 1024} KB"
+            )
+        return v
+
 
 class ListServersResponse(BaseModel):
     servers: List[ServerSummaryResponse]
@@ -314,3 +342,26 @@ class ServerFactsHistoryDetail(BaseModel):
 
 class ServerFactsHistoryListResponse(BaseModel):
     entries: List[ServerFactsHistoryEntry]
+
+
+class ServerOpenPortsHistoryEntry(BaseModel):
+    """Lightweight history row for the open-ports-history list (excludes the ports blob)."""
+
+    id: int
+    recorded_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ServerOpenPortsHistoryDetail(BaseModel):
+    """A single historical open-ports snapshot."""
+
+    id: int
+    recorded_at: datetime
+    open_ports: Optional[Dict[str, Any]] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServerOpenPortsHistoryListResponse(BaseModel):
+    entries: List[ServerOpenPortsHistoryEntry]

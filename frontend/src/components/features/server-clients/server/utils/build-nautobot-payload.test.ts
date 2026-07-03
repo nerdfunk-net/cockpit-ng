@@ -50,6 +50,7 @@ function server(overrides: Partial<ServerResponse> = EMPTY_SERVER_OVERRIDES): Se
     },
     ansible_credentials: null,
     selected_interfaces: [{ name: 'eth0', address: '10.0.0.1', prefix: '24' }],
+    open_ports: null,
     created_at: null,
     updated_at: null,
     ...overrides,

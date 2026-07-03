@@ -29,7 +29,9 @@ def _decrypt_password(encrypted: str) -> str:
         f = Fernet(config.fernet_key)
         return f.decrypt(encrypted.encode()).decode()
     except InvalidToken as e:
-        raise ValueError("Failed to decrypt — shared secret mismatch or tampered data") from e
+        raise ValueError(
+            "Failed to decrypt — shared secret mismatch or tampered data"
+        ) from e
 
 
 class CommandExecutor:
@@ -43,6 +45,7 @@ class CommandExecutor:
         """Register default command handlers"""
         self.register("echo", self._execute_echo)
         self.register("get_facts", self._execute_get_facts)
+        self.register("get_open_ports", self._execute_get_open_ports)
 
     def register(self, command_name: str, handler: Callable):
         """Register a new command handler"""
@@ -99,11 +102,11 @@ class CommandExecutor:
         logger.info(f"Echo command: {message}")
         return {"status": "success", "output": message, "error": None}
 
-    async def _execute_get_facts(
-        self, params: dict, publish_progress: Optional[Callable] = None
-    ) -> dict:
+    async def _run_ansible_playbook(self, params: dict, playbook_filename: str) -> dict:
         """
-        Gather Ansible facts from a target host and return the JSON data.
+        Shared plumbing for Ansible-agent commands (get_facts, get_open_ports, ...):
+        decrypt auth params, invoke `ansible-playbook -i "IP,"` against
+        *playbook_filename*, and return the JSON the playbook wrote to facts_dest.
 
         Auth modes (mutually exclusive):
           SSH key (no passphrase):
@@ -116,6 +119,9 @@ class CommandExecutor:
         Optional:
             ansible_ssh_private_key_file  — override default SSH identity file
             ansible_port                  — default 22
+
+        Returns {"status": "success", "data": <parsed json>, "ip_address": ip_address}
+        or {"status": "error", "error": ..., "output": None}.
         """
         ip_address = params.get("ip_address")
         ansible_user = params.get("ansible_user")
@@ -131,9 +137,17 @@ class CommandExecutor:
             ssh_passphrase = _decrypt_password(params["ssh_passphrase"])
 
         if not ip_address:
-            return {"status": "error", "error": "ip_address is required", "output": None}
+            return {
+                "status": "error",
+                "error": "ip_address is required",
+                "output": None,
+            }
         if not ansible_user:
-            return {"status": "error", "error": "ansible_user is required", "output": None}
+            return {
+                "status": "error",
+                "error": "ansible_user is required",
+                "output": None,
+            }
         if not ansible_password and not use_sshkey:
             return {
                 "status": "error",
@@ -153,10 +167,10 @@ class CommandExecutor:
             }
 
         ansible_port = int(params.get("ansible_port", 22))
-        playbook_path = Path(config.ansible_playbook_dir) / "get_facts.yml"
+        playbook_path = Path(config.ansible_playbook_dir) / playbook_filename
 
         with tempfile.NamedTemporaryFile(
-            prefix="cockpit_facts_", suffix=".json", delete=False
+            prefix="cockpit_ansible_", suffix=".json", delete=False
         ) as tmp:
             facts_dest = tmp.name
 
@@ -171,9 +185,11 @@ class CommandExecutor:
 
             cmd = [
                 "ansible-playbook",
-                "-i", f"{ip_address},",
+                "-i",
+                f"{ip_address},",
                 str(playbook_path),
-                "-e", extra_vars,
+                "-e",
+                extra_vars,
             ]
 
             if ansible_password:
@@ -183,7 +199,9 @@ class CommandExecutor:
                 cmd += ["-e", f"ansible_ssh_private_key_file={key_file}"]
 
             env = os.environ.copy()
-            env["ANSIBLE_HOST_KEY_CHECKING"] = "True" if config.ansible_host_key_checking else "False"
+            env["ANSIBLE_HOST_KEY_CHECKING"] = (
+                "True" if config.ansible_host_key_checking else "False"
+            )
 
             if ssh_passphrase:
                 # Use SSH_ASKPASS to supply the key passphrase non-interactively.
@@ -200,8 +218,11 @@ class CommandExecutor:
                 env.pop("DISPLAY", None)
 
             logger.info(
-                "Running ansible-playbook for %s (user=%s, port=%d)",
-                ip_address, ansible_user, ansible_port,
+                "Running ansible-playbook %s for %s (user=%s, port=%d)",
+                playbook_filename,
+                ip_address,
+                ansible_user,
+                ansible_port,
             )
 
             process = await asyncio.create_subprocess_exec(
@@ -234,7 +255,11 @@ class CommandExecutor:
 
             if process.returncode != 0:
                 combined = (stdout_text + "\n" + stderr_text).strip()
-                logger.error("ansible-playbook failed (exit=%d):\n%s", process.returncode, combined[:2000])
+                logger.error(
+                    "ansible-playbook failed (exit=%d):\n%s",
+                    process.returncode,
+                    combined[:2000],
+                )
 
                 # Extract the most specific fatal/unreachable message from Ansible output.
                 fatal_match = re.search(r'fatal:.*?"msg":\s*"([^"]+)"', combined)
@@ -243,7 +268,9 @@ class CommandExecutor:
                 elif combined:
                     error_msg = combined
                 else:
-                    error_msg = f"ansible-playbook exited with code {process.returncode}"
+                    error_msg = (
+                        f"ansible-playbook exited with code {process.returncode}"
+                    )
 
                 return {
                     "status": "error",
@@ -253,32 +280,21 @@ class CommandExecutor:
 
             try:
                 with open(facts_dest) as f:
-                    facts = json.load(f)
+                    data = json.load(f)
             except FileNotFoundError:
                 return {
                     "status": "error",
-                    "error": "Facts file was not created — playbook may have failed silently",
+                    "error": "Result file was not created — playbook may have failed silently",
                     "output": None,
                 }
             except json.JSONDecodeError as e:
                 return {
                     "status": "error",
-                    "error": f"Failed to parse facts JSON: {e}",
+                    "error": f"Failed to parse result JSON: {e}",
                     "output": None,
                 }
 
-            hostname = facts.get("ansible_fqdn") or facts.get("ansible_hostname") or ip_address
-            logger.info("Facts gathered for %s (hostname=%s)", ip_address, hostname)
-
-            return {
-                "status": "success",
-                "output": {
-                    "facts": facts,
-                    "ip_address": ip_address,
-                    "hostname": hostname,
-                },
-                "error": None,
-            }
+            return {"status": "success", "data": data, "ip_address": ip_address}
 
         finally:
             for path in (facts_dest, askpass_script):
@@ -287,3 +303,61 @@ class CommandExecutor:
                         os.unlink(path)
                     except FileNotFoundError:
                         pass
+
+    async def _execute_get_facts(
+        self, params: dict, publish_progress: Optional[Callable] = None
+    ) -> dict:
+        """
+        Gather Ansible facts from a target host and return the JSON data.
+
+        See _run_ansible_playbook for supported auth modes and optional params.
+        """
+        result = await self._run_ansible_playbook(params, "get_facts.yml")
+        if result["status"] != "success":
+            return result
+
+        facts = result["data"]
+        ip_address = result["ip_address"]
+        hostname = (
+            facts.get("ansible_fqdn") or facts.get("ansible_hostname") or ip_address
+        )
+        logger.info("Facts gathered for %s (hostname=%s)", ip_address, hostname)
+
+        return {
+            "status": "success",
+            "output": {
+                "facts": facts,
+                "ip_address": ip_address,
+                "hostname": hostname,
+            },
+            "error": None,
+        }
+
+    async def _execute_get_open_ports(
+        self, params: dict, publish_progress: Optional[Callable] = None
+    ) -> dict:
+        """
+        Scan open TCP/UDP listening ports on a target host and return the result.
+
+        See _run_ansible_playbook for supported auth modes and optional params —
+        identical connection contract to get_facts.
+        """
+        result = await self._run_ansible_playbook(params, "scan_open_ports.yml")
+        if result["status"] != "success":
+            return result
+
+        data = result["data"]
+        ip_address = result["ip_address"]
+        hostname = data.get("hostname") or ip_address
+        logger.info("Open ports scanned for %s (hostname=%s)", ip_address, hostname)
+
+        return {
+            "status": "success",
+            "output": {
+                "tcp_ports": data.get("tcp_ports", []),
+                "udp_ports": data.get("udp_ports", []),
+                "ip_address": data.get("ip_address") or ip_address,
+                "hostname": hostname,
+            },
+            "error": None,
+        }

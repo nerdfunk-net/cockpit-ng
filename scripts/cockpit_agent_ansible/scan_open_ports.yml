@@ -1,0 +1,32 @@
+---
+# scan_open_ports.yml
+# Scans a host's listening TCP and UDP ports (with bind address) and writes the result as JSON.
+# Usage: ansible-playbook scan_open_ports.yml -i "<ip>," -e "ansible_user=... facts_dest=..."
+
+- name: Scan open TCP and UDP ports
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Get listening TCP ports with bind address (ss)
+      ansible.builtin.shell: >-
+        ss -tln | awk 'NR>1 { n=split($4,a,":"); port=a[n]; addr=$4; sub(":" port "$", "", addr); gsub(/^\[|\]$/, "", addr); printf "{\"address\":\"%s\",\"port\":%s}\n", addr, port }' | sort -u
+      register: tcp_ports
+      changed_when: false
+
+    - name: Get listening UDP ports with bind address (ss)
+      ansible.builtin.shell: >-
+        ss -uln | awk 'NR>1 { n=split($4,a,":"); port=a[n]; addr=$4; sub(":" port "$", "", addr); gsub(/^\[|\]$/, "", addr); printf "{\"address\":\"%s\",\"port\":%s}\n", addr, port }' | sort -u
+      register: udp_ports
+      changed_when: false
+
+    - name: Save open ports result to local file
+      delegate_to: localhost
+      copy:
+        content: "{{ {
+          'tcp_ports': tcp_ports.stdout_lines | map('from_json') | list,
+          'udp_ports': udp_ports.stdout_lines | map('from_json') | list,
+          'hostname': ansible_fqdn | default(ansible_hostname),
+          'ip_address': ansible_default_ipv4.address | default(inventory_hostname),
+          } | to_nice_json }}"
+        dest: "{{ facts_dest | default('open_ports.json') }}"

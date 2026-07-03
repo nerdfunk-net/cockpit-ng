@@ -18,7 +18,7 @@ from sqlalchemy.orm import sessionmaker
 
 from core.database import Base
 from core.models.client_data import ClientHostname, ClientIpAddress, ClientMacAddress
-from core.models.servers import Server, ServerFactsHistory
+from core.models.servers import Server, ServerFactsHistory, ServerOpenPortsHistory
 
 
 def _require_pg_url() -> str:
@@ -187,3 +187,41 @@ def server_facts_history_repository_pg(
     from repositories.servers.servers_repository import ServersRepository
 
     return ServersRepository(), ServerFactsHistoryRepository()
+
+
+@pytest.fixture(scope="session")
+def postgres_engine_server_open_ports_history(postgres_engine_servers):
+    """Ensures ``server_open_ports_history`` exists alongside ``servers`` (FK dependency)."""
+    Base.metadata.create_all(
+        postgres_engine_servers, tables=[ServerOpenPortsHistory.__table__]
+    )
+    return postgres_engine_servers
+
+
+@pytest.fixture
+def server_open_ports_history_repository_pg(
+    postgres_engine_server_open_ports_history, monkeypatch
+):
+    """Returns ``(ServersRepository, ServerOpenPortsHistoryRepository)`` sharing one test engine."""
+    import core.database as db_mod
+
+    with postgres_engine_server_open_ports_history.begin() as conn:
+        conn.execute(
+            text(
+                "TRUNCATE TABLE server_open_ports_history, servers RESTART IDENTITY CASCADE"
+            )
+        )
+
+    make_session = sessionmaker(bind=postgres_engine_server_open_ports_history)
+
+    def _test_get_db_session():
+        return make_session()
+
+    monkeypatch.setattr(db_mod, "get_db_session", _test_get_db_session)
+    monkeypatch.setattr("repositories.base.get_db_session", _test_get_db_session)
+    from repositories.servers.server_open_ports_history_repository import (
+        ServerOpenPortsHistoryRepository,
+    )
+    from repositories.servers.servers_repository import ServersRepository
+
+    return ServersRepository(), ServerOpenPortsHistoryRepository()

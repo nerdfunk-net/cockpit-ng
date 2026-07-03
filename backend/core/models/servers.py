@@ -28,6 +28,7 @@ class Server(Base):
     is_virtual = Column(Boolean, nullable=False, server_default="false", default=False)
     ansible_facts = Column(JSONB, nullable=True)
     ansible_credentials = Column(JSONB, nullable=True)
+    open_ports = Column(JSONB, nullable=True)
     selected_interfaces = Column(JSONB, nullable=True)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -59,3 +60,24 @@ class ServerFactsHistory(Base):
     )
 
     __table_args__ = (Index("idx_server_facts_history_server_id", "server_id"),)
+
+
+class ServerOpenPortsHistory(Base):
+    """Historical snapshots of open TCP/UDP ports scanned for a server."""
+
+    __tablename__ = "server_open_ports_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(
+        Integer,
+        ForeignKey("servers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    open_ports = Column(JSONB, nullable=False)
+    content_hash = Column(String(64), nullable=False)
+    recorded_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (Index("idx_server_open_ports_history_server_id", "server_id"),)

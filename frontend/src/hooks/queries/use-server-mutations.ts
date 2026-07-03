@@ -10,6 +10,7 @@ import type {
   ServerCluster,
   ServerContact,
   ServerLocation,
+  ServerOpenPorts,
   ServerResponse,
 } from '@/components/features/server-clients/server/types'
 
@@ -30,6 +31,7 @@ interface CreateServerPayload {
   is_virtual?: boolean | null
   ansible_facts?: Record<string, unknown> | null
   ansible_credentials?: AnsibleCredentials | null
+  open_ports?: ServerOpenPorts | null
 }
 
 interface UpdateServerPayload {
@@ -50,6 +52,7 @@ interface UpdateServerPayload {
   ansible_facts?: Record<string, unknown> | null
   ansible_credentials?: AnsibleCredentials | null
   selected_interfaces?: SelectedInterface[] | null
+  open_ports?: ServerOpenPorts | null
   cluster?: ServerCluster | null
 }
 

@@ -77,12 +77,16 @@ def build_servers_service():
     from repositories.servers.server_facts_history_repository import (
         ServerFactsHistoryRepository,
     )
+    from repositories.servers.server_open_ports_history_repository import (
+        ServerOpenPortsHistoryRepository,
+    )
     from repositories.servers.servers_repository import ServersRepository
     from services.servers.servers_service import ServersService
 
     return ServersService(
         repository=ServersRepository(),
         history_repository=ServerFactsHistoryRepository(),
+        open_ports_history_repository=ServerOpenPortsHistoryRepository(),
     )
 
 

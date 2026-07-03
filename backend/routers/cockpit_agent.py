@@ -24,6 +24,7 @@ from models.cockpit_agent import (
     CommandHistoryResponse,
     CommandRequest,
     CommandResponse,
+    OpenPortsScanRequest,
     PingJobResponse,
     PingRequest,
 )
@@ -158,6 +159,83 @@ def ansible_get_facts(
             )
 
         response = service.send_ansible_get_facts(
+            agent_id=request.agent_id,
+            ip_address=request.ip_address,
+            use_sshkey=request.use_sshkey,
+            sent_by=user.get("sub", "system"),
+            ansible_user=request.ansible_user,
+            credential_id=request.credential_id,
+            ansible_port=request.ansible_port,
+            timeout=request.timeout,
+        )
+
+        if response.get("status") == "timeout":
+            logger.warning(
+                "Ansible agent %s timed out: %s",
+                request.agent_id,
+                response.get("error"),
+            )
+            raise HTTPException(
+                status_code=504,
+                detail="Agent did not respond within the timeout",
+            )
+
+        if response.get("status") == "error":
+            error_msg = response.get("error") or "Agent returned an error"
+            logger.error(
+                "Ansible agent %s returned error: %s", request.agent_id, error_msg
+            )
+            raise HTTPException(status_code=422, detail=error_msg)
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise_internal_server_error(logger, "Internal error", e)
+
+
+@router.post(
+    "/open-ports-scan",
+    response_model=CommandResponse,
+    dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
+)
+def open_ports_scan(
+    request: OpenPortsScanRequest,
+    user: dict = Depends(verify_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Scan open TCP/UDP ports on a target host using a cockpit Ansible agent.
+
+    Credentials are resolved server-side — the frontend passes only a credential_id.
+    Supports three auth modes:
+      - SSH key (no passphrase): use_sshkey=True, ansible_user required, no credential_id
+      - SSH key with passphrase: use_sshkey=True, credential_id set (password = passphrase)
+      - Username/password:       use_sshkey=False, credential_id set
+
+    Sync route — blocking Redis wait runs in Starlette's thread pool.
+    """
+    try:
+        if (
+            request.use_sshkey
+            and request.credential_id is None
+            and not request.ansible_user
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail="ansible_user is required for SSH key auth without a credential",
+            )
+
+        service = CockpitAgentService(db)
+
+        if not service.check_agent_online(request.agent_id):
+            raise HTTPException(
+                status_code=503,
+                detail="Agent is offline or not responding",
+            )
+
+        response = service.send_open_ports_scan(
             agent_id=request.agent_id,
             ip_address=request.ip_address,
             use_sshkey=request.use_sshkey,

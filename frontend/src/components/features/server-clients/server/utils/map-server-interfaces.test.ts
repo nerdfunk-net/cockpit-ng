@@ -47,6 +47,7 @@ function baseServer(overrides: Partial<ServerResponse> = EMPTY_SERVER_OVERRIDES)
       { name: 'eth0', address: '192.168.1.10', prefix: '24' },
       { name: 'eth1', address: '10.0.0.5' },
     ],
+    open_ports: null,
     created_at: null,
     updated_at: null,
     ...overrides,

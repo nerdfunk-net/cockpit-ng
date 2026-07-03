@@ -5,6 +5,7 @@ Lightweight Python agent that runs on remote hosts to gather Ansible facts on be
 ## Features
 
 - **Ansible Facts Gathering**: Run `get_facts.yml` against any IP address without a pre-existing inventory file
+- **Open Port Scanning**: Run `scan_open_ports.yml` to list a host's listening TCP/UDP ports
 - **Redis Pub/Sub**: Real-time command delivery via Redis
 - **Health Monitoring**: Automatic heartbeat every 30s
 - **Command Buffering**: Queue commands locally when Redis is unavailable
@@ -185,6 +186,55 @@ Specify the exact private key the agent should use:
 
 `hostname` is resolved from `ansible_fqdn` → `ansible_hostname` → `ip_address` (fallback).
 
+---
+
+### `get_open_ports` — Scan Open TCP/UDP Ports
+
+Runs `scan_open_ports.yml` against the specified IP address using `ansible-playbook -i "IP,"` (no inventory file required). Returns each listening TCP/UDP port together with its bind address, discovered via `ss -tln`/`ss -uln` (no root required — no process/PID attribution). The bind address matters for security review: a port bound to `0.0.0.0`/`::`/`*` is reachable from any interface, while one bound to `127.0.0.1`/`::1` or a specific IP is not.
+
+**Authentication is required** — same modes as `get_facts`: you must provide either `ansible_password` or `use_sshkey: true`.
+
+#### Parameters
+
+Identical connection parameters to `get_facts` (see table above): `ip_address`, `ansible_user`, `ansible_password`, `use_sshkey`, `ansible_ssh_private_key_file`, `ansible_port`.
+
+#### Example — password authentication
+
+```json
+{
+  "command_id": "uuid-here",
+  "command": "get_open_ports",
+  "params": {
+    "ip_address": "192.168.1.1",
+    "ansible_user": "root",
+    "ansible_password": "secret",
+    "ansible_port": 22
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "command_id": "uuid-here",
+  "status": "success",
+  "output": {
+    "tcp_ports": [
+      { "address": "0.0.0.0", "port": 22 },
+      { "address": "127.0.0.1", "port": 80 }
+    ],
+    "udp_ports": [
+      { "address": "0.0.0.0", "port": 68 }
+    ],
+    "ip_address": "192.168.1.1",
+    "hostname": "router1.example.com"
+  },
+  "error": null,
+  "execution_time_ms": 1876,
+  "timestamp": 1711620000
+}
+```
+
 ## Manual Testing
 
 ```bash
@@ -205,6 +255,10 @@ redis-cli -h cockpit.example.com -a your_password PUBLISH cockpit-agent:$(hostna
 # Send get_facts command (SSH key auth)
 redis-cli -h cockpit.example.com -a your_password PUBLISH cockpit-agent:$(hostname) \
   '{"command_id":"3","command":"get_facts","params":{"ip_address":"192.168.1.1","ansible_user":"netops","use_sshkey":true}}'
+
+# Send get_open_ports command (password auth)
+redis-cli -h cockpit.example.com -a your_password PUBLISH cockpit-agent:$(hostname) \
+  '{"command_id":"4","command":"get_open_ports","params":{"ip_address":"192.168.1.1","ansible_user":"root","ansible_password":"secret"}}'
 ```
 
 ## Security

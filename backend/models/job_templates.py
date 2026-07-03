@@ -22,6 +22,7 @@ JobTemplateType = Literal[
     "set_primary_ip",
     "get_client_data",
     "get_server_facts",
+    "get_open_ports",
 ]
 
 # Inventory source options
@@ -385,6 +386,16 @@ class JobTemplateBase(BaseModel):
         max_length=255,
         description="Cockpit agent ID (type='ansible') used to gather facts (only applies to get_server_facts type)",
     )
+    # Get Open Ports (get_open_ports type)
+    open_ports_prefixes: Optional[List[str]] = Field(
+        None,
+        description="CIDR prefixes to scan, e.g. ['192.168.178.0/24'] (only applies to get_open_ports type)",
+    )
+    open_ports_agent_id: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Cockpit agent ID (type='ansible') used to scan ports (only applies to get_open_ports type)",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -479,6 +490,9 @@ class JobTemplateUpdate(BaseModel):
     # Get Server Facts
     facts_prefixes: Optional[List[str]] = None
     facts_agent_id: Optional[str] = Field(None, max_length=255)
+    # Get Open Ports
+    open_ports_prefixes: Optional[List[str]] = None
+    open_ports_agent_id: Optional[str] = Field(None, max_length=255)
     is_global: Optional[bool] = None
 
 

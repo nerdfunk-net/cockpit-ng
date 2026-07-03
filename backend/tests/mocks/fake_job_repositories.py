@@ -149,6 +149,8 @@ class _FakeJobTemplate:
         self.collect_hostname: bool = kwargs.get("collect_hostname", True)
         self.facts_prefixes: Optional[str] = kwargs.get("facts_prefixes")
         self.facts_agent_id: Optional[str] = kwargs.get("facts_agent_id")
+        self.open_ports_prefixes: Optional[str] = kwargs.get("open_ports_prefixes")
+        self.open_ports_agent_id: Optional[str] = kwargs.get("open_ports_agent_id")
         self.is_global: bool = kwargs.get("is_global", False)
         self.user_id: Optional[int] = kwargs.get("user_id")
         self.created_by: Optional[str] = kwargs.get("created_by")
