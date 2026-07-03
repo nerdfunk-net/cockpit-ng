@@ -100,6 +100,62 @@ class OpenPortsScanRequest(BaseModel):
     timeout: int = Field(default=60, description="Seconds to wait for agent response")
 
 
+class NmapScanRequest(BaseModel):
+    """Request to scan open TCP/UDP ports on a target host via an nmap agent."""
+
+    agent_id: str = Field(..., description="Nmap agent ID")
+    ip_address: str = Field(..., description="Target hostname or IP address")
+    ports: Optional[str] = Field(
+        default=None,
+        description='Port specification, e.g. "22,80,443" or "1-1024" (agent default when omitted)',
+    )
+    scan_type: Optional[str] = Field(
+        default=None,
+        description="Scan type: syn, connect, or udp (agent default when omitted)",
+    )
+    service_detection: Optional[bool] = Field(
+        default=None,
+        description="Enable nmap -sV service/version detection",
+    )
+    timeout: int = Field(default=300, description="Seconds to wait for agent response")
+
+
+class NmapPortBinding(BaseModel):
+    address: str
+    port: int
+
+
+class NmapServiceInfo(BaseModel):
+    protocol: str
+    port: int
+    state: Optional[str] = None
+    service: Optional[str] = None
+    product: Optional[str] = None
+    version: Optional[str] = None
+
+
+class NmapScanOutput(BaseModel):
+    """Structured output returned by the nmap agent scan_ports command."""
+
+    ip_address: str
+    hostname: str
+    host_status: str
+    tcp_ports: List[NmapPortBinding]
+    udp_ports: List[NmapPortBinding]
+    scan_arguments: str
+    services: List[NmapServiceInfo] = Field(default_factory=list)
+
+
+class NmapScanResponse(BaseModel):
+    """Response from agent after nmap scan_ports command execution."""
+
+    command_id: str
+    status: str
+    output: Optional[NmapScanOutput] = None
+    error: Optional[str] = None
+    execution_time_ms: int
+
+
 class CommandHistoryItem(BaseModel):
     """Command history record"""
 

@@ -35,6 +35,7 @@ import {
   History,
   Download,
   Wifi,
+  Radar,
   Plug,
   Settings,
   BarChart3,
@@ -140,7 +141,10 @@ const navigationSections: NavSection[] = [
       {
         label: 'Tools',
         icon: Wrench,
-        children: [{ label: 'Ping', href: '/tools/ping', icon: Wifi }],
+        children: [
+          { label: 'Ping', href: '/tools/ping', icon: Wifi },
+          { label: 'Scan', href: '/tools/scan', icon: Radar },
+        ],
       },
       { label: 'Compliance Check', href: '/compliance', icon: CheckCircle },
     ],

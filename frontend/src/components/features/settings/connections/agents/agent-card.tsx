@@ -8,6 +8,7 @@ const TYPE_BADGE_CLASSES: Record<AgentType, string> = {
   'git-based': 'bg-blue-600/80 text-white border-blue-400/50',
   ansible: 'bg-amber-500/80 text-white border-amber-400/50',
   netmiko: 'bg-emerald-500/80 text-white border-emerald-400/50',
+  nmap: 'bg-violet-500/80 text-white border-violet-400/50',
 }
 
 const TYPE_LABELS: Record<AgentType, string> = {
@@ -15,6 +16,7 @@ const TYPE_LABELS: Record<AgentType, string> = {
   'git-based': 'Git-based',
   ansible: 'Ansible',
   netmiko: 'Netmiko',
+  nmap: 'Nmap',
 }
 
 interface AgentCardProps {

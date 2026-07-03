@@ -8,6 +8,8 @@ import type {
   CommandResult,
   PingInput,
   PingJobResponse,
+  NmapScanInput,
+  NmapScanResult,
 } from '../types'
 
 export function useAgentMutations() {
@@ -88,5 +90,34 @@ export function useAgentMutations() {
     },
   })
 
-  return { gitPull, dockerRestart, ping }
+  const nmapScan = useMutation({
+    mutationFn: async (input: NmapScanInput): Promise<NmapScanResult> => {
+      return apiCall<NmapScanResult>('cockpit-agent/nmap/scan-ports', {
+        method: 'POST',
+        body: JSON.stringify({
+          agent_id: input.agent_id,
+          ip_address: input.ip_address,
+          ports: input.ports || undefined,
+          scan_type: input.scan_type || undefined,
+          service_detection: input.service_detection,
+          timeout: input.timeout ?? 300,
+        }),
+      })
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.cockpitAgents.history(variables.agent_id),
+      })
+      queryClient.invalidateQueries({ queryKey: queryKeys.cockpitAgents.list() })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Nmap Scan Failed',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+
+  return { gitPull, dockerRestart, ping, nmapScan }
 }

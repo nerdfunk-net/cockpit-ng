@@ -11,6 +11,7 @@ import {
   Terminal,
   Server,
   Wifi,
+  Radar,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -25,6 +26,7 @@ interface AgentCardProps {
   onGitPull: (agentId: string) => void
   onDockerRestart: (agentId: string) => void
   onPing: (agentId: string) => void
+  onNmapScan: (agentId: string) => void
   onViewHistory: (agentId: string) => void
 }
 
@@ -33,6 +35,7 @@ export function AgentCard({
   onGitPull,
   onDockerRestart,
   onPing,
+  onNmapScan,
   onViewHistory,
 }: AgentCardProps) {
   const isOnline = agent.status === 'online'
@@ -40,6 +43,7 @@ export function AgentCard({
   const hasGitPull = capabilities.includes('git_pull')
   const hasDockerRestart = capabilities.includes('docker_restart')
   const hasPing = capabilities.includes('ping')
+  const hasNmapScan = capabilities.includes('scan_ports')
 
   return (
     <Card
@@ -133,6 +137,18 @@ export function AgentCard({
             >
               <Wifi className="h-3 w-3 mr-1" />
               Ping
+            </Button>
+          )}
+          {hasNmapScan && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs h-8"
+              disabled={!isOnline}
+              onClick={() => onNmapScan(agent.agent_id)}
+            >
+              <Radar className="h-3 w-3 mr-1" />
+              Scan
             </Button>
           )}
           <Button

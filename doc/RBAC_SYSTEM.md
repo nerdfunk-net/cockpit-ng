@@ -167,6 +167,7 @@ general.inventory:{read, write, delete}
 network.templates:{read, write, delete}
 network.netmiko:execute
 network.ping:execute
+network.scan:execute
 
 # Snapshots
 snapshots:{read, write, delete}

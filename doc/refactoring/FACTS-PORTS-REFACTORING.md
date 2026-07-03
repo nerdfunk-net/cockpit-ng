@@ -6,6 +6,28 @@ keeping the Ansible agent commands and `ServersService` persistence layer unchan
 
 ---
 
+## Status: Implemented (Phases 0–6 complete)
+
+All phases below (`ansible_auth.py`, `ServerAnsibleOperationsService`, thin
+executors, the `/refresh-facts` / `/refresh-open-ports` endpoints + frontend
+hooks, and `get_open_ports` template/schedule UI parity) have been implemented
+and verified (backend unit suite + router regression guards + frontend
+`tsc`/`eslint` all green).
+
+**One issue remains open by design:** the add-server dialog (`add-server-dialog.tsx`)
+still gathers facts via `POST /api/cockpit-agent/ansible/get-facts` and parses
+the result client-side with `parse-ansible-facts.ts`, rather than going through
+`ServerAnsibleOperationsService`. This is **not a security regression** —
+`/ansible/get-facts` already resolves credentials server-side, so no password
+ever reaches the browser — but it does mean the Python (`ansible_facts_parser.py`)
+and TypeScript (`parse-ansible-facts.ts`) facts parsers must still be kept in
+sync by hand. This was always an explicit non-goal (§1.2) and optional
+follow-up (§9.2, `POST /api/servers/discover`); it was deliberately left open
+rather than folded into this refactor and can be picked up later if the two
+parsers ever drift.
+
+---
+
 ## 1. Goal & non-goals
 
 ### 1.1 Goals

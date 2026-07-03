@@ -24,6 +24,8 @@ from models.cockpit_agent import (
     CommandHistoryResponse,
     CommandRequest,
     CommandResponse,
+    NmapScanRequest,
+    NmapScanResponse,
     OpenPortsScanRequest,
     PingJobResponse,
     PingRequest,
@@ -265,6 +267,79 @@ def open_ports_scan(
             error_msg = response.get("error") or "Agent returned an error"
             logger.error(
                 "Ansible agent %s returned error: %s", request.agent_id, error_msg
+            )
+            raise HTTPException(status_code=422, detail=error_msg)
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise_internal_server_error(logger, "Internal error", e)
+
+
+@router.post(
+    "/nmap/scan-ports",
+    response_model=NmapScanResponse,
+    dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
+)
+def nmap_scan_ports(
+    request: NmapScanRequest,
+    user: dict = Depends(verify_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Scan open TCP/UDP ports on a target host using a Cockpit nmap agent.
+
+    The agent runs nmap from its own network position — no SSH credentials are
+    required. Use **Agents → Operating** in the UI for ad-hoc scans.
+
+    Sync route — blocking Redis wait runs in Starlette's thread pool.
+    """
+    try:
+        if request.scan_type is not None and request.scan_type not in (
+            "syn",
+            "connect",
+            "udp",
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail="scan_type must be syn, connect, or udp",
+            )
+
+        service = CockpitAgentService(db)
+
+        if not service.check_agent_online(request.agent_id):
+            raise HTTPException(
+                status_code=503,
+                detail="Agent is offline or not responding",
+            )
+
+        response = service.send_nmap_scan(
+            agent_id=request.agent_id,
+            ip_address=request.ip_address,
+            sent_by=user.get("sub", "system"),
+            ports=request.ports,
+            scan_type=request.scan_type,
+            service_detection=request.service_detection,
+            timeout=request.timeout,
+        )
+
+        if response.get("status") == "timeout":
+            logger.warning(
+                "Nmap agent %s timed out: %s",
+                request.agent_id,
+                response.get("error"),
+            )
+            raise HTTPException(
+                status_code=504,
+                detail="Agent did not respond within the timeout",
+            )
+
+        if response.get("status") == "error":
+            error_msg = response.get("error") or "Agent returned an error"
+            logger.error(
+                "Nmap agent %s returned error: %s", request.agent_id, error_msg
             )
             raise HTTPException(status_code=422, detail=error_msg)
 

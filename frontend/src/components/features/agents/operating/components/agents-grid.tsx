@@ -9,6 +9,7 @@ interface AgentsGridProps {
   onGitPull: (agentId: string) => void
   onDockerRestart: (agentId: string) => void
   onPing: (agentId: string) => void
+  onNmapScan: (agentId: string) => void
   onViewHistory: (agentId: string) => void
 }
 
@@ -17,6 +18,7 @@ export function AgentsGrid({
   onGitPull,
   onDockerRestart,
   onPing,
+  onNmapScan,
   onViewHistory,
 }: AgentsGridProps) {
   if (agents.length === 0) {
@@ -38,6 +40,7 @@ export function AgentsGrid({
           onGitPull={onGitPull}
           onDockerRestart={onDockerRestart}
           onPing={onPing}
+          onNmapScan={onNmapScan}
           onViewHistory={onViewHistory}
         />
       ))}

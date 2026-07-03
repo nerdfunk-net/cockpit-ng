@@ -605,6 +605,42 @@ class CockpitAgentService:
             timeout=timeout,
         )
 
+    def send_nmap_scan(
+        self,
+        agent_id: str,
+        ip_address: str,
+        sent_by: str,
+        *,
+        ports: Optional[str] = None,
+        scan_type: Optional[str] = None,
+        service_detection: Optional[bool] = None,
+        timeout: int = 300,
+    ) -> dict:
+        """
+        Send scan_ports to a Cockpit nmap agent and wait for the result.
+
+        No credentials are required — the agent runs nmap from its own network
+        position toward the target IP.
+        """
+        if not self.check_agent_online(agent_id):
+            return {"status": "error", "error": "Agent is offline or not responding"}
+
+        params: Dict = {"ip_address": ip_address}
+        if ports is not None:
+            params["ports"] = ports
+        if scan_type is not None:
+            params["scan_type"] = scan_type
+        if service_detection is not None:
+            params["service_detection"] = service_detection
+
+        return self.send_command_and_wait(
+            agent_id=agent_id,
+            command="scan_ports",
+            params=params,
+            sent_by=sent_by,
+            timeout=timeout,
+        )
+
     # ------------------------------------------------------------------
     # Netmiko agent convenience methods
     # ------------------------------------------------------------------

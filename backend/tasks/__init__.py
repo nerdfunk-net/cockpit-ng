@@ -98,6 +98,9 @@ from .periodic_tasks import (
 # Import ping network task
 from .ping_network_task import ping_network_task
 
+# Import nmap scan network task
+from .nmap_scan_network_task import nmap_scan_network_task
+
 # Import scan prefixes task
 from .scan_prefixes_task import scan_prefixes_task
 from .scheduling import check_job_schedules_task, dispatch_job
@@ -141,6 +144,7 @@ __all__ = [
     "update_ip_addresses_from_csv_task",
     # Network tools
     "ping_network_task",
+    "nmap_scan_network_task",
     "scan_prefixes_task",
     "check_ip_task",
     "ip_addresses_task",

@@ -120,6 +120,7 @@ celery_app.conf.update(
         "tasks.backup_devices": {"queue": "backup"},
         # Network scanning tasks go to 'network' queue (if configured in UI)
         "tasks.ping_network_task": {"queue": "network"},
+        "tasks.nmap_scan_network_task": {"queue": "network"},
         "tasks.scan_prefixes_task": {"queue": "network"},
         "tasks.check_ip_task": {"queue": "network"},
         "tasks.get_client_data_task": {"queue": "network"},

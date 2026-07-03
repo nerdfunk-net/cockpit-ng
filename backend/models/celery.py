@@ -2,9 +2,9 @@
 Pydantic models for Celery task management API.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # ============================================================================
 # Shared Task Response Models
@@ -323,6 +323,15 @@ class PingNetworkRequest(BaseModel):
     timeout: int = 500
     retry: int = 3
     interval: int = 10
+
+
+class NmapScanNetworkRequest(BaseModel):
+    cidrs: List[str]
+    agent_id: str
+    ports: Optional[str] = None
+    scan_type: Literal["syn", "connect", "udp"] = "connect"
+    service_detection: bool = False
+    timeout: int = Field(default=300, ge=30, le=3600)
 
 
 class ScanPrefixesRequest(BaseModel):

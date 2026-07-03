@@ -113,6 +113,7 @@ Every permission follows the pattern:
 | `network.templates:delete` | Delete templates |
 | `network.netmiko:execute` | Execute commands on devices via SSH (Netmiko) |
 | `network.ping:execute` | Run network ping operations |
+| `network.scan:execute` | Run network port scan operations (nmap, prefix scan) |
 
 ### Snapshots
 
@@ -218,7 +219,7 @@ Settings access: read-only (`settings.nautobot:read`, `settings.checkmk:read`, `
 
 Full access to all network tooling (templates, Netmiko, snapshots, Git). Read-only for system settings.
 
-Key additions over `operator`: `network.templates:*`, `network.netmiko:execute`, `network.ping:execute`, `snapshots:delete`, `git.*`, `general.inventory:delete`, `nautobot.csv_updates:write`
+Key additions over `operator`: `network.templates:*`, `network.netmiko:execute`, `network.ping:execute`, `network.scan:execute`, `snapshots:delete`, `git.*`, `general.inventory:delete`, `nautobot.csv_updates:write`
 
 ### `viewer` — Read-Only
 

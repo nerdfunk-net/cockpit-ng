@@ -1,4 +1,4 @@
-export type AgentType = 'generic' | 'git-based' | 'ansible' | 'netmiko'
+export type AgentType = 'generic' | 'git-based' | 'ansible' | 'netmiko' | 'nmap'
 
 export interface Agent {
   id: string

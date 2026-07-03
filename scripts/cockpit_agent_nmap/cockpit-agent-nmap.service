@@ -1,0 +1,22 @@
+[Unit]
+Description=Cockpit Nmap Agent
+After=network.target
+
+[Service]
+Type=simple
+User=cockpit-agent
+Group=cockpit-agent
+WorkingDirectory=/opt/cockpit-agent-nmap
+ExecStart=/opt/cockpit-agent-nmap/venv/bin/python agent.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+EnvironmentFile=/opt/cockpit-agent-nmap/.env
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

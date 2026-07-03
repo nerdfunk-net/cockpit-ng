@@ -147,3 +147,47 @@ def test_wait_for_response_timeout(service: CockpitAgentService) -> None:
         result = service.wait_for_response("agent-1", "cmd-1", timeout=0)
 
     assert result["status"] == "timeout"
+
+
+@pytest.mark.unit
+def test_send_nmap_scan_offline_agent(service: CockpitAgentService) -> None:
+    with patch.object(service, "check_agent_online", return_value=False):
+        result = service.send_nmap_scan("nmap-1", "10.0.0.1", "alice", ports="22,80")
+
+    assert result["status"] == "error"
+    assert "offline" in result["error"].lower()
+
+
+@pytest.mark.unit
+def test_send_nmap_scan_success(service: CockpitAgentService) -> None:
+    with (
+        patch.object(service, "check_agent_online", return_value=True),
+        patch.object(
+            service,
+            "send_command_and_wait",
+            return_value={"status": "success", "output": {"tcp_ports": []}},
+        ) as wait_mock,
+    ):
+        result = service.send_nmap_scan(
+            "nmap-1",
+            "10.0.0.1",
+            "alice",
+            ports="22,80",
+            scan_type="connect",
+            service_detection=True,
+            timeout=120,
+        )
+
+    assert result["status"] == "success"
+    wait_mock.assert_called_once_with(
+        agent_id="nmap-1",
+        command="scan_ports",
+        params={
+            "ip_address": "10.0.0.1",
+            "ports": "22,80",
+            "scan_type": "connect",
+            "service_detection": True,
+        },
+        sent_by="alice",
+        timeout=120,
+    )

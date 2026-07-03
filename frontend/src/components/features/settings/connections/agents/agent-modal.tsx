@@ -25,6 +25,7 @@ const AGENT_TYPE_LABELS: Record<AgentType, string> = {
   'git-based': 'Git-based',
   ansible: 'Ansible',
   netmiko: 'Netmiko',
+  nmap: 'Nmap',
 }
 
 interface AgentModalProps {
@@ -223,9 +224,11 @@ export function AgentModal({
                 ? 'Git-based agents deploy configuration from a Git repository (required).'
                 : formData.type === 'ansible'
                   ? 'Ansible agents run playbooks, optionally sourced from a Git repository.'
-                  : formData.type === 'netmiko'
-                    ? 'Netmiko agents connect directly to network devices via SSH from an isolated network segment.'
-                    : 'Generic agents can optionally use a Git repository for configuration.'}
+                  : formData.type === 'nmap'
+                    ? 'Nmap agents run port scans from their network position, optionally sourced from a Git repository.'
+                    : formData.type === 'netmiko'
+                      ? 'Netmiko agents connect directly to network devices via SSH from an isolated network segment.'
+                      : 'Generic agents can optionally use a Git repository for configuration.'}
             </p>
           </div>
 

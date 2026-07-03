@@ -9,18 +9,20 @@ import { useAgentMutations } from './hooks/use-agent-mutations'
 import { AgentsGrid } from './components/agents-grid'
 import { GitPullDialog } from './dialogs/git-pull-dialog'
 import { PingDialog } from './dialogs/ping-dialog'
+import { NmapScanDialog } from './dialogs/nmap-scan-dialog'
 import { CommandHistoryDialog } from './dialogs/command-history-dialog'
 import { EMPTY_AGENTS } from './utils/constants'
 
 export function AgentsOperatingPage() {
   const { data, isLoading, refetch, isFetching } = useAgentsQuery()
-  const { gitPull, dockerRestart, ping } = useAgentMutations()
+  const { gitPull, dockerRestart, ping, nmapScan } = useAgentMutations()
 
   const agents = data?.agents ?? EMPTY_AGENTS
 
   // Dialog state
   const [gitPullAgent, setGitPullAgent] = useState<string | null>(null)
   const [pingAgent, setPingAgent] = useState<string | null>(null)
+  const [nmapAgent, setNmapAgent] = useState<string | null>(null)
   const [historyAgent, setHistoryAgent] = useState<string | null>(null)
 
   // Summary stats
@@ -38,6 +40,7 @@ export function AgentsOperatingPage() {
     [dockerRestart]
   )
   const handlePing = useCallback((agentId: string) => setPingAgent(agentId), [])
+  const handleNmapScan = useCallback((agentId: string) => setNmapAgent(agentId), [])
   const handleViewHistory = useCallback(
     (agentId: string) => setHistoryAgent(agentId),
     []
@@ -126,6 +129,7 @@ export function AgentsOperatingPage() {
               onGitPull={handleGitPull}
               onDockerRestart={handleDockerRestart}
               onPing={handlePing}
+              onNmapScan={handleNmapScan}
               onViewHistory={handleViewHistory}
             />
           )}
@@ -147,6 +151,14 @@ export function AgentsOperatingPage() {
           onOpenChange={open => !open && setPingAgent(null)}
           agentId={pingAgent}
           mutation={ping}
+        />
+      )}
+      {nmapAgent && (
+        <NmapScanDialog
+          open={!!nmapAgent}
+          onOpenChange={open => !open && setNmapAgent(null)}
+          agentId={nmapAgent}
+          mutation={nmapScan}
         />
       )}
       {historyAgent && (

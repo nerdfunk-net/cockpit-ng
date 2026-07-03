@@ -87,3 +87,44 @@ export interface PingJobResponse {
   status: string
   message: string
 }
+
+export interface NmapScanInput {
+  agent_id: string
+  ip_address: string
+  ports?: string
+  scan_type?: 'syn' | 'connect' | 'udp'
+  service_detection?: boolean
+  timeout?: number
+}
+
+export interface NmapPortBinding {
+  address: string
+  port: number
+}
+
+export interface NmapServiceInfo {
+  protocol: string
+  port: number
+  state?: string | null
+  service?: string | null
+  product?: string | null
+  version?: string | null
+}
+
+export interface NmapScanOutput {
+  ip_address: string
+  hostname: string
+  host_status: string
+  tcp_ports: NmapPortBinding[]
+  udp_ports: NmapPortBinding[]
+  scan_arguments: string
+  services: NmapServiceInfo[]
+}
+
+export interface NmapScanResult {
+  command_id: string
+  status: string
+  output: NmapScanOutput | null
+  error: string | null
+  execution_time_ms: number
+}
