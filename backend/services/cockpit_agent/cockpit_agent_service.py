@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from repositories.cockpit_agent.cockpit_agent_repository import CockpitAgentRepository
+from services.cockpit_agent.ansible_auth import ResolvedAnsibleAuth
 
 logger = logging.getLogger(__name__)
 
@@ -459,6 +460,81 @@ class CockpitAgentService:
     # Ansible agent convenience methods
     # ------------------------------------------------------------------
 
+    def _build_ansible_params(
+        self,
+        ip_address: str,
+        auth: ResolvedAnsibleAuth,
+        *,
+        ansible_port: int = 22,
+    ) -> Dict:
+        """Resolve auth secrets server-side and build the agent command params.
+
+        Three auth modes (see ResolvedAnsibleAuth):
+          SSH key (no passphrase): use_sshkey=True, credential_id=None, ansible_user required
+          SSH key with passphrase: use_sshkey=True, credential_id set (password = passphrase)
+          Username/password:       use_sshkey=False, credential_id set
+        """
+        params: Dict = {
+            "ip_address": ip_address,
+            "use_sshkey": auth.use_sshkey,
+            "ansible_port": ansible_port,
+        }
+
+        if auth.use_sshkey and auth.credential_id is None:
+            if not auth.ansible_user:
+                raise ValueError(
+                    "ansible_user is required for SSH key auth without a credential"
+                )
+            params["ansible_user"] = auth.ansible_user
+        elif auth.credential_id is not None:
+            import service_factory
+
+            creds_svc = service_factory.build_credentials_service()
+            cred = creds_svc.get_credential_by_id(auth.credential_id)
+            if not cred:
+                raise ValueError(f"Credential {auth.credential_id} not found")
+            params["ansible_user"] = cred.get("username") or auth.ansible_user
+            if not params["ansible_user"]:
+                raise ValueError(f"Credential {auth.credential_id} has no username")
+            secret = creds_svc.get_decrypted_password(auth.credential_id)
+            if auth.use_sshkey:
+                # SSH key with passphrase — password field holds the passphrase
+                if secret:
+                    params["ssh_passphrase"] = secret
+            else:
+                # Username/password auth
+                if not secret:
+                    raise ValueError(f"Credential {auth.credential_id} has no password")
+                params["ansible_password"] = secret
+        else:
+            raise ValueError("credential_id is required when use_sshkey is False")
+
+        return params
+
+    def _send_ansible_command(
+        self,
+        agent_id: str,
+        command: str,
+        ip_address: str,
+        auth: ResolvedAnsibleAuth,
+        sent_by: str,
+        *,
+        ansible_port: int = 22,
+        timeout: int = 60,
+    ) -> dict:
+        if not self.check_agent_online(agent_id):
+            return {"status": "error", "error": "Agent is offline or not responding"}
+
+        params = self._build_ansible_params(ip_address, auth, ansible_port=ansible_port)
+
+        return self.send_command_and_wait(
+            agent_id=agent_id,
+            command=command,
+            params=params,
+            sent_by=sent_by,
+            timeout=timeout,
+        )
+
     def send_ansible_get_facts(
         self,
         agent_id: str,
@@ -479,49 +555,18 @@ class CockpitAgentService:
           SSH key with passphrase: use_sshkey=True, credential_id set (password = passphrase)
           Username/password:       use_sshkey=False, credential_id set
         """
-        if not self.check_agent_online(agent_id):
-            return {"status": "error", "error": "Agent is offline or not responding"}
-
-        params: Dict = {
-            "ip_address": ip_address,
-            "use_sshkey": use_sshkey,
-            "ansible_port": ansible_port,
-        }
-
-        if use_sshkey and credential_id is None:
-            if not ansible_user:
-                raise ValueError(
-                    "ansible_user is required for SSH key auth without a credential"
-                )
-            params["ansible_user"] = ansible_user
-        elif credential_id is not None:
-            import service_factory
-
-            creds_svc = service_factory.build_credentials_service()
-            cred = creds_svc.get_credential_by_id(credential_id)
-            if not cred:
-                raise ValueError(f"Credential {credential_id} not found")
-            params["ansible_user"] = cred.get("username") or ansible_user
-            if not params["ansible_user"]:
-                raise ValueError(f"Credential {credential_id} has no username")
-            secret = creds_svc.get_decrypted_password(credential_id)
-            if use_sshkey:
-                # SSH key with passphrase — password field holds the passphrase
-                if secret:
-                    params["ssh_passphrase"] = secret
-            else:
-                # Username/password auth
-                if not secret:
-                    raise ValueError(f"Credential {credential_id} has no password")
-                params["ansible_password"] = secret
-        else:
-            raise ValueError("credential_id is required when use_sshkey is False")
-
-        return self.send_command_and_wait(
-            agent_id=agent_id,
-            command="get_facts",
-            params=params,
-            sent_by=sent_by,
+        auth = ResolvedAnsibleAuth(
+            use_sshkey=use_sshkey,
+            ansible_user=ansible_user,
+            credential_id=credential_id,
+        )
+        return self._send_ansible_command(
+            agent_id,
+            "get_facts",
+            ip_address,
+            auth,
+            sent_by,
+            ansible_port=ansible_port,
             timeout=timeout,
         )
 
@@ -545,49 +590,18 @@ class CockpitAgentService:
           SSH key with passphrase: use_sshkey=True, credential_id set (password = passphrase)
           Username/password:       use_sshkey=False, credential_id set
         """
-        if not self.check_agent_online(agent_id):
-            return {"status": "error", "error": "Agent is offline or not responding"}
-
-        params: Dict = {
-            "ip_address": ip_address,
-            "use_sshkey": use_sshkey,
-            "ansible_port": ansible_port,
-        }
-
-        if use_sshkey and credential_id is None:
-            if not ansible_user:
-                raise ValueError(
-                    "ansible_user is required for SSH key auth without a credential"
-                )
-            params["ansible_user"] = ansible_user
-        elif credential_id is not None:
-            import service_factory
-
-            creds_svc = service_factory.build_credentials_service()
-            cred = creds_svc.get_credential_by_id(credential_id)
-            if not cred:
-                raise ValueError(f"Credential {credential_id} not found")
-            params["ansible_user"] = cred.get("username") or ansible_user
-            if not params["ansible_user"]:
-                raise ValueError(f"Credential {credential_id} has no username")
-            secret = creds_svc.get_decrypted_password(credential_id)
-            if use_sshkey:
-                # SSH key with passphrase — password field holds the passphrase
-                if secret:
-                    params["ssh_passphrase"] = secret
-            else:
-                # Username/password auth
-                if not secret:
-                    raise ValueError(f"Credential {credential_id} has no password")
-                params["ansible_password"] = secret
-        else:
-            raise ValueError("credential_id is required when use_sshkey is False")
-
-        return self.send_command_and_wait(
-            agent_id=agent_id,
-            command="get_open_ports",
-            params=params,
-            sent_by=sent_by,
+        auth = ResolvedAnsibleAuth(
+            use_sshkey=use_sshkey,
+            ansible_user=ansible_user,
+            credential_id=credential_id,
+        )
+        return self._send_ansible_command(
+            agent_id,
+            "get_open_ports",
+            ip_address,
+            auth,
+            sent_by,
+            ansible_port=ansible_port,
             timeout=timeout,
         )
 

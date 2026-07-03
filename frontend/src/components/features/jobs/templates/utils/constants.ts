@@ -38,6 +38,7 @@ export const JOB_TYPE_LABELS: Record<string, string> = {
   set_primary_ip: 'Set Primary IP',
   get_client_data: 'Get Client Data',
   get_server_facts: 'Get Server Facts',
+  get_open_ports: 'Get Open Ports',
 } as const
 
 export const JOB_TYPE_COLORS: Record<string, string> = {
@@ -55,6 +56,7 @@ export const JOB_TYPE_COLORS: Record<string, string> = {
   set_primary_ip: 'bg-cyan-600',
   get_client_data: 'bg-emerald-500',
   get_server_facts: 'bg-indigo-500',
+  get_open_ports: 'bg-rose-500',
 } as const
 
 export const CSV_EXPORT_PROPERTIES: {

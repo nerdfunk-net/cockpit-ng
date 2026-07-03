@@ -90,6 +90,22 @@ def build_servers_service():
     )
 
 
+def build_server_ansible_ops_service(db):
+    """Create a new ServerAnsibleOperationsService instance.
+
+    *db* is required because CockpitAgentService writes command history
+    through the same SQLAlchemy session (see
+    services/cockpit_agent/cockpit_agent_service.py).
+    """
+    from services.cockpit_agent.cockpit_agent_service import CockpitAgentService
+    from services.servers.ansible_ops import ServerAnsibleOperationsService
+
+    return ServerAnsibleOperationsService(
+        servers_service=build_servers_service(),
+        agent_service=CockpitAgentService(db),
+    )
+
+
 def build_device_query_service() -> DeviceQueryService:
     """Create a new DeviceQueryService instance."""
     from services.nautobot.devices.query import DeviceQueryService

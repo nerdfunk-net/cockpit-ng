@@ -51,10 +51,12 @@ import { CsvExportJobTemplate } from './template-types/CsvExportJobTemplate'
 import { SetPrimaryIpJobTemplate } from './template-types/SetPrimaryIpJobTemplate'
 import { GetClientDataJobTemplate } from './template-types/GetClientDataJobTemplate'
 import { GetServerFactsJobTemplate } from './template-types/GetServerFactsJobTemplate'
+import { GetOpenPortsJobTemplate } from './template-types/GetOpenPortsJobTemplate'
 import { CsvImportMappingDialog } from './template-types/CsvImportMappingDialog'
 import { CsvImportDefaultsPanel } from './csv-import-defaults-panel'
 import type { DeployTemplateEntryData } from './template-types/DeployTemplateEntry'
 import type { FactsPrefixEntry } from './template-types/GetServerFactsJobTemplate'
+import type { OpenPortsPrefixEntry } from './template-types/GetOpenPortsJobTemplate'
 import type {
   JobTemplate,
   JobType,
@@ -195,6 +197,11 @@ export function TemplateFormDialog({
     FactsPrefixEntry[]
   >([{ _key: generateEntryKey(), value: '' }])
   const [formFactsAgentId, setFormFactsAgentId] = useState('')
+  // Get Open Ports
+  const [formOpenPortsPrefixEntries, setFormOpenPortsPrefixEntries] = useState<
+    OpenPortsPrefixEntry[]
+  >([{ _key: generateEntryKey(), value: '' }])
+  const [formOpenPortsAgentId, setFormOpenPortsAgentId] = useState('')
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
   const { data: ipStatuses = EMPTY_IP_STATUSES, isLoading: loadingIpStatuses } =
@@ -237,7 +244,10 @@ export function TemplateFormDialog({
 
   // Agents from settings — shown regardless of online status
   const { data: allConfiguredAgents, isLoading: loadingAgents } = useAgentsQuery({
-    enabled: formJobType === 'backup' || formJobType === 'get_server_facts',
+    enabled:
+      formJobType === 'backup' ||
+      formJobType === 'get_server_facts' ||
+      formJobType === 'get_open_ports',
   })
   const netmikoAgents = useMemo(
     () =>
@@ -347,6 +357,8 @@ export function TemplateFormDialog({
     setFormBackupAgentId('')
     setFormFactsPrefixEntries([{ _key: generateEntryKey(), value: '' }])
     setFormFactsAgentId('')
+    setFormOpenPortsPrefixEntries([{ _key: generateEntryKey(), value: '' }])
+    setFormOpenPortsAgentId('')
   }, [])
 
   // Load editing template data
@@ -472,6 +484,16 @@ export function TemplateFormDialog({
           : [{ _key: generateEntryKey(), value: '' }]
       )
       setFormFactsAgentId(editingTemplate.facts_agent_id || '')
+      setFormOpenPortsPrefixEntries(
+        editingTemplate.open_ports_prefixes &&
+          editingTemplate.open_ports_prefixes.length > 0
+          ? editingTemplate.open_ports_prefixes.map(v => ({
+              _key: generateEntryKey(),
+              value: v,
+            }))
+          : [{ _key: generateEntryKey(), value: '' }]
+      )
+      setFormOpenPortsAgentId(editingTemplate.open_ports_agent_id || '')
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
@@ -536,6 +558,10 @@ export function TemplateFormDialog({
       const validPrefixes = formFactsPrefixEntries.filter(e => e.value.trim())
       if (validPrefixes.length === 0 || !formFactsAgentId) return false
     }
+    if (formJobType === 'get_open_ports') {
+      const validPrefixes = formOpenPortsPrefixEntries.filter(e => e.value.trim())
+      if (validPrefixes.length === 0 || !formOpenPortsAgentId) return false
+    }
     return true
   }, [
     formName,
@@ -562,6 +588,8 @@ export function TemplateFormDialog({
     formSetPrimaryIpAgentId,
     formFactsPrefixEntries,
     formFactsAgentId,
+    formOpenPortsPrefixEntries,
+    formOpenPortsAgentId,
   ])
 
   const handleSubmit = async () => {
@@ -757,6 +785,12 @@ export function TemplateFormDialog({
           : undefined,
       facts_agent_id:
         formJobType === 'get_server_facts' ? formFactsAgentId || undefined : undefined,
+      open_ports_prefixes:
+        formJobType === 'get_open_ports'
+          ? formOpenPortsPrefixEntries.map(e => e.value.trim()).filter(Boolean)
+          : undefined,
+      open_ports_agent_id:
+        formJobType === 'get_open_ports' ? formOpenPortsAgentId || undefined : undefined,
       is_global: formIsGlobal,
     }
 
@@ -819,13 +853,14 @@ export function TemplateFormDialog({
             />
           )}
 
-          {/* Inventory - Not for scan_prefixes, deploy_agent, ip_addresses, csv_import, csv_export, or get_server_facts */}
+          {/* Inventory - Not for scan_prefixes, deploy_agent, ip_addresses, csv_import, csv_export, get_server_facts, or get_open_ports */}
           {formJobType !== 'scan_prefixes' &&
             formJobType !== 'deploy_agent' &&
             formJobType !== 'ip_addresses' &&
             formJobType !== 'csv_import' &&
             formJobType !== 'csv_export' &&
-            formJobType !== 'get_server_facts' && (
+            formJobType !== 'get_server_facts' &&
+            formJobType !== 'get_open_ports' && (
               <JobTemplateInventorySection
                 formInventorySource={formInventorySource}
                 setFormInventorySource={setFormInventorySource}
@@ -1053,6 +1088,17 @@ export function TemplateFormDialog({
               setFormFactsPrefixEntries={setFormFactsPrefixEntries}
               formFactsAgentId={formFactsAgentId}
               setFormFactsAgentId={setFormFactsAgentId}
+              ansibleAgents={ansibleAgents}
+              loadingAgents={loadingAgents}
+            />
+          )}
+
+          {formJobType === 'get_open_ports' && (
+            <GetOpenPortsJobTemplate
+              formOpenPortsPrefixEntries={formOpenPortsPrefixEntries}
+              setFormOpenPortsPrefixEntries={setFormOpenPortsPrefixEntries}
+              formOpenPortsAgentId={formOpenPortsAgentId}
+              setFormOpenPortsAgentId={setFormOpenPortsAgentId}
               ansibleAgents={ansibleAgents}
               loadingAgents={loadingAgents}
             />

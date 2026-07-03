@@ -7,6 +7,8 @@ Endpoints:
   POST   /api/servers                               – create server
   PUT    /api/servers/{id}                          – update server
   DELETE /api/servers/{id}                          – delete server
+  POST   /api/servers/{id}/refresh-facts            – re-gather Ansible facts for a server
+  POST   /api/servers/{id}/refresh-open-ports       – re-scan open ports for a server
   GET    /api/servers/{id}/facts/history            – list Ansible facts history entries
   GET    /api/servers/{id}/facts/history/{hist_id}  – single Ansible facts history entry
   GET    /api/servers/{id}/open-ports/history       – list open-ports history entries
@@ -24,7 +26,7 @@ from core.db_errors import (
     is_duplicate_server_hostname_error,
 )
 from core.safe_http_errors import raise_internal_server_error
-from dependencies import get_servers_service
+from dependencies import get_server_ansible_ops_service, get_servers_service
 from models.servers import (
     CreateServerRequest,
     ListServersResponse,
@@ -38,6 +40,7 @@ from models.servers import (
     ServerSummaryResponse,
     UpdateServerRequest,
 )
+from services.servers.ansible_ops import ServerAnsibleOperationsService
 from services.servers.servers_service import _ALLOWED_GROUP_BY, ServersService
 
 logger = logging.getLogger(__name__)
@@ -145,6 +148,56 @@ def update_server(
                 detail=duplicate_server_hostname_message(hostname),
             ) from exc
         raise_internal_server_error(logger, "Failed to update server", exc)
+
+
+@router.post("/{server_id}/refresh-facts", response_model=ServerResponse)
+def refresh_server_facts(
+    server_id: int,
+    user: dict = Depends(require_permission("servers", "write")),
+    ops_service: ServerAnsibleOperationsService = Depends(
+        get_server_ansible_ops_service
+    ),
+    service: ServersService = Depends(get_servers_service),
+) -> ServerResponse:
+    """Re-gather Ansible facts for a server using its stored connection settings."""
+    try:
+        if service.get_by_id(server_id) is None:
+            raise HTTPException(status_code=404, detail="Server not found")
+        result = ops_service.refresh_facts_for_server(
+            server_id, sent_by=user.get("username", "system")
+        )
+        if not result.success:
+            raise HTTPException(status_code=422, detail=result.error)
+        return ServerResponse.model_validate(service.get_by_id(server_id))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise_internal_server_error(logger, "Failed to refresh server facts", exc)
+
+
+@router.post("/{server_id}/refresh-open-ports", response_model=ServerResponse)
+def refresh_server_open_ports(
+    server_id: int,
+    user: dict = Depends(require_permission("servers", "write")),
+    ops_service: ServerAnsibleOperationsService = Depends(
+        get_server_ansible_ops_service
+    ),
+    service: ServersService = Depends(get_servers_service),
+) -> ServerResponse:
+    """Re-scan open TCP/UDP ports for a server using its stored connection settings."""
+    try:
+        if service.get_by_id(server_id) is None:
+            raise HTTPException(status_code=404, detail="Server not found")
+        result = ops_service.refresh_open_ports_for_server(
+            server_id, sent_by=user.get("username", "system")
+        )
+        if not result.success:
+            raise HTTPException(status_code=422, detail=result.error)
+        return ServerResponse.model_validate(service.get_by_id(server_id))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise_internal_server_error(logger, "Failed to refresh server open ports", exc)
 
 
 @router.get("/{server_id}/facts/history", response_model=ServerFactsHistoryListResponse)

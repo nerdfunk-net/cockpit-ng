@@ -214,6 +214,10 @@ def open_ports_scan(
       - SSH key with passphrase: use_sshkey=True, credential_id set (password = passphrase)
       - Username/password:       use_sshkey=False, credential_id set
 
+    Prefer POST /api/servers/{id}/refresh-open-ports for refreshing an existing
+    server's open ports from the UI — this low-level endpoint remains for
+    debugging and other ad-hoc callers (e.g. the add-server flow).
+
     Sync route — blocking Redis wait runs in Starlette's thread pool.
     """
     try:

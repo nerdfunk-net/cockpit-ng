@@ -68,6 +68,10 @@ const scheduleFormSchema = z.object({
   credential_id: z.number().nullable().optional(),
   facts_auth_type: z.enum(['ssh_key', 'ssh_key_passphrase', 'credentials']).optional(),
   facts_ansible_user: z.string().optional(),
+  open_ports_auth_type: z
+    .enum(['ssh_key', 'ssh_key_passphrase', 'credentials'])
+    .optional(),
+  open_ports_ansible_user: z.string().optional(),
 })
 
 type FormData = z.infer<typeof scheduleFormSchema>
@@ -95,6 +99,8 @@ export function ScheduleFormDialog({
   const editingJobParams = (editingJob?.job_parameters ?? {}) as {
     facts_auth_type?: 'ssh_key' | 'ssh_key_passphrase' | 'credentials'
     facts_ansible_user?: string
+    open_ports_auth_type?: 'ssh_key' | 'ssh_key_passphrase' | 'credentials'
+    open_ports_ansible_user?: string
   }
 
   const form = useForm<FormData>({
@@ -111,6 +117,9 @@ export function ScheduleFormDialog({
           credential_id: editingJob.credential_id ?? null,
           facts_auth_type: editingJobParams.facts_auth_type ?? 'ssh_key',
           facts_ansible_user: editingJobParams.facts_ansible_user ?? 'root',
+          open_ports_auth_type: editingJobParams.open_ports_auth_type ?? 'ssh_key',
+          open_ports_ansible_user:
+            editingJobParams.open_ports_ansible_user ?? 'root',
         }
       : DEFAULT_SCHEDULE,
   })
@@ -121,6 +130,8 @@ export function ScheduleFormDialog({
       const jobParams = (editingJob.job_parameters ?? {}) as {
         facts_auth_type?: 'ssh_key' | 'ssh_key_passphrase' | 'credentials'
         facts_ansible_user?: string
+        open_ports_auth_type?: 'ssh_key' | 'ssh_key_passphrase' | 'credentials'
+        open_ports_ansible_user?: string
       }
       form.reset({
         job_identifier: editingJob.job_identifier,
@@ -133,6 +144,8 @@ export function ScheduleFormDialog({
         credential_id: editingJob.credential_id ?? null,
         facts_auth_type: jobParams.facts_auth_type ?? 'ssh_key',
         facts_ansible_user: jobParams.facts_ansible_user ?? 'root',
+        open_ports_auth_type: jobParams.open_ports_auth_type ?? 'ssh_key',
+        open_ports_ansible_user: jobParams.open_ports_ansible_user ?? 'root',
       })
     } else if (open && !editingJob) {
       form.reset(DEFAULT_SCHEDULE)
@@ -147,13 +160,15 @@ export function ScheduleFormDialog({
   const selectedTemplateId = form.watch('job_template_id')
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
   const isGetServerFacts = selectedTemplate?.job_type === 'get_server_facts'
+  const isGetOpenPorts = selectedTemplate?.job_type === 'get_open_ports'
 
   const factsAuthType = form.watch('facts_auth_type')
+  const openPortsAuthType = form.watch('open_ports_auth_type')
 
-  // Password credentials for the Get Server Facts auth-method picker — same
-  // source and filtering used by the "Add Server" dialog.
+  // Password credentials for the Get Server Facts / Get Open Ports auth-method
+  // picker — same source and filtering used by the "Add Server" dialog.
   const { data: passwordCredentials = EMPTY_PASSWORD_CREDENTIALS, isLoading: loadingPasswordCredentials } =
-    usePasswordCredentialsQuery({ enabled: open && isGetServerFacts })
+    usePasswordCredentialsQuery({ enabled: open && (isGetServerFacts || isGetOpenPorts) })
 
   // Clear the selected credential when the auth method changes
   useEffect(() => {
@@ -163,23 +178,47 @@ export function ScheduleFormDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [factsAuthType])
 
+  useEffect(() => {
+    if (isGetOpenPorts) {
+      form.setValue('credential_id', null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openPortsAuthType])
+
   const onSubmit = form.handleSubmit(async formValues => {
-    const { facts_auth_type, facts_ansible_user, ...rest } = formValues
+    const {
+      facts_auth_type,
+      facts_ansible_user,
+      open_ports_auth_type,
+      open_ports_ansible_user,
+      ...rest
+    } = formValues
+
+    const authType = isGetOpenPorts ? open_ports_auth_type : facts_auth_type
 
     const data: ScheduleFormData = {
       ...rest,
-      credential_id: isGetServerFacts
-        ? facts_auth_type === 'ssh_key'
-          ? null
-          : (rest.credential_id ?? null)
-        : rest.credential_id,
+      credential_id:
+        isGetServerFacts || isGetOpenPorts
+          ? authType === 'ssh_key'
+            ? null
+            : (rest.credential_id ?? null)
+          : rest.credential_id,
       job_parameters: isGetServerFacts
         ? {
             facts_auth_type: facts_auth_type ?? 'ssh_key',
             facts_ansible_user:
               facts_auth_type === 'ssh_key' ? facts_ansible_user || 'root' : undefined,
           }
-        : undefined,
+        : isGetOpenPorts
+          ? {
+              open_ports_auth_type: open_ports_auth_type ?? 'ssh_key',
+              open_ports_ansible_user:
+                open_ports_auth_type === 'ssh_key'
+                  ? open_ports_ansible_user || 'root'
+                  : undefined,
+            }
+          : undefined,
     }
 
     if (editingJob) {
@@ -559,6 +598,153 @@ export function ScheduleFormDialog({
                         </Select>
                         <p className="text-xs text-gray-500">
                           {factsAuthType === 'ssh_key_passphrase'
+                            ? 'The password field of this credential is used as the SSH key passphrase.'
+                            : 'Stored credentials from Settings → Credentials.'}
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Get Open Ports: authentication method (mirrors the facts auth block) */}
+            {isGetOpenPorts && (
+              <div className="space-y-3 pt-3 border-t">
+                <FormField
+                  control={form.control}
+                  name="open_ports_auth_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Authentication method <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <RadioGroup
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        className="space-y-2"
+                      >
+                        <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                          <RadioGroupItem
+                            value="ssh_key"
+                            id="schedule-ports-auth-ssh-key"
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <FormLabel
+                              htmlFor="schedule-ports-auth-ssh-key"
+                              className="cursor-pointer text-sm font-medium text-gray-800"
+                            >
+                              SSH key (no passphrase)
+                            </FormLabel>
+                            <p className="text-xs text-gray-600">
+                              Use the agent&apos;s configured SSH key with no passphrase
+                              protection.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                          <RadioGroupItem
+                            value="ssh_key_passphrase"
+                            id="schedule-ports-auth-ssh-passphrase"
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <FormLabel
+                              htmlFor="schedule-ports-auth-ssh-passphrase"
+                              className="cursor-pointer text-sm font-medium text-gray-800"
+                            >
+                              SSH key with passphrase
+                            </FormLabel>
+                            <p className="text-xs text-gray-600">
+                              SSH key protected by a passphrase stored in the
+                              credentials vault.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                          <RadioGroupItem
+                            value="credentials"
+                            id="schedule-ports-auth-credentials"
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <FormLabel
+                              htmlFor="schedule-ports-auth-credentials"
+                              className="cursor-pointer text-sm font-medium text-gray-800"
+                            >
+                              Username &amp; password
+                            </FormLabel>
+                            <p className="text-xs text-gray-600">
+                              Authenticate using a stored username and password
+                              credential.
+                            </p>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {openPortsAuthType === 'ssh_key' ? (
+                  <FormField
+                    control={form.control}
+                    name="open_ports_ansible_user"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>SSH username</FormLabel>
+                        <FormControl>
+                          <Input placeholder="root" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <FormField
+                    control={form.control}
+                    name="credential_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {openPortsAuthType === 'ssh_key_passphrase'
+                            ? 'Passphrase credential'
+                            : 'Login credential'}{' '}
+                          <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Select
+                          value={field.value?.toString() || ''}
+                          onValueChange={v => field.onChange(v ? parseInt(v) : null)}
+                          disabled={loadingPasswordCredentials}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  loadingPasswordCredentials
+                                    ? 'Loading…'
+                                    : passwordCredentials.length === 0
+                                      ? 'No credentials found'
+                                      : 'Select credential'
+                                }
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {passwordCredentials.map(cred => (
+                              <SelectItem key={cred.id} value={cred.id.toString()}>
+                                <span className="font-medium">{cred.name}</span>
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                  ({cred.username})
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-gray-500">
+                          {openPortsAuthType === 'ssh_key_passphrase'
                             ? 'The password field of this credential is used as the SSH key passphrase.'
                             : 'Stored credentials from Settings → Credentials.'}
                         </p>

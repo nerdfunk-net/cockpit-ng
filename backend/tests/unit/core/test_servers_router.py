@@ -15,9 +15,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from core.auth import verify_token
-from dependencies import get_servers_service
+from dependencies import get_server_ansible_ops_service, get_servers_service
 from main import app
 from models.servers import CreateServerRequest, UpdateServerRequest
+from services.servers.ansible_ops import HostScanResult
 
 _NOW = datetime(2024, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
 _VALID_UUID = "550e8400-e29b-41d4-a716-446655440000"
@@ -87,7 +88,9 @@ def _detail(**kwargs: object) -> SimpleNamespace:
 
 
 @contextmanager
-def _auth_context(mock_service: MagicMock) -> Generator[MagicMock, None, None]:
+def _auth_context(
+    mock_service: MagicMock, ops_service: MagicMock | None = None
+) -> Generator[MagicMock, None, None]:
     """Context manager: wires auth + RBAC + service override and guarantees cleanup."""
 
     def override_verify_token() -> dict:
@@ -95,6 +98,8 @@ def _auth_context(mock_service: MagicMock) -> Generator[MagicMock, None, None]:
 
     app.dependency_overrides[verify_token] = override_verify_token
     app.dependency_overrides[get_servers_service] = lambda: mock_service
+    if ops_service is not None:
+        app.dependency_overrides[get_server_ansible_ops_service] = lambda: ops_service
 
     try:
         with patch("service_factory.build_rbac_service") as rbac_mock:
@@ -324,6 +329,170 @@ def test_update_server_not_found_returns_404(client: TestClient) -> None:
         )
 
     assert resp.status_code == 404
+
+
+# ── POST /api/servers/{id}/refresh-facts ───────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_refresh_facts_returns_updated_server(client: TestClient) -> None:
+    """Successful refresh returns the updated server record."""
+    mock_service = MagicMock()
+    mock_service.get_by_id.return_value = _detail(hostname="refreshed-host")
+    ops_service = MagicMock()
+    ops_service.refresh_facts_for_server.return_value = HostScanResult(
+        hostname="refreshed-host", operation="update", success=True, server_id=1
+    )
+
+    with _auth_context(mock_service, ops_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.post("/api/servers/1/refresh-facts", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 200
+    assert resp.json()["hostname"] == "refreshed-host"
+    ops_service.refresh_facts_for_server.assert_called_once_with(1, sent_by="tester")
+
+
+@pytest.mark.unit
+def test_refresh_facts_server_not_found_returns_404(client: TestClient) -> None:
+    """Refresh on a missing server returns 404 without calling the ops service."""
+    mock_service = MagicMock()
+    mock_service.get_by_id.return_value = None
+    ops_service = MagicMock()
+
+    with _auth_context(mock_service, ops_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.post("/api/servers/999/refresh-facts", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 404
+    ops_service.refresh_facts_for_server.assert_not_called()
+
+
+@pytest.mark.unit
+def test_refresh_facts_agent_error_returns_422(client: TestClient) -> None:
+    """Agent/credential failures surface as a 422 with the ops-service error message."""
+    mock_service = MagicMock()
+    mock_service.get_by_id.return_value = _detail()
+    ops_service = MagicMock()
+    ops_service.refresh_facts_for_server.return_value = HostScanResult(
+        hostname="web01",
+        operation="get_facts",
+        success=False,
+        error="Agent 'agent-1' is offline or not responding",
+    )
+
+    with _auth_context(mock_service, ops_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.post("/api/servers/1/refresh-facts", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 422
+    assert "offline" in resp.json()["detail"].lower()
+
+
+@pytest.mark.unit
+def test_refresh_facts_internal_error_is_sanitized(client: TestClient) -> None:
+    """Unexpected errors on refresh return the safe 5xx shape."""
+    mock_service = MagicMock()
+    mock_service.get_by_id.return_value = _detail()
+    ops_service = MagicMock()
+    ops_service.refresh_facts_for_server.side_effect = RuntimeError("boom")
+
+    with _auth_context(mock_service, ops_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.post("/api/servers/1/refresh-facts", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 500
+    body = resp.json()
+    assert body["detail"]["message"] == "An internal error occurred"
+    assert "boom" not in resp.text
+
+
+@pytest.mark.unit
+def test_refresh_facts_forbidden_without_permission(client: TestClient) -> None:
+    """Refresh returns 403 when RBAC denies servers:write."""
+    mock_service = MagicMock()
+    ops_service = MagicMock()
+
+    with _auth_context(mock_service, ops_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=False)
+        resp = client.post("/api/servers/1/refresh-facts", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 403
+    ops_service.refresh_facts_for_server.assert_not_called()
+
+
+# ── POST /api/servers/{id}/refresh-open-ports ──────────────────────────────────
+
+
+@pytest.mark.unit
+def test_refresh_open_ports_returns_updated_server(client: TestClient) -> None:
+    """Successful refresh returns the updated server record."""
+    mock_service = MagicMock()
+    mock_service.get_by_id.return_value = _detail()
+    ops_service = MagicMock()
+    ops_service.refresh_open_ports_for_server.return_value = HostScanResult(
+        hostname="web01", operation="update", success=True, server_id=1
+    )
+
+    with _auth_context(mock_service, ops_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.post("/api/servers/1/refresh-open-ports", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 200
+    assert resp.json()["hostname"] == "web01"
+    ops_service.refresh_open_ports_for_server.assert_called_once_with(
+        1, sent_by="tester"
+    )
+
+
+@pytest.mark.unit
+def test_refresh_open_ports_server_not_found_returns_404(client: TestClient) -> None:
+    """Refresh on a missing server returns 404 without calling the ops service."""
+    mock_service = MagicMock()
+    mock_service.get_by_id.return_value = None
+    ops_service = MagicMock()
+
+    with _auth_context(mock_service, ops_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.post("/api/servers/999/refresh-open-ports", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 404
+    ops_service.refresh_open_ports_for_server.assert_not_called()
+
+
+@pytest.mark.unit
+def test_refresh_open_ports_agent_error_returns_422(client: TestClient) -> None:
+    """Agent/credential failures surface as a 422 with the ops-service error message."""
+    mock_service = MagicMock()
+    mock_service.get_by_id.return_value = _detail()
+    ops_service = MagicMock()
+    ops_service.refresh_open_ports_for_server.return_value = HostScanResult(
+        hostname="web01",
+        operation="get_open_ports",
+        success=False,
+        error="Stored credentials are incomplete (missing credential ID).",
+    )
+
+    with _auth_context(mock_service, ops_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.post("/api/servers/1/refresh-open-ports", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 422
+    assert "incomplete" in resp.json()["detail"]
+
+
+@pytest.mark.unit
+def test_refresh_open_ports_forbidden_without_permission(client: TestClient) -> None:
+    """Refresh returns 403 when RBAC denies servers:write."""
+    mock_service = MagicMock()
+    ops_service = MagicMock()
+
+    with _auth_context(mock_service, ops_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=False)
+        resp = client.post("/api/servers/1/refresh-open-ports", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 403
+    ops_service.refresh_open_ports_for_server.assert_not_called()
 
 
 # ── GET /api/servers/{id}/facts/history ────────────────────────────────────────

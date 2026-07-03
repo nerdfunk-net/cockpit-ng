@@ -90,6 +90,9 @@ export interface JobTemplate {
   // Get Server Facts (get_server_facts type)
   facts_prefixes?: string[]
   facts_agent_id?: string | null
+  // Get Open Ports (get_open_ports type)
+  open_ports_prefixes?: string[]
+  open_ports_agent_id?: string | null
   is_global: boolean
   user_id?: number
   created_by?: string

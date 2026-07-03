@@ -16,6 +16,8 @@ export const DEFAULT_SCHEDULE = {
   credential_id: null,
   facts_auth_type: 'ssh_key' as const,
   facts_ansible_user: 'root',
+  open_ports_auth_type: 'ssh_key' as const,
+  open_ports_ansible_user: 'root',
 }
 
 export const SCHEDULE_TYPE_LABELS: Record<string, string> = {

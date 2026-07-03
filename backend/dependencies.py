@@ -14,9 +14,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from fastapi import Request
+from fastapi import Depends, Request
+from sqlalchemy.orm import Session
 
 import service_factory
+from core.database import get_db
 
 if TYPE_CHECKING:
     from services.checkmk.activation_service import CheckMKActivationService
@@ -332,3 +334,8 @@ def get_job_run_service():
 def get_servers_service():
     """Provide a ServersService instance."""
     return service_factory.build_servers_service()
+
+
+def get_server_ansible_ops_service(db: Session = Depends(get_db)):
+    """Provide a ServerAnsibleOperationsService instance."""
+    return service_factory.build_server_ansible_ops_service(db)
