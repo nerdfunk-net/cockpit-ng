@@ -1,0 +1,85 @@
+# docker-compose.yaml — Cockpit Nmap Agent
+#
+# Production (connects to the Cockpit server's Redis):
+#   docker compose up -d
+#
+# Local development (spins up a bundled Redis for testing):
+#   docker compose --profile dev up -d
+#
+# Air-gap deployment: build on a connected host with prepare-agent-image.sh,
+# transfer the tar.gz artifact, then docker load && docker compose up -d.
+
+services:
+  cockpit-nmap-agent:
+    build:
+      context: ../..                                    # repo root (COPY paths are relative to it)
+      dockerfile: scripts/docker_nmap_image/Dockerfile
+    image: cockpit-agent-nmap:latest
+    container_name: cockpit-nmap-agent
+    restart: unless-stopped
+    # NET_RAW allows SYN/UDP scans without running the container as root.
+    # Connect scans (-sT) work without this capability.
+    cap_add:
+      - NET_RAW
+    environment:
+      # Redis — point to the Cockpit server in production;
+      # use "redis" (service name below) for local dev testing.
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-changeme}
+      - REDIS_DB=${REDIS_DB:-0}
+
+      # Redis TLS (optional)
+      - REDIS_SSL=${REDIS_SSL:-false}
+      - REDIS_TLS_VERIFY=${REDIS_TLS_VERIFY:-true}
+      - REDIS_TLS_CA_CERT=${REDIS_TLS_CA_CERT:-}
+      - REDIS_TLS_CERT=${REDIS_TLS_CERT:-}
+      - REDIS_TLS_KEY=${REDIS_TLS_KEY:-}
+
+      # Agent identity (defaults to container hostname if unset)
+      - AGENT_ID=${AGENT_ID:-}
+
+      # Shared secret for HMAC auth (required — must match Cockpit Settings → Agents)
+      - COCKPIT_SHARED_SECRET=${COCKPIT_SHARED_SECRET:-}
+
+      # Nmap
+      - NMAP_PATH=${NMAP_PATH:-/usr/bin/nmap}
+      - NMAP_DEFAULT_PORTS=${NMAP_DEFAULT_PORTS:-1-1024}
+      - NMAP_DEFAULT_SCAN_TYPE=${NMAP_DEFAULT_SCAN_TYPE:-connect}
+      - NMAP_SERVICE_DETECTION=${NMAP_SERVICE_DETECTION:-false}
+      - NMAP_TIMEOUT=${NMAP_TIMEOUT:-300}
+
+      # Operational
+      - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL:-30}
+      - LOGLEVEL=${LOGLEVEL:-INFO}
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis; r = redis.Redis(host='${REDIS_HOST:-cockpit.example.com}', port=${REDIS_PORT:-6379}, password='${REDIS_PASSWORD:-changeme}'); r.ping()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Local Redis (development / testing only) ─────────────────────────────
+  # Start with: docker compose --profile dev up -d
+  # Then set REDIS_HOST=redis in your .env file.
+  redis:
+    profiles:
+      - dev
+    image: redis:alpine
+    container_name: cockpit-agent-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
