@@ -160,8 +160,8 @@ export default function ScanResultsModal({ taskId, onClose }: ScanResultsModalPr
       <DialogContent className="!max-w-6xl max-h-[85vh] overflow-y-auto w-[90vw]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className="bg-violet-100 p-2 rounded-lg">
-              <Radar className="w-5 h-5 text-violet-600" />
+            <div className="bg-blue-100 p-2 rounded-lg">
+              <Radar className="w-5 h-5 text-blue-600" />
             </div>
             <span className="text-gray-900">Nmap Scan Results</span>
           </DialogTitle>
@@ -174,16 +174,16 @@ export default function ScanResultsModal({ taskId, onClose }: ScanResultsModalPr
         </DialogHeader>
 
         {(taskStatus === 'PENDING' || taskStatus === 'PROGRESS') && (
-          <div className="space-y-4 bg-gradient-to-br from-violet-50 to-violet-100 p-6 rounded-lg border border-violet-200">
+          <div className="space-y-4 bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
             <div className="flex items-center gap-3">
-              <Loader2 className="w-5 h-5 animate-spin text-violet-600" />
+              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
               <span className="text-sm font-medium text-slate-700">
                 {progress?.status || 'Starting...'}
               </span>
             </div>
             <Progress
               value={progressPercentage}
-              className="w-full [&>div]:bg-violet-600"
+              className="w-full [&>div]:bg-blue-600"
             />
             <div className="text-sm text-slate-600 font-medium">
               {progress?.current || 0} / {progress?.total || 0} processed
@@ -229,12 +229,12 @@ export default function ScanResultsModal({ taskId, onClose }: ScanResultsModalPr
               {taskResult.networks.map(network => (
                 <Card
                   key={network.network}
-                  className="border-l-4 border-l-violet-500 shadow-md overflow-hidden p-0"
+                  className="border-l-4 border-l-blue-500 shadow-md overflow-hidden p-0"
                 >
-                  <CardHeader className="bg-gradient-to-r from-violet-50 to-violet-100 border-b-0 rounded-none m-0 py-3 px-4">
+                  <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-0 rounded-none m-0 py-3 px-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg font-mono text-slate-700 flex items-center gap-2">
-                        <Network className="h-4 w-4 text-violet-600" />
+                        <Network className="h-4 w-4 text-blue-600" />
                         {network.network}
                       </CardTitle>
                       <Badge variant="outline" className="font-semibold">
@@ -363,7 +363,7 @@ function HostResultCard({
           ) : (
             <XCircle className="h-4 w-4 text-red-600 shrink-0" />
           )}
-          <Server className="h-4 w-4 text-violet-600 shrink-0" />
+          <Server className="h-4 w-4 text-blue-600 shrink-0" />
           <div className="min-w-0">
             <p className="font-mono text-sm font-medium text-slate-800 truncate">
               {host.ip_address}

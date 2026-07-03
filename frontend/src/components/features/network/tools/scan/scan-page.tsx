@@ -215,8 +215,8 @@ export default function ScanToolPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-violet-100 p-2 rounded-lg">
-              <Radar className="h-6 w-6 text-violet-600" />
+            <div className="bg-blue-100 p-2 rounded-lg">
+              <Radar className="h-6 w-6 text-blue-600" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Network Port Scan</h1>
@@ -228,7 +228,7 @@ export default function ScanToolPage() {
         </div>
 
         <Card className="shadow-lg border-0 overflow-hidden p-0">
-          <CardHeader className="bg-gradient-to-r from-violet-400/80 to-violet-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+          <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
             <CardTitle className="flex items-center space-x-2 text-sm font-medium">
               <Radar className="h-4 w-4" />
               <span>Scan Configuration</span>
@@ -253,7 +253,7 @@ export default function ScanToolPage() {
                           className={
                             input.error
                               ? 'border-red-500 focus:ring-red-500 bg-white'
-                              : 'focus:ring-violet-500 focus:border-violet-500 border-slate-300 bg-white font-mono text-slate-900 placeholder:text-slate-400 shadow-sm'
+                              : 'focus:ring-blue-500 focus:border-blue-500 border-slate-300 bg-white font-mono text-slate-900 placeholder:text-slate-400 shadow-sm'
                           }
                         />
                         {input.error && (
@@ -268,7 +268,7 @@ export default function ScanToolPage() {
                         size="icon"
                         variant="outline"
                         onClick={handleAddRow}
-                        className="flex-shrink-0 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-600 transition-colors"
+                        className="flex-shrink-0 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
@@ -299,9 +299,9 @@ export default function ScanToolPage() {
                   Nmap Agent <span className="text-red-500">*</span>
                 </Label>
                 {loadingAgents ? (
-                  <div className="flex items-center gap-2 p-3 border border-violet-200 rounded-md bg-violet-50">
-                    <Loader2 className="h-4 w-4 animate-spin text-violet-600" />
-                    <span className="text-sm text-violet-800">Loading agents...</span>
+                  <div className="flex items-center gap-2 p-3 border border-blue-200 rounded-md bg-blue-50">
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                    <span className="text-sm text-blue-800">Loading agents...</span>
                   </div>
                 ) : nmapAgents.length === 0 ? (
                   <div className="p-4 border border-amber-200 rounded-md bg-amber-50">
@@ -353,7 +353,7 @@ export default function ScanToolPage() {
                 placeholder="1-1024"
                 value={ports}
                 onChange={e => setPorts(e.target.value)}
-                className="font-mono focus:ring-violet-500 focus:border-violet-500"
+                className="font-mono focus:ring-blue-500 focus:border-blue-500"
               />
               <p className="text-xs text-muted-foreground">
                 Port specification passed to nmap, e.g. &quot;22,80,443&quot; or
@@ -367,7 +367,7 @@ export default function ScanToolPage() {
                 id="service-detection"
                 checked={serviceDetection}
                 onCheckedChange={checked => setServiceDetection(checked as boolean)}
-                className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600"
+                className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
               />
               <div>
                 <Label
@@ -387,7 +387,7 @@ export default function ScanToolPage() {
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-violet-600 transition-colors"
+                className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors"
               >
                 {showAdvanced ? (
                   <ChevronDown className="w-4 h-4" />
@@ -398,7 +398,7 @@ export default function ScanToolPage() {
               </button>
 
               {showAdvanced && (
-                <div className="mt-4 bg-gradient-to-br from-violet-50 to-violet-100 p-4 rounded-lg border border-violet-200">
+                <div className="mt-4 bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
                   <div className="space-y-2 max-w-xs">
                     <Label htmlFor="scan-timeout" className="text-sm font-medium text-slate-700">
                       Scan Timeout (seconds)
@@ -410,7 +410,7 @@ export default function ScanToolPage() {
                       max={3600}
                       value={timeout}
                       onChange={e => setTimeout(parseInt(e.target.value, 10) || 300)}
-                      className="focus:ring-violet-500 focus:border-violet-500 border-violet-300 bg-white font-mono"
+                      className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono"
                     />
                     <p className="text-xs text-slate-600">Per-host nmap timeout (30–3600s)</p>
                   </div>
@@ -422,7 +422,7 @@ export default function ScanToolPage() {
               <Button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="min-w-[150px] bg-violet-600 hover:bg-violet-700 text-white shadow-md hover:shadow-lg transition-all"
+                className="min-w-[150px] bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
               >
                 {isSubmitting ? (
                   <>
