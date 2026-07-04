@@ -73,7 +73,9 @@ def execute_compare_devices(
                 },
             )
 
-            devices_result = asyncio.run(nb2cmk_service.get_devices_for_sync())
+            devices_result = asyncio.run(
+                nb2cmk_service.get_devices_for_sync(require_primary_ip=True)
+            )
             if devices_result and hasattr(devices_result, "devices"):
                 device_ids = [device.get("id") for device in devices_result.devices]
                 logger.info("Fetched %s devices from Nautobot", len(device_ids))

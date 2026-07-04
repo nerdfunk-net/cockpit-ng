@@ -37,7 +37,9 @@ async def test_get_devices_for_sync_delegates(facade: NautobotToCheckMKService) 
     result = await facade.get_devices_for_sync()
 
     assert result is expected
-    facade.query_service.get_devices_for_sync.assert_awaited_once()
+    facade.query_service.get_devices_for_sync.assert_awaited_once_with(
+        require_primary_ip=False
+    )
 
 
 @pytest.mark.asyncio

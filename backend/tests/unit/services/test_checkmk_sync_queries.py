@@ -42,6 +42,50 @@ async def test_get_devices_for_sync_success() -> None:
 
     assert result.total == 1
     assert result.devices[0]["name"] == "sw1"
+    nautobot.graphql_query.assert_awaited_once()
+    _, variables = nautobot.graphql_query.await_args.args
+    assert variables == {}
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_get_devices_for_sync_require_primary_ip() -> None:
+    with (
+        patch("service_factory.build_checkmk_config_service"),
+        patch("service_factory.build_device_normalization_service"),
+        patch("service_factory.build_priority_rule_evaluator"),
+    ):
+        svc = DeviceQueryService()
+
+    nautobot = MagicMock()
+    nautobot.graphql_query = AsyncMock(
+        return_value={
+            "data": {
+                "devices": [
+                    {
+                        "id": "2",
+                        "name": "sw2",
+                        "role": {"name": "core"},
+                        "status": {"name": "active"},
+                        "location": {"name": "DC"},
+                    }
+                ]
+            }
+        }
+    )
+
+    with patch("service_factory.build_nautobot_service", return_value=nautobot):
+        result = await svc.get_devices_for_sync(require_primary_ip=True)
+
+    assert result.total == 1
+    assert result.devices[0]["name"] == "sw2"
+    assert "primary IP address" in result.message
+    nautobot.graphql_query.assert_awaited_once()
+    call_args = nautobot.graphql_query.await_args
+    assert call_args is not None
+    query, variables = call_args.args
+    assert "has_primary_ip" in query
+    assert variables == {"has_primary_ip": True}
 
 
 @pytest.mark.asyncio

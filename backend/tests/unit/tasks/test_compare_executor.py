@@ -59,6 +59,7 @@ def test_execute_compare_devices_no_devices_to_compare() -> None:
 
     assert result["success"] is True
     assert result["total"] == 0
+    mock_nb2cmk.get_devices_for_sync.assert_awaited_once_with(require_primary_ip=True)
 
 
 @pytest.mark.unit

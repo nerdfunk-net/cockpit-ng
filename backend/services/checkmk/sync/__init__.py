@@ -43,8 +43,14 @@ class NautobotToCheckMKService:
         self.operations_service = DeviceSyncOperations(self.query_service)
 
     # Query methods - delegate to DeviceQueryService
-    async def get_devices_for_sync(self) -> DeviceList:
-        """Get all devices from Nautobot for CheckMK sync.
+    async def get_devices_for_sync(
+        self, *, require_primary_ip: bool = False
+    ) -> DeviceList:
+        """Get devices from Nautobot for CheckMK bulk sync or comparison jobs.
+
+        Args:
+            require_primary_ip: When True, only devices with a primary IPv4 address
+                are returned.
 
         Returns:
             DeviceList with device data
@@ -52,7 +58,9 @@ class NautobotToCheckMKService:
         Raises:
             HTTPException: If GraphQL query fails or other errors occur
         """
-        return await self.query_service.get_devices_for_sync()
+        return await self.query_service.get_devices_for_sync(
+            require_primary_ip=require_primary_ip
+        )
 
     async def get_device_normalized(self, device_id: str) -> Dict[str, Any]:
         """Get normalized device config from Nautobot for CheckMK comparison.

@@ -16,6 +16,20 @@ from models.nb2cmk import DeviceList
 
 logger = logging.getLogger(__name__)
 
+_DEVICE_LIST_GRAPHQL_FIELDS = """
+                id
+                name
+                role {
+                  name
+                }
+                location {
+                  name
+                }
+                status {
+                  name
+                }
+"""
+
 
 class DeviceQueryService:
     """Service for querying device data from Nautobot."""
@@ -27,8 +41,14 @@ class DeviceQueryService:
         self._normalization = service_factory.build_device_normalization_service()
         self._rule_evaluator = service_factory.build_priority_rule_evaluator()
 
-    async def get_devices_for_sync(self) -> DeviceList:
-        """Get all devices from Nautobot for CheckMK sync.
+    async def get_devices_for_sync(
+        self, *, require_primary_ip: bool = False
+    ) -> DeviceList:
+        """Get devices from Nautobot for CheckMK bulk sync or comparison jobs.
+
+        Args:
+            require_primary_ip: When True, only devices with a primary IPv4 address
+                are returned (via Nautobot ``has_primary_ip`` GraphQL filter).
 
         Returns:
             DeviceList with device data
@@ -41,26 +61,26 @@ class DeviceQueryService:
 
             nautobot_service = service_factory.build_nautobot_service()
 
-            # Use GraphQL query to get all devices from Nautobot
-            query = """
-            query all_devices {
-              devices {
-                id
-                name
-                role {
-                  name
-                }
-                location {
-                  name
-                }
-                status {
-                  name
-                }
-              }
-            }
-            """
+            if require_primary_ip:
+                query = f"""
+                query devices_with_primary_ip($has_primary_ip: Boolean!) {{
+                  devices(has_primary_ip: $has_primary_ip) {{
+                {_DEVICE_LIST_GRAPHQL_FIELDS}
+                  }}
+                }}
+                """
+                variables: Dict[str, Any] = {"has_primary_ip": True}
+            else:
+                query = f"""
+                query all_devices {{
+                  devices {{
+                {_DEVICE_LIST_GRAPHQL_FIELDS}
+                  }}
+                }}
+                """
+                variables = {}
 
-            result = await nautobot_service.graphql_query(query, {})
+            result = await nautobot_service.graphql_query(query, variables)
             if "errors" in result:
                 logger.error("GraphQL errors: %s", result["errors"])
                 raise HTTPException(
@@ -89,10 +109,13 @@ class DeviceQueryService:
                     }
                 )
 
+            scope = (
+                "devices with a primary IP address" if require_primary_ip else "devices"
+            )
             return DeviceList(
                 devices=devices,
                 total=len(devices),
-                message=f"Retrieved {len(devices)} devices from Nautobot",
+                message=f"Retrieved {len(devices)} {scope} from Nautobot",
             )
 
         except HTTPException:
