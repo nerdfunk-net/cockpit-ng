@@ -52,11 +52,16 @@ import { SetPrimaryIpJobTemplate } from './template-types/SetPrimaryIpJobTemplat
 import { GetClientDataJobTemplate } from './template-types/GetClientDataJobTemplate'
 import { GetServerFactsJobTemplate } from './template-types/GetServerFactsJobTemplate'
 import { GetOpenPortsJobTemplate } from './template-types/GetOpenPortsJobTemplate'
+import { PortScanJobTemplate } from './template-types/PortScanJobTemplate'
 import { CsvImportMappingDialog } from './template-types/CsvImportMappingDialog'
 import { CsvImportDefaultsPanel } from './csv-import-defaults-panel'
 import type { DeployTemplateEntryData } from './template-types/DeployTemplateEntry'
 import type { FactsPrefixEntry } from './template-types/GetServerFactsJobTemplate'
 import type { OpenPortsPrefixEntry } from './template-types/GetOpenPortsJobTemplate'
+import type {
+  PortScanCidrEntry,
+} from './template-types/PortScanJobTemplate'
+import type { ScanTargetSource } from '@/components/features/network/tools/scan/scan-inventory-section'
 import type {
   JobTemplate,
   JobType,
@@ -202,6 +207,21 @@ export function TemplateFormDialog({
     OpenPortsPrefixEntry[]
   >([{ _key: generateEntryKey(), value: '' }])
   const [formOpenPortsAgentId, setFormOpenPortsAgentId] = useState('')
+  // Port Scan
+  const [formPortScanTargetSource, setFormPortScanTargetSource] =
+    useState<ScanTargetSource>('cidr')
+  const [formPortScanInventoryName, setFormPortScanInventoryName] = useState('')
+  const [formPortScanCidrEntries, setFormPortScanCidrEntries] = useState<
+    PortScanCidrEntry[]
+  >([{ _key: generateEntryKey(), value: '' }])
+  const [formPortScanAgentId, setFormPortScanAgentId] = useState('')
+  const [formPortScanType, setFormPortScanType] = useState<'connect' | 'syn' | 'udp'>(
+    'connect'
+  )
+  const [formPortScanPorts, setFormPortScanPorts] = useState('1-1024')
+  const [formPortScanServiceDetection, setFormPortScanServiceDetection] =
+    useState(false)
+  const [formPortScanTimeout, setFormPortScanTimeout] = useState('300')
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
   const { data: ipStatuses = EMPTY_IP_STATUSES, isLoading: loadingIpStatuses } =
@@ -247,7 +267,8 @@ export function TemplateFormDialog({
     enabled:
       formJobType === 'backup' ||
       formJobType === 'get_server_facts' ||
-      formJobType === 'get_open_ports',
+      formJobType === 'get_open_ports' ||
+      formJobType === 'port_scan',
   })
   const netmikoAgents = useMemo(
     () =>
@@ -261,6 +282,13 @@ export function TemplateFormDialog({
       (allConfiguredAgents ?? [])
         .filter(a => a.type === 'ansible' && a.agent_id)
         .map(a => ({ agent_id: a.agent_id!, hostname: a.name, status: 'configured' as const })),
+    [allConfiguredAgents]
+  )
+  const nmapAgents = useMemo(
+    () =>
+      (allConfiguredAgents ?? [])
+        .filter(a => a.type === 'nmap' && a.agent_id)
+        .map(a => ({ agent_id: a.agent_id!, hostname: a.name })),
     [allConfiguredAgents]
   )
 
@@ -359,6 +387,14 @@ export function TemplateFormDialog({
     setFormFactsAgentId('')
     setFormOpenPortsPrefixEntries([{ _key: generateEntryKey(), value: '' }])
     setFormOpenPortsAgentId('')
+    setFormPortScanTargetSource('cidr')
+    setFormPortScanInventoryName('')
+    setFormPortScanCidrEntries([{ _key: generateEntryKey(), value: '' }])
+    setFormPortScanAgentId('')
+    setFormPortScanType('connect')
+    setFormPortScanPorts('1-1024')
+    setFormPortScanServiceDetection(false)
+    setFormPortScanTimeout('300')
   }, [])
 
   // Load editing template data
@@ -494,6 +530,27 @@ export function TemplateFormDialog({
           : [{ _key: generateEntryKey(), value: '' }]
       )
       setFormOpenPortsAgentId(editingTemplate.open_ports_agent_id || '')
+      setFormPortScanTargetSource(
+        editingTemplate.port_scan_target_source === 'inventory' ? 'inventory' : 'cidr'
+      )
+      setFormPortScanInventoryName(editingTemplate.inventory_name || '')
+      setFormPortScanCidrEntries(
+        editingTemplate.port_scan_cidrs && editingTemplate.port_scan_cidrs.length > 0
+          ? editingTemplate.port_scan_cidrs.map(v => ({
+              _key: generateEntryKey(),
+              value: v,
+            }))
+          : [{ _key: generateEntryKey(), value: '' }]
+      )
+      setFormPortScanAgentId(editingTemplate.port_scan_agent_id || '')
+      setFormPortScanType(editingTemplate.port_scan_type || 'connect')
+      setFormPortScanPorts(editingTemplate.port_scan_ports || '1-1024')
+      setFormPortScanServiceDetection(
+        editingTemplate.port_scan_service_detection ?? false
+      )
+      setFormPortScanTimeout(
+        editingTemplate.port_scan_timeout?.toString() || '300'
+      )
       setFormIsGlobal(editingTemplate.is_global)
     } else if (open && !editingTemplate) {
       resetForm()
@@ -506,6 +563,17 @@ export function TemplateFormDialog({
       setFormInventorySource('inventory')
     }
   }, [formJobType])
+
+  useEffect(() => {
+    if (formJobType === 'port_scan') {
+      setFormInventorySource(
+        formPortScanTargetSource === 'inventory' ? 'inventory' : 'all'
+      )
+      if (formPortScanTargetSource === 'cidr') {
+        setFormPortScanInventoryName('')
+      }
+    }
+  }, [formJobType, formPortScanTargetSource])
 
   const isFormValid = useCallback(() => {
     if (!formName.trim() || !formJobType) return false
@@ -521,7 +589,12 @@ export function TemplateFormDialog({
       !formBackupRunningConfigPath
     )
       return false
-    if (formInventorySource === 'inventory' && !formInventoryName) return false
+    if (
+      formInventorySource === 'inventory' &&
+      !formInventoryName &&
+      formJobType !== 'port_scan'
+    )
+      return false
     if (formJobType === 'run_commands' && !formCommandTemplate) return false
     if (formJobType === 'deploy_agent') {
       if (!formDeployAgentId) return false
@@ -562,6 +635,15 @@ export function TemplateFormDialog({
       const validPrefixes = formOpenPortsPrefixEntries.filter(e => e.value.trim())
       if (validPrefixes.length === 0 || !formOpenPortsAgentId) return false
     }
+    if (formJobType === 'port_scan') {
+      if (!formPortScanAgentId) return false
+      if (formPortScanTargetSource === 'inventory') {
+        if (!formPortScanInventoryName) return false
+      } else {
+        const validCidrs = formPortScanCidrEntries.filter(e => e.value.trim())
+        if (validCidrs.length === 0) return false
+      }
+    }
     return true
   }, [
     formName,
@@ -590,6 +672,10 @@ export function TemplateFormDialog({
     formFactsAgentId,
     formOpenPortsPrefixEntries,
     formOpenPortsAgentId,
+    formPortScanTargetSource,
+    formPortScanInventoryName,
+    formPortScanCidrEntries,
+    formPortScanAgentId,
   ])
 
   const handleSubmit = async () => {
@@ -598,9 +684,20 @@ export function TemplateFormDialog({
       job_type: formJobType,
       description: formDescription || undefined,
       config_repository_id: formConfigRepoId || undefined,
-      inventory_source: formInventorySource,
+      inventory_source:
+        formJobType === 'port_scan'
+          ? formPortScanTargetSource === 'inventory'
+            ? 'inventory'
+            : 'all'
+          : formInventorySource,
       inventory_name:
-        formInventorySource === 'inventory' ? formInventoryName : undefined,
+        formJobType === 'port_scan'
+          ? formPortScanTargetSource === 'inventory'
+            ? formPortScanInventoryName
+            : undefined
+          : formInventorySource === 'inventory'
+            ? formInventoryName
+            : undefined,
       command_template_name:
         formJobType === 'run_commands' ? formCommandTemplate : undefined,
       backup_running_config_path:
@@ -791,6 +888,23 @@ export function TemplateFormDialog({
           : undefined,
       open_ports_agent_id:
         formJobType === 'get_open_ports' ? formOpenPortsAgentId || undefined : undefined,
+      port_scan_target_source:
+        formJobType === 'port_scan' ? formPortScanTargetSource : undefined,
+      port_scan_cidrs:
+        formJobType === 'port_scan' && formPortScanTargetSource === 'cidr'
+          ? formPortScanCidrEntries.map(e => e.value.trim()).filter(Boolean)
+          : undefined,
+      port_scan_agent_id:
+        formJobType === 'port_scan' ? formPortScanAgentId || undefined : undefined,
+      port_scan_type: formJobType === 'port_scan' ? formPortScanType : undefined,
+      port_scan_ports:
+        formJobType === 'port_scan' ? formPortScanPorts.trim() || undefined : undefined,
+      port_scan_service_detection:
+        formJobType === 'port_scan' ? formPortScanServiceDetection : undefined,
+      port_scan_timeout:
+        formJobType === 'port_scan' && formPortScanTimeout
+          ? parseInt(formPortScanTimeout, 10)
+          : undefined,
       is_global: formIsGlobal,
     }
 
@@ -853,14 +967,15 @@ export function TemplateFormDialog({
             />
           )}
 
-          {/* Inventory - Not for scan_prefixes, deploy_agent, ip_addresses, csv_import, csv_export, get_server_facts, or get_open_ports */}
+          {/* Inventory - Not for scan_prefixes, deploy_agent, ip_addresses, csv_import, csv_export, get_server_facts, get_open_ports, or port_scan */}
           {formJobType !== 'scan_prefixes' &&
             formJobType !== 'deploy_agent' &&
             formJobType !== 'ip_addresses' &&
             formJobType !== 'csv_import' &&
             formJobType !== 'csv_export' &&
             formJobType !== 'get_server_facts' &&
-            formJobType !== 'get_open_ports' && (
+            formJobType !== 'get_open_ports' &&
+            formJobType !== 'port_scan' && (
               <JobTemplateInventorySection
                 formInventorySource={formInventorySource}
                 setFormInventorySource={setFormInventorySource}
@@ -1101,6 +1216,31 @@ export function TemplateFormDialog({
               setFormOpenPortsAgentId={setFormOpenPortsAgentId}
               ansibleAgents={ansibleAgents}
               loadingAgents={loadingAgents}
+            />
+          )}
+
+          {formJobType === 'port_scan' && (
+            <PortScanJobTemplate
+              formPortScanTargetSource={formPortScanTargetSource}
+              setFormPortScanTargetSource={setFormPortScanTargetSource}
+              formPortScanInventoryName={formPortScanInventoryName}
+              setFormPortScanInventoryName={setFormPortScanInventoryName}
+              formPortScanCidrEntries={formPortScanCidrEntries}
+              setFormPortScanCidrEntries={setFormPortScanCidrEntries}
+              formPortScanAgentId={formPortScanAgentId}
+              setFormPortScanAgentId={setFormPortScanAgentId}
+              formPortScanType={formPortScanType}
+              setFormPortScanType={setFormPortScanType}
+              formPortScanPorts={formPortScanPorts}
+              setFormPortScanPorts={setFormPortScanPorts}
+              formPortScanServiceDetection={formPortScanServiceDetection}
+              setFormPortScanServiceDetection={setFormPortScanServiceDetection}
+              formPortScanTimeout={formPortScanTimeout}
+              setFormPortScanTimeout={setFormPortScanTimeout}
+              nmapAgents={nmapAgents}
+              loadingAgents={loadingAgents}
+              savedInventories={savedInventories}
+              loadingInventories={loadingInventories}
             />
           )}
         </div>

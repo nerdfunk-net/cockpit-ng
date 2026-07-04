@@ -35,6 +35,9 @@ _EXECUTOR_PATCHES = {
     "execute_ping_agent": "tasks.execution.ping_agent_executor.execute_ping_agent",
     "execute_set_primary_ip": "tasks.execution.set_primary_ip_executor.execute_set_primary_ip",
     "execute_get_client_data": "tasks.execution.client_data_executor.execute_get_client_data",
+    "execute_get_server_facts": "tasks.execution.get_server_facts_executor.execute_get_server_facts",
+    "execute_get_open_ports": "tasks.execution.get_open_ports_executor.execute_get_open_ports",
+    "execute_port_scan": "tasks.execution.port_scan_executor.execute_port_scan",
 }
 
 
@@ -180,6 +183,14 @@ def test_get_client_data_routed_to_client_data_executor():
     result, mocks = _run("get_client_data")
     assert result["success"] is True
     mocks["execute_get_client_data"].assert_called_once()
+
+
+@pytest.mark.unit
+def test_port_scan_routed_to_port_scan_executor():
+    """port_scan job_type calls execute_port_scan."""
+    result, mocks = _run("port_scan")
+    assert result["success"] is True
+    mocks["execute_port_scan"].assert_called_once()
 
 
 # ── parameter forwarding ──────────────────────────────────────────────────────

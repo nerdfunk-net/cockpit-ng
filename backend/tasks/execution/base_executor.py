@@ -51,6 +51,7 @@ def execute_job_type(
     from .get_server_facts_executor import execute_get_server_facts
     from .ip_addresses_executor import execute_ip_addresses
     from .ping_agent_executor import execute_ping_agent
+    from .port_scan_executor import execute_port_scan
     from .scan_prefixes_executor import execute_scan_prefixes
     from .set_primary_ip_executor import execute_set_primary_ip
     from .sync_executor import execute_sync_devices
@@ -72,6 +73,7 @@ def execute_job_type(
         "get_client_data": execute_get_client_data,
         "get_server_facts": execute_get_server_facts,
         "get_open_ports": execute_get_open_ports,
+        "port_scan": execute_port_scan,
     }
 
     executor = job_executors.get(job_type)

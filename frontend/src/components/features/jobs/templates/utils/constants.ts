@@ -39,6 +39,7 @@ export const JOB_TYPE_LABELS: Record<string, string> = {
   get_client_data: 'Get Client Data',
   get_server_facts: 'Get Server Facts',
   get_open_ports: 'Get Open Ports',
+  port_scan: 'Port Scan',
 } as const
 
 export const JOB_TYPE_COLORS: Record<string, string> = {
@@ -57,6 +58,7 @@ export const JOB_TYPE_COLORS: Record<string, string> = {
   get_client_data: 'bg-emerald-500',
   get_server_facts: 'bg-indigo-500',
   get_open_ports: 'bg-rose-500',
+  port_scan: 'bg-blue-500',
 } as const
 
 export const CSV_EXPORT_PROPERTIES: {

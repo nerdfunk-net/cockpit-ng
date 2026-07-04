@@ -93,6 +93,14 @@ export interface JobTemplate {
   // Get Open Ports (get_open_ports type)
   open_ports_prefixes?: string[]
   open_ports_agent_id?: string | null
+  // Port Scan (port_scan type)
+  port_scan_target_source?: 'cidr' | 'inventory'
+  port_scan_cidrs?: string[]
+  port_scan_agent_id?: string | null
+  port_scan_type?: 'connect' | 'syn' | 'udp'
+  port_scan_ports?: string
+  port_scan_service_detection?: boolean
+  port_scan_timeout?: number
   is_global: boolean
   user_id?: number
   created_by?: string

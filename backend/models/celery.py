@@ -4,7 +4,7 @@ Pydantic models for Celery task management API.
 
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 # ============================================================================
 # Shared Task Response Models
@@ -326,12 +326,26 @@ class PingNetworkRequest(BaseModel):
 
 
 class NmapScanNetworkRequest(BaseModel):
-    cidrs: List[str]
+    target_source: Literal["cidr", "inventory"] = "cidr"
+    cidrs: List[str] = Field(default_factory=list)
+    inventory_name: Optional[str] = None
     agent_id: str
     ports: Optional[str] = None
     scan_type: Literal["syn", "connect", "udp"] = "connect"
     service_detection: bool = False
     timeout: int = Field(default=300, ge=30, le=3600)
+
+    @model_validator(mode="after")
+    def validate_target_source(self) -> "NmapScanNetworkRequest":
+        if self.target_source == "cidr" and not self.cidrs:
+            raise ValueError("cidrs list cannot be empty when target_source is cidr")
+        if self.target_source == "inventory" and not (
+            self.inventory_name and self.inventory_name.strip()
+        ):
+            raise ValueError(
+                "inventory_name is required when target_source is inventory"
+            )
+        return self
 
 
 class ScanPrefixesRequest(BaseModel):

@@ -94,6 +94,13 @@ class JobTemplateService:
         facts_agent_id: Optional[str] = None,
         open_ports_prefixes: Optional[List[str]] = None,
         open_ports_agent_id: Optional[str] = None,
+        port_scan_target_source: Optional[str] = None,
+        port_scan_cidrs: Optional[List[str]] = None,
+        port_scan_agent_id: Optional[str] = None,
+        port_scan_type: Optional[str] = None,
+        port_scan_ports: Optional[str] = None,
+        port_scan_service_detection: bool = False,
+        port_scan_timeout: Optional[int] = 300,
         is_global: bool = False,
     ) -> Dict[str, Any]:
         if self._repo.check_name_exists(name, user_id if not is_global else None):
@@ -123,6 +130,9 @@ class JobTemplateService:
         )
         open_ports_prefixes_json = (
             json.dumps(open_ports_prefixes) if open_ports_prefixes is not None else None
+        )
+        port_scan_cidrs_json = (
+            json.dumps(port_scan_cidrs) if port_scan_cidrs is not None else None
         )
 
         template = self._repo.create(
@@ -201,6 +211,13 @@ class JobTemplateService:
             facts_agent_id=facts_agent_id,
             open_ports_prefixes=open_ports_prefixes_json,
             open_ports_agent_id=open_ports_agent_id,
+            port_scan_target_source=port_scan_target_source,
+            port_scan_cidrs=port_scan_cidrs_json,
+            port_scan_agent_id=port_scan_agent_id,
+            port_scan_type=port_scan_type,
+            port_scan_ports=port_scan_ports,
+            port_scan_service_detection=port_scan_service_detection,
+            port_scan_timeout=port_scan_timeout,
             is_global=is_global,
             user_id=user_id if not is_global else None,
             created_by=created_by,
@@ -315,6 +332,13 @@ class JobTemplateService:
         facts_agent_id: Optional[str] = None,
         open_ports_prefixes: Optional[List[str]] = None,
         open_ports_agent_id: Optional[str] = None,
+        port_scan_target_source: Optional[str] = None,
+        port_scan_cidrs: Optional[List[str]] = None,
+        port_scan_agent_id: Optional[str] = None,
+        port_scan_type: Optional[str] = None,
+        port_scan_ports: Optional[str] = None,
+        port_scan_service_detection: Optional[bool] = None,
+        port_scan_timeout: Optional[int] = None,
         is_global: Optional[bool] = None,
         user_id: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
@@ -480,6 +504,20 @@ class JobTemplateService:
             update_data["open_ports_prefixes"] = json.dumps(open_ports_prefixes)
         if open_ports_agent_id is not None:
             update_data["open_ports_agent_id"] = open_ports_agent_id
+        if port_scan_target_source is not None:
+            update_data["port_scan_target_source"] = port_scan_target_source
+        if port_scan_cidrs is not None:
+            update_data["port_scan_cidrs"] = json.dumps(port_scan_cidrs)
+        if port_scan_agent_id is not None:
+            update_data["port_scan_agent_id"] = port_scan_agent_id
+        if port_scan_type is not None:
+            update_data["port_scan_type"] = port_scan_type
+        if port_scan_ports is not None:
+            update_data["port_scan_ports"] = port_scan_ports
+        if port_scan_service_detection is not None:
+            update_data["port_scan_service_detection"] = port_scan_service_detection
+        if port_scan_timeout is not None:
+            update_data["port_scan_timeout"] = port_scan_timeout
         if is_global is not None:
             update_data["is_global"] = is_global
             if is_global:
@@ -597,6 +635,11 @@ class JobTemplateService:
                 "value": "get_open_ports",
                 "label": "Get Open Ports",
                 "description": "Scan IP prefixes and record open TCP/UDP ports via a Cockpit Ansible agent",
+            },
+            {
+                "value": "port_scan",
+                "label": "Port Scan",
+                "description": "Scan open ports on reachable hosts via a Cockpit Nmap agent using CIDR prefixes or a saved inventory",
             },
         ]
 
@@ -721,6 +764,17 @@ class JobTemplateService:
                 else None
             ),
             "open_ports_agent_id": template.open_ports_agent_id,
+            "port_scan_target_source": template.port_scan_target_source,
+            "port_scan_cidrs": (
+                json.loads(template.port_scan_cidrs)
+                if template.port_scan_cidrs
+                else None
+            ),
+            "port_scan_agent_id": template.port_scan_agent_id,
+            "port_scan_type": template.port_scan_type,
+            "port_scan_ports": template.port_scan_ports,
+            "port_scan_service_detection": template.port_scan_service_detection,
+            "port_scan_timeout": template.port_scan_timeout,
             "is_global": template.is_global,
             "user_id": template.user_id,
             "created_by": template.created_by,

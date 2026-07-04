@@ -231,6 +231,28 @@ class JobTemplate(Base):
     open_ports_agent_id = Column(
         String(255), nullable=True
     )  # Cockpit agent ID (must be type='ansible') used to scan ports (get_open_ports type)
+    # Port Scan (port_scan type)
+    port_scan_target_source = Column(
+        String(20), nullable=True
+    )  # 'cidr' or 'inventory' (port_scan type)
+    port_scan_cidrs = Column(
+        Text, nullable=True
+    )  # JSON array of CIDR strings (port_scan type)
+    port_scan_agent_id = Column(
+        String(255), nullable=True
+    )  # Cockpit agent ID (must be type='nmap') used to scan ports (port_scan type)
+    port_scan_type = Column(
+        String(20), nullable=True
+    )  # nmap scan type: connect, syn, udp (port_scan type)
+    port_scan_ports = Column(
+        String(255), nullable=True
+    )  # Port specification passed to nmap (port_scan type)
+    port_scan_service_detection = Column(
+        Boolean, nullable=False, default=False
+    )  # Enable nmap -sV service detection (port_scan type)
+    port_scan_timeout = Column(
+        Integer, nullable=True
+    )  # Per-host nmap timeout in seconds (port_scan type)
     is_global = Column(Boolean, nullable=False, default=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     created_by = Column(String(255))  # Username of creator

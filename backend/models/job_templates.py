@@ -23,6 +23,7 @@ JobTemplateType = Literal[
     "get_client_data",
     "get_server_facts",
     "get_open_ports",
+    "port_scan",
 ]
 
 # Inventory source options
@@ -396,6 +397,41 @@ class JobTemplateBase(BaseModel):
         max_length=255,
         description="Cockpit agent ID (type='ansible') used to scan ports (only applies to get_open_ports type)",
     )
+    # Port Scan (port_scan type)
+    port_scan_target_source: Optional[str] = Field(
+        None,
+        max_length=20,
+        description="Target source: 'cidr' or 'inventory' (only applies to port_scan type)",
+    )
+    port_scan_cidrs: Optional[List[str]] = Field(
+        None,
+        description="CIDR prefixes to scan (only applies to port_scan type with target_source='cidr')",
+    )
+    port_scan_agent_id: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Cockpit agent ID (type='nmap') used to scan ports (only applies to port_scan type)",
+    )
+    port_scan_type: Optional[str] = Field(
+        None,
+        max_length=20,
+        description="Nmap scan type: connect, syn, or udp (only applies to port_scan type)",
+    )
+    port_scan_ports: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Port specification passed to nmap, e.g. '1-1024' (only applies to port_scan type)",
+    )
+    port_scan_service_detection: Optional[bool] = Field(
+        False,
+        description="Enable nmap service detection (-sV) (only applies to port_scan type)",
+    )
+    port_scan_timeout: Optional[int] = Field(
+        300,
+        ge=30,
+        le=3600,
+        description="Per-host nmap timeout in seconds (only applies to port_scan type)",
+    )
     is_global: bool = Field(
         False,
         description="Whether this template is global (available to all users) or private",
@@ -493,6 +529,14 @@ class JobTemplateUpdate(BaseModel):
     # Get Open Ports
     open_ports_prefixes: Optional[List[str]] = None
     open_ports_agent_id: Optional[str] = Field(None, max_length=255)
+    # Port Scan
+    port_scan_target_source: Optional[str] = Field(None, max_length=20)
+    port_scan_cidrs: Optional[List[str]] = None
+    port_scan_agent_id: Optional[str] = Field(None, max_length=255)
+    port_scan_type: Optional[str] = Field(None, max_length=20)
+    port_scan_ports: Optional[str] = Field(None, max_length=255)
+    port_scan_service_detection: Optional[bool] = None
+    port_scan_timeout: Optional[int] = Field(None, ge=30, le=3600)
     is_global: Optional[bool] = None
 
 

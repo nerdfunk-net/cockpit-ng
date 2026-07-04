@@ -79,6 +79,28 @@ export function useSavedInventoriesQuery(enabled = true) {
   })
 }
 
+const EMPTY_GROUPS: string[] = []
+
+/**
+ * Fetch all unique inventory group paths for the group filter dropdown.
+ */
+export function useInventoryGroupsQuery(enabled = true) {
+  const { apiCall } = useApi()
+
+  return useQuery({
+    queryKey: queryKeys.inventory.groups(),
+    queryFn: async () => {
+      const response = await apiCall<{ groups: string[] }>(
+        'inventory/get-all-groups',
+        { method: 'GET' }
+      )
+      return response?.groups ?? EMPTY_GROUPS
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
 /**
  * Hook for loading a specific inventory by name
  *

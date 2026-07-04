@@ -140,6 +140,15 @@ async def create_job_template(
             facts_agent_id=template_data.facts_agent_id,
             open_ports_prefixes=template_data.open_ports_prefixes,
             open_ports_agent_id=template_data.open_ports_agent_id,
+            port_scan_target_source=template_data.port_scan_target_source,
+            port_scan_cidrs=template_data.port_scan_cidrs,
+            port_scan_agent_id=template_data.port_scan_agent_id,
+            port_scan_type=template_data.port_scan_type,
+            port_scan_ports=template_data.port_scan_ports,
+            port_scan_service_detection=template_data.port_scan_service_detection
+            if template_data.port_scan_service_detection is not None
+            else False,
+            port_scan_timeout=template_data.port_scan_timeout,
             is_global=template_data.is_global,
         )
 
@@ -355,6 +364,13 @@ async def update_job_template(
             facts_agent_id=update_data.facts_agent_id,
             open_ports_prefixes=update_data.open_ports_prefixes,
             open_ports_agent_id=update_data.open_ports_agent_id,
+            port_scan_target_source=update_data.port_scan_target_source,
+            port_scan_cidrs=update_data.port_scan_cidrs,
+            port_scan_agent_id=update_data.port_scan_agent_id,
+            port_scan_type=update_data.port_scan_type,
+            port_scan_ports=update_data.port_scan_ports,
+            port_scan_service_detection=update_data.port_scan_service_detection,
+            port_scan_timeout=update_data.port_scan_timeout,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],
         )

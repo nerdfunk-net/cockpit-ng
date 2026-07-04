@@ -102,38 +102,41 @@ async def trigger_nmap_scan_network(
     current_user: dict = Depends(require_permission("network.scan", "execute")),
 ):
     """
-    Scan open ports on reachable hosts in CIDR ranges via a Cockpit nmap agent.
+    Scan open ports on reachable hosts via CIDR ranges or a saved inventory.
 
-    1. Expands CIDR networks to individual IP addresses
-    2. Pings all IPs using fping to find alive hosts
-    3. Runs nmap port scans on each alive host through the selected agent
+    target_source=cidr (default):
+      1. Expands CIDR networks to individual IP addresses
+      2. Pings all IPs using fping to find alive hosts
+      3. Runs nmap port scans on each alive host through the selected agent
+
+    target_source=inventory:
+      1. Resolves device IP addresses from the named saved inventory via Nautobot
+      2. Pings all IPs using fping to find alive hosts
+      3. Runs nmap port scans on each alive host through the selected agent
     """
     from tasks.nmap_scan_network_task import nmap_scan_network_task
 
-    if not request.cidrs:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="cidrs list cannot be empty",
-        )
-
-    for cidr in request.cidrs:
-        try:
-            network = ipaddress.ip_network(cidr, strict=False)
-            if network.prefixlen < 19:
+    if request.target_source == "cidr":
+        for cidr in request.cidrs:
+            try:
+                network = ipaddress.ip_network(cidr, strict=False)
+                if network.prefixlen < 19:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"CIDR network too large (minimum /19): {cidr}",
+                    )
+            except ValueError:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"CIDR network too large (minimum /19): {cidr}",
+                    detail=f"Invalid CIDR format: {cidr}",
                 )
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid CIDR format: {cidr}",
-            )
 
     task = nmap_scan_network_task.delay(
         cidrs=request.cidrs,
         agent_id=request.agent_id,
         executed_by=current_user.get("username", "unknown"),
+        target_source=request.target_source,
+        inventory_name=request.inventory_name,
         ports=request.ports,
         scan_type=request.scan_type,
         service_detection=request.service_detection,
@@ -142,12 +145,18 @@ async def trigger_nmap_scan_network(
 
     job_id = f"nmap_scan_network_{task.id}"
 
+    target_label = (
+        f"inventory '{request.inventory_name}'"
+        if request.target_source == "inventory"
+        else f"{len(request.cidrs)} network(s)"
+    )
+
     return TaskWithJobResponse(
         task_id=task.id,
         job_id=job_id,
         status="queued",
         message=(
-            f"Nmap scan task queued for {len(request.cidrs)} network(s) "
+            f"Nmap scan task queued for {target_label} "
             f"via agent '{request.agent_id}': {task.id}"
         ),
     )

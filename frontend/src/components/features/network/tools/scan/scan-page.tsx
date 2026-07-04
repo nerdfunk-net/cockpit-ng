@@ -24,7 +24,12 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useAgentsQuery } from '@/hooks/queries/use-agents-query'
+import { useSavedInventoriesQuery } from '@/hooks/queries/use-saved-inventories-queries'
 import ScanResultsModal from '@/components/features/network/tools/scan/scan-results-modal'
+import {
+  ScanInventorySection,
+  type ScanTargetSource,
+} from '@/components/features/network/tools/scan/scan-inventory-section'
 
 interface CidrInput {
   id: number
@@ -66,15 +71,25 @@ const validateCIDR = (cidr: string): string => {
 }
 
 const EMPTY_AGENTS: never[] = []
+const EMPTY_INVENTORIES: never[] = []
 
 export default function ScanToolPage() {
   const { toast } = useToast()
   const { data: agentsData, isLoading: loadingAgents } = useAgentsQuery()
+  const { data: inventoriesData, isLoading: loadingInventories } =
+    useSavedInventoriesQuery()
 
   const nmapAgents = useMemo(
     () => (agentsData ?? EMPTY_AGENTS).filter(a => a.type === 'nmap' && a.agent_id),
     [agentsData]
   )
+  const savedInventories = useMemo(
+    () => inventoriesData?.inventories ?? EMPTY_INVENTORIES,
+    [inventoriesData]
+  )
+
+  const [targetSource, setTargetSource] = useState<ScanTargetSource>('cidr')
+  const [inventoryName, setInventoryName] = useState('')
 
   const [cidrInputs, setCidrInputs] = useState<CidrInput[]>([
     { id: 1, value: '', error: '' },
@@ -124,24 +139,33 @@ export default function ScanToolPage() {
   }, [])
 
   const handleSubmit = useCallback(async () => {
-    const validCidrs = cidrInputs
-      .filter(input => input.value.trim())
-      .map(input => input.value.trim())
+    if (targetSource === 'cidr') {
+      const validCidrs = cidrInputs
+        .filter(input => input.value.trim())
+        .map(input => input.value.trim())
 
-    if (validCidrs.length === 0) {
+      if (validCidrs.length === 0) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please enter at least one CIDR network',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      const hasErrors = cidrInputs.some(input => input.value.trim() && input.error)
+      if (hasErrors) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please fix all CIDR validation errors',
+          variant: 'destructive',
+        })
+        return
+      }
+    } else if (!inventoryName) {
       toast({
         title: 'Validation Error',
-        description: 'Please enter at least one CIDR network',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    const hasErrors = cidrInputs.some(input => input.value.trim() && input.error)
-    if (hasErrors) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fix all CIDR validation errors',
+        description: 'Please select a saved inventory',
         variant: 'destructive',
       })
       return
@@ -159,11 +183,18 @@ export default function ScanToolPage() {
     setIsSubmitting(true)
 
     try {
+      const validCidrs =
+        targetSource === 'cidr'
+          ? cidrInputs.filter(i => i.value.trim()).map(i => i.value.trim())
+          : []
+
       const response = await fetch('/api/proxy/celery/tasks/nmap-scan-network', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          target_source: targetSource,
           cidrs: validCidrs,
+          inventory_name: targetSource === 'inventory' ? inventoryName : undefined,
           agent_id: selectedAgentId,
           ports: ports.trim() || undefined,
           scan_type: scanType,
@@ -181,9 +212,14 @@ export default function ScanToolPage() {
       setTaskId(data.task_id)
       setShowModal(true)
 
+      const targetDescription =
+        targetSource === 'inventory'
+          ? `inventory "${inventoryName}"`
+          : `${validCidrs.length} network(s)`
+
       toast({
         title: 'Scan Started',
-        description: `Scanning ${validCidrs.length} network(s) via agent ${selectedAgentId}...`,
+        description: `Scanning ${targetDescription} via agent ${selectedAgentId}...`,
       })
     } catch (error) {
       console.error('Failed to start nmap scan task:', error)
@@ -196,6 +232,8 @@ export default function ScanToolPage() {
       setIsSubmitting(false)
     }
   }, [
+    targetSource,
+    inventoryName,
     cidrInputs,
     selectedAgentId,
     ports,
@@ -206,9 +244,19 @@ export default function ScanToolPage() {
   ])
 
   const canSubmit = useMemo(() => {
-    const hasValidCidr = cidrInputs.some(i => i.value.trim() && !i.error)
-    return hasValidCidr && !!selectedAgentId && !isSubmitting && !loadingAgents
-  }, [cidrInputs, selectedAgentId, isSubmitting, loadingAgents])
+    const hasValidTarget =
+      targetSource === 'inventory'
+        ? !!inventoryName
+        : cidrInputs.some(i => i.value.trim() && !i.error)
+    return hasValidTarget && !!selectedAgentId && !isSubmitting && !loadingAgents
+  }, [
+    targetSource,
+    inventoryName,
+    cidrInputs,
+    selectedAgentId,
+    isSubmitting,
+    loadingAgents,
+  ])
 
   return (
     <>
@@ -221,7 +269,7 @@ export default function ScanToolPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Network Port Scan</h1>
               <p className="text-gray-600 mt-1">
-                Scan open ports on reachable hosts in CIDR networks via an Nmap agent
+                Scan open ports on reachable hosts via CIDR networks or a saved inventory
               </p>
             </div>
           </div>
@@ -235,7 +283,16 @@ export default function ScanToolPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
-            {/* CIDR Networks */}
+            <ScanInventorySection
+              targetSource={targetSource}
+              setTargetSource={setTargetSource}
+              inventoryName={inventoryName}
+              setInventoryName={setInventoryName}
+              savedInventories={savedInventories}
+              loadingInventories={loadingInventories}
+            />
+
+            {targetSource === 'cidr' && (
             <div className="space-y-4">
               <Label className="text-base font-semibold text-slate-700">
                 CIDR Networks
@@ -291,6 +348,14 @@ export default function ScanToolPage() {
                 ping before nmap scanning.
               </p>
             </div>
+            )}
+
+            {targetSource === 'inventory' && (
+              <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded-md border border-slate-200">
+                Device IP addresses are resolved from the selected inventory via Nautobot.
+                Alive hosts are discovered via ping before nmap scanning.
+              </p>
+            )}
 
             {/* Agent + Scan type row */}
             <div className="grid gap-4 md:grid-cols-2">
