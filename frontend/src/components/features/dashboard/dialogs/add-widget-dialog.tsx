@@ -39,7 +39,7 @@ export function AddWidgetDialog({
           </DialogDescription>
         </DialogHeader>
         {availableWidgets.length === 0 ? (
-          <p className="text-sm text-slate-500 py-4 text-center">
+          <p className="text-sm text-muted-foreground py-4 text-center">
             All available widgets are already on your dashboard.
           </p>
         ) : (
@@ -47,11 +47,11 @@ export function AddWidgetDialog({
             {availableWidgets.map(widget => (
               <div
                 key={widget.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors"
+                className="flex items-center justify-between p-3 rounded-lg border border-border hover:border-muted-foreground/30 hover:bg-muted transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900">{widget.title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{widget.description}</p>
+                  <p className="text-sm font-medium text-foreground">{widget.title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{widget.description}</p>
                 </div>
                 <Button
                   size="sm"

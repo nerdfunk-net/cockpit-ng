@@ -16,6 +16,10 @@ import { useToast } from '@/hooks/use-toast'
 
 function CodeBlock({ children }: { children: string }) {
   return (
+    // Deliberately kept dark: terminal/console output block. No semantic token
+    // exists for "console output" background; this pattern is used unmigrated
+    // across ~10 other features (job results, snapshot viewers, etc.), so a
+    // token should be introduced codebase-wide rather than diverging here.
     <pre className="mt-2 overflow-x-auto rounded-md bg-slate-900 p-3 text-xs text-slate-100">
       <code>{children}</code>
     </pre>
@@ -33,11 +37,11 @@ function Step({
 }) {
   return (
     <li className="space-y-2">
-      <h4 className="font-semibold text-gray-900">
-        <span className="mr-2 text-emerald-700">{number}.</span>
+      <h4 className="font-semibold text-foreground">
+        <span className="mr-2 text-success-foreground">{number}.</span>
         {title}
       </h4>
-      <div className="text-sm text-gray-600 leading-relaxed pl-6">{children}</div>
+      <div className="text-sm text-muted-foreground leading-relaxed pl-6">{children}</div>
     </li>
   )
 }
@@ -92,41 +96,41 @@ export default function BaselineImportSection() {
 
   return (
     <div className="space-y-6">
-      <Alert className="border-amber-200 bg-amber-50">
-        <BookOpen className="h-4 w-4 text-amber-800" />
-        <AlertTitle className="text-amber-900">
+      <Alert className="status-warning border">
+        <BookOpen className="h-4 w-4" />
+        <AlertTitle>
           Pytest does not load baseline data automatically
         </AlertTitle>
-        <AlertDescription className="text-amber-800 text-sm">
+        <AlertDescription className="text-sm">
           Integration tests expect a dedicated test Nautobot instance populated from{' '}
-          <code className="rounded bg-amber-100/80 px-1 py-0.5 text-xs">
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">
             contributing-data/tests_baseline/baseline.yaml
           </code>
           . You must import that YAML into Nautobot before running{' '}
-          <code className="rounded bg-amber-100/80 px-1 py-0.5 text-xs">
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">
             pytest -m &quot;integration and nautobot&quot;
           </code>
           . See{' '}
-          <code className="rounded bg-amber-100/80 px-1 py-0.5 text-xs">
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">
             backend/tests/README.md
           </code>{' '}
           (section &quot;Pytest baseline&quot;) and{' '}
-          <code className="rounded bg-amber-100/80 px-1 py-0.5 text-xs">
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">
             backend/tests/QUICK_START_INTEGRATION_TESTS.md
           </code>
           .
         </AlertDescription>
       </Alert>
 
-      <Card className="shadow-sm border-emerald-100">
+      <Card className="shadow-sm border-success-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5 text-emerald-600" />
+            <Upload className="w-5 h-5 text-success-foreground" />
             Import test baseline
           </CardTitle>
           <CardDescription>
             Load YAML from{' '}
-            <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+            <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
               contributing-data/tests_baseline/
             </code>{' '}
             into the Nautobot instance configured in Cockpit settings. Existing
@@ -134,11 +138,7 @@ export default function BaselineImportSection() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button
-            onClick={handleImportBaseline}
-            disabled={isImporting}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
+          <Button onClick={handleImportBaseline} disabled={isImporting}>
             {isImporting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -151,14 +151,14 @@ export default function BaselineImportSection() {
               </>
             )}
           </Button>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             Calls{' '}
-            <code className="rounded bg-slate-100 px-1 py-0.5">
+            <code className="rounded bg-muted px-1 py-0.5">
               POST /api/tools/tests-baseline
             </code>
             . Override the directory with env{' '}
-            <code className="rounded bg-slate-100 px-1 py-0.5">BASELINE_DIR</code>{' '}
-            (path relative to <code className="rounded bg-slate-100 px-1 py-0.5">backend/</code>{' '}
+            <code className="rounded bg-muted px-1 py-0.5">BASELINE_DIR</code>{' '}
+            (path relative to <code className="rounded bg-muted px-1 py-0.5">backend/</code>{' '}
             unless absolute).
           </p>
         </CardContent>
@@ -169,15 +169,15 @@ export default function BaselineImportSection() {
           <CardTitle>Manual: baseline data for Python integration tests</CardTitle>
           <CardDescription>
             End-to-end workflow from YAML on disk to passing{' '}
-            <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
               pytest -m integration
             </code>{' '}
             tests against real Nautobot.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8 text-sm text-gray-600">
+        <CardContent className="space-y-8 text-sm text-muted-foreground">
           <section>
-            <h3 className="font-semibold text-gray-900 mb-2">What you get</h3>
+            <h3 className="font-semibold text-foreground mb-2">What you get</h3>
             <p>
               The <strong>Pytest integration tests</strong> profile defines a fixed
               contract used by inventory, device-operation, CSV import, and CheckMK
@@ -209,15 +209,15 @@ export default function BaselineImportSection() {
             </ul>
             <p className="mt-2">
               Canonical file:{' '}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">
                 contributing-data/tests_baseline/baseline.yaml
               </code>{' '}
               (symlinked as{' '}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">
                 backend/tests/baseline.yaml
               </code>
               ). Expected counts for assertions live in{' '}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">
                 backend/tests/fixtures/baseline_manifest.json
               </code>
               .
@@ -225,7 +225,7 @@ export default function BaselineImportSection() {
           </section>
 
           <section>
-            <h3 className="font-semibold text-gray-900 mb-3">Prerequisites</h3>
+            <h3 className="font-semibold text-foreground mb-3">Prerequisites</h3>
             <ul className="list-disc pl-6 space-y-1">
               <li>
                 Cockpit <strong>backend</strong> and <strong>frontend</strong> running
@@ -239,7 +239,7 @@ export default function BaselineImportSection() {
                 Nautobot connection configured in Cockpit{' '}
                 <Link
                   href="/settings/nautobot"
-                  className="text-emerald-700 hover:underline inline-flex items-center gap-0.5"
+                  className="text-primary hover:underline inline-flex items-center gap-0.5"
                 >
                   Settings → Nautobot
                   <ExternalLink className="w-3 h-3" />
@@ -251,7 +251,7 @@ export default function BaselineImportSection() {
                 session).
               </li>
               <li>
-                <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">
+                <code className="rounded bg-muted px-1 py-0.5 text-xs">
                   contributing-data/tests_baseline/baseline.yaml
                 </code>{' '}
                 present on the server filesystem (from git clone or after Generate).
@@ -260,7 +260,7 @@ export default function BaselineImportSection() {
           </section>
 
           <section>
-            <h3 className="font-semibold text-gray-900 mb-3">Step-by-step</h3>
+            <h3 className="font-semibold text-foreground mb-3">Step-by-step</h3>
             <ol className="space-y-6 list-none pl-0">
               <Step number={1} title="Ensure baseline.yaml is up to date">
                 <p>
@@ -401,7 +401,7 @@ python scripts/expect_inventory_counts.py --filter filter_by_location_city_a`}</
           </section>
 
           <section>
-            <h3 className="font-semibold text-gray-900 mb-2">Troubleshooting</h3>
+            <h3 className="font-semibold text-foreground mb-2">Troubleshooting</h3>
             <ul className="list-disc pl-6 space-y-2">
               <li>
                 <strong>Import failed / directory not found</strong> — Backend must see{' '}
@@ -431,8 +431,8 @@ python scripts/expect_inventory_counts.py --filter filter_by_location_city_a`}</
             </ul>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <h3 className="font-semibold text-gray-900 mb-2">Further reading</h3>
+          <section className="rounded-lg border border-border bg-muted p-4">
+            <h3 className="font-semibold text-foreground mb-2">Further reading</h3>
             <ul className="space-y-1 text-sm">
               <li>
                 <code className="text-xs">backend/tests/README.md</code> — Pytest

@@ -61,9 +61,9 @@ export function DeviceList({
   const endRow = Math.min(page * pageSize, total)
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg flex flex-col">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg flex flex-col">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <Server className="h-4 w-4" />
           <span className="text-sm font-medium">Devices</span>
@@ -71,23 +71,23 @@ export function DeviceList({
         <button
           onClick={onFilterClick}
           className={cn(
-            'flex items-center gap-1 text-xs transition-colors',
-            filterActive
-              ? 'text-yellow-200 hover:text-white'
-              : 'text-blue-100 hover:text-white'
+            'flex items-center gap-1 text-xs transition-colors hover:text-current',
+            filterActive ? 'text-warning-foreground' : 'text-panel-header-muted'
           )}
           aria-label="Filter devices"
         >
           <Filter className="h-3.5 w-3.5" />
           Filter
-          {filterActive && <span className="h-1.5 w-1.5 rounded-full bg-yellow-300" />}
+          {filterActive && (
+            <span className="h-1.5 w-1.5 rounded-full bg-warning-foreground" />
+          )}
         </button>
       </div>
 
       {/* Search input */}
-      <div className="px-3 py-2 border-b border-gray-100">
+      <div className="px-3 py-2 border-b border-border">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Search devices..."
             value={search}
@@ -98,22 +98,22 @@ export function DeviceList({
       </div>
 
       {/* Device list */}
-      <div className="bg-gradient-to-b from-white to-gray-50 flex-1">
+      <div className="panel-content flex-1">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500" />
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
           </div>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-border">
             {/* "All" entry */}
             <li>
               <button
                 onClick={() => onSelect(null)}
                 className={cn(
-                  'w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-blue-50',
+                  'w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-primary/10',
                   selectedDevice === null
-                    ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-gray-700'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-muted-foreground'
                 )}
               >
                 All
@@ -127,10 +127,10 @@ export function DeviceList({
                   <button
                     onClick={() => onSelect(device)}
                     className={cn(
-                      'flex-1 min-w-0 text-left px-4 py-2.5 text-sm transition-colors hover:bg-blue-50 truncate',
+                      'flex-1 min-w-0 text-left px-4 py-2.5 text-sm transition-colors hover:bg-primary/10 truncate',
                       selectedDevice === device
-                        ? 'bg-blue-50 text-blue-700 font-medium'
-                        : 'text-gray-700'
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'text-muted-foreground'
                     )}
                     title={device}
                   >
@@ -146,7 +146,7 @@ export function DeviceList({
                       className={cn(
                         'shrink-0 mr-2 p-1 rounded transition-colors',
                         'opacity-0 group-hover:opacity-100 focus:opacity-100',
-                        'text-gray-400 hover:text-blue-500 hover:bg-blue-50'
+                        'text-muted-foreground hover:text-primary hover:bg-primary/10'
                       )}
                     >
                       <Activity className="h-3.5 w-3.5" />
@@ -157,7 +157,7 @@ export function DeviceList({
             })}
 
             {devices.length === 0 && (
-              <li className="px-4 py-6 text-center text-sm text-gray-400">
+              <li className="px-4 py-6 text-center text-sm text-muted-foreground">
                 {search ? 'No matching devices' : 'No devices found'}
               </li>
             )}
@@ -166,9 +166,9 @@ export function DeviceList({
       </div>
 
       {/* Pagination footer */}
-      <div className="border-t border-gray-200 px-3 py-2 rounded-b-lg bg-white">
+      <div className="border-t border-border px-3 py-2 rounded-b-lg bg-card">
         <div className="flex items-center justify-between gap-1">
-          <p className="text-xs text-gray-400 whitespace-nowrap">
+          <p className="text-xs text-muted-foreground whitespace-nowrap">
             {total > 0 ? `${startRow}–${endRow} / ${total}` : '0'}
           </p>
           <div className="flex items-center gap-1">
@@ -190,18 +190,18 @@ export function DeviceList({
             <button
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
-              className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-0.5 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Previous page"
             >
-              <ChevronLeft className="h-4 w-4 text-gray-600" />
+              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
             </button>
             <button
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
-              className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-0.5 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Next page"
             >
-              <ChevronRight className="h-4 w-4 text-gray-600" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
         </div>

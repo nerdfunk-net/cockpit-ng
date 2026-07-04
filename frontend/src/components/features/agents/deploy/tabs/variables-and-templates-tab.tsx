@@ -70,12 +70,12 @@ export function VariablesAndTemplatesTab({
   return (
     <div className="space-y-6">
       {/* Template Selection - Now at the top */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Template Selection</span>
           </div>
-          <div className="text-xs text-blue-100">
+          <div className="text-xs text-panel-header-muted">
             Choose a Jinja2 template to render for your devices
           </div>
         </div>
@@ -99,8 +99,8 @@ export function VariablesAndTemplatesTab({
 
           {isLoadingTemplate && (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-              <span className="ml-2 text-sm text-gray-600">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">
                 Loading template details...
               </span>
             </div>
@@ -108,19 +108,19 @@ export function VariablesAndTemplatesTab({
 
           {!isLoadingTemplate && selectedTemplate && (
             <>
-              <div className="p-3 bg-gray-50 border border-gray-200 rounded-md space-y-2">
+              <div className="p-3 bg-muted border border-border rounded-md space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-foreground">
                       Template Configuration:
                     </span>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-muted-foreground">
                       Use Nautobot data & context is{' '}
                       <span
                         className={
                           selectedTemplate.use_nautobot_context
-                            ? 'font-semibold text-green-600'
-                            : 'font-semibold text-gray-500'
+                            ? 'font-semibold text-success-foreground'
+                            : 'font-semibold text-muted-foreground'
                         }
                       >
                         {selectedTemplate.use_nautobot_context ? 'enabled' : 'disabled'}
@@ -129,16 +129,16 @@ export function VariablesAndTemplatesTab({
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-foreground">
                     SNMP Mapping:
                   </span>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     Pass SNMP mapping is{' '}
                     <span
                       className={
                         selectedTemplate.pass_snmp_mapping
-                          ? 'font-semibold text-green-600'
-                          : 'font-semibold text-gray-500'
+                          ? 'font-semibold text-success-foreground'
+                          : 'font-semibold text-muted-foreground'
                       }
                     >
                       {selectedTemplate.pass_snmp_mapping ? 'enabled' : 'disabled'}
@@ -157,7 +157,7 @@ export function VariablesAndTemplatesTab({
                   readOnly={selectedTemplate.scope === 'global'}
                 />
                 {selectedTemplate.scope === 'global' && (
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Global templates are read-only
                   </p>
                 )}
@@ -169,15 +169,17 @@ export function VariablesAndTemplatesTab({
 
       {/* Custom Variables Section - Only shown when template has custom variables */}
       {!isLoadingTemplate && selectedTemplate && customVariables.length > 0 && (
-        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+        <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+          <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium">Template Variables</span>
             </div>
-            <div className="text-xs text-blue-100">Override custom variable values</div>
+            <div className="text-xs text-panel-header-muted">
+              Override custom variable values
+            </div>
           </div>
           <div className="p-6 space-y-4">
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               The selected template contains custom variables. You can override their
               default values below:
             </p>
@@ -188,7 +190,7 @@ export function VariablesAndTemplatesTab({
                     <Label htmlFor={`var-${name}`} className="text-sm font-medium">
                       {name}
                     </Label>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       Default: {defaultValue}
                     </span>
                   </div>
@@ -208,14 +210,14 @@ export function VariablesAndTemplatesTab({
 
       {/* Info message when no custom variables */}
       {!isLoadingTemplate && selectedTemplate && customVariables.length === 0 && (
-        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-          <div className="bg-gradient-to-r from-gray-400/80 to-gray-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+        <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+          <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium">Template Variables</span>
             </div>
           </div>
           <div className="p-6">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               This template does not have any custom variables that can be overridden.
             </p>
           </div>

@@ -35,17 +35,17 @@ export function ClusterRow({ server }: ClusterRowProps) {
   return (
     <>
       <div className="flex flex-col gap-0.5">
-        <span className="text-xs text-gray-500 uppercase tracking-wide">Cluster</span>
+        <span className="text-xs text-muted-foreground uppercase tracking-wide">Cluster</span>
         {server.cluster ? (
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-medium text-gray-800 truncate">
+            <span className="text-sm font-medium text-foreground truncate">
               {server.cluster.name}
             </span>
             <button
               type="button"
               onClick={() => setDialogOpen(true)}
               title="Change cluster"
-              className="shrink-0 text-gray-400 hover:text-blue-500 transition-colors"
+              className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
             >
               <Pencil className="h-3 w-3" />
             </button>

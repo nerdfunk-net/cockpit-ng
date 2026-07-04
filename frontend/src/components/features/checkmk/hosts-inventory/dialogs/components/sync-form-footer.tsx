@@ -23,7 +23,7 @@ export function SyncFormFooter({
         type="button"
         variant="secondary"
         onClick={onValidate}
-        className="min-w-[120px] hover:bg-blue-100 hover:border-blue-400 active:scale-95 transition-all cursor-pointer"
+        className="min-w-[120px] hover:bg-info hover:border-info-border active:scale-95 transition-all cursor-pointer"
       >
         <CheckCircle className="h-4 w-4 mr-2" />
         Validate

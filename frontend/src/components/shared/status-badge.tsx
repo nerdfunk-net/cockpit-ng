@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 
 export type StatusVariant = 'success' | 'warning' | 'error' | 'info'
 
-interface StatusBadgeProps {
+interface StatusBadgeProps extends Omit<React.ComponentProps<'span'>, 'className'> {
   variant: StatusVariant
   children: React.ReactNode
   className?: string
@@ -16,9 +16,9 @@ const variantClasses: Record<StatusVariant, string> = {
   info: 'status-info border',
 }
 
-export function StatusBadge({ variant, children, className }: StatusBadgeProps) {
+export function StatusBadge({ variant, children, className, ...props }: StatusBadgeProps) {
   return (
-    <Badge variant="outline" className={cn(variantClasses[variant], className)}>
+    <Badge variant="outline" className={cn(variantClasses[variant], className)} {...props}>
       {children}
     </Badge>
   )

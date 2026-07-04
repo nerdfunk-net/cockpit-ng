@@ -3,7 +3,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Search, Radar, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -23,6 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useApi } from '@/hooks/use-api'
 import { useCheckmkDiscoveryMutations } from '../hooks/use-checkmk-discovery-mutations'
+import { StatusBadge } from '@/components/shared/status-badge'
 import type { Device } from '../../shared/types'
 
 const DISCOVERY_MODES = [
@@ -144,8 +144,8 @@ export function DiscoveryTab() {
     <div className="space-y-6">
       {/* Device Management Section */}
       <div className="rounded-xl border shadow-sm overflow-hidden">
-        {/* Blue Header */}
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+        {/* Panel Header */}
+        <div className="panel-header py-2 px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Search className="h-4 w-4" />
@@ -153,7 +153,7 @@ export function DiscoveryTab() {
                 <h3 className="text-sm font-semibold">
                   Device Synchronization Management
                 </h3>
-                <p className="text-blue-100 text-xs">
+                <p className="text-panel-header-muted text-xs">
                   Showing {filteredDevices.length} of {devices.length} devices
                 </p>
               </div>
@@ -163,12 +163,12 @@ export function DiscoveryTab() {
                 variant="ghost"
                 size="sm"
                 onClick={loadDevices}
-                className="text-white hover:bg-white/20 text-xs h-7"
+                className="text-current hover:bg-card/20 text-xs h-7"
                 disabled={loading}
                 title="Load devices from Nautobot"
               >
                 {loading ? (
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1" />
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1" />
                 ) : (
                   <Search className="h-3 w-3 mr-1" />
                 )}
@@ -179,17 +179,17 @@ export function DiscoveryTab() {
         </div>
 
         {/* Table Content */}
-        <div className="p-4 bg-white">
+        <div className="p-4 bg-card">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-50">
-                <tr className="border-b border-slate-200">
+              <thead className="bg-muted">
+                <tr className="border-b border-border">
                   <th className="p-2 text-left w-12">
                     <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} />
                   </th>
                   <th className="p-2 text-left">
                     <div className="space-y-1">
-                      <span className="text-xs font-medium text-slate-700">
+                      <span className="text-xs font-medium text-muted-foreground">
                         Device Name
                       </span>
                       <input
@@ -197,28 +197,28 @@ export function DiscoveryTab() {
                         placeholder="Filter by name..."
                         value={deviceNameFilter}
                         onChange={e => setDeviceNameFilter(e.target.value)}
-                        className="w-full px-2 py-1 text-xs border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full px-2 py-1 text-xs border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                   </th>
-                  <th className="p-2 text-left text-xs font-medium text-slate-700">
+                  <th className="p-2 text-left text-xs font-medium text-muted-foreground">
                     Role
                   </th>
-                  <th className="p-2 text-left text-xs font-medium text-slate-700">
+                  <th className="p-2 text-left text-xs font-medium text-muted-foreground">
                     Location
                   </th>
-                  <th className="p-2 text-left text-xs font-medium text-slate-700">
+                  <th className="p-2 text-left text-xs font-medium text-muted-foreground">
                     IP Address
                   </th>
-                  <th className="p-2 text-left text-xs font-medium text-slate-700">
+                  <th className="p-2 text-left text-xs font-medium text-muted-foreground">
                     Status
                   </th>
-                  <th className="p-2 text-center text-xs font-medium text-slate-700">
+                  <th className="p-2 text-center text-xs font-medium text-muted-foreground">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-border">
                 {filteredDevices.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center p-8 text-muted-foreground">
@@ -229,7 +229,7 @@ export function DiscoveryTab() {
                   </tr>
                 ) : (
                   filteredDevices.map(device => (
-                    <tr key={device.id} className="hover:bg-slate-50">
+                    <tr key={device.id} className="hover:bg-muted">
                       <td className="p-2">
                         <Checkbox
                           checked={selectedDevices.has(device.id)}
@@ -245,9 +245,9 @@ export function DiscoveryTab() {
                         {device.primary_ip4?.address || 'N/A'}
                       </td>
                       <td className="p-2">
-                        <Badge className="bg-green-100 text-green-800 border-green-300">
+                        <StatusBadge variant="success">
                           {device.status?.name || 'Unknown'}
-                        </Badge>
+                        </StatusBadge>
                       </td>
                       <td className="p-2">
                         <div className="flex items-center justify-center gap-2">
@@ -322,15 +322,15 @@ export function DiscoveryTab() {
 
         {/* Footer with Bulk Actions */}
         {devices.length > 0 && (
-          <div className="p-4 bg-slate-50 border-t border-slate-200">
+          <div className="p-4 bg-muted border-t border-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 {selectedDevices.size > 0 ? (
                   <>
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    <StatusBadge variant="info">
                       {selectedDevices.size} device
                       {selectedDevices.size !== 1 ? 's' : ''} selected
-                    </Badge>
+                    </StatusBadge>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -341,7 +341,9 @@ export function DiscoveryTab() {
                     </Button>
                   </>
                 ) : (
-                  <span className="text-sm text-gray-500">No devices selected</span>
+                  <span className="text-sm text-muted-foreground">
+                    No devices selected
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-4">

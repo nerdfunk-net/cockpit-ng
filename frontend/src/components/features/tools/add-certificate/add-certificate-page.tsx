@@ -11,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   Dialog,
@@ -45,6 +44,8 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/auth-store'
+import { IconChip } from '@/components/shared/icon-chip'
+import { StatusBadge } from '@/components/shared/status-badge'
 
 interface CertificateInfo {
   filename: string
@@ -306,17 +307,17 @@ export default function AddCertificatePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-          <p className="text-gray-600">Loading certificates...</p>
+          <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading certificates...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -326,12 +327,12 @@ export default function AddCertificatePage() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
-            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-500 text-white shadow-lg">
-              <KeyRound className="w-6 h-6" />
-            </div>
+            <IconChip variant="success">
+              <KeyRound className="h-6 w-6" />
+            </IconChip>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Certificate Manager</h1>
-              <p className="text-gray-600 mt-1">Upload and manage CA certificates</p>
+              <h1 className="text-3xl font-bold text-foreground">Certificate Manager</h1>
+              <p className="text-muted-foreground mt-2">Upload and manage CA certificates</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -380,10 +381,10 @@ export default function AddCertificatePage() {
           <Card className="status-info">
             <CardContent className="py-4">
               <div className="flex items-center gap-3">
-                <FolderSearch className="w-5 h-5 text-blue-500" />
+                <FolderSearch className="w-5 h-5 text-info-foreground" />
                 <span className="text-sm">
                   Scanning directory:{' '}
-                  <code className="bg-blue-100 px-2 py-0.5 rounded font-mono text-xs">
+                  <code className="bg-muted px-2 py-0.5 rounded font-mono text-xs">
                     {certsDirectory}
                   </code>
                 </span>
@@ -406,11 +407,7 @@ export default function AddCertificatePage() {
                 </CardDescription>
               </div>
               {selectedCerts.size > 0 && (
-                <Button
-                  onClick={handleAddToSystem}
-                  disabled={adding}
-                  className="gap-2 bg-green-600 hover:bg-green-700"
-                >
+                <Button onClick={handleAddToSystem} disabled={adding} className="gap-2">
                   <ShieldCheck className="w-4 h-4" />
                   {adding ? 'Adding...' : `Add ${selectedCerts.size} to System CA`}
                 </Button>
@@ -419,8 +416,8 @@ export default function AddCertificatePage() {
           </CardHeader>
           <CardContent>
             {certificates.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <div className="text-center py-12 text-muted-foreground">
+                <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-lg font-medium">No certificates found</p>
                 <p className="text-sm mt-2">
                   Upload a .crt file or add certificates to the config/certs directory
@@ -458,23 +455,20 @@ export default function AddCertificatePage() {
                       <TableCell className="font-mono text-sm">
                         {cert.filename}
                       </TableCell>
-                      <TableCell className="text-gray-500">
+                      <TableCell className="text-muted-foreground">
                         {formatFileSize(cert.size)}
                       </TableCell>
                       <TableCell>
                         {cert.exists_in_system ? (
-                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                          <StatusBadge variant="success">
                             <CheckCircle2 className="w-3 h-3 mr-1" />
                             In System CA
-                          </Badge>
+                          </StatusBadge>
                         ) : (
-                          <Badge
-                            variant="secondary"
-                            className="bg-amber-100 text-amber-700"
-                          >
+                          <StatusBadge variant="warning">
                             <Info className="w-3 h-3 mr-1" />
                             Not in System
-                          </Badge>
+                          </StatusBadge>
                         )}
                       </TableCell>
                       <TableCell>
@@ -482,7 +476,7 @@ export default function AddCertificatePage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteCert(cert.filename)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -499,7 +493,7 @@ export default function AddCertificatePage() {
         <Card className="status-warning">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-warning-foreground flex-shrink-0 mt-0.5" />
               <div className="text-sm">
                 <p className="font-medium mb-2">Important Notes:</p>
                 <ul className="list-disc list-inside space-y-1">
@@ -509,13 +503,13 @@ export default function AddCertificatePage() {
                   </li>
                   <li>
                     The operation copies certificates to{' '}
-                    <code className="bg-amber-100 px-1 rounded">
+                    <code className="bg-muted px-1 rounded">
                       /usr/local/share/ca-certificates/
                     </code>
                   </li>
                   <li>
                     The{' '}
-                    <code className="bg-amber-100 px-1 rounded">
+                    <code className="bg-muted px-1 rounded">
                       update-ca-certificates
                     </code>{' '}
                     command is executed to update the trust store
@@ -533,15 +527,17 @@ export default function AddCertificatePage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {modalSuccess ? (
-                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <CheckCircle2 className="w-5 h-5 text-success-foreground" />
               ) : (
-                <XCircle className="w-5 h-5 text-red-500" />
+                <XCircle className="w-5 h-5 text-error-foreground" />
               )}
               {modalTitle}
             </DialogTitle>
             <DialogDescription>Command execution output</DialogDescription>
           </DialogHeader>
           <div className="mt-4">
+            {/* Deliberately kept dark: terminal/console output block (see note in
+                baseline-import-section.tsx CodeBlock for rationale). */}
             <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm font-mono overflow-auto max-h-96 whitespace-pre-wrap">
               {modalOutput}
             </pre>

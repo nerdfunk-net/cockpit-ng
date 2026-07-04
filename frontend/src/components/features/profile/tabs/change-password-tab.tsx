@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { StatusAlert } from '@/components/shared/status-alert'
 import { Eye, EyeOff, Lock } from 'lucide-react'
 
 interface PasswordState {
@@ -40,12 +41,12 @@ export function ChangePasswordTab({
 }: ChangePasswordTabProps) {
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
-        <CardTitle className="flex items-center space-x-2 text-white text-base">
+      <CardHeader className="panel-header py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+        <CardTitle className="flex items-center space-x-2 text-base">
           <Lock className="h-5 w-5" />
           <span>Change Password</span>
         </CardTitle>
-        <CardDescription className="text-blue-100">
+        <CardDescription className="text-panel-header-muted">
           Update your password (leave empty to keep current password)
         </CardDescription>
       </CardHeader>
@@ -114,11 +115,7 @@ export function ChangePasswordTab({
         </div>
 
         {/* Password Error */}
-        {passwordError && (
-          <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-            {passwordError}
-          </div>
-        )}
+        {passwordError && <StatusAlert variant="error">{passwordError}</StatusAlert>}
       </CardContent>
     </Card>
   )

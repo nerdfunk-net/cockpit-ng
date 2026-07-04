@@ -1,6 +1,5 @@
 'use client'
 
-import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,6 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { StatusIcon } from '@/components/shared/status-icon'
 
 export interface ValidationResults {
   isValid: boolean
@@ -42,8 +42,7 @@ function ValidationRow({
   issueCount,
   useAlertIcon = false,
 }: ValidationRowProps) {
-  const Icon = valid ? CheckCircle : useAlertIcon ? AlertCircle : XCircle
-  const iconClass = valid ? 'h-4 w-4 text-green-600' : 'h-4 w-4 text-red-600'
+  const iconVariant = valid ? 'success' : useAlertIcon ? 'warning' : 'error'
 
   let badgeLabel: string
   if (valid) {
@@ -57,7 +56,7 @@ function ValidationRow({
   return (
     <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
       <div className="flex items-center gap-2">
-        <Icon className={iconClass} />
+        <StatusIcon variant={iconVariant} className="h-4 w-4" />
         <span className="text-sm font-medium">{label}</span>
       </div>
       <Badge variant={valid ? 'default' : 'destructive'}>{badgeLabel}</Badge>
@@ -77,12 +76,12 @@ export function ValidationResultsDialog({
           <DialogTitle className="flex items-center gap-2">
             {results.isValid ? (
               <>
-                <CheckCircle className="h-5 w-5 text-green-600" />
+                <StatusIcon variant="success" className="h-5 w-5" />
                 <span>Validation Passed</span>
               </>
             ) : (
               <>
-                <XCircle className="h-5 w-5 text-red-600" />
+                <StatusIcon variant="error" className="h-5 w-5" />
                 <span>Validation Failed</span>
               </>
             )}

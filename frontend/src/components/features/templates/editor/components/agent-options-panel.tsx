@@ -34,22 +34,22 @@ export function AgentOptionsPanel({
   const inventories = inventoriesData?.inventories || []
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
       {/* Header with gradient */}
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center gap-3">
           <div className="flex items-center">
             <Server className="h-4 w-4 mr-2" />
             <span className="text-sm font-medium">Agent Options</span>
           </div>
           {isLoadingDevices && (
-            <div className="flex items-center gap-1.5 text-xs text-blue-100">
-              <div className="animate-spin rounded-full h-3 w-3 border-b border-white" />
+            <div className="flex items-center gap-1.5 text-xs text-panel-header-muted">
+              <div className="animate-spin rounded-full h-3 w-3 border-b border-current" />
               <span>Loading devices...</span>
             </div>
           )}
           {!isLoadingDevices && deviceCount !== undefined && deviceCount > 0 && (
-            <span className="text-xs text-blue-100">
+            <span className="text-xs text-panel-header-muted">
               {deviceCount} device{deviceCount !== 1 ? 's' : ''} loaded
             </span>
           )}
@@ -58,7 +58,7 @@ export function AgentOptionsPanel({
           variant="ghost"
           size="sm"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="h-6 w-6 p-0 text-white hover:bg-white/20"
+          className="h-6 w-6 p-0 hover:bg-white/20"
         >
           {isCollapsed ? (
             <ChevronDown className="h-4 w-4" />
@@ -70,7 +70,7 @@ export function AgentOptionsPanel({
 
       {/* Content area */}
       {!isCollapsed && (
-        <div className="p-4 bg-gradient-to-b from-white to-gray-50">
+        <div className="p-4 panel-content">
           <Form {...form}>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
               {/* Inventory selector */}

@@ -26,6 +26,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { IconChip } from '@/components/shared/icon-chip'
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,7 @@ import {
 import { HostDetailsDialog } from './dialogs/host-details-dialog'
 import { InventoryDialog } from './dialogs/inventory-dialog'
 import { DeviceSyncDialog } from './dialogs/device-sync-dialog'
+import { StatusMessageCard } from '../shared/components/status-message-card'
 
 import { useCheckmkHostsQuery } from './hooks/use-checkmk-hosts-query'
 import { useHostsFilter } from './hooks/use-hosts-filter'
@@ -158,7 +160,7 @@ export default function HostsInventoryPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-sm text-muted-foreground">Loading hosts...</p>
         </div>
       </div>
@@ -170,11 +172,11 @@ export default function HostsInventoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Server className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <Server className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Hosts & Inventory</h1>
+            <h1 className="text-3xl font-bold text-foreground">Hosts & Inventory</h1>
             <p className="text-muted-foreground mt-2">
               View and manage CheckMK hosts and inventory data
             </p>
@@ -184,39 +186,7 @@ export default function HostsInventoryPage() {
 
       {/* Status Message */}
       {statusMessage && (
-        <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
-          <Card
-            className={`min-w-[400px] max-w-[600px] shadow-lg ${
-              statusMessage.type === 'error'
-                ? 'border-red-500 bg-red-50'
-                : 'border-blue-500 bg-blue-50'
-            }`}
-          >
-            <CardContent className="p-4">
-              <div
-                className={`flex items-start gap-3 ${
-                  statusMessage.type === 'error' ? 'text-red-800' : 'text-blue-800'
-                }`}
-              >
-                <div className="flex-shrink-0 mt-0.5">
-                  {statusMessage.type === 'error' && <X className="h-5 w-5" />}
-                  {statusMessage.type === 'info' && <span className="text-lg">ℹ</span>}
-                </div>
-                <span className="flex-1 text-sm font-medium break-words">
-                  {statusMessage.text}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => clearMessage()}
-                  className="ml-2 h-6 w-6 p-0 flex-shrink-0 hover:bg-transparent"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <StatusMessageCard message={statusMessage} onDismiss={clearMessage} />
       )}
 
       {error && (
@@ -232,14 +202,14 @@ export default function HostsInventoryPage() {
 
       {/* Hosts table */}
       <div className="rounded-xl border shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+        <div className="panel-header py-2 px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Server className="h-4 w-4" />
               <div>
                 <h3 className="text-sm font-semibold">CheckMK Hosts Management</h3>
                 {activeFiltersCount > 0 || sortColumn ? (
-                  <p className="text-blue-100 text-xs">
+                  <p className="text-panel-header-muted text-xs">
                     Showing {filteredHosts.length} of {hosts.length} hosts
                     {activeFiltersCount > 0 &&
                       ` (${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} active)`}
@@ -247,7 +217,7 @@ export default function HostsInventoryPage() {
                       ` - Sorted by ${sortColumn.replace('_', ' ')} (${sortOrder})`}
                   </p>
                 ) : (
-                  <p className="text-blue-100 text-xs">
+                  <p className="text-panel-header-muted text-xs">
                     Showing all {hosts.length} hosts
                   </p>
                 )}
@@ -258,7 +228,7 @@ export default function HostsInventoryPage() {
                 <>
                   <Badge
                     variant="secondary"
-                    className="bg-white/20 text-white border-white/30"
+                    className="bg-card/20 text-current border-current/30"
                   >
                     {activeFiltersCount} active
                   </Badge>
@@ -266,7 +236,7 @@ export default function HostsInventoryPage() {
                     variant="ghost"
                     size="sm"
                     onClick={resetFilters}
-                    className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                    className="h-8 w-8 p-0 text-current hover:bg-card/20"
                     title="Clear All Filters"
                   >
                     <RotateCcw className="h-4 w-4" />
@@ -277,12 +247,12 @@ export default function HostsInventoryPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => void refetch()}
-                className="text-white hover:bg-white/20 text-xs h-7"
+                className="text-current hover:bg-card/20 text-xs h-7"
                 disabled={isLoading}
                 title="Reload hosts from CheckMK"
               >
                 {isLoading ? (
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1" />
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1" />
                 ) : (
                   <Search className="h-3 w-3 mr-1" />
                 )}
@@ -291,7 +261,7 @@ export default function HostsInventoryPage() {
             </div>
           </div>
         </div>
-        <div className="p-4 bg-white">
+        <div className="p-4 bg-card">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -316,7 +286,7 @@ export default function HostsInventoryPage() {
                           placeholder="Filter by name..."
                           value={hostNameFilter}
                           onChange={e => setHostNameFilter(e.target.value)}
-                          className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                          className="h-8 text-xs border-2 bg-card border-border hover:border-muted-foreground focus:border-primary"
                         />
                       </div>
                     </div>
@@ -446,7 +416,7 @@ export default function HostsInventoryPage() {
                         </td>
                         <td className="p-2">{ipAddress}</td>
                         <td className="p-2">
-                          <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                          <code className="text-xs bg-muted px-2 py-1 rounded">
                             {host.folder || '/'}
                           </code>
                         </td>
@@ -567,7 +537,7 @@ export default function HostsInventoryPage() {
                   value={pageSize.toString()}
                   onValueChange={value => setPageSize(parseInt(value))}
                 >
-                  <SelectTrigger className="w-20 h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                  <SelectTrigger className="w-20 h-8 border-2 bg-card border-border hover:border-muted-foreground focus:border-primary">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -618,7 +588,7 @@ export default function HostsInventoryPage() {
       <Dialog open={showErrorModal} onOpenChange={closeErrorModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-error-foreground">
               <AlertCircle className="h-5 w-5" />
               Sync Failed
             </DialogTitle>
@@ -627,8 +597,8 @@ export default function HostsInventoryPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-800 whitespace-pre-wrap">
+            <div className="bg-error border border-error-border rounded-lg p-4">
+              <p className="text-sm text-error-foreground whitespace-pre-wrap">
                 {errorModalMessage}
               </p>
             </div>

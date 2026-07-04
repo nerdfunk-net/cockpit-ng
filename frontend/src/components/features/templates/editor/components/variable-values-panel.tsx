@@ -64,14 +64,14 @@ export function VariableValuesPanel({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-3 py-2 border-b border-t bg-gray-50">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      <div className="px-3 py-2 border-b border-t bg-muted">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Variable Details
         </span>
       </div>
       <div className="flex-1 overflow-y-auto p-3">
         {!selectedVariable && (
-          <p className="text-xs text-gray-400 text-center pt-4">
+          <p className="text-xs text-muted-foreground text-center pt-4">
             Select a variable above to view its details.
           </p>
         )}
@@ -80,7 +80,7 @@ export function VariableValuesPanel({
             {/* Variable name - only for custom variables */}
             {!selectedVariable.isDefault && (
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Name</Label>
+                <Label className="text-xs text-muted-foreground">Name</Label>
                 <Input
                   value={selectedVariable.name}
                   onChange={e =>
@@ -94,28 +94,28 @@ export function VariableValuesPanel({
 
             {/* Variable value */}
             <div className="space-y-1">
-              <Label className="text-xs text-gray-500">
+              <Label className="text-xs text-muted-foreground">
                 Value
                 {formattedValue.isJSON && (
-                  <span className="ml-2 text-blue-600 font-normal">(JSON Object)</span>
+                  <span className="ml-2 text-primary font-normal">(JSON Object)</span>
                 )}
               </Label>
               {selectedVariable.isAutoFilled ? (
                 selectedVariable.value ? (
-                  <pre className="text-xs bg-gray-50 px-2 py-1.5 rounded border border-gray-200 overflow-auto max-h-[400px] font-mono whitespace-pre">
+                  <pre className="text-xs bg-muted px-2 py-1.5 rounded border border-border overflow-auto max-h-[400px] font-mono whitespace-pre">
                     {formattedValue.formatted}
                   </pre>
                 ) : selectedVariable.requiresExecution ? (
                   <div className="space-y-2">
-                    <div className="text-xs text-orange-600 bg-orange-50 px-3 py-2 rounded border border-orange-200">
+                    <div className="text-xs bg-warning border border-warning-border text-warning-foreground px-3 py-2 rounded">
                       <p className="font-medium mb-1">⚡ Command Execution Required</p>
-                      <p className="text-gray-600">
+                      <p>
                         Execute the pre-run command to populate both{' '}
-                        <code className="font-mono bg-orange-100 px-1">
+                        <code className="font-mono bg-warning-border/40 px-1">
                           pre_run.raw
                         </code>{' '}
                         and{' '}
-                        <code className="font-mono bg-orange-100 px-1">
+                        <code className="font-mono bg-warning-border/40 px-1">
                           pre_run.parsed
                         </code>{' '}
                         variables.
@@ -126,7 +126,7 @@ export function VariableValuesPanel({
                       onClick={handleExecuteCommand}
                       disabled={selectedVariable.isExecuting}
                       size="sm"
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full"
                     >
                       {selectedVariable.isExecuting ? (
                         <>
@@ -142,7 +142,7 @@ export function VariableValuesPanel({
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500 bg-gray-50 px-2 py-1.5 rounded italic">
+                  <p className="text-xs text-muted-foreground bg-muted px-2 py-1.5 rounded italic">
                     Auto-filled at render time from backend context
                   </p>
                 )
@@ -175,10 +175,10 @@ export function VariableValuesPanel({
           <div className="space-y-2 mt-2">
             {variables.map(v => (
               <div key={v.id} className="flex items-start gap-2 text-xs">
-                <span className="font-mono text-gray-700 font-medium min-w-[100px] flex-shrink-0">
+                <span className="font-mono text-foreground font-medium min-w-[100px] flex-shrink-0">
                   {v.name || '(unnamed)'}
                 </span>
-                <span className="text-gray-400 truncate">
+                <span className="text-muted-foreground truncate">
                   {v.isAutoFilled
                     ? v.value
                       ? `${v.value.substring(0, 50)}...`

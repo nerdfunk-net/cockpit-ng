@@ -106,13 +106,13 @@ export function DashboardPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse text-slate-500">Loading dashboard...</div>
+        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 p-6 bg-slate-50/50 min-h-screen">
+    <div className="space-y-6 p-6 bg-muted/50 min-h-screen">
       <DashboardToolbar
         isEditing={isEditing}
         isSaving={saveDashboardLayout.isPending}
@@ -124,7 +124,7 @@ export function DashboardPage() {
       />
 
       {isEditing && (
-        <div className="rounded-lg border border-dashed border-blue-300 bg-blue-50/50 px-4 py-2 text-sm text-blue-600">
+        <div className="rounded-lg border border-dashed border-info-border bg-info px-4 py-2 text-sm text-info-foreground">
           Edit mode — drag cards to reposition, resize from the corner, or remove with ✕
         </div>
       )}

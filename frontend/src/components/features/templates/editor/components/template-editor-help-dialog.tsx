@@ -26,7 +26,7 @@ export function TemplateEditorHelpDialog({
       <DialogContent className="!max-w-[1400px] w-[95vw] max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-2xl">
-            <HelpCircle className="h-6 w-6 text-purple-600" />
+            <HelpCircle className="h-6 w-6 text-primary" />
             Template Editor Help
           </DialogTitle>
         </DialogHeader>

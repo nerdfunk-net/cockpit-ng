@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo, Suspense } from 'react'
 import { useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
+import { IconChip } from '@/components/shared/icon-chip'
 import { FileCode, Play, Save, RefreshCw, HelpCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useTemplateMutations } from '@/components/features/settings/templates/hooks/use-template-mutations'
@@ -615,7 +616,7 @@ function TemplateEditorContent() {
   if (editor.isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="flex items-center gap-3 text-gray-600">
+        <div className="flex items-center gap-3 text-muted-foreground">
           <RefreshCw className="h-5 w-5 animate-spin" />
           <span>Loading template...</span>
         </div>
@@ -630,11 +631,11 @@ function TemplateEditorContent() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-purple-100 p-2 rounded-lg">
-            <FileCode className="h-6 w-6 text-purple-600" />
-          </div>
+          <IconChip variant="primary">
+            <FileCode className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">
+            <h1 className="text-3xl font-bold text-foreground">
               {editor.isEditMode ? 'Edit Template' : 'Template Editor'}
             </h1>
             <p className="text-muted-foreground mt-2">
@@ -646,7 +647,6 @@ function TemplateEditorContent() {
           variant="outline"
           size="icon"
           onClick={() => setHelpDialogOpen(true)}
-          className="border-purple-300 text-purple-700 hover:bg-purple-50"
           title="Help & Documentation"
         >
           <HelpCircle className="h-5 w-5" />
@@ -674,7 +674,7 @@ function TemplateEditorContent() {
         style={{ minHeight: '500px' }}
       >
         {/* Left: Variables */}
-        <div className="flex flex-col overflow-hidden border rounded-lg shadow-sm bg-white">
+        <div className="flex flex-col overflow-hidden border rounded-lg shadow-sm bg-card">
           <div className="flex-[2] min-h-0 overflow-hidden">
             <VariablesPanel
               variables={editor.variableManager.variables}
@@ -712,7 +712,6 @@ function TemplateEditorContent() {
           variant="outline"
           onClick={handleRender}
           disabled={renderer.isRendering || !watchedContent.trim()}
-          className="border-blue-300 text-blue-700 hover:bg-blue-50"
         >
           {renderer.isRendering ? (
             <RefreshCw className="h-4 w-4 animate-spin mr-1" />
@@ -722,11 +721,7 @@ function TemplateEditorContent() {
           {renderer.isRendering ? 'Rendering...' : 'Show Rendered Template'}
         </Button>
 
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="bg-green-600 hover:bg-green-700"
-        >
+        <Button onClick={handleSave} disabled={isSaving}>
           {isSaving && <RefreshCw className="h-4 w-4 animate-spin mr-1" />}
           <Save className="h-4 w-4 mr-1" />
           {editor.isEditMode ? 'Update Template' : 'Save Template'}
@@ -764,7 +759,7 @@ export function TemplateEditorPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-24">
-          <div className="flex items-center gap-3 text-gray-600">
+          <div className="flex items-center gap-3 text-muted-foreground">
             <RefreshCw className="h-5 w-5 animate-spin" />
             <span>Loading editor...</span>
           </div>

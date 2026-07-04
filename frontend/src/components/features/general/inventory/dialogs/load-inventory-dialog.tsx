@@ -93,7 +93,7 @@ export function LoadInventoryDialog({
       <DialogContent className="sm:max-w-[700px] max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5 text-blue-600" />
+            <FolderOpen className="h-5 w-5 text-primary" />
             Load Saved Inventory
           </DialogTitle>
           <DialogDescription>
@@ -104,7 +104,7 @@ export function LoadInventoryDialog({
         <div className="grid gap-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search inventories..."
               value={searchTerm}
@@ -116,20 +116,20 @@ export function LoadInventoryDialog({
           {/* Inventory List */}
           <div className="border rounded-md max-h-[400px] overflow-y-auto">
             {isLoading ? (
-              <div className="p-8 text-center text-gray-500">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2" />
+              <div className="p-8 text-center text-muted-foreground">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
                 Loading inventories...
               </div>
             ) : filteredInventories.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
+              <div className="p-8 text-center text-muted-foreground">
                 {searchTerm ? (
                   <>
-                    <Search className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                    <Search className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
                     <p>No inventories found matching &ldquo;{searchTerm}&rdquo;</p>
                   </>
                 ) : (
                   <>
-                    <FolderOpen className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                    <FolderOpen className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
                     <p>No saved inventories yet</p>
                     <p className="text-sm mt-1">
                       Create device filters and save them to get started
@@ -142,14 +142,14 @@ export function LoadInventoryDialog({
                 {filteredInventories.map(inventory => (
                   <div
                     key={inventory.id}
-                    className="p-4 hover:bg-gray-50 cursor-pointer transition-colors group"
+                    className="p-4 hover:bg-muted cursor-pointer transition-colors group"
                     onClick={() => handleLoad(inventory)}
                     onDoubleClick={() => handleLoad(inventory)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-gray-900 truncate">
+                          <h4 className="font-medium text-foreground truncate">
                             {inventory.name}
                           </h4>
                           <Badge
@@ -172,11 +172,11 @@ export function LoadInventoryDialog({
                           </Badge>
                         </div>
                         {inventory.description && (
-                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                             {inventory.description}
                           </p>
                         )}
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span>{inventory.conditions.length} condition(s)</span>
                           <span>•</span>
                           <span>Created by {inventory.created_by}</span>
@@ -192,7 +192,7 @@ export function LoadInventoryDialog({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={e => handleDelete(e, inventory.id, inventory.name)}
                       >
                         <Trash2 className="h-4 w-4" />

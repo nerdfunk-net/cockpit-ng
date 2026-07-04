@@ -430,7 +430,7 @@ export function ProfilePage() {
       <div className="container mx-auto py-8">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent" />
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
           </div>
         </div>
       </div>
@@ -441,21 +441,21 @@ export function ProfilePage() {
     <div className="container mx-auto py-8">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center space-x-4">
-          <Avatar className="h-16 w-16 ring-2 ring-blue-100">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-16 w-16 ring-2 ring-primary/20">
             <AvatarImage
               src={generateAvatarDataUrl(formData.username, 64)}
               onError={e => {
                 e.currentTarget.style.display = 'none'
               }}
             />
-            <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold text-lg">
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
               {formData.username.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Profile Settings</h1>
-            <p className="text-slate-600">
+            <h1 className="text-2xl font-bold text-foreground">Profile Settings</h1>
+            <p className="text-muted-foreground">
               Manage your account settings and preferences
             </p>
           </div>
@@ -526,11 +526,11 @@ export function ProfilePage() {
                 formData.api_key.length > 0 &&
                 formData.api_key.length !== 42)
             }
-            className="min-w-[120px] bg-green-600 hover:bg-green-700 text-white"
+            className="min-w-[120px]"
           >
             {isSaving ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-foreground border-t-transparent mr-2" />
                 Saving...
               </>
             ) : (

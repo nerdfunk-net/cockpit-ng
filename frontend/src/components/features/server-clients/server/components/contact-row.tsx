@@ -120,7 +120,7 @@ export function ContactRow({ server }: ContactRowProps) {
     <>
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-gray-500 uppercase tracking-wide">Contacts</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-wide">Contacts</span>
           <Button
             type="button"
             variant="outline"
@@ -146,7 +146,7 @@ export function ContactRow({ server }: ContactRowProps) {
                 key={`${contact.id}-${contact.association_id ?? index}`}
                 className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center px-2 py-1.5 border-t border-border text-sm"
               >
-                <span className="font-medium text-gray-800 truncate">{contact.name}</span>
+                <span className="font-medium text-foreground truncate">{contact.name}</span>
                 <span className="text-muted-foreground truncate">{contact.role.name}</span>
                 <div className="flex items-center gap-0.5">
                   <button
@@ -154,7 +154,7 @@ export function ContactRow({ server }: ContactRowProps) {
                     onClick={() => openEditDialog(index)}
                     title="Edit contact"
                     disabled={updateServer.isPending}
-                    className="shrink-0 p-1 text-gray-400 hover:text-blue-500 transition-colors disabled:opacity-50"
+                    className="shrink-0 p-1 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
@@ -163,7 +163,7 @@ export function ContactRow({ server }: ContactRowProps) {
                     onClick={() => handleRemove(index)}
                     title="Remove contact"
                     disabled={updateServer.isPending}
-                    className="shrink-0 p-1 text-gray-400 hover:text-destructive transition-colors disabled:opacity-50"
+                    className="shrink-0 p-1 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
                   >
                     <Minus className="h-3 w-3" />
                   </button>

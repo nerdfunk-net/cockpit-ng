@@ -40,7 +40,7 @@ export function AnsibleFactsModal({
       <DialogContent className="!max-w-[calc(72rem*1.2)] sm:!max-w-[calc(72rem*1.2)] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileJson className="h-5 w-5 text-blue-600" />
+            <FileJson className="h-5 w-5 text-primary" />
             Ansible Facts — {label}
           </DialogTitle>
         </DialogHeader>
@@ -49,7 +49,7 @@ export function AnsibleFactsModal({
           <Button variant="outline" size="sm" onClick={handleCopy} disabled={!json}>
             {copied ? (
               <>
-                <Check className="h-3.5 w-3.5 mr-1.5 text-green-600" />
+                <Check className="h-3.5 w-3.5 mr-1.5 text-success-foreground" />
                 Copied
               </>
             ) : (
@@ -61,13 +61,13 @@ export function AnsibleFactsModal({
           </Button>
         </div>
 
-        <div className="flex-1 overflow-auto min-h-0 border border-gray-200 rounded-md bg-gray-50">
+        <div className="flex-1 overflow-auto min-h-0 border border-border rounded-md bg-muted">
           {json ? (
-            <pre className="p-4 text-xs font-mono text-gray-800 whitespace-pre leading-relaxed">
+            <pre className="p-4 text-xs font-mono text-foreground whitespace-pre leading-relaxed">
               {json}
             </pre>
           ) : (
-            <div className="flex items-center justify-center h-32 text-sm text-gray-400">
+            <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
               No Ansible facts available for this server.
             </div>
           )}

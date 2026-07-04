@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { IconChip } from '@/components/shared/icon-chip'
 import { useLogsQuery, useLogEventTypesQuery } from '@/hooks/queries/use-logs-query'
 import { LogsColumnSelector } from './components/logs-column-selector'
 import type { ColumnDef } from './components/logs-column-selector'
@@ -60,14 +61,14 @@ const PAGE_SIZE_OPTIONS = [25, 50, 100, 200]
 
 function SeverityBadge({ severity }: { severity: string }) {
   const classes: Record<string, string> = {
-    info: 'bg-blue-100 text-blue-800',
-    warning: 'bg-amber-100 text-amber-800',
-    error: 'bg-red-100 text-red-800',
-    critical: 'bg-red-200 text-red-900',
+    info: 'status-info',
+    warning: 'status-warning',
+    error: 'status-error',
+    critical: 'status-error font-semibold',
   }
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${classes[severity] ?? 'bg-gray-100 text-gray-700'}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${classes[severity] ?? 'bg-muted text-muted-foreground'}`}
     >
       {severity}
     </span>
@@ -192,12 +193,12 @@ export default function LogsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="bg-orange-100 p-2 rounded-lg">
-            <ScrollText className="h-6 w-6 text-orange-600" />
-          </div>
+          <IconChip variant="warning">
+            <ScrollText className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Audit Logs</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold text-foreground">Audit Logs</h1>
+            <p className="text-muted-foreground mt-1">
               View system and user activity audit trail
             </p>
           </div>
@@ -215,14 +216,14 @@ export default function LogsPage() {
       )}
 
       {/* Main Content Section */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
         {/* Gradient header */}
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <ScrollText className="h-4 w-4" />
             <div>
               <span className="text-sm font-medium">Audit Log Entries</span>
-              <p className="text-blue-100 text-xs">
+              <p className="text-panel-header-muted text-xs">
                 {isLoading
                   ? 'Loading…'
                   : `Showing ${items.length} of ${total} entries${hasFilters ? ' (filtered)' : ''}`}
@@ -236,7 +237,7 @@ export default function LogsPage() {
                 variant="ghost"
                 size="sm"
                 onClick={clearFilters}
-                className="text-white hover:bg-white/20 text-xs h-6"
+                className="text-current hover:bg-card/20 text-xs h-6"
               >
                 <X className="h-3 w-3 mr-1" />
                 Clear
@@ -247,10 +248,10 @@ export default function LogsPage() {
               size="sm"
               onClick={() => void refetch()}
               disabled={isLoading}
-              className="text-white hover:bg-white/20 text-xs h-6"
+              className="text-current hover:bg-card/20 text-xs h-6"
             >
               {isLoading ? (
-                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1" />
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-1" />
               ) : (
                 <RefreshCw className="h-3 w-3 mr-1" />
               )}
@@ -265,7 +266,7 @@ export default function LogsPage() {
         </div>
 
         {/* Filters row — below gradient title, above table */}
-        <div className="px-4 py-2 bg-blue-50 border-b flex flex-wrap gap-2">
+        <div className="px-4 py-2 bg-muted border-b flex flex-wrap gap-2">
           <Input
             placeholder="Search message…"
             value={search}
@@ -300,22 +301,24 @@ export default function LogsPage() {
         </div>
 
         {/* Table content */}
-        <div className="p-4 bg-gradient-to-b from-white to-gray-50">
+        <div className="p-4 panel-content">
           {isLoading && items.length === 0 ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
-              <span className="ml-2 text-sm text-gray-600">Loading audit logs…</span>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">
+                Loading audit logs…
+              </span>
             </div>
           ) : items.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <ScrollText className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+            <div className="text-center py-12 text-muted-foreground">
+              <ScrollText className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
               <p className="text-lg font-medium">No log entries found</p>
               {hasFilters && (
                 <p className="text-sm mt-1">
                   Try{' '}
                   <button
                     onClick={clearFilters}
-                    className="text-blue-600 hover:underline"
+                    className="text-primary hover:underline"
                   >
                     clearing the filters
                   </button>
@@ -346,15 +349,15 @@ export default function LogsPage() {
                   ))}
                 </colgroup>
                 <thead>
-                  <tr className="border-b bg-gray-50">
+                  <tr className="border-b bg-muted">
                     {visibleColumns.map(col => (
                       <th
                         key={col.id}
-                        className="text-left px-3 py-2 font-medium text-gray-600 whitespace-nowrap relative select-none overflow-hidden"
+                        className="text-left px-3 py-2 font-medium text-muted-foreground whitespace-nowrap relative select-none overflow-hidden"
                       >
                         <span className="block truncate">{col.label}</span>
                         <div
-                          className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400 transition-colors"
+                          className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-primary transition-colors"
                           onMouseDown={e => handleResizeStart(col.id, e)}
                         />
                       </th>
@@ -365,7 +368,7 @@ export default function LogsPage() {
                   {items.map(item => (
                     <tr
                       key={item.id}
-                      className="border-b hover:bg-gray-50 transition-colors"
+                      className="border-b hover:bg-muted transition-colors"
                     >
                       {visibleColumns.map(col => (
                         <td
@@ -375,7 +378,7 @@ export default function LogsPage() {
                           {col.id === 'severity' ? (
                             <SeverityBadge severity={item.severity} />
                           ) : col.id === 'created_at' ? (
-                            <span className="whitespace-nowrap text-xs text-gray-600">
+                            <span className="whitespace-nowrap text-xs text-muted-foreground">
                               {formatDate(item.created_at)}
                             </span>
                           ) : col.id === 'message' ? (
@@ -384,7 +387,7 @@ export default function LogsPage() {
                             </span>
                           ) : col.id === 'extra_data' ? (
                             <span
-                              className="block truncate font-mono text-xs text-gray-500"
+                              className="block truncate font-mono text-xs text-muted-foreground"
                               title={item.extra_data ?? ''}
                             >
                               {item.extra_data ?? '—'}
@@ -407,8 +410,8 @@ export default function LogsPage() {
         </div>
 
         {/* Pagination footer */}
-        <div className="border-t bg-gray-50 px-4 py-2 flex items-center justify-between gap-4 rounded-b-lg">
-          <div className="flex items-center gap-2 text-xs text-gray-600">
+        <div className="border-t bg-muted px-4 py-2 flex items-center justify-between gap-4 rounded-b-lg">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>Rows per page:</span>
             <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
               <SelectTrigger className="h-6 text-xs w-16">
@@ -424,7 +427,7 @@ export default function LogsPage() {
             </Select>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-gray-600">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>
               Page {page} of {totalPages} ({total} total)
             </span>

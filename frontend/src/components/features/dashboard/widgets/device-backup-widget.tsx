@@ -22,6 +22,8 @@ import {
   Search,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { IconChip } from '@/components/shared/icon-chip'
+import { StatusBadge } from '@/components/shared/status-badge'
 import { useDeviceBackupQuery } from '@/hooks/queries/use-device-backup-query'
 
 function formatTimeAgo(timestamp: string | null): string {
@@ -75,15 +77,15 @@ export function DeviceBackupWidget() {
       >
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <div className="p-3 rounded-xl bg-blue-100 ring-1 ring-white/20">
-              <HardDrive className="h-6 w-6 text-blue-600" />
-            </div>
+            <IconChip variant="primary" className="p-3 rounded-xl">
+              <HardDrive className="h-6 w-6" />
+            </IconChip>
             <div className="text-right">
-              <div className="text-3xl font-bold text-slate-900">
+              <div className="text-3xl font-bold text-foreground">
                 {isLoading ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 ) : isError ? (
-                  <AlertTriangle className="h-8 w-8 text-red-500" />
+                  <AlertTriangle className="h-8 w-8 text-error-foreground" />
                 ) : (
                   `${successRate}%`
                 )}
@@ -92,16 +94,16 @@ export function DeviceBackupWidget() {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <CardTitle className="text-sm font-semibold text-slate-700 mb-2">
+          <CardTitle className="text-sm font-semibold text-foreground mb-2">
             Device Backup Health
           </CardTitle>
           {!isLoading && !isError && (
             <div className="space-y-1">
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 {data?.devices_with_successful_backup ?? 0} successful,{' '}
                 {data?.devices_with_failed_backup ?? 0} failed
               </p>
-              <p className="text-xs text-blue-600 font-medium">Click to view details →</p>
+              <p className="text-xs text-primary font-medium">Click to view details →</p>
             </div>
           )}
         </CardContent>
@@ -109,35 +111,35 @@ export function DeviceBackupWidget() {
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-5xl max-h-[80vh] p-0 gap-0 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
-            <DialogHeader className="text-white">
-              <DialogTitle className="text-lg font-semibold text-white">
+          <div className="panel-header px-6 py-4">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold">
                 Device Backup Status Report
               </DialogTitle>
-              <DialogDescription className="text-blue-50">
+              <DialogDescription className="text-panel-header-muted">
                 Detailed per-device backup analysis
               </DialogDescription>
             </DialogHeader>
           </div>
 
-          <div className="grid grid-cols-4 gap-4 p-6 bg-slate-50 border-b">
+          <div className="grid grid-cols-4 gap-4 p-6 bg-muted border-b">
             {(['all', 'success', 'failed'] as const).map(f => (
               <button
                 key={f}
                 onClick={() => setStatusFilter(f)}
                 className={cn(
-                  'text-center p-3 rounded-lg transition-all hover:bg-white hover:shadow-sm',
-                  statusFilter === f ? 'bg-white shadow-sm ring-2 ring-blue-200' : ''
+                  'text-center p-3 rounded-lg transition-all hover:bg-card hover:shadow-sm',
+                  statusFilter === f ? 'bg-card shadow-sm ring-2 ring-primary/30' : ''
                 )}
               >
                 <div
                   className={cn(
                     'text-2xl font-bold',
                     f === 'success'
-                      ? 'text-green-600'
+                      ? 'text-success-foreground'
                       : f === 'failed'
-                        ? 'text-red-600'
-                        : 'text-slate-900'
+                        ? 'text-error-foreground'
+                        : 'text-foreground'
                   )}
                 >
                   {f === 'all'
@@ -146,26 +148,26 @@ export function DeviceBackupWidget() {
                       ? data?.devices_with_successful_backup ?? 0
                       : data?.devices_with_failed_backup ?? 0}
                 </div>
-                <div className="text-xs text-slate-600 capitalize">
+                <div className="text-xs text-muted-foreground capitalize">
                   {f === 'all' ? 'Total Devices' : f === 'success' ? 'Successful' : 'Failed'}
                 </div>
               </button>
             ))}
             <div className="text-center p-3">
-              <div className="text-2xl font-bold text-blue-600">{successRate}%</div>
-              <div className="text-xs text-slate-600">Success Rate</div>
+              <div className="text-2xl font-bold text-primary">{successRate}%</div>
+              <div className="text-xs text-muted-foreground">Success Rate</div>
             </div>
           </div>
 
           <div className="px-6 pt-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search devices..."
                 value={searchFilter}
                 onChange={e => setSearchFilter(e.target.value)}
-                className="pl-10 bg-white"
+                className="pl-10 bg-card"
               />
             </div>
           </div>
@@ -173,7 +175,7 @@ export function DeviceBackupWidget() {
           <div className="overflow-y-auto max-h-[400px] px-6 pb-6">
             <div className="space-y-3 mt-4">
               {filteredDevices.length === 0 ? (
-                <div className="text-center py-8 text-slate-500">
+                <div className="text-center py-8 text-muted-foreground">
                   <p>No devices found</p>
                 </div>
               ) : (
@@ -189,20 +191,20 @@ export function DeviceBackupWidget() {
                       <div className="flex items-start gap-3 flex-1">
                         <div className="mt-1">
                           {device.last_backup_success ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            <CheckCircle2 className="h-5 w-5 text-success-foreground" />
                           ) : (
-                            <XCircle className="h-5 w-5 text-red-600" />
+                            <XCircle className="h-5 w-5 text-error-foreground" />
                           )}
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-semibold text-slate-900">{device.device_name}</h4>
-                          <p className="text-xs text-slate-500 font-mono mt-0.5">{device.device_id}</p>
+                          <h4 className="font-semibold text-foreground">{device.device_name}</h4>
+                          <p className="text-xs text-muted-foreground font-mono mt-0.5">{device.device_id}</p>
                           <div className="flex items-center gap-4 mt-2">
-                            <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                               <Clock className="h-3.5 w-3.5" />
                               <span>{formatTimeAgo(device.last_backup_time)}</span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                               <TrendingUp className="h-3.5 w-3.5" />
                               <span title="Total backup history: successful / failed">
                                 History: {device.total_successful_backups} / {device.total_failed_backups}
@@ -210,21 +212,14 @@ export function DeviceBackupWidget() {
                             </div>
                           </div>
                           {!device.last_backup_success && device.last_error && (
-                            <div className="mt-2 p-2 bg-red-100 border border-red-200 rounded text-xs text-red-800">
+                            <div className="mt-2 p-2 bg-error border border-error-border rounded text-xs text-error-foreground">
                               <span className="font-semibold">Error:</span> {device.last_error}
                             </div>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div
-                          className={cn(
-                            'px-2 py-1 rounded-full text-xs font-semibold',
-                            device.last_backup_success
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          )}
-                        >
+                        <StatusBadge variant={device.last_backup_success ? 'success' : 'error'}>
                           {device.total_successful_backups > 0
                             ? Math.round(
                                 (device.total_successful_backups /
@@ -233,7 +228,7 @@ export function DeviceBackupWidget() {
                               )
                             : 0}
                           %
-                        </div>
+                        </StatusBadge>
                       </div>
                     </div>
                   </div>
@@ -242,8 +237,8 @@ export function DeviceBackupWidget() {
             </div>
           </div>
 
-          <div className="flex justify-between items-center px-6 py-3 bg-slate-50 border-t">
-            <p className="text-xs text-slate-500">
+          <div className="flex justify-between items-center px-6 py-3 bg-muted border-t">
+            <p className="text-xs text-muted-foreground">
               {filteredDevices.length} of {data?.total_devices ?? 0} devices shown
             </p>
             <Button onClick={() => setIsModalOpen(false)} size="sm">

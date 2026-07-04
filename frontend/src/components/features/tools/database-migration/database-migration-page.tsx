@@ -38,6 +38,7 @@ import {
 import Link from 'next/link'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
+import { IconChip } from '@/components/shared/icon-chip'
 
 interface ColumnDiff {
   table: string
@@ -218,7 +219,7 @@ export default function DatabaseMigrationPage() {
   }, [fetchStatus])
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -227,13 +228,13 @@ export default function DatabaseMigrationPage() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-500 text-white shadow-sm">
-              <Database className="w-6 h-6" />
-            </div>
+          <div className="flex items-center gap-4">
+            <IconChip variant="primary">
+              <Database className="h-6 w-6" />
+            </IconChip>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Database Migration</h1>
-              <p className="text-gray-500 text-sm">
+              <h1 className="text-2xl font-bold text-foreground">Database Migration</h1>
+              <p className="text-muted-foreground text-sm">
                 Compare and synchronize database schema against SQLAlchemy models
               </p>
             </div>
@@ -259,10 +260,10 @@ export default function DatabaseMigrationPage() {
               Detected differences between the live database and SQLAlchemy model
               definitions. Missing items are created on sync. Risky column changes
               require force apply or{' '}
-              <code className="text-xs bg-gray-100 px-1 rounded">
+              <code className="text-xs bg-muted px-1 rounded">
                 APPLY_RISKY_DATABASE_MIGRATION=true
               </code>{' '}
-              in <code className="text-xs bg-gray-100 px-1 rounded">.env</code>.
+              in <code className="text-xs bg-muted px-1 rounded">.env</code>.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -276,7 +277,7 @@ export default function DatabaseMigrationPage() {
 
             {loading ? (
               <div className="flex justify-center p-8">
-                <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
+                <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
               </div>
             ) : status ? (
               <div className="space-y-6">
@@ -309,15 +310,15 @@ export default function DatabaseMigrationPage() {
                 {status.missing_tables.length > 0 && (
                   <section>
                     <h3 className="font-medium mb-2 flex items-center gap-2 text-sm">
-                      <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-destructive shrink-0" />
                       Missing Tables ({status.missing_tables.length})
-                      <span className="text-gray-400 font-normal">— will be created on sync</span>
+                      <span className="text-muted-foreground font-normal">— will be created on sync</span>
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {status.missing_tables.map(t => (
                         <div
                           key={t}
-                          className="bg-white border rounded px-3 py-1.5 text-sm font-mono text-gray-700 shadow-sm"
+                          className="bg-card border rounded px-3 py-1.5 text-sm font-mono text-muted-foreground shadow-sm"
                         >
                           {t}
                         </div>
@@ -330,14 +331,14 @@ export default function DatabaseMigrationPage() {
                 {status.missing_columns.length > 0 && (
                   <section>
                     <h3 className="font-medium mb-2 flex items-center gap-2 text-sm">
-                      <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-warning-foreground shrink-0" />
                       Missing Columns ({status.missing_columns.length})
-                      <span className="text-gray-400 font-normal">— will be added on sync</span>
+                      <span className="text-muted-foreground font-normal">— will be added on sync</span>
                     </h3>
                     <div className="border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-gray-50">
+                          <TableRow className="bg-muted">
                             <TableHead>Table</TableHead>
                             <TableHead>Column</TableHead>
                           </TableRow>
@@ -346,7 +347,7 @@ export default function DatabaseMigrationPage() {
                           {status.missing_columns.map(item => (
                             <TableRow key={`${item.table}-${item.column}`}>
                               <TableCell className="font-medium">{item.table}</TableCell>
-                              <TableCell className="font-mono text-blue-600">
+                              <TableCell className="font-mono text-primary">
                                 {item.column}
                               </TableCell>
                             </TableRow>
@@ -361,14 +362,14 @@ export default function DatabaseMigrationPage() {
                 {status.missing_indexes.length > 0 && (
                   <section>
                     <h3 className="font-medium mb-2 flex items-center gap-2 text-sm">
-                      <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
                       Missing Indexes ({status.missing_indexes.length})
-                      <span className="text-gray-400 font-normal">— will be created on sync</span>
+                      <span className="text-muted-foreground font-normal">— will be created on sync</span>
                     </h3>
                     <div className="border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-gray-50">
+                          <TableRow className="bg-muted">
                             <TableHead>Table</TableHead>
                             <TableHead>Index</TableHead>
                           </TableRow>
@@ -377,7 +378,7 @@ export default function DatabaseMigrationPage() {
                           {status.missing_indexes.map(item => (
                             <TableRow key={`${item.table}-${item.index}`}>
                               <TableCell className="font-medium">{item.table}</TableCell>
-                              <TableCell className="font-mono text-purple-600">
+                              <TableCell className="font-mono text-primary">
                                 {item.index}
                               </TableCell>
                             </TableRow>
@@ -392,14 +393,14 @@ export default function DatabaseMigrationPage() {
                 {safeDiffs.length > 0 && (
                   <section>
                     <h3 className="font-medium mb-2 flex items-center gap-2 text-sm">
-                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
                       Safe Column Changes ({safeDiffs.length})
-                      <span className="text-gray-400 font-normal">— applied on sync</span>
+                      <span className="text-muted-foreground font-normal">— applied on sync</span>
                     </h3>
                     <div className="border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-gray-50">
+                          <TableRow className="bg-muted">
                             <TableHead>Table</TableHead>
                             <TableHead>Column</TableHead>
                             <TableHead>Change</TableHead>
@@ -409,16 +410,16 @@ export default function DatabaseMigrationPage() {
                           {safeDiffs.map(cd => (
                             <TableRow key={`${cd.table}-${cd.column}`}>
                               <TableCell className="font-medium">{cd.table}</TableCell>
-                              <TableCell className="font-mono text-blue-600">
+                              <TableCell className="font-mono text-primary">
                                 {cd.column}
                               </TableCell>
-                              <TableCell className="text-sm text-gray-600">
+                              <TableCell className="text-sm text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <span className="font-mono">{cd.db_type}</span>
                                   <ArrowRight className="w-3 h-3 shrink-0" />
                                   <span className="font-mono">{cd.model_type}</span>
                                   {cd.nullable_changed && (
-                                    <span className="ml-1 text-gray-400">
+                                    <span className="ml-1 text-muted-foreground">
                                       {cd.model_nullable ? '(drop NOT NULL)' : '(add NOT NULL)'}
                                     </span>
                                   )}
@@ -436,32 +437,32 @@ export default function DatabaseMigrationPage() {
                 {riskyDiffs.length > 0 && (
                   <section>
                     <h3 className="font-medium mb-2 flex items-center gap-2 text-sm">
-                      <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-destructive shrink-0" />
                       Risky Column Changes ({riskyDiffs.length})
                       <Badge variant="destructive" className="text-xs ml-1">
                         Force required
                       </Badge>
                     </h3>
-                    <Alert className="mb-2 border-red-200 bg-red-50 text-red-800">
-                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                    <Alert className="mb-2 status-error border">
+                      <AlertTriangle className="h-4 w-4" />
                       <AlertDescription className="text-sm">
                         These changes may cause data loss (type casts) or fail if existing
                         rows contain NULL values (NOT NULL addition). Use Force Apply or set{' '}
-                        <code className="bg-red-100 px-1 rounded text-xs">
+                        <code className="bg-muted px-1 rounded text-xs">
                           APPLY_RISKY_DATABASE_MIGRATION=true
                         </code>{' '}
-                        in <code className="bg-red-100 px-1 rounded text-xs">.env</code>.
+                        in <code className="bg-muted px-1 rounded text-xs">.env</code>.
                         Alternatively, run{' '}
-                        <code className="bg-red-100 px-1 rounded text-xs">
+                        <code className="bg-muted px-1 rounded text-xs">
                           python scripts/database/sync.py --migrate --force
                         </code>
                         .
                       </AlertDescription>
                     </Alert>
-                    <div className="border border-red-200 rounded-lg overflow-hidden">
+                    <div className="border border-error-border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-red-50">
+                          <TableRow className="bg-error">
                             <TableHead>Table</TableHead>
                             <TableHead>Column</TableHead>
                             <TableHead>Change</TableHead>
@@ -471,16 +472,16 @@ export default function DatabaseMigrationPage() {
                           {riskyDiffs.map(cd => (
                             <TableRow key={`${cd.table}-${cd.column}`}>
                               <TableCell className="font-medium">{cd.table}</TableCell>
-                              <TableCell className="font-mono text-red-600">
+                              <TableCell className="font-mono text-error-foreground">
                                 {cd.column}
                               </TableCell>
-                              <TableCell className="text-sm text-gray-600">
+                              <TableCell className="text-sm text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <span className="font-mono">{cd.db_type}</span>
                                   <ArrowRight className="w-3 h-3 shrink-0" />
                                   <span className="font-mono">{cd.model_type}</span>
                                   {cd.nullable_changed && (
-                                    <span className="ml-1 text-gray-400">
+                                    <span className="ml-1 text-muted-foreground">
                                       {cd.model_nullable ? '(drop NOT NULL)' : '(add NOT NULL)'}
                                     </span>
                                   )}
@@ -499,20 +500,20 @@ export default function DatabaseMigrationPage() {
                   status.extra_columns.length > 0 ||
                   status.extra_indexes.length > 0) && (
                   <section>
-                    <h3 className="font-medium mb-2 flex items-center gap-2 text-sm text-gray-500">
+                    <h3 className="font-medium mb-2 flex items-center gap-2 text-sm text-muted-foreground">
                       <Info className="w-4 h-4 shrink-0" />
                       Extra items in database (not in models)
                       <span className="font-normal">— informational only, not removed</span>
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {status.extra_tables.length > 0 && (
-                        <div className="bg-gray-50 border rounded-lg p-3">
-                          <p className="text-xs font-medium text-gray-500 mb-2">
+                        <div className="bg-muted border rounded-lg p-3">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">
                             Tables ({status.extra_tables.length})
                           </p>
                           <div className="space-y-1">
                             {status.extra_tables.map(t => (
-                              <div key={t} className="text-sm font-mono text-gray-600">
+                              <div key={t} className="text-sm font-mono text-muted-foreground">
                                 {t}
                               </div>
                             ))}
@@ -520,15 +521,15 @@ export default function DatabaseMigrationPage() {
                         </div>
                       )}
                       {status.extra_columns.length > 0 && (
-                        <div className="bg-gray-50 border rounded-lg p-3">
-                          <p className="text-xs font-medium text-gray-500 mb-2">
+                        <div className="bg-muted border rounded-lg p-3">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">
                             Columns ({status.extra_columns.length})
                           </p>
                           <div className="space-y-1">
                             {status.extra_columns.map(item => (
                               <div
                                 key={`${item.table}-${item.column}`}
-                                className="text-sm font-mono text-gray-600"
+                                className="text-sm font-mono text-muted-foreground"
                               >
                                 {item.table}.{item.column}
                               </div>
@@ -537,15 +538,15 @@ export default function DatabaseMigrationPage() {
                         </div>
                       )}
                       {status.extra_indexes.length > 0 && (
-                        <div className="bg-gray-50 border rounded-lg p-3">
-                          <p className="text-xs font-medium text-gray-500 mb-2">
+                        <div className="bg-muted border rounded-lg p-3">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">
                             Indexes ({status.extra_indexes.length})
                           </p>
                           <div className="space-y-1">
                             {status.extra_indexes.map(item => (
                               <div
                                 key={`${item.table}-${item.index}`}
-                                className="text-sm font-mono text-gray-600"
+                                className="text-sm font-mono text-muted-foreground"
                               >
                                 {item.index}
                               </div>
@@ -573,7 +574,6 @@ export default function DatabaseMigrationPage() {
                     <Button
                       onClick={handleSync}
                       disabled={migrating || !hasSafeChanges}
-                      className="bg-blue-600 hover:bg-blue-700"
                     >
                       {migrating ? (
                         <>
@@ -601,7 +601,7 @@ export default function DatabaseMigrationPage() {
                     {(migrationResult.tables_created > 0 ||
                       migrationResult.columns_added > 0 ||
                       migrationResult.indexes_created > 0) && (
-                      <ul className="text-sm space-y-0.5 mb-2 text-gray-700">
+                      <ul className="text-sm space-y-0.5 mb-2 text-muted-foreground">
                         {migrationResult.tables_created > 0 && (
                           <li>✓ {migrationResult.tables_created} table(s) created</li>
                         )}
@@ -615,10 +615,10 @@ export default function DatabaseMigrationPage() {
                     )}
                     {migrationResult.column_changes_applied.length > 0 && (
                       <div className="mb-2">
-                        <p className="text-xs font-bold uppercase text-gray-500 mb-1">
+                        <p className="text-xs font-bold uppercase text-muted-foreground mb-1">
                           Column changes applied:
                         </p>
-                        <ul className="text-sm space-y-0.5 text-gray-700">
+                        <ul className="text-sm space-y-0.5 text-muted-foreground">
                           {migrationResult.column_changes_applied.map(c => (
                             <li key={c}>✓ {c}</li>
                           ))}
@@ -627,10 +627,10 @@ export default function DatabaseMigrationPage() {
                     )}
                     {migrationResult.column_changes_skipped.length > 0 && (
                       <div className="mb-2">
-                        <p className="text-xs font-bold uppercase text-amber-600 mb-1">
+                        <p className="text-xs font-bold uppercase text-warning-foreground mb-1">
                           Skipped (risky — use Force Apply):
                         </p>
-                        <ul className="text-sm space-y-0.5 text-amber-800">
+                        <ul className="text-sm space-y-0.5 text-warning-foreground">
                           {migrationResult.column_changes_skipped.map(c => (
                             <li key={c}>⚠ {c}</li>
                           ))}
@@ -639,10 +639,10 @@ export default function DatabaseMigrationPage() {
                     )}
                     {migrationResult.errors.length > 0 && (
                       <div>
-                        <p className="text-xs font-bold uppercase text-red-500 mb-1">
+                        <p className="text-xs font-bold uppercase text-destructive mb-1">
                           Errors:
                         </p>
-                        <ul className="text-sm space-y-0.5 text-red-700">
+                        <ul className="text-sm space-y-0.5 text-error-foreground">
                           {migrationResult.errors.map(e => (
                             <li key={e}>✗ {e}</li>
                           ))}
@@ -693,12 +693,12 @@ export default function DatabaseMigrationPage() {
                     id="remove-existing"
                     checked={removeExisting}
                     onChange={e => setRemoveExisting(e.target.checked)}
-                    className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                    className="w-4 h-4 text-destructive border-border rounded focus:ring-destructive"
                     disabled={seeding}
                   />
                   <label
                     htmlFor="remove-existing"
-                    className="text-sm font-medium text-gray-700 cursor-pointer select-none"
+                    className="text-sm font-medium text-muted-foreground cursor-pointer select-none"
                   >
                     Remove all existing RBAC data before seeding
                   </label>
@@ -722,18 +722,14 @@ export default function DatabaseMigrationPage() {
                   </Alert>
                 )}
                 <div className="flex justify-between items-center">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-muted-foreground">
                     Run this after database changes or when adding new features that
                     require permissions.
                   </div>
                   <Button
                     onClick={handleSeedRbac}
                     disabled={seeding}
-                    className={
-                      removeExisting
-                        ? 'bg-red-600 hover:bg-red-700'
-                        : 'bg-green-600 hover:bg-green-700'
-                    }
+                    variant={removeExisting ? 'destructive' : 'default'}
                   >
                     {seeding ? (
                       <>
@@ -757,7 +753,7 @@ export default function DatabaseMigrationPage() {
         <Dialog open={showForceDialog} onOpenChange={setShowForceDialog}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle className="text-red-600 flex items-center gap-2">
+              <DialogTitle className="text-destructive flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5" />
                 Force Apply Risky Changes
               </DialogTitle>
@@ -767,10 +763,10 @@ export default function DatabaseMigrationPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 py-2">
-              <div className="border border-red-200 rounded-lg overflow-hidden">
+              <div className="border border-error-border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-red-50">
+                    <TableRow className="bg-error">
                       <TableHead className="text-xs">Column</TableHead>
                       <TableHead className="text-xs">Change</TableHead>
                     </TableRow>
@@ -781,7 +777,7 @@ export default function DatabaseMigrationPage() {
                         <TableCell className="text-sm font-mono">
                           {cd.table}.{cd.column}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">
+                        <TableCell className="text-sm text-muted-foreground">
                           {columnDiffDescription(cd)}
                         </TableCell>
                       </TableRow>
@@ -795,11 +791,11 @@ export default function DatabaseMigrationPage() {
                   id="force-confirm"
                   checked={forceConfirmed}
                   onChange={e => setForceConfirmed(e.target.checked)}
-                  className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                  className="w-4 h-4 text-destructive border-border rounded focus:ring-destructive"
                 />
                 <label
                   htmlFor="force-confirm"
-                  className="text-sm font-medium text-gray-700 cursor-pointer select-none"
+                  className="text-sm font-medium text-muted-foreground cursor-pointer select-none"
                 >
                   I understand this may cause irreversible data loss
                 </label>
@@ -834,10 +830,7 @@ export default function DatabaseMigrationPage() {
               <Button variant="outline" onClick={() => setShowSeedDialog(false)}>
                 Skip
               </Button>
-              <Button
-                onClick={handleSeedRbac}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
+              <Button onClick={handleSeedRbac}>
                 Seed RBAC
               </Button>
             </DialogFooter>
@@ -854,6 +847,11 @@ export default function DatabaseMigrationPage() {
               <DialogDescription>{seedResult?.message}</DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto">
+              {/* Deliberately kept dark: this is a terminal/console output block.
+                  No semantic token exists for "console output" background; the same
+                  bg-gray-900/text-gray-100 pattern is used unmigrated across ~10 other
+                  features (job results, snapshot viewers, etc.) so a token should be
+                  introduced codebase-wide rather than diverging here. */}
               <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap">
                 {seedResult?.output || 'No output available'}
               </pre>

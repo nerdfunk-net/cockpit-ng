@@ -32,8 +32,8 @@ export function GeneralPanel({ form }: GeneralPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 rounded-t-lg flex items-center justify-between">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg overflow-hidden">
+      <div className="panel-header py-2 px-4 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center gap-2">
           <FileCode className="h-4 w-4" />
           <span className="text-sm font-medium">Template Details</span>
@@ -42,7 +42,7 @@ export function GeneralPanel({ form }: GeneralPanelProps) {
           variant="ghost"
           size="sm"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="h-6 w-6 p-0 text-white hover:bg-white/20"
+          className="h-6 w-6 p-0 hover:bg-white/20"
         >
           {isCollapsed ? (
             <ChevronDown className="h-4 w-4" />
@@ -52,7 +52,7 @@ export function GeneralPanel({ form }: GeneralPanelProps) {
         </Button>
       </div>
       {!isCollapsed && (
-        <div className="p-4 bg-gradient-to-b from-white to-gray-50">
+        <div className="p-4 panel-content">
           <Form {...form}>
             <div className="space-y-3">
               {/* Template Details in 12-column grid */}
@@ -63,7 +63,7 @@ export function GeneralPanel({ form }: GeneralPanelProps) {
                   render={({ field }) => (
                     <FormItem className="col-span-3">
                       <FormLabel>
-                        Template Name <span className="text-red-500">*</span>
+                        Template Name <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., telegraf-agent-config" {...field} />

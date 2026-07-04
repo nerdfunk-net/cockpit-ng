@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { GitCommit } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 
 // Tabs
 import { DeviceSelectionTab } from './tabs/device-selection-tab'
@@ -183,11 +184,11 @@ export function AgentsDeployPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <GitCommit className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <GitCommit className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Agents Deploy</h1>
+            <h1 className="text-3xl font-bold text-foreground">Agents Deploy</h1>
             <p className="text-muted-foreground mt-2">
               Deploy Telegraf/InfluxDB/Grafana configurations to devices
             </p>

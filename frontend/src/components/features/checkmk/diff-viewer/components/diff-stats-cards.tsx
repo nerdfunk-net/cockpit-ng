@@ -1,5 +1,5 @@
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { StatusBadge } from '@/components/shared/status-badge'
 
 interface DiffStatsCardsProps {
   totalDevices: number
@@ -30,9 +30,9 @@ export function DiffStatsCards({
             <div className="text-sm font-medium text-muted-foreground">
               In Both Systems
             </div>
-            <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+            <StatusBadge variant="success" className="text-xs">
               both
-            </Badge>
+            </StatusBadge>
           </div>
           <div className="text-2xl font-bold mt-1">{totalBoth}</div>
         </CardContent>
@@ -43,9 +43,9 @@ export function DiffStatsCards({
             <div className="text-sm font-medium text-muted-foreground">
               Nautobot Only
             </div>
-            <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+            <StatusBadge variant="info" className="text-xs">
               nb
-            </Badge>
+            </StatusBadge>
           </div>
           <div className="text-2xl font-bold mt-1">{totalNautobotOnly}</div>
         </CardContent>
@@ -56,12 +56,9 @@ export function DiffStatsCards({
             <div className="text-sm font-medium text-muted-foreground">
               CheckMK Only
             </div>
-            <Badge
-              variant="secondary"
-              className="bg-orange-100 text-orange-800 text-xs"
-            >
+            <StatusBadge variant="warning" className="text-xs">
               cmk
-            </Badge>
+            </StatusBadge>
           </div>
           <div className="text-2xl font-bold mt-1">{totalCheckmkOnly}</div>
         </CardContent>

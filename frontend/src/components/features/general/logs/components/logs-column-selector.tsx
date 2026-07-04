@@ -34,7 +34,7 @@ export function LogsColumnSelector({
         <Button
           variant="ghost"
           size="sm"
-          className="text-white hover:bg-white/20 text-xs h-6"
+          className="text-current hover:bg-card/20 text-xs h-6"
         >
           <Settings className="h-3 w-3 mr-1" />
           Columns

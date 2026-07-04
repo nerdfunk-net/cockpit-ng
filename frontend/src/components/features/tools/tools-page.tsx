@@ -17,6 +17,7 @@ import {
   Database,
   FlaskConical,
 } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 
 interface ToolLink {
   title: string
@@ -59,16 +60,16 @@ export default function DeveloperToolsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-purple-500 text-white shadow-lg">
-            <Wrench className="w-6 h-6" />
-          </div>
+          <IconChip variant="primary">
+            <Wrench className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Developer Tools</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold text-foreground">Developer Tools</h1>
+            <p className="text-muted-foreground mt-2">
               Debugging and administrative tools for Cockpit
             </p>
           </div>
@@ -78,29 +79,27 @@ export default function DeveloperToolsPage() {
         <div className="grid gap-4">
           {tools.map(tool => (
               <Link key={tool.href} href={tool.href}>
-                <Card className="group hover:shadow-lg transition-all duration-200 hover:border-purple-300 cursor-pointer">
+                <Card className="group hover:shadow-lg transition-all duration-200 hover:border-primary cursor-pointer">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100 text-purple-600 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                           {tool.icon}
                         </div>
                         <div>
                           <CardTitle className="text-lg flex items-center gap-2">
                             {tool.title}
                             {tool.external && (
-                              <ExternalLink className="w-4 h-4 text-gray-400" />
+                              <ExternalLink className="w-4 h-4 text-muted-foreground" />
                             )}
                           </CardTitle>
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-purple-500 group-hover:translate-x-1 transition-all" />
+                      <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription className="text-sm text-gray-600">
-                      {tool.description}
-                    </CardDescription>
+                    <CardDescription>{tool.description}</CardDescription>
                   </CardContent>
                 </Card>
               </Link>
@@ -111,7 +110,7 @@ export default function DeveloperToolsPage() {
         <Card className="status-warning">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex-shrink-0">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-warning text-warning-foreground flex-shrink-0">
                 <Wrench className="w-4 h-4" />
               </div>
               <div className="text-sm">

@@ -243,7 +243,7 @@ export function ManageInventoryDialog({
       <DialogContent className="sm:max-w-[800px] max-h-[85vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-purple-600" />
+            <Settings className="h-5 w-5 text-primary" />
             Manage Inventories
           </DialogTitle>
           <DialogDescription>
@@ -255,7 +255,7 @@ export function ManageInventoryDialog({
           <div className="grid gap-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search inventories..."
                 value={searchTerm}
@@ -267,20 +267,20 @@ export function ManageInventoryDialog({
             {/* Inventory List */}
             <div className="border rounded-md max-h-[500px] overflow-y-auto">
               {isLoading ? (
-                <div className="p-8 text-center text-gray-500">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-2" />
+                <div className="p-8 text-center text-muted-foreground">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
                   Loading inventories...
                 </div>
               ) : filteredInventories.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
+                <div className="p-8 text-center text-muted-foreground">
                   {searchTerm ? (
                     <>
-                      <Search className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                      <Search className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
                       <p>No inventories found matching &ldquo;{searchTerm}&rdquo;</p>
                     </>
                   ) : (
                     <>
-                      <Settings className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                      <Settings className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
                       <p>No saved inventories yet</p>
                       <p className="text-sm mt-1">
                         Create device filters and save them to get started
@@ -293,12 +293,12 @@ export function ManageInventoryDialog({
                   {filteredInventories.map(inventory => (
                     <div
                       key={inventory.id}
-                      className="p-4 hover:bg-purple-50/50 transition-colors group"
+                      className="p-4 hover:bg-muted/50 transition-colors group"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium text-gray-900 truncate">
+                            <h4 className="font-medium text-foreground truncate">
                               {inventory.name}
                             </h4>
                             <Badge
@@ -321,11 +321,11 @@ export function ManageInventoryDialog({
                             </Badge>
                           </div>
                           {inventory.description && (
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                            <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                               {inventory.description}
                             </p>
                           )}
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span>{getConditionCount(inventory)} condition(s)</span>
                             <span>•</span>
                             <span>Created by {inventory.created_by}</span>
@@ -341,7 +341,7 @@ export function ManageInventoryDialog({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            className="text-primary hover:text-primary hover:bg-primary/10"
                             onClick={() => handleView(inventory)}
                             title="View conditions"
                           >
@@ -350,7 +350,6 @@ export function ManageInventoryDialog({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                             onClick={() => handleEdit(inventory)}
                             title="Edit inventory"
                           >
@@ -359,7 +358,7 @@ export function ManageInventoryDialog({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleDelete(inventory)}
                             title="Delete inventory"
                           >
@@ -382,7 +381,7 @@ export function ManageInventoryDialog({
                 variant="ghost"
                 size="sm"
                 onClick={() => setViewMode('list')}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4 mr-1" />
                 Back to List
@@ -392,7 +391,7 @@ export function ManageInventoryDialog({
                   variant="outline"
                   size="sm"
                   onClick={() => handleEdit(selectedInventory)}
-                  className="text-purple-600 hover:text-purple-700 border-purple-300"
+                  className="text-primary hover:text-primary border-primary/30"
                 >
                   <Edit2 className="h-4 w-4 mr-1" />
                   Edit
@@ -401,7 +400,7 @@ export function ManageInventoryDialog({
                   variant="outline"
                   size="sm"
                   onClick={() => handleDelete(selectedInventory)}
-                  className="text-red-600 hover:text-red-700 border-red-300"
+                  className="text-destructive hover:text-destructive border-destructive/30"
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   Delete
@@ -409,9 +408,9 @@ export function ManageInventoryDialog({
               </div>
             </div>
 
-            <div className="border rounded-lg p-4 bg-gradient-to-br from-blue-50 to-purple-50">
+            <div className="border rounded-lg p-4 bg-muted">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-foreground">
                   {selectedInventory.name}
                 </h3>
                 <Badge
@@ -434,12 +433,12 @@ export function ManageInventoryDialog({
               </div>
 
               {selectedInventory.description && (
-                <p className="text-sm text-gray-700 mb-3">
+                <p className="text-sm text-muted-foreground mb-3">
                   {selectedInventory.description}
                 </p>
               )}
 
-              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-4">
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-4">
                 <div>
                   <span className="font-medium">Created by:</span>{' '}
                   {selectedInventory.created_by}
@@ -453,11 +452,11 @@ export function ManageInventoryDialog({
               </div>
 
               <div className="border-t pt-3">
-                <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                <Label className="text-sm font-semibold text-muted-foreground mb-2 block">
                   Logical Expression ({getConditionCount(selectedInventory)} condition
                   {getConditionCount(selectedInventory) !== 1 ? 's' : ''})
                 </Label>
-                <div className="bg-white rounded-md p-3 border border-gray-200 font-mono text-sm text-gray-800 break-words">
+                <div className="bg-card rounded-md p-3 border border-border font-mono text-sm text-foreground break-words">
                   {getLogicalExpression(selectedInventory)}
                 </div>
               </div>
@@ -472,7 +471,7 @@ export function ManageInventoryDialog({
                 variant="ghost"
                 size="sm"
                 onClick={() => setViewMode('list')}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-muted-foreground hover:text-foreground"
                 disabled={isSaving}
               >
                 <X className="h-4 w-4 mr-1" />
@@ -480,11 +479,11 @@ export function ManageInventoryDialog({
               </Button>
             </div>
 
-            <div className="border rounded-lg p-4 bg-gradient-to-br from-purple-50 to-pink-50">
+            <div className="border rounded-lg p-4 bg-muted">
               <div className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="edit-name">
-                    Inventory Name <span className="text-red-500">*</span>
+                    Inventory Name <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="edit-name"
@@ -492,7 +491,7 @@ export function ManageInventoryDialog({
                     onChange={e => setEditName(e.target.value)}
                     placeholder="Enter inventory name"
                     disabled={isSaving}
-                    className="bg-white"
+                    className="bg-card"
                   />
                 </div>
 
@@ -505,16 +504,16 @@ export function ManageInventoryDialog({
                     placeholder="Optional description"
                     rows={3}
                     disabled={isSaving}
-                    className="bg-white"
+                    className="bg-card"
                   />
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                  <p className="text-xs text-blue-800 mb-2">
+                <div className="bg-info border border-info-border rounded-md p-3">
+                  <p className="text-xs text-info-foreground mb-2">
                     <strong>Note:</strong> You cannot edit the logical conditions or
                     scope. To change conditions, create a new inventory.
                   </p>
-                  <div className="text-xs text-blue-700">
+                  <div className="text-xs text-info-foreground">
                     <span className="font-medium">Current Scope:</span>{' '}
                     <Badge
                       variant={
@@ -528,11 +527,11 @@ export function ManageInventoryDialog({
                 </div>
 
                 <div className="border-t pt-3">
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <Label className="text-sm font-semibold text-muted-foreground mb-2 block">
                     Logical Expression ({getConditionCount(selectedInventory)} condition
                     {getConditionCount(selectedInventory) !== 1 ? 's' : ''})
                   </Label>
-                  <div className="bg-gray-50 rounded-md p-3 border border-gray-300 font-mono text-sm text-gray-700 break-words">
+                  <div className="bg-muted rounded-md p-3 border border-border font-mono text-sm text-muted-foreground break-words">
                     {getLogicalExpression(selectedInventory)}
                   </div>
                 </div>
@@ -545,14 +544,10 @@ export function ManageInventoryDialog({
                   >
                     Cancel
                   </Button>
-                  <Button
-                    onClick={handleSaveEdit}
-                    disabled={isSaving || !editName.trim()}
-                    className="bg-purple-600 hover:bg-purple-700"
-                  >
+                  <Button onClick={handleSaveEdit} disabled={isSaving || !editName.trim()}>
                     {isSaving ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
                         Saving...
                       </>
                     ) : (

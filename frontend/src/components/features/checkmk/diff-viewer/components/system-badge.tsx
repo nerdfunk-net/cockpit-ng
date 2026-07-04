@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/shared/status-badge'
 import type { DeviceSource } from '../types'
 
 interface SystemBadgeProps {
@@ -8,22 +8,10 @@ interface SystemBadgeProps {
 export function SystemBadge({ source }: SystemBadgeProps) {
   switch (source) {
     case 'both':
-      return (
-        <Badge variant="secondary" className="bg-green-100 text-green-800">
-          Both Systems
-        </Badge>
-      )
+      return <StatusBadge variant="success">Both Systems</StatusBadge>
     case 'nautobot':
-      return (
-        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-          Nautobot Only
-        </Badge>
-      )
+      return <StatusBadge variant="info">Nautobot Only</StatusBadge>
     case 'checkmk':
-      return (
-        <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-          CheckMK Only
-        </Badge>
-      )
+      return <StatusBadge variant="warning">CheckMK Only</StatusBadge>
   }
 }

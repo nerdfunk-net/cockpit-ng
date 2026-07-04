@@ -51,10 +51,10 @@ export function getRowColorClass(
 
   switch (result) {
     case 'equal':
-      return 'bg-green-50 hover:bg-green-100 border-green-200'
+      return 'bg-success hover:bg-success/70 border-success-border'
     case 'diff':
     case 'host_not_found':
-      return 'bg-red-50 hover:bg-red-100 border-red-200'
+      return 'bg-error hover:bg-error/70 border-error-border'
     default:
       return ''
   }

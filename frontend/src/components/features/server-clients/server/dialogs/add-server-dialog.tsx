@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { AlertCircle, Bot, Loader2, Server } from 'lucide-react'
+import { StatusAlert } from '@/components/shared/status-alert'
+import { Bot, Loader2, Server } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/hooks/use-toast'
 import { usePasswordCredentialsQuery, type PasswordCredential } from '@/hooks/queries/use-ssh-credentials-query'
@@ -38,7 +38,7 @@ const EMPTY_CREDENTIALS: PasswordCredential[] = []
 
 /** Higher-contrast fields on light gradient dialog backgrounds (see doc/STYLE_GUIDE_DESIGN.md). */
 const FIELD_INPUT_CLASS =
-  'bg-white border-gray-300 text-gray-900 shadow-sm placeholder:text-gray-500 focus-visible:border-blue-500 focus-visible:ring-blue-500/30'
+  'bg-card border-border text-foreground shadow-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/30'
 
 const FIELD_SELECT_TRIGGER_CLASS = `w-full ${FIELD_INPUT_CLASS}`
 
@@ -210,31 +210,28 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
           </DialogDescription>
         </DialogHeader>
 
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-4 py-3 text-white">
+        <div className="panel-header px-4 py-3">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-white/20 p-2">
               <Server className="h-4 w-4" />
             </div>
             <div>
               <h2 className="text-sm font-medium">Add Server</h2>
-              <p className="mt-0.5 text-xs text-blue-100">
+              <p className="mt-0.5 text-xs text-panel-header-muted">
                 Connect via Ansible to gather host facts and register the server
               </p>
             </div>
           </div>
         </div>
 
-        <div className="space-y-4 bg-gradient-to-b from-white to-gray-50 p-6">
-          <Alert className="border-blue-200 bg-blue-50">
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-sm text-blue-800">
-              Enter the target hostname or IP and choose how Cockpit authenticates. Facts are
-              collected through the selected Ansible agent.
-            </AlertDescription>
-          </Alert>
+        <div className="space-y-4 panel-content p-6">
+          <StatusAlert variant="info">
+            Enter the target hostname or IP and choose how Cockpit authenticates. Facts are
+            collected through the selected Ansible agent.
+          </StatusAlert>
 
           <div className="space-y-2">
-            <Label htmlFor="add-server-host" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="add-server-host" className="text-sm font-medium text-foreground">
               Hostname or IP address
             </Label>
             <Input
@@ -245,48 +242,48 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
               disabled={isGettingFacts}
               className={FIELD_INPUT_CLASS}
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Used as the Ansible connection target and stored on the server record.
             </p>
           </div>
 
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-gray-700">Authentication method</Label>
+            <Label className="text-sm font-medium text-foreground">Authentication method</Label>
             <RadioGroup
               value={authType}
               onValueChange={(v) => setAuthType(v as AuthType)}
               disabled={isGettingFacts}
               className="space-y-2"
             >
-              <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+              <div className="flex items-start gap-3 rounded-lg border border-border bg-muted p-3">
                 <RadioGroupItem value="ssh_key" id="auth-ssh-key" className="mt-0.5" />
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="auth-ssh-key" className="cursor-pointer text-sm font-medium text-gray-800">
+                  <Label htmlFor="auth-ssh-key" className="cursor-pointer text-sm font-medium text-foreground">
                     SSH key (no passphrase)
                   </Label>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-muted-foreground">
                     Use the agent&apos;s configured SSH key with no passphrase protection.
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+              <div className="flex items-start gap-3 rounded-lg border border-border bg-muted p-3">
                 <RadioGroupItem value="ssh_key_passphrase" id="auth-ssh-passphrase" className="mt-0.5" />
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="auth-ssh-passphrase" className="cursor-pointer text-sm font-medium text-gray-800">
+                  <Label htmlFor="auth-ssh-passphrase" className="cursor-pointer text-sm font-medium text-foreground">
                     SSH key with passphrase
                   </Label>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-muted-foreground">
                     SSH key protected by a passphrase stored in the credentials vault.
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+              <div className="flex items-start gap-3 rounded-lg border border-border bg-muted p-3">
                 <RadioGroupItem value="credentials" id="auth-credentials" className="mt-0.5" />
                 <div className="flex-1 space-y-1">
-                  <Label htmlFor="auth-credentials" className="cursor-pointer text-sm font-medium text-gray-800">
+                  <Label htmlFor="auth-credentials" className="cursor-pointer text-sm font-medium text-foreground">
                     Username &amp; password
                   </Label>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-muted-foreground">
                     Authenticate using a stored username and password credential.
                   </p>
                 </div>
@@ -296,7 +293,7 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
 
           {authType === 'ssh_key' ? (
             <div className="space-y-2">
-              <Label htmlFor="add-server-sshuser" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="add-server-sshuser" className="text-sm font-medium text-foreground">
                 SSH username
               </Label>
               <Input
@@ -310,7 +307,7 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
             </div>
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="add-server-cred" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="add-server-cred" className="text-sm font-medium text-foreground">
                 {authType === 'ssh_key_passphrase' ? 'Passphrase credential' : 'Login credential'}
               </Label>
               <Select
@@ -338,7 +335,7 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {authType === 'ssh_key_passphrase'
                   ? 'The password field of this credential is used as the SSH key passphrase.'
                   : 'Stored credentials from Settings → Credentials.'}
@@ -347,18 +344,18 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="add-server-agent" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="add-server-agent" className="text-sm font-medium text-foreground">
               Ansible agent
             </Label>
             {isLoadingAgents ? (
-              <div className="flex h-9 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-600 shadow-sm">
-                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+              <div className="flex h-9 items-center gap-2 rounded-md border border-border bg-card px-3 text-sm text-muted-foreground shadow-sm">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 Loading agents…
               </div>
             ) : ansibleAgents.length === 0 ? (
-              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <StatusAlert variant="warning" className="px-3 py-2">
                 No Ansible agents configured. Add one in Settings → Connections → Agents.
-              </div>
+              </StatusAlert>
             ) : (
               <Select
                 value={selectedAgentId}
@@ -372,7 +369,7 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
                   {ansibleAgents.map((agent) => (
                     <SelectItem key={agent.id} value={agent.agent_id ?? agent.id}>
                       <div className="flex items-center gap-2">
-                        <Bot className="h-3.5 w-3.5 text-blue-500" />
+                        <Bot className="h-3.5 w-3.5 text-primary" />
                         {agent.name}
                         {agent.agent_id ? (
                           <span className="font-mono text-xs text-muted-foreground">
@@ -388,13 +385,12 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
           </div>
         </div>
 
-        <DialogFooter className="gap-2 border-t border-gray-200 bg-white px-6 py-4">
+        <DialogFooter className="gap-2 border-t border-border bg-card px-6 py-4">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isGettingFacts}
-            className="border-gray-300"
           >
             Cancel
           </Button>
@@ -402,7 +398,6 @@ export function AddServerDialog({ open, onOpenChange, onServerAdded }: AddServer
             type="button"
             onClick={handleGetFacts}
             disabled={!canGetFacts || isLoading}
-            className="bg-blue-600 text-white hover:bg-blue-700"
           >
             {isGettingFacts ? (
               <>

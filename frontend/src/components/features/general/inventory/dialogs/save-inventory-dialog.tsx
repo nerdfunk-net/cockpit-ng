@@ -67,7 +67,7 @@ export function SaveInventoryDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Save className="h-5 w-5 text-blue-600" />
+            <Save className="h-5 w-5 text-primary" />
             Save Inventory Configuration
           </DialogTitle>
           <DialogDescription>
@@ -78,7 +78,7 @@ export function SaveInventoryDialog({
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="inventory-name">
-              Inventory Name <span className="text-red-500">*</span>
+              Inventory Name <span className="text-destructive">*</span>
             </Label>
             <Input
               id="inventory-name"
@@ -114,7 +114,7 @@ export function SaveInventoryDialog({
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {scope === 'global'
                 ? 'All users can use this inventory configuration'
                 : 'Only you can see and use this inventory configuration'}
@@ -126,11 +126,7 @@ export function SaveInventoryDialog({
           <Button variant="outline" onClick={handleClose} disabled={isSaving}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={isSaving || !name.trim()}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
+          <Button onClick={handleSave} disabled={isSaving || !name.trim()}>
             {isSaving ? 'Saving...' : 'Save Inventory'}
           </Button>
         </DialogFooter>

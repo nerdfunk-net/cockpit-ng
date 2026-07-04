@@ -6,7 +6,7 @@ import {
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { CheckCircle, XCircle } from 'lucide-react'
+import { StatusIcon } from '@/components/shared/status-icon'
 import type { DryRunResult } from '../types'
 
 interface DryRunResultDialogProps {
@@ -36,11 +36,10 @@ export function DryRunResultDialog({
             <TabsList className="w-full">
               {results.map(result => (
                 <TabsTrigger key={result.deviceId} value={result.deviceId}>
-                  {result.success ? (
-                    <CheckCircle className="mr-1 h-3 w-3 text-green-500" />
-                  ) : (
-                    <XCircle className="mr-1 h-3 w-3 text-red-500" />
-                  )}
+                  <StatusIcon
+                    variant={result.success ? 'success' : 'error'}
+                    className="mr-1 h-3 w-3"
+                  />
                   {result.deviceName}
                 </TabsTrigger>
               ))}

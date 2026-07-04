@@ -38,8 +38,8 @@ export function RenderedOutputDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-[90vw] max-h-[80vh] flex flex-col p-0">
-        <DialogHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 px-6 rounded-t-lg">
-          <DialogTitle className="flex items-center gap-2 text-white">
+        <DialogHeader className="panel-header py-3 px-6 rounded-t-lg">
+          <DialogTitle className="flex items-center gap-2">
             {result?.success ? (
               <CheckCircle className="h-4 w-4" />
             ) : (
@@ -76,7 +76,7 @@ export function RenderedOutputDialog({
           )}
 
           {!result?.renderedContent && !result?.error && (
-            <p className="text-sm text-gray-500 text-center py-8">
+            <p className="text-sm text-muted-foreground text-center py-8">
               No rendered output available.
             </p>
           )}

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import PingResultsModal from '@/components/features/network/tools/ping/ping-results-modal'
+import { IconChip } from '@/components/shared/icon-chip'
 
 interface CidrInput {
   id: number
@@ -199,13 +200,13 @@ export default function PingToolPage() {
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <Wifi className="h-6 w-6 text-blue-600" />
-            </div>
+          <div className="flex items-center gap-4">
+            <IconChip variant="primary">
+              <Wifi className="h-6 w-6" />
+            </IconChip>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Network Ping Tool</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-3xl font-bold text-foreground">Network Ping Tool</h1>
+              <p className="text-muted-foreground mt-2">
                 Ping CIDR networks and resolve DNS names
               </p>
             </div>
@@ -213,16 +214,16 @@ export default function PingToolPage() {
         </div>
 
         <Card className="shadow-lg border-0 overflow-hidden p-0">
-          <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+          <CardHeader className="panel-header border-b-0 rounded-none m-0 py-2 px-4">
             <CardTitle className="flex items-center space-x-2 text-sm font-medium">
               <Wifi className="h-4 w-4" />
               <span>Network Ping Configuration</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
+          <CardContent className="p-6 panel-content space-y-6">
             {/* CIDR Networks Section */}
             <div className="space-y-4">
-              <Label className="text-base font-semibold text-slate-700">
+              <Label className="text-base font-semibold text-foreground">
                 CIDR Networks
               </Label>
               <div className="space-y-3">
@@ -237,12 +238,12 @@ export default function PingToolPage() {
                           onChange={e => handleCidrChange(input.id, e.target.value)}
                           className={
                             input.error
-                              ? 'border-red-500 focus:ring-red-500 bg-white'
-                              : 'focus:ring-blue-500 focus:border-blue-500 border-slate-300 bg-white font-mono text-slate-900 placeholder:text-slate-400 shadow-sm'
+                              ? 'border-destructive focus-visible:ring-destructive/50 bg-card'
+                              : 'border-border bg-card font-mono text-foreground shadow-sm'
                           }
                         />
                         {input.error && (
-                          <div className="flex items-center gap-1 mt-1 text-sm text-red-600 bg-red-50 p-2 rounded-md border border-red-200">
+                          <div className="flex items-center gap-1 mt-1 text-sm text-error-foreground bg-error p-2 rounded-md border border-error-border">
                             <AlertCircle className="w-4 h-4 flex-shrink-0" />
                             <span>{input.error}</span>
                           </div>
@@ -253,7 +254,7 @@ export default function PingToolPage() {
                         size="icon"
                         variant="outline"
                         onClick={handleAddRow}
-                        className="flex-shrink-0 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors"
+                        className="flex-shrink-0 hover:bg-primary/10 hover:border-primary hover:text-primary transition-colors"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
@@ -263,7 +264,7 @@ export default function PingToolPage() {
                         variant="outline"
                         onClick={() => handleRemoveRow(input.id)}
                         disabled={cidrInputs.length === 1}
-                        className="flex-shrink-0 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors disabled:opacity-50"
+                        className="flex-shrink-0 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-colors disabled:opacity-50"
                       >
                         <Minus className="w-4 h-4" />
                       </Button>
@@ -271,38 +272,37 @@ export default function PingToolPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded-md border border-slate-200">
+              <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md border border-border">
                 Enter CIDR networks (netmask /19 to /32). Click + to add more networks.
               </p>
             </div>
 
             {/* Options Section */}
-            <div className="space-y-4 bg-gradient-to-br from-slate-50 to-slate-100 p-4 rounded-lg border border-slate-200">
+            <div className="space-y-4 bg-muted p-4 rounded-lg border border-border">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="resolve-dns"
                   checked={resolveDns}
                   onCheckedChange={checked => setResolveDns(checked as boolean)}
-                  className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                 />
                 <Label
                   htmlFor="resolve-dns"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-slate-700"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-foreground"
                 >
                   Resolve DNS
                 </Label>
               </div>
-              <p className="text-sm text-slate-600 ml-6">
+              <p className="text-sm text-muted-foreground ml-6">
                 Resolve hostnames for reachable IP addresses
               </p>
             </div>
 
             {/* Advanced Options */}
-            <div className="border-t border-slate-200 pt-4">
+            <div className="border-t border-border pt-4">
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors"
+                className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
               >
                 {showAdvanced ? (
                   <ChevronDown className="w-4 h-4" />
@@ -313,11 +313,11 @@ export default function PingToolPage() {
               </button>
 
               {showAdvanced && (
-                <div className="mt-4 grid grid-cols-2 gap-4 bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                <div className="mt-4 grid grid-cols-2 gap-4 bg-info p-4 rounded-lg border border-info-border">
                   <div className="space-y-2">
                     <Label
                       htmlFor="count"
-                      className="text-sm font-medium text-slate-700"
+                      className="text-sm font-medium text-muted-foreground"
                     >
                       Ping Count
                     </Label>
@@ -328,9 +328,9 @@ export default function PingToolPage() {
                       max="10"
                       value={count}
                       onChange={e => setCount(parseInt(e.target.value) || 3)}
-                      className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
+                      className="border-border bg-card font-mono text-foreground shadow-sm"
                     />
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-muted-foreground">
                       Number of pings per host (1-10)
                     </p>
                   </div>
@@ -338,7 +338,7 @@ export default function PingToolPage() {
                   <div className="space-y-2">
                     <Label
                       htmlFor="timeout"
-                      className="text-sm font-medium text-slate-700"
+                      className="text-sm font-medium text-muted-foreground"
                     >
                       Timeout (ms)
                     </Label>
@@ -350,9 +350,9 @@ export default function PingToolPage() {
                       step="100"
                       value={timeout}
                       onChange={e => setTimeout(parseInt(e.target.value) || 500)}
-                      className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
+                      className="border-border bg-card font-mono text-foreground shadow-sm"
                     />
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-muted-foreground">
                       Individual target timeout (100-5000ms)
                     </p>
                   </div>
@@ -360,7 +360,7 @@ export default function PingToolPage() {
                   <div className="space-y-2">
                     <Label
                       htmlFor="retry"
-                      className="text-sm font-medium text-slate-700"
+                      className="text-sm font-medium text-muted-foreground"
                     >
                       Retries
                     </Label>
@@ -371,15 +371,15 @@ export default function PingToolPage() {
                       max="10"
                       value={retry}
                       onChange={e => setRetry(parseInt(e.target.value) || 3)}
-                      className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
+                      className="border-border bg-card font-mono text-foreground shadow-sm"
                     />
-                    <p className="text-xs text-slate-600">Number of retries (0-10)</p>
+                    <p className="text-xs text-muted-foreground">Number of retries (0-10)</p>
                   </div>
 
                   <div className="space-y-2">
                     <Label
                       htmlFor="interval"
-                      className="text-sm font-medium text-slate-700"
+                      className="text-sm font-medium text-muted-foreground"
                     >
                       Interval (ms)
                     </Label>
@@ -390,9 +390,9 @@ export default function PingToolPage() {
                       max="1000"
                       value={interval}
                       onChange={e => setInterval(parseInt(e.target.value) || 10)}
-                      className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono text-slate-900 shadow-sm"
+                      className="border-border bg-card font-mono text-foreground shadow-sm"
                     />
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-muted-foreground">
                       Interval between packets (1-1000ms)
                     </p>
                   </div>
@@ -401,11 +401,11 @@ export default function PingToolPage() {
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-end pt-4 border-t border-slate-200">
+            <div className="flex justify-end pt-4 border-t border-border">
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="min-w-[150px] bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+                className="min-w-[150px] shadow-md hover:shadow-lg transition-all"
               >
                 {isSubmitting ? (
                   <>

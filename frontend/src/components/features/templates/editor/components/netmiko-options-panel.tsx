@@ -166,9 +166,9 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
   }
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
       {/* Header with gradient */}
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center gap-3">
           <div className="flex items-center">
             <Terminal className="h-4 w-4 mr-2" />
@@ -179,7 +179,7 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
           variant="ghost"
           size="sm"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="h-6 w-6 p-0 text-white hover:bg-white/20"
+          className="h-6 w-6 p-0 hover:bg-white/20"
         >
           {isCollapsed ? (
             <ChevronDown className="h-4 w-4" />
@@ -191,7 +191,7 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
 
       {/* Content area */}
       {!isCollapsed && (
-        <div className="p-4 bg-gradient-to-b from-white to-gray-50">
+        <div className="p-4 panel-content">
           <Form {...form}>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               {/* 1. Mode - 2 columns */}
@@ -251,26 +251,26 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
                         />
                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
                           {isSearching ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
                           ) : (
-                            <Search className="h-4 w-4 text-gray-400" />
+                            <Search className="h-4 w-4 text-muted-foreground" />
                           )}
                         </div>
 
                         {/* Search results dropdown */}
                         {showResults && filteredDevices.length > 0 && (
-                          <div className="absolute z-50 w-full mt-1 bg-white border-2 border-blue-300 rounded-md shadow-lg max-h-64 overflow-auto">
+                          <div className="absolute z-50 w-full mt-1 bg-popover border-2 border-primary/30 rounded-md shadow-lg max-h-64 overflow-auto">
                             {filteredDevices.map(device => (
                               <button
                                 key={device.id}
                                 type="button"
                                 onClick={() => handleDeviceSelect(device)}
-                                className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-100 focus:outline-none border-b border-gray-100 last:border-b-0"
+                                className="w-full text-left px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none border-b border-border last:border-b-0"
                               >
-                                <div className="font-medium text-gray-900">
+                                <div className="font-medium text-popover-foreground">
                                   {device.name}
                                 </div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-muted-foreground">
                                   {getDeviceIp(device)}
                                 </div>
                               </button>
@@ -283,8 +283,8 @@ export function NetmikoOptionsPanel({ form }: NetmikoOptionsPanelProps) {
                           searchTerm.length >= 3 &&
                           filteredDevices.length === 0 &&
                           !isSearching && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-300 rounded-md shadow-lg px-4 py-3">
-                              <p className="text-sm text-gray-500">No devices found</p>
+                            <div className="absolute z-50 w-full mt-1 bg-popover border-2 border-border rounded-md shadow-lg px-4 py-3">
+                              <p className="text-sm text-muted-foreground">No devices found</p>
                             </div>
                           )}
                       </div>

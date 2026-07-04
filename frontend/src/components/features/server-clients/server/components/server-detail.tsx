@@ -81,9 +81,9 @@ function formatBytes(bytes: number): string {
 function FactRow({ label, value }: { label: string; value: string | number | null }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs text-gray-500 uppercase tracking-wide">{label}</span>
-      <span className="text-sm font-medium text-gray-800 truncate">
-        {value ?? <span className="text-gray-400 italic">—</span>}
+      <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
+      <span className="text-sm font-medium text-foreground truncate">
+        {value ?? <span className="text-muted-foreground italic">—</span>}
       </span>
     </div>
   )
@@ -145,7 +145,7 @@ function LocationRow({ server }: { server: ServerResponse }) {
 
   return (
     <div ref={rowRef} className="flex flex-col gap-0.5">
-      <span className="text-xs text-gray-500 uppercase tracking-wide">Location</span>
+      <span className="text-xs text-muted-foreground uppercase tracking-wide">Location</span>
 
       {editing ? (
         <div className="relative" ref={dropdown.setContainerRef}>
@@ -180,13 +180,13 @@ function LocationRow({ server }: { server: ServerResponse }) {
         </div>
       ) : (
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium text-gray-800 truncate">
-            {displayName ?? <span className="text-gray-400 italic">—</span>}
+          <span className="text-sm font-medium text-foreground truncate">
+            {displayName ?? <span className="text-muted-foreground italic">—</span>}
           </span>
           <button
             onClick={() => setEditing(true)}
             title="Set location"
-            className="shrink-0 text-gray-400 hover:text-blue-500 transition-colors"
+            className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
           >
             <Pencil className="h-3 w-3" />
           </button>
@@ -261,9 +261,9 @@ export function ServerDetail({
     .join(' / ')
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
       {/* Gradient header */}
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <Server className="h-4 w-4" />
           <span className="text-sm font-medium">{server.hostname}</span>
@@ -272,7 +272,7 @@ export function ServerDetail({
           <button
             onClick={onShowHistory}
             title="Show Facts and Open Ports History"
-            className="flex items-center gap-1.5 text-xs text-blue-100 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 text-xs text-panel-header-muted hover:text-current transition-colors"
           >
             <History className="h-4 w-4" />
             <span>Show History</span>
@@ -280,7 +280,7 @@ export function ServerDetail({
           <button
             onClick={onShowFacts}
             title="Show Ansible Facts"
-            className="flex items-center gap-1.5 text-xs text-blue-100 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 text-xs text-panel-header-muted hover:text-current transition-colors"
           >
             <FileJson className="h-4 w-4" />
             <span>Show Facts</span>
@@ -289,7 +289,7 @@ export function ServerDetail({
       </div>
 
       {/* Facts grid */}
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
+      <div className="p-6 panel-content space-y-6">
         <div className="grid grid-cols-2 gap-x-8 gap-y-4">
           <FactRow label="Hostname" value={server.hostname} />
           <FactRow label="Virtual Machine" value={server.is_virtual ? 'Yes' : 'No'} />
@@ -310,33 +310,33 @@ export function ServerDetail({
         {mounts.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <HardDrive className="h-4 w-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-700">Mount Points</span>
+              <HardDrive className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Mount Points</span>
             </div>
-            <div className="border border-gray-200 rounded-md overflow-hidden">
+            <div className="border border-border rounded-md overflow-hidden">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Device</th>
-                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Mount</th>
-                    <th className="text-left px-3 py-2 text-gray-500 font-medium">FS</th>
-                    <th className="text-right px-3 py-2 text-gray-500 font-medium">Total</th>
-                    <th className="text-right px-3 py-2 text-gray-500 font-medium">Available</th>
+                  <tr className="bg-muted border-b border-border">
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">Device</th>
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">Mount</th>
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">FS</th>
+                    <th className="text-right px-3 py-2 text-muted-foreground font-medium">Total</th>
+                    <th className="text-right px-3 py-2 text-muted-foreground font-medium">Available</th>
                   </tr>
                 </thead>
                 <tbody>
                   {mounts.map((m, i) => (
                     <tr
                       key={m.mount}
-                      className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+                      className={i % 2 === 0 ? 'bg-card' : 'bg-muted/40'}
                     >
-                      <td className="px-3 py-2 font-mono text-gray-600">{m.device}</td>
-                      <td className="px-3 py-2 font-mono text-gray-800">{m.mount}</td>
-                      <td className="px-3 py-2 text-gray-600">{m.fstype}</td>
-                      <td className="px-3 py-2 text-right text-gray-600">
+                      <td className="px-3 py-2 font-mono text-muted-foreground">{m.device}</td>
+                      <td className="px-3 py-2 font-mono text-foreground">{m.mount}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{m.fstype}</td>
+                      <td className="px-3 py-2 text-right text-muted-foreground">
                         {m.size_total ? formatBytes(m.size_total) : '—'}
                       </td>
-                      <td className="px-3 py-2 text-right text-gray-600">
+                      <td className="px-3 py-2 text-right text-muted-foreground">
                         {m.size_available ? formatBytes(m.size_available) : '—'}
                       </td>
                     </tr>
@@ -350,34 +350,34 @@ export function ServerDetail({
         {/* Interfaces section */}
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <Network className="h-4 w-4 text-gray-400" />
-            <span className="text-sm font-medium text-gray-700">Interfaces</span>
+            <Network className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Interfaces</span>
             <button
               onClick={() => setInterfacesOpen(true)}
               title="Manage interfaces"
-              className="ml-auto flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 transition-colors"
+              className="ml-auto flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
             >
               <Settings2 className="h-3.5 w-3.5" />
               <span>Manage</span>
             </button>
           </div>
           {selectedInterfaces.length > 0 ? (
-            <div className="border border-gray-200 rounded-md overflow-hidden">
+            <div className="border border-border rounded-md overflow-hidden">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Interface</th>
-                    <th className="text-left px-3 py-2 text-gray-500 font-medium">IP Address</th>
+                  <tr className="bg-muted border-b border-border">
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">Interface</th>
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">IP Address</th>
                   </tr>
                 </thead>
                 <tbody>
                   {selectedInterfaces.map((iface, i) => {
                     const ipDisplay = formatServerInterfaceDisplay(server, iface)
                     return (
-                      <tr key={iface.name} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-3 py-2 font-mono text-gray-800">{iface.name}</td>
-                        <td className="px-3 py-2 text-gray-600">
-                          {ipDisplay ?? <span className="italic text-gray-400">—</span>}
+                      <tr key={iface.name} className={i % 2 === 0 ? 'bg-card' : 'bg-muted/40'}>
+                        <td className="px-3 py-2 font-mono text-foreground">{iface.name}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {ipDisplay ?? <span className="italic text-muted-foreground">—</span>}
                         </td>
                       </tr>
                     )
@@ -386,7 +386,7 @@ export function ServerDetail({
               </table>
             </div>
           ) : (
-            <p className="text-xs text-gray-400 italic">No interfaces selected — click Manage to add some.</p>
+            <p className="text-xs text-muted-foreground italic">No interfaces selected — click Manage to add some.</p>
           )}
         </div>
 
@@ -394,12 +394,12 @@ export function ServerDetail({
         {hasOpenPorts && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <DoorOpen className="h-4 w-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-700">Open Ports</span>
+              <DoorOpen className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Open Ports</span>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs text-gray-500 uppercase tracking-wide">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">
                   TCP ({tcpPorts.length})
                 </span>
                 {tcpPorts.length > 0 ? (
@@ -412,11 +412,11 @@ export function ServerDetail({
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-gray-400 italic">None</span>
+                  <span className="text-xs text-muted-foreground italic">None</span>
                 )}
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs text-gray-500 uppercase tracking-wide">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">
                   UDP ({udpPorts.length})
                 </span>
                 {udpPorts.length > 0 ? (
@@ -429,7 +429,7 @@ export function ServerDetail({
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-gray-400 italic">None</span>
+                  <span className="text-xs text-muted-foreground italic">None</span>
                 )}
               </div>
             </div>
@@ -439,7 +439,7 @@ export function ServerDetail({
         <ContactRow server={server} />
 
         {/* Actions */}
-        <div className="pt-2 border-t border-gray-200 flex justify-between items-center gap-2">
+        <div className="pt-2 border-t border-border flex justify-between items-center gap-2">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"

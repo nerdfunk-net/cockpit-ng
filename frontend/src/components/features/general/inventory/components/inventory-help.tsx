@@ -5,22 +5,16 @@
 
 'use client'
 
-import {
-  BookOpen,
-  Filter,
-  Layers,
-  Binary,
-  FileCode,
-  Globe,
-  AlertCircle,
-} from 'lucide-react'
+import { BookOpen, Filter, Layers, Binary, FileCode, Globe } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { StatusAlert } from '@/components/shared/status-alert'
 
 // Simple code example component
 function CodeExample({ title, code }: { title: string; code: string }) {
   return (
     <div className="space-y-2">
-      <h5 className="text-sm font-medium text-gray-700">{title}</h5>
-      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-xs">
+      <h5 className="text-sm font-medium text-muted-foreground">{title}</h5>
+      <pre className="bg-muted text-foreground p-4 rounded-lg overflow-x-auto text-xs">
         <code>{code}</code>
       </pre>
     </div>
@@ -31,40 +25,42 @@ export function InventoryHelpContent() {
   return (
     <div className="space-y-8">
       {/* Introduction */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 py-2 px-4 border-b">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg overflow-hidden">
+        <div className="bg-info py-2 px-4 border-b">
           <div className="flex items-center gap-2 text-lg font-semibold">
-            <BookOpen className="h-5 w-5 text-blue-600" />
+            <BookOpen className="h-5 w-5 text-info-foreground" />
             <span>Inventory Builder Overview</span>
           </div>
         </div>
         <div className="p-6 space-y-4">
-          <p className="text-gray-700">
+          <p className="text-muted-foreground">
             The <strong>Inventory Builder</strong> is a powerful device selection system
             that uses logical operations (AND/OR/NOT) to create dynamic device
             inventories. Build complex queries using a tree-based structure with nested
             groups and real-time preview of matching devices from Nautobot.
           </p>
           <div className="grid md:grid-cols-3 gap-4 mt-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">
+            <div className="p-4 bg-info rounded-lg border border-info-border">
+              <h4 className="font-semibold text-info-foreground mb-2">
                 🎯 Logical Conditions
               </h4>
-              <p className="text-sm text-blue-700">
+              <p className="text-sm text-info-foreground">
                 Create filters using fields like role, location, status, or custom
                 fields with operators like equals, contains, not equals.
               </p>
             </div>
-            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-              <h4 className="font-semibold text-purple-800 mb-2">📦 Nested Groups</h4>
-              <p className="text-sm text-purple-700">
+            <div className="p-4 bg-muted rounded-lg border border-border">
+              <h4 className="font-semibold text-foreground mb-2">📦 Nested Groups</h4>
+              <p className="text-sm text-muted-foreground">
                 Organize conditions into groups with their own logic (AND/OR) and nest
                 groups within groups for complex queries.
               </p>
             </div>
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-2">💾 Save & Reuse</h4>
-              <p className="text-sm text-green-700">
+            <div className="p-4 bg-success rounded-lg border border-success-border">
+              <h4 className="font-semibold text-success-foreground mb-2">
+                💾 Save &amp; Reuse
+              </h4>
+              <p className="text-sm text-success-foreground">
                 Save your inventory queries for later use and share them with your team
                 (global scope) or keep them private.
               </p>
@@ -74,35 +70,33 @@ export function InventoryHelpContent() {
       </div>
 
       {/* Root Logic Explanation */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-purple-50 to-purple-100 py-2 px-4 border-b">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg overflow-hidden">
+        <div className="bg-muted py-2 px-4 border-b">
           <div className="flex items-center gap-2 text-lg font-semibold">
-            <Binary className="h-5 w-5 text-purple-600" />
+            <Binary className="h-5 w-5 text-muted-foreground" />
             <span>Root Logic Toggle (AND/OR)</span>
           </div>
         </div>
         <div className="p-6 space-y-6">
-          <p className="text-gray-600 text-sm">
+          <p className="text-muted-foreground text-sm">
             The <strong>Root Logic</strong> determines how multiple top-level conditions
             and groups are combined. You can toggle between{' '}
-            <code className="bg-gray-100 px-2 py-1 rounded">AND</code> and{' '}
-            <code className="bg-gray-100 px-2 py-1 rounded">OR</code> logic at the root
+            <code className="bg-muted px-2 py-1 rounded">AND</code> and{' '}
+            <code className="bg-muted px-2 py-1 rounded">OR</code> logic at the root
             level.
           </p>
 
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
-                <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                  AND
-                </span>
+            <div className="p-4 bg-info rounded-lg border border-info-border">
+              <h4 className="font-semibold text-info-foreground mb-2 flex items-center gap-2">
+                <Badge>AND</Badge>
                 Root Logic
               </h4>
-              <p className="text-sm text-blue-700 mb-2">
+              <p className="text-sm text-info-foreground mb-2">
                 All conditions must be true. Results are the{' '}
                 <strong>intersection</strong> of matching devices.
               </p>
-              <div className="text-xs text-blue-600 space-y-1">
+              <div className="text-xs text-info-foreground space-y-1">
                 <div>
                   ✓ Role = Router <strong>AND</strong>
                 </div>
@@ -116,18 +110,16 @@ export function InventoryHelpContent() {
               </div>
             </div>
 
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
-                <span className="bg-green-600 text-white text-xs px-2 py-1 rounded">
-                  OR
-                </span>
+            <div className="p-4 bg-success rounded-lg border border-success-border">
+              <h4 className="font-semibold text-success-foreground mb-2 flex items-center gap-2">
+                <Badge>OR</Badge>
                 Root Logic
               </h4>
-              <p className="text-sm text-green-700 mb-2">
+              <p className="text-sm text-success-foreground mb-2">
                 Any condition can be true. Results are the <strong>union</strong> of
                 matching devices.
               </p>
-              <div className="text-xs text-green-600 space-y-1">
+              <div className="text-xs text-success-foreground space-y-1">
                 <div>
                   ✓ Role = Router <strong>OR</strong>
                 </div>
@@ -142,56 +134,49 @@ export function InventoryHelpContent() {
             </div>
           </div>
 
-          <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-500">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
-              <div>
-                <h4 className="font-semibold text-amber-800 mb-1">
-                  How to Toggle Root Logic
-                </h4>
-                <p className="text-sm text-amber-700">
-                  Click the <strong>AND</strong> or <strong>OR</strong> button at the
-                  top of the condition tree. This changes how all top-level items are
-                  combined. Groups can have their own internal logic.
-                </p>
-              </div>
-            </div>
-          </div>
+          <StatusAlert variant="warning">
+            <h4 className="font-semibold mb-1">How to Toggle Root Logic</h4>
+            <p className="text-sm">
+              Click the <strong>AND</strong> or <strong>OR</strong> button at the top of
+              the condition tree. This changes how all top-level items are combined.
+              Groups can have their own internal logic.
+            </p>
+          </StatusAlert>
         </div>
       </div>
 
       {/* Grouping Mechanism */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-indigo-50 to-blue-100 py-2 px-4 border-b">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg overflow-hidden">
+        <div className="bg-muted py-2 px-4 border-b">
           <div className="flex items-center gap-2 text-lg font-semibold">
-            <Layers className="h-5 w-5 text-indigo-600" />
+            <Layers className="h-5 w-5 text-muted-foreground" />
             <span>Grouping Mechanism</span>
           </div>
         </div>
         <div className="p-6 space-y-6">
-          <p className="text-gray-600 text-sm">
+          <p className="text-muted-foreground text-sm">
             Groups allow you to organize conditions and apply different logical
             operations. You can nest groups within groups to create sophisticated
             queries with parenthetical logic.
           </p>
 
           <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Group Properties</h4>
+            <h4 className="font-semibold text-foreground">Group Properties</h4>
             <div className="grid md:grid-cols-2 gap-3">
-              <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                <h5 className="font-semibold text-indigo-800 text-sm mb-1">
+              <div className="p-3 bg-muted rounded-lg border border-border">
+                <h5 className="font-semibold text-foreground text-sm mb-1">
                   Group Logic (AND/OR/NOT)
                 </h5>
-                <p className="text-xs text-indigo-700">
+                <p className="text-xs text-muted-foreground">
                   Determines how the group relates to other items at the same level.
                   Choose AND, OR, or NOT when creating the group.
                 </p>
               </div>
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <h5 className="font-semibold text-blue-800 text-sm mb-1">
+              <div className="p-3 bg-muted rounded-lg border border-border">
+                <h5 className="font-semibold text-foreground text-sm mb-1">
                   Internal Logic (AND/OR)
                 </h5>
-                <p className="text-xs text-blue-700">
+                <p className="text-xs text-muted-foreground">
                   Controls how conditions within the group are combined. You can change
                   this by clicking the logic button inside the group.
                 </p>
@@ -200,8 +185,8 @@ export function InventoryHelpContent() {
           </div>
 
           <div className="space-y-3">
-            <h4 className="font-semibold text-gray-800">Creating Groups</h4>
-            <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
+            <h4 className="font-semibold text-foreground">Creating Groups</h4>
+            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
               <li>
                 Click the <strong>&quot;Add Group&quot;</strong> button
               </li>
@@ -218,19 +203,21 @@ export function InventoryHelpContent() {
             </ol>
           </div>
 
-          <div className="p-4 bg-slate-50 rounded-lg border">
-            <h5 className="font-semibold text-slate-800 mb-3">
+          <div className="p-4 bg-muted rounded-lg border border-border">
+            <h5 className="font-semibold text-foreground mb-3">
               Visual Example: Group Structure
             </h5>
             <div className="space-y-2 text-sm font-mono">
-              <div className="bg-white p-2 rounded border-l-4 border-blue-500">
+              <div className="bg-card p-2 rounded border-l-4 border-primary">
                 <strong>Root (AND)</strong>
                 <div className="ml-4 mt-1 space-y-1">
                   <div>├─ Condition: role = router</div>
                   <div>├─ Condition: location = DC1</div>
-                  <div className="bg-purple-50 p-2 rounded border-l-4 border-purple-500 mt-2">
-                    <strong>└─ Group (NOT, Internal: OR)</strong>
-                    <div className="ml-4 mt-1 space-y-1">
+                  <div className="bg-error p-2 rounded border-l-4 border-error-border mt-2">
+                    <strong className="text-error-foreground">
+                      └─ Group (NOT, Internal: OR)
+                    </strong>
+                    <div className="ml-4 mt-1 space-y-1 text-error-foreground">
                       <div>├─ Condition: status = down</div>
                       <div>└─ Condition: status = maintenance</div>
                     </div>
@@ -238,7 +225,7 @@ export function InventoryHelpContent() {
                 </div>
               </div>
             </div>
-            <p className="text-xs text-gray-600 mt-3">
+            <p className="text-xs text-muted-foreground mt-3">
               This query means:{' '}
               <em>
                 &quot;Get routers in DC1, but exclude those that are down OR in
@@ -250,45 +237,45 @@ export function InventoryHelpContent() {
       </div>
 
       {/* Available Fields and Operators */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-slate-50 to-slate-100 py-2 px-4 border-b">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg overflow-hidden">
+        <div className="bg-muted py-2 px-4 border-b">
           <div className="flex items-center gap-2 text-lg font-semibold">
-            <Filter className="h-5 w-5 text-slate-600" />
+            <Filter className="h-5 w-5 text-muted-foreground" />
             <span>Available Fields and Operators</span>
           </div>
         </div>
         <div className="p-6 space-y-6">
           <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Device Fields</h4>
+            <h4 className="font-semibold text-foreground">Device Fields</h4>
             <div className="grid md:grid-cols-3 gap-3 text-sm">
-              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+              <div className="p-2 bg-muted rounded border border-border">
                 <strong>Name</strong> - Device hostname
               </div>
-              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+              <div className="p-2 bg-muted rounded border border-border">
                 <strong>Location</strong> - Site/Location (hierarchical)
               </div>
-              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+              <div className="p-2 bg-muted rounded border border-border">
                 <strong>Role</strong> - Device role (router, switch, etc.)
               </div>
-              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+              <div className="p-2 bg-muted rounded border border-border">
                 <strong>Status</strong> - Device status (active, offline, etc.)
               </div>
-              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+              <div className="p-2 bg-muted rounded border border-border">
                 <strong>Manufacturer</strong> - Device manufacturer
               </div>
-              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+              <div className="p-2 bg-muted rounded border border-border">
                 <strong>Device Type</strong> - Model/type
               </div>
-              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+              <div className="p-2 bg-muted rounded border border-border">
                 <strong>Platform</strong> - OS platform
               </div>
-              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+              <div className="p-2 bg-muted rounded border border-border">
                 <strong>Tag</strong> - Device tags
               </div>
-              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+              <div className="p-2 bg-muted rounded border border-border">
                 <strong>Has Primary IP</strong> - Has primary IP assigned
               </div>
-              <div className="p-2 bg-green-50 rounded border border-green-200 md:col-span-3">
+              <div className="p-2 bg-success rounded border border-success-border md:col-span-3">
                 <strong>Custom Fields</strong> - Any custom fields defined in Nautobot
                 (dynamically loaded)
               </div>
@@ -296,27 +283,31 @@ export function InventoryHelpContent() {
           </div>
 
           <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Operators</h4>
+            <h4 className="font-semibold text-foreground">Operators</h4>
             <div className="grid md:grid-cols-2 gap-3 text-sm">
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <strong className="text-green-800">equals</strong>
-                <p className="text-xs text-green-700 mt-1">
+              <div className="p-3 bg-success rounded-lg border border-success-border">
+                <strong className="text-success-foreground">equals</strong>
+                <p className="text-xs text-success-foreground mt-1">
                   Exact match (case-insensitive)
                 </p>
               </div>
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <strong className="text-green-800">contains</strong>
-                <p className="text-xs text-green-700 mt-1">
+              <div className="p-3 bg-success rounded-lg border border-success-border">
+                <strong className="text-success-foreground">contains</strong>
+                <p className="text-xs text-success-foreground mt-1">
                   Partial match (case-insensitive)
                 </p>
               </div>
-              <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                <strong className="text-red-800">not_equals</strong>
-                <p className="text-xs text-red-700 mt-1">Does not match exactly</p>
+              <div className="p-3 bg-error rounded-lg border border-error-border">
+                <strong className="text-error-foreground">not_equals</strong>
+                <p className="text-xs text-error-foreground mt-1">
+                  Does not match exactly
+                </p>
               </div>
-              <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                <strong className="text-red-800">not_contains</strong>
-                <p className="text-xs text-red-700 mt-1">Does not contain the value</p>
+              <div className="p-3 bg-error rounded-lg border border-error-border">
+                <strong className="text-error-foreground">not_contains</strong>
+                <p className="text-xs text-error-foreground mt-1">
+                  Does not contain the value
+                </p>
               </div>
             </div>
           </div>
@@ -324,40 +315,38 @@ export function InventoryHelpContent() {
       </div>
 
       {/* Usage Examples */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 py-2 px-4 border-b">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg overflow-hidden">
+        <div className="bg-muted py-2 px-4 border-b">
           <div className="flex items-center gap-2 text-lg font-semibold">
-            <FileCode className="h-5 w-5 text-green-600" />
+            <FileCode className="h-5 w-5 text-muted-foreground" />
             <span>Usage Examples</span>
           </div>
         </div>
         <div className="p-6 space-y-8">
           {/* Example 1 */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-              <span className="bg-green-600 text-white text-xs px-2 py-1 rounded">
-                Example 1
-              </span>
+            <h4 className="font-semibold text-foreground flex items-center gap-2">
+              <Badge>Example 1</Badge>
               Simple Filter - All Routers
             </h4>
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-              <p className="text-sm text-green-800 mb-3">
+            <div className="p-4 bg-success rounded-lg border border-success-border">
+              <p className="text-sm text-success-foreground mb-3">
                 <strong>Goal:</strong> Find all devices with role &quot;router&quot;
               </p>
-              <div className="space-y-2 text-sm text-green-700">
+              <div className="space-y-2 text-sm text-success-foreground">
                 <div>
                   <strong>Steps:</strong>
                 </div>
                 <ol className="list-decimal list-inside space-y-1 ml-2">
                   <li>
-                    Select field: <code className="bg-white px-1 rounded">Role</code>
+                    Select field: <code className="bg-card px-1 rounded">Role</code>
                   </li>
                   <li>
                     Select operator:{' '}
-                    <code className="bg-white px-1 rounded">equals</code>
+                    <code className="bg-card px-1 rounded">equals</code>
                   </li>
                   <li>
-                    Enter value: <code className="bg-white px-1 rounded">router</code>
+                    Enter value: <code className="bg-card px-1 rounded">router</code>
                   </li>
                   <li>
                     Click <strong>&quot;Add Condition&quot;</strong>
@@ -379,32 +368,30 @@ Result: All devices with role = router`}
 
           {/* Example 2 */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-              <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                Example 2
-              </span>
+            <h4 className="font-semibold text-foreground flex items-center gap-2">
+              <Badge>Example 2</Badge>
               Multiple Conditions with AND Logic
             </h4>
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-800 mb-3">
+            <div className="p-4 bg-info rounded-lg border border-info-border">
+              <p className="text-sm text-info-foreground mb-3">
                 <strong>Goal:</strong> Find routers in DC1 that are active
               </p>
-              <div className="space-y-2 text-sm text-blue-700">
+              <div className="space-y-2 text-sm text-info-foreground">
                 <div>
                   <strong>Steps:</strong>
                 </div>
                 <ol className="list-decimal list-inside space-y-1 ml-2">
                   <li>
                     Add condition:{' '}
-                    <code className="bg-white px-1 rounded">role equals router</code>
+                    <code className="bg-card px-1 rounded">role equals router</code>
                   </li>
                   <li>
                     Add condition:{' '}
-                    <code className="bg-white px-1 rounded">location equals DC1</code>
+                    <code className="bg-card px-1 rounded">location equals DC1</code>
                   </li>
                   <li>
                     Add condition:{' '}
-                    <code className="bg-white px-1 rounded">status equals active</code>
+                    <code className="bg-card px-1 rounded">status equals active</code>
                   </li>
                   <li>
                     Ensure root logic is <strong>AND</strong> (default)
@@ -427,28 +414,26 @@ Result: Only devices matching ALL conditions
 
           {/* Example 3 */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-              <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded">
-                Example 3
-              </span>
+            <h4 className="font-semibold text-foreground flex items-center gap-2">
+              <Badge>Example 3</Badge>
               Multiple Conditions with OR Logic
             </h4>
-            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-              <p className="text-sm text-purple-800 mb-3">
+            <div className="p-4 bg-success rounded-lg border border-success-border">
+              <p className="text-sm text-success-foreground mb-3">
                 <strong>Goal:</strong> Find devices that are either routers OR switches
               </p>
-              <div className="space-y-2 text-sm text-purple-700">
+              <div className="space-y-2 text-sm text-success-foreground">
                 <div>
                   <strong>Steps:</strong>
                 </div>
                 <ol className="list-decimal list-inside space-y-1 ml-2">
                   <li>
                     Add condition:{' '}
-                    <code className="bg-white px-1 rounded">role equals router</code>
+                    <code className="bg-card px-1 rounded">role equals router</code>
                   </li>
                   <li>
                     Add condition:{' '}
-                    <code className="bg-white px-1 rounded">role equals switch</code>
+                    <code className="bg-card px-1 rounded">role equals switch</code>
                   </li>
                   <li>
                     Click the <strong>AND</strong> button at the top to toggle it to{' '}
@@ -471,29 +456,27 @@ Result: Devices matching ANY condition
 
           {/* Example 4 */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-              <span className="bg-red-600 text-white text-xs px-2 py-1 rounded">
-                Example 4
-              </span>
+            <h4 className="font-semibold text-foreground flex items-center gap-2">
+              <Badge>Example 4</Badge>
               Using NOT Groups (Exclusion)
             </h4>
-            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-              <p className="text-sm text-red-800 mb-3">
+            <div className="p-4 bg-error rounded-lg border border-error-border">
+              <p className="text-sm text-error-foreground mb-3">
                 <strong>Goal:</strong> Find all routers in DC1, but exclude those that
                 are down or in maintenance
               </p>
-              <div className="space-y-2 text-sm text-red-700">
+              <div className="space-y-2 text-sm text-error-foreground">
                 <div>
                   <strong>Steps:</strong>
                 </div>
                 <ol className="list-decimal list-inside space-y-1 ml-2">
                   <li>
                     Add condition:{' '}
-                    <code className="bg-white px-1 rounded">role equals router</code>
+                    <code className="bg-card px-1 rounded">role equals router</code>
                   </li>
                   <li>
                     Add condition:{' '}
-                    <code className="bg-white px-1 rounded">location equals DC1</code>
+                    <code className="bg-card px-1 rounded">location equals DC1</code>
                   </li>
                   <li>
                     Click <strong>&quot;Add Group&quot;</strong> and select{' '}
@@ -501,11 +484,11 @@ Result: Devices matching ANY condition
                   </li>
                   <li>
                     Inside the NOT group, add:{' '}
-                    <code className="bg-white px-1 rounded">status equals down</code>
+                    <code className="bg-card px-1 rounded">status equals down</code>
                   </li>
                   <li>
                     In the same group, add:{' '}
-                    <code className="bg-white px-1 rounded">
+                    <code className="bg-card px-1 rounded">
                       status equals maintenance
                     </code>
                   </li>
@@ -532,18 +515,16 @@ Result: (Routers in DC1) - (down OR maintenance)
 
           {/* Example 5 */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-              <span className="bg-indigo-600 text-white text-xs px-2 py-1 rounded">
-                Example 5
-              </span>
+            <h4 className="font-semibold text-foreground flex items-center gap-2">
+              <Badge>Example 5</Badge>
               Complex Nested Groups
             </h4>
-            <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-              <p className="text-sm text-indigo-800 mb-3">
+            <div className="p-4 bg-muted rounded-lg border border-border">
+              <p className="text-sm text-foreground mb-3">
                 <strong>Goal:</strong> Find devices that are (routers in DC1 OR switches
                 in DC2) AND have primary IP
               </p>
-              <div className="space-y-2 text-sm text-indigo-700">
+              <div className="space-y-2 text-sm text-muted-foreground">
                 <div>
                   <strong>Steps:</strong>
                 </div>
@@ -559,13 +540,13 @@ Result: (Routers in DC1) - (down OR maintenance)
                     <ul className="list-disc list-inside ml-4 mt-1">
                       <li>
                         Add:{' '}
-                        <code className="bg-white px-1 rounded">
+                        <code className="bg-card px-1 rounded">
                           role equals router
                         </code>
                       </li>
                       <li>
                         Add:{' '}
-                        <code className="bg-white px-1 rounded">
+                        <code className="bg-card px-1 rounded">
                           location equals DC1
                         </code>
                       </li>
@@ -576,13 +557,13 @@ Result: (Routers in DC1) - (down OR maintenance)
                     <ul className="list-disc list-inside ml-4 mt-1">
                       <li>
                         Add:{' '}
-                        <code className="bg-white px-1 rounded">
+                        <code className="bg-card px-1 rounded">
                           role equals switch
                         </code>
                       </li>
                       <li>
                         Add:{' '}
-                        <code className="bg-white px-1 rounded">
+                        <code className="bg-card px-1 rounded">
                           location equals DC2
                         </code>
                       </li>
@@ -590,7 +571,7 @@ Result: (Routers in DC1) - (down OR maintenance)
                   </li>
                   <li>
                     At root level, add:{' '}
-                    <code className="bg-white px-1 rounded">
+                    <code className="bg-card px-1 rounded">
                       has_primary equals true
                     </code>
                   </li>
@@ -616,37 +597,35 @@ Result: ((Routers in DC1) OR (Switches in DC2)) AND (has primary IP)
 
           {/* Example 6 */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-              <span className="bg-amber-600 text-white text-xs px-2 py-1 rounded">
-                Example 6
-              </span>
+            <h4 className="font-semibold text-foreground flex items-center gap-2">
+              <Badge>Example 6</Badge>
               Using Custom Fields
             </h4>
-            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-              <p className="text-sm text-amber-800 mb-3">
+            <div className="p-4 bg-warning rounded-lg border border-warning-border">
+              <p className="text-sm text-warning-foreground mb-3">
                 <strong>Goal:</strong> Find devices with specific SNMP credentials
               </p>
-              <div className="space-y-2 text-sm text-amber-700">
+              <div className="space-y-2 text-sm text-warning-foreground">
                 <div>
                   <strong>Steps:</strong>
                 </div>
                 <ol className="list-decimal list-inside space-y-1 ml-2">
                   <li>
                     Select field:{' '}
-                    <code className="bg-white px-1 rounded">Custom Fields</code>
+                    <code className="bg-card px-1 rounded">Custom Fields</code>
                   </li>
                   <li>Wait for custom fields to load from Nautobot</li>
                   <li>
                     Select custom field:{' '}
-                    <code className="bg-white px-1 rounded">snmp_credentials</code>
+                    <code className="bg-card px-1 rounded">snmp_credentials</code>
                   </li>
                   <li>
                     Select operator:{' '}
-                    <code className="bg-white px-1 rounded">equals</code>
+                    <code className="bg-card px-1 rounded">equals</code>
                   </li>
                   <li>
                     Select or enter value:{' '}
-                    <code className="bg-white px-1 rounded">prod-snmp-v3</code>
+                    <code className="bg-card px-1 rounded">prod-snmp-v3</code>
                   </li>
                   <li>Add the condition and preview</li>
                 </ol>
@@ -664,55 +643,65 @@ Result: All devices with the specific SNMP credential configuration`}
       </div>
 
       {/* Tips and Best Practices */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-yellow-50 to-amber-50 py-2 px-4 border-b">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg overflow-hidden">
+        <div className="bg-warning py-2 px-4 border-b">
           <div className="flex items-center gap-2 text-lg font-semibold">
-            <Globe className="h-5 w-5 text-amber-600" />
+            <Globe className="h-5 w-5 text-warning-foreground" />
             <span>Tips and Best Practices</span>
           </div>
         </div>
         <div className="p-6 space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-              <h5 className="font-semibold text-blue-800 mb-2">💡 Start Simple</h5>
-              <p className="text-sm text-blue-700">
+            <div className="p-4 bg-info rounded-lg border-l-4 border-info-border">
+              <h5 className="font-semibold text-info-foreground mb-2">
+                💡 Start Simple
+              </h5>
+              <p className="text-sm text-info-foreground">
                 Begin with a single condition and preview results. Gradually add more
                 conditions or groups to refine your selection.
               </p>
             </div>
-            <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
-              <h5 className="font-semibold text-green-800 mb-2">💾 Save Your Work</h5>
-              <p className="text-sm text-green-700">
+            <div className="p-4 bg-success rounded-lg border-l-4 border-success-border">
+              <h5 className="font-semibold text-success-foreground mb-2">
+                💾 Save Your Work
+              </h5>
+              <p className="text-sm text-success-foreground">
                 Save frequently-used queries with descriptive names. Use
                 &quot;global&quot; scope to share with your team.
               </p>
             </div>
-            <div className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
-              <h5 className="font-semibold text-purple-800 mb-2">🎯 Use NOT Wisely</h5>
-              <p className="text-sm text-purple-700">
+            <div className="p-4 bg-muted rounded-lg border-l-4 border-border">
+              <h5 className="font-semibold text-foreground mb-2">
+                🎯 Use NOT Wisely
+              </h5>
+              <p className="text-sm text-muted-foreground">
                 NOT groups are powerful for exclusions. Combine them with OR logic
                 inside to exclude multiple conditions at once.
               </p>
             </div>
-            <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-500">
-              <h5 className="font-semibold text-amber-800 mb-2">📊 Preview Often</h5>
-              <p className="text-sm text-amber-700">
+            <div className="p-4 bg-warning rounded-lg border-l-4 border-warning-border">
+              <h5 className="font-semibold text-warning-foreground mb-2">
+                📊 Preview Often
+              </h5>
+              <p className="text-sm text-warning-foreground">
                 Click &quot;Preview Devices&quot; frequently to verify your query is
                 returning the expected results before generating inventory.
               </p>
             </div>
-            <div className="p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
-              <h5 className="font-semibold text-red-800 mb-2">🔍 Check Device Count</h5>
-              <p className="text-sm text-red-700">
+            <div className="p-4 bg-error rounded-lg border-l-4 border-error-border">
+              <h5 className="font-semibold text-error-foreground mb-2">
+                🔍 Check Device Count
+              </h5>
+              <p className="text-sm text-error-foreground">
                 Watch the device count in the preview. If it&apos;s too high or too low,
                 adjust your conditions accordingly.
               </p>
             </div>
-            <div className="p-4 bg-indigo-50 rounded-lg border-l-4 border-indigo-500">
-              <h5 className="font-semibold text-indigo-800 mb-2">
+            <div className="p-4 bg-muted rounded-lg border-l-4 border-border">
+              <h5 className="font-semibold text-foreground mb-2">
                 🏗️ Structure Complex Queries
               </h5>
-              <p className="text-sm text-indigo-700">
+              <p className="text-sm text-muted-foreground">
                 For very complex queries, use nested groups to maintain clarity and make
                 it easier to modify later.
               </p>

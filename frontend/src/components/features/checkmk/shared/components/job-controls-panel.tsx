@@ -32,22 +32,19 @@ export function JobControlsPanel({
   onClearResults,
 }: JobControlsPanelProps) {
   return (
-    <div className="bg-white border rounded-lg shadow-sm">
+    <div className="bg-card border rounded-lg shadow-sm">
       {/* Start New Job */}
-      <div className="bg-white p-4">
+      <div className="bg-card p-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 mb-1">
+            <h3 className="font-semibold text-foreground mb-1">
               Start New Comparison Job
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Start a new comprehensive device comparison job that processes all devices
             </p>
           </div>
-          <Button
-            onClick={onStartNewJob}
-            className="bg-blue-600 hover:bg-blue-700 ml-4"
-          >
+          <Button onClick={onStartNewJob} className="ml-4">
             <Play className="h-4 w-4 mr-2" />
             Start Device Comparison Job
           </Button>
@@ -55,10 +52,10 @@ export function JobControlsPanel({
       </div>
 
       {/* Job Results Selection */}
-      <div className="bg-gray-50 p-4 border-t">
+      <div className="bg-muted p-4 border-t">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Label className="text-sm font-medium text-gray-700">
+            <Label className="text-sm font-medium text-muted-foreground">
               Load Job Results:
             </Label>
             <Select value={selectedJobId} onValueChange={onSelectJob}>
@@ -85,7 +82,6 @@ export function JobControlsPanel({
               onClick={onLoadResults}
               disabled={!selectedJobId || selectedJobId === 'no-jobs' || loadingResults}
               size="sm"
-              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
             >
               {loadingResults ? (
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -107,7 +103,7 @@ export function JobControlsPanel({
               onClick={onClearResults}
               variant="outline"
               size="sm"
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
               title="Clear all comparison results"
               disabled={availableJobs.length === 0}
             >

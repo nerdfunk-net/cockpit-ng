@@ -1,14 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import {
-  Activity,
-  Loader2,
-  AlertCircle,
-  Key,
-  ChevronRight,
-  RefreshCw,
-} from 'lucide-react'
+import { Activity, Loader2, Key, ChevronRight, RefreshCw } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -16,6 +9,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { StatusAlert } from '@/components/shared/status-alert'
+import { StatusBadge } from '@/components/shared/status-badge'
 import { cn } from '@/lib/utils'
 import { useApi } from '@/hooks/use-api'
 import type { NautobotDevice } from '@/hooks/queries/use-clients-query'
@@ -240,7 +235,7 @@ export function LiveStatusDialog({ device, onClose }: LiveStatusDialogProps) {
       <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-blue-500" />
+            <Activity className="h-5 w-5 text-primary" />
             Live Status — {device.name}
             {deviceIp && (
               <span className="text-sm font-normal text-muted-foreground ml-1">
@@ -311,13 +306,13 @@ function CredentialStep({
 
       {loadingCreds ? (
         <div className="flex items-center justify-center py-10">
-          <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
       ) : credentials.length === 0 ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        <StatusAlert variant="warning">
           No SSH credentials found. Please add SSH credentials in{' '}
           <strong>Settings → Credentials</strong>.
-        </div>
+        </StatusAlert>
       ) : (
         <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
           {credentials.map(cred => (
@@ -327,15 +322,15 @@ function CredentialStep({
               className={cn(
                 'w-full flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors',
                 selectedCredId === cred.id
-                  ? 'border-blue-500 bg-blue-50 text-blue-900'
-                  : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-800'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-card hover:bg-muted text-foreground'
               )}
             >
               <div className="flex items-center gap-3">
                 <Key
                   className={cn(
                     'h-4 w-4 shrink-0',
-                    selectedCredId === cred.id ? 'text-blue-500' : 'text-gray-400'
+                    selectedCredId === cred.id ? 'text-primary' : 'text-muted-foreground'
                   )}
                 />
                 <div>
@@ -353,7 +348,7 @@ function CredentialStep({
         </div>
       )}
 
-      <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+      <div className="flex justify-end gap-2 pt-2 border-t border-border">
         <Button variant="outline" size="sm" onClick={onClose}>
           Cancel
         </Button>
@@ -374,7 +369,7 @@ function CredentialStep({
 function LoadingStep({ deviceName }: { deviceName: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-3">
-      <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="text-sm text-muted-foreground">
         Connecting to <strong>{deviceName}</strong> and executing commands…
       </p>
@@ -394,15 +389,10 @@ interface ErrorStepProps {
 function ErrorStep({ message, onRetry, onClose }: ErrorStepProps) {
   return (
     <div className="space-y-4 mt-2">
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
-        <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-medium text-red-800">Command execution failed</p>
-          <p className="text-xs text-red-700 mt-1 font-mono whitespace-pre-wrap break-all">
-            {message}
-          </p>
-        </div>
-      </div>
+      <StatusAlert variant="error">
+        <p className="text-sm font-medium">Command execution failed</p>
+        <p className="text-xs mt-1 font-mono whitespace-pre-wrap break-all">{message}</p>
+      </StatusAlert>
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={onRetry}>
           Try Again
@@ -430,7 +420,7 @@ function ResultsStep({ results, deviceName, onRefetch, onClose }: ResultsStepPro
   return (
     <div className="space-y-4 mt-2">
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-border">
         <TabButton
           active={activeTab === 'arp'}
           count={results.arp.length}
@@ -448,7 +438,7 @@ function ResultsStep({ results, deviceName, onRefetch, onClose }: ResultsStepPro
       {activeTab === 'arp' && <ArpTable rows={results.arp} />}
       {activeTab === 'mac' && <MacTable rows={results.mac} />}
 
-      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+      <div className="flex items-center justify-between pt-2 border-t border-border">
         <p className="text-xs text-muted-foreground">
           Snapshot from <span className="font-medium">{deviceName}</span>
         </p>
@@ -480,15 +470,15 @@ function TabButton({ active, label, count, onClick }: TabButtonProps) {
       className={cn(
         'px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2',
         active
-          ? 'border-blue-500 text-blue-600'
-          : 'border-transparent text-gray-500 hover:text-gray-700'
+          ? 'border-primary text-primary'
+          : 'border-transparent text-muted-foreground hover:text-foreground'
       )}
     >
       {label}
       <span
         className={cn(
           'text-xs px-1.5 py-0.5 rounded-full',
-          active ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'
+          active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
         )}
       >
         {count}
@@ -509,46 +499,46 @@ function ArpTable({ rows }: { rows: ArpEntry[] }) {
   const hasVrf = rows.some(r => r.vrf)
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-xs">
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-200">
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">
+          <tr className="bg-muted border-b border-border">
+            <th className="text-left px-3 py-2 font-semibold text-muted-foreground">
               IP Address
             </th>
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">
+            <th className="text-left px-3 py-2 font-semibold text-muted-foreground">
               MAC Address
             </th>
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">Age</th>
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">
+            <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Age</th>
+            <th className="text-left px-3 py-2 font-semibold text-muted-foreground">
               Interface
             </th>
             {hasVrf && (
-              <th className="text-left px-3 py-2 font-semibold text-gray-700">VRF</th>
+              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">VRF</th>
             )}
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">
+            <th className="text-left px-3 py-2 font-semibold text-muted-foreground">
               Protocol
             </th>
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">Type</th>
+            <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Type</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-border">
           {rows.map((row) => (
             <tr
               key={`${row.ip_address}-${row.interface}-${row.vrf ?? ''}`}
-              className="hover:bg-gray-50 transition-colors"
+              className="hover:bg-muted/50 transition-colors"
             >
-              <td className="px-3 py-2 font-mono text-gray-800">{row.ip_address}</td>
-              <td className="px-3 py-2 font-mono text-gray-600">{row.mac_address}</td>
-              <td className="px-3 py-2 text-gray-600">
+              <td className="px-3 py-2 font-mono text-foreground">{row.ip_address}</td>
+              <td className="px-3 py-2 font-mono text-muted-foreground">{row.mac_address}</td>
+              <td className="px-3 py-2 text-muted-foreground">
                 {row.age === '-' ? '—' : `${row.age} min`}
               </td>
-              <td className="px-3 py-2 text-gray-600">{row.interface}</td>
+              <td className="px-3 py-2 text-muted-foreground">{row.interface}</td>
               {hasVrf && (
-                <td className="px-3 py-2 text-gray-600">{row.vrf ?? '—'}</td>
+                <td className="px-3 py-2 text-muted-foreground">{row.vrf ?? '—'}</td>
               )}
-              <td className="px-3 py-2 text-gray-500">{row.protocol}</td>
-              <td className="px-3 py-2 text-gray-500">{row.type}</td>
+              <td className="px-3 py-2 text-muted-foreground">{row.protocol}</td>
+              <td className="px-3 py-2 text-muted-foreground">{row.type}</td>
             </tr>
           ))}
         </tbody>
@@ -567,32 +557,32 @@ function MacTable({ rows }: { rows: MacEntry[] }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-xs">
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-200">
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">
+          <tr className="bg-muted border-b border-border">
+            <th className="text-left px-3 py-2 font-semibold text-muted-foreground">
               MAC Address
             </th>
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">VLAN</th>
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">Type</th>
-            <th className="text-left px-3 py-2 font-semibold text-gray-700">Port(s)</th>
+            <th className="text-left px-3 py-2 font-semibold text-muted-foreground">VLAN</th>
+            <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Type</th>
+            <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Port(s)</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-border">
           {rows.map(row => (
             <tr
               key={`${row.destination_address}-${row.vlan_id}`}
-              className="hover:bg-gray-50 transition-colors"
+              className="hover:bg-muted/50 transition-colors"
             >
-              <td className="px-3 py-2 font-mono text-gray-800">
+              <td className="px-3 py-2 font-mono text-foreground">
                 {row.destination_address}
               </td>
-              <td className="px-3 py-2 text-gray-600">{row.vlan_id}</td>
+              <td className="px-3 py-2 text-muted-foreground">{row.vlan_id}</td>
               <td className="px-3 py-2">
                 <MacTypeBadge type={row.type} />
               </td>
-              <td className="px-3 py-2 text-gray-600">
+              <td className="px-3 py-2 text-muted-foreground">
                 {Array.isArray(row.destination_port)
                   ? row.destination_port.join(', ')
                   : row.destination_port}
@@ -606,19 +596,30 @@ function MacTable({ rows }: { rows: MacEntry[] }) {
 }
 
 function MacTypeBadge({ type }: { type: string }) {
-  const style =
-    type === 'DYNAMIC'
-      ? 'bg-green-100 text-green-700'
-      : type === 'STATIC'
-        ? 'bg-blue-100 text-blue-700'
-        : 'bg-gray-100 text-gray-600'
-
-  return <span className={cn('px-1.5 py-0.5 rounded font-medium', style)}>{type}</span>
+  if (type === 'DYNAMIC') {
+    return (
+      <StatusBadge variant="success" className="font-medium">
+        {type}
+      </StatusBadge>
+    )
+  }
+  if (type === 'STATIC') {
+    return (
+      <StatusBadge variant="info" className="font-medium">
+        {type}
+      </StatusBadge>
+    )
+  }
+  return (
+    <span className="px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground">
+      {type}
+    </span>
+  )
 }
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="py-10 text-center text-sm text-muted-foreground rounded-lg border border-dashed border-gray-200">
+    <div className="py-10 text-center text-sm text-muted-foreground rounded-lg border border-dashed border-border">
       {message}
     </div>
   )

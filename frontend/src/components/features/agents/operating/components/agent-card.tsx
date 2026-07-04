@@ -14,6 +14,7 @@ import {
   Radar,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { StatusBadge } from '@/components/shared/status-badge'
 import {
   formatRelativeTime,
   formatUptime,
@@ -49,7 +50,7 @@ export function AgentCard({
     <Card
       className={cn(
         'transition-all duration-200 hover:shadow-md',
-        isOnline ? 'border-green-200' : 'border-red-200'
+        isOnline ? 'border-success-border' : 'border-error-border'
       )}
     >
       <CardHeader className="pb-3">
@@ -58,15 +59,15 @@ export function AgentCard({
             <Server className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold text-sm">{agent.hostname}</span>
           </div>
-          <Badge
-            variant={isOnline ? 'default' : 'destructive'}
-            className={cn(
-              'text-xs',
-              isOnline && 'bg-green-100 text-green-700 hover:bg-green-100'
-            )}
-          >
-            {agent.status}
-          </Badge>
+          {isOnline ? (
+            <StatusBadge variant="success" className="text-xs">
+              {agent.status}
+            </StatusBadge>
+          ) : (
+            <Badge variant="destructive" className="text-xs">
+              {agent.status}
+            </Badge>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">

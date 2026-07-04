@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Server, Loader2, AlertTriangle } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 import { useNautobotStatsQuery } from '@/hooks/queries/use-nautobot-stats-query'
 
 function formatNumber(num: number): string {
@@ -17,15 +18,15 @@ export function NautobotDevicesWidget() {
     <Card className="analytics-card border-0 h-full transition-all duration-300 hover:shadow-analytics-lg">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div className="p-3 rounded-xl bg-blue-100 ring-1 ring-white/20">
-            <Server className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary" className="p-3 rounded-xl">
+            <Server className="h-6 w-6" />
+          </IconChip>
           <div className="text-right">
-            <div className="text-3xl font-bold text-slate-900">
+            <div className="text-3xl font-bold text-foreground">
               {isLoading ? (
-                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               ) : isError ? (
-                <AlertTriangle className="h-8 w-8 text-red-500" />
+                <AlertTriangle className="h-8 w-8 text-error-foreground" />
               ) : (
                 formatNumber(data?.devices ?? 0)
               )}
@@ -34,10 +35,10 @@ export function NautobotDevicesWidget() {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <CardTitle className="text-sm font-semibold text-slate-700 mb-2">
+        <CardTitle className="text-sm font-semibold text-foreground mb-2">
           Total Nautobot Devices
         </CardTitle>
-        <p className="text-xs text-slate-500 leading-relaxed">Network devices in Nautobot</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">Network devices in Nautobot</p>
       </CardContent>
     </Card>
   )

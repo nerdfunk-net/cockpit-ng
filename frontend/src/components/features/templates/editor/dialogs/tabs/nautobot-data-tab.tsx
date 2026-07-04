@@ -146,9 +146,9 @@ export function NautobotDataTab({
             id="nautobot-var-name"
             value={variableName}
             onChange={e => setVariableName(e.target.value)}
-            className={nameError ? 'border-red-300' : ''}
+            className={nameError ? 'border-destructive' : ''}
           />
-          {nameError && <p className="text-xs text-red-500">{nameError}</p>}
+          {nameError && <p className="text-xs text-destructive">{nameError}</p>}
         </div>
       )}
 

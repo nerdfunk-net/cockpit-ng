@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/table'
 import { Radar, Loader2 } from 'lucide-react'
 import type { UseMutationResult } from '@tanstack/react-query'
+import { StatusBadge } from '@/components/shared/status-badge'
 import type { NmapScanInput, NmapScanResult } from '../types'
 
 interface NmapScanDialogProps {
@@ -149,15 +150,11 @@ export function NmapScanDialog({
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <Badge variant="outline">{output.hostname}</Badge>
                 <Badge variant="outline">{output.ip_address}</Badge>
-                <Badge
-                  className={
-                    output.host_status === 'up'
-                      ? 'bg-green-100 text-green-700 hover:bg-green-100'
-                      : undefined
-                  }
-                >
-                  {output.host_status}
-                </Badge>
+                {output.host_status === 'up' ? (
+                  <StatusBadge variant="success">{output.host_status}</StatusBadge>
+                ) : (
+                  <Badge>{output.host_status}</Badge>
+                )}
                 <span className="text-muted-foreground text-xs">
                   {mutation.data.execution_time_ms}ms · {output.scan_arguments}
                 </span>

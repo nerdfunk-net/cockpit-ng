@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { StatusBadge } from '@/components/shared/status-badge'
 import {
   Select,
   SelectContent,
@@ -241,20 +241,20 @@ export function InterfaceMappingTable({
   }
 
   return (
-    <div className="border border-green-200/60 rounded-md overflow-hidden">
+    <div className="border border-success-border rounded-md overflow-hidden">
       <table className="w-full text-xs">
-        <thead className="bg-green-50/50 border-b border-green-200/60">
+        <thead className="bg-success/50 border-b border-success-border">
           <tr>
-            <th className="text-left p-2 font-medium text-gray-900 w-14">Sync</th>
-            <th className="text-left p-2 font-medium text-gray-900 w-16">Primary</th>
-            <th className="text-left p-2 font-medium text-gray-900">Interface</th>
-            <th className="text-left p-2 font-medium text-gray-900">IP Address</th>
-            <th className="text-left p-2 font-medium text-gray-900">IP Role</th>
-            <th className="text-left p-2 font-medium text-gray-900">Status</th>
-            <th className="text-left p-2 font-medium text-gray-900">Details</th>
+            <th className="text-left p-2 font-medium text-foreground w-14">Sync</th>
+            <th className="text-left p-2 font-medium text-foreground w-16">Primary</th>
+            <th className="text-left p-2 font-medium text-foreground">Interface</th>
+            <th className="text-left p-2 font-medium text-foreground">IP Address</th>
+            <th className="text-left p-2 font-medium text-foreground">IP Role</th>
+            <th className="text-left p-2 font-medium text-foreground">Status</th>
+            <th className="text-left p-2 font-medium text-foreground">Details</th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y">
+        <tbody className="bg-card divide-y">
           {displayedRows.map(row => {
             const mapping = ipMappings[row.rowKey] || {
               enabled: false,
@@ -270,7 +270,7 @@ export function InterfaceMappingTable({
             return (
               <tr
                 key={row.rowKey}
-                className={`hover:bg-green-50/30 ${!mapping.enabled ? 'opacity-50' : ''}`}
+                className={`hover:bg-success/30 ${!mapping.enabled ? 'opacity-50' : ''}`}
               >
                 {/* Sync checkbox */}
                 <td className="p-2 align-top">
@@ -306,10 +306,10 @@ export function InterfaceMappingTable({
                         handleInterfaceNameChange(row.rowKey, e.target.value)
                       }
                       disabled={!mapping.enabled}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                      className="w-full px-2 py-1 text-xs border border-border rounded font-mono focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
                       placeholder="Ethernet0/0"
                     />
-                    <div className="text-[10px] text-gray-500 h-3.5">
+                    <div className="text-[10px] text-muted-foreground h-3.5">
                       {row.interface.alias ? `Alias: ${row.interface.alias}` : '\u00A0'}
                     </div>
                   </div>
@@ -322,7 +322,7 @@ export function InterfaceMappingTable({
                     value={mapping.ipAddress}
                     onChange={e => handleIpAddressChange(row.rowKey, e.target.value)}
                     disabled={!mapping.enabled}
-                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                    className="w-full px-2 py-1 text-xs border border-border rounded font-mono focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
                     placeholder="192.168.1.1/24"
                   />
                 </td>
@@ -334,7 +334,7 @@ export function InterfaceMappingTable({
                     onValueChange={value => handleIpRoleChange(row.rowKey, value)}
                     disabled={!mapping.enabled}
                   >
-                    <SelectTrigger className="h-7 text-xs bg-white border-gray-300">
+                    <SelectTrigger className="h-7 text-xs bg-card border-border">
                       <SelectValue placeholder="Select IP role..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -367,7 +367,7 @@ export function InterfaceMappingTable({
                     onValueChange={value => handleStatusChange(row.rowKey, value)}
                     disabled={!mapping.enabled}
                   >
-                    <SelectTrigger className="h-7 text-xs bg-white border-gray-300">
+                    <SelectTrigger className="h-7 text-xs bg-card border-border">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -392,26 +392,24 @@ export function InterfaceMappingTable({
 
                 {/* Details */}
                 <td className="p-2 align-top">
-                  <div className="space-y-0.5 text-[11px] text-gray-600">
+                  <div className="space-y-0.5 text-[11px] text-muted-foreground">
                     <div className="flex items-center gap-1.5">
                       <span>Admin:</span>
-                      <Badge
-                        className={`text-[10px] h-4 px-1 ${
-                          adminStatus === 'Up' ? 'bg-green-500' : 'bg-red-500'
-                        }`}
+                      <StatusBadge
+                        variant={adminStatus === 'Up' ? 'success' : 'error'}
+                        className="text-[10px] h-4 px-1"
                       >
                         {adminStatus}
-                      </Badge>
+                      </StatusBadge>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span>Oper:</span>
-                      <Badge
-                        className={`text-[10px] h-4 px-1 ${
-                          operStatus === 'Up' ? 'bg-green-500' : 'bg-red-500'
-                        }`}
+                      <StatusBadge
+                        variant={operStatus === 'Up' ? 'success' : 'error'}
+                        className="text-[10px] h-4 px-1"
                       >
                         {operStatus}
-                      </Badge>
+                      </StatusBadge>
                     </div>
                     {row.interface.phys_address && (
                       <div>MAC: {row.interface.phys_address}</div>
@@ -426,7 +424,7 @@ export function InterfaceMappingTable({
       </table>
 
       {/* Summary */}
-      <div className="bg-green-50/30 px-3 py-2 border-t border-green-200/60 text-[11px] text-gray-600">
+      <div className="bg-success/30 px-3 py-2 border-t border-success-border text-[11px] text-muted-foreground">
         <div className="flex gap-4">
           <span>
             <strong>Total:</strong> {displayedRows.length} IP addresses

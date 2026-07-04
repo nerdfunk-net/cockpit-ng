@@ -620,9 +620,9 @@ export function BaselineGenerateForm() {
                     </CardDescription>
                   </div>
                   {showDistribution ? (
-                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
                   ) : (
-                    <ChevronRight className="w-5 h-5 text-gray-500" />
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   )}
                 </div>
               </CardHeader>
@@ -739,11 +739,7 @@ export function BaselineGenerateForm() {
               )}
             </Card>
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -760,13 +756,13 @@ export function BaselineGenerateForm() {
         </Form>
 
         {lastResult && (
-          <Alert className="border-emerald-200 bg-emerald-50/50 shadow-sm">
-            <FlaskConical className="h-4 w-4 text-emerald-600" />
-            <AlertTitle className="text-gray-900">
+          <Alert className="status-success border shadow-sm">
+            <FlaskConical className="h-4 w-4" />
+            <AlertTitle>
               Generated {lastResult.filename}
             </AlertTitle>
-            <AlertDescription className="space-y-2 text-gray-600">
-              <p className="font-mono text-sm break-all text-gray-800">
+            <AlertDescription className="space-y-2">
+              <p className="font-mono text-sm break-all text-foreground">
                 {lastResult.path}
               </p>
               <p>
@@ -775,9 +771,9 @@ export function BaselineGenerateForm() {
                 {lastResult.stats.virtual_machines}, clusters:{' '}
                 {lastResult.stats.clusters}
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Copy this file to{' '}
-                <code className="rounded bg-white px-1.5 py-0.5 text-xs border border-gray-200">
+                <code className="rounded bg-muted px-1.5 py-0.5 text-xs border border-border">
                   contributing-data/tests_baseline/
                 </code>{' '}
                 then use Import test baseline below to load into Nautobot.

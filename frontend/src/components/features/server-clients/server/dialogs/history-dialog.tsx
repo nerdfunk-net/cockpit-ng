@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import { History, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { StatusBadge } from '@/components/shared/status-badge'
 import {
   Dialog,
   DialogContent,
@@ -91,7 +91,7 @@ export function HistoryDialog({ open, onOpenChange, serverId, hostname }: Histor
         <DialogContent className="max-w-xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-blue-600" />
+              <History className="h-5 w-5 text-primary" />
               History — {hostname}
             </DialogTitle>
           </DialogHeader>
@@ -102,11 +102,11 @@ export function HistoryDialog({ open, onOpenChange, serverId, hostname }: Histor
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : entries.length === 0 ? (
-              <div className="py-10 text-center text-sm text-gray-400">
+              <div className="py-10 text-center text-sm text-muted-foreground">
                 No history recorded yet.
               </div>
             ) : (
-              <ul className="divide-y divide-gray-100">
+              <ul className="divide-y divide-border">
                 {entries.map((entry) => {
                   const isPending =
                     selected?.type === entry.type &&
@@ -118,18 +118,16 @@ export function HistoryDialog({ open, onOpenChange, serverId, hostname }: Histor
                       className="flex items-center justify-between gap-3 py-2.5 px-1"
                     >
                       <div className="flex min-w-0 items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'shrink-0 px-1.5 py-0 text-[10px]',
-                            entry.type === 'facts'
-                              ? 'border-blue-300 bg-blue-50 text-blue-700'
-                              : 'border-purple-300 bg-purple-50 text-purple-700'
-                          )}
-                        >
-                          {entry.type === 'facts' ? 'Facts' : 'Open Ports'}
-                        </Badge>
-                        <span className="truncate text-sm text-gray-700">
+                        {entry.type === 'facts' ? (
+                          <StatusBadge variant="info" className="shrink-0 px-1.5 py-0 text-[10px]">
+                            Facts
+                          </StatusBadge>
+                        ) : (
+                          <Badge variant="secondary" className="shrink-0 px-1.5 py-0 text-[10px]">
+                            Open Ports
+                          </Badge>
+                        )}
+                        <span className="truncate text-sm text-muted-foreground">
                           {new Date(entry.recorded_at).toLocaleString()}
                         </span>
                       </div>

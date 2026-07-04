@@ -20,34 +20,36 @@ export const InventoryRenderer = ({
   depth?: number
 }): ReactNode => {
   if (data === null || data === undefined) {
-    return <span className="text-gray-400 italic text-xs">-</span>
+    return <span className="text-muted-foreground italic text-xs">-</span>
   }
 
   if (typeof data !== 'object') {
     if (typeof data === 'boolean') {
       return (
-        <span className="text-purple-600 font-medium text-xs">{data.toString()}</span>
+        <span className="text-warning-foreground font-medium text-xs">
+          {data.toString()}
+        </span>
       )
     }
     if (typeof data === 'number') {
-      return <span className="text-blue-600 font-medium text-xs">{data}</span>
+      return <span className="text-info-foreground font-medium text-xs">{data}</span>
     }
     if (typeof data === 'string') {
-      return <span className="text-green-600 text-xs">{data}</span>
+      return <span className="text-success-foreground text-xs">{data}</span>
     }
-    return <span className="text-gray-500 text-xs">{String(data)}</span>
+    return <span className="text-muted-foreground text-xs">{String(data)}</span>
   }
 
   if (Array.isArray(data)) {
     if (data.length === 0) {
-      return <span className="text-gray-400 italic text-xs">empty</span>
+      return <span className="text-muted-foreground italic text-xs">empty</span>
     }
     return (
       <div className="space-y-1 w-full">
         {data.map((item, index) => (
           // eslint-disable-next-line react/no-array-index-key
           <div key={index} className="flex items-start gap-2 w-full">
-            <span className="text-gray-500 text-xs font-medium select-none min-w-[35px]">
+            <span className="text-muted-foreground text-xs font-medium select-none min-w-[35px]">
               [{index}]
             </span>
             <div className="flex-1 min-w-0">
@@ -91,7 +93,7 @@ export const InventoryRenderer = ({
       <div className="space-y-3 w-full">
         {hasAttributes ? (
           <div>
-            <div className="text-xs font-medium text-gray-600 mb-1.5">Attributes</div>
+            <div className="text-xs font-medium text-muted-foreground mb-1.5">Attributes</div>
             <div className="space-y-1">
               <InventoryRenderer
                 data={Object.fromEntries(filteredAttributes)}
@@ -106,7 +108,7 @@ export const InventoryRenderer = ({
             {Object.entries(objData.Nodes as Record<string, unknown>).map(
               ([key, value]) => (
                 <div key={key}>
-                  <div className="text-xs font-semibold text-purple-700 mb-1.5">
+                  <div className="text-xs font-semibold text-info-foreground mb-1.5">
                     {key}
                   </div>
                   <InventoryRenderer data={value} depth={depth + 1} />
@@ -118,10 +120,10 @@ export const InventoryRenderer = ({
 
         {hasTable ? (
           <div>
-            <div className="text-xs font-medium text-gray-600 mb-1.5">Table</div>
+            <div className="text-xs font-medium text-muted-foreground mb-1.5">Table</div>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-[11px] border border-gray-300">
-                <thead className="bg-gray-100">
+              <table className="min-w-full text-[11px] border border-border">
+                <thead className="bg-muted">
                   <tr>
                     {(() => {
                       const rows = (objData.Table as Record<string, unknown>)
@@ -146,7 +148,7 @@ export const InventoryRenderer = ({
                           {keyColumns?.map(col => (
                             <th
                               key={col}
-                              className="border border-gray-300 px-2 py-1 text-left font-medium text-gray-700"
+                              className="border border-border px-2 py-1 text-left font-medium text-muted-foreground"
                             >
                               {col}
                             </th>
@@ -154,7 +156,7 @@ export const InventoryRenderer = ({
                           {otherColumns.map(col => (
                             <th
                               key={col}
-                              className="border border-gray-300 px-2 py-1 text-left font-medium text-gray-700"
+                              className="border border-border px-2 py-1 text-left font-medium text-muted-foreground"
                             >
                               {col}
                             </th>
@@ -192,9 +194,9 @@ export const InventoryRenderer = ({
 
                     return (
                       // eslint-disable-next-line react/no-array-index-key
-                      <tr key={idx} className="hover:bg-gray-50">
+                      <tr key={idx} className="hover:bg-muted">
                         {orderedColumns.map(key => (
-                          <td key={key} className="border border-gray-300 px-2 py-1">
+                          <td key={key} className="border border-border px-2 py-1">
                             <InventoryRenderer data={row[key]} depth={depth + 1} />
                           </td>
                         ))}
@@ -219,14 +221,14 @@ export const InventoryRenderer = ({
   const entries = Object.entries(objData).filter(([key]) => !excludedKeys.includes(key))
 
   if (entries.length === 0) {
-    return <span className="text-gray-400 italic text-xs">empty</span>
+    return <span className="text-muted-foreground italic text-xs">empty</span>
   }
 
   return (
     <div className="space-y-0.5 w-full">
       {entries.map(([key, value]) => (
         <div key={key} className="flex items-start gap-2 w-full">
-          <span className="text-xs font-medium text-gray-700 min-w-[120px] flex-shrink-0">
+          <span className="text-xs font-medium text-muted-foreground min-w-[120px] flex-shrink-0">
             {key}:
           </span>
           <div className="flex-1 min-w-0 break-words">

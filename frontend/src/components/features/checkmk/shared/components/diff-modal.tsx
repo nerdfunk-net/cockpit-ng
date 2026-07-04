@@ -5,6 +5,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/shared/status-badge'
 import type { Device, DiffResult } from '../types'
 import { formatValue } from '../utils/diff-helpers'
 
@@ -47,7 +48,7 @@ export function DiffModal({
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                 <p className="mt-2 text-sm text-muted-foreground">Loading diff...</p>
               </div>
             </div>
@@ -63,22 +64,19 @@ export function DiffModal({
                     const matchedRule = diffResult.differences.normalized_config.internal?.matched_rule
                     if (!matchedRule) return null
                     return (
-                      <Badge variant="outline" className="text-slate-700 border-slate-400 bg-slate-50 font-mono text-xs">
+                      <Badge variant="outline" className="text-muted-foreground font-mono text-xs">
                         Priority Rule: {matchedRule.filename}{matchedRule.is_default ? ' (default)' : ''}
                       </Badge>
                     )
                   })()}
                 </div>
-                <Badge
+                <StatusBadge
                   variant={
-                    diffResult.differences.result === 'equal' ? 'default' : 'secondary'
-                  }
-                  className={
                     diffResult.differences.result === 'equal'
-                      ? 'bg-green-100 text-green-800'
+                      ? 'success'
                       : diffResult.differences.result === 'host_not_found'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-orange-100 text-orange-800'
+                        ? 'error'
+                        : 'warning'
                   }
                 >
                   {diffResult.differences.result === 'equal'
@@ -86,31 +84,35 @@ export function DiffModal({
                     : diffResult.differences.result === 'host_not_found'
                       ? '❌ Host Not Found in CheckMK'
                       : '⚠ Differences Found'}
-                </Badge>
+                </StatusBadge>
               </div>
 
               {/* Handle host not found case */}
               {diffResult.differences.result === 'host_not_found' ? (
-                <div className="bg-red-50 rounded-lg p-6 border border-red-200">
+                <div className="bg-error rounded-lg p-6 border border-error-border">
                   <div className="text-center">
-                    <div className="text-red-600 text-lg mb-3">🚫 Host Not Found</div>
-                    <p className="text-red-800 mb-4">{diffResult.differences.diff}</p>
+                    <div className="text-error-foreground text-lg mb-3">
+                      🚫 Host Not Found
+                    </div>
+                    <p className="text-error-foreground mb-4">
+                      {diffResult.differences.diff}
+                    </p>
 
-                    <div className="bg-white rounded-lg p-4 border border-red-200 text-left">
-                      <h4 className="font-semibold mb-2 text-red-800">
+                    <div className="bg-card rounded-lg p-4 border border-error-border text-left">
+                      <h4 className="font-semibold mb-2 text-error-foreground">
                         Expected Configuration (Nautobot)
                       </h4>
                       <div className="space-y-2 text-sm">
                         <div>
                           <strong>Folder:</strong>{' '}
-                          <code className="bg-red-100 px-2 py-1 rounded">
+                          <code className="bg-error/60 px-2 py-1 rounded">
                             {diffResult.differences.normalized_config.folder}
                           </code>
                         </div>
                         <div>
                           <strong>Attributes:</strong>
                         </div>
-                        <pre className="bg-red-100 p-3 rounded text-xs font-mono overflow-auto max-h-40">
+                        <pre className="bg-error/60 p-3 rounded text-xs font-mono overflow-auto max-h-40">
                           {JSON.stringify(
                             diffResult.differences.normalized_config.attributes,
                             null,
@@ -120,7 +122,7 @@ export function DiffModal({
                       </div>
                     </div>
 
-                    <p className="text-red-700 text-sm mt-4">
+                    <p className="text-error-foreground text-sm mt-4">
                       This device exists in Nautobot but has not been synchronized to
                       CheckMK yet. Use the Sync button to create this host in CheckMK.
                     </p>
@@ -129,22 +131,22 @@ export function DiffModal({
               ) : (
                 <>
                   {/* Folder Comparison */}
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="bg-muted rounded-lg p-4">
                     <h4 className="font-semibold mb-3">Folder Configuration</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="text-xs font-medium text-blue-600 mb-1">
+                        <div className="text-xs font-medium text-info-foreground mb-1">
                           Nautobot (Expected)
                         </div>
-                        <div className="bg-blue-50 p-2 rounded text-sm font-mono">
+                        <div className="bg-info p-2 rounded text-sm font-mono">
                           {diffResult.differences.normalized_config.folder}
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs font-medium text-purple-600 mb-1">
+                        <div className="text-xs font-medium text-muted-foreground mb-1">
                           CheckMK (Actual)
                         </div>
-                        <div className="bg-purple-50 p-2 rounded text-sm font-mono">
+                        <div className="bg-card p-2 rounded text-sm font-mono border">
                           {diffResult.differences.checkmk_config?.folder ||
                             '(not found)'}
                         </div>
@@ -152,17 +154,17 @@ export function DiffModal({
                     </div>
                     {diffResult.differences.normalized_config.folder !==
                       diffResult.differences.checkmk_config?.folder && (
-                      <div className="mt-2 text-xs text-orange-600">
+                      <div className="mt-2 text-xs text-warning-foreground">
                         ⚠ Folder paths differ
                       </div>
                     )}
                   </div>
 
                   {/* Attributes Comparison */}
-                  <div className="bg-white border rounded-lg">
-                    <div className="bg-gray-50 px-4 py-3 border-b">
+                  <div className="bg-card border rounded-lg">
+                    <div className="bg-muted px-4 py-3 border-b">
                       <h4 className="font-semibold">Attributes Comparison</h4>
-                      <div className="text-xs text-gray-600 mt-1">
+                      <div className="text-xs text-muted-foreground mt-1">
                         Side-by-side comparison of device attributes
                       </div>
                     </div>
@@ -170,17 +172,17 @@ export function DiffModal({
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b bg-gray-25">
-                            <th className="text-left p-3 font-medium text-gray-700 w-48">
+                          <tr className="border-b bg-muted/50">
+                            <th className="text-left p-3 font-medium text-muted-foreground w-48">
                               Attribute
                             </th>
-                            <th className="text-left p-3 font-medium text-blue-600 w-1/3">
+                            <th className="text-left p-3 font-medium text-info-foreground w-1/3">
                               Nautobot (Expected)
                             </th>
-                            <th className="text-left p-3 font-medium text-purple-600 w-1/3">
+                            <th className="text-left p-3 font-medium text-muted-foreground w-1/3">
                               CheckMK (Actual)
                             </th>
-                            <th className="text-left p-3 font-medium text-gray-700 w-32">
+                            <th className="text-left p-3 font-medium text-muted-foreground w-32">
                               Status
                             </th>
                           </tr>
@@ -200,28 +202,28 @@ export function DiffModal({
                                 key={key}
                                 className={`border-b transition-colors ${
                                   isIgnored
-                                    ? 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200'
+                                    ? 'bg-warning hover:bg-warning/70 border-warning-border'
                                     : nautobotMissing || checkmkMissing || isDifferent
-                                      ? 'bg-red-50 hover:bg-red-100 border-red-200'
-                                      : 'bg-green-50 hover:bg-green-100 border-green-200'
+                                      ? 'bg-error hover:bg-error/70 border-error-border'
+                                      : 'bg-success hover:bg-success/70 border-success-border'
                                 }`}
                               >
                                 <td className="p-3 font-mono text-sm font-medium w-48">
                                   {key}
                                 </td>
                                 <td
-                                  className={`p-3 text-sm w-1/3 ${nautobotMissing ? 'text-gray-400 italic' : ''}`}
+                                  className={`p-3 text-sm w-1/3 ${nautobotMissing ? 'text-muted-foreground italic' : ''}`}
                                 >
-                                  <div className="bg-blue-50 p-2 rounded font-mono text-xs overflow-auto max-h-32">
+                                  <div className="bg-info p-2 rounded font-mono text-xs overflow-auto max-h-32">
                                     <pre className="whitespace-pre-wrap break-words">
                                       {formatValue(nautobotValue)}
                                     </pre>
                                   </div>
                                 </td>
                                 <td
-                                  className={`p-3 text-sm w-1/3 ${checkmkMissing ? 'text-gray-400 italic' : ''}`}
+                                  className={`p-3 text-sm w-1/3 ${checkmkMissing ? 'text-muted-foreground italic' : ''}`}
                                 >
-                                  <div className="bg-purple-50 p-2 rounded font-mono text-xs overflow-auto max-h-32">
+                                  <div className="bg-card border p-2 rounded font-mono text-xs overflow-auto max-h-32">
                                     <pre className="whitespace-pre-wrap break-words">
                                       {formatValue(checkmkValue)}
                                     </pre>
@@ -229,40 +231,19 @@ export function DiffModal({
                                 </td>
                                 <td className="p-3 text-xs">
                                   {isIgnored ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-yellow-700 border-yellow-400 bg-yellow-100"
-                                    >
-                                      Ignored
-                                    </Badge>
+                                    <StatusBadge variant="warning">Ignored</StatusBadge>
                                   ) : nautobotMissing ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-red-700 border-red-400 bg-red-100"
-                                    >
+                                    <StatusBadge variant="error">
                                       Only in CheckMK
-                                    </Badge>
+                                    </StatusBadge>
                                   ) : checkmkMissing ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-red-700 border-red-400 bg-red-100"
-                                    >
+                                    <StatusBadge variant="error">
                                       Missing in CheckMK
-                                    </Badge>
+                                    </StatusBadge>
                                   ) : isDifferent ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-red-700 border-red-400 bg-red-100"
-                                    >
-                                      Different
-                                    </Badge>
+                                    <StatusBadge variant="error">Different</StatusBadge>
                                   ) : (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-green-700 border-green-400 bg-green-100"
-                                    >
-                                      Match
-                                    </Badge>
+                                    <StatusBadge variant="success">Match</StatusBadge>
                                   )}
                                 </td>
                               </tr>
@@ -278,8 +259,8 @@ export function DiffModal({
                     (diffResult.differences.checkmk_config.is_cluster ||
                       diffResult.differences.checkmk_config.is_offline ||
                       diffResult.differences.checkmk_config.cluster_nodes) && (
-                      <div className="bg-purple-50 rounded-lg p-4">
-                        <h4 className="font-semibold mb-2 text-purple-800">
+                      <div className="bg-muted rounded-lg p-4">
+                        <h4 className="font-semibold mb-2 text-foreground">
                           CheckMK Additional Information
                         </h4>
                         <div className="space-y-1 text-sm">

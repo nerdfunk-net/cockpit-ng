@@ -75,7 +75,7 @@ export function AddToNautobotDeviceDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Server className="h-5 w-5 text-blue-600" />
+            <Server className="h-5 w-5 text-primary" />
             Add to Nautobot
           </DialogTitle>
           <DialogDescription>

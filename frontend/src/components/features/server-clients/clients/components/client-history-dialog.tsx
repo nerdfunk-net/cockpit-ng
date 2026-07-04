@@ -30,7 +30,7 @@ function formatDate(iso: string | null) {
 function EmptyState({ message }: { message: string }) {
   return (
     <tr>
-      <td colSpan={6} className="text-center py-10 text-gray-500 text-xs">
+      <td colSpan={6} className="text-center py-10 text-muted-foreground text-xs">
         {message}
       </td>
     </tr>
@@ -41,8 +41,8 @@ function LoadingState() {
   return (
     <tr>
       <td colSpan={6} className="text-center py-10">
-        <div className="flex items-center justify-center gap-2 text-gray-500">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
           <span className="text-xs">Loading history…</span>
         </div>
       </td>
@@ -61,19 +61,19 @@ function IpHistoryTab({
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left px-3 py-2 font-medium text-gray-700">
+          <tr className="border-b border-border bg-muted">
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">
               Collected At
             </th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">Device</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">Device</th>
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">
               IP Address
             </th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">
               MAC Address
             </th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">Port</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">VLAN</th>
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">Port</th>
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">VLAN</th>
           </tr>
         </thead>
         <tbody>
@@ -85,22 +85,22 @@ function IpHistoryTab({
             rows.map(row => (
               <tr
                 key={`${row.collected_at}-${row.device_name}-${row.ip_address}`}
-                className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                className="border-b border-border hover:bg-muted/50 transition-colors"
               >
-                <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">
+                <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">
                   {formatDate(row.collected_at)}
                 </td>
-                <td className="px-3 py-1.5 font-medium text-gray-800">
+                <td className="px-3 py-1.5 font-medium text-foreground">
                   {row.device_name}
                 </td>
-                <td className="px-3 py-1.5 font-mono text-gray-800">
+                <td className="px-3 py-1.5 font-mono text-foreground">
                   {row.ip_address}
                 </td>
-                <td className="px-3 py-1.5 font-mono text-gray-600">
+                <td className="px-3 py-1.5 font-mono text-muted-foreground">
                   {row.mac_address ?? '—'}
                 </td>
-                <td className="px-3 py-1.5 text-gray-600">{row.port ?? '—'}</td>
-                <td className="px-3 py-1.5 text-gray-600">{row.vlan ?? '—'}</td>
+                <td className="px-3 py-1.5 text-muted-foreground">{row.port ?? '—'}</td>
+                <td className="px-3 py-1.5 text-muted-foreground">{row.vlan ?? '—'}</td>
               </tr>
             ))
           )}
@@ -121,19 +121,19 @@ function MacHistoryTab({
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left px-3 py-2 font-medium text-gray-700">
+          <tr className="border-b border-border bg-muted">
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">
               Collected At
             </th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">Device</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">Device</th>
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">
               MAC Address
             </th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">
               IP Address
             </th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">Port</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">VLAN</th>
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">Port</th>
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">VLAN</th>
           </tr>
         </thead>
         <tbody>
@@ -145,22 +145,22 @@ function MacHistoryTab({
             rows.map(row => (
               <tr
                 key={`${row.collected_at}-${row.device_name}-${row.mac_address}`}
-                className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                className="border-b border-border hover:bg-muted/50 transition-colors"
               >
-                <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">
+                <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">
                   {formatDate(row.collected_at)}
                 </td>
-                <td className="px-3 py-1.5 font-medium text-gray-800">
+                <td className="px-3 py-1.5 font-medium text-foreground">
                   {row.device_name}
                 </td>
-                <td className="px-3 py-1.5 font-mono text-gray-800">
+                <td className="px-3 py-1.5 font-mono text-foreground">
                   {row.mac_address}
                 </td>
-                <td className="px-3 py-1.5 font-mono text-gray-600">
+                <td className="px-3 py-1.5 font-mono text-muted-foreground">
                   {row.ip_address ?? '—'}
                 </td>
-                <td className="px-3 py-1.5 text-gray-600">{row.port ?? '—'}</td>
-                <td className="px-3 py-1.5 text-gray-600">{row.vlan ?? '—'}</td>
+                <td className="px-3 py-1.5 text-muted-foreground">{row.port ?? '—'}</td>
+                <td className="px-3 py-1.5 text-muted-foreground">{row.vlan ?? '—'}</td>
               </tr>
             ))
           )}
@@ -181,13 +181,13 @@ function HostnameHistoryTab({
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left px-3 py-2 font-medium text-gray-700">
+          <tr className="border-b border-border bg-muted">
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">
               Collected At
             </th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">Device</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">Hostname</th>
-            <th className="text-left px-3 py-2 font-medium text-gray-700">
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">Device</th>
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">Hostname</th>
+            <th className="text-left px-3 py-2 font-medium text-muted-foreground">
               IP Address
             </th>
           </tr>
@@ -201,16 +201,16 @@ function HostnameHistoryTab({
             rows.map(row => (
               <tr
                 key={`${row.collected_at}-${row.device_name}-${row.hostname}`}
-                className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                className="border-b border-border hover:bg-muted/50 transition-colors"
               >
-                <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">
+                <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">
                   {formatDate(row.collected_at)}
                 </td>
-                <td className="px-3 py-1.5 font-medium text-gray-800">
+                <td className="px-3 py-1.5 font-medium text-foreground">
                   {row.device_name}
                 </td>
-                <td className="px-3 py-1.5 text-gray-800">{row.hostname}</td>
-                <td className="px-3 py-1.5 font-mono text-gray-600">
+                <td className="px-3 py-1.5 text-foreground">{row.hostname}</td>
+                <td className="px-3 py-1.5 font-mono text-muted-foreground">
                   {row.ip_address ?? '—'}
                 </td>
               </tr>
@@ -253,7 +253,7 @@ export function ClientHistoryDialog({ item, onClose }: ClientHistoryDialogProps)
       <DialogContent className="!max-w-[67rem] max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <History className="h-5 w-5 text-blue-600" />
+            <History className="h-5 w-5 text-primary" />
             History — {title}
           </DialogTitle>
         </DialogHeader>
@@ -264,7 +264,7 @@ export function ClientHistoryDialog({ item, onClose }: ClientHistoryDialogProps)
               <TabsTrigger value="ip">
                 IP Address
                 {ipHistory.length > 0 && (
-                  <span className="ml-1.5 text-xs bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 text-xs bg-primary/10 text-primary rounded-full px-1.5 py-0.5">
                     {ipHistory.length}
                   </span>
                 )}
@@ -272,7 +272,7 @@ export function ClientHistoryDialog({ item, onClose }: ClientHistoryDialogProps)
               <TabsTrigger value="mac">
                 MAC Address
                 {macHistory.length > 0 && (
-                  <span className="ml-1.5 text-xs bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 text-xs bg-primary/10 text-primary rounded-full px-1.5 py-0.5">
                     {macHistory.length}
                   </span>
                 )}
@@ -280,14 +280,14 @@ export function ClientHistoryDialog({ item, onClose }: ClientHistoryDialogProps)
               <TabsTrigger value="hostname">
                 Hostname
                 {hostnameHistory.length > 0 && (
-                  <span className="ml-1.5 text-xs bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 text-xs bg-primary/10 text-primary rounded-full px-1.5 py-0.5">
                     {hostnameHistory.length}
                   </span>
                 )}
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 overflow-y-auto mt-2 rounded border border-gray-100">
+            <div className="flex-1 overflow-y-auto mt-2 rounded border border-border">
               <TabsContent value="ip" className="mt-0">
                 <IpHistoryTab rows={ipHistory} isLoading={isLoading} />
               </TabsContent>

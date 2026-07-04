@@ -130,33 +130,33 @@ export function DiffDeviceTable({
 
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
-      {/* Blue Header */}
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+      {/* Panel Header */}
+      <div className="panel-header py-2 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <ArrowLeftRight className="h-4 w-4" />
             <div>
               <h3 className="text-sm font-semibold">Device Inventory Comparison</h3>
               {totalDeviceCount > 0 ? (
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-blue-100">
+                <div className="flex items-center gap-2 mt-0.5 text-xs text-panel-header-muted">
                   <span>
-                    <span className="font-semibold text-white">{totalDeviceCount}</span>{' '}
+                    <span className="font-semibold text-current">{totalDeviceCount}</span>{' '}
                     total
                   </span>
                   <span className="opacity-40">·</span>
                   <span>
-                    <span className="font-semibold text-white">{totalBoth}</span> both
+                    <span className="font-semibold text-current">{totalBoth}</span> both
                   </span>
                   <span className="opacity-40">·</span>
                   <span>
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-current">
                       {totalNautobotOnly}
                     </span>{' '}
                     Nautobot
                   </span>
                   <span className="opacity-40">·</span>
                   <span>
-                    <span className="font-semibold text-white">{totalCheckmkOnly}</span>{' '}
+                    <span className="font-semibold text-current">{totalCheckmkOnly}</span>{' '}
                     CheckMK
                   </span>
                   {activeFiltersCount > 0 && (
@@ -167,7 +167,7 @@ export function DiffDeviceTable({
                   )}
                 </div>
               ) : (
-                <p className="text-blue-100 text-xs mt-0.5">
+                <p className="text-panel-header-muted text-xs mt-0.5">
                   {loading ? 'Loading…' : 'Click Run Diff or Refresh to load devices.'}
                 </p>
               )}
@@ -179,11 +179,11 @@ export function DiffDeviceTable({
                 onClick={onSyncSelected}
                 disabled={isSyncingSelected}
                 size="sm"
-                className="bg-white text-blue-700 hover:bg-white/90 font-medium"
+                className="bg-card text-primary hover:bg-card/90 font-medium"
               >
                 {isSyncingSelected ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2" />
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
                     Syncing {selectedDevices.size}...
                   </>
                 ) : (
@@ -198,7 +198,7 @@ export function DiffDeviceTable({
               <>
                 <Badge
                   variant="secondary"
-                  className="bg-white/20 text-white border-white/30"
+                  className="bg-card/20 text-current border-current/30"
                 >
                   {activeFiltersCount} active
                 </Badge>
@@ -206,7 +206,7 @@ export function DiffDeviceTable({
                   variant="ghost"
                   size="sm"
                   onClick={onResetFilters}
-                  className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                  className="h-8 w-8 p-0 text-current hover:bg-card/20"
                   title="Clear All Filters"
                 >
                   <RotateCcw className="h-4 w-4" />
@@ -218,7 +218,7 @@ export function DiffDeviceTable({
               variant="ghost"
               size="sm"
               disabled={loading}
-              className="text-white hover:bg-white/20"
+              className="text-current hover:bg-card/20"
               title="Reload devices from Nautobot (bypass cache)"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -229,10 +229,10 @@ export function DiffDeviceTable({
               variant="ghost"
               size="sm"
               disabled={loading}
-              className="text-white hover:bg-white/20"
+              className="text-current hover:bg-card/20"
             >
               {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
               ) : (
                 <RotateCcw className="h-4 w-4 mr-2" />
               )}
@@ -318,9 +318,9 @@ export function DiffDeviceTable({
 
       {/* Pagination Footer */}
       {devices.length > 0 && (
-        <div className="bg-gray-50 border-t px-6 py-3 flex items-center justify-between">
+        <div className="bg-muted border-t px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Rows per page:</span>
+            <span className="text-sm text-muted-foreground">Rows per page:</span>
             <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
               <SelectTrigger className="h-8 w-20 text-xs">
                 <SelectValue />
@@ -335,7 +335,7 @@ export function DiffDeviceTable({
             </Select>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground">
               Page {currentPage + 1} of {Math.max(1, totalPages)}
             </span>
             <Button

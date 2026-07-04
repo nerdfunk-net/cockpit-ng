@@ -190,17 +190,17 @@ export function DeviceFilterDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-[563px] p-0 gap-0 [&>[data-slot='dialog-close']]:text-white [&>[data-slot='dialog-close']]:opacity-80 [&>[data-slot='dialog-close']]:hover:opacity-100">
         {/* Gradient header */}
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center rounded-t-lg">
+        <div className="panel-header py-2 px-4 flex items-center rounded-t-lg">
           <div className="flex items-center space-x-2">
             <Filter className="h-4 w-4" />
-            <DialogTitle className="text-sm font-medium text-white">
+            <DialogTitle className="text-sm font-medium">
               Filter Devices
             </DialogTitle>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+        <div className="p-6 panel-content">
           <div className="grid grid-cols-2 gap-4">
             <SearchableDropdownInput
               id="filter-role"
@@ -241,7 +241,7 @@ export function DeviceFilterDialog({
         </div>
 
         {/* Footer */}
-        <DialogFooter className="px-6 py-3 bg-white border-t border-gray-100">
+        <DialogFooter className="px-6 py-3 bg-card border-t border-border">
           <Button variant="ghost" onClick={handleReset}>
             Reset
           </Button>

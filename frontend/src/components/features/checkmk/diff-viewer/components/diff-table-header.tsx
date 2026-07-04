@@ -68,7 +68,7 @@ export function DiffTableHeader({
 }: DiffTableHeaderProps) {
   return (
     <thead>
-      <tr className="border-b bg-gray-50">
+      <tr className="border-b bg-muted">
         <th className="pl-3 pr-1 py-3 w-10">
           <Checkbox
             checked={isIndeterminate ? 'indeterminate' : isAllSelected}
@@ -76,7 +76,7 @@ export function DiffTableHeader({
             aria-label="Select all devices"
           />
         </th>
-        <th className="pl-4 pr-2 py-3 w-56 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="pl-4 pr-2 py-3 w-56 text-left text-xs font-medium text-muted-foreground uppercase">
           <div className="space-y-1">
             <div>Device Name</div>
             <Input
@@ -87,7 +87,7 @@ export function DiffTableHeader({
             />
           </div>
         </th>
-        <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="px-4 py-3 w-36 text-left text-xs font-medium text-muted-foreground uppercase">
           <div className="space-y-1">
             <div>IP Address</div>
             <Select
@@ -105,7 +105,7 @@ export function DiffTableHeader({
             </Select>
           </div>
         </th>
-        <th className="px-4 py-3 w-40 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="px-4 py-3 w-40 text-left text-xs font-medium text-muted-foreground uppercase">
           <div className="space-y-1">
             <div className="flex items-center gap-1">
               Role
@@ -132,7 +132,7 @@ export function DiffTableHeader({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="cursor-pointer text-red-600 hover:bg-red-50"
+                  className="cursor-pointer text-destructive hover:bg-destructive/10"
                   onSelect={() => {
                     const resetFilters: Record<string, boolean> = {}
                     filterOptions.roles.forEach(role => {
@@ -161,7 +161,7 @@ export function DiffTableHeader({
             </DropdownMenu>
           </div>
         </th>
-        <th className="px-4 py-3 w-48 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="px-4 py-3 w-48 text-left text-xs font-medium text-muted-foreground uppercase">
           <div className="space-y-1">
             <div>Location</div>
             <Select value={selectedLocation} onValueChange={onLocationChange}>
@@ -181,7 +181,7 @@ export function DiffTableHeader({
             </Select>
           </div>
         </th>
-        <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="px-4 py-3 w-36 text-left text-xs font-medium text-muted-foreground uppercase">
           <div className="space-y-1">
             <div>Status</div>
             <Select value={statusFilter} onValueChange={onStatusFilterChange}>
@@ -201,7 +201,7 @@ export function DiffTableHeader({
             </Select>
           </div>
         </th>
-        <th className="px-4 py-3 w-44 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="px-4 py-3 w-44 text-left text-xs font-medium text-muted-foreground uppercase">
           <div className="space-y-1">
             <div className="flex items-center gap-1">
               System
@@ -233,7 +233,7 @@ export function DiffTableHeader({
                 <DropdownMenuLabel className="text-xs">Filter by System</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="cursor-pointer text-blue-600 hover:bg-blue-50"
+                  className="cursor-pointer text-primary hover:bg-primary/10"
                   onSelect={e => {
                     e.preventDefault()
                     onSystemFiltersChange({ nautobot: true, checkmk: true })
@@ -242,7 +242,7 @@ export function DiffTableHeader({
                   Select all
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="cursor-pointer text-red-600 hover:bg-red-50"
+                  className="cursor-pointer text-destructive hover:bg-destructive/10"
                   onSelect={e => {
                     e.preventDefault()
                     onSystemFiltersChange({ nautobot: false, checkmk: false })
@@ -283,7 +283,7 @@ export function DiffTableHeader({
             </DropdownMenu>
           </div>
         </th>
-        <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="px-4 py-3 w-36 text-left text-xs font-medium text-muted-foreground uppercase">
           <div className="space-y-1">
             <div className="flex items-center gap-1">
               CheckMK Diff
@@ -319,7 +319,7 @@ export function DiffTableHeader({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="cursor-pointer text-blue-600 hover:bg-blue-50"
+                  className="cursor-pointer text-primary hover:bg-primary/10"
                   onSelect={e => {
                     e.preventDefault()
                     const allSelected: Record<string, boolean> = {
@@ -334,7 +334,7 @@ export function DiffTableHeader({
                   Select all
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="cursor-pointer text-red-600 hover:bg-red-50"
+                  className="cursor-pointer text-destructive hover:bg-destructive/10"
                   onSelect={e => {
                     e.preventDefault()
                     const allDeselected: Record<string, boolean> = {
@@ -421,7 +421,7 @@ export function DiffTableHeader({
             </DropdownMenu>
           </div>
         </th>
-        <th className="px-4 py-3 w-28 text-left text-xs font-medium text-gray-600 uppercase">
+        <th className="px-4 py-3 w-28 text-left text-xs font-medium text-muted-foreground uppercase">
           <div className="space-y-1">
             <div>Actions</div>
             <div className="h-8" />

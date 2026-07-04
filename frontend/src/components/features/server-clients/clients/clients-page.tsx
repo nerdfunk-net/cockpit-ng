@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Users, Calendar } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 import {
   useNautobotDevicesSearchQuery,
   useClientDataQuery,
@@ -183,11 +184,11 @@ export function ClientsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Users className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <Users className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Network Clients</h1>
+            <h1 className="text-3xl font-bold text-foreground">Network Clients</h1>
             <p className="text-muted-foreground mt-2">
               Browse correlated client data collected from network devices
             </p>

@@ -100,7 +100,7 @@ export function InterfacesDialog({ open, onOpenChange, server }: InterfacesDialo
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Network className="h-5 w-5 text-blue-600" />
+            <Network className="h-5 w-5 text-primary" />
             Manage Interfaces
           </DialogTitle>
         </DialogHeader>
@@ -111,13 +111,13 @@ export function InterfacesDialog({ open, onOpenChange, server }: InterfacesDialo
               No interface data found in Ansible facts.
             </p>
           ) : (
-            <div className="border border-gray-200 rounded-md overflow-hidden">
+            <div className="border border-border rounded-md overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
+                  <tr className="bg-muted border-b border-border">
                     <th className="w-8 px-3 py-2" />
-                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Interface</th>
-                    <th className="text-left px-3 py-2 text-gray-500 font-medium">IP Address</th>
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">Interface</th>
+                    <th className="text-left px-3 py-2 text-muted-foreground font-medium">IP Address</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -127,7 +127,7 @@ export function InterfacesDialog({ open, onOpenChange, server }: InterfacesDialo
                     return (
                       <tr
                         key={name}
-                        className={`cursor-pointer ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50`}
+                        className={`cursor-pointer ${i % 2 === 0 ? 'bg-card' : 'bg-muted/40'} hover:bg-primary/10`}
                         onClick={() => toggleInterface(name)}
                       >
                         <td className="px-3 py-2.5">
@@ -137,8 +137,8 @@ export function InterfacesDialog({ open, onOpenChange, server }: InterfacesDialo
                             onClick={(e) => e.stopPropagation()}
                           />
                         </td>
-                        <td className="px-3 py-2.5 font-mono text-gray-800">{name}</td>
-                        <td className="px-3 py-2.5 text-gray-500">
+                        <td className="px-3 py-2.5 font-mono text-foreground">{name}</td>
+                        <td className="px-3 py-2.5 text-muted-foreground">
                           {formatServerInterfaceDisplay(server, {
                             name,
                             address: ipv4?.address,
@@ -146,7 +146,7 @@ export function InterfacesDialog({ open, onOpenChange, server }: InterfacesDialo
                             broadcast: ipv4?.broadcast,
                             network: ipv4?.network,
                             prefix: ipv4?.prefix,
-                          }) ?? <span className="italic text-gray-300">—</span>}
+                          }) ?? <span className="italic text-muted-foreground">—</span>}
                         </td>
                       </tr>
                     )

@@ -3,6 +3,7 @@
 import { Loader2, Plus, Server } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { IconChip } from '@/components/shared/icon-chip'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useServerQuery } from '@/hooks/queries/use-server-query'
 import { useServersQuery } from '@/hooks/queries/use-servers-query'
@@ -97,11 +98,11 @@ export function ServerPage() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Server className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <Server className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Server</h1>
+            <h1 className="text-3xl font-bold text-foreground">Server</h1>
             <p className="text-muted-foreground mt-2">
               Managed servers and their Ansible facts
             </p>
@@ -114,13 +115,13 @@ export function ServerPage() {
       </div>
 
       {/* Main panel */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg overflow-hidden">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <Server className="h-4 w-4" />
             <span className="text-sm font-medium">Server Inventory</span>
           </div>
-          <div className="text-xs text-blue-100">{headerCountLabel}</div>
+          <div className="text-xs text-panel-header-muted">{headerCountLabel}</div>
         </div>
 
         {isLoading ? (
@@ -128,13 +129,13 @@ export function ServerPage() {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
-          <div className="p-6 text-center text-sm text-red-600">
+          <div className="p-6 text-center text-sm text-error-foreground">
             Failed to load servers. Please try again.
           </div>
         ) : (
           <div className="flex min-h-[520px]">
             {/* Left tree panel */}
-            <div className="w-64 border-r border-gray-200 shrink-0 bg-gray-50 flex flex-col min-h-[520px]">
+            <div className="w-64 border-r border-border shrink-0 bg-muted flex flex-col min-h-[520px]">
               <ServerTree
                 servers={servers}
                 isSearching={isSearchPending || (isFetching && isFiltering)}
@@ -150,13 +151,13 @@ export function ServerPage() {
             </div>
 
             {/* Right detail panel */}
-            <div className="flex-1 p-6 bg-gradient-to-b from-white to-gray-50 overflow-y-auto">
+            <div className="flex-1 p-6 panel-content overflow-y-auto">
               {selectedId != null && isDetailLoading ? (
                 <div className="flex items-center justify-center py-16">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : detailError ? (
-                <div className="text-center py-16 text-sm text-red-600">
+                <div className="text-center py-16 text-sm text-error-foreground">
                   Failed to load server details. Please try again.
                 </div>
               ) : selectedServer ? (
@@ -167,7 +168,7 @@ export function ServerPage() {
                   onRemoved={handleServerRemoved}
                 />
               ) : (
-                <div className="text-center py-16 text-gray-400">
+                <div className="text-center py-16 text-muted-foreground">
                   <Server className="h-10 w-10 mx-auto mb-3 opacity-30" />
                   <p className="text-sm">Select a server from the list to view details</p>
                 </div>

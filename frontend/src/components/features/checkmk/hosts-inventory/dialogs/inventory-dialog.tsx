@@ -72,20 +72,20 @@ export function InventoryDialog({ open, onOpenChange, host }: InventoryDialogPro
           </DialogDescription>
         </DialogHeader>
 
-        {/* Compact Blue Header */}
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+        {/* Compact Panel Header */}
+        <div className="panel-header py-2 px-4">
           <div>
             <h2 className="text-base font-semibold">Host Inventory</h2>
-            <p className="text-blue-100 text-xs">{host?.host_name}</p>
+            <p className="text-panel-header-muted text-xs">{host?.host_name}</p>
           </div>
         </div>
 
         {/* Inventory Content */}
-        <div className="flex-1 overflow-y-auto bg-gray-50/50">
+        <div className="flex-1 overflow-y-auto bg-muted/50">
           {loadingInventory ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Loading inventory...
                 </p>
@@ -109,22 +109,22 @@ export function InventoryDialog({ open, onOpenChange, host }: InventoryDialogPro
                       {/* Render all top-level nodes dynamically */}
                       {Object.entries(nodes).map(([nodeName, nodeData]) => {
                         // Determine color scheme based on node name
-                        let borderColor = 'border-gray-400/60'
-                        let textColor = 'text-gray-900'
-                        let bgColor = 'bg-white'
+                        let borderColor = 'border-border'
+                        let textColor = 'text-foreground'
+                        let bgColor = 'bg-card'
 
                         if (nodeName === 'hardware') {
-                          borderColor = 'border-blue-400/60'
-                          textColor = 'text-gray-900'
-                          bgColor = 'bg-white'
+                          borderColor = 'border-border'
+                          textColor = 'text-foreground'
+                          bgColor = 'bg-card'
                         } else if (nodeName === 'networking') {
-                          borderColor = 'border-green-400/60'
-                          textColor = 'text-green-700'
-                          bgColor = 'bg-green-50/30'
+                          borderColor = 'border-success-border'
+                          textColor = 'text-success-foreground'
+                          bgColor = 'bg-success/30'
                         } else if (nodeName === 'software') {
-                          borderColor = 'border-purple-400/60'
-                          textColor = 'text-purple-700'
-                          bgColor = 'bg-purple-50/30'
+                          borderColor = 'border-info-border'
+                          textColor = 'text-info-foreground'
+                          bgColor = 'bg-info/30'
                         }
 
                         return (
@@ -157,12 +157,12 @@ export function InventoryDialog({ open, onOpenChange, host }: InventoryDialogPro
                       {/* Raw JSON Section */}
                       <div>
                         <details className="group">
-                          <summary className="flex items-center gap-1.5 text-xs font-medium text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600 transition-colors select-none py-2">
+                          <summary className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-primary transition-colors select-none py-2">
                             <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
                             Raw JSON Response
                           </summary>
-                          <div className="mt-2 bg-gray-900 rounded-md p-3 overflow-auto max-h-80 border border-gray-700">
-                            <pre className="text-[11px] text-green-400 font-mono leading-relaxed">
+                          <div className="mt-2 bg-muted rounded-md p-3 overflow-auto max-h-80 border border-border">
+                            <pre className="text-[11px] text-foreground font-mono leading-relaxed">
                               {JSON.stringify(inventoryData, null, 2)}
                             </pre>
                           </div>

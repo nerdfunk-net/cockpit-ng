@@ -9,9 +9,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Wifi, Loader2, CheckCircle2 } from 'lucide-react'
+import { Wifi, Loader2 } from 'lucide-react'
 import type { UseMutationResult } from '@tanstack/react-query'
 import type { DeviceInfo } from '@/components/shared/device-selector'
+import { StatusIcon } from '@/components/shared/status-icon'
 import { DeviceSelectionTab } from '../../deploy/tabs/device-selection-tab'
 import type { PingInput, PingJobResponse } from '../types'
 
@@ -70,7 +71,7 @@ export function PingDialog({ open, onOpenChange, agentId, mutation }: PingDialog
         <div className="flex-1 overflow-y-auto">
           {mutation.isSuccess ? (
             <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
-              <CheckCircle2 className="h-12 w-12 text-green-500" />
+              <StatusIcon variant="success" className="h-12 w-12" />
               <div>
                 <p className="font-medium text-lg">Ping Job Queued</p>
                 <p className="text-sm text-muted-foreground mt-1">

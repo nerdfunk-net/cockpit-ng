@@ -15,6 +15,7 @@ import {
 import { RefreshCw, Download } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { useSavedInventoriesQuery } from '@/hooks/queries/use-saved-inventories-queries'
+import { StatusAlert } from '@/components/shared/status-alert'
 import type { InventoryMetadataType, VariableDefinition } from '../types'
 
 interface AnalyzeResponse {
@@ -218,15 +219,13 @@ export function InventoryMetadataTab({
     <div className="space-y-4">
       {isAgentCategory && !agentInventoryId ? (
         // Agent category with no inventory selected
-        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800">
-            <strong>No inventory selected.</strong>
-          </p>
-          <p className="text-xs text-yellow-700 mt-1">
+        <StatusAlert variant="warning">
+          <strong>No inventory selected.</strong>
+          <p className="text-xs mt-1">
             Please select an inventory in the <strong>Agent Options</strong> panel above
             before adding inventory-based variables.
           </p>
-        </div>
+        </StatusAlert>
       ) : isAgentCategory && agentInventoryId ? (
         // Agent category with inventory selected - show which inventory is being used
         <div className="space-y-2">
@@ -263,7 +262,7 @@ export function InventoryMetadataTab({
         </div>
       )}
 
-      {analyzeError && <p className="text-sm text-red-500">{analyzeError}</p>}
+      {analyzeError && <p className="text-sm text-destructive">{analyzeError}</p>}
 
       {analyzeData && (
         <>
@@ -319,9 +318,9 @@ export function InventoryMetadataTab({
                 id="inventory-var-name"
                 value={variableName}
                 onChange={e => setVariableName(e.target.value)}
-                className={nameError ? 'border-red-300' : ''}
+                className={nameError ? 'border-destructive' : ''}
               />
-              {nameError && <p className="text-xs text-red-500">{nameError}</p>}
+              {nameError && <p className="text-xs text-destructive">{nameError}</p>}
             </div>
           )}
 

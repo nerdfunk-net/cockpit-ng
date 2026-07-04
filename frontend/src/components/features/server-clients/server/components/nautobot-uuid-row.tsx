@@ -29,8 +29,8 @@ export function NautobotUuidRow({ server }: NautobotUuidRowProps) {
   if (server.nautobot_uuid) {
     return (
       <div className="flex flex-col gap-0.5">
-        <span className="text-xs text-gray-500 uppercase tracking-wide">Nautobot UUID</span>
-        <span className="text-sm font-medium text-gray-800 truncate font-mono">
+        <span className="text-xs text-muted-foreground uppercase tracking-wide">Nautobot UUID</span>
+        <span className="text-sm font-medium text-foreground truncate font-mono">
           {server.nautobot_uuid}
         </span>
       </div>
@@ -40,7 +40,7 @@ export function NautobotUuidRow({ server }: NautobotUuidRowProps) {
   return (
     <>
       <div className="flex flex-col gap-0.5">
-        <span className="text-xs text-gray-500 uppercase tracking-wide">Nautobot UUID</span>
+        <span className="text-xs text-muted-foreground uppercase tracking-wide">Nautobot UUID</span>
         <Button
           type="button"
           variant="outline"

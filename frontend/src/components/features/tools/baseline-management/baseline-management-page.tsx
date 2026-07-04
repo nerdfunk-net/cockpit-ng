@@ -12,10 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArrowLeft, FileOutput, FlaskConical } from 'lucide-react'
 import { BaselineGenerateForm } from '@/components/features/tools/tests-baseline/tests-baseline-page'
 import BaselineImportSection from './baseline-import-section'
+import { IconChip } from '@/components/shared/icon-chip'
 
 export default function BaselineManagementPage() {
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
           <Link href="/tools">
@@ -23,13 +24,13 @@ export default function BaselineManagementPage() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500 text-white shadow-sm">
-              <FlaskConical className="w-6 h-6" />
-            </div>
+          <div className="flex items-center gap-4">
+            <IconChip variant="success">
+              <FlaskConical className="h-6 w-6" />
+            </IconChip>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Baseline Management</h1>
-              <p className="text-gray-500 text-sm">
+              <h1 className="text-2xl font-bold text-foreground">Baseline Management</h1>
+              <p className="text-muted-foreground text-sm">
                 Generate baseline YAML and import test data into Nautobot. Use the
                 Pytest profile for the 120-device integration-test contract.
               </p>
@@ -47,16 +48,16 @@ export default function BaselineManagementPage() {
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileOutput className="w-5 h-5 text-emerald-600" />
+                  <FileOutput className="w-5 h-5 text-success-foreground" />
                   Generate baseline
                 </CardTitle>
                 <CardDescription>
                   Build a baseline YAML file under{' '}
-                  <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+                  <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
                     data/baseline/
                   </code>
                   , copy it to{' '}
-                  <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+                  <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
                     contributing-data/tests_baseline/
                   </code>
                   , then import on the Import tab.

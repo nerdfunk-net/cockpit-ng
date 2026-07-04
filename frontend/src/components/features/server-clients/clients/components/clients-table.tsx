@@ -122,11 +122,11 @@ export function ClientsTable({
         minSize: 90,
         enableHiding: false,
         cell: ({ row }) => (
-          <span className="flex items-center gap-1 font-mono text-xs text-gray-800">
+          <span className="flex items-center gap-1 font-mono text-xs text-foreground">
             <button
               type="button"
               onClick={() => onHistoryClick(row.original)}
-              className="text-gray-400 hover:text-blue-600 transition-colors shrink-0"
+              className="text-muted-foreground hover:text-primary transition-colors shrink-0"
               title="Show history"
             >
               <History className="h-3.5 w-3.5" />
@@ -142,7 +142,7 @@ export function ClientsTable({
         size: 150,
         minSize: 90,
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-gray-800">
+          <span className="font-mono text-xs text-foreground">
             {row.original.mac_address ?? '—'}
           </span>
         ),
@@ -154,7 +154,7 @@ export function ClientsTable({
         size: 100,
         minSize: 60,
         cell: ({ row }) => (
-          <span className="text-xs text-gray-700">{row.original.port ?? '—'}</span>
+          <span className="text-xs text-muted-foreground">{row.original.port ?? '—'}</span>
         ),
       },
       {
@@ -164,7 +164,7 @@ export function ClientsTable({
         size: 70,
         minSize: 50,
         cell: ({ row }) => (
-          <span className="text-xs text-gray-700">{row.original.vlan ?? '—'}</span>
+          <span className="text-xs text-muted-foreground">{row.original.vlan ?? '—'}</span>
         ),
       },
       {
@@ -174,7 +174,7 @@ export function ClientsTable({
         size: 110,
         minSize: 60,
         cell: ({ row }) => (
-          <span className="text-xs text-gray-700">{row.original.vrf ?? '—'}</span>
+          <span className="text-xs text-muted-foreground">{row.original.vrf ?? '—'}</span>
         ),
       },
       {
@@ -184,7 +184,7 @@ export function ClientsTable({
         size: 180,
         minSize: 80,
         cell: ({ row }) => (
-          <span className="text-xs text-gray-700 block truncate" title={row.original.hostname ?? undefined}>
+          <span className="text-xs text-muted-foreground block truncate" title={row.original.hostname ?? undefined}>
             {row.original.hostname ?? '—'}
           </span>
         ),
@@ -197,7 +197,7 @@ export function ClientsTable({
         minSize: 80,
         enableHiding: false,
         cell: ({ row }) => (
-          <span className="text-xs text-gray-700">{row.original.device_name}</span>
+          <span className="text-xs text-muted-foreground">{row.original.device_name}</span>
         ),
       },
     ],
@@ -218,19 +218,19 @@ export function ClientsTable({
   })
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <TableIcon className="h-4 w-4" />
           <span className="text-sm font-medium">
             {selectedDevice ? `Clients — ${selectedDevice}` : 'All Clients'}
           </span>
           {isFetching && !isLoading && (
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white opacity-70" />
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current opacity-70" />
           )}
         </div>
         <div className="flex items-center gap-2">
-          <div className="text-xs text-blue-100">
+          <div className="text-xs text-panel-header-muted">
             {total > 0 ? `${startRow}–${endRow} of ${total}` : '0 entries'}
           </div>
           <DropdownMenu>
@@ -238,7 +238,7 @@ export function ClientsTable({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 w-7 p-0 text-white hover:bg-white/20 hover:text-white"
+                className="h-7 w-7 p-0 hover:bg-white/20"
                 aria-label="Toggle columns"
               >
                 <SlidersHorizontal className="h-4 w-4" />
@@ -264,11 +264,11 @@ export function ClientsTable({
         </div>
       </div>
 
-      <div className="bg-gradient-to-b from-white to-gray-50 rounded-b-lg overflow-hidden">
+      <div className="panel-content rounded-b-lg overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
-            <span className="ml-2 text-sm text-gray-600">Loading...</span>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+            <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
           </div>
         ) : (
           <>
@@ -282,13 +282,13 @@ export function ClientsTable({
                   {table.getHeaderGroups().map(headerGroup => (
                     <tr
                       key={headerGroup.id}
-                      className="border-b border-gray-200 bg-gray-50"
+                      className="border-b border-border bg-muted"
                     >
                       {headerGroup.headers.map(header => (
                         <th
                           key={header.id}
                           style={{ width: header.getSize() }}
-                          className="relative select-none h-9 px-3 text-left align-middle font-medium text-gray-700 overflow-hidden"
+                          className="relative select-none h-9 px-3 text-left align-middle font-medium text-muted-foreground overflow-hidden"
                         >
                           {header.isPlaceholder
                             ? null
@@ -302,8 +302,8 @@ export function ClientsTable({
                               onTouchStart={header.getResizeHandler()}
                               className={`absolute right-0 top-0 h-full w-1 cursor-col-resize transition-colors ${
                                 header.column.getIsResizing()
-                                  ? 'bg-blue-500'
-                                  : 'bg-transparent hover:bg-blue-400'
+                                  ? 'bg-primary'
+                                  : 'bg-transparent hover:bg-primary/70'
                               }`}
                             />
                           )}
@@ -312,7 +312,7 @@ export function ClientsTable({
                     </tr>
                   ))}
                   {/* Filter inputs row — aligned to visible columns */}
-                  <tr className="border-b border-gray-200">
+                  <tr className="border-b border-border">
                     {table.getVisibleLeafColumns().map(col => {
                       const filterKey = COLUMN_FILTER_KEY[col.id]
                       return (
@@ -339,7 +339,7 @@ export function ClientsTable({
                     <tr>
                       <td
                         colSpan={table.getVisibleLeafColumns().length}
-                        className="text-center py-12 text-gray-500"
+                        className="text-center py-12 text-muted-foreground"
                       >
                         <p className="text-base font-medium">No entries found</p>
                         <p className="text-xs mt-1">
@@ -353,7 +353,7 @@ export function ClientsTable({
                     table.getRowModel().rows.map(row => (
                       <tr
                         key={row.id}
-                        className="border-b border-gray-100 hover:bg-muted/50 transition-colors"
+                        className="border-b border-border hover:bg-muted/50 transition-colors"
                       >
                         {row.getVisibleCells().map(cell => (
                           <td
@@ -373,8 +373,8 @@ export function ClientsTable({
 
             {/* Pagination */}
             {total > 0 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-                <p className="text-xs text-gray-500">
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                <p className="text-xs text-muted-foreground">
                   Page {page} of {totalPages}
                 </p>
                 <div className="flex items-center gap-2">

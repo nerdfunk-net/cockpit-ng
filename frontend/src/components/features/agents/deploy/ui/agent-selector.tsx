@@ -31,7 +31,7 @@ export function AgentSelector({
     return (
       <div className="space-y-2">
         <Label>Agent</Label>
-        <div className="p-3 border rounded-md bg-yellow-50 text-yellow-800 text-sm">
+        <div className="p-3 rounded-md status-warning border text-sm">
           No agents configured. Please configure agents in Settings → Connections →
           Agents first.
         </div>
@@ -52,7 +52,7 @@ export function AgentSelector({
               key={agent.id}
               value={agent.agent_id || ''}
               disabled={!agent.agent_id}
-              className="cursor-pointer focus:bg-blue-50 focus:text-gray-900"
+              className="cursor-pointer focus:bg-muted focus:text-foreground"
             >
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">

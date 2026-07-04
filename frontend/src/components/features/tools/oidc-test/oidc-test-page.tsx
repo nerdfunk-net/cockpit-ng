@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-  CheckCircle2,
   XCircle,
   AlertCircle,
   Info,
@@ -32,6 +31,9 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { IconChip } from '@/components/shared/icon-chip'
+import { StatusIcon } from '@/components/shared/status-icon'
+import type { StatusVariant } from '@/components/shared/status-badge'
 
 interface ProviderDebugInfo {
   provider_id: string
@@ -70,6 +72,12 @@ interface DebugLog {
   level: 'info' | 'warning' | 'error' | 'success'
   message: string
   details?: Record<string, unknown>
+}
+
+const PROVIDER_STATUS_VARIANT: Record<ProviderDebugInfo['status'], StatusVariant> = {
+  ok: 'success',
+  warning: 'warning',
+  error: 'error',
 }
 
 export default function OIDCTestPage() {
@@ -198,47 +206,23 @@ export default function OIDCTestPage() {
     }
   }
 
-  const getStatusIcon = (status: 'ok' | 'warning' | 'error') => {
-    switch (status) {
-      case 'ok':
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />
-      case 'warning':
-        return <AlertCircle className="w-5 h-5 text-yellow-500" />
-      case 'error':
-        return <XCircle className="w-5 h-5 text-red-500" />
-    }
-  }
-
-  const getLevelIcon = (level: DebugLog['level']) => {
-    switch (level) {
-      case 'success':
-        return <CheckCircle2 className="w-4 h-4 text-green-500" />
-      case 'info':
-        return <Info className="w-4 h-4 text-blue-500" />
-      case 'warning':
-        return <AlertCircle className="w-4 h-4 text-yellow-500" />
-      case 'error':
-        return <XCircle className="w-4 h-4 text-red-500" />
-    }
-  }
-
   const selectedProviderInfo = debugInfo?.providers.find(
     p => p.provider_id === selectedProvider
   )
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-          <p className="text-gray-600">Loading OIDC configuration...</p>
+          <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading OIDC configuration...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -248,14 +232,14 @@ export default function OIDCTestPage() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
-            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-500 text-white shadow-lg">
-              <Shield className="w-6 h-6" />
-            </div>
+            <IconChip variant="primary">
+              <Shield className="h-6 w-6" />
+            </IconChip>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-foreground">
                 OIDC Testing Dashboard
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-muted-foreground mt-2">
                 Debug and test OpenID Connect authentication flows
               </p>
             </div>
@@ -270,7 +254,7 @@ export default function OIDCTestPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 OIDC Status
               </CardTitle>
             </CardHeader>
@@ -278,13 +262,17 @@ export default function OIDCTestPage() {
               <div className="flex items-center gap-2">
                 {debugInfo?.oidc_enabled ? (
                   <>
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    <span className="text-2xl font-bold text-green-600">Enabled</span>
+                    <StatusIcon variant="success" className="w-5 h-5" />
+                    <span className="text-2xl font-bold text-success-foreground">
+                      Enabled
+                    </span>
                   </>
                 ) : (
                   <>
-                    <XCircle className="w-5 h-5 text-red-500" />
-                    <span className="text-2xl font-bold text-red-600">Disabled</span>
+                    <StatusIcon variant="error" className="w-5 h-5" />
+                    <span className="text-2xl font-bold text-error-foreground">
+                      Disabled
+                    </span>
                   </>
                 )}
               </div>
@@ -293,14 +281,14 @@ export default function OIDCTestPage() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Providers
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <Settings className="w-5 h-5 text-blue-500" />
-                <span className="text-2xl font-bold text-gray-900">
+                <Settings className="w-5 h-5 text-primary" />
+                <span className="text-2xl font-bold text-foreground">
                   {debugInfo?.providers.length || 0}
                 </span>
               </div>
@@ -309,7 +297,7 @@ export default function OIDCTestPage() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Traditional Login
               </CardTitle>
             </CardHeader>
@@ -317,13 +305,17 @@ export default function OIDCTestPage() {
               <div className="flex items-center gap-2">
                 {debugInfo?.allow_traditional_login ? (
                   <>
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    <span className="text-2xl font-bold text-green-600">Allowed</span>
+                    <StatusIcon variant="success" className="w-5 h-5" />
+                    <span className="text-2xl font-bold text-success-foreground">
+                      Allowed
+                    </span>
                   </>
                 ) : (
                   <>
-                    <XCircle className="w-5 h-5 text-gray-400" />
-                    <span className="text-2xl font-bold text-gray-600">Disabled</span>
+                    <XCircle className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-2xl font-bold text-muted-foreground">
+                      Disabled
+                    </span>
                   </>
                 )}
               </div>
@@ -350,15 +342,18 @@ export default function OIDCTestPage() {
                   className={cn(
                     'w-full p-3 rounded-lg border-2 text-left transition-all',
                     selectedProvider === provider.provider_id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:bg-muted bg-card'
                   )}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-gray-900">{provider.name}</span>
-                    {getStatusIcon(provider.status)}
+                    <span className="font-medium text-foreground">{provider.name}</span>
+                    <StatusIcon
+                      variant={PROVIDER_STATUS_VARIANT[provider.status]}
+                      className="w-5 h-5"
+                    />
                   </div>
-                  <p className="text-xs text-gray-500">{provider.provider_id}</p>
+                  <p className="text-xs text-muted-foreground">{provider.provider_id}</p>
                   {provider.issues.length > 0 && (
                     <Badge variant="destructive" className="mt-2 text-xs">
                       {provider.issues.length} issue(s)
@@ -409,7 +404,7 @@ export default function OIDCTestPage() {
                     {/* Basic Info */}
                     <div className="space-y-3">
                       <div className="flex justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-gray-600">
+                        <span className="text-sm font-medium text-muted-foreground">
                           Provider ID
                         </span>
                         <span className="text-sm font-mono">
@@ -417,11 +412,11 @@ export default function OIDCTestPage() {
                         </span>
                       </div>
                       <div className="flex justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-gray-600">Name</span>
+                        <span className="text-sm font-medium text-muted-foreground">Name</span>
                         <span className="text-sm">{selectedProviderInfo.name}</span>
                       </div>
                       <div className="flex justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-gray-600">
+                        <span className="text-sm font-medium text-muted-foreground">
                           Client ID
                         </span>
                         <span className="text-sm font-mono">
@@ -429,7 +424,7 @@ export default function OIDCTestPage() {
                         </span>
                       </div>
                       <div className="flex justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-gray-600">
+                        <span className="text-sm font-medium text-muted-foreground">
                           Issuer
                         </span>
                         <span className="text-sm font-mono text-right max-w-sm truncate">
@@ -437,7 +432,7 @@ export default function OIDCTestPage() {
                         </span>
                       </div>
                       <div className="flex justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-gray-600">
+                        <span className="text-sm font-medium text-muted-foreground">
                           Scopes
                         </span>
                         <span className="text-sm font-mono">
@@ -445,7 +440,7 @@ export default function OIDCTestPage() {
                         </span>
                       </div>
                       <div className="flex justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-gray-600">
+                        <span className="text-sm font-medium text-muted-foreground">
                           Response Type
                         </span>
                         <span className="text-sm font-mono">
@@ -455,17 +450,20 @@ export default function OIDCTestPage() {
 
                       {/* CA Certificate */}
                       <div className="flex justify-between py-2 border-b">
-                        <span className="text-sm font-medium text-gray-600">
+                        <span className="text-sm font-medium text-muted-foreground">
                           Custom CA Certificate
                         </span>
                         <div className="flex items-center gap-2">
                           {selectedProviderInfo.config.ca_cert_path ? (
                             <>
-                              {selectedProviderInfo.config.ca_cert_exists ? (
-                                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                              ) : (
-                                <XCircle className="w-4 h-4 text-red-500" />
-                              )}
+                              <StatusIcon
+                                variant={
+                                  selectedProviderInfo.config.ca_cert_exists
+                                    ? 'success'
+                                    : 'error'
+                                }
+                                className="w-4 h-4"
+                              />
                               <span className="text-sm font-mono">
                                 {selectedProviderInfo.config.ca_cert_exists
                                   ? 'Configured'
@@ -473,14 +471,14 @@ export default function OIDCTestPage() {
                               </span>
                             </>
                           ) : (
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-muted-foreground">
                               Not configured
                             </span>
                           )}
                         </div>
                       </div>
                       {selectedProviderInfo.config.ca_cert_path && (
-                        <div className="text-xs font-mono text-gray-500 pl-4">
+                        <div className="text-xs font-mono text-muted-foreground pl-4">
                           {selectedProviderInfo.config.ca_cert_path}
                         </div>
                       )}
@@ -504,7 +502,7 @@ export default function OIDCTestPage() {
                       { label: 'JWKS', url: selectedProviderInfo.config.jwks_uri },
                     ].map(({ label, url }) => (
                       <div key={label} className="space-y-1">
-                        <div className="text-sm font-medium text-gray-600">
+                        <div className="text-sm font-medium text-muted-foreground">
                           {label} Endpoint
                         </div>
                         {url ? (
@@ -512,13 +510,13 @@ export default function OIDCTestPage() {
                             href={url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm font-mono text-blue-600 hover:text-blue-700 break-all p-2 bg-blue-50 rounded border border-blue-200"
+                            className="flex items-center gap-2 text-sm font-mono text-primary hover:opacity-80 break-all p-2 bg-info rounded border border-info-border"
                           >
                             <ExternalLink className="w-3 h-3 flex-shrink-0" />
                             {url}
                           </a>
                         ) : (
-                          <div className="text-sm text-gray-400 italic p-2 bg-gray-50 rounded">
+                          <div className="text-sm text-muted-foreground italic p-2 bg-muted rounded">
                             Not configured
                           </div>
                         )}
@@ -536,7 +534,7 @@ export default function OIDCTestPage() {
                     </Alert>
 
                     {/* Debug Callback Toggle */}
-                    <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center space-x-2 p-3 bg-success border border-success-border rounded-lg">
                       <Checkbox
                         id="use-debug-callback"
                         checked={useDebugCallback}
@@ -553,7 +551,7 @@ export default function OIDCTestPage() {
                     </div>
 
                     {/* Custom Parameters Toggle */}
-                    <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center space-x-2 p-3 bg-info border border-info-border rounded-lg">
                       <Checkbox
                         id="use-custom-params"
                         checked={useCustomParams}
@@ -571,7 +569,7 @@ export default function OIDCTestPage() {
 
                     {/* Custom Parameters Form */}
                     {useCustomParams && (
-                      <div className="space-y-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                      <div className="space-y-4 p-4 bg-muted border border-border rounded-lg">
                         <div className="space-y-2">
                           <Label
                             htmlFor="custom-client-id"
@@ -590,7 +588,7 @@ export default function OIDCTestPage() {
                             onChange={e => setCustomClientId(e.target.value)}
                             className="font-mono text-sm"
                           />
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             Leave empty to use default:{' '}
                             {selectedProviderInfo.config.client_id}
                           </p>
@@ -614,7 +612,7 @@ export default function OIDCTestPage() {
                             onChange={e => setCustomScopes(e.target.value)}
                             className="font-mono text-sm"
                           />
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             Default:{' '}
                             {selectedProviderInfo.config.scopes?.join(' ') ||
                               'openid profile email'}
@@ -636,7 +634,7 @@ export default function OIDCTestPage() {
                             onChange={e => setCustomResponseType(e.target.value)}
                             className="font-mono text-sm"
                           />
-                          <p className="text-xs text-gray-500">Default: code</p>
+                          <p className="text-xs text-muted-foreground">Default: code</p>
                         </div>
 
                         <div className="space-y-2">
@@ -654,7 +652,7 @@ export default function OIDCTestPage() {
                             onChange={e => setCustomRedirectUri(e.target.value)}
                             className="font-mono text-sm"
                           />
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             Leave empty to use system default
                           </p>
                         </div>
@@ -713,14 +711,14 @@ export default function OIDCTestPage() {
                     </Button>
 
                     {selectedProviderInfo.status === 'error' && (
-                      <p className="text-sm text-red-600 text-center">
+                      <p className="text-sm text-destructive text-center">
                         Fix configuration issues before testing
                       </p>
                     )}
                   </TabsContent>
                 </Tabs>
               ) : (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-muted-foreground">
                   Select a provider to view details
                 </div>
               )}
@@ -738,8 +736,8 @@ export default function OIDCTestPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-600">
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <span className="text-sm font-medium text-muted-foreground">
                   Auto-create Users
                 </span>
                 <Badge
@@ -750,8 +748,8 @@ export default function OIDCTestPage() {
                   {debugInfo?.global_config.auto_create_users ? 'Yes' : 'No'}
                 </Badge>
               </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-600">
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <span className="text-sm font-medium text-muted-foreground">
                   Update User Info
                 </span>
                 <Badge
@@ -762,8 +760,8 @@ export default function OIDCTestPage() {
                   {debugInfo?.global_config.update_user_info ? 'Yes' : 'No'}
                 </Badge>
               </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-600">Default Role</span>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <span className="text-sm font-medium text-muted-foreground">Default Role</span>
                 <Badge variant="outline">
                   {debugInfo?.global_config.default_role || 'user'}
                 </Badge>
@@ -786,20 +784,20 @@ export default function OIDCTestPage() {
               {logs.map(log => (
                 <div
                   key={`${log.timestamp}-${log.level}-${log.message}`}
-                  className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                  className="flex items-start gap-3 p-3 bg-muted rounded-lg border border-border"
                 >
-                  {getLevelIcon(log.level)}
+                  <StatusIcon variant={log.level} className="w-4 h-4" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-foreground">
                         {log.message}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         {new Date(log.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
                     {log.details && (
-                      <pre className="text-xs text-gray-600 font-mono bg-white p-2 rounded overflow-x-auto">
+                      <pre className="text-xs text-muted-foreground font-mono bg-card p-2 rounded overflow-x-auto">
                         {JSON.stringify(log.details, null, 2)}
                       </pre>
                     )}
@@ -807,7 +805,7 @@ export default function OIDCTestPage() {
                 </div>
               ))}
               {logs.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted-foreground">
                   No logs yet. Interact with the page to see debug information.
                 </div>
               )}

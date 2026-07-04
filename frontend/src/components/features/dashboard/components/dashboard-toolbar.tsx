@@ -25,8 +25,8 @@ export function DashboardToolbar({
   return (
     <div className="flex items-center justify-between">
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold text-slate-900">Cockpit Dashboard</h1>
-        <p className="text-slate-600">
+        <h1 className="text-3xl font-bold text-foreground">Cockpit Dashboard</h1>
+        <p className="text-muted-foreground">
           Network infrastructure overview and real-time statistics
         </p>
       </div>

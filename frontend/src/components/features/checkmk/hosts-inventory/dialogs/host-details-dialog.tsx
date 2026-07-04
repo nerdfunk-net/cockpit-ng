@@ -86,17 +86,17 @@ export function HostDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Compact Blue Header */}
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 pr-14">
+        {/* Compact Panel Header */}
+        <div className="panel-header py-2 px-4 pr-14">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold">Host Details</h2>
-              <p className="text-blue-100 text-xs">{host?.host_name}</p>
+              <p className="text-panel-header-muted text-xs">{host?.host_name}</p>
             </div>
             <div className="flex items-center gap-2">
               <Label
                 htmlFor="effective-attrs"
-                className="text-xs text-blue-100 whitespace-nowrap"
+                className="text-xs text-panel-header-muted whitespace-nowrap"
               >
                 Effective Attributes:
               </Label>
@@ -104,7 +104,7 @@ export function HostDetailsDialog({
                 value={showEffectiveAttributes ? 'true' : 'false'}
                 onValueChange={value => setShowEffectiveAttributes(value === 'true')}
               >
-                <SelectTrigger className="w-20 h-7 text-xs border-white/30 bg-white/10 hover:bg-white/20 text-white">
+                <SelectTrigger className="w-20 h-7 text-xs border-current/30 bg-card/10 hover:bg-card/20 text-current">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -117,11 +117,11 @@ export function HostDetailsDialog({
         </div>
 
         {/* Host Details Content */}
-        <div className="flex-1 overflow-y-auto bg-gray-50/50">
+        <div className="flex-1 overflow-y-auto bg-muted/50">
           {loadingHostDetails ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Loading host details...
                 </p>
@@ -134,11 +134,11 @@ export function HostDetailsDialog({
                 {(() => {
                   if (hostDetails.id && typeof hostDetails.id === 'string') {
                     return (
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-md p-3 border border-blue-200/60">
-                        <div className="text-[10px] font-semibold text-blue-600/80 uppercase tracking-wide mb-1">
+                      <div className="bg-info rounded-md p-3 border border-info-border">
+                        <div className="text-[10px] font-semibold text-info-foreground uppercase tracking-wide mb-1">
                           Host Name
                         </div>
-                        <div className="font-mono text-sm font-semibold text-gray-900">
+                        <div className="font-mono text-sm font-semibold text-foreground">
                           {hostDetails.id}
                         </div>
                       </div>
@@ -154,11 +154,11 @@ export function HostDetailsDialog({
                   const folder = extensions?.folder
                   if (folder && typeof folder === 'string') {
                     return (
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-md p-3 border border-blue-200/60">
-                        <div className="text-[10px] font-semibold text-blue-600/80 uppercase tracking-wide mb-1">
+                      <div className="bg-info rounded-md p-3 border border-info-border">
+                        <div className="text-[10px] font-semibold text-info-foreground uppercase tracking-wide mb-1">
                           Folder
                         </div>
-                        <div className="font-mono text-sm font-semibold text-gray-900">
+                        <div className="font-mono text-sm font-semibold text-foreground">
                           {folder}
                         </div>
                       </div>
@@ -195,12 +195,12 @@ export function HostDetailsDialog({
                       {/* Core Attributes */}
                       {Object.keys(coreAttrs).length > 0 && (
                         <div className="mb-4">
-                          <div className="flex items-center mb-2 pb-1.5 border-b border-blue-400/60">
-                            <h3 className="text-sm font-semibold text-gray-900">
+                          <div className="flex items-center mb-2 pb-1.5 border-b border-info-border">
+                            <h3 className="text-sm font-semibold text-foreground">
                               Core Attributes
                             </h3>
                           </div>
-                          <div className="bg-white rounded-md p-4 border border-blue-200">
+                          <div className="bg-card rounded-md p-4 border border-info-border">
                             <JsonRenderer data={coreAttrs} />
                           </div>
                         </div>
@@ -209,12 +209,12 @@ export function HostDetailsDialog({
                       {/* Tag Attributes */}
                       {Object.keys(tagAttrs).length > 0 && (
                         <div className="mb-4">
-                          <div className="flex items-center mb-2 pb-1.5 border-b border-amber-400/60">
-                            <h3 className="text-sm font-semibold text-amber-800">
+                          <div className="flex items-center mb-2 pb-1.5 border-b border-warning-border">
+                            <h3 className="text-sm font-semibold text-warning-foreground">
                               Tags
                             </h3>
                           </div>
-                          <div className="bg-amber-50/50 rounded-md p-4 border border-amber-200">
+                          <div className="bg-warning rounded-md p-4 border border-warning-border">
                             <JsonRenderer data={tagAttrs} />
                           </div>
                         </div>
@@ -256,12 +256,12 @@ export function HostDetailsDialog({
                       {/* Effective Core Attributes */}
                       {Object.keys(coreEffAttrs).length > 0 && (
                         <div className="mb-4">
-                          <div className="flex items-center mb-2 pb-1.5 border-b border-blue-500/60">
-                            <h3 className="text-sm font-semibold text-blue-700">
+                          <div className="flex items-center mb-2 pb-1.5 border-b border-info-border">
+                            <h3 className="text-sm font-semibold text-info-foreground">
                               Effective Core Attributes
                             </h3>
                           </div>
-                          <div className="bg-blue-50/30 rounded-md p-4 border border-blue-300">
+                          <div className="bg-info/60 rounded-md p-4 border border-info-border">
                             <JsonRenderer data={coreEffAttrs} />
                           </div>
                         </div>
@@ -270,12 +270,12 @@ export function HostDetailsDialog({
                       {/* Effective Tag Attributes */}
                       {Object.keys(tagEffAttrs).length > 0 && (
                         <div className="mb-4">
-                          <div className="flex items-center mb-2 pb-1.5 border-b border-amber-500/60">
-                            <h3 className="text-sm font-semibold text-amber-900">
+                          <div className="flex items-center mb-2 pb-1.5 border-b border-warning-border">
+                            <h3 className="text-sm font-semibold text-warning-foreground">
                               Effective Tags
                             </h3>
                           </div>
-                          <div className="bg-amber-100/40 rounded-md p-4 border border-amber-300">
+                          <div className="bg-warning/60 rounded-md p-4 border border-warning-border">
                             <JsonRenderer data={tagEffAttrs} />
                           </div>
                         </div>
@@ -294,27 +294,27 @@ export function HostDetailsDialog({
                 if (extensions?.is_cluster) {
                   return (
                     <div className="mb-4">
-                      <div className="flex items-center mb-2 pb-1.5 border-b border-blue-400/60">
-                        <h3 className="text-sm font-semibold text-gray-900">
+                      <div className="flex items-center mb-2 pb-1.5 border-b border-info-border">
+                        <h3 className="text-sm font-semibold text-foreground">
                           Cluster Information
                         </h3>
                       </div>
-                      <div className="bg-blue-50/30 rounded-md p-4 border border-blue-200">
+                      <div className="bg-info/60 rounded-md p-4 border border-info-border">
                         <div className="space-y-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-700">
+                            <span className="text-xs font-medium text-muted-foreground">
                               Status:
                             </span>
-                            <Badge className="bg-blue-500 hover:bg-blue-600 text-xs h-5">
+                            <Badge className="bg-primary hover:bg-primary/90 text-xs h-5">
                               Cluster
                             </Badge>
                           </div>
                           {extensions.cluster_nodes ? (
                             <div>
-                              <div className="text-xs font-medium text-gray-700 mb-1.5">
+                              <div className="text-xs font-medium text-muted-foreground mb-1.5">
                                 Cluster Nodes:
                               </div>
-                              <div className="bg-white rounded p-3 border border-blue-200">
+                              <div className="bg-card rounded p-3 border border-info-border">
                                 <JsonRenderer data={extensions.cluster_nodes} />
                               </div>
                             </div>
@@ -330,12 +330,12 @@ export function HostDetailsDialog({
               {/* Raw JSON Section */}
               <div>
                 <details className="group">
-                  <summary className="flex items-center gap-1.5 text-xs font-medium text-gray-600 uppercase tracking-wide cursor-pointer hover:text-blue-600 transition-colors select-none py-2">
+                  <summary className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-primary transition-colors select-none py-2">
                     <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
                     Raw JSON Response
                   </summary>
-                  <div className="mt-2 bg-gray-900 rounded-md p-3 overflow-auto max-h-80 border border-gray-700">
-                    <pre className="text-[11px] text-green-400 font-mono leading-relaxed">
+                  <div className="mt-2 bg-muted rounded-md p-3 overflow-auto max-h-80 border border-border">
+                    <pre className="text-[11px] text-foreground font-mono leading-relaxed">
                       {JSON.stringify(hostDetails, null, 2)}
                     </pre>
                   </div>

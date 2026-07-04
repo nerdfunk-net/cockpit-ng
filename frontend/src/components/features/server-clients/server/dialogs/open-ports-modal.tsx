@@ -27,7 +27,7 @@ export function OpenPortsModal({ open, onOpenChange, label, openPorts }: OpenPor
       <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <DoorOpen className="h-5 w-5 text-blue-600" />
+            <DoorOpen className="h-5 w-5 text-primary" />
             Open Ports — {label}
           </DialogTitle>
         </DialogHeader>
@@ -36,7 +36,7 @@ export function OpenPortsModal({ open, onOpenChange, label, openPorts }: OpenPor
           {hasPorts ? (
             <div className="grid grid-cols-2 gap-4 p-1">
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs text-gray-500 uppercase tracking-wide">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">
                   TCP ({tcpPorts.length})
                 </span>
                 {tcpPorts.length > 0 ? (
@@ -49,11 +49,11 @@ export function OpenPortsModal({ open, onOpenChange, label, openPorts }: OpenPor
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-gray-400 italic">None</span>
+                  <span className="text-xs text-muted-foreground italic">None</span>
                 )}
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs text-gray-500 uppercase tracking-wide">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">
                   UDP ({udpPorts.length})
                 </span>
                 {udpPorts.length > 0 ? (
@@ -66,12 +66,12 @@ export function OpenPortsModal({ open, onOpenChange, label, openPorts }: OpenPor
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-gray-400 italic">None</span>
+                  <span className="text-xs text-muted-foreground italic">None</span>
                 )}
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-32 text-sm text-gray-400">
+            <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
               No open ports recorded for this snapshot.
             </div>
           )}

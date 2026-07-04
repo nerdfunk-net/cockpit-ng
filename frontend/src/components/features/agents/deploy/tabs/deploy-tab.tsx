@@ -52,12 +52,12 @@ export function DeployTab({
         </Alert>
       )}
       {/* Agent Selection */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Agent Repository</span>
           </div>
-          <div className="text-xs text-blue-100">
+          <div className="text-xs text-panel-header-muted">
             Select the agent and path for config deployment
           </div>
         </div>
@@ -87,12 +87,12 @@ export function DeployTab({
       </div>
 
       {/* Deploy Actions */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Deployment Actions</span>
           </div>
-          <div className="text-xs text-blue-100">
+          <div className="text-xs text-panel-header-muted">
             Render templates, deploy to git, or activate changes
           </div>
         </div>

@@ -92,7 +92,7 @@ export function SelectClusterDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {HeaderIcon && <HeaderIcon className="h-5 w-5 text-blue-600" />}
+            {HeaderIcon && <HeaderIcon className="h-5 w-5 text-primary" />}
             {title}
           </DialogTitle>
           <DialogDescription>{description}</DialogDescription>

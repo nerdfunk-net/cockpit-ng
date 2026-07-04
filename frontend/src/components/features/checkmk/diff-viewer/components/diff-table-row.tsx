@@ -2,6 +2,7 @@ import { GitCompare, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { StatusBadge } from '@/components/shared/status-badge'
 import { SystemBadge } from './system-badge'
 import type { DiffDevice } from '../types'
 
@@ -22,7 +23,7 @@ export function DiffTableRow({
   onGetDiff,
   onSync,
 }: DiffTableRowProps) {
-  const alternatingRowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+  const alternatingRowClass = index % 2 === 0 ? 'bg-card' : 'bg-muted'
   const displayIp = device.ip_address || device.checkmk_ip || 'N/A'
   const canViewDiff = !!device.nautobot_id
 
@@ -41,21 +42,21 @@ export function DiffTableRow({
           aria-label={`Select ${device.name}`}
         />
       </td>
-      <td className="pl-4 pr-2 py-3 w-56 text-sm font-medium text-gray-900">
+      <td className="pl-4 pr-2 py-3 w-56 text-sm font-medium text-foreground">
         {device.name}
       </td>
-      <td className="px-4 py-3 w-36 text-sm text-gray-600">{displayIp}</td>
-      <td className="px-4 py-3 w-40 text-sm text-gray-600">
+      <td className="px-4 py-3 w-36 text-sm text-muted-foreground">{displayIp}</td>
+      <td className="px-4 py-3 w-40 text-sm text-muted-foreground">
         {device.role || 'Unknown'}
       </td>
-      <td className="px-4 py-3 w-48 text-sm text-gray-600">
+      <td className="px-4 py-3 w-48 text-sm text-muted-foreground">
         {device.location || 'Unknown'}
       </td>
       <td className="px-4 py-3 w-36">
         {device.status ? (
           <Badge variant="secondary">{device.status}</Badge>
         ) : (
-          <span className="text-sm text-gray-400">N/A</span>
+          <span className="text-sm text-muted-foreground">N/A</span>
         )}
       </td>
       <td className="px-4 py-3 w-44">
@@ -63,14 +64,13 @@ export function DiffTableRow({
       </td>
       <td className="px-4 py-3 w-36">
         {device.checkmk_diff_status ? (
-          <Badge
-            variant="secondary"
-            className={
+          <StatusBadge
+            variant={
               device.checkmk_diff_status === 'equal'
-                ? 'bg-green-100 text-green-800'
+                ? 'success'
                 : device.checkmk_diff_status === 'host_not_found'
-                  ? 'bg-red-100 text-red-800'
-                  : 'bg-orange-100 text-orange-800'
+                  ? 'error'
+                  : 'warning'
             }
           >
             {device.checkmk_diff_status === 'equal'
@@ -78,9 +78,9 @@ export function DiffTableRow({
               : device.checkmk_diff_status === 'host_not_found'
                 ? 'Not Found'
                 : 'Diff'}
-          </Badge>
+          </StatusBadge>
         ) : (
-          <span className="text-sm text-gray-400">&mdash;</span>
+          <span className="text-sm text-muted-foreground">&mdash;</span>
         )}
       </td>
       <td className="px-4 py-3 w-28">
@@ -108,7 +108,7 @@ export function DiffTableRow({
                   ? 'Sync is not available for CheckMK-only hosts'
                   : 'Sync not available for this device'
             }
-            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 disabled:text-gray-400"
+            className="h-8 w-8 p-0 text-primary hover:text-primary/80 disabled:text-muted-foreground"
           >
             <RefreshCw className="h-4 w-4" />
           </Button>

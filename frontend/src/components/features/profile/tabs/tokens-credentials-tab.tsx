@@ -22,6 +22,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { StatusAlert } from '@/components/shared/status-alert'
 import {
   Eye,
   EyeOff,
@@ -88,12 +89,12 @@ export function TokensCredentialsTab({
 }: TokensCredentialsTabProps) {
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
-        <CardTitle className="flex items-center space-x-2 text-white text-base">
+      <CardHeader className="panel-header py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+        <CardTitle className="flex items-center space-x-2 text-base">
           <Key className="h-5 w-5" />
           <span>Tokens & Credentials</span>
         </CardTitle>
-        <CardDescription className="text-blue-100">
+        <CardDescription className="text-panel-header-muted">
           Manage your API keys and access tokens
         </CardDescription>
       </CardHeader>
@@ -142,7 +143,7 @@ export function TokensCredentialsTab({
             )}
           </div>
           <div className="flex items-center justify-between text-sm">
-            <p className="text-slate-500">
+            <p className="text-muted-foreground">
               {apiKeySet && apiKey.length === 0
                 ? 'An API key is configured. For security it cannot be displayed — generate or enter a new key to replace it.'
                 : 'Leave empty for no API key, or enter exactly 42 characters'}
@@ -150,19 +151,19 @@ export function TokensCredentialsTab({
             <span
               className={`font-mono ${
                 apiKey.length === 0
-                  ? 'text-slate-400'
+                  ? 'text-muted-foreground'
                   : apiKey.length === 42
-                    ? 'text-green-600'
-                    : 'text-red-600'
+                    ? 'text-success-foreground'
+                    : 'text-destructive'
               }`}
             >
               {apiKey.length}/42
             </span>
           </div>
           {apiKey.length > 0 && apiKey.length !== 42 && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+            <StatusAlert variant="error">
               API key must be exactly 42 characters long
-            </div>
+            </StatusAlert>
           )}
         </div>
 
@@ -171,7 +172,7 @@ export function TokensCredentialsTab({
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-base font-medium">Personal Credentials</Label>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted-foreground">
                 Manage your personal authentication credentials
               </p>
             </div>
@@ -188,8 +189,8 @@ export function TokensCredentialsTab({
           </div>
 
           {personalCredentials.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-              <Key className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+            <div className="text-center py-8 text-muted-foreground bg-muted rounded-lg border-2 border-dashed border-border">
+              <Key className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
               <p>No personal credentials configured</p>
               <p className="text-sm">
                 Click &ldquo;Add Credential&rdquo; to get started
@@ -203,18 +204,18 @@ export function TokensCredentialsTab({
                     open={credential.isOpen}
                     onOpenChange={() => onToggleCredentialExpanded(credential.id)}
                   >
-                    <div className="flex items-center justify-between p-4 hover:bg-slate-50">
+                    <div className="flex items-center justify-between p-4 hover:bg-muted">
                       <CollapsibleTrigger className="flex items-center space-x-3 flex-1 text-left">
                         {credential.isOpen ? (
-                          <ChevronDown className="h-4 w-4 text-slate-400" />
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-slate-400" />
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         )}
                         <div>
                           <div className="font-medium">
                             {credential.name || 'Unnamed Credential'}
                           </div>
-                          <div className="text-sm text-slate-500">
+                          <div className="text-sm text-muted-foreground">
                             {credential.type === 'SSH_KEY'
                               ? 'SSH Key'
                               : credential.type}{' '}
@@ -227,13 +228,13 @@ export function TokensCredentialsTab({
                         variant="ghost"
                         size="sm"
                         onClick={() => onRemoveCredential(credential.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 ml-2"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-2"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                     <CollapsibleContent>
-                      <div className="px-4 pb-4 space-y-4 border-t bg-slate-50/50">
+                      <div className="px-4 pb-4 space-y-4 border-t bg-muted/50">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                           {/* Credential Name */}
                           <div className="space-y-2">
@@ -361,7 +362,7 @@ export function TokensCredentialsTab({
                                   />
                                   {(credential.ssh_private_key ||
                                     credential.has_ssh_key) && (
-                                    <div className="flex items-center gap-1 text-green-600 text-sm">
+                                    <div className="flex items-center gap-1 text-success-foreground text-sm">
                                       <Check className="h-4 w-4" />
                                       <span>
                                         {credential.has_ssh_key &&
@@ -374,7 +375,7 @@ export function TokensCredentialsTab({
                                 </div>
                                 {credential.has_ssh_key &&
                                   !credential.ssh_private_key && (
-                                    <p className="text-sm text-slate-500">
+                                    <p className="text-sm text-muted-foreground">
                                       SSH key is already stored. Upload a new key to
                                       replace it.
                                     </p>

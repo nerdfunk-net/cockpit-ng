@@ -48,9 +48,9 @@ export function CustomVariableTab({
           placeholder="my_variable"
           value={name}
           onChange={e => setName(e.target.value)}
-          className={nameError ? 'border-red-300' : ''}
+          className={nameError ? 'border-destructive' : ''}
         />
-        {nameError && <p className="text-xs text-red-500">{nameError}</p>}
+        {nameError && <p className="text-xs text-destructive">{nameError}</p>}
       </div>
 
       <div className="space-y-2">

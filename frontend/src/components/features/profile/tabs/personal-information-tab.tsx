@@ -28,12 +28,12 @@ export function PersonalInformationTab({
 }: PersonalInformationTabProps) {
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
-        <CardTitle className="flex items-center space-x-2 text-white text-base">
+      <CardHeader className="panel-header py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+        <CardTitle className="flex items-center space-x-2 text-base">
           <User className="h-5 w-5" />
           <span>Personal Information</span>
         </CardTitle>
-        <CardDescription className="text-blue-100">
+        <CardDescription className="text-panel-header-muted">
           Update your personal details and account preferences
         </CardDescription>
       </CardHeader>
@@ -41,8 +41,8 @@ export function PersonalInformationTab({
         {/* Username (read-only) */}
         <div className="space-y-2">
           <Label htmlFor="username">Username</Label>
-          <Input id="username" value={username} disabled className="bg-slate-50" />
-          <p className="text-sm text-slate-500">Username cannot be changed</p>
+          <Input id="username" value={username} disabled className="bg-muted" />
+          <p className="text-sm text-muted-foreground">Username cannot be changed</p>
         </div>
 
         {/* Real Name */}

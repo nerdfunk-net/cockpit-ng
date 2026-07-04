@@ -21,22 +21,25 @@ export function CodeExample({ title, code, language = 'jinja2' }: CodeExamplePro
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 overflow-hidden">
-      <div className="flex items-center justify-between bg-slate-100 px-4 py-2 border-b border-slate-200">
-        <span className="text-sm font-medium text-slate-700">{title}</span>
+    <div className="rounded-lg border border-border overflow-hidden">
+      <div className="flex items-center justify-between bg-muted px-4 py-2 border-b border-border">
+        <span className="text-sm font-medium text-muted-foreground">{title}</span>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs">
             {language}
           </Badge>
           <Button variant="ghost" size="sm" onClick={handleCopy} className="h-7 px-2">
             {copied ? (
-              <Check className="h-3.5 w-3.5 text-green-600" />
+              <Check className="h-3.5 w-3.5 text-success-foreground" />
             ) : (
               <Copy className="h-3.5 w-3.5" />
             )}
           </Button>
         </div>
       </div>
+      {/* Terminal-style code output — intentionally always-dark, matches the
+          console/terminal convention used elsewhere (e.g. netmiko automation
+          execution results); not a themed surface. */}
       <pre className="bg-slate-900 text-green-400 p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap">
         {code}
       </pre>

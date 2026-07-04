@@ -12,6 +12,7 @@ import { PingDialog } from './dialogs/ping-dialog'
 import { NmapScanDialog } from './dialogs/nmap-scan-dialog'
 import { CommandHistoryDialog } from './dialogs/command-history-dialog'
 import { EMPTY_AGENTS } from './utils/constants'
+import { IconChip } from '@/components/shared/icon-chip'
 
 export function AgentsOperatingPage() {
   const { data, isLoading, refetch, isFetching } = useAgentsQuery()
@@ -52,11 +53,11 @@ export function AgentsOperatingPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Activity className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <Activity className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Agents Operating</h1>
+            <h1 className="text-3xl font-bold text-foreground">Agents Operating</h1>
             <p className="text-muted-foreground mt-2">
               Monitor and manage running Cockpit agents
             </p>
@@ -92,18 +93,22 @@ export function AgentsOperatingPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 py-4">
-            <Wifi className="h-5 w-5 text-green-500" />
+            <Wifi className="h-5 w-5 text-success-foreground" />
             <div>
-              <p className="text-2xl font-bold text-green-600">{stats.online}</p>
+              <p className="text-2xl font-bold text-success-foreground">
+                {stats.online}
+              </p>
               <p className="text-xs text-muted-foreground">Online</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 py-4">
-            <WifiOff className="h-5 w-5 text-red-500" />
+            <WifiOff className="h-5 w-5 text-error-foreground" />
             <div>
-              <p className="text-2xl font-bold text-red-600">{stats.offline}</p>
+              <p className="text-2xl font-bold text-error-foreground">
+                {stats.offline}
+              </p>
               <p className="text-xs text-muted-foreground">Offline</p>
             </div>
           </CardContent>
@@ -112,13 +117,13 @@ export function AgentsOperatingPage() {
 
       {/* Running Agents */}
       <Card className="shadow-lg border-0 overflow-hidden p-0">
-        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-t-lg m-0 py-2 px-4">
+        <CardHeader className="panel-header border-b-0 rounded-t-lg m-0 py-2 px-4">
           <CardTitle className="flex items-center space-x-2 text-sm font-medium">
             <Activity className="h-5 w-5" />
             <span>Running Agents</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
+        <CardContent className="p-6 panel-content">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

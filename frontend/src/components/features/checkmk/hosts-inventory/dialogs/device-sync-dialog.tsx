@@ -591,7 +591,7 @@ export function DeviceSyncDialog({
         <SyncDialogHeader deviceName={form.watch('deviceName')} isUpdate={isUpdate} />
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto bg-gray-50/50">
+        <div className="flex-1 overflow-y-auto bg-muted/50">
           {loadingMetadata ? (
             <SyncLoadingState />
           ) : (
