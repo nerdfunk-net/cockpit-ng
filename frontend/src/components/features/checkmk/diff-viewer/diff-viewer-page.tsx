@@ -66,14 +66,28 @@ export default function DiffViewerPage() {
     [showMessage]
   )
 
-  // Job management for comparison results overlay
-  const jobManagement = useJobManagement(
-    async loadedDevices => {
-      // Overlay comparison results onto diff devices
+  const handleJobsLoaded = useCallback(
+    (loadedDevices: Device[]) => {
       overlayComparisonResults(loadedDevices)
     },
-    message => showMessage(message, 'error'),
-    message => showMessage(message, 'success')
+    [overlayComparisonResults]
+  )
+
+  const handleJobError = useCallback(
+    (message: string) => showMessage(message, 'error'),
+    [showMessage]
+  )
+
+  const handleJobSuccess = useCallback(
+    (message: string) => showMessage(message, 'success'),
+    [showMessage]
+  )
+
+  // Job management for comparison results overlay
+  const jobManagement = useJobManagement(
+    handleJobsLoaded,
+    handleJobError,
+    handleJobSuccess
   )
 
   // Diff comparison for individual devices

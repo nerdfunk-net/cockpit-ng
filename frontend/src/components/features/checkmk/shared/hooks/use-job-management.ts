@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import type { Job } from '../utils/api'
 import type { Device } from '../types'
 import {
@@ -139,6 +139,16 @@ export function useJobManagement(
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
   const [loadingResults, setLoadingResults] = useState(false)
 
+  const onJobsLoadedRef = useRef(onJobsLoaded)
+  const onErrorRef = useRef(onError)
+  const onSuccessRef = useRef(onSuccess)
+
+  useEffect(() => {
+    onJobsLoadedRef.current = onJobsLoaded
+    onErrorRef.current = onError
+    onSuccessRef.current = onSuccess
+  })
+
   // Fetch available completed jobs
   const fetchAvailableJobs = useCallback(async () => {
     try {
@@ -162,11 +172,9 @@ export function useJobManagement(
       setAvailableJobs(completedJobs)
     } catch (error) {
       console.error('Error fetching available jobs:', error)
-      if (onError) {
-        onError('Failed to fetch available jobs')
-      }
+      onErrorRef.current?.('Failed to fetch available jobs')
     }
-  }, [onError])
+  }, [])
 
   // Load job results
   const loadJobResults = useCallback(
@@ -187,28 +195,22 @@ export function useJobManagement(
           transformDeviceResult(result, index)
         )
 
-        if (onJobsLoaded) {
-          onJobsLoaded(devices)
-        }
+        onJobsLoadedRef.current?.(devices)
 
-        if (onSuccess) {
-          onSuccess(
-            `Loaded ${devices.length} device comparison results from job ${targetJobId.slice(0, 8)}...`
-          )
-        }
+        onSuccessRef.current?.(
+          `Loaded ${devices.length} device comparison results from job ${targetJobId.slice(0, 8)}...`
+        )
 
         return devices
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Failed to load job results'
-        if (onError) {
-          onError(message)
-        }
+        onErrorRef.current?.(message)
       } finally {
         setLoadingResults(false)
       }
     },
-    [selectedJobId, onJobsLoaded, onSuccess, onError]
+    [selectedJobId]
   )
 
   // Clear all results
@@ -223,39 +225,31 @@ export function useJobManagement(
       setSelectedJobId('')
       setCurrentJobId(null)
 
-      if (onSuccess) {
-        onSuccess(data.message || 'All comparison results cleared')
-      }
+      onSuccessRef.current?.(data.message || 'All comparison results cleared')
 
       return true
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to clear results'
-      if (onError) {
-        onError(message)
-      }
+      onErrorRef.current?.(message)
       return false
     }
-  }, [fetchAvailableJobs, onSuccess, onError])
+  }, [fetchAvailableJobs])
 
   // Start new comparison job
   const startNewJob = useCallback(async () => {
     try {
       const result = await apiStartComparisonJob()
 
-      if (onSuccess) {
-        onSuccess('Device comparison job started successfully')
-      }
+      onSuccessRef.current?.('Device comparison job started successfully')
 
       return result
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to start comparison job'
-      if (onError) {
-        onError(message)
-      }
+      onErrorRef.current?.(message)
       return null
     }
-  }, [onSuccess, onError])
+  }, [])
 
   // Load jobs on mount
   useEffect(() => {
