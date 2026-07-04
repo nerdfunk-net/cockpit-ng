@@ -179,7 +179,6 @@ export function ConditionTreeBuilder({
       return null
     }
 
-    // Find the actual group to get its logic type
     const targetGroupId = currentGroupPath[currentGroupPath.length - 1]
     if (!targetGroupId) {
       return `Group ${currentGroupPath.length}`
@@ -222,25 +221,12 @@ export function ConditionTreeBuilder({
       <div className="p-6 bg-gradient-to-b from-white to-gray-50">
         {/* Target Location Indicator */}
         <div className="mb-4 flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center gap-2 flex-1">
-            <span className="text-sm font-medium text-blue-900">
-              Adding conditions to:
-            </span>
-            <Badge variant="outline" className="bg-white">
-              {getCurrentTargetName()}
-            </Badge>
-          </div>
-          {currentGroupPath.length > 0 && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setTargetGroup(null)}
-              className="h-7 text-xs text-blue-700 hover:text-blue-900 hover:bg-blue-100"
-            >
-              <ChevronLeft className="h-3 w-3 mr-1" />
-              Back to Root
-            </Button>
-          )}
+          <span className="text-sm font-medium text-blue-900">
+            Adding conditions to:
+          </span>
+          <Badge variant="outline" className="bg-white">
+            {getCurrentTargetName()}
+          </Badge>
         </div>
 
         <div
@@ -473,13 +459,13 @@ export function ConditionTreeBuilder({
             ) : (
               <div className="space-y-2">
                 {/* Root level logic indicator */}
-                <div className="text-xs text-gray-500 mb-2">
+                <div className="text-xs text-gray-500 mb-2 flex items-center flex-wrap gap-1">
                   Root logic:{' '}
                   <Badge variant="outline">{conditionTree.internalLogic}</Badge>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="ml-2 h-5 text-xs"
+                    className="h-5 text-xs"
                     onClick={() => {
                       setConditionTree((prev: ConditionTree) => ({
                         ...prev,
@@ -489,6 +475,18 @@ export function ConditionTreeBuilder({
                   >
                     Toggle
                   </Button>
+                  {currentGroupPath.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-5 text-xs"
+                      onClick={() => setTargetGroup(null)}
+                      title="Return to root level"
+                    >
+                      <ChevronLeft className="h-3 w-3 mr-1" />
+                      Back to Root
+                    </Button>
+                  )}
                 </div>
                 {conditionTree.items.map((item, index) => (
                   <div key={item.id}>
