@@ -1,8 +1,10 @@
 # Cockpit-NG Design System Guide
 
-**Version:** 2.0  
-**Last Updated:** 2026-02-12  
+**Version:** 3.0  
+**Last Updated:** 2026-07-04  
 **Purpose:** Visual design patterns and UI component specifications for Cockpit-NG applications.
+
+> **⚠️ COLOR RULE (v3.0):** Components MUST use semantic color tokens (`text-foreground`, `bg-success`, `text-primary`, …) — **never** raw Tailwind palette classes (`text-gray-600`, `bg-blue-50`, `border-green-200`, …). All tokens are defined in `frontend/src/app/globals.css` and adapt automatically to dark mode and future color schemes. See [Section 4](#4-color-system) for the full token reference and migration mapping.
 
 > **Note:** This is a design-focused extract from the comprehensive [STYLE_GUIDE.md](STYLE_GUIDE.md). For complete implementation guidance including code architecture, hooks, and API patterns, refer to the full style guide.
 
@@ -29,7 +31,8 @@
 
 ## Reference Applications
 
-- **Primary Reference:** CheckMK Sync Devices (`/checkmk/sync-devices`)
+- **Color/Token Reference (canonical):** Device Onboarding (`/frontend/src/components/features/nautobot/onboard/`) — fully migrated to semantic tokens; copy its patterns for all color work
+- **Primary Structure Reference:** CheckMK Sync Devices (`/checkmk/sync-devices`)
 - **Tabbed Interface Reference:** Netmiko Command Execution (`/network/automation/netmiko`)
 
 ---
@@ -59,15 +62,17 @@ export default function MyPage() {
 The page header is the first thing users see. Use this exact pattern:
 
 ```tsx
+import { IconChip } from '@/components/shared/icon-chip'
+
 <div className="flex items-center justify-between">
   {/* Left Side: Title and Icon */}
-  <div className="flex items-center space-x-3">
-    <div className="bg-green-100 p-2 rounded-lg">
-      <RefreshCw className="h-6 w-6 text-green-600" />
-    </div>
+  <div className="flex items-center gap-4">
+    <IconChip variant="success">
+      <RefreshCw className="h-6 w-6" />
+    </IconChip>
     <div>
-      <h1 className="text-3xl font-bold text-gray-900">Page Title</h1>
-      <p className="text-gray-600 mt-1">Brief description of the page purpose</p>
+      <h1 className="text-3xl font-bold text-foreground">Page Title</h1>
+      <p className="text-muted-foreground mt-2">Brief description of the page purpose</p>
     </div>
   </div>
 
@@ -78,16 +83,19 @@ The page header is the first thing users see. Use this exact pattern:
 </div>
 ```
 
-**Icon Box Colors** (choose based on feature):
-- Green: `bg-green-100` + `text-green-600` (sync, refresh, success-oriented features)
-- Blue: `bg-blue-100` + `text-blue-600` (automation, commands, general features)
-- Purple: `bg-purple-100` + `text-purple-600` (settings, configuration)
-- Orange: `bg-orange-100` + `text-orange-600` (warnings, monitoring)
-- Red: `bg-red-100` + `text-red-600` (critical operations, delete actions)
+**Icon Chip Variants** (`<IconChip variant="...">`, choose based on feature):
+- `success` — sync, refresh, success-oriented features
+- `primary` — automation, commands, general features (default)
+- `info` — informational features
+- `warning` — monitoring, attention
+- `error` — critical operations, delete actions
+- `neutral` — secondary/utility features
+
+❌ Never build icon boxes by hand with `bg-{color}-100` / `text-{color}-600` — those classes break dark mode and theming.
 
 **Typography:**
-- Main title: `text-3xl font-bold text-gray-900`
-- Description: `text-gray-600 mt-1`
+- Main title: `text-3xl font-bold text-foreground`
+- Description: `text-muted-foreground mt-2`
 - Icon size: `h-6 w-6`
 
 ---
@@ -104,35 +112,37 @@ This is the **primary pattern** for all prominent content sections. Use this for
 - Any section requiring visual prominence
 
 ```tsx
-<div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-  {/* Header with gradient */}
-  <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+<div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+  {/* Header with gradient — .panel-header is a themeable utility from globals.css */}
+  <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
     <div className="flex items-center space-x-2">
       <Terminal className="h-4 w-4" />
       <span className="text-sm font-medium">Section Title</span>
     </div>
-    <div className="text-xs text-blue-100">
+    <div className="text-xs text-panel-header-muted">
       Optional helper text or description
     </div>
   </div>
 
   {/* Content area with gradient background */}
-  <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+  <div className="p-6 panel-content">
     {/* Your content here */}
   </div>
 </div>
 ```
 
 **Key Properties:**
-- Container: `shadow-lg border-0 p-0 bg-white rounded-lg`
-- Header gradient: `bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white`
+- Container: `shadow-lg border-0 p-0 bg-card rounded-lg`
+- Header gradient: `panel-header` (utility class — driven by `--panel-header-*` CSS variables)
 - Header padding: `py-2 px-4`
 - Header corners: `rounded-t-lg`
 - Title: `text-sm font-medium`
-- Helper text: `text-xs text-blue-100`
+- Helper text: `text-xs text-panel-header-muted`
 - Content padding: `p-6`
-- Content gradient: `bg-gradient-to-b from-white to-gray-50`
+- Content gradient: `panel-content` (utility class — gradient from `--card` to `--background`)
 - Icon size in header: `h-4 w-4`
+
+❌ Never write the gradient by hand (`bg-gradient-to-r from-blue-400/80 ...`). The `.panel-header` / `.panel-content` utilities exist so a future color scheme only changes `globals.css`, not every component.
 
 ### 2.2 Plain Card Pattern (Secondary Pattern)
 
@@ -196,20 +206,20 @@ For pages with multiple sections, use tabs:
 Each tab should follow this pattern:
 
 ```tsx
+import { StatusAlert } from '@/components/shared/status-alert'
+
 <TabsContent value="mytab" className="space-y-6">
   {/* Alert if needed */}
-  <Alert className="bg-blue-50 border-blue-200">
-    <AlertDescription className="text-blue-800">
-      Important information about this tab
-    </AlertDescription>
-  </Alert>
+  <StatusAlert variant="info">
+    Important information about this tab
+  </StatusAlert>
 
   {/* Main content section(s) using gradient header pattern */}
-  <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-    <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+  <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+    <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
       {/* Header content */}
     </div>
-    <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+    <div className="p-6 panel-content">
       {/* Tab content */}
     </div>
   </div>
@@ -222,46 +232,93 @@ Each tab should follow this pattern:
 
 ## 4. Color System
 
-### 4.1 Status Colors
+### 4.0 The Semantic Token Rule (MANDATORY)
 
-Use semantic colors consistently:
+**Components never reference concrete colors.** All colors come from semantic CSS-variable tokens defined in `frontend/src/app/globals.css` (`:root` for light mode, `.dark` for dark mode) and exposed as Tailwind utilities via `@theme inline`.
 
-| Status | Background | Border | Text | Use Case |
-|--------|-----------|--------|------|----------|
-| Success | `bg-green-50` | `border-green-200` | `text-green-600/800` | Success messages, completed tasks |
-| Error | `bg-red-50` | `border-red-200` | `text-red-600/800` | Error messages, failed operations |
-| Info | `bg-blue-50` | `border-blue-200` | `text-blue-600/800` | Informational messages, hints |
-| Warning | `bg-amber-50` | `border-amber-200` | `text-amber-600/800` | Warnings, cautions |
-
-### 4.2 Gradient Colors
-
-**Blue Gradients (Primary):**
-- Header: `from-blue-400/80 to-blue-500/80`
-- Content: `from-white to-gray-50`
-- Text on gradient: `text-white`
-- Secondary text: `text-blue-100`
-
-**Alternative Gradients** (use sparingly for variety):
-- Green: `from-green-400/80 to-green-500/80`
-- Purple: `from-purple-400/80 to-purple-500/80`
-- Orange: `from-orange-400/80 to-orange-500/80`
-
-### 4.3 Icon Box Colors
-
-Icon boxes in headers follow this pattern:
+**Why:** With tokens, implementing a new color scheme means adding one variable block to `globals.css` (e.g. `[data-theme="emerald"] { --primary: ...; }`) — zero component changes. Hardcoded palette classes (`text-gray-600`, `bg-blue-50`) break dark mode and make theming impossible.
 
 ```tsx
-<div className="bg-{color}-100 p-2 rounded-lg">
-  <IconComponent className="h-6 w-6 text-{color}-600" />
-</div>
+// ❌ WRONG — hardcoded palette, breaks dark mode and theming
+<p className="text-gray-600">...</p>
+<div className="bg-green-50 border-green-200 text-green-800">Saved!</div>
+
+// ✅ CORRECT — semantic tokens, theme-proof
+<p className="text-muted-foreground">...</p>
+<div className="bg-success border-success-border text-success-foreground">Saved!</div>
 ```
 
-**Color Meanings:**
-- **Green** (`green-100` / `green-600`): Sync, refresh, growth, positive actions
-- **Blue** (`blue-100` / `blue-600`): Automation, commands, information, default
-- **Purple** (`purple-100` / `purple-600`): Settings, configuration, customization
-- **Orange** (`orange-100` / `orange-600`): Monitoring, alerts, attention
-- **Red** (`red-100` / `red-600`): Destructive actions, critical operations
+**Only exception:** data-driven colors from an API (e.g. Nautobot status colors) may be applied via inline `style`. Chart colors use the `--chart-1..5` tokens.
+
+### 4.1 Token Reference
+
+**Neutral / structural tokens:**
+
+| Token utility | Use for |
+|---------------|---------|
+| `bg-background` / `text-foreground` | Page background / primary text |
+| `bg-card` / `text-card-foreground` | Card & panel surfaces (replaces `bg-white`) |
+| `bg-popover` / `text-popover-foreground` | Dropdowns, popovers |
+| `bg-muted` / `text-muted-foreground` | Subtle backgrounds / secondary text |
+| `border-border` (or just `border`) | All standard borders |
+| `bg-primary` / `text-primary-foreground` | Primary actions (default Button) |
+| `text-primary` | Links, active icons, spinners |
+| `ring-ring` | Focus rings (e.g. `focus:ring-ring/30`) |
+| `bg-destructive` / `text-destructive` | Destructive actions, required markers, invalid input borders |
+
+**Status tokens** (each has background, foreground, and border):
+
+| Status | Background | Text | Border | Use Case |
+|--------|-----------|------|--------|----------|
+| Success | `bg-success` | `text-success-foreground` | `border-success-border` | Success messages, completed tasks |
+| Error | `bg-error` | `text-error-foreground` | `border-error-border` | Error messages, failed operations |
+| Warning | `bg-warning` | `text-warning-foreground` | `border-warning-border` | Warnings, cautions |
+| Info | `bg-info` | `text-info-foreground` | `border-info-border` | Informational messages, hints |
+
+Shorthand utility classes `.status-success`, `.status-warning`, `.status-error`, `.status-info` set background + text + border-color in one class (add `border` for the border width). Prefer the shared components (Section 4.3) over using these directly.
+
+### 4.2 Panel Gradients
+
+Gradients are token-driven via the `.panel-header` / `.panel-content` utilities (see Section 2.1). The colors come from `--panel-header-from/to/foreground/muted` in `globals.css`.
+
+- Header: `panel-header` class; helper text on it: `text-panel-header-muted`
+- Content: `panel-content` class
+
+❌ Do not write `bg-gradient-to-r from-{color} ...` in components. If a new theme needs different panel colors, only `globals.css` changes.
+
+### 4.3 Shared Color Components
+
+Use these shared primitives instead of assembling status styling by hand (all in `/frontend/src/components/shared/`):
+
+| Component | Purpose |
+|-----------|---------|
+| `<StatusAlert variant="success\|warning\|error\|info">` | Status alert boxes with icon and optional `onDismiss` |
+| `<StatusBadge variant="...">` | Tinted status badges |
+| `<StatusIcon variant="...">` | Correctly-colored status icon (CheckCircle2/AlertCircle/XCircle/Info) |
+| `<IconChip variant="primary\|success\|warning\|error\|info\|neutral">` | Page-header icon boxes |
+
+### 4.4 Migration Mapping (Old → New)
+
+When touching a file that still uses raw palette classes, migrate them:
+
+| Old (hardcoded) | New (token) |
+|-----------------|-------------|
+| `text-gray-900`, `text-slate-900`, `text-gray-800` | `text-foreground` |
+| `text-gray-500/600/700`, `text-slate-500/600` | `text-muted-foreground` |
+| `bg-white` | `bg-card` (surfaces) or `bg-background` (page) |
+| `bg-gray-50/100`, `bg-slate-50` | `bg-muted` |
+| `border-gray-200/300`, `border-slate-200/300` | `border-border` (or just `border`) |
+| `text-blue-600` (links/icons/spinners) | `text-primary` |
+| `bg-blue-600 hover:bg-blue-700 text-white` on Button | remove — default variant is already primary |
+| `bg-blue-50 border-blue-200 text-blue-800` | `bg-info border-info-border text-info-foreground` |
+| `bg-green-50/100`, `text-green-600..900`, `border-green-200` | `bg-success`, `text-success-foreground`, `border-success-border` |
+| `bg-red-50/100`, `text-red-600..900`, `border-red-200` | `bg-error`, `text-error-foreground`, `border-error-border` |
+| `text-red-500` (required `*`, invalid input) | `text-destructive` / `border-destructive` |
+| `bg-yellow/amber-50`, `text-yellow/amber-600..900` | `bg-warning`, `text-warning-foreground`, `border-warning-border` |
+| `from-blue-400/80 to-blue-500/80 text-white` | `panel-header` |
+| `from-white to-gray-50` | `panel-content` |
+| `text-blue-100` (on gradient) | `text-panel-header-muted` |
+| `dark:*` color overrides paired with the above | delete — tokens handle dark mode automatically |
 
 ---
 
@@ -309,16 +366,16 @@ Use these spacing utilities consistently:
 
 ```tsx
 {/* Page title */}
-<h1 className="text-3xl font-bold text-gray-900">Main Page Title</h1>
+<h1 className="text-3xl font-bold text-foreground">Main Page Title</h1>
 
 {/* Page subtitle/description */}
-<p className="text-gray-600 mt-1">Description text below title</p>
+<p className="text-muted-foreground mt-2">Description text below title</p>
 
 {/* Section title in gradient header */}
 <span className="text-sm font-medium">Section Title</span>
 
 {/* Helper text in gradient header */}
-<div className="text-xs text-blue-100">Helper text</div>
+<div className="text-xs text-panel-header-muted">Helper text</div>
 
 {/* Card title - use CardTitle component */}
 <CardTitle>Card Section Title</CardTitle>
@@ -334,7 +391,7 @@ Use these spacing utilities consistently:
 <p className="text-sm">Regular body text</p>
 
 {/* Helper text */}
-<p className="text-xs text-gray-500">Helper or description text</p>
+<p className="text-xs text-muted-foreground">Helper or description text</p>
 
 {/* Muted text */}
 <span className="text-muted-foreground">Less prominent text</span>
@@ -344,15 +401,13 @@ Use these spacing utilities consistently:
 
 ```tsx
 {/* Empty states */}
-<div className="text-center py-12 text-gray-500">
+<div className="text-center py-12 text-muted-foreground">
   <p className="text-lg font-medium">Main message</p>
   <p className="text-sm mt-1">Helper text</p>
 </div>
 
-{/* Alert text */}
-<AlertDescription className="text-blue-800">
-  Alert message text
-</AlertDescription>
+{/* Alert text — StatusAlert handles coloring; plain Alert uses default foreground */}
+<StatusAlert variant="info">Alert message text</StatusAlert>
 
 {/* Monospace (code, commands) */}
 <code className="font-mono text-sm">show ip interface brief</code>
@@ -364,43 +419,28 @@ Use these spacing utilities consistently:
 
 ### 7.1 Alerts
 
-**Info Alert:**
+Use the shared `StatusAlert` component — it picks the right icon and token colors and supports dismissal:
+
 ```tsx
-<Alert className="bg-blue-50 border-blue-200">
-  <AlertCircle className="h-4 w-4 text-blue-600" />
-  <AlertDescription className="text-blue-800">
-    Information message
-  </AlertDescription>
-</Alert>
+import { StatusAlert } from '@/components/shared/status-alert'
+
+<StatusAlert variant="info">Information message</StatusAlert>
+<StatusAlert variant="success">Success message</StatusAlert>
+<StatusAlert variant="error">Error message</StatusAlert>
+<StatusAlert variant="warning">Warning message</StatusAlert>
+
+{/* Dismissible */}
+<StatusAlert variant="error" onDismiss={() => setError(null)}>
+  {errorMessage}
+</StatusAlert>
 ```
 
-**Success Alert:**
-```tsx
-<Alert className="bg-green-50 border-green-200">
-  <CheckCircle2 className="h-4 w-4 text-green-600" />
-  <AlertDescription className="text-green-800">
-    Success message
-  </AlertDescription>
-</Alert>
-```
+If you need a raw `Alert` for a custom layout, use the status utility classes — never palette classes:
 
-**Error Alert:**
 ```tsx
-<Alert className="bg-red-50 border-red-200">
-  <XCircle className="h-4 w-4 text-red-600" />
-  <AlertDescription className="text-red-800">
-    Error message
-  </AlertDescription>
-</Alert>
-```
-
-**Warning Alert:**
-```tsx
-<Alert className="bg-amber-50 border-amber-200">
-  <AlertTriangle className="h-4 w-4 text-amber-600" />
-  <AlertDescription className="text-amber-800">
-    Warning message
-  </AlertDescription>
+<Alert className="status-info border">
+  <AlertCircle className="h-4 w-4" />
+  <AlertDescription>Information message</AlertDescription>
 </Alert>
 ```
 
@@ -412,7 +452,7 @@ Use these spacing utilities consistently:
   <div className="space-y-2">
     <Label htmlFor="field">Field Label</Label>
     <Input id="field" placeholder="Enter value" />
-    <p className="text-xs text-gray-500">Helper text</p>
+    <p className="text-xs text-muted-foreground">Helper text</p>
   </div>
 
   {/* Another field group */}
@@ -436,7 +476,7 @@ Use these spacing utilities consistently:
 {/* Button with loading state */}
 <Button disabled={isLoading}>
   {isLoading && (
-    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2" />
   )}
   Action Text
 </Button>
@@ -445,7 +485,7 @@ Use these spacing utilities consistently:
 ### 7.4 Toggle/Switch Patterns
 
 ```tsx
-<div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-lg shadow-sm">
+<div className="flex items-center space-x-3 p-4 bg-muted border rounded-lg shadow-sm">
   <Switch
     id="option"
     checked={enabled}
@@ -455,7 +495,7 @@ Use these spacing utilities consistently:
     <Label htmlFor="option" className="text-sm font-medium cursor-pointer">
       Option Name
     </Label>
-    <p className="text-xs text-gray-600 mt-0.5">
+    <p className="text-xs text-muted-foreground mt-0.5">
       Description of what this option does
     </p>
   </div>
@@ -464,26 +504,18 @@ Use these spacing utilities consistently:
 
 ### 7.5 Status Badges
 
+Use the shared `StatusBadge` component:
+
 ```tsx
-{/* Success status */}
-<Badge className="bg-green-100 text-green-800 border-green-300">
-  Active
-</Badge>
+import { StatusBadge } from '@/components/shared/status-badge'
 
-{/* Info status */}
-<Badge className="bg-blue-100 text-blue-800 border-blue-300">
-  Pending
-</Badge>
+<StatusBadge variant="success">Active</StatusBadge>
+<StatusBadge variant="info">Pending</StatusBadge>
+<StatusBadge variant="error">Failed</StatusBadge>
+<StatusBadge variant="warning">Degraded</StatusBadge>
 
-{/* Error status */}
-<Badge className="bg-red-100 text-red-800 border-red-300">
-  Failed
-</Badge>
-
-{/* Default status */}
-<Badge variant="outline">
-  Default
-</Badge>
+{/* Default/neutral status */}
+<Badge variant="outline">Default</Badge>
 ```
 
 ---
@@ -495,7 +527,7 @@ Use these spacing utilities consistently:
 ```tsx
 <div className="flex items-center justify-center h-64">
   <div className="text-center">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
     <p className="mt-2 text-sm text-muted-foreground">Loading data...</p>
   </div>
 </div>
@@ -506,7 +538,7 @@ Use these spacing utilities consistently:
 ```tsx
 <Button disabled={isLoading}>
   {isLoading && (
-    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2" />
   )}
   {isLoading ? 'Processing...' : 'Submit'}
 </Button>
@@ -515,11 +547,11 @@ Use these spacing utilities consistently:
 ### 8.3 Section Loading
 
 ```tsx
-<div className="p-6 bg-gradient-to-b from-white to-gray-50">
+<div className="p-6 panel-content">
   {loading ? (
     <div className="flex items-center justify-center py-8">
-      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
-      <span className="ml-2 text-sm text-gray-600">Loading...</span>
+      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+      <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
     </div>
   ) : (
     {/* Content */}
@@ -534,7 +566,7 @@ Use these spacing utilities consistently:
 ### 9.1 No Data State
 
 ```tsx
-<div className="text-center py-12 text-gray-500">
+<div className="text-center py-12 text-muted-foreground">
   <p className="text-lg font-medium">No data available</p>
   <p className="text-sm mt-1">Get started by clicking the button above</p>
 </div>
@@ -543,19 +575,16 @@ Use these spacing utilities consistently:
 ### 9.2 No Selection State
 
 ```tsx
-<Alert className="bg-blue-50 border-blue-200">
-  <AlertCircle className="h-4 w-4 text-blue-600" />
-  <AlertDescription className="text-blue-800">
-    No devices selected. Please select devices in the <strong>Devices</strong> tab first.
-  </AlertDescription>
-</Alert>
+<StatusAlert variant="info">
+  No devices selected. Please select devices in the <strong>Devices</strong> tab first.
+</StatusAlert>
 ```
 
 ### 9.3 Selected Items Display
 
 ```tsx
-<div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-  <p className="text-sm text-blue-800">
+<div className="p-3 bg-info border border-info-border rounded-md">
+  <p className="text-sm text-info-foreground">
     <strong>{selectedCount}</strong> item{selectedCount !== 1 ? 's' : ''} selected
   </p>
 </div>
@@ -659,7 +688,7 @@ export function ErrorDialog({ open, onOpenChange, error }: ErrorDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600">
+          <DialogTitle className="flex items-center gap-2 text-error-foreground">
             <XCircle className="h-5 w-5" />
             {error?.title || 'Error'}
           </DialogTitle>
@@ -667,11 +696,11 @@ export function ErrorDialog({ open, onOpenChange, error }: ErrorDialogProps) {
         </DialogHeader>
         
         {error?.details && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-            <ul className="space-y-1 text-sm text-red-800">
+          <div className="p-4 bg-error border border-error-border rounded-md">
+            <ul className="space-y-1 text-sm text-error-foreground">
               {error.details.map((detail, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <span className="text-red-600">•</span>
+                  <span>•</span>
                   <span className="font-mono">{detail}</span>
                 </li>
               ))}
@@ -742,9 +771,9 @@ Use Lucide React icons consistently:
 import { RefreshCw, Settings, Terminal } from 'lucide-react'
 
 // In headers (page icon box)
-<div className="bg-blue-100 p-2 rounded-lg">
-  <Terminal className="h-6 w-6 text-blue-600" />
-</div>
+<IconChip variant="primary">
+  <Terminal className="h-6 w-6" />
+</IconChip>
 
 // In section headers
 <Terminal className="h-4 w-4" />
@@ -765,9 +794,13 @@ import { RefreshCw, Settings, Terminal } from 'lucide-react'
 
 ### ❌ Design Don'ts
 
-- Don't use `bg-blue-100` for headers (outdated pattern)
+- **Don't use raw Tailwind palette classes** (`text-gray-600`, `bg-blue-50`, `border-green-200`, `bg-white`, …) — use semantic tokens (Section 4)
+- Don't add `dark:` color overrides — the tokens already handle dark mode
+- Don't hand-roll status alerts/badges/icons — use `StatusAlert`, `StatusBadge`, `StatusIcon`, `IconChip`
+- Don't write panel gradients by hand — use `.panel-header` / `.panel-content`
+- Don't override Button colors with `bg-blue-600 hover:bg-blue-700` — the default variant is already primary
 - Don't mix gradient sections with plain cards in the same feature
-- Don't use inline styles or arbitrary colors
+- Don't use inline styles or arbitrary colors (exception: API-provided colors)
 - Don't forget `space-y-6` wrapper around page content
 - Don't use `pt-6` when parent already has padding
 - Don't use different header styles within the same feature
@@ -776,14 +809,16 @@ import { RefreshCw, Settings, Terminal } from 'lucide-react'
 
 ### ✅ Design Do's
 
-- Use gradient header pattern for main feature sections
+- Use semantic color tokens exclusively (`bg-card`, `text-muted-foreground`, `bg-success`, …)
+- Use the shared color components from `/components/shared/`
+- Use gradient header pattern (`.panel-header`) for main feature sections
 - Maintain consistent spacing with `space-y-6` and `space-y-4`
-- Use semantic color classes (success, error, info, warning)
 - Use shadcn UI components for all UI primitives
 - Add loading and empty states to all data sections
 - Use Lucide React icons consistently
 - Follow the typography scale
 - Test responsive layout on mobile devices
+- Test in both light **and dark** mode
 - Add proper accessibility attributes (ARIA labels)
 
 ---
@@ -798,6 +833,7 @@ import { RefreshCw, Settings, Terminal } from 'lucide-react'
 import { useState } from 'react'
 import { MyIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { IconChip } from '@/components/shared/icon-chip'
 
 export default function MyPage() {
   const [loading, setLoading] = useState(false)
@@ -807,26 +843,26 @@ export default function MyPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <MyIcon className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <MyIcon className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Page Title</h1>
-            <p className="text-gray-600 mt-1">Brief description</p>
+            <h1 className="text-3xl font-bold text-foreground">My Page Title</h1>
+            <p className="text-muted-foreground mt-2">Brief description</p>
           </div>
         </div>
         <Button variant="outline">Quick Action</Button>
       </div>
 
       {/* Main Content Section */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <MyIcon className="h-4 w-4" />
             <span className="text-sm font-medium">Section Title</span>
           </div>
         </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+        <div className="p-6 panel-content">
           {/* Content */}
         </div>
       </div>
@@ -850,12 +886,12 @@ export default function MyTabbedPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <MyIcon className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <MyIcon className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Page Title</h1>
-            <p className="text-gray-600 mt-1">Brief description</p>
+            <h1 className="text-3xl font-bold text-foreground">My Page Title</h1>
+            <p className="text-muted-foreground mt-2">Brief description</p>
           </div>
         </div>
       </div>
@@ -893,9 +929,10 @@ Before considering your design implementation complete:
 
 - [ ] **Root Container**: Uses `space-y-6` for consistent vertical spacing
 - [ ] **Page Header**: Includes colored icon box, title, description, and optional actions
-- [ ] **Section Headers**: Uses gradient pattern (`from-blue-400/80 to-blue-500/80`)
-- [ ] **Content Areas**: Uses `p-6 bg-gradient-to-b from-white to-gray-50`
-- [ ] **Colors**: Uses semantic colors (green/red/blue/amber) consistently
+- [ ] **Section Headers**: Uses gradient pattern (`.panel-header` utility)
+- [ ] **Content Areas**: Uses `p-6 panel-content`
+- [ ] **Colors**: Uses semantic tokens ONLY — no raw palette classes (run `grep -E "(bg|text|border)-(gray|blue|green|red|slate|amber|yellow)-[0-9]" <files>` to verify)
+- [ ] **Dark Mode**: Verified in dark mode (tokens make this automatic, but check custom layouts)
 - [ ] **Typography**: Follows typography scale (text-3xl, text-sm, etc.)
 - [ ] **Spacing**: Maintains standard spacing (space-y-6, gap-2, p-6)
 - [ ] **Icons**: Lucide React icons with correct sizes (h-6 w-6 for page, h-4 w-4 for sections)
@@ -947,11 +984,11 @@ export function MyPage() {
       {/* Page Header - OUTSIDE the form */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-{color}-100 p-2 rounded-lg">
-            <Icon className="h-6 w-6 text-{color}-600" />
-          </div>
+          <IconChip variant="primary">
+            <Icon className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Page Title</h1>
+            <h1 className="text-3xl font-bold text-foreground">Page Title</h1>
             <p className="text-muted-foreground mt-2">Description</p>
           </div>
         </div>
@@ -979,9 +1016,9 @@ export function MyPage() {
 - **CORRECT:** `<p className="text-muted-foreground mt-2">...</p>`
 - **Impact:** Using `mt-1` creates insufficient spacing; makes pages look cramped
 
-⚠️ **CRITICAL COLOR ISSUE #3** — Use Semantic Colors, NOT Direct Color Utilities:
-- **WRONG:** Title `text-gray-900`, Subtitle `text-gray-600`
-- **CORRECT:** Title `text-slate-900`, Subtitle `text-muted-foreground`
+⚠️ **CRITICAL COLOR ISSUE #3** — Use Semantic Tokens, NOT Direct Color Utilities:
+- **WRONG:** Title `text-gray-900` or `text-slate-900`, Subtitle `text-gray-600`
+- **CORRECT:** Title `text-foreground`, Subtitle `text-muted-foreground`
 - **Impact:** Direct colors don't respect theme changes; breaks dark mode/theme consistency
 
 | Mistake | Correct |
@@ -990,10 +1027,10 @@ export function MyPage() {
 | Header inside `<form>` | Header outside `<form>`, as a sibling |
 | Fixed-size icon box (`h-12 w-12 flex items-center justify-center`) | Padding-based icon box (`p-2 rounded-lg`) |
 | `gap-3` or `space-x-3` between icon and title | `gap-4` (matches Add VM reference) |
-| `tracking-tight` on title | `text-slate-900` on title |
+| `tracking-tight` on title | `text-foreground` on title |
 | **Subtitle margin `mt-1`** | **`mt-2` on subtitle (8px)** - CRITICAL |
-| **Title color `text-gray-900`** | **`text-slate-900`** - CRITICAL (semantic) |
-| **Subtitle color `text-gray-600`** | **`text-muted-foreground`** - CRITICAL (semantic) |
+| **Title color `text-gray-900` / `text-slate-900`** | **`text-foreground`** - CRITICAL (semantic token) |
+| **Subtitle color `text-gray-600`** | **`text-muted-foreground`** - CRITICAL (semantic token) |
 | Spinner-only loading state | Show header + spinner below (like the loaded state, but with a spinner in place of content) |
 
 ### 14.2 Section Panel Consistency
@@ -1002,15 +1039,15 @@ All gradient header sections within a single app **MUST** use identical structur
 
 ```tsx
 {/* Container */}
-<div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+<div className="shadow-lg border-0 p-0 bg-card rounded-lg">
 
   {/* Header - ALWAYS these exact classes */}
-  <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+  <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
     ...
   </div>
 
   {/* Content - ALWAYS p-6, never p-4 */}
-  <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+  <div className="p-6 panel-content">
     ...
   </div>
 </div>
@@ -1034,11 +1071,11 @@ if (isLoading) {
       {/* Same header as the loaded state */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Icon className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <Icon className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Page Title</h1>
+            <h1 className="text-3xl font-bold text-foreground">Page Title</h1>
             <p className="text-muted-foreground mt-2">Description</p>
           </div>
         </div>

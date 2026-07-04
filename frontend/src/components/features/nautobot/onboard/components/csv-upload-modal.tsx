@@ -347,7 +347,7 @@ export function CSVUploadModal({
                 className="cursor-pointer"
               />
               {csvFile && (
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-muted-foreground">
                   Selected: {csvFile.name} ({(csvFile.size / 1024).toFixed(2)} KB)
                 </p>
               )}
@@ -358,17 +358,17 @@ export function CSVUploadModal({
           {!taskId && (
             <div className="border rounded-lg overflow-hidden">
               <div
-                className="bg-blue-50 border-b border-blue-200 px-4 py-3 cursor-pointer hover:bg-blue-100 transition-colors"
+                className="bg-info border-b border-info-border px-4 py-3 cursor-pointer hover:bg-info-border/50 transition-colors"
                 onClick={() => setShowOptionalSettings(!showOptionalSettings)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-900">
+                    <FileSpreadsheet className="h-4 w-4 text-info-foreground" />
+                    <span className="text-sm font-medium text-info-foreground">
                       CSV Format and Jobs Settings (Optional)
                     </span>
                   </div>
-                  <span className="text-xs text-blue-700">
+                  <span className="text-xs text-info-foreground/80">
                     {showOptionalSettings ? 'Click to hide' : 'Click to configure'}
                   </span>
                 </div>
@@ -487,7 +487,7 @@ export function CSVUploadModal({
 
           {/* Parsing Indicator */}
           {isParsing && (
-            <div className="flex items-center space-x-2 text-blue-600">
+            <div className="flex items-center space-x-2 text-primary">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Parsing CSV file...</span>
             </div>
@@ -557,18 +557,18 @@ export function CSVUploadModal({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {isTaskRunning && (
-                    <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   )}
                   {taskStatus?.status === 'SUCCESS' && (
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    <CheckCircle2 className="h-5 w-5 text-success-foreground" />
                   )}
                   {taskStatus?.status === 'FAILURE' && (
-                    <XCircle className="h-5 w-5 text-red-500" />
+                    <XCircle className="h-5 w-5 text-error-foreground" />
                   )}
                   <span className="font-medium">{getStatusMessage()}</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Badge variant="default" className="bg-green-600">
+                  <Badge variant="outline" className="status-success border">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
                     Success: {successCount}
                   </Badge>
@@ -611,7 +611,7 @@ export function CSVUploadModal({
                             </TableCell>
                             <TableCell>
                               {result.status === 'success' ? (
-                                <Badge variant="default" className="bg-green-600">
+                                <Badge variant="outline" className="status-success border">
                                   <CheckCircle2 className="h-3 w-3 mr-1" />
                                   Success
                                 </Badge>
@@ -643,7 +643,7 @@ export function CSVUploadModal({
 
           {/* Submitting Indicator */}
           {isSubmitting && !taskId && (
-            <div className="flex items-center space-x-2 text-blue-600">
+            <div className="flex items-center space-x-2 text-primary">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Submitting bulk onboarding task...</span>
             </div>
@@ -806,10 +806,10 @@ export function CSVUploadModal({
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="bg-info border border-info-border rounded-lg p-3">
               <div className="flex gap-2">
-                <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-xs text-blue-800">
+                <AlertCircle className="h-4 w-4 text-info-foreground flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-info-foreground">
                   <p className="font-semibold mb-1">Important Notes:</p>
                   <ul className="list-disc list-inside space-y-1">
                     <li>

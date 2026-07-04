@@ -40,15 +40,17 @@ export function DeviceSearchResults({
 
   if (results.length === 0) {
     return (
-      <Card className="border-2 border-green-200 bg-green-50">
+      <Card className="border-2 border-success-border bg-success">
         <CardHeader className="pb-3">
           <div className="flex items-center space-x-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            <CardTitle className="text-lg text-green-800">Device Not Found</CardTitle>
+            <CheckCircle2 className="h-5 w-5 text-success-foreground" />
+            <CardTitle className="text-lg text-success-foreground">
+              Device Not Found
+            </CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-green-700">
+          <p className="text-success-foreground">
             No device found with name &quot;{searchQuery}&quot; in Nautobot. You can
             proceed with onboarding.
           </p>
@@ -58,17 +60,17 @@ export function DeviceSearchResults({
   }
 
   return (
-    <Card className="border-2 border-yellow-200 bg-yellow-50">
+    <Card className="border-2 border-warning-border bg-warning">
       <CardHeader className="pb-3">
         <div className="flex items-center space-x-2">
-          <XCircle className="h-5 w-5 text-yellow-600" />
-          <CardTitle className="text-lg text-yellow-800">
+          <XCircle className="h-5 w-5 text-warning-foreground" />
+          <CardTitle className="text-lg text-warning-foreground">
             Device Already Exists ({results.length})
           </CardTitle>
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-yellow-700 mb-4">
+        <p className="text-warning-foreground mb-4">
           Found {results.length} device{results.length > 1 ? 's' : ''} matching &quot;
           {searchQuery}&quot;:
         </p>
@@ -76,10 +78,10 @@ export function DeviceSearchResults({
           {results.map(device => (
             <div
               key={device.id}
-              className="bg-white rounded-lg border border-yellow-200 p-3 space-y-2"
+              className="bg-card rounded-lg border border-warning-border p-3 space-y-2"
             >
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-900">{device.name}</span>
+                <span className="font-semibold text-foreground">{device.name}</span>
                 {device.status && (
                   <Badge
                     variant="outline"
@@ -93,7 +95,7 @@ export function DeviceSearchResults({
                 )}
               </div>
               {device.device_type && (
-                <div className="text-sm text-slate-600">
+                <div className="text-sm text-muted-foreground">
                   <span className="font-medium">Type:</span>{' '}
                   {device.device_type.manufacturer?.name && (
                     <span>{device.device_type.manufacturer.name} - </span>
@@ -102,12 +104,12 @@ export function DeviceSearchResults({
                 </div>
               )}
               {device.location && (
-                <div className="text-sm text-slate-600">
+                <div className="text-sm text-muted-foreground">
                   <span className="font-medium">Location:</span> {device.location.name}
                 </div>
               )}
               {device.primary_ip4 && (
-                <div className="text-sm text-slate-600">
+                <div className="text-sm text-muted-foreground">
                   <span className="font-medium">IP:</span> {device.primary_ip4.address}
                 </div>
               )}

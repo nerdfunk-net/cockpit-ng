@@ -54,18 +54,18 @@ export function OnboardingProgressModal({
     : isLoading
 
   const getStatusIcon = () => {
-    if (!taskStatus) return <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+    if (!taskStatus) return <Loader2 className="h-6 w-6 animate-spin text-primary" />
 
     switch (taskStatus.status) {
       case 'SUCCESS':
-        return <CheckCircle2 className="h-6 w-6 text-green-500" />
+        return <CheckCircle2 className="h-6 w-6 text-success-foreground" />
       case 'FAILURE':
       case 'REVOKED':
-        return <XCircle className="h-6 w-6 text-red-500" />
+        return <XCircle className="h-6 w-6 text-error-foreground" />
       case 'PROGRESS':
-        return <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+        return <Loader2 className="h-6 w-6 animate-spin text-primary" />
       default:
-        return <AlertCircle className="h-6 w-6 text-yellow-500" />
+        return <AlertCircle className="h-6 w-6 text-warning-foreground" />
     }
   }
 
@@ -196,9 +196,9 @@ export function OnboardingProgressModal({
                             key={ip}
                             className={`text-xs px-1.5 py-0.5 rounded ${
                               idx + 1 < (taskStatus.progress?.current_device ?? 0)
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                                ? 'bg-success text-success-foreground'
                                 : idx + 1 === taskStatus.progress?.current_device
-                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                  ? 'bg-info text-info-foreground'
                                   : 'bg-muted text-muted-foreground'
                             }`}
                           >
@@ -217,19 +217,19 @@ export function OnboardingProgressModal({
             <div
               className={`rounded-lg border p-3 ${
                 taskStatus.result.success
-                  ? 'bg-green-50 dark:bg-green-950/20'
+                  ? 'bg-success border-success-border'
                   : taskStatus.result.partial_success
-                    ? 'bg-yellow-50 dark:bg-yellow-950/20'
-                    : 'bg-red-50 dark:bg-red-950/20'
+                    ? 'bg-warning border-warning-border'
+                    : 'bg-error border-error-border'
               }`}
             >
               <h4
                 className={`text-sm font-medium mb-2 ${
                   taskStatus.result.success
-                    ? 'text-green-900 dark:text-green-100'
+                    ? 'text-success-foreground'
                     : taskStatus.result.partial_success
-                      ? 'text-yellow-900 dark:text-yellow-100'
-                      : 'text-red-900 dark:text-red-100'
+                      ? 'text-warning-foreground'
+                      : 'text-error-foreground'
                 }`}
               >
                 {taskStatus.result.success
@@ -241,10 +241,10 @@ export function OnboardingProgressModal({
               <div
                 className={`space-y-1 text-sm ${
                   taskStatus.result.success
-                    ? 'text-green-800 dark:text-green-200'
+                    ? 'text-success-foreground'
                     : taskStatus.result.partial_success
-                      ? 'text-yellow-800 dark:text-yellow-200'
-                      : 'text-red-800 dark:text-red-200'
+                      ? 'text-warning-foreground'
+                      : 'text-error-foreground'
                 }`}
               >
                 {/* Multi-device summary */}
@@ -257,7 +257,7 @@ export function OnboardingProgressModal({
                         {taskStatus.result.device_count} successful
                         {taskStatus.result.failed_devices !== undefined &&
                           taskStatus.result.failed_devices > 0 && (
-                            <span className="text-red-600 dark:text-red-400">
+                            <span className="text-error-foreground">
                               {' '}
                               ({taskStatus.result.failed_devices} failed)
                             </span>
@@ -281,16 +281,14 @@ export function OnboardingProgressModal({
                       <div
                         key={device.ip_address || idx}
                         className={`text-xs p-2 rounded ${
-                          device.success
-                            ? 'bg-green-100 dark:bg-green-900/30'
-                            : 'bg-red-100 dark:bg-red-900/30'
+                          device.success ? 'bg-success' : 'bg-error'
                         }`}
                       >
                         <div className="flex items-center gap-1">
                           {device.success ? (
-                            <CheckCircle2 className="h-3 w-3 text-green-600" />
+                            <CheckCircle2 className="h-3 w-3 text-success-foreground" />
                           ) : (
-                            <XCircle className="h-3 w-3 text-red-600" />
+                            <XCircle className="h-3 w-3 text-error-foreground" />
                           )}
                           <span className="font-medium">
                             {device.device_name || device.ip_address}
@@ -302,7 +300,7 @@ export function OnboardingProgressModal({
                           )}
                         </div>
                         {!device.success && device.error && (
-                          <p className="text-red-600 dark:text-red-400 mt-1 pl-4">
+                          <p className="text-error-foreground mt-1 pl-4">
                             {device.error}
                           </p>
                         )}
@@ -337,7 +335,7 @@ export function OnboardingProgressModal({
                       href={taskStatus.result.job_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline flex items-center gap-1"
+                      className="text-primary hover:underline flex items-center gap-1"
                     >
                       View Onboarding Job <ExternalLink className="h-3 w-3" />
                     </a>
@@ -349,7 +347,7 @@ export function OnboardingProgressModal({
                       href={taskStatus.result.sync_result.job_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline flex items-center gap-1"
+                      className="text-primary hover:underline flex items-center gap-1"
                     >
                       View Sync Job <ExternalLink className="h-3 w-3" />
                     </a>
@@ -361,11 +359,11 @@ export function OnboardingProgressModal({
 
           {/* Error Details */}
           {taskStatus?.status === 'FAILURE' && (
-            <div className="rounded-lg border p-3 bg-red-50 dark:bg-red-950/20">
-              <h4 className="text-sm font-medium mb-2 text-red-900 dark:text-red-100">
+            <div className="rounded-lg border p-3 bg-error border-error-border">
+              <h4 className="text-sm font-medium mb-2 text-error-foreground">
                 Onboarding Failed
               </h4>
-              <p className="text-sm text-red-800 dark:text-red-200">
+              <p className="text-sm text-error-foreground">
                 {taskStatus.error ||
                   taskStatus.result?.error ||
                   'An unknown error occurred'}
@@ -376,7 +374,7 @@ export function OnboardingProgressModal({
                     href={taskStatus.result.job_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline flex items-center gap-1 text-xs"
+                    className="text-primary hover:underline flex items-center gap-1 text-xs"
                   >
                     View Nautobot Job <ExternalLink className="h-3 w-3" />
                   </a>

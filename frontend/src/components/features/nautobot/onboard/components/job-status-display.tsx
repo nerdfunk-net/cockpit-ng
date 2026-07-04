@@ -51,21 +51,21 @@ export function JobStatusDisplay({
 
   const getStatusIcon = () => {
     if (isCheckingJob) {
-      return <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+      return <Loader2 className="h-5 w-5 text-primary animate-spin" />
     }
 
     switch (normalizedStatus) {
       case 'completed':
       case 'success':
-        return <CheckCircle2 className="h-5 w-5 text-green-600" />
+        return <CheckCircle2 className="h-5 w-5 text-success-foreground" />
       case 'failed':
       case 'failure':
-        return <XCircle className="h-5 w-5 text-red-600" />
+        return <XCircle className="h-5 w-5 text-error-foreground" />
       case 'running':
       case 'pending':
-        return <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+        return <Loader2 className="h-5 w-5 text-primary animate-spin" />
       default:
-        return <Clock className="h-5 w-5 text-slate-600" />
+        return <Clock className="h-5 w-5 text-muted-foreground" />
     }
   }
 
@@ -73,15 +73,15 @@ export function JobStatusDisplay({
     switch (normalizedStatus) {
       case 'completed':
       case 'success':
-        return 'border-green-200 bg-green-50'
+        return 'border-success-border bg-success'
       case 'failed':
       case 'failure':
-        return 'border-red-200 bg-red-50'
+        return 'border-error-border bg-error'
       case 'running':
       case 'pending':
-        return 'border-blue-200 bg-blue-50'
+        return 'border-info-border bg-info'
       default:
-        return 'border-slate-200 bg-slate-50'
+        return 'border-border bg-muted'
     }
   }
 
@@ -132,7 +132,7 @@ export function JobStatusDisplay({
               <Button
                 onClick={handleGoToSyncDevices}
                 size="sm"
-                className="h-7 gap-1.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                className="h-7 gap-1.5"
               >
                 <Settings className="h-3.5 w-3.5" />
                 Go to Sync Devices
@@ -144,20 +144,20 @@ export function JobStatusDisplay({
       <CardContent>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="text-slate-600">Job ID:</div>
-            <div className="font-mono text-slate-900">{jobId}</div>
+            <div className="text-muted-foreground">Job ID:</div>
+            <div className="font-mono text-foreground">{jobId}</div>
 
             {onboardedIPAddress && (
               <>
-                <div className="text-slate-600">IP Address:</div>
-                <div className="font-mono text-slate-900">{onboardedIPAddress}</div>
+                <div className="text-muted-foreground">IP Address:</div>
+                <div className="font-mono text-foreground">{onboardedIPAddress}</div>
               </>
             )}
 
             {jobStatus?.created_at && (
               <>
-                <div className="text-slate-600">Started:</div>
-                <div className="text-slate-900">
+                <div className="text-muted-foreground">Started:</div>
+                <div className="text-foreground">
                   {new Date(jobStatus.created_at).toLocaleString()}
                 </div>
               </>
@@ -165,8 +165,8 @@ export function JobStatusDisplay({
 
             {jobStatus?.completed_at && (
               <>
-                <div className="text-slate-600">Completed:</div>
-                <div className="text-slate-900">
+                <div className="text-muted-foreground">Completed:</div>
+                <div className="text-foreground">
                   {new Date(jobStatus.completed_at).toLocaleString()}
                 </div>
               </>
@@ -174,9 +174,9 @@ export function JobStatusDisplay({
           </div>
 
           {jobStatus?.result && (
-            <div className="mt-4 p-3 bg-white rounded-md border border-slate-200">
-              <div className="text-sm font-medium text-slate-700 mb-2">Result:</div>
-              <pre className="text-xs text-slate-900 whitespace-pre-wrap overflow-auto max-h-60">
+            <div className="mt-4 p-3 bg-card rounded-md border">
+              <div className="text-sm font-medium text-foreground mb-2">Result:</div>
+              <pre className="text-xs text-foreground whitespace-pre-wrap overflow-auto max-h-60">
                 {typeof jobStatus.result === 'string'
                   ? jobStatus.result
                   : JSON.stringify(jobStatus.result, null, 2)}
@@ -185,16 +185,18 @@ export function JobStatusDisplay({
           )}
 
           {jobStatus?.error && (
-            <div className="mt-4 p-3 bg-red-50 rounded-md border border-red-200">
-              <div className="text-sm font-medium text-red-700 mb-2">Error:</div>
-              <pre className="text-xs text-red-900 whitespace-pre-wrap overflow-auto max-h-60">
+            <div className="mt-4 p-3 bg-error rounded-md border border-error-border">
+              <div className="text-sm font-medium text-error-foreground mb-2">
+                Error:
+              </div>
+              <pre className="text-xs text-error-foreground whitespace-pre-wrap overflow-auto max-h-60">
                 {jobStatus.error}
               </pre>
             </div>
           )}
 
           {isCheckingJob && (
-            <div className="text-sm text-blue-600 animate-pulse">
+            <div className="text-sm text-primary animate-pulse">
               Checking job status...
             </div>
           )}

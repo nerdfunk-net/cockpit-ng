@@ -103,7 +103,7 @@ export function FormSection({
         <Button
           onClick={onSubmit}
           disabled={isSubmittingOnboard || !ipValidation.isValid}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-8 text-sm"
+          className="px-6 h-8 text-sm"
         >
           {isSubmittingOnboard ? (
             <>
@@ -117,8 +117,8 @@ export function FormSection({
             </>
           )}
         </Button>
-        <p className="text-sm text-slate-500">
-          Required fields are marked with <span className="text-red-500">*</span>
+        <p className="text-sm text-muted-foreground">
+          Required fields are marked with <span className="text-destructive">*</span>
         </p>
       </div>
     </>

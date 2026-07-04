@@ -300,7 +300,7 @@ export function NetworkScanModal({
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5 text-blue-500" />
+            <Search className="h-5 w-5 text-primary" />
             Scan Network
           </DialogTitle>
           <DialogDescription>
@@ -320,10 +320,12 @@ export function NetworkScanModal({
                       placeholder="e.g., 192.168.1.0/24"
                       value={line.value}
                       onChange={e => handleCIDRChange(line.id, e.target.value)}
-                      className={cidrErrors[line.id] ? 'border-red-500' : ''}
+                      className={cidrErrors[line.id] ? 'border-destructive' : ''}
                     />
                     {cidrErrors[line.id] && (
-                      <p className="text-xs text-red-500 mt-1">{cidrErrors[line.id]}</p>
+                      <p className="text-xs text-destructive mt-1">
+                        {cidrErrors[line.id]}
+                      </p>
                     )}
                   </div>
                   <Button
@@ -367,7 +369,7 @@ export function NetworkScanModal({
           {isScanning && scanProgress && (
             <div className="space-y-4">
               <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500" />
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
                 <p className="mt-2 text-sm text-muted-foreground">
                   Scanning network...
                 </p>
@@ -378,9 +380,9 @@ export function NetworkScanModal({
                   <span>Progress</span>
                   <span>{progressPercent}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div className="w-full bg-muted rounded-full h-2.5">
                   <div
-                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                    className="bg-primary h-2.5 rounded-full transition-all duration-300"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -396,7 +398,9 @@ export function NetworkScanModal({
                   </div>
                   <div className="text-center">
                     <p className="text-muted-foreground">Reachable</p>
-                    <p className="font-semibold text-green-600">{scanProgress.alive}</p>
+                    <p className="font-semibold text-success-foreground">
+                      {scanProgress.alive}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -451,7 +455,7 @@ export function NetworkScanModal({
                           </td>
                           <td className="p-2 font-mono text-sm">{result.ip}</td>
                           <td className="p-2">
-                            <span className="flex items-center gap-1 text-green-600">
+                            <span className="flex items-center gap-1 text-success-foreground">
                               <CheckCircle2 className="h-4 w-4" />
                               Reachable
                             </span>
@@ -473,7 +477,7 @@ export function NetworkScanModal({
                             {range.count} host{range.count !== 1 ? 's' : ''}
                           </td>
                           <td className="p-2">
-                            <span className="flex items-center gap-1 text-red-600">
+                            <span className="flex items-center gap-1 text-error-foreground">
                               <XCircle className="h-4 w-4" />
                               Unreachable
                             </span>
@@ -508,7 +512,7 @@ export function NetworkScanModal({
           {/* No Results Message */}
           {!isScanning && scanState === 'finished' && scanResults.length === 0 && (
             <div className="text-center py-8">
-              <XCircle className="h-12 w-12 text-red-400 mx-auto mb-2" />
+              <XCircle className="h-12 w-12 text-destructive/70 mx-auto mb-2" />
               <p className="text-muted-foreground">No reachable hosts found</p>
               <Button
                 variant="outline"

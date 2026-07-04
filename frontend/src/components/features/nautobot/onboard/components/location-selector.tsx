@@ -83,7 +83,7 @@ export function LocationSelector({
     <div className="space-y-1" ref={containerRef}>
       <Label className="text-[11px] font-medium">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       <div className="relative">
         <Input
@@ -93,24 +93,24 @@ export function LocationSelector({
           onFocus={() => setShowDropdown(true)}
           className={`h-7 text-xs border-2 ${
             selectedLocationId
-              ? 'bg-blue-50 border-blue-500'
-              : 'bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500'
+              ? 'bg-info border-primary'
+              : 'bg-card border-border hover:border-muted-foreground/50 focus:border-primary'
           }`}
         />
         {showDropdown && (
-          <div className="absolute z-[9999] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto w-full">
+          <div className="absolute z-[9999] mt-1 bg-popover border rounded-md shadow-xl max-h-60 overflow-y-auto w-full">
             {locationFiltered.length > 0 ? (
               locationFiltered.map(loc => (
                 <div
                   key={loc.id}
-                  className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-xs border-b border-gray-100 last:border-b-0"
+                  className="px-3 py-2 hover:bg-muted cursor-pointer text-xs border-b border-border/50 last:border-b-0"
                   onClick={() => handleLocationSelect(loc)}
                 >
                   {loc.hierarchicalPath || loc.name}
                 </div>
               ))
             ) : (
-              <div className="px-3 py-2 text-xs text-gray-500 italic">
+              <div className="px-3 py-2 text-xs text-muted-foreground italic">
                 No locations found
               </div>
             )}

@@ -44,12 +44,18 @@
   /* Status state color tokens */
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-border: var(--success-border);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-border: var(--warning-border);
   --color-error: var(--error);
   --color-error-foreground: var(--error-foreground);
+  --color-error-border: var(--error-border);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-info-border: var(--info-border);
+  /* Panel (gradient section header) tokens */
+  --color-panel-header-muted: var(--panel-header-muted);
 }
 
 :root {
@@ -104,6 +110,11 @@
   --info: #eff6ff; /* blue-50 */
   --info-foreground: #1d4ed8; /* blue-700 */
   --info-border: #bfdbfe; /* blue-200 */
+  /* Panel gradient header (section panels) - Light Mode */
+  --panel-header-from: rgba(96, 165, 250, 0.8); /* blue-400/80 */
+  --panel-header-to: rgba(59, 130, 246, 0.8); /* blue-500/80 */
+  --panel-header-foreground: #ffffff;
+  --panel-header-muted: #dbeafe; /* blue-100 - helper text on gradient */
 }
 
 .dark {
@@ -152,6 +163,11 @@
   --info: rgba(30, 58, 138, 0.3); /* blue-900/30 */
   --info-foreground: #93c5fd; /* blue-300 */
   --info-border: rgba(29, 78, 216, 0.5); /* blue-700/50 */
+  /* Panel gradient header (section panels) - Dark Mode */
+  --panel-header-from: rgba(59, 130, 246, 0.5); /* blue-500/50 */
+  --panel-header-to: rgba(37, 99, 235, 0.5); /* blue-600/50 */
+  --panel-header-foreground: #ffffff;
+  --panel-header-muted: #bfdbfe; /* blue-200 */
 }
 
 @layer base {
@@ -319,5 +335,20 @@
     background-color: var(--info);
     color: var(--info-foreground);
     border-color: var(--info-border);
+  }
+
+  /* Themeable section panel (gradient header pattern) — swap the
+     --panel-header-* variables per theme instead of editing components */
+  .panel-header {
+    background-image: linear-gradient(
+      to right,
+      var(--panel-header-from),
+      var(--panel-header-to)
+    );
+    color: var(--panel-header-foreground);
+  }
+
+  .panel-content {
+    background-image: linear-gradient(to bottom, var(--card), var(--background));
   }
 }

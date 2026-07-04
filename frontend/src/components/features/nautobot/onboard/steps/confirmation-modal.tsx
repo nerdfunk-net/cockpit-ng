@@ -28,7 +28,7 @@ export function ConfirmationModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <HelpCircle className="h-5 w-5 text-amber-500" />
+            <HelpCircle className="h-5 w-5 text-warning-foreground" />
             No Tags or Custom Fields Added
           </DialogTitle>
           <DialogDescription>
@@ -51,9 +51,7 @@ export function ConfirmationModal({
             <Button variant="outline" onClick={onAbort}>
               Abort Onboarding
             </Button>
-            <Button onClick={onConfirm} className="bg-blue-600 hover:bg-blue-700">
-              Start Onboarding
-            </Button>
+            <Button onClick={onConfirm}>Start Onboarding</Button>
           </div>
         </div>
       </DialogContent>

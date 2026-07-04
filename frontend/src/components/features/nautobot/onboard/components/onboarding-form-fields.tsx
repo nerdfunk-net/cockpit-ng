@@ -21,6 +21,12 @@ import type {
 } from '../types'
 import { EMPTY_DROPDOWN_OPTIONS } from '../constants'
 
+const SELECT_TRIGGER_CLASSES =
+  'h-8 text-sm border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm'
+
+const INPUT_CLASSES =
+  'h-8 text-sm border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm'
+
 interface OnboardingFormFieldsProps {
   formData: OnboardFormData
   ipValidation: IPValidation
@@ -80,11 +86,11 @@ export function OnboardingFormFields({
     <div className="space-y-4">
       {/* Panel 1: Device Information - IP Address and Device Search */}
       <div className="rounded-xl border shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-1.5 px-3">
+        <div className="panel-header py-1.5 px-3">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xs font-semibold">Device Information</h3>
-              <p className="text-blue-100 text-[10px]">
+              <p className="text-panel-header-muted text-[10px]">
                 Enter IP address and verify availability
               </p>
             </div>
@@ -93,7 +99,7 @@ export function OnboardingFormFields({
                 onClick={onShowTagsModal}
                 size="sm"
                 variant="outline"
-                className="bg-white text-blue-600 hover:bg-blue-50 border-blue-200 h-7 text-xs px-2"
+                className="bg-card text-primary hover:bg-info border-info-border h-7 text-xs px-2"
               >
                 <Tags className="h-3 w-3 mr-1" />
                 Tags {selectedTagsCount > 0 && `(${selectedTagsCount})`}
@@ -102,7 +108,7 @@ export function OnboardingFormFields({
                 onClick={onShowCustomFieldsModal}
                 size="sm"
                 variant="outline"
-                className="bg-white text-blue-600 hover:bg-blue-50 border-blue-200 h-7 text-xs px-2"
+                className="bg-card text-primary hover:bg-info border-info-border h-7 text-xs px-2"
               >
                 <FileText className="h-3 w-3 mr-1" />
                 Custom Fields
@@ -110,12 +116,12 @@ export function OnboardingFormFields({
             </div>
           </div>
         </div>
-        <div className="p-3 bg-white">
+        <div className="p-3 bg-card">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Left Cell: IP Address Check */}
             <div className="space-y-1">
               <Label htmlFor="ip_address" className="text-[11px] font-medium">
-                IP Address(es) <span className="text-red-500">*</span>
+                IP Address(es) <span className="text-destructive">*</span>
                 <span className="text-muted-foreground font-normal ml-1">
                   (comma-separated for multiple)
                 </span>
@@ -127,17 +133,17 @@ export function OnboardingFormFields({
                     placeholder="192.168.1.1, 192.168.1.2, 192.168.1.3"
                     value={formData.ip_address}
                     onChange={e => onIPChange(e.target.value)}
-                    className={`h-7 text-xs border-2 bg-white ${
+                    className={`h-7 text-xs border-2 bg-card ${
                       ipValidation.isValid
-                        ? 'border-green-500 bg-green-50'
+                        ? 'border-success-foreground bg-success'
                         : formData.ip_address && !ipValidation.isValid
-                          ? 'border-red-500 bg-red-50'
-                          : 'border-gray-300 hover:border-gray-400 focus:border-blue-500'
+                          ? 'border-destructive bg-error'
+                          : 'border-border hover:border-muted-foreground/50 focus:border-primary'
                     }`}
                   />
                   {formData.ip_address && (
                     <p
-                      className={`text-[10px] mt-0.5 ${ipValidation.isValid ? 'text-green-600' : 'text-red-600'}`}
+                      className={`text-[10px] mt-0.5 ${ipValidation.isValid ? 'text-success-foreground' : 'text-error-foreground'}`}
                     >
                       {ipValidation.message}
                     </p>
@@ -152,7 +158,7 @@ export function OnboardingFormFields({
                 >
                   {isValidatingIP ? (
                     <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 mr-1" />
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary mr-1" />
                       Checking...
                     </>
                   ) : (
@@ -176,7 +182,7 @@ export function OnboardingFormFields({
                   placeholder="Enter device name"
                   value={deviceSearchQuery}
                   onChange={e => onDeviceSearchQueryChange(e.target.value)}
-                  className="h-7 text-xs border-2 border-gray-300 hover:border-gray-400 focus:border-blue-500 bg-white flex-1"
+                  className="h-7 text-xs border-2 border-border hover:border-muted-foreground/50 focus:border-primary bg-card flex-1"
                 />
                 <Button
                   onClick={onSearchDevice}
@@ -187,7 +193,7 @@ export function OnboardingFormFields({
                 >
                   {isSearchingDevice ? (
                     <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 mr-1" />
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary mr-1" />
                       Searching...
                     </>
                   ) : (
@@ -204,17 +210,17 @@ export function OnboardingFormFields({
       </div>
       {/* Panel 2: Device Properties */}
       <div className="rounded-xl border shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-1.5 px-3">
+        <div className="panel-header py-1.5 px-3">
           <div className="flex items-center space-x-1.5">
             <div>
               <h3 className="text-xs font-semibold">Device Properties</h3>
-              <p className="text-blue-100 text-[10px]">
+              <p className="text-panel-header-muted text-[10px]">
                 Configure device settings and network properties
               </p>
             </div>
           </div>
         </div>
-        <div className="p-3 bg-white">
+        <div className="p-3 bg-card">
           {/* Device Properties Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Location Selector */}
@@ -227,13 +233,13 @@ export function OnboardingFormFields({
 
             <div className="space-y-1">
               <Label className="text-[11px] font-medium">
-                Namespace <span className="text-red-500">*</span>
+                Namespace <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formData.namespace_id}
                 onValueChange={value => onFormDataChange('namespace_id', value)}
               >
-                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                   <SelectValue placeholder="Select namespace..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -248,13 +254,13 @@ export function OnboardingFormFields({
 
             <div className="space-y-1">
               <Label className="text-[11px] font-medium">
-                Device Role <span className="text-red-500">*</span>
+                Device Role <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formData.role_id}
                 onValueChange={value => onFormDataChange('role_id', value)}
               >
-                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                   <SelectValue placeholder="Select device role..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -273,7 +279,7 @@ export function OnboardingFormFields({
                 value={formData.platform_id}
                 onValueChange={value => onFormDataChange('platform_id', value)}
               >
-                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                   <SelectValue placeholder="Select platform..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -289,13 +295,13 @@ export function OnboardingFormFields({
 
             <div className="space-y-1">
               <Label className="text-[11px] font-medium">
-                Device Status <span className="text-red-500">*</span>
+                Device Status <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formData.status_id}
                 onValueChange={value => onFormDataChange('status_id', value)}
               >
-                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                   <SelectValue placeholder="Select device status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -310,13 +316,13 @@ export function OnboardingFormFields({
 
             <div className="space-y-1">
               <Label className="text-[11px] font-medium">
-                Secret Group <span className="text-red-500">*</span>
+                Secret Group <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formData.secret_groups_id}
                 onValueChange={value => onFormDataChange('secret_groups_id', value)}
               >
-                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                   <SelectValue placeholder="Select secret group..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -331,13 +337,13 @@ export function OnboardingFormFields({
 
             <div className="space-y-1">
               <Label className="text-[11px] font-medium">
-                Interface Status <span className="text-red-500">*</span>
+                Interface Status <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formData.interface_status_id}
                 onValueChange={value => onFormDataChange('interface_status_id', value)}
               >
-                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                   <SelectValue placeholder="Select interface status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -352,13 +358,13 @@ export function OnboardingFormFields({
 
             <div className="space-y-1">
               <Label className="text-[11px] font-medium">
-                IP Address Status <span className="text-red-500">*</span>
+                IP Address Status <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formData.ip_address_status_id}
                 onValueChange={value => onFormDataChange('ip_address_status_id', value)}
               >
-                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                   <SelectValue placeholder="Select IP address status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -373,13 +379,13 @@ export function OnboardingFormFields({
 
             <div className="space-y-1">
               <Label className="text-[11px] font-medium">
-                Prefix Status <span className="text-red-500">*</span>
+                Prefix Status <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formData.prefix_status_id}
                 onValueChange={value => onFormDataChange('prefix_status_id', value)}
               >
-                <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                   <SelectValue placeholder="Select prefix status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -394,22 +400,22 @@ export function OnboardingFormFields({
           </div>{' '}
           {/* Close grid */}
         </div>{' '}
-        {/* Close p-3 bg-white */}
+        {/* Close p-3 bg-card */}
       </div>{' '}
       {/* Close Panel 2: Device Properties */}
       {/* Panel 3: Connection & Sync Settings */}
       <div className="rounded-xl border shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-1.5 px-3">
+        <div className="panel-header py-1.5 px-3">
           <div className="flex items-center space-x-1.5">
             <div>
               <h3 className="text-xs font-semibold">Connection & Sync Settings</h3>
-              <p className="text-blue-100 text-[10px]">
+              <p className="text-panel-header-muted text-[10px]">
                 Configure connection parameters and sync options
               </p>
             </div>
           </div>
         </div>
-        <div className="p-3 bg-white">
+        <div className="p-3 bg-card">
           {/* Connection Settings - All in one row */}
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1 w-24">
@@ -418,7 +424,7 @@ export function OnboardingFormFields({
                 type="number"
                 value={formData.port}
                 onChange={e => onFormDataChange('port', parseInt(e.target.value, 10))}
-                className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                className={INPUT_CLASSES}
               />
             </div>
 
@@ -430,7 +436,7 @@ export function OnboardingFormFields({
                 onChange={e =>
                   onFormDataChange('timeout', parseInt(e.target.value, 10))
                 }
-                className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                className={INPUT_CLASSES}
               />
             </div>
 
@@ -444,7 +450,7 @@ export function OnboardingFormFields({
                 onChange={e =>
                   onFormDataChange('onboarding_timeout', parseInt(e.target.value, 10))
                 }
-                className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                className={INPUT_CLASSES}
                 title="Maximum time to wait for the onboarding job to complete (recommended: 120s for auto-detect)"
               />
             </div>

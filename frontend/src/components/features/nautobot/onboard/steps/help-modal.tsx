@@ -21,7 +21,7 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
       <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <HelpCircle className="h-5 w-5 text-blue-500" />
+            <HelpCircle className="h-5 w-5 text-primary" />
             Device Onboarding Help
           </DialogTitle>
           <DialogDescription>
@@ -252,11 +252,11 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
           </section>
 
           {/* Tips */}
-          <section className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
-            <h3 className="font-semibold text-base mb-2 text-blue-900 dark:text-blue-100">
+          <section className="bg-info p-3 rounded-lg">
+            <h3 className="font-semibold text-base mb-2 text-info-foreground">
               💡 Tips
             </h3>
-            <ul className="list-disc list-inside space-y-1 text-blue-800 dark:text-blue-200 text-xs">
+            <ul className="list-disc list-inside space-y-1 text-info-foreground text-xs">
               <li>
                 Use &quot;Check IP&quot; to verify if an IP address already exists in
                 Nautobot
