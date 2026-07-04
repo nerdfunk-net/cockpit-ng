@@ -9,19 +9,23 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { HardDrive, Network, FileText, Loader2, Lock, Folder } from 'lucide-react'
-import {
-  useInventoryGroupsQuery,
-  type SavedInventory,
-} from '@/hooks/queries/use-saved-inventories-queries'
+import { useInventoryGroupsQuery } from '@/hooks/queries/use-saved-inventories-queries'
 
 export type ScanTargetSource = 'cidr' | 'inventory'
+
+export interface ScanInventoryOption {
+  id: number
+  name: string
+  scope: string
+  group_path?: string | null
+}
 
 interface ScanInventorySectionProps {
   targetSource: ScanTargetSource
   setTargetSource: (value: ScanTargetSource) => void
   inventoryName: string
   setInventoryName: (value: string) => void
-  savedInventories: SavedInventory[]
+  savedInventories: ScanInventoryOption[]
   loadingInventories: boolean
 }
 

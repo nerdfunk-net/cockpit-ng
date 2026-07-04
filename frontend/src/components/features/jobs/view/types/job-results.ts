@@ -376,6 +376,59 @@ export interface ScanPrefixJobResult {
 }
 
 // ============================================================================
+// Port Scan Job Result Types
+// ============================================================================
+
+export interface PortScanPortBinding {
+  address: string
+  port: number
+}
+
+export interface PortScanService {
+  protocol: string
+  port: number
+  state?: string
+  service?: string | null
+  product?: string | null
+  version?: string | null
+}
+
+export interface PortScanHostResult {
+  ip_address: string
+  hostname?: string
+  host_status?: string
+  tcp_ports: PortScanPortBinding[]
+  udp_ports: PortScanPortBinding[]
+  services?: PortScanService[]
+  scan_arguments?: string
+  success: boolean
+  error?: string | null
+}
+
+export interface PortScanNetworkResult {
+  network: string
+  total_ips: number
+  reachable_count: number
+  hosts: PortScanHostResult[]
+}
+
+export interface PortScanJobResult {
+  success: boolean
+  agent_id?: string
+  scan_type?: string
+  ports?: string | null
+  networks: PortScanNetworkResult[]
+  total_networks?: number
+  total_ips_scanned?: number
+  total_reachable?: number
+  total_hosts_scanned?: number
+  total_open_tcp_ports?: number
+  total_open_udp_ports?: number
+  error?: string
+  [key: string]: unknown
+}
+
+// ============================================================================
 // IP Addresses Job Result Types
 // ============================================================================
 
@@ -566,6 +619,21 @@ export function isScanPrefixJobResult(
     'total_ips_scanned' in result &&
     'total_reachable' in result &&
     'total_unreachable' in result
+  )
+}
+
+/**
+ * Check if result is a port scan / nmap scan job result.
+ * Has networks array with agent_id and open port totals.
+ */
+export function isPortScanJobResult(
+  result: Record<string, unknown>
+): result is PortScanJobResult {
+  return (
+    'networks' in result &&
+    Array.isArray(result.networks) &&
+    'agent_id' in result &&
+    ('total_open_tcp_ports' in result || 'scan_type' in result)
   )
 }
 

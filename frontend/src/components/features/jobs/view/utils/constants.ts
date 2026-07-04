@@ -31,6 +31,7 @@ export const JOB_TYPE_OPTIONS: readonly FilterOption[] = [
   { value: 'run_commands', label: 'Run Commands' },
   { value: 'scan_prefixes', label: 'Scan Prefixes' },
   { value: 'port_scan', label: 'Port Scan' },
+  { value: 'nmap_scan_network', label: 'Port Scan' },
   { value: 'sync_devices', label: 'Sync Devices' },
 ] as const
 

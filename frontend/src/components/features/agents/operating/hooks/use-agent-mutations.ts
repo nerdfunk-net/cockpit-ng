@@ -104,7 +104,7 @@ export function useAgentMutations() {
         }),
       })
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.cockpitAgents.history(variables.agent_id),
       })

@@ -26,6 +26,7 @@ import {
   isCsvImportJobResult,
   isPingAgentJobResult,
   isSetPrimaryIpJobResult,
+  isPortScanJobResult,
   GenericJobResult,
 } from '../types/job-results'
 import { BackupJobResultView } from '../results/backup-job-result'
@@ -43,6 +44,7 @@ import { PingAgentResultView } from '../results/ping-agent-result'
 import { SetPrimaryIpResultView } from '../results/set-primary-ip-result'
 import { CompareJobResultView } from '../results/compare-job-result'
 import { GenericJobResultView } from '../results/generic-job-result'
+import { PortScanResultView } from '../results/port-scan-result'
 
 interface JobResultDialogProps {
   jobRun: JobRun | null
@@ -76,6 +78,11 @@ function renderJobResult(
   // Scan prefix result has unique prefixes array structure
   if (isScanPrefixJobResult(result)) {
     return <ScanPrefixResultView result={result} />
+  }
+
+  // Port scan / nmap scan result has networks array with agent_id
+  if (isPortScanJobResult(result)) {
+    return <PortScanResultView result={result} />
   }
 
   // IP addresses task result (list or delete) with filter_field + filter_value

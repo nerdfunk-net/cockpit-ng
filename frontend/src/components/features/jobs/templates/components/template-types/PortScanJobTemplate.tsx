@@ -18,7 +18,7 @@ import {
   type ScanTargetSource,
 } from '@/components/features/network/tools/scan/scan-inventory-section'
 import { generateEntryKey } from './DeployAgentJobTemplate'
-import type { SavedInventory } from '../types'
+import type { SavedInventory } from '../../types'
 
 export interface PortScanCidrEntry {
   _key: string
