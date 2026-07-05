@@ -1,6 +1,7 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
+import { StatusAlert } from '@/components/shared/status-alert'
+import { StatusBadge } from '@/components/shared/status-badge'
 import {
   Card,
   CardContent,
@@ -8,14 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Network,
-  SkipForward,
-  Info,
-} from 'lucide-react'
+import { CheckCircle2, XCircle, AlertTriangle, Network, SkipForward } from 'lucide-react'
 import type {
   SetPrimaryIpJobResult,
   SetPrimaryIpDeviceResult,
@@ -32,35 +26,35 @@ const STRATEGY_LABELS: Record<string, string> = {
   interface_name: 'Interface Name',
 }
 
-function StatusBadge({ status }: { status: SetPrimaryIpDeviceResult['status'] }) {
+function DeviceStatusBadge({ status }: { status: SetPrimaryIpDeviceResult['status'] }) {
   switch (status) {
     case 'assigned':
       return (
-        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 text-xs">
+        <StatusBadge variant="success" className="text-xs">
           <CheckCircle2 className="h-3 w-3 mr-1" />
           Assigned
-        </Badge>
+        </StatusBadge>
       )
     case 'skipped':
       return (
-        <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 text-xs">
+        <StatusBadge variant="warning" className="text-xs">
           <SkipForward className="h-3 w-3 mr-1" />
           Skipped
-        </Badge>
+        </StatusBadge>
       )
     case 'unreachable':
       return (
-        <Badge variant="destructive" className="text-xs">
+        <StatusBadge variant="error" className="text-xs">
           <XCircle className="h-3 w-3 mr-1" />
           Unreachable
-        </Badge>
+        </StatusBadge>
       )
     case 'failed':
       return (
-        <Badge className="bg-red-100 text-red-700 hover:bg-red-100 text-xs">
+        <StatusBadge variant="error" className="text-xs">
           <AlertTriangle className="h-3 w-3 mr-1" />
           Failed
-        </Badge>
+        </StatusBadge>
       )
   }
 }
@@ -82,12 +76,9 @@ export function SetPrimaryIpResultView({ result }: SetPrimaryIpResultViewProps) 
             <CardDescription>Strategy: {strategyLabel}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-3">
-              <Info className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-              <p className="text-sm text-amber-700">
-                {result.note ?? 'Interface Name strategy is not yet implemented.'}
-              </p>
-            </div>
+            <StatusAlert variant="warning">
+              {result.note ?? 'Interface Name strategy is not yet implemented.'}
+            </StatusAlert>
           </CardContent>
         </Card>
       </div>
@@ -117,7 +108,7 @@ export function SetPrimaryIpResultView({ result }: SetPrimaryIpResultViewProps) 
               <p className="text-xs text-muted-foreground uppercase tracking-wider">
                 Assigned
               </p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-success-foreground">
                 {result.assigned_count ?? 0}
               </p>
             </div>
@@ -125,7 +116,7 @@ export function SetPrimaryIpResultView({ result }: SetPrimaryIpResultViewProps) 
               <p className="text-xs text-muted-foreground uppercase tracking-wider">
                 Skipped
               </p>
-              <p className="text-2xl font-bold text-amber-500">
+              <p className="text-2xl font-bold text-warning-foreground">
                 {result.skipped_count ?? 0}
               </p>
             </div>
@@ -133,14 +124,14 @@ export function SetPrimaryIpResultView({ result }: SetPrimaryIpResultViewProps) 
               <p className="text-xs text-muted-foreground uppercase tracking-wider">
                 Unreachable
               </p>
-              <p className="text-2xl font-bold text-red-600">
+              <p className="text-2xl font-bold text-error-foreground">
                 {result.unreachable_count ?? 0}
               </p>
             </div>
           </div>
           {(result.failed_count ?? 0) > 0 && (
             <div className="mt-3 pt-3 border-t">
-              <p className="text-sm text-red-600 font-medium">
+              <p className="text-sm text-error-foreground font-medium">
                 {result.failed_count} device(s) failed — see details below.
               </p>
             </div>
@@ -168,25 +159,25 @@ export function SetPrimaryIpResultView({ result }: SetPrimaryIpResultViewProps) 
                 <div key={device.device_name} className="px-4 py-3 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">{device.device_name}</span>
-                    <StatusBadge status={device.status} />
+                    <DeviceStatusBadge status={device.status} />
                   </div>
 
                   {device.status === 'assigned' && device.primary_ip && (
-                    <p className="text-xs text-green-700 ml-1">
+                    <p className="text-xs text-success-foreground ml-1">
                       Primary IP set to{' '}
-                      <code className="font-mono bg-green-50 px-1 rounded">
+                      <code className="font-mono bg-success px-1 rounded">
                         {device.primary_ip}
                       </code>
                     </p>
                   )}
 
                   {device.status === 'skipped' && device.reachable_ips.length > 0 && (
-                    <p className="text-xs text-amber-600 ml-1">
+                    <p className="text-xs text-warning-foreground ml-1">
                       Multiple IPs reachable:{' '}
                       {device.reachable_ips.map(ip => (
                         <code
                           key={ip}
-                          className="font-mono bg-amber-50 px-1 rounded mr-1"
+                          className="font-mono bg-warning px-1 rounded mr-1"
                         >
                           {ip}
                         </code>
@@ -195,7 +186,7 @@ export function SetPrimaryIpResultView({ result }: SetPrimaryIpResultViewProps) 
                   )}
 
                   {device.status === 'failed' && device.reason && (
-                    <p className="text-xs text-red-600 ml-1">{device.reason}</p>
+                    <p className="text-xs text-error-foreground ml-1">{device.reason}</p>
                   )}
 
                   {device.status === 'unreachable' && (

@@ -6,14 +6,14 @@ import {
   RefreshCw,
   Play,
   CheckSquare,
-  AlertCircle,
   CheckCircle2,
   XCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { StatusAlert } from '@/components/shared/status-alert'
+import { IconChip } from '@/components/shared/icon-chip'
 import { useStackDevicesQuery } from './hooks/use-stack-devices-query'
 import { useStacksMutations } from './hooks/use-stacks-mutations'
 import type { StackDevice, DeviceResult } from './types/stacks-types'
@@ -77,12 +77,12 @@ export default function StacksPage() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="bg-purple-100 p-2 rounded-lg">
-            <Layers className="h-6 w-6 text-purple-600" />
-          </div>
+          <IconChip variant="info">
+            <Layers className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Device Stacks</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold text-foreground">Device Stacks</h1>
+            <p className="text-muted-foreground mt-1">
               Detect devices with multiple serial numbers, split them, and build Virtual
               Chassis groups.
             </p>
@@ -95,49 +95,46 @@ export default function StacksPage() {
       </div>
 
       {/* Info alert */}
-      <Alert className="bg-blue-50 border-blue-200">
-        <AlertCircle className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-blue-800">
-          The list below shows all Nautobot devices whose serial field contains a comma,
-          indicating multiple serial numbers (stacked units). Select the devices you
-          want to process and select
-          <strong> Process selected</strong>. The action splits each device into
-          separate entries and groups them into a Nautobot Virtual Chassis.
-        </AlertDescription>
-      </Alert>
+      <StatusAlert variant="info">
+        The list below shows all Nautobot devices whose serial field contains a comma,
+        indicating multiple serial numbers (stacked units). Select the devices you
+        want to process and select
+        <strong> Process selected</strong>. The action splits each device into
+        separate entries and groups them into a Nautobot Virtual Chassis.
+      </StatusAlert>
 
       {/* Results panel */}
       {processResults && (
-        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-          <div className="bg-gradient-to-r from-green-400/80 to-green-500/80 text-white py-2 px-4 rounded-t-lg flex items-center gap-2">
+        <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+          <div className="panel-header py-2 px-4 rounded-t-lg flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4" />
             <span className="text-sm font-medium">Processing results</span>
           </div>
-          <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-3">
+          <div className="p-6 panel-content space-y-3">
             {processResults.map(result => (
               <div
                 key={result.device_id}
                 className={`flex items-start gap-3 p-3 rounded-lg border ${
                   result.success
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-red-50 border-red-200'
+                    ? 'bg-success border-success-border'
+                    : 'bg-error border-error-border'
                 }`}
               >
                 {result.success ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-success-foreground mt-0.5 shrink-0" />
                 ) : (
-                  <XCircle className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />
+                  <XCircle className="h-4 w-4 text-error-foreground mt-0.5 shrink-0" />
                 )}
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{result.device_name}</p>
-                  <p className="text-xs text-gray-600 mt-0.5">{result.message}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{result.message}</p>
                   {result.created_devices.length > 0 && (
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Created: {result.created_devices.join(', ')}
                     </p>
                   )}
                   {result.virtual_chassis_name && (
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Virtual Chassis: <strong>{result.virtual_chassis_name}</strong>
                     </p>
                   )}
@@ -149,13 +146,13 @@ export default function StacksPage() {
       )}
 
       {/* Devices table */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 rounded-t-lg flex items-center justify-between">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 rounded-t-lg flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="h-4 w-4" />
             <span className="text-sm font-medium">Potential stack devices</span>
             {data && (
-              <Badge variant="secondary" className="bg-blue-200 text-blue-900 text-xs">
+              <Badge variant="secondary" className="bg-card/80 text-panel-header-foreground text-xs">
                 {data.count}
               </Badge>
             )}
@@ -164,7 +161,7 @@ export default function StacksPage() {
             size="sm"
             onClick={handleProcess}
             disabled={selectedIds.length === 0 || processStacks.isPending}
-            className="bg-white text-blue-700 hover:bg-blue-50 h-7 px-3 text-xs font-medium"
+            className="bg-card text-primary hover:bg-muted h-7 px-3 text-xs font-medium"
           >
             <Play className="h-3 w-3 mr-1" />
             {processStacks.isPending
@@ -173,24 +170,21 @@ export default function StacksPage() {
           </Button>
         </div>
 
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+        <div className="p-6 panel-content">
           {error && (
-            <Alert className="bg-red-50 border-red-200 mb-4">
-              <XCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">
-                Failed to load devices. Check that Nautobot is reachable.
-              </AlertDescription>
-            </Alert>
+            <StatusAlert variant="error" className="mb-4">
+              Failed to load devices. Check that Nautobot is reachable.
+            </StatusAlert>
           )}
 
           {isLoading ? (
-            <div className="text-center py-12 text-gray-500">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-3 text-blue-400" />
+            <div className="text-center py-12 text-muted-foreground">
+              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-3 text-primary" />
               <p className="text-lg font-medium">Loading devices…</p>
             </div>
           ) : devices.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <CheckSquare className="h-8 w-8 mx-auto mb-3 text-green-400" />
+            <div className="text-center py-12 text-muted-foreground">
+              <CheckSquare className="h-8 w-8 mx-auto mb-3 text-success-foreground" />
               <p className="text-lg font-medium">No stack devices found</p>
               <p className="text-sm mt-1">
                 All devices in Nautobot have a single serial number.

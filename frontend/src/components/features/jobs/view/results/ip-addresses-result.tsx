@@ -18,6 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { StatusAlert } from '@/components/shared/status-alert'
+import { StatusBadge } from '@/components/shared/status-badge'
+import { StatusIcon } from '@/components/shared/status-icon'
 import {
   IPAddressesJobResult,
   IPAddressEntry,
@@ -25,18 +28,7 @@ import {
   IPSkippedEntry,
   IPFailedEntry,
 } from '../types/job-results'
-import {
-  CheckCircle2,
-  XCircle,
-  Network,
-  Search,
-  Trash2,
-  List,
-  AlertCircle,
-  SkipForward,
-  Tag,
-  Plug,
-} from 'lucide-react'
+import { Network, Search, Trash2, List, SkipForward, Tag, Plug } from 'lucide-react'
 
 interface IPAddressesResultViewProps {
   result: IPAddressesJobResult
@@ -122,11 +114,11 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {isRemove ? (
-              <Trash2 className="h-5 w-5 text-red-500" />
+              <Trash2 className="h-5 w-5 text-destructive" />
             ) : isMark ? (
-              <Tag className="h-5 w-5 text-amber-500" />
+              <Tag className="h-5 w-5 text-warning-foreground" />
             ) : (
-              <List className="h-5 w-5 text-blue-500" />
+              <List className="h-5 w-5 text-primary" />
             )}
             {isRemove
               ? 'Remove IP Addresses'
@@ -141,13 +133,12 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Status</p>
               <div className="flex items-center gap-1">
-                {result.success ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                ) : (
-                  <XCircle className="h-4 w-4 text-red-600" />
-                )}
+                <StatusIcon
+                  variant={result.success ? 'success' : 'error'}
+                  className="h-4 w-4"
+                />
                 <span
-                  className={`text-sm font-medium ${result.success ? 'text-green-600' : 'text-red-600'}`}
+                  className={`text-sm font-medium ${result.success ? 'text-success-foreground' : 'text-error-foreground'}`}
                 >
                   {result.success ? 'Success' : 'Failed'}
                 </span>
@@ -161,17 +152,17 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
                 <StatBox
                   label="Deleted"
                   value={result.deleted ?? 0}
-                  color="text-green-600"
+                  color="text-success-foreground"
                 />
                 <StatBox
                   label="Skipped"
                   value={result.skipped ?? 0}
-                  color="text-amber-600"
+                  color="text-warning-foreground"
                 />
                 <StatBox
                   label="Failed"
                   value={result.failed ?? 0}
-                  color={result.failed ? 'text-red-600' : undefined}
+                  color={result.failed ? 'text-error-foreground' : undefined}
                 />
               </>
             )}
@@ -181,12 +172,12 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
                 <StatBox
                   label="Updated"
                   value={result.updated ?? 0}
-                  color="text-green-600"
+                  color="text-success-foreground"
                 />
                 <StatBox
                   label="Failed"
                   value={result.failed ?? 0}
-                  color={result.failed ? 'text-red-600' : undefined}
+                  color={result.failed ? 'text-error-foreground' : undefined}
                 />
               </>
             )}
@@ -213,13 +204,10 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
           </div>
 
           {isRemove && (result.failed ?? 0) > 0 && (
-            <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-              <AlertCircle className="h-4 w-4 text-yellow-600 shrink-0 mt-0.5" />
-              <p className="text-sm text-yellow-800">
-                {result.failed} IP address{(result.failed ?? 0) > 1 ? 'es' : ''} could
-                not be deleted.
-              </p>
-            </div>
+            <StatusAlert variant="warning">
+              {result.failed} IP address{(result.failed ?? 0) > 1 ? 'es' : ''} could not
+              be deleted.
+            </StatusAlert>
           )}
         </CardContent>
       </Card>
@@ -284,8 +272,8 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
                             variant="outline"
                             className={`text-xs ${
                               ip.ip_version === 6
-                                ? 'border-purple-300 text-purple-700'
-                                : 'border-blue-300 text-blue-700'
+                                ? 'border-border text-foreground'
+                                : 'border-info-border text-info-foreground'
                             }`}
                           >
                             v{ip.ip_version}
@@ -309,7 +297,7 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
                             ) : (
                               <Badge
                                 variant="outline"
-                                className="text-xs border-gray-200 text-gray-400"
+                                className="text-xs border-border text-muted-foreground"
                               >
                                 null
                               </Badge>
@@ -338,11 +326,9 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <StatusIcon variant="success" className="h-4 w-4" />
                   Deleted IPs
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
-                    {deletedIps.length}
-                  </Badge>
+                  <StatusBadge variant="success">{deletedIps.length}</StatusBadge>
                 </CardTitle>
                 <CardDescription>
                   IP addresses permanently removed from Nautobot
@@ -371,7 +357,7 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
                 <TableBody>
                   {filteredRemoved.map(ip => (
                     <TableRow key={ip.id}>
-                      <TableCell className="font-mono text-sm font-medium text-green-800">
+                      <TableCell className="font-mono text-sm font-medium text-success-foreground">
                         {ip.address}
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">
@@ -398,11 +384,9 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <SkipForward className="h-4 w-4 text-amber-600" />
+                  <SkipForward className="h-4 w-4 text-warning-foreground" />
                   Skipped IPs
-                  <Badge className="bg-amber-100 text-amber-800 border-amber-200">
-                    {skippedIps.length}
-                  </Badge>
+                  <StatusBadge variant="warning">{skippedIps.length}</StatusBadge>
                 </CardTitle>
                 <CardDescription>
                   Assigned IP addresses protected from deletion
@@ -431,7 +415,7 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
                 <TableBody>
                   {filteredSkipped.map(ip => (
                     <TableRow key={ip.id}>
-                      <TableCell className="font-mono text-sm font-medium text-amber-800">
+                      <TableCell className="font-mono text-sm font-medium text-warning-foreground">
                         {ip.address}
                       </TableCell>
                       <TableCell>
@@ -440,7 +424,7 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
                             <Badge
                               key={a.id ?? i}
                               variant="outline"
-                              className="text-xs border-amber-300 text-amber-800 flex items-center gap-1"
+                              className="text-xs border-warning-border text-warning-foreground flex items-center gap-1"
                             >
                               <Plug className="h-3 w-3" />
                               {a.device
@@ -466,14 +450,12 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
 
       {/* ── Remove: Failed IPs table ── */}
       {isRemove && failedIps.length > 0 && (
-        <Card className="border-red-200">
+        <Card className="border-error-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <XCircle className="h-4 w-4 text-red-600" />
+              <StatusIcon variant="error" className="h-4 w-4" />
               Failed IPs
-              <Badge className="bg-red-100 text-red-800 border-red-200">
-                {failedIps.length}
-              </Badge>
+              <StatusBadge variant="error">{failedIps.length}</StatusBadge>
             </CardTitle>
             <CardDescription>IP addresses that could not be deleted</CardDescription>
           </CardHeader>
@@ -489,10 +471,10 @@ export function IPAddressesResultView({ result }: IPAddressesResultViewProps) {
                 <TableBody>
                   {failedIps.map((ip, idx) => (
                     <TableRow key={ip.id ?? idx}>
-                      <TableCell className="font-mono text-sm font-medium text-red-800">
+                      <TableCell className="font-mono text-sm font-medium text-error-foreground">
                         {ip.address}
                       </TableCell>
-                      <TableCell className="text-sm text-red-700">
+                      <TableCell className="text-sm text-error-foreground">
                         {ip.reason}
                       </TableCell>
                     </TableRow>

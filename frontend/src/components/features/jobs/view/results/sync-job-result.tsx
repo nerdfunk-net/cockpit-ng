@@ -10,12 +10,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  CheckCircle2,
-  XCircle as XCircleIcon,
-  AlertCircle,
-  RefreshCw,
-} from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
+import { StatusIcon } from '@/components/shared/status-icon'
 import { SyncJobResult, SyncJobDeviceResult } from '../types/job-results'
 
 interface SyncJobResultProps {
@@ -27,41 +23,49 @@ export function SyncJobResultView({ result }: SyncJobResultProps) {
     <div className="space-y-4">
       {/* Summary Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
+        <div className="bg-muted rounded-lg p-3 text-center">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">Status</p>
           <p
-            className={`text-lg font-semibold ${result.success ? 'text-green-600' : 'text-red-600'}`}
+            className={`text-lg font-semibold ${result.success ? 'text-success-foreground' : 'text-error-foreground'}`}
           >
             {result.success ? 'Success' : 'Failed'}
           </p>
         </div>
         {result.total !== undefined && (
-          <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
-            <p className="text-lg font-semibold text-gray-700">
+          <div className="bg-muted rounded-lg p-3 text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">
+              Total
+            </p>
+            <p className="text-lg font-semibold text-foreground">
               {String(result.total)}
             </p>
           </div>
         )}
         {result.success_count !== undefined && (
-          <div className="bg-green-50 rounded-lg p-3 text-center">
-            <p className="text-xs text-green-600 uppercase tracking-wide">Success</p>
-            <p className="text-lg font-semibold text-green-700">
+          <div className="bg-success rounded-lg p-3 text-center">
+            <p className="text-xs text-success-foreground uppercase tracking-wide">
+              Success
+            </p>
+            <p className="text-lg font-semibold text-success-foreground">
               {String(result.success_count)}
             </p>
           </div>
         )}
         {result.failed_count !== undefined && (
-          <div className="bg-red-50 rounded-lg p-3 text-center">
-            <p className="text-xs text-red-600 uppercase tracking-wide">Failed</p>
-            <p className="text-lg font-semibold text-red-700">
+          <div className="bg-error rounded-lg p-3 text-center">
+            <p className="text-xs text-error-foreground uppercase tracking-wide">
+              Failed
+            </p>
+            <p className="text-lg font-semibold text-error-foreground">
               {String(result.failed_count)}
             </p>
           </div>
         )}
-        <div className="bg-yellow-50 rounded-lg p-3 text-center">
-          <p className="text-xs text-yellow-600 uppercase tracking-wide">Skipped</p>
-          <p className="text-lg font-semibold text-yellow-700">
+        <div className="bg-warning rounded-lg p-3 text-center">
+          <p className="text-xs text-warning-foreground uppercase tracking-wide">
+            Skipped
+          </p>
+          <p className="text-lg font-semibold text-warning-foreground">
             {String(result.skipped_count ?? 0)}
           </p>
         </div>
@@ -69,65 +73,69 @@ export function SyncJobResultView({ result }: SyncJobResultProps) {
 
       {/* Message */}
       {result.message && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-sm text-blue-800">{String(result.message)}</p>
+        <div className="bg-info border border-info-border rounded-lg p-3">
+          <p className="text-sm text-info-foreground">{String(result.message)}</p>
         </div>
       )}
 
       {/* CheckMK Activation Status */}
       <div>
-        <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+        <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
           <RefreshCw className="h-4 w-4" />
           CheckMK Activation Status
         </h4>
         {result.activation === undefined ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
+          <div className="bg-muted border border-border rounded-lg p-3 flex items-center gap-3">
             <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-gray-400" />
+              <StatusIcon variant="info" className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Not Needed</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-sm font-medium text-muted-foreground">Not Needed</p>
+              <p className="text-xs text-muted-foreground">
                 No devices were synced, activation was not required
               </p>
             </div>
           </div>
         ) : result.activation === null ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
+          <div className="bg-muted border border-border rounded-lg p-3 flex items-center gap-3">
             <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-gray-400" />
+              <StatusIcon variant="info" className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Activation Disabled</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-sm font-medium text-muted-foreground">
+                Activation Disabled
+              </p>
+              <p className="text-xs text-muted-foreground">
                 CheckMK changes were not activated (activate_changes_after_sync is
                 disabled)
               </p>
             </div>
           </div>
         ) : result.activation.success ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-3">
+          <div className="bg-success border border-success-border rounded-lg p-3 flex items-center gap-3">
             <div className="flex-shrink-0">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <StatusIcon variant="success" className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-green-700">
+              <p className="text-sm font-medium text-success-foreground">
                 Activation Successful
               </p>
-              <p className="text-xs text-green-600">
+              <p className="text-xs text-success-foreground">
                 {result.activation.message ||
                   'CheckMK changes were activated successfully'}
               </p>
             </div>
           </div>
         ) : (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-3">
+          <div className="bg-error border border-error-border rounded-lg p-3 flex items-center gap-3">
             <div className="flex-shrink-0">
-              <XCircleIcon className="h-5 w-5 text-red-600" />
+              <StatusIcon variant="error" className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-red-700">Activation Failed</p>
-              <p className="text-xs text-red-600">
+              <p className="text-sm font-medium text-error-foreground">
+                Activation Failed
+              </p>
+              <p className="text-xs text-error-foreground">
                 {result.activation.error ||
                   result.activation.message ||
                   'Failed to activate CheckMK changes'}
@@ -140,13 +148,13 @@ export function SyncJobResultView({ result }: SyncJobResultProps) {
       {/* Device Results Table */}
       {result.results && result.results.length > 0 && (
         <div className="border rounded-lg overflow-hidden">
-          <div className="bg-gray-50 px-4 py-2 border-b">
-            <h4 className="text-sm font-semibold text-gray-700">Device Results</h4>
+          <div className="bg-muted px-4 py-2 border-b">
+            <h4 className="text-sm font-semibold text-foreground">Device Results</h4>
           </div>
           <div className="max-h-64 overflow-y-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
+                <TableRow className="bg-muted">
                   <TableHead className="text-xs font-semibold">Device</TableHead>
                   <TableHead className="text-xs font-semibold">Operation</TableHead>
                   <TableHead className="text-xs font-semibold">Status</TableHead>
@@ -158,7 +166,7 @@ export function SyncJobResultView({ result }: SyncJobResultProps) {
                   (deviceResult: SyncJobDeviceResult, index: number) => (
                     <TableRow
                       key={deviceResult.device_id || deviceResult.hostname || index}
-                      className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}
+                      className={index % 2 === 0 ? 'bg-card' : 'bg-muted/50'}
                     >
                       <TableCell className="text-sm font-medium">
                         {deviceResult.hostname ||
@@ -172,18 +180,18 @@ export function SyncJobResultView({ result }: SyncJobResultProps) {
                       </TableCell>
                       <TableCell>
                         {deviceResult.success ? (
-                          <span className="flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="h-4 w-4" />
+                          <span className="flex items-center gap-1 text-success-foreground">
+                            <StatusIcon variant="success" className="h-4 w-4" />
                             <span className="text-xs">Success</span>
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-red-600">
-                            <XCircleIcon className="h-4 w-4" />
+                          <span className="flex items-center gap-1 text-error-foreground">
+                            <StatusIcon variant="error" className="h-4 w-4" />
                             <span className="text-xs">Failed</span>
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs text-gray-600 max-w-[200px] truncate">
+                      <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="cursor-help">

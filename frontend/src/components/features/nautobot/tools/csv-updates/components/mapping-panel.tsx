@@ -82,13 +82,13 @@ export function MappingPanel({
   const totalFields = lookupFields.length
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white rounded-t-lg">
+        <div className="panel-header rounded-t-lg">
           <CollapsibleTrigger asChild>
             <Button
               variant="ghost"
-              className="w-full py-2 px-4 flex items-center justify-between hover:bg-white/10 text-white rounded-t-lg"
+              className="w-full py-2 px-4 flex items-center justify-between hover:bg-panel-header-foreground/10 rounded-t-lg"
             >
               <div className="flex items-center space-x-2">
                 {isOpen ? (
@@ -97,9 +97,9 @@ export function MappingPanel({
                   <ChevronRight className="h-4 w-4" />
                 )}
                 <span className="text-sm font-medium">Lookup Field Mapping</span>
-                {hasErrors && <AlertTriangle className="h-4 w-4 text-yellow-300" />}
+                {hasErrors && <AlertTriangle className="h-4 w-4 text-warning-foreground" />}
               </div>
-              <span className="text-xs text-white/80">
+              <span className="text-xs text-panel-header-muted">
                 {mappedCount} of {totalFields} fields mapped
               </span>
             </Button>
@@ -107,10 +107,10 @@ export function MappingPanel({
         </div>
 
         <CollapsibleContent>
-          <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
+          <div className="p-6 panel-content space-y-6">
             {/* Info */}
             <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
               <div className="space-y-2 flex-1">
                 <p className="text-xs text-muted-foreground">
                   Map CSV columns to lookup fields used for identifying and updating{' '}
@@ -148,7 +148,7 @@ export function MappingPanel({
                   >
                     <SelectTrigger
                       id={`mapping-${field}`}
-                      className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                      className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
                     >
                       <SelectValue placeholder="Select CSV column..." />
                     </SelectTrigger>
@@ -166,7 +166,7 @@ export function MappingPanel({
                   {columnMapping[field] && (
                     <p className="text-xs text-muted-foreground">
                       Mapped to:{' '}
-                      <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">
+                      <span className="font-mono bg-muted px-1.5 py-0.5 rounded">
                         {columnMapping[field]}
                       </span>
                     </p>

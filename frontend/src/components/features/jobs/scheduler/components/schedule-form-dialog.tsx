@@ -240,12 +240,12 @@ export function ScheduleFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-5xl sm:!max-w-5xl p-0 gap-0 overflow-hidden">
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
-          <DialogHeader className="text-white">
-            <DialogTitle className="text-lg font-semibold text-white">
+        <div className="panel-header px-6 py-4">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">
               {editingJob ? 'Edit Schedule' : 'Create Schedule'}
             </DialogTitle>
-            <DialogDescription className="text-blue-50">
+            <DialogDescription className="text-panel-header-muted">
               {editingJob
                 ? 'Update schedule settings'
                 : 'Schedule a job template to run automatically'}
@@ -279,9 +279,9 @@ export function ScheduleFormDialog({
                           <SelectItem key={template.id} value={template.id.toString()}>
                             <div className="flex items-center gap-2">
                               {template.is_global ? (
-                                <Globe className="h-3.5 w-3.5 text-blue-500" />
+                                <Globe className="h-3.5 w-3.5 text-primary" />
                               ) : (
-                                <User className="h-3.5 w-3.5 text-gray-400" />
+                                <User className="h-3.5 w-3.5 text-muted-foreground" />
                               )}
                               <span className="font-medium">{template.name}</span>
                               <span className="text-xs text-muted-foreground">
@@ -314,13 +314,13 @@ export function ScheduleFormDialog({
 
             {/* Template description */}
             {selectedTemplate && (
-              <div className="px-3 py-2 rounded-md bg-gray-50 border border-gray-200 text-sm text-gray-600">
+              <div className="px-3 py-2 rounded-md bg-muted border border-border text-sm text-muted-foreground">
                 <div className="flex items-center gap-2 mb-1">
                   <Badge variant="outline" className="text-xs">
                     {getJobTypeLabel(selectedTemplate.job_type)}
                   </Badge>
                   {selectedTemplate.is_global ? (
-                    <Badge className="text-xs bg-blue-100 text-blue-700">Global</Badge>
+                    <Badge className="text-xs bg-info text-info-foreground">Global</Badge>
                   ) : (
                     <Badge variant="secondary" className="text-xs">
                       Private
@@ -401,9 +401,9 @@ export function ScheduleFormDialog({
             {/* Timezone notice */}
             {['hourly', 'daily', 'weekly', 'monthly'].includes(scheduleType) &&
               startTime && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 border border-blue-200 text-sm">
-                  <Globe className="h-4 w-4 text-blue-500 shrink-0" />
-                  <p className="text-blue-700">
+                <div className="status-info border flex items-center gap-2 px-3 py-2 rounded-md text-sm">
+                  <Globe className="h-4 w-4 shrink-0" />
+                  <p>
                     <span className="font-medium">All times are in UTC.</span> For{' '}
                     {startTime} UTC, that&apos;s{' '}
                     <span className="font-mono font-medium">
@@ -422,7 +422,7 @@ export function ScheduleFormDialog({
                 render={({ field }) => (
                   <FormItem className="pt-3 border-t">
                     <FormLabel>
-                      Device Credentials <span className="text-red-500">*</span>
+                      Device Credentials <span className="text-destructive">*</span>
                     </FormLabel>
                     <Select
                       value={field.value?.toString() || 'none'}
@@ -437,15 +437,15 @@ export function ScheduleFormDialog({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">
-                          <span className="text-gray-400">No credential selected</span>
+                          <span className="text-muted-foreground">No credential selected</span>
                         </SelectItem>
                         {credentials.map(cred => (
                           <SelectItem key={cred.id} value={cred.id.toString()}>
                             <div className="flex items-center gap-2">
                               {cred.source === 'general' ? (
-                                <Globe className="h-3.5 w-3.5 text-blue-500" />
+                                <Globe className="h-3.5 w-3.5 text-primary" />
                               ) : (
-                                <User className="h-3.5 w-3.5 text-gray-400" />
+                                <User className="h-3.5 w-3.5 text-muted-foreground" />
                               )}
                               <span className="font-medium">{cred.name}</span>
                               <span className="text-xs text-muted-foreground">
@@ -471,14 +471,14 @@ export function ScheduleFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Authentication method <span className="text-red-500">*</span>
+                        Authentication method <span className="text-destructive">*</span>
                       </FormLabel>
                       <RadioGroup
                         value={field.value}
                         onValueChange={field.onChange}
                         className="space-y-2"
                       >
-                        <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                        <div className="flex items-start gap-3 rounded-lg border border-border bg-muted p-3">
                           <RadioGroupItem
                             value="ssh_key"
                             id="schedule-auth-ssh-key"
@@ -487,17 +487,17 @@ export function ScheduleFormDialog({
                           <div className="flex-1 space-y-1">
                             <FormLabel
                               htmlFor="schedule-auth-ssh-key"
-                              className="cursor-pointer text-sm font-medium text-gray-800"
+                              className="cursor-pointer text-sm font-medium text-foreground"
                             >
                               SSH key (no passphrase)
                             </FormLabel>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-muted-foreground">
                               Use the agent&apos;s configured SSH key with no passphrase
                               protection.
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                        <div className="flex items-start gap-3 rounded-lg border border-border bg-muted p-3">
                           <RadioGroupItem
                             value="ssh_key_passphrase"
                             id="schedule-auth-ssh-passphrase"
@@ -506,17 +506,17 @@ export function ScheduleFormDialog({
                           <div className="flex-1 space-y-1">
                             <FormLabel
                               htmlFor="schedule-auth-ssh-passphrase"
-                              className="cursor-pointer text-sm font-medium text-gray-800"
+                              className="cursor-pointer text-sm font-medium text-foreground"
                             >
                               SSH key with passphrase
                             </FormLabel>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-muted-foreground">
                               SSH key protected by a passphrase stored in the
                               credentials vault.
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                        <div className="flex items-start gap-3 rounded-lg border border-border bg-muted p-3">
                           <RadioGroupItem
                             value="credentials"
                             id="schedule-auth-credentials"
@@ -525,11 +525,11 @@ export function ScheduleFormDialog({
                           <div className="flex-1 space-y-1">
                             <FormLabel
                               htmlFor="schedule-auth-credentials"
-                              className="cursor-pointer text-sm font-medium text-gray-800"
+                              className="cursor-pointer text-sm font-medium text-foreground"
                             >
                               Username &amp; password
                             </FormLabel>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-muted-foreground">
                               Authenticate using a stored username and password
                               credential.
                             </p>
@@ -565,7 +565,7 @@ export function ScheduleFormDialog({
                           {factsAuthType === 'ssh_key_passphrase'
                             ? 'Passphrase credential'
                             : 'Login credential'}{' '}
-                          <span className="text-red-500">*</span>
+                          <span className="text-destructive">*</span>
                         </FormLabel>
                         <Select
                           value={field.value?.toString() || ''}
@@ -596,7 +596,7 @@ export function ScheduleFormDialog({
                             ))}
                           </SelectContent>
                         </Select>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           {factsAuthType === 'ssh_key_passphrase'
                             ? 'The password field of this credential is used as the SSH key passphrase.'
                             : 'Stored credentials from Settings → Credentials.'}
@@ -618,14 +618,14 @@ export function ScheduleFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Authentication method <span className="text-red-500">*</span>
+                        Authentication method <span className="text-destructive">*</span>
                       </FormLabel>
                       <RadioGroup
                         value={field.value}
                         onValueChange={field.onChange}
                         className="space-y-2"
                       >
-                        <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                        <div className="flex items-start gap-3 rounded-lg border border-border bg-muted p-3">
                           <RadioGroupItem
                             value="ssh_key"
                             id="schedule-ports-auth-ssh-key"
@@ -634,17 +634,17 @@ export function ScheduleFormDialog({
                           <div className="flex-1 space-y-1">
                             <FormLabel
                               htmlFor="schedule-ports-auth-ssh-key"
-                              className="cursor-pointer text-sm font-medium text-gray-800"
+                              className="cursor-pointer text-sm font-medium text-foreground"
                             >
                               SSH key (no passphrase)
                             </FormLabel>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-muted-foreground">
                               Use the agent&apos;s configured SSH key with no passphrase
                               protection.
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                        <div className="flex items-start gap-3 rounded-lg border border-border bg-muted p-3">
                           <RadioGroupItem
                             value="ssh_key_passphrase"
                             id="schedule-ports-auth-ssh-passphrase"
@@ -653,17 +653,17 @@ export function ScheduleFormDialog({
                           <div className="flex-1 space-y-1">
                             <FormLabel
                               htmlFor="schedule-ports-auth-ssh-passphrase"
-                              className="cursor-pointer text-sm font-medium text-gray-800"
+                              className="cursor-pointer text-sm font-medium text-foreground"
                             >
                               SSH key with passphrase
                             </FormLabel>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-muted-foreground">
                               SSH key protected by a passphrase stored in the
                               credentials vault.
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 p-3">
+                        <div className="flex items-start gap-3 rounded-lg border border-border bg-muted p-3">
                           <RadioGroupItem
                             value="credentials"
                             id="schedule-ports-auth-credentials"
@@ -672,11 +672,11 @@ export function ScheduleFormDialog({
                           <div className="flex-1 space-y-1">
                             <FormLabel
                               htmlFor="schedule-ports-auth-credentials"
-                              className="cursor-pointer text-sm font-medium text-gray-800"
+                              className="cursor-pointer text-sm font-medium text-foreground"
                             >
                               Username &amp; password
                             </FormLabel>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-muted-foreground">
                               Authenticate using a stored username and password
                               credential.
                             </p>
@@ -712,7 +712,7 @@ export function ScheduleFormDialog({
                           {openPortsAuthType === 'ssh_key_passphrase'
                             ? 'Passphrase credential'
                             : 'Login credential'}{' '}
-                          <span className="text-red-500">*</span>
+                          <span className="text-destructive">*</span>
                         </FormLabel>
                         <Select
                           value={field.value?.toString() || ''}
@@ -743,7 +743,7 @@ export function ScheduleFormDialog({
                             ))}
                           </SelectContent>
                         </Select>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           {openPortsAuthType === 'ssh_key_passphrase'
                             ? 'The password field of this credential is used as the SSH key passphrase.'
                             : 'Stored credentials from Settings → Credentials.'}
@@ -787,7 +787,7 @@ export function ScheduleFormDialog({
                         Global Schedule
                         <Badge
                           variant="secondary"
-                          className="text-xs bg-blue-100 text-blue-700"
+                          className="text-xs bg-info text-info-foreground"
                         >
                           Admin
                         </Badge>

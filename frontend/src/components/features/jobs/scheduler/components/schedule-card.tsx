@@ -12,11 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { Clock, Play, Pause, Edit, Trash2, RefreshCw } from 'lucide-react'
 import type { JobSchedule } from '../types'
 import { useScheduleMutations } from '../hooks/use-schedule-mutations'
-import {
-  getScheduleTypeLabel,
-  getScheduleTypeColor,
-  getJobTypeLabel,
-} from '../utils/schedule-utils'
+import { getScheduleTypeLabel, getJobTypeLabel } from '../utils/schedule-utils'
+import { StatusBadge } from '@/components/shared/status-badge'
 
 interface ScheduleCardProps {
   schedule: JobSchedule
@@ -54,7 +51,7 @@ export function ScheduleCard({ schedule, onEdit }: ScheduleCardProps) {
             </CardDescription>
           </div>
           {schedule.is_active ? (
-            <Badge className="bg-green-500">Active</Badge>
+            <StatusBadge variant="success">Active</StatusBadge>
           ) : (
             <Badge variant="secondary">Paused</Badge>
           )}
@@ -62,9 +59,7 @@ export function ScheduleCard({ schedule, onEdit }: ScheduleCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2">
-          <div
-            className={`h-2 w-2 rounded-full ${getScheduleTypeColor(schedule.schedule_type)}`}
-          />
+          <div className="h-2 w-2 rounded-full bg-primary" />
           <span className="text-sm font-medium">
             {getScheduleTypeLabel(schedule.schedule_type, schedule)}
           </span>

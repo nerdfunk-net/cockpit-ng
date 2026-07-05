@@ -73,17 +73,17 @@ export function VirtualChassisModal({
         <div className="py-2 space-y-4">
           {/* Panel 1: Select existing stack */}
           <div
-            className={`shadow-lg border-0 p-0 bg-white rounded-lg transition-opacity ${
+            className={`shadow-lg border-0 p-0 bg-card rounded-lg transition-opacity ${
               selectPanelDimmed ? 'opacity-50' : 'opacity-100'
             }`}
           >
-            <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+            <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
               <div className="flex items-center space-x-2">
                 <Layers className="h-4 w-4" />
                 <span className="text-sm font-medium">Select Existing Stack</span>
               </div>
               {selectedVcId && (
-                <div className="text-xs text-blue-100">
+                <div className="text-xs text-panel-header-muted">
                   Selected:{' '}
                   <span className="font-medium">
                     {items.find(v => v.id === selectedVcId)?.name ?? selectedVcId}
@@ -92,11 +92,11 @@ export function VirtualChassisModal({
               )}
             </div>
 
-            <div className="p-4 bg-gradient-to-b from-white to-gray-50">
+            <div className="p-4 panel-content">
               {isLoading ? (
                 <div className="flex items-center justify-center py-6">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-gray-600">Loading...</span>
+                  <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -104,7 +104,7 @@ export function VirtualChassisModal({
                     placeholder="Filter virtual chassis..."
                     value={filter}
                     onChange={e => setFilter(e.target.value)}
-                    className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                    className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
                   />
 
                   {filteredItems.length === 0 ? (
@@ -114,21 +114,21 @@ export function VirtualChassisModal({
                         : 'No virtual chassis configured in Nautobot.'}
                     </p>
                   ) : (
-                    <div className="max-h-48 overflow-y-auto border-2 border-slate-200 rounded-md">
+                    <div className="max-h-48 overflow-y-auto border-2 border-border rounded-md">
                       {filteredItems.map(vc => (
                         <button
                           key={vc.id}
                           type="button"
                           onClick={() => handleSelect(vc)}
-                          className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-blue-50 transition-colors border-b border-slate-100 last:border-b-0 ${
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-info transition-colors border-b border-border last:border-b-0 ${
                             selectedVcId === vc.id
-                              ? 'bg-blue-50 text-blue-700 font-medium'
+                              ? 'bg-info text-info-foreground font-medium'
                               : ''
                           }`}
                         >
                           <span>{vc.name}</span>
                           {selectedVcId === vc.id && (
-                            <Check className="h-4 w-4 text-blue-600 shrink-0" />
+                            <Check className="h-4 w-4 text-primary shrink-0" />
                           )}
                         </button>
                       ))}
@@ -136,17 +136,17 @@ export function VirtualChassisModal({
                   )}
 
                   {selectedVcId && (
-                    <div className="flex items-center justify-between text-xs text-muted-foreground bg-blue-50 px-3 py-2 rounded-md">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground bg-info px-3 py-2 rounded-md">
                       <span>
                         Selected:{' '}
-                        <span className="font-medium text-blue-700">
+                        <span className="font-medium text-info-foreground">
                           {items.find(v => v.id === selectedVcId)?.name ?? selectedVcId}
                         </span>
                       </span>
                       <button
                         type="button"
                         onClick={onClear}
-                        className="text-blue-600 hover:text-blue-800 underline"
+                        className="text-primary hover:text-primary/80 underline"
                       >
                         Clear
                       </button>
@@ -159,21 +159,21 @@ export function VirtualChassisModal({
 
           {/* Panel 2: Create new stack */}
           <div
-            className={`shadow-lg border-0 p-0 bg-white rounded-lg transition-opacity ${
+            className={`shadow-lg border-0 p-0 bg-card rounded-lg transition-opacity ${
               createPanelDimmed ? 'opacity-50' : 'opacity-100'
             }`}
           >
-            <div className="bg-gradient-to-r from-green-400/80 to-green-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+            <div className="bg-success text-success-foreground py-2 px-4 flex items-center justify-between rounded-t-lg">
               <div className="flex items-center space-x-2">
                 <Plus className="h-4 w-4" />
                 <span className="text-sm font-medium">Add Device to New Stack</span>
               </div>
-              <div className="text-xs text-green-100">
+              <div className="text-xs text-success-foreground/80">
                 Device becomes master at position 1
               </div>
             </div>
 
-            <div className="p-4 bg-gradient-to-b from-white to-gray-50 space-y-2">
+            <div className="p-4 panel-content space-y-2">
               <Label htmlFor="new-vc-name" className="text-sm">
                 New Stack Name
               </Label>
@@ -182,26 +182,26 @@ export function VirtualChassisModal({
                 placeholder="Enter a name for the new stack..."
                 value={newVcName}
                 onChange={handleNewVcNameChange}
-                className="border-2 border-slate-300 bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 shadow-sm"
+                className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
               />
               {newVcName.trim() && (
-                <div className="flex items-center justify-between text-xs text-muted-foreground bg-green-50 px-3 py-2 rounded-md">
+                <div className="flex items-center justify-between text-xs text-muted-foreground bg-success px-3 py-2 rounded-md">
                   <span>
                     New stack:{' '}
-                    <span className="font-medium text-green-700">
+                    <span className="font-medium text-success-foreground">
                       {newVcName.trim()}
                     </span>
                   </span>
                   <button
                     type="button"
                     onClick={onClear}
-                    className="text-green-600 hover:text-green-800 underline"
+                    className="text-primary hover:text-primary/80 underline"
                   >
                     Clear
                   </button>
                 </div>
               )}
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 A new Virtual Chassis will be created in Nautobot. The new device will
                 be assigned as master at position 1.
               </p>

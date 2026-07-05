@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { StatusBadge } from '@/components/shared/status-badge'
 import type { ObjectType, CSVConfig, ParsedCSVData, ValidationResult } from '../types'
 import { OBJECT_TYPE_LABELS } from '../constants'
 
@@ -87,13 +88,13 @@ export function CsvUploadStep({
       <div className="space-y-2">
         <Label className="text-sm font-medium">CSV File</Label>
         {csvFile ? (
-          <div className="flex items-center gap-3 p-3 border rounded-md bg-blue-50 border-blue-200">
-            <FileSpreadsheet className="h-5 w-5 text-blue-600 flex-shrink-0" />
+          <div className="flex items-center gap-3 p-3 border rounded-md bg-info border-info-border">
+            <FileSpreadsheet className="h-5 w-5 text-info-foreground flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-blue-900 truncate">
+              <p className="text-sm font-medium text-info-foreground truncate">
                 {csvFile.name}
               </p>
-              <p className="text-xs text-blue-700">
+              <p className="text-xs text-info-foreground">
                 {(csvFile.size / 1024).toFixed(1)} KB
               </p>
             </div>
@@ -101,19 +102,19 @@ export function CsvUploadStep({
               variant="ghost"
               size="sm"
               onClick={onClear}
-              className="h-7 w-7 p-0 text-blue-600 hover:text-blue-800"
+              className="h-7 w-7 p-0 text-info-foreground hover:opacity-80"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         ) : (
           <div
-            className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            className="border-2 border-dashed border-border rounded-md p-8 text-center cursor-pointer hover:border-info-border hover:bg-info transition-colors"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-600">Click to select a CSV file</p>
-            <p className="text-xs text-gray-400 mt-1">Accepts .csv files</p>
+            <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Click to select a CSV file</p>
+            <p className="text-xs text-muted-foreground mt-1">Accepts .csv files</p>
           </div>
         )}
         <input
@@ -128,7 +129,7 @@ export function CsvUploadStep({
       {/* CSV Config */}
       <div className="flex items-end gap-4">
         <div className="space-y-1">
-          <Label className="text-xs font-medium text-gray-600">Delimiter</Label>
+          <Label className="text-xs font-medium text-muted-foreground">Delimiter</Label>
           <Input
             className="h-8 text-sm w-20"
             value={csvConfig.delimiter}
@@ -138,7 +139,7 @@ export function CsvUploadStep({
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs font-medium text-gray-600">Quote Character</Label>
+          <Label className="text-xs font-medium text-muted-foreground">Quote Character</Label>
           <Input
             className="h-8 text-sm w-20"
             value={csvConfig.quoteChar}
@@ -164,14 +165,12 @@ export function CsvUploadStep({
               <Badge variant="destructive">{validationSummary.errorCount} errors</Badge>
             )}
             {validationSummary.warningCount > 0 && (
-              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+              <StatusBadge variant="warning">
                 {validationSummary.warningCount} warnings
-              </Badge>
+              </StatusBadge>
             )}
             {validationSummary.isValid && (
-              <Badge className="bg-green-100 text-green-800 border-green-300">
-                Valid
-              </Badge>
+              <StatusBadge variant="success">Valid</StatusBadge>
             )}
           </div>
 
@@ -182,10 +181,10 @@ export function CsvUploadStep({
                   key={`${result.type}-${result.rowNumber ?? ''}-${result.message}`}
                   className={`px-3 py-1.5 text-xs border-b last:border-0 ${
                     result.type === 'error'
-                      ? 'bg-red-50 text-red-800'
+                      ? 'bg-error text-error-foreground'
                       : result.type === 'warning'
-                        ? 'bg-yellow-50 text-yellow-800'
-                        : 'bg-green-50 text-green-800'
+                        ? 'bg-warning text-warning-foreground'
+                        : 'bg-success text-success-foreground'
                   }`}
                 >
                   {result.rowNumber ? `Row ${result.rowNumber}: ` : ''}

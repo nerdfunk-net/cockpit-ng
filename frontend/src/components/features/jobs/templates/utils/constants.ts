@@ -42,23 +42,25 @@ export const JOB_TYPE_LABELS: Record<string, string> = {
   port_scan: 'Port Scan',
 } as const
 
+// Decorative, non-semantic per-job-type accent dots — folded into the
+// nearest status bucket by hue family (see doc/STYLE_GUIDE_DESIGN.md §4.4).
 export const JOB_TYPE_COLORS: Record<string, string> = {
-  backup: 'bg-blue-500',
-  compare_devices: 'bg-purple-500',
-  run_commands: 'bg-green-500',
-  cache_devices: 'bg-cyan-500',
-  sync_devices: 'bg-orange-500',
-  scan_prefixes: 'bg-purple-500',
-  deploy_agent: 'bg-teal-500',
-  ip_addresses: 'bg-emerald-500',
-  csv_import: 'bg-yellow-500',
-  csv_export: 'bg-emerald-600',
-  ping_agent: 'bg-sky-500',
-  set_primary_ip: 'bg-cyan-600',
-  get_client_data: 'bg-emerald-500',
-  get_server_facts: 'bg-indigo-500',
-  get_open_ports: 'bg-rose-500',
-  port_scan: 'bg-blue-500',
+  backup: 'bg-info-foreground',
+  compare_devices: 'bg-info-foreground',
+  run_commands: 'bg-success-foreground',
+  cache_devices: 'bg-info-foreground',
+  sync_devices: 'bg-warning-foreground',
+  scan_prefixes: 'bg-info-foreground',
+  deploy_agent: 'bg-info-foreground',
+  ip_addresses: 'bg-success-foreground',
+  csv_import: 'bg-warning-foreground',
+  csv_export: 'bg-success-foreground',
+  ping_agent: 'bg-info-foreground',
+  set_primary_ip: 'bg-info-foreground',
+  get_client_data: 'bg-success-foreground',
+  get_server_facts: 'bg-info-foreground',
+  get_open_ports: 'bg-error-foreground',
+  port_scan: 'bg-info-foreground',
 } as const
 
 export const CSV_EXPORT_PROPERTIES: {

@@ -48,7 +48,7 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Server className="h-5 w-5 text-blue-500" />
+            <Server className="h-5 w-5 text-primary" />
             Scheduler Debug Info
           </DialogTitle>
           <DialogDescription>
@@ -58,67 +58,67 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
-            <span className="ml-2 text-gray-600">Loading scheduler info...</span>
+            <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Loading scheduler info...</span>
           </div>
         ) : debugInfo ? (
           <div className="space-y-4">
             {/* Server Time Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+            <div className="status-info border rounded-lg p-4">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 Server Time
               </h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-blue-600">UTC:</span>
+                  <span>UTC:</span>
                   <span className="ml-2 font-mono">
                     {new Date(debugInfo.server_time.utc).toLocaleString()}
                   </span>
                 </div>
                 <div>
-                  <span className="text-blue-600">Offset:</span>
+                  <span>Offset:</span>
                   <span className="ml-2 font-mono">
                     UTC{debugInfo.server_time.timezone_offset_hours >= 0 ? '+' : ''}
                     {debugInfo.server_time.timezone_offset_hours}h
                   </span>
                 </div>
               </div>
-              <p className="mt-2 text-xs text-blue-600">⚠️ Note: {debugInfo.note}</p>
+              <p className="mt-2 text-xs">⚠️ Note: {debugInfo.note}</p>
             </div>
 
             {/* Summary Stats */}
             <div className="grid grid-cols-4 gap-3">
-              <div className="bg-gray-50 rounded-lg p-3 text-center">
-                <p className="text-xs text-gray-500 uppercase">Total</p>
-                <p className="text-2xl font-bold text-gray-700">
+              <div className="bg-muted rounded-lg p-3 text-center">
+                <p className="text-xs text-muted-foreground uppercase">Total</p>
+                <p className="text-2xl font-bold text-foreground">
                   {debugInfo.schedule_summary.total_schedules}
                 </p>
               </div>
-              <div className="bg-green-50 rounded-lg p-3 text-center">
-                <p className="text-xs text-green-600 uppercase">Active</p>
-                <p className="text-2xl font-bold text-green-700">
+              <div className="bg-success rounded-lg p-3 text-center">
+                <p className="text-xs text-success-foreground uppercase">Active</p>
+                <p className="text-2xl font-bold text-success-foreground">
                   {debugInfo.schedule_summary.active_schedules}
                 </p>
               </div>
               <div
-                className={`${debugInfo.schedule_summary.due_now > 0 ? 'bg-amber-50' : 'bg-gray-50'} rounded-lg p-3 text-center`}
+                className={`${debugInfo.schedule_summary.due_now > 0 ? 'bg-warning' : 'bg-muted'} rounded-lg p-3 text-center`}
               >
                 <p
-                  className={`text-xs uppercase ${debugInfo.schedule_summary.due_now > 0 ? 'text-amber-600' : 'text-gray-500'}`}
+                  className={`text-xs uppercase ${debugInfo.schedule_summary.due_now > 0 ? 'text-warning-foreground' : 'text-muted-foreground'}`}
                 >
                   Due Now
                 </p>
                 <p
-                  className={`text-2xl font-bold ${debugInfo.schedule_summary.due_now > 0 ? 'text-amber-700' : 'text-gray-400'}`}
+                  className={`text-2xl font-bold ${debugInfo.schedule_summary.due_now > 0 ? 'text-warning-foreground' : 'text-muted-foreground'}`}
                 >
                   {debugInfo.schedule_summary.due_now}
                 </p>
               </div>
-              <div className="bg-purple-50 rounded-lg p-3 text-center">
-                <p className="text-xs text-purple-600 uppercase">Celery</p>
+              <div className="bg-muted rounded-lg p-3 text-center">
+                <p className="text-xs text-muted-foreground uppercase">Celery</p>
                 <p
-                  className={`text-sm font-medium ${debugInfo.celery_status.includes('active') ? 'text-green-600' : 'text-red-600'}`}
+                  className={`text-sm font-medium ${debugInfo.celery_status.includes('active') ? 'text-success-foreground' : 'text-destructive'}`}
                 >
                   {debugInfo.celery_status.includes('active')
                     ? '✓ Active'
@@ -129,16 +129,16 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
 
             {/* Due Schedules */}
             {debugInfo.due_schedules.length > 0 && (
-              <div className="border border-amber-200 rounded-lg overflow-hidden">
-                <div className="bg-amber-100 px-4 py-2 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <h4 className="font-semibold text-amber-800">
+              <div className="border-warning-border border rounded-lg overflow-hidden">
+                <div className="bg-warning px-4 py-2 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-warning-foreground" />
+                  <h4 className="font-semibold text-warning-foreground">
                     Due Schedules (Should Be Running)
                   </h4>
                 </div>
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-amber-50">
+                    <TableRow className="bg-warning/50">
                       <TableHead className="text-xs">ID</TableHead>
                       <TableHead className="text-xs">Name</TableHead>
                       <TableHead className="text-xs">Type</TableHead>
@@ -148,7 +148,7 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
                   </TableHeader>
                   <TableBody>
                     {debugInfo.due_schedules.map(schedule => (
-                      <TableRow key={schedule.id} className="bg-amber-50/50">
+                      <TableRow key={schedule.id} className="bg-warning/30">
                         <TableCell className="font-mono text-xs">
                           {schedule.id}
                         </TableCell>
@@ -165,7 +165,7 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
                             ? new Date(schedule.next_run).toLocaleString()
                             : '-'}
                         </TableCell>
-                        <TableCell className="text-amber-700 font-medium">
+                        <TableCell className="text-warning-foreground font-medium">
                           {Math.abs(Math.round(schedule.seconds_until_next_run / 60))}{' '}
                           min
                         </TableCell>
@@ -179,9 +179,9 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
             {/* Upcoming Schedules */}
             {debugInfo.upcoming_schedules.length > 0 && (
               <div className="border rounded-lg overflow-hidden">
-                <div className="bg-gray-50 px-4 py-2 flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-600" />
-                  <h4 className="font-semibold text-gray-700">Upcoming Schedules</h4>
+                <div className="bg-muted px-4 py-2 flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <h4 className="font-semibold text-foreground">Upcoming Schedules</h4>
                 </div>
                 <Table>
                   <TableHeader>
@@ -198,7 +198,7 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
                         <TableCell className="font-medium">
                           {schedule.job_identifier}
                         </TableCell>
-                        <TableCell className="text-xs text-gray-600">
+                        <TableCell className="text-xs text-muted-foreground">
                           {schedule.template_name || '-'}
                         </TableCell>
                         <TableCell className="font-mono text-xs">
@@ -218,7 +218,7 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
                             </Tooltip>
                           </TooltipProvider>
                         </TableCell>
-                        <TableCell className="text-green-600 font-medium">
+                        <TableCell className="text-success-foreground font-medium">
                           {schedule.seconds_until_next_run < 60
                             ? `${schedule.seconds_until_next_run}s`
                             : schedule.seconds_until_next_run < 3600
@@ -250,7 +250,7 @@ export function ScheduleDebugDialog({ open, onOpenChange }: ScheduleDebugDialogP
             </div>
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             No debug information available
           </div>
         )}

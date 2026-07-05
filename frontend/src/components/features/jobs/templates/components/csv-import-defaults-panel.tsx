@@ -149,7 +149,7 @@ function LocationField({ items, value, disabled, onChange }: LocationFieldProps)
       placeholder="Search location..."
       required
       disabled={disabled}
-      inputClassName="h-8 text-sm bg-white border-gray-300 shadow-sm"
+      inputClassName="h-8 text-sm bg-card border-border shadow-sm"
       dropdownState={locationDropdown}
       renderItem={item => <span>{item.hierarchicalPath ?? item.name}</span>}
       getItemKey={item => item.id}
@@ -192,15 +192,15 @@ export function CsvImportDefaultsPanel({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
         <CollapsibleTrigger asChild>
-          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg cursor-pointer select-none">
+          <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg cursor-pointer select-none">
             <div className="flex items-center space-x-2">
               <Settings2 className="h-4 w-4" />
               <span className="text-sm font-medium">Default Values</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-blue-100">
+              <span className="text-xs text-panel-header-muted">
                 Used when CSV rows are missing these fields — CSV data always takes
                 priority
               </span>
@@ -213,7 +213,7 @@ export function CsvImportDefaultsPanel({
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+          <div className="p-6 panel-content space-y-4">
             <div className="grid grid-cols-2 gap-4">
               {fieldConfigs.map(field => {
                 const currentValue = defaults[field.key] ?? ''
@@ -234,14 +234,14 @@ export function CsvImportDefaultsPanel({
                 if (field.type === 'text') {
                   return (
                     <div key={field.key} className="space-y-1">
-                      <Label className="text-xs font-medium text-gray-600">
+                      <Label className="text-xs font-medium text-muted-foreground">
                         {field.label}
                         {field.required && (
-                          <span className="text-blue-500 ml-1">*</span>
+                          <span className="text-destructive ml-1">*</span>
                         )}
                       </Label>
                       <Input
-                        className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                        className="h-8 text-sm bg-card border-border shadow-sm"
                         value={currentValue}
                         placeholder={
                           field.placeholder ?? `Default ${field.label.toLowerCase()}...`
@@ -268,9 +268,9 @@ export function CsvImportDefaultsPanel({
 
                 return (
                   <div key={field.key} className="space-y-1">
-                    <Label className="text-xs font-medium text-gray-600">
+                    <Label className="text-xs font-medium text-muted-foreground">
                       {field.label}
-                      {field.required && <span className="text-blue-500 ml-1">*</span>}
+                      {field.required && <span className="text-destructive ml-1">*</span>}
                     </Label>
                     <Select
                       value={currentValue || '__none__'}
@@ -279,7 +279,7 @@ export function CsvImportDefaultsPanel({
                       }
                       disabled={isLoading}
                     >
-                      <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                      <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
                         <SelectValue
                           placeholder={
                             isLoading
@@ -290,7 +290,7 @@ export function CsvImportDefaultsPanel({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__none__">
-                          <span className="text-gray-400">
+                          <span className="text-muted-foreground">
                             {field.required
                               ? '— No default (required in CSV) —'
                               : '— No default —'}

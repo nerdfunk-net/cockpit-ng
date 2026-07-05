@@ -89,7 +89,7 @@ export function JobsFilter({
               <DropdownMenuCheckboxItem
                 checked={false}
                 onCheckedChange={() => onStatusChange([])}
-                className="text-red-600"
+                className="text-destructive"
               >
                 Clear all
               </DropdownMenuCheckboxItem>
@@ -128,7 +128,7 @@ export function JobsFilter({
               <DropdownMenuCheckboxItem
                 checked={false}
                 onCheckedChange={() => onJobTypeChange([])}
-                className="text-red-600"
+                className="text-destructive"
               >
                 Clear all
               </DropdownMenuCheckboxItem>
@@ -167,7 +167,7 @@ export function JobsFilter({
               <DropdownMenuCheckboxItem
                 checked={false}
                 onCheckedChange={() => onTriggerChange([])}
-                className="text-red-600"
+                className="text-destructive"
               >
                 Clear all
               </DropdownMenuCheckboxItem>
@@ -206,7 +206,7 @@ export function JobsFilter({
               <DropdownMenuCheckboxItem
                 checked={false}
                 onCheckedChange={() => onTemplateChange([])}
-                className="text-red-600"
+                className="text-destructive"
               >
                 Clear all
               </DropdownMenuCheckboxItem>
@@ -229,7 +229,7 @@ export function JobsFilter({
             variant="outline"
             size="sm"
             disabled={isClearing || !hasJobs}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
           >
             <Trash2 className={`mr-2 h-4 w-4 ${isClearing ? 'animate-spin' : ''}`} />
             {hasActiveFilters ? 'Clear Filtered' : 'Clear All'}

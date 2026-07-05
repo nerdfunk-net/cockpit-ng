@@ -25,8 +25,8 @@ export function SchedulesGrid({
     return (
       <Card>
         <CardContent className="flex items-center justify-center h-96">
-          <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-          <span className="ml-2 text-gray-500">Loading schedules...</span>
+          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Loading schedules...</span>
         </CardContent>
       </Card>
     )
@@ -42,7 +42,7 @@ export function SchedulesGrid({
             Create your first schedule using a job template
           </p>
           {!hasTemplates ? (
-            <p className="text-sm text-amber-600">
+            <p className="text-sm text-warning-foreground">
               Create a job template first in Jobs → Job Templates
             </p>
           ) : (

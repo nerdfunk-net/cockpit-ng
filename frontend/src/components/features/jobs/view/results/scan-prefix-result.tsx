@@ -62,7 +62,7 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
           <CardDescription>
             Network prefix scanning results
             {result.resolve_dns && (
-              <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+              <span className="ml-2 text-xs bg-info text-info-foreground px-2 py-0.5 rounded">
                 <Globe className="h-3 w-3 inline mr-1" />
                 DNS Resolved
               </span>
@@ -83,7 +83,7 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Reachable</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-success-foreground">
                 {result.total_reachable.toLocaleString()}
                 <span className="text-sm text-muted-foreground ml-1">
                   (
@@ -99,7 +99,7 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Unreachable</p>
-              <p className="text-2xl font-bold text-slate-600">
+              <p className="text-2xl font-bold text-muted-foreground">
                 {result.total_unreachable.toLocaleString()}
                 <span className="text-sm text-muted-foreground ml-1">
                   (
@@ -116,11 +116,11 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
           </div>
 
           {/* Scan Configuration */}
-          <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-md">
-            <p className="text-sm text-slate-700">
+          <div className="mt-4 p-3 bg-muted border border-border rounded-md">
+            <p className="text-sm text-foreground">
               <Network className="h-4 w-4 inline mr-1" />
               Filtered by:{' '}
-              <code className="bg-white px-2 py-0.5 rounded text-xs">
+              <code className="bg-card px-2 py-0.5 rounded text-xs">
                 {result.custom_field_name} = {result.custom_field_value}
               </code>
             </p>
@@ -150,7 +150,7 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
           <div className="space-y-3">
             {prefixes.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <Network className="h-12 w-12 mx-auto mb-2 text-slate-400" />
+                <Network className="h-12 w-12 mx-auto mb-2 opacity-40" />
                 <p>No prefixes scanned</p>
               </div>
             ) : (
@@ -169,12 +169,12 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                     {/* Prefix Header */}
                     <button
                       onClick={() => togglePrefix(prefix.prefix)}
-                      className="w-full p-4 bg-slate-50 hover:bg-slate-100 transition-colors flex items-center justify-between"
+                      className="w-full p-4 bg-muted hover:bg-muted/70 transition-colors flex items-center justify-between"
                     >
                       <div className="flex items-center gap-3">
-                        <Network className="h-5 w-5 text-slate-600" />
+                        <Network className="h-5 w-5 text-muted-foreground" />
                         <div className="text-left">
-                          <p className="font-semibold text-slate-900">
+                          <p className="font-semibold text-foreground">
                             {prefix.prefix}
                           </p>
                           <p className="text-sm text-muted-foreground">
@@ -190,16 +190,16 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                           </Badge>
                           <Badge
                             variant="outline"
-                            className="bg-slate-50 text-slate-700 border-slate-300"
+                            className="bg-muted text-muted-foreground border-border"
                           >
                             <XCircle className="h-3 w-3 mr-1" />
                             {prefix.unreachable_count}
                           </Badge>
                         </div>
                         {isExpanded ? (
-                          <ChevronUp className="h-5 w-5 text-slate-600" />
+                          <ChevronUp className="h-5 w-5 text-muted-foreground" />
                         ) : (
-                          <ChevronDown className="h-5 w-5 text-slate-600" />
+                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
                         )}
                       </div>
                     </button>
@@ -210,7 +210,7 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                         {/* Reachable IPs */}
                         {prefix.reachable.length > 0 && (
                           <div>
-                            <h4 className="text-sm font-semibold text-green-700 mb-2 flex items-center gap-2">
+                            <h4 className="text-sm font-semibold text-success-foreground mb-2 flex items-center gap-2">
                               <CheckCircle2 className="h-4 w-4" />
                               Reachable IPs ({prefix.reachable_count})
                             </h4>
@@ -218,13 +218,13 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                               {prefix.reachable.map(ip => (
                                 <div
                                   key={`${prefix.prefix}-${ip.ip}`}
-                                  className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded text-sm"
+                                  className="flex items-center justify-between p-2 bg-success border border-success-border rounded text-sm"
                                 >
-                                  <span className="font-mono text-green-900">
+                                  <span className="font-mono text-success-foreground">
                                     {ip.ip}
                                   </span>
                                   {ip.hostname && (
-                                    <span className="text-green-700 flex items-center gap-1">
+                                    <span className="text-success-foreground flex items-center gap-1">
                                       <Globe className="h-3 w-3" />
                                       {ip.hostname}
                                     </span>
@@ -238,7 +238,7 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                         {/* Unreachable IPs */}
                         {prefix.unreachable.length > 0 && (
                           <div>
-                            <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                            <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
                               <XCircle className="h-4 w-4" />
                               Unreachable IP Ranges ({prefix.unreachable_count})
                             </h4>
@@ -246,7 +246,7 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
                               {prefix.unreachable.slice(0, 5).map(range => (
                                 <div
                                   key={`${prefix.prefix}-${range}`}
-                                  className="p-2 bg-slate-50 border border-slate-200 rounded text-sm font-mono text-slate-700"
+                                  className="p-2 bg-muted border border-border rounded text-sm font-mono text-foreground"
                                 >
                                   {range}
                                 </div>
@@ -279,9 +279,9 @@ export function ScanPrefixResultView({ result }: ScanPrefixResultViewProps) {
 
       {/* Error Message */}
       {result.error && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-error-border bg-error">
           <CardContent className="pt-6">
-            <div className="flex items-start gap-2 text-red-800">
+            <div className="flex items-start gap-2 text-error-foreground">
               <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-semibold">Error</p>

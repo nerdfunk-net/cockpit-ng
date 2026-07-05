@@ -28,16 +28,16 @@ export function JobTemplateConfigRepoSection({
   configRepos,
 }: JobTemplateConfigRepoSectionProps) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+    <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <FolderGit2 className="h-4 w-4 text-slate-600" />
-        <Label className="text-sm font-semibold text-slate-700">
+        <FolderGit2 className="h-4 w-4 text-muted-foreground" />
+        <Label className="text-sm font-semibold text-foreground">
           Configuration Repository
         </Label>
-        <span className="text-xs text-slate-500">(Optional)</span>
+        <span className="text-xs text-muted-foreground">(Optional)</span>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="config-repo" className="text-xs text-slate-600">
+        <Label htmlFor="config-repo" className="text-xs text-muted-foreground">
           Git Repository (category=Device Configs)
         </Label>
         <Select
@@ -46,7 +46,7 @@ export function JobTemplateConfigRepoSection({
         >
           <SelectTrigger
             id="config-repo"
-            className="h-9 bg-white border-2 border-gray-400 shadow-sm"
+            className="h-9 bg-card border-2 border-input shadow-sm"
           >
             <SelectValue placeholder="Select config repository (optional)" />
           </SelectTrigger>
@@ -59,7 +59,7 @@ export function JobTemplateConfigRepoSection({
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           Select a Git repository with configuration files
         </p>
       </div>

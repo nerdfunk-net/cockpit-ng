@@ -114,15 +114,15 @@ export function PortScanJobTemplate({
       />
 
       {formPortScanTargetSource === 'cidr' && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50/30 p-4 space-y-3">
+        <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <Label className="text-sm font-semibold text-blue-900">IP Prefixes</Label>
+            <Label className="text-sm font-semibold text-info-foreground">IP Prefixes</Label>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={handleCidrAdd}
-              className="h-7 text-xs border-blue-200 text-blue-700 hover:bg-blue-50"
+              className="h-7 text-xs border-info-border text-info-foreground hover:bg-info"
             >
               <Plus className="h-3 w-3 mr-1" />
               Add Prefix
@@ -135,7 +135,7 @@ export function PortScanJobTemplate({
                   value={entry.value}
                   onChange={e => handleCidrChange(idx, e.target.value)}
                   placeholder="192.168.1.0/24"
-                  className="bg-white border-blue-200 focus:border-blue-400 focus:ring-blue-400 font-mono"
+                  className="bg-card border-info-border focus:border-primary focus:ring-ring/30 font-mono"
                 />
                 <Button
                   type="button"
@@ -143,37 +143,37 @@ export function PortScanJobTemplate({
                   size="icon"
                   onClick={() => handleCidrRemove(idx)}
                   disabled={formPortScanCidrEntries.length <= 1}
-                  className="h-9 w-9 shrink-0 text-blue-500 hover:text-red-600 hover:bg-red-50"
+                  className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive hover:bg-error"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
             ))}
           </div>
-          <p className="text-xs text-blue-700">
+          <p className="text-xs text-info-foreground">
             CIDR prefixes (/19 to /32). Alive hosts are discovered via ping before
             nmap scanning.
           </p>
         </div>
       )}
 
-      <div className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-4 space-y-4">
+      <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-4">
         <div className="flex items-center gap-2">
-          <Radar className="h-4 w-4 text-indigo-600" />
-          <Label className="text-sm font-semibold text-indigo-900">Scan Options</Label>
+          <Radar className="h-4 w-4 text-info-foreground" />
+          <Label className="text-sm font-semibold text-info-foreground">Scan Options</Label>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-xs text-indigo-700">
-              Nmap Agent <span className="text-red-500">*</span>
+            <Label className="text-xs text-info-foreground">
+              Nmap Agent <span className="text-destructive">*</span>
             </Label>
             {loadingAgents ? (
-              <div className="flex items-center justify-center h-9 bg-white border border-indigo-200 rounded-md">
-                <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+              <div className="flex items-center justify-center h-9 bg-card border border-info-border rounded-md">
+                <Loader2 className="h-4 w-4 animate-spin text-info-foreground" />
               </div>
             ) : nmapAgents.length === 0 ? (
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
+              <p className="text-xs text-warning-foreground bg-warning border border-warning-border rounded-md p-2">
                 No Nmap agents configured. Add one in Settings → Connections → Agents.
               </p>
             ) : (
@@ -181,7 +181,7 @@ export function PortScanJobTemplate({
                 value={formPortScanAgentId}
                 onValueChange={setFormPortScanAgentId}
               >
-                <SelectTrigger className="h-9 bg-white border-indigo-200">
+                <SelectTrigger className="h-9 bg-card border-info-border">
                   <SelectValue placeholder="Select an Nmap agent" />
                 </SelectTrigger>
                 <SelectContent>
@@ -196,14 +196,14 @@ export function PortScanJobTemplate({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs text-indigo-700">Scan Type</Label>
+            <Label className="text-xs text-info-foreground">Scan Type</Label>
             <Select
               value={formPortScanType}
               onValueChange={v =>
                 setFormPortScanType(v as 'connect' | 'syn' | 'udp')
               }
             >
-              <SelectTrigger className="h-9 bg-white border-indigo-200">
+              <SelectTrigger className="h-9 bg-card border-info-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -217,24 +217,24 @@ export function PortScanJobTemplate({
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-xs text-indigo-700">Ports</Label>
+            <Label className="text-xs text-info-foreground">Ports</Label>
             <Input
               value={formPortScanPorts}
               onChange={e => setFormPortScanPorts(e.target.value)}
               placeholder="1-1024"
-              className="bg-white border-indigo-200 font-mono"
+              className="bg-card border-info-border font-mono"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs text-indigo-700">Scan Timeout (seconds)</Label>
+            <Label className="text-xs text-info-foreground">Scan Timeout (seconds)</Label>
             <Input
               type="number"
               min={30}
               max={3600}
               value={formPortScanTimeout}
               onChange={e => setFormPortScanTimeout(e.target.value)}
-              className="bg-white border-indigo-200 font-mono"
+              className="bg-card border-info-border font-mono"
             />
           </div>
         </div>
@@ -249,7 +249,7 @@ export function PortScanJobTemplate({
           />
           <Label
             htmlFor="port-scan-service-detection"
-            className="text-sm font-medium cursor-pointer text-indigo-900"
+            className="text-sm font-medium cursor-pointer text-info-foreground"
           >
             Service detection (-sV)
           </Label>

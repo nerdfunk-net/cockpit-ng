@@ -27,10 +27,10 @@ export function GetClientDataJobTemplate({
 }: GetClientDataJobTemplateProps) {
   return (
     <>
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50/30 p-4 space-y-3">
+      <div className="rounded-lg border border-success-border bg-success/30 p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Database className="h-4 w-4 text-emerald-600" />
-          <Label className="text-sm font-semibold text-emerald-900">
+          <Database className="h-4 w-4 text-success-foreground" />
+          <Label className="text-sm font-semibold text-success-foreground">
             Collect Properties
           </Label>
         </div>
@@ -74,16 +74,16 @@ export function GetClientDataJobTemplate({
             </Label>
           </div>
         </div>
-        <p className="text-xs text-emerald-600">
+        <p className="text-xs text-success-foreground">
           Requires SSH credentials. All collected rows share a session ID as the join
           key.
         </p>
       </div>
 
-      <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
+      <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-purple-600" />
-          <Label className="text-sm font-semibold text-purple-900">
+          <Zap className="h-4 w-4 text-info-foreground" />
+          <Label className="text-sm font-semibold text-info-foreground">
             Parallel Execution
           </Label>
         </div>
@@ -91,7 +91,7 @@ export function GetClientDataJobTemplate({
           <div className="flex items-center justify-between">
             <Label
               htmlFor="parallel-tasks-gcd"
-              className="text-sm text-purple-900 font-medium"
+              className="text-sm text-info-foreground font-medium"
             >
               Number of Parallel Tasks
             </Label>
@@ -109,9 +109,9 @@ export function GetClientDataJobTemplate({
               const value = parseInt(e.target.value) || 1
               setParallelTasks(Math.min(50, Math.max(1, value)))
             }}
-            className="h-9 bg-white border-purple-200 focus:ring-purple-500 focus:border-purple-500"
+            className="h-9 bg-card border-info-border focus:ring-ring/30 focus:border-primary"
           />
-          <p className="text-xs text-purple-600 leading-relaxed">
+          <p className="text-xs text-info-foreground leading-relaxed">
             <span className="font-semibold">Recommended:</span> 1 = sequential (safe,
             slow), 5–10 = moderate parallel execution, 20+ = high parallel execution
             (requires sufficient Celery workers)

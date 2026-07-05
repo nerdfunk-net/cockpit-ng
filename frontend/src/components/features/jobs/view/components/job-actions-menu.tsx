@@ -39,7 +39,7 @@ export function JobActionsMenu({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
               onClick={() => onViewResult(jobId)}
             >
               <Eye className="h-4 w-4" />
@@ -57,7 +57,7 @@ export function JobActionsMenu({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
               onClick={() => onCancel(jobId)}
               disabled={isCancelling}
             >
@@ -76,7 +76,7 @@ export function JobActionsMenu({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
               onClick={() => onDelete(jobId)}
               disabled={isDeleting}
             >

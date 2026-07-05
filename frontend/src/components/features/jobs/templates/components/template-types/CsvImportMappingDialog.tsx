@@ -66,13 +66,13 @@ export function CsvImportMappingDialog({
           <DialogTitle>Column Mapping</DialogTitle>
         </DialogHeader>
 
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Map each CSV column to a Nautobot field. Select &quot;Not Used&quot; to skip a
           column.
         </p>
 
         {csvHeaders.length === 0 ? (
-          <p className="text-sm text-gray-500 py-4 text-center">
+          <p className="text-sm text-muted-foreground py-4 text-center">
             No CSV headers available. Select a file first.
           </p>
         ) : (
@@ -80,10 +80,10 @@ export function CsvImportMappingDialog({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2 px-2 text-gray-600 font-medium w-1/2">
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium w-1/2">
                     CSV Column
                   </th>
-                  <th className="text-left py-2 px-2 text-gray-600 font-medium w-1/2">
+                  <th className="text-left py-2 px-2 text-muted-foreground font-medium w-1/2">
                     Nautobot Field
                   </th>
                 </tr>
@@ -118,7 +118,7 @@ export function CsvImportMappingDialog({
                             <SelectContent>
                               <SelectItem
                                 value={NOT_USED}
-                                className="text-gray-400 italic"
+                                className="text-muted-foreground italic"
                               >
                                 Not Used
                               </SelectItem>

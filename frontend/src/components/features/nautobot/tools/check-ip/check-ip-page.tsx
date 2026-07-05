@@ -3,7 +3,8 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Search, HelpCircle } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { StatusAlert } from './components/status-alert'
+import { StatusAlert } from '@/components/shared/status-alert'
+import { IconChip } from '@/components/shared/icon-chip'
 import { CheckIPUploadForm } from './components/check-ip-upload-form'
 import { CheckIPProgress } from './components/check-ip-progress'
 import { CheckIPSummary } from './components/check-ip-summary'
@@ -115,11 +116,11 @@ export function CheckIPPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Search className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip>
+            <Search className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Check IP & Names</h1>
+            <h1 className="text-3xl font-bold text-foreground">Check IP & Names</h1>
             <p className="text-muted-foreground mt-2">
               Compare CSV device list with Nautobot devices
             </p>
@@ -139,10 +140,10 @@ export function CheckIPPage() {
               devices from Nautobot and compares each row:
             </p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li><span className="text-green-600 font-medium">Match</span> — IP found and device name matches.</li>
-              <li><span className="text-yellow-600 font-medium">Name mismatch</span> — IP found but names are completely different.</li>
-              <li><span className="text-orange-500 font-medium">Partial mismatch</span> — IP found but one name is contained within the other (e.g. &ldquo;lab-003&rdquo; vs &ldquo;lab-003.tld.zz&rdquo;).</li>
-              <li><span className="text-red-600 font-medium">IP not found</span> — IP does not exist in Nautobot.</li>
+              <li><span className="text-success-foreground font-medium">Match</span> — IP found and device name matches.</li>
+              <li><span className="text-warning-foreground font-medium">Name mismatch</span> — IP found but names are completely different.</li>
+              <li><span className="text-warning-foreground font-medium">Partial mismatch</span> — IP found but one name is contained within the other (e.g. &ldquo;lab-003&rdquo; vs &ldquo;lab-003.tld.zz&rdquo;).</li>
+              <li><span className="text-error-foreground font-medium">IP not found</span> — IP does not exist in Nautobot.</li>
             </ul>
             <p className="text-muted-foreground">
               CIDR notation is stripped before comparison. Name matching is case-insensitive.
@@ -152,7 +153,11 @@ export function CheckIPPage() {
       </div>
 
       {/* Status Messages */}
-      {statusMessage && <StatusAlert message={statusMessage} />}
+      {statusMessage && (
+        <StatusAlert variant={statusMessage.type} className="font-mono text-xs">
+          {statusMessage.message}
+        </StatusAlert>
+      )}
 
       {/* Upload Section */}
       <CheckIPUploadForm

@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { StatusAlert } from '@/components/shared/status-alert'
 import { CheckIPJobResult } from '../types/job-results'
 import { CheckCircle2, XCircle, AlertTriangle, Info, Download } from 'lucide-react'
 
@@ -61,17 +62,17 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'match':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />
+        return <CheckCircle2 className="h-4 w-4 text-success-foreground" />
       case 'name_mismatch':
-        return <AlertTriangle className="h-4 w-4 text-yellow-600" />
+        return <AlertTriangle className="h-4 w-4 text-warning-foreground" />
       case 'name_partial_mismatch':
-        return <AlertTriangle className="h-4 w-4 text-orange-500" />
+        return <AlertTriangle className="h-4 w-4 text-warning-foreground" />
       case 'ip_not_found':
-        return <XCircle className="h-4 w-4 text-red-600" />
+        return <XCircle className="h-4 w-4 text-error-foreground" />
       case 'error':
-        return <XCircle className="h-4 w-4 text-red-600" />
+        return <XCircle className="h-4 w-4 text-error-foreground" />
       default:
-        return <Info className="h-4 w-4 text-gray-600" />
+        return <Info className="h-4 w-4 text-muted-foreground" />
     }
   }
 
@@ -79,17 +80,17 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'match':
-        return 'bg-green-100 text-green-700 border-green-300'
+        return 'bg-success text-success-foreground border-success-border'
       case 'name_mismatch':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300'
+        return 'bg-warning text-warning-foreground border-warning-border'
       case 'name_partial_mismatch':
-        return 'bg-orange-100 text-orange-700 border-orange-300'
+        return 'bg-warning text-warning-foreground border-warning-border'
       case 'ip_not_found':
-        return 'bg-red-100 text-red-700 border-red-300'
+        return 'bg-error text-error-foreground border-error-border'
       case 'error':
-        return 'bg-red-100 text-red-700 border-red-300'
+        return 'bg-error text-error-foreground border-error-border'
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300'
+        return 'bg-muted text-muted-foreground border-border'
     }
   }
 
@@ -116,37 +117,33 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Matches</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-success-foreground">
                 {result.statistics.matches}
               </p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Mismatches</p>
-              <p className="text-2xl font-bold text-yellow-600">
+              <p className="text-2xl font-bold text-warning-foreground">
                 {result.statistics.name_mismatches}
               </p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Partial Mismatches</p>
-              <p className="text-2xl font-bold text-orange-500">
+              <p className="text-2xl font-bold text-warning-foreground">
                 {result.statistics.name_partial_mismatches ?? 0}
               </p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Not Found</p>
-              <p className="text-2xl font-bold text-red-600">
+              <p className="text-2xl font-bold text-error-foreground">
                 {result.statistics.ip_not_found}
               </p>
             </div>
           </div>
           {result.statistics.errors > 0 && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-700">
-                <XCircle className="h-4 w-4 inline mr-1" />
-                {result.statistics.errors} device(s) encountered errors during
-                processing
-              </p>
-            </div>
+            <StatusAlert variant="error" className="mt-4">
+              {result.statistics.errors} device(s) encountered errors during processing
+            </StatusAlert>
           )}
         </CardContent>
       </Card>
@@ -187,7 +184,7 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
           <div className="space-y-2">
             {displayedResults.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-green-500" />
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-success-foreground" />
                 <p>All devices matched successfully!</p>
               </div>
             ) : (
@@ -217,7 +214,7 @@ export function CheckIPResultView({ result }: CheckIPResultViewProps) {
                       )}
                     {device.error && (
                       <span
-                        className="text-sm text-red-600 max-w-xs truncate"
+                        className="text-sm text-error-foreground max-w-xs truncate"
                         title={device.error}
                       >
                         {device.error}

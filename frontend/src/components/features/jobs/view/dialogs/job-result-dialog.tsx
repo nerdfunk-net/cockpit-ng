@@ -9,7 +9,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { Eye, AlertCircle } from 'lucide-react'
+import { Eye } from 'lucide-react'
+import { StatusAlert } from '@/components/shared/status-alert'
 import {
   JobRun,
   isBackupJobResult,
@@ -147,7 +148,7 @@ export function JobResultDialog({ jobRun, open, onOpenChange }: JobResultDialogP
       <DialogContent className="sm:max-w-6xl w-[90vw] max-h-[85vh] flex flex-col">
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5 text-blue-500" />
+            <Eye className="h-5 w-5 text-primary" />
             Job Result: {jobRun.job_name}
           </DialogTitle>
           <DialogDescription>
@@ -173,20 +174,18 @@ export function JobResultDialog({ jobRun, open, onOpenChange }: JobResultDialogP
 
                   {/* Error Message (for failed jobs) - common to all types */}
                   {result.error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                      <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-red-800">Error</p>
-                        <p className="text-sm text-red-700">{String(result.error)}</p>
-                      </div>
-                    </div>
+                    <StatusAlert variant="error">
+                      <p className="text-sm font-medium">Error</p>
+                      <p className="text-sm">{String(result.error)}</p>
+                    </StatusAlert>
                   )}
 
                   {/* Raw JSON (collapsible) - common to all types */}
                   <details className="border rounded-lg">
-                    <summary className="px-4 py-2 cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50">
+                    <summary className="px-4 py-2 cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted">
                       View Raw JSON
                     </summary>
+                    {/* Terminal-style output: intentionally hardcoded dark background, not theme-driven */}
                     <pre className="p-4 bg-gray-900 text-gray-100 text-xs overflow-x-auto rounded-b-lg">
                       {JSON.stringify(result, null, 2)}
                     </pre>

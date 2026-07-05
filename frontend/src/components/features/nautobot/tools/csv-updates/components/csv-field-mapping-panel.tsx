@@ -49,25 +49,25 @@ export function CsvFieldMappingPanel({
 
   if (headers.length === 0) {
     return (
-      <p className="text-sm text-gray-500 py-4 text-center">
+      <p className="text-sm text-muted-foreground py-4 text-center">
         No CSV headers available. Upload and parse a file first.
       </p>
     )
   }
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
       {/* Header bar */}
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <span className="text-sm font-medium">Column → Field Mapping</span>
-        <div className="flex items-center gap-2 text-xs text-white/80">
+        <div className="flex items-center gap-2 text-xs text-panel-header-muted">
           {mappedCount > 0 && (
-            <span className="bg-white/20 rounded px-1.5 py-0.5">
+            <span className="bg-panel-header-foreground/20 rounded px-1.5 py-0.5">
               {mappedCount} mapped
             </span>
           )}
           {unmappedCount > 0 && (
-            <span className="bg-white/10 rounded px-1.5 py-0.5">
+            <span className="bg-panel-header-foreground/10 rounded px-1.5 py-0.5">
               {unmappedCount} not used
             </span>
           )}
@@ -77,12 +77,12 @@ export function CsvFieldMappingPanel({
       {/* Table */}
       <div className="max-h-[45vh] overflow-y-auto">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-white z-10 border-b">
+          <thead className="sticky top-0 bg-card z-10 border-b">
             <tr>
-              <th className="text-left py-2 px-3 text-gray-600 font-medium w-[45%]">
+              <th className="text-left py-2 px-3 text-muted-foreground font-medium w-[45%]">
                 CSV Column
               </th>
-              <th className="text-left py-2 px-3 text-gray-600 font-medium w-[55%]">
+              <th className="text-left py-2 px-3 text-muted-foreground font-medium w-[55%]">
                 Nautobot Field
               </th>
             </tr>
@@ -95,16 +95,16 @@ export function CsvFieldMappingPanel({
               const isMapped = selectValue !== NOT_USED
 
               return (
-                <tr key={header} className="border-b last:border-0 hover:bg-gray-50">
+                <tr key={header} className="border-b last:border-0 hover:bg-muted">
                   {/* CSV column */}
                   <td className="py-2 px-3">
                     <div className="flex items-center gap-1.5">
                       {isMapped ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                        <CheckCircle2 className="h-3.5 w-3.5 text-success-foreground flex-shrink-0" />
                       ) : (
-                        <Circle className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
+                        <Circle className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                       )}
-                      <span className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">
+                      <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
                         {header}
                       </span>
                     </div>
@@ -122,14 +122,14 @@ export function CsvFieldMappingPanel({
                             {isMapped ? (
                               getFieldLabel(selectValue)
                             ) : (
-                              <span className="text-gray-400 italic">Not Used</span>
+                              <span className="text-muted-foreground italic">Not Used</span>
                             )}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem
                             value={NOT_USED}
-                            className="text-gray-400 italic text-xs"
+                            className="text-muted-foreground italic text-xs"
                           >
                             Not Used
                           </SelectItem>
@@ -140,7 +140,7 @@ export function CsvFieldMappingPanel({
                               className="text-xs"
                             >
                               {field.label}
-                              <span className="ml-1.5 text-gray-400 font-mono text-[10px]">
+                              <span className="ml-1.5 text-muted-foreground font-mono text-[10px]">
                                 ({field.key})
                               </span>
                             </SelectItem>
@@ -151,7 +151,7 @@ export function CsvFieldMappingPanel({
                       {isMapped && (
                         <Badge
                           variant="outline"
-                          className="text-[10px] px-1 py-0 h-4 text-blue-600 border-blue-200 flex-shrink-0 font-mono"
+                          className="text-[10px] px-1 py-0 h-4 text-info-foreground border-info-border flex-shrink-0 font-mono"
                         >
                           {selectValue}
                         </Badge>

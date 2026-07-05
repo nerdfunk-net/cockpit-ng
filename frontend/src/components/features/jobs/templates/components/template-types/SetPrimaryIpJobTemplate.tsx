@@ -10,7 +10,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Network, Bot, Info } from 'lucide-react'
+import { Loader2, Network, Bot } from 'lucide-react'
+import { StatusAlert } from '@/components/shared/status-alert'
+import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/lib/auth-store'
 
 interface CockpitAgent {
@@ -72,21 +74,21 @@ export function SetPrimaryIpJobTemplate({
   }, [fetchAgents])
 
   return (
-    <div className="rounded-lg border border-cyan-200 bg-cyan-50/30 p-4 space-y-4">
+    <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-4">
       <div className="flex items-center gap-2">
-        <Network className="h-4 w-4 text-cyan-600" />
-        <Label className="text-sm font-semibold text-cyan-900">
+        <Network className="h-4 w-4 text-info-foreground" />
+        <Label className="text-sm font-semibold text-info-foreground">
           Set Primary IP Settings
         </Label>
       </div>
 
       {/* Strategy selector */}
       <div className="space-y-1.5">
-        <Label className="text-xs text-cyan-700">
-          Strategy <span className="text-red-500">*</span>
+        <Label className="text-xs text-info-foreground">
+          Strategy <span className="text-destructive">*</span>
         </Label>
         <Select value={formStrategy} onValueChange={setFormStrategy}>
-          <SelectTrigger className="h-9 bg-white border-cyan-200">
+          <SelectTrigger className="h-9 bg-card border-info-border">
             <SelectValue placeholder="Select strategy…" />
           </SelectTrigger>
           <SelectContent>
@@ -97,7 +99,7 @@ export function SetPrimaryIpJobTemplate({
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-cyan-600">
+        <p className="text-xs text-info-foreground">
           The criterion used to determine which IP address becomes the primary IP.
         </p>
       </div>
@@ -105,27 +107,32 @@ export function SetPrimaryIpJobTemplate({
       {/* IP is reachable: agent selector */}
       {formStrategy === 'ip_reachable' && (
         <div className="space-y-1.5">
-          <Label className="text-xs text-cyan-700">
-            Cockpit Agent <span className="text-red-500">*</span>
+          <Label className="text-xs text-info-foreground">
+            Cockpit Agent <span className="text-destructive">*</span>
           </Label>
           {loadingAgents ? (
-            <div className="flex items-center justify-center h-9 bg-white border border-cyan-200 rounded-md">
-              <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />
+            <div className="flex items-center justify-center h-9 bg-card border border-info-border rounded-md">
+              <Loader2 className="h-4 w-4 animate-spin text-info-foreground" />
             </div>
           ) : (
             <Select value={formAgentId} onValueChange={setFormAgentId}>
-              <SelectTrigger className="h-9 bg-white border-cyan-200">
+              <SelectTrigger className="h-9 bg-card border-info-border">
                 <SelectValue placeholder="Select agent…" />
               </SelectTrigger>
               <SelectContent>
                 {agents.map(agent => (
                   <SelectItem key={agent.agent_id} value={agent.agent_id}>
                     <div className="flex items-center gap-2">
-                      <Bot className="h-4 w-4 text-gray-500" />
+                      <Bot className="h-4 w-4 text-muted-foreground" />
                       <span>{agent.hostname}</span>
                       <Badge
                         variant="secondary"
-                        className={`text-xs ${agent.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                        className={cn(
+                          'text-xs',
+                          agent.status === 'online'
+                            ? 'bg-success text-success-foreground'
+                            : 'bg-error text-error-foreground'
+                        )}
                       >
                         {agent.status}
                       </Badge>
@@ -135,7 +142,7 @@ export function SetPrimaryIpJobTemplate({
               </SelectContent>
             </Select>
           )}
-          <p className="text-xs text-cyan-600">
+          <p className="text-xs text-info-foreground">
             This agent will ping all IPs of each device. The single reachable IP will be
             set as primary. Devices with multiple reachable IPs are skipped (ambiguous).
           </p>
@@ -144,14 +151,11 @@ export function SetPrimaryIpJobTemplate({
 
       {/* Interface Name: future feature note */}
       {formStrategy === 'interface_name' && (
-        <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-3">
-          <Info className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-          <p className="text-xs text-amber-700">
-            The <strong>Interface Name</strong> strategy will be implemented in a future
-            release. You can save this template now and it will return a scaffold
-            response when executed.
-          </p>
-        </div>
+        <StatusAlert variant="warning">
+          The <strong>Interface Name</strong> strategy will be implemented in a future
+          release. You can save this template now and it will return a scaffold
+          response when executed.
+        </StatusAlert>
       )}
     </div>
   )

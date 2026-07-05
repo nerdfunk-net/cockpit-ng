@@ -14,6 +14,7 @@ import {
 } from '../hooks/use-template-queries'
 import { TemplateFormDialog } from './template-form-dialog'
 import { TemplatesTable } from './templates-table'
+import { IconChip } from '@/components/shared/icon-chip'
 import type {
   JobTemplate,
   JobType,
@@ -61,7 +62,7 @@ export function JobTemplatesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -71,11 +72,11 @@ export function JobTemplatesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <FileText className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <FileText className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Job Templates</h1>
+            <h1 className="text-3xl font-bold text-foreground">Job Templates</h1>
             <p className="text-muted-foreground mt-2">
               Create and manage reusable job templates for the scheduler
             </p>
@@ -86,7 +87,6 @@ export function JobTemplatesPage() {
             setEditingTemplate(null)
             setIsDialogOpen(true)
           }}
-          className="bg-blue-600 hover:bg-blue-700"
         >
           <Plus className="mr-2 h-4 w-4" />
           New Template
@@ -97,17 +97,14 @@ export function JobTemplatesPage() {
       {templates.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center h-64">
-            <FileText className="h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-xl font-semibold text-gray-700 mb-2">
+            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-xl font-semibold text-foreground mb-2">
               No job templates yet
             </p>
-            <p className="text-gray-500 mb-4">
+            <p className="text-muted-foreground mb-4">
               Create your first job template to use in the scheduler
             </p>
-            <Button
-              onClick={() => setIsDialogOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button onClick={() => setIsDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Create Job Template
             </Button>

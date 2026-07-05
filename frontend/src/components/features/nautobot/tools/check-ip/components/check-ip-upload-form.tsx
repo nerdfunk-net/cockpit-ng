@@ -118,17 +118,17 @@ export function CheckIPUploadForm({
 
   return (
     <Card className="shadow-lg border-0 overflow-hidden p-0">
-      <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+      <CardHeader className="panel-header border-b-0 rounded-none m-0 py-2 px-4">
         <CardTitle className="flex items-center space-x-2 text-sm font-medium">
           <Upload className="h-4 w-4" />
           <span>Upload CSV File</span>
         </CardTitle>
-        <CardDescription className="text-white/90 text-xs mt-1">
+        <CardDescription className="text-panel-header-muted text-xs mt-1">
           Select a CSV file with device information to compare with Nautobot. Required
           columns: ip_address, name
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+      <CardContent className="p-6 panel-content space-y-4">
         <Form {...form}>
           <form onSubmit={handleFormSubmit} className="space-y-4">
             {/* CSV Configuration */}
@@ -268,18 +268,18 @@ function CSVPreview({ preview }: { preview: CSVPreviewResult }) {
     <div className="rounded-md border bg-muted/30 p-4 space-y-3">
       {/* Column validation status */}
       {preview.error ? (
-        <div className="flex items-center gap-2 text-sm text-red-700">
+        <div className="flex items-center gap-2 text-sm text-error-foreground">
           <XCircle className="h-4 w-4 flex-shrink-0" />
           {preview.error}
         </div>
       ) : preview.isValid ? (
-        <div className="flex items-center gap-2 text-sm text-green-700">
+        <div className="flex items-center gap-2 text-sm text-success-foreground">
           <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
           Required columns <code className="font-mono">ip_address</code> and{' '}
           <code className="font-mono">name</code> found
         </div>
       ) : (
-        <div className="flex items-center gap-2 text-sm text-red-700">
+        <div className="flex items-center gap-2 text-sm text-error-foreground">
           <XCircle className="h-4 w-4 flex-shrink-0" />
           Missing columns:{' '}
           <code className="font-mono">{preview.missingColumns.join(', ')}</code>
@@ -293,7 +293,7 @@ function CSVPreview({ preview }: { preview: CSVPreviewResult }) {
 
       {/* Preview table */}
       {preview.rows.length > 0 && (
-        <div className="overflow-auto max-h-48 rounded border bg-white">
+        <div className="overflow-auto max-h-48 rounded border bg-card">
           <table className="text-xs w-full border-collapse">
             <thead>
               <tr className="bg-muted border-b">

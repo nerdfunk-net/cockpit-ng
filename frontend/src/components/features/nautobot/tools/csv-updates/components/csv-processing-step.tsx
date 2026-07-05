@@ -82,19 +82,19 @@ export function CsvProcessingStep({ taskId, onComplete }: CsvProcessingStepProps
       {/* Icon */}
       <div>
         {!isTerminal ? (
-          <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
+          <Loader2 className="h-12 w-12 text-primary animate-spin" />
         ) : taskStatus?.status === 'SUCCESS' ? (
-          <CheckCircle className="h-12 w-12 text-green-500" />
+          <CheckCircle className="h-12 w-12 text-success-foreground" />
         ) : (
-          <AlertTriangle className="h-12 w-12 text-red-500" />
+          <AlertTriangle className="h-12 w-12 text-error-foreground" />
         )}
       </div>
 
       {/* Status text */}
       <div className="text-center space-y-1">
-        <p className="text-base font-medium text-gray-800">{statusText}</p>
+        <p className="text-base font-medium text-foreground">{statusText}</p>
         {!isTerminal && (
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Task ID: <span className="font-mono">{taskId}</span>
           </p>
         )}
@@ -104,7 +104,7 @@ export function CsvProcessingStep({ taskId, onComplete }: CsvProcessingStepProps
       {progressPercent !== null && (
         <div className="w-full max-w-sm space-y-1">
           <Progress value={progressPercent} className="h-2" />
-          <p className="text-xs text-center text-gray-500">
+          <p className="text-xs text-center text-muted-foreground">
             {progress?.current} / {progress?.total} records
           </p>
         </div>

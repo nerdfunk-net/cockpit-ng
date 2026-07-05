@@ -66,6 +66,9 @@ interface ScanPrefixesJobTemplateProps {
 const EMPTY_CUSTOM_FIELDS: CustomField[] = []
 const EMPTY_LOCATIONS: NautobotLocation[] = []
 
+const SELECT_TRIGGER_CLASSES = 'bg-card border-info-border focus:border-primary focus:ring-ring/30'
+const INPUT_CLASSES = 'bg-card border-info-border focus:border-primary focus:ring-ring/30'
+
 export function ScanPrefixesJobTemplate({
   formScanResolveDns,
   setFormScanResolveDns,
@@ -174,47 +177,35 @@ export function ScanPrefixesJobTemplate({
   return (
     <>
       {/* Scan Conditions Section */}
-      <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
+      <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Network className="h-4 w-4 text-purple-600" />
-          <Label className="text-sm font-semibold text-purple-900">Scan Conditions</Label>
+          <Network className="h-4 w-4 text-info-foreground" />
+          <Label className="text-sm font-semibold text-info-foreground">Scan Conditions</Label>
         </div>
 
         {/* Condition type selector */}
         <div className="space-y-2">
-          <Label className="text-sm text-purple-900">Condition Type</Label>
+          <Label className="text-sm text-info-foreground">Condition Type</Label>
           <RadioGroup
             value={formScanConditionType || 'custom_field'}
             onValueChange={setFormScanConditionType}
             className="flex gap-6"
           >
             <div className="flex items-center gap-2">
-              <RadioGroupItem
-                value="custom_field"
-                id="condition-custom-field"
-                className="border-purple-400 text-purple-600"
-              />
-              <Label htmlFor="condition-custom-field" className="text-sm text-purple-900 cursor-pointer font-normal">
+              <RadioGroupItem value="custom_field" id="condition-custom-field" />
+              <Label htmlFor="condition-custom-field" className="text-sm text-info-foreground cursor-pointer font-normal">
                 Custom Field
               </Label>
             </div>
             <div className="flex items-center gap-2">
-              <RadioGroupItem
-                value="location"
-                id="condition-location"
-                className="border-purple-400 text-purple-600"
-              />
-              <Label htmlFor="condition-location" className="text-sm text-purple-900 cursor-pointer font-normal">
+              <RadioGroupItem value="location" id="condition-location" />
+              <Label htmlFor="condition-location" className="text-sm text-info-foreground cursor-pointer font-normal">
                 Location
               </Label>
             </div>
             <div className="flex items-center gap-2">
-              <RadioGroupItem
-                value="cidr"
-                id="condition-cidr"
-                className="border-purple-400 text-purple-600"
-              />
-              <Label htmlFor="condition-cidr" className="text-sm text-purple-900 cursor-pointer font-normal">
+              <RadioGroupItem value="cidr" id="condition-cidr" />
+              <Label htmlFor="condition-cidr" className="text-sm text-info-foreground cursor-pointer font-normal">
                 CIDR
               </Label>
             </div>
@@ -225,7 +216,7 @@ export function ScanPrefixesJobTemplate({
         {(!formScanConditionType || formScanConditionType === 'custom_field') && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="custom-field-name" className="text-sm text-purple-900">
+              <Label htmlFor="custom-field-name" className="text-sm text-info-foreground">
                 Scan Condition
               </Label>
               <Select
@@ -233,7 +224,7 @@ export function ScanPrefixesJobTemplate({
                 onValueChange={setFormScanCustomFieldName}
                 disabled={loadingCustomFields}
               >
-                <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
+                <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                   <SelectValue
                     placeholder={
                       loadingCustomFields ? 'Loading...' : 'Select custom field...'
@@ -248,14 +239,14 @@ export function ScanPrefixesJobTemplate({
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-purple-700">
+              <p className="text-xs text-info-foreground">
                 Select the custom field on prefixes to filter by (content_type: ipam.prefix)
               </p>
             </div>
 
             {formScanCustomFieldName && (
               <div className="space-y-2">
-                <Label htmlFor="custom-field-value" className="text-sm text-purple-900">
+                <Label htmlFor="custom-field-value" className="text-sm text-info-foreground">
                   Custom Field Value
                 </Label>
                 {getSelectedFieldType() === 'boolean' ? (
@@ -263,7 +254,7 @@ export function ScanPrefixesJobTemplate({
                     value={formScanCustomFieldValue}
                     onValueChange={setFormScanCustomFieldValue}
                   >
-                    <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
+                    <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                       <SelectValue placeholder="Select value..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -276,7 +267,7 @@ export function ScanPrefixesJobTemplate({
                     value={formScanCustomFieldValue}
                     onValueChange={setFormScanCustomFieldValue}
                   >
-                    <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
+                    <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                       <SelectValue placeholder="Select value..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -294,10 +285,10 @@ export function ScanPrefixesJobTemplate({
                     value={formScanCustomFieldValue}
                     onChange={e => setFormScanCustomFieldValue(e.target.value)}
                     placeholder="Enter value..."
-                    className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+                    className={INPUT_CLASSES}
                   />
                 )}
-                <p className="text-xs text-purple-700">
+                <p className="text-xs text-info-foreground">
                   Prefixes with this custom field value will be scanned
                 </p>
               </div>
@@ -308,7 +299,7 @@ export function ScanPrefixesJobTemplate({
         {/* Location mode */}
         {formScanConditionType === 'location' && (
           <div className="space-y-2">
-            <Label htmlFor="scan-location" className="text-sm text-purple-900">
+            <Label htmlFor="scan-location" className="text-sm text-info-foreground">
               Location
             </Label>
             <Select
@@ -316,7 +307,7 @@ export function ScanPrefixesJobTemplate({
               onValueChange={setFormScanLocationName}
               disabled={loadingLocations}
             >
-              <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
+              <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                 <SelectValue
                   placeholder={loadingLocations ? 'Loading...' : 'Select location...'}
                 />
@@ -329,7 +320,7 @@ export function ScanPrefixesJobTemplate({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-purple-700">
+            <p className="text-xs text-info-foreground">
               Prefixes assigned to this location will be scanned
             </p>
           </div>
@@ -338,7 +329,7 @@ export function ScanPrefixesJobTemplate({
         {/* CIDR mode */}
         {formScanConditionType === 'cidr' && (
           <div className="space-y-2">
-            <Label htmlFor="scan-cidr" className="text-sm text-purple-900">
+            <Label htmlFor="scan-cidr" className="text-sm text-info-foreground">
               CIDR
             </Label>
             <Input
@@ -347,20 +338,20 @@ export function ScanPrefixesJobTemplate({
               value={formScanCidr}
               onChange={e => setFormScanCidr(e.target.value)}
               placeholder="e.g. 10.0.0.0/8"
-              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+              className={INPUT_CLASSES}
             />
-            <p className="text-xs text-purple-700">
+            <p className="text-xs text-info-foreground">
               Prefixes matching this CIDR notation will be scanned
             </p>
           </div>
         )}
 
         {/* Response Custom Field */}
-        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-purple-200">
+        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-info-border">
           <div className="space-y-2">
             <Label
               htmlFor="response-custom-field-name"
-              className="text-sm text-purple-900"
+              className="text-sm text-info-foreground"
             >
               Write Response to
             </Label>
@@ -369,7 +360,7 @@ export function ScanPrefixesJobTemplate({
               onValueChange={setFormScanResponseCustomFieldName}
               disabled={loadingCustomFields}
             >
-              <SelectTrigger className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400">
+              <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                 <SelectValue
                   placeholder={
                     loadingCustomFields ? 'Loading...' : 'Select custom field...'
@@ -384,14 +375,14 @@ export function ScanPrefixesJobTemplate({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-purple-700">
+            <p className="text-xs text-info-foreground">
               Optional: Write scan results to this custom field (content_type: ipam.prefix)
             </p>
           </div>
         </div>
 
         {/* Set Reachable IP to Active */}
-        <div className="pt-2 border-t border-purple-200">
+        <div className="pt-2 border-t border-info-border">
           <div className="flex items-center space-x-3">
             <Switch
               id="scan-set-reachable-ip-active"
@@ -400,22 +391,22 @@ export function ScanPrefixesJobTemplate({
             />
             <Label
               htmlFor="scan-set-reachable-ip-active"
-              className="text-sm text-purple-900 cursor-pointer"
+              className="text-sm text-info-foreground cursor-pointer"
             >
               Set reachable IP to Active
             </Label>
           </div>
-          <p className="text-xs text-purple-700 mt-1">
+          <p className="text-xs text-info-foreground mt-1">
             When enabled, all reachable IP addresses will be updated with status=Active
           </p>
         </div>
       </div>
 
       {/* Scan Options Section */}
-      <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
+      <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Radar className="h-4 w-4 text-purple-600" />
-          <Label className="text-sm font-semibold text-purple-900">Scan Options</Label>
+          <Radar className="h-4 w-4 text-info-foreground" />
+          <Label className="text-sm font-semibold text-info-foreground">Scan Options</Label>
         </div>
 
         <div className="flex items-center space-x-3">
@@ -426,18 +417,18 @@ export function ScanPrefixesJobTemplate({
           />
           <Label
             htmlFor="scan-resolve-dns"
-            className="text-sm text-purple-900 cursor-pointer"
+            className="text-sm text-info-foreground cursor-pointer"
           >
             Resolve DNS
           </Label>
         </div>
-        <p className="text-xs text-purple-700">
+        <p className="text-xs text-info-foreground">
           When enabled, DNS names will be resolved during network scanning.
         </p>
 
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="scan-ping-count" className="text-sm text-purple-900">
+            <Label htmlFor="scan-ping-count" className="text-sm text-info-foreground">
               Ping Count
             </Label>
             <Input
@@ -448,15 +439,15 @@ export function ScanPrefixesJobTemplate({
               value={formScanPingCount}
               onChange={e => setFormScanPingCount(e.target.value)}
               placeholder="3"
-              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+              className={INPUT_CLASSES}
             />
-            <p className="text-xs text-purple-700">
+            <p className="text-xs text-info-foreground">
               Number of ping attempts per host (1-10)
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="scan-timeout-ms" className="text-sm text-purple-900">
+            <Label htmlFor="scan-timeout-ms" className="text-sm text-info-foreground">
               Timeout (ms)
             </Label>
             <Input
@@ -467,15 +458,15 @@ export function ScanPrefixesJobTemplate({
               value={formScanTimeoutMs}
               onChange={e => setFormScanTimeoutMs(e.target.value)}
               placeholder="1000"
-              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+              className={INPUT_CLASSES}
             />
-            <p className="text-xs text-purple-700">
+            <p className="text-xs text-info-foreground">
               Timeout in milliseconds (100-30000)
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="scan-retries" className="text-sm text-purple-900">
+            <Label htmlFor="scan-retries" className="text-sm text-info-foreground">
               Retries
             </Label>
             <Input
@@ -486,13 +477,13 @@ export function ScanPrefixesJobTemplate({
               value={formScanRetries}
               onChange={e => setFormScanRetries(e.target.value)}
               placeholder="2"
-              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+              className={INPUT_CLASSES}
             />
-            <p className="text-xs text-purple-700">Number of retry attempts (0-5)</p>
+            <p className="text-xs text-info-foreground">Number of retry attempts (0-5)</p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="scan-max-ips" className="text-sm text-purple-900">
+            <Label htmlFor="scan-max-ips" className="text-sm text-info-foreground">
               Max IPs per Scan
             </Label>
             <Input
@@ -502,15 +493,15 @@ export function ScanPrefixesJobTemplate({
               value={formScanMaxIps}
               onChange={e => setFormScanMaxIps(e.target.value)}
               placeholder="No limit"
-              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+              className={INPUT_CLASSES}
             />
-            <p className="text-xs text-purple-700">
+            <p className="text-xs text-info-foreground">
               Maximum number of IPs to scan. Larger jobs will be split.
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="scan-interval-ms" className="text-sm text-purple-900">
+            <Label htmlFor="scan-interval-ms" className="text-sm text-info-foreground">
               Interval (ms)
             </Label>
             <Input
@@ -521,9 +512,9 @@ export function ScanPrefixesJobTemplate({
               value={formScanIntervalMs}
               onChange={e => setFormScanIntervalMs(e.target.value)}
               placeholder="100"
-              className="bg-white border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+              className={INPUT_CLASSES}
             />
-            <p className="text-xs text-purple-700">
+            <p className="text-xs text-info-foreground">
               Interval between scans in milliseconds (0-10000)
             </p>
           </div>

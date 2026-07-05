@@ -28,18 +28,23 @@ interface RackElevationProps {
   onSetActiveSlot: (slot: ActiveSlot | null) => void
 }
 
+// Local, non-API-driven status→color coding for the elevation's status
+// indicator stripe (no device/status data is wired in yet — see RackDevice
+// in ../types). Mapped onto the semantic status tokens by hue family so the
+// stripe stays theme-aware (green→success, blue/purple→info, red→error,
+// orange→warning, neutral→muted).
 const STATUS_COLORS: Record<string, string> = {
-  active: '#4caf50',
-  planned: '#2196f3',
-  staged: '#9c27b0',
-  failed: '#f44336',
-  decommissioning: '#ff9800',
-  inventory: '#9e9e9e',
+  active: 'var(--success-foreground)',
+  planned: 'var(--info-foreground)',
+  staged: 'var(--info-foreground)',
+  failed: 'var(--error-foreground)',
+  decommissioning: 'var(--warning-foreground)',
+  inventory: 'var(--muted-foreground)',
 }
 
 function getStatusColor(statusName?: string) {
   if (!statusName) return STATUS_COLORS['active']
-  return STATUS_COLORS[statusName.toLowerCase()] ?? '#4caf50'
+  return STATUS_COLORS[statusName.toLowerCase()] ?? STATUS_COLORS['active']
 }
 
 export function RackElevation({
@@ -145,7 +150,7 @@ export function RackElevation({
         {rows.map(u => (
           <div
             key={u}
-            className="flex items-center justify-end pr-1 text-gray-400"
+            className="flex items-center justify-end pr-1 text-muted-foreground"
             style={{ height: RACK_UNIT_HEIGHT_PX, fontSize: 10 }}
           >
             {u}
@@ -158,7 +163,11 @@ export function RackElevation({
         className="relative"
         style={{ width: RACK_BODY_WIDTH_PX, height: bodyHeight }}
       >
-        {/* Background grid: one row per unit, provides borders and empty-slot color */}
+        {/* Background grid: one row per unit, provides borders and empty-slot color.
+            Fixed neutral fills (not semantic status tokens) are a deliberate exception:
+            this is a blueprint-style rack elevation diagram, rendered with consistent
+            occupied/empty/reservation shading regardless of app theme — the same
+            precedent as the hardcoded terminal/console <pre> blocks elsewhere. */}
         {rows.map(u => {
           const isOccupied = occupiedUnits.has(u)
           const isReservationUnit = occupiedUnits.get(u) === true
@@ -170,7 +179,7 @@ export function RackElevation({
           return (
             <div
               key={u}
-              className="absolute border-b border-gray-200"
+              className="absolute border-b border-border"
               style={{
                 top: unitTop(u),
                 left: 0,
@@ -205,12 +214,12 @@ export function RackElevation({
               }}
             >
               {isReservation ? (
-                /* Reservation: amber left stripe instead of status color */
+                /* Reservation: warning-toned left stripe instead of status color */
                 <div
                   className="shrink-0 h-full"
                   style={{
                     width: RACK_STATUS_INDICATOR_PX,
-                    backgroundColor: '#f59e0b',
+                    backgroundColor: 'var(--warning-foreground)',
                   }}
                 />
               ) : (

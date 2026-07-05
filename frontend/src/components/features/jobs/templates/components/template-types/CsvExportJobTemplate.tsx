@@ -65,9 +65,9 @@ export function CsvExportJobTemplate({
   return (
     <div className="space-y-4">
       <Collapsible open={configOpen} onOpenChange={setConfigOpen}>
-        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
           <CollapsibleTrigger asChild>
-            <div className="bg-gradient-to-r from-emerald-500/80 to-emerald-600/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg cursor-pointer select-none">
+            <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg cursor-pointer select-none">
               <div className="flex items-center space-x-2">
                 <Download className="h-4 w-4" />
                 <span className="text-sm font-medium">CSV Export Configuration</span>
@@ -80,10 +80,10 @@ export function CsvExportJobTemplate({
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+            <div className="panel-content p-6 space-y-4">
               {/* Git Repository */}
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">
+                <Label className="text-xs font-medium text-muted-foreground">
                   Git Repository
                 </Label>
                 <Select
@@ -92,7 +92,7 @@ export function CsvExportJobTemplate({
                     setFormCsvExportRepoId(val ? parseInt(val) : null)
                   }
                 >
-                  <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                  <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
                     <SelectValue placeholder="Select a CSV exports repository..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -104,7 +104,7 @@ export function CsvExportJobTemplate({
                   </SelectContent>
                 </Select>
                 {csvExportRepos.length === 0 && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     No repositories with category &quot;csv_exports&quot; found. Add one
                     in Settings → Git.
                   </p>
@@ -113,17 +113,17 @@ export function CsvExportJobTemplate({
 
               {/* File Path */}
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">
+                <Label className="text-xs font-medium text-muted-foreground">
                   Output File Path
                 </Label>
                 <Input
-                  className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                  className="h-8 text-sm bg-card border-border shadow-sm"
                   value={formCsvExportFilePath}
                   onChange={e => setFormCsvExportFilePath(e.target.value)}
                   placeholder="e.g. exports/devices.csv"
                   maxLength={500}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Path within the repository where the CSV will be written and
                   committed.
                 </p>
@@ -131,15 +131,15 @@ export function CsvExportJobTemplate({
 
               {/* Properties */}
               <div className="space-y-2">
-                <Label className="text-xs font-medium text-gray-600">
+                <Label className="text-xs font-medium text-muted-foreground">
                   Properties to Export
                   {formCsvExportProperties.length > 0 && (
-                    <span className="ml-2 text-emerald-600 font-normal">
+                    <span className="ml-2 text-success-foreground font-normal">
                       ({formCsvExportProperties.length} selected)
                     </span>
                   )}
                 </Label>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3 bg-white">
+                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-border rounded-md p-3 bg-card">
                   {CSV_EXPORT_PROPERTIES.map(prop => (
                     <div key={prop.id} className="flex items-start space-x-2">
                       <Checkbox
@@ -151,11 +151,11 @@ export function CsvExportJobTemplate({
                       <div className="space-y-0.5">
                         <label
                           htmlFor={`prop-${prop.id}`}
-                          className="text-xs font-medium text-gray-700 cursor-pointer leading-tight"
+                          className="text-xs font-medium text-muted-foreground cursor-pointer leading-tight"
                         >
                           {prop.label}
                         </label>
-                        <p className="text-xs text-gray-400 leading-tight">
+                        <p className="text-xs text-muted-foreground leading-tight">
                           {prop.description}
                         </p>
                       </div>
@@ -163,7 +163,7 @@ export function CsvExportJobTemplate({
                   ))}
                 </div>
                 {formCsvExportProperties.length === 0 && (
-                  <p className="text-xs text-red-500">
+                  <p className="text-xs text-destructive">
                     At least one property must be selected.
                   </p>
                 )}
@@ -172,9 +172,9 @@ export function CsvExportJobTemplate({
               {/* Delimiter & Quote Char */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">Delimiter</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Delimiter</Label>
                   <Input
-                    className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                    className="h-8 text-sm bg-card border-border shadow-sm"
                     value={formCsvExportDelimiter}
                     onChange={e => setFormCsvExportDelimiter(e.target.value)}
                     placeholder=","
@@ -182,11 +182,11 @@ export function CsvExportJobTemplate({
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     Quote Character
                   </Label>
                   <Input
-                    className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                    className="h-8 text-sm bg-card border-border shadow-sm"
                     value={formCsvExportQuoteChar}
                     onChange={e => setFormCsvExportQuoteChar(e.target.value)}
                     placeholder={'"'}
@@ -198,10 +198,10 @@ export function CsvExportJobTemplate({
               {/* Include Headers */}
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-xs font-medium text-gray-600">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     Include Headers
                   </Label>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     Write column names as the first row of the CSV
                   </p>
                 </div>

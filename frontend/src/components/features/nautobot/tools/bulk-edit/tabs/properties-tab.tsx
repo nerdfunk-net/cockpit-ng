@@ -166,23 +166,23 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
 
   return (
     <div className="space-y-6">
-      <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 rounded-t-lg">
+      <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+        <div className="panel-header py-2 px-4 rounded-t-lg">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Default Properties</span>
-            <div className="text-xs text-blue-100">
+            <div className="text-xs text-panel-header-muted">
               Configure default settings used in bulk edit operations
             </div>
           </div>
         </div>
-        <div className="p-6 space-y-6 bg-gray-50">
+        <div className="p-6 space-y-6 panel-content">
           {/* Interface Configuration Section */}
-          <div className="space-y-4 p-6 bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div className="border-b border-gray-200 pb-3">
-              <h3 className="text-lg font-semibold text-gray-900">
+          <div className="space-y-4 p-6 bg-card rounded-lg border border-border shadow-sm">
+            <div className="border-b border-border pb-3">
+              <h3 className="text-lg font-semibold text-foreground">
                 Interface Configuration
               </h3>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Default settings for new interfaces
               </p>
             </div>
@@ -192,7 +192,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
               <div className="space-y-2">
                 <Label
                   htmlFor="interface-name"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-muted-foreground"
                 >
                   Interface Name
                 </Label>
@@ -201,7 +201,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
                   placeholder="e.g., GigabitEthernet0/0"
                   value={properties.interfaceConfig.name}
                   onChange={e => handleInterfaceNameChange(e.target.value)}
-                  className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="bg-card border-border focus:border-primary focus:ring-ring"
                 />
               </div>
 
@@ -209,7 +209,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
               <div className="space-y-2">
                 <Label
                   htmlFor="interface-type"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-muted-foreground"
                 >
                   Interface Type
                 </Label>
@@ -219,7 +219,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
                 >
                   <SelectTrigger
                     id="interface-type"
-                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="bg-card border-border focus:border-primary focus:ring-ring"
                   >
                     <SelectValue placeholder="Select type..." />
                   </SelectTrigger>
@@ -237,7 +237,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
               <div className="space-y-2">
                 <Label
                   htmlFor="interface-status"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-muted-foreground"
                 >
                   Status
                 </Label>
@@ -247,7 +247,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
                 >
                   <SelectTrigger
                     id="interface-status"
-                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="bg-card border-border focus:border-primary focus:ring-ring"
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -263,16 +263,16 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
             </div>
 
             {/* Add new Interface when IP changes */}
-            <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="space-y-3 p-4 bg-info rounded-lg border border-info-border">
               <div className="flex items-center justify-between">
                 <div className="space-y-1 flex-1">
                   <Label
                     htmlFor="create-on-ip-change"
-                    className="text-sm font-medium text-gray-900"
+                    className="text-sm font-medium text-foreground"
                   >
                     Add new Interface when IP changes
                   </Label>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-muted-foreground">
                     Automatically create a new interface when the primary IP address is
                     updated
                   </p>
@@ -281,33 +281,33 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
                   id="create-on-ip-change"
                   checked={properties.interfaceConfig.createOnIpChange}
                   onCheckedChange={handleCreateOnIpChangeChange}
-                  className="ml-4 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
+                  className="ml-4"
                 />
               </div>
             </div>
           </div>
 
           {/* IP Configuration Section */}
-          <div className="space-y-4 p-6 bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div className="border-b border-gray-200 pb-3">
-              <h3 className="text-lg font-semibold text-gray-900">IP Configuration</h3>
-              <p className="text-sm text-gray-600 mt-1">
+          <div className="space-y-4 p-6 bg-card rounded-lg border border-border shadow-sm">
+            <div className="border-b border-border pb-3">
+              <h3 className="text-lg font-semibold text-foreground">IP Configuration</h3>
+              <p className="text-sm text-muted-foreground mt-1">
                 Default settings for IP address management
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Add IP Prefixes Automatically */}
-              <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="space-y-3 p-4 bg-info rounded-lg border border-info-border">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1 flex-1">
                     <Label
                       htmlFor="add-prefixes"
-                      className="text-sm font-medium text-gray-900"
+                      className="text-sm font-medium text-foreground"
                     >
                       Add IP Prefixes Automatically
                     </Label>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-muted-foreground">
                       Automatically add IP prefixes when creating interfaces
                     </p>
                   </div>
@@ -315,22 +315,22 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
                     id="add-prefixes"
                     checked={properties.ipConfig.addPrefixesAutomatically}
                     onCheckedChange={handleAddPrefixesChange}
-                    className="ml-4 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
+                    className="ml-4"
                   />
                 </div>
               </div>
 
               {/* Use Assigned IP if Exists */}
-              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50">
+              <div className="rounded-lg border border-border p-4 bg-muted">
                 <div className="flex items-center justify-between">
                   <div>
                     <Label
                       htmlFor="use-assigned-ip"
-                      className="text-sm font-medium text-gray-900"
+                      className="text-sm font-medium text-foreground"
                     >
                       Use Assigned IP Address if IP exists and it not assigned
                     </Label>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-muted-foreground">
                       Use existing IP address if it exists with different netmask
                     </p>
                   </div>
@@ -338,7 +338,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
                     id="use-assigned-ip"
                     checked={properties.ipConfig.useAssignedIpIfExists}
                     onCheckedChange={handleUseAssignedIpChange}
-                    className="ml-4 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
+                    className="ml-4"
                   />
                 </div>
               </div>
@@ -347,7 +347,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
               <div className="space-y-2">
                 <Label
                   htmlFor="network-mask"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-muted-foreground"
                 >
                   Default Network Mask
                 </Label>
@@ -357,7 +357,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
                 >
                   <SelectTrigger
                     id="network-mask"
-                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="bg-card border-border focus:border-primary focus:ring-ring"
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -375,7 +375,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
               <div className="space-y-2">
                 <Label
                   htmlFor="namespace"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-muted-foreground"
                 >
                   Namespace
                 </Label>
@@ -386,7 +386,7 @@ export function PropertiesTab({ properties, onPropertiesChange }: PropertiesTabP
                 >
                   <SelectTrigger
                     id="namespace"
-                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="bg-card border-border focus:border-primary focus:ring-ring"
                   >
                     <SelectValue
                       placeholder={

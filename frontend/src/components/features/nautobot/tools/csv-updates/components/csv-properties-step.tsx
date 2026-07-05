@@ -212,14 +212,14 @@ export function CsvPropertiesStep({
     <div className="space-y-6">
       {/* Matching Strategy */}
       {showMatchingStrategy && (
-        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
-            <Search className="h-4 w-4 text-blue-500" />
-            <h3 className="text-sm font-semibold text-gray-800">Matching Strategy</h3>
+            <Search className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Matching Strategy</h3>
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             How to find the device in Nautobot when the primary key is{' '}
-            <span className="font-medium text-gray-700">name</span>.
+            <span className="font-medium text-foreground">name</span>.
           </p>
 
           <div className="space-y-2">
@@ -228,8 +228,8 @@ export function CsvPropertiesStep({
                 key={option.value}
                 className={`flex items-start gap-3 cursor-pointer rounded-md border p-3 transition-colors ${
                   matchingStrategy === option.value
-                    ? 'border-blue-400 bg-blue-50'
-                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                    ? 'border-info-border bg-info'
+                    : 'border-border bg-muted hover:border-muted-foreground/40'
                 }`}
               >
                 <input
@@ -238,13 +238,13 @@ export function CsvPropertiesStep({
                   value={option.value}
                   checked={matchingStrategy === option.value}
                   onChange={() => onMatchingStrategyChange(option.value)}
-                  className="mt-0.5 accent-blue-600"
+                  className="mt-0.5 accent-primary"
                 />
                 <div>
-                  <span className="text-sm font-medium text-gray-800">
+                  <span className="text-sm font-medium text-foreground">
                     {option.label}
                   </span>
-                  <p className="text-xs text-gray-500 mt-0.5">{option.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{option.description}</p>
                 </div>
               </label>
             ))}
@@ -254,19 +254,19 @@ export function CsvPropertiesStep({
 
       {/* Customize Name */}
       {showMatchingStrategy && (
-        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
-            <Pencil className="h-4 w-4 text-blue-500" />
-            <h3 className="text-sm font-semibold text-gray-800">Customize Name</h3>
+            <Pencil className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Customize Name</h3>
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             Transform the CSV name value before it is used to look up the device in
-            Nautobot. Leave <span className="font-medium text-gray-700">Pattern</span>{' '}
+            Nautobot. Leave <span className="font-medium text-foreground">Pattern</span>{' '}
             empty to skip transformation.
           </p>
 
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
-            <Label className="text-xs text-gray-600 whitespace-nowrap">Mode</Label>
+            <Label className="text-xs text-muted-foreground whitespace-nowrap">Mode</Label>
             <Select
               value={nameTransform?.mode ?? 'regex'}
               onValueChange={v => handleNameTransformModeChange(v as NameTransformMode)}
@@ -284,7 +284,7 @@ export function CsvPropertiesStep({
               </SelectContent>
             </Select>
 
-            <Label className="text-xs text-gray-600 whitespace-nowrap">Pattern</Label>
+            <Label className="text-xs text-muted-foreground whitespace-nowrap">Pattern</Label>
             <Input
               value={nameTransform?.pattern ?? ''}
               onChange={e => handleNameTransformPatternChange(e.target.value)}
@@ -298,7 +298,7 @@ export function CsvPropertiesStep({
 
             {nameTransform?.mode === 'replace' && (
               <>
-                <Label className="text-xs text-gray-600 whitespace-nowrap">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">
                   Replacement
                 </Label>
                 <Input
@@ -313,7 +313,7 @@ export function CsvPropertiesStep({
 
           {nameTransform?.pattern && (
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs text-blue-600">
+              <p className="text-xs text-info-foreground">
                 {nameTransform.mode === 'regex'
                   ? 'The first match (or captured group) will replace the original name.'
                   : `Matches of the pattern will be replaced with "${
@@ -345,24 +345,24 @@ export function CsvPropertiesStep({
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-sm">
-              <FlaskConical className="h-4 w-4 text-blue-500" />
+              <FlaskConical className="h-4 w-4 text-primary" />
               Name Transform Preview
             </DialogTitle>
           </DialogHeader>
 
-          <div className="text-xs text-gray-500 mb-3">
+          <div className="text-xs text-muted-foreground mb-3">
             Mode:{' '}
-            <span className="font-medium text-gray-700">
+            <span className="font-medium text-foreground">
               {nameTransform?.mode === 'regex' ? 'Regular Expression' : 'Replace'}
             </span>
             {' · '}Pattern:{' '}
-            <code className="font-mono bg-gray-100 px-1 rounded">
+            <code className="font-mono bg-muted px-1 rounded">
               {nameTransform?.pattern}
             </code>
             {nameTransform?.mode === 'replace' && (
               <>
                 {' · '}Replacement:{' '}
-                <code className="font-mono bg-gray-100 px-1 rounded">
+                <code className="font-mono bg-muted px-1 rounded">
                   {nameTransform.replacement || '(empty)'}
                 </code>
               </>
@@ -370,7 +370,7 @@ export function CsvPropertiesStep({
           </div>
 
           {tryResults.some(r => r.error) && (
-            <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 mb-3">
+            <div className="flex items-center gap-2 rounded-md border border-error-border bg-error px-3 py-2 text-xs text-error-foreground mb-3">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               <span>
                 <span className="font-medium">Invalid pattern:</span>{' '}
@@ -379,37 +379,37 @@ export function CsvPropertiesStep({
             </div>
           )}
 
-          <div className="max-h-96 overflow-y-auto rounded-md border border-gray-200">
+          <div className="max-h-96 overflow-y-auto rounded-md border border-border">
             <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+              <thead className="sticky top-0 bg-muted border-b border-border">
                 <tr>
-                  <th className="text-left px-3 py-2 font-medium text-gray-600 w-1/2">
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground w-1/2">
                     Original (CSV)
                   </th>
                   <th className="w-5" />
-                  <th className="text-left px-3 py-2 font-medium text-gray-600 w-1/2">
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground w-1/2">
                     Result (used for lookup)
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {tryResults.map(row => {
                   const changed = row.result !== row.original && !row.error
                   return (
-                    <tr key={row.original} className={changed ? 'bg-blue-50/40' : ''}>
-                      <td className="px-3 py-1.5 font-mono text-gray-700">
+                    <tr key={row.original} className={changed ? 'bg-info/40' : ''}>
+                      <td className="px-3 py-1.5 font-mono text-foreground">
                         {row.original}
                       </td>
-                      <td className="text-center text-gray-400">
+                      <td className="text-center text-muted-foreground">
                         <ArrowRight className="h-3 w-3 inline" />
                       </td>
                       <td
                         className={`px-3 py-1.5 font-mono ${
                           row.error
-                            ? 'text-red-500 italic'
+                            ? 'text-error-foreground italic'
                             : changed
-                              ? 'text-blue-700 font-medium'
-                              : 'text-gray-400'
+                              ? 'text-info-foreground font-medium'
+                              : 'text-muted-foreground'
                         }`}
                       >
                         {row.error ? 'error' : row.result}
@@ -421,7 +421,7 @@ export function CsvPropertiesStep({
             </table>
           </div>
 
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {tryResults.filter(r => r.result !== r.original && !r.error).length} of{' '}
             {tryResults.length} names will be transformed.
           </p>
@@ -430,26 +430,26 @@ export function CsvPropertiesStep({
 
       {/* Rack Location Disambiguation */}
       {isRackMapped && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+        <div className="rounded-lg border border-warning-border bg-warning p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
-            <MapPin className="h-4 w-4 text-amber-600" />
-            <h3 className="text-sm font-semibold text-gray-800">
+            <MapPin className="h-4 w-4 text-warning-foreground" />
+            <h3 className="text-sm font-semibold text-warning-foreground">
               Rack Location Disambiguation
             </h3>
           </div>
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-warning-foreground">
             Rack names must be unique within a location, but the same rack name can
             exist in multiple locations (e.g., both{' '}
             <span className="font-medium">Building A</span> and{' '}
             <span className="font-medium">Building B</span> may each have a rack named{' '}
-            <span className="font-medium text-gray-800">A_1</span>). If your CSV covers
+            <span className="font-medium">A_1</span>). If your CSV covers
             devices from several locations, select the CSV column that identifies the
             location so the correct rack UUID can be resolved. If more than one rack
             with that name exists in the given location, the device will not be updated
             and an error will be reported.
           </p>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
-            <span className="text-xs text-gray-600 whitespace-nowrap">
+            <span className="text-xs text-warning-foreground whitespace-nowrap">
               Location column
             </span>
             <Select
@@ -462,7 +462,7 @@ export function CsvPropertiesStep({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NOT_USED_SENTINEL} className="text-xs text-gray-400">
+                <SelectItem value={NOT_USED_SENTINEL} className="text-xs text-muted-foreground">
                   NOT USED
                 </SelectItem>
                 {csvHeaders.map(col => (
@@ -474,7 +474,7 @@ export function CsvPropertiesStep({
             </Select>
           </div>
           {rackLocationColumn && (
-            <p className="text-xs text-amber-700">
+            <p className="text-xs text-warning-foreground">
               Column <span className="font-medium">{rackLocationColumn}</span> will be
               used to filter racks by location during UUID resolution.
             </p>
@@ -483,11 +483,11 @@ export function CsvPropertiesStep({
       )}
 
       {/* Default Properties */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+      <div className="rounded-lg border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Settings2 className="h-4 w-4 text-blue-500" />
-            <h3 className="text-sm font-semibold text-gray-800">Default Properties</h3>
+            <Settings2 className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Default Properties</h3>
           </div>
           <Button
             variant="outline"
@@ -499,21 +499,21 @@ export function CsvPropertiesStep({
             Add
           </Button>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           Set default values for fields that are not included in your CSV. These values
           are applied to every row during the import.
         </p>
 
         {defaultProperties.length === 0 ? (
-          <div className="text-xs text-gray-400 italic py-2 text-center">
+          <div className="text-xs text-muted-foreground italic py-2 text-center">
             No default properties configured. Click <strong>Add</strong> to define one.
           </div>
         ) : (
           <div className="space-y-2">
             {/* Header row */}
             <div className="grid grid-cols-[1fr_1fr_auto] gap-2 px-1">
-              <Label className="text-xs text-gray-500">Field</Label>
-              <Label className="text-xs text-gray-500">Default value</Label>
+              <Label className="text-xs text-muted-foreground">Field</Label>
+              <Label className="text-xs text-muted-foreground">Default value</Label>
               <span className="w-7" />
             </div>
 
@@ -549,7 +549,7 @@ export function CsvPropertiesStep({
                   variant="ghost"
                   size="icon"
                   onClick={() => handleRemoveProperty(index)}
-                  className="h-7 w-7 text-gray-400 hover:text-red-500"
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
                   title="Remove"
                 >
                   <Minus className="h-3.5 w-3.5" />
@@ -562,7 +562,7 @@ export function CsvPropertiesStep({
 
       {/* Info box when matching strategy is not shown */}
       {!showMatchingStrategy && (
-        <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+        <div className="rounded-lg border border-warning-border bg-warning px-4 py-3 text-xs text-warning-foreground">
           <span className="font-medium">Note:</span> Matching Strategy is only
           configurable when <span className="font-medium">name</span> is selected as the
           primary key column. Currently using{' '}

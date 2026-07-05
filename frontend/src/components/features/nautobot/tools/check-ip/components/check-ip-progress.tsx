@@ -13,13 +13,13 @@ export function CheckIPProgress({ taskStatus }: CheckIPProgressProps) {
 
   return (
     <Card className="shadow-lg border-0 overflow-hidden p-0">
-      <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+      <CardHeader className="panel-header border-b-0 rounded-none m-0 py-2 px-4">
         <CardTitle className="flex items-center space-x-2 text-sm font-medium">
           <Info className="h-4 w-4" />
           <span>Progress</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+      <CardContent className="p-6 panel-content space-y-4">
         <Progress value={progressValue} className="h-2" />
         <div className="text-sm text-muted-foreground">
           {taskStatus.progress ? (

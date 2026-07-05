@@ -920,19 +920,19 @@ export function TemplateFormDialog({
   }
 
   const getJobTypeColor = (jobType: string) => {
-    return JOB_TYPE_COLORS[jobType] || 'bg-gray-500'
+    return JOB_TYPE_COLORS[jobType] || 'bg-muted-foreground'
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-6xl sm:!max-w-6xl p-0 gap-0 overflow-hidden w-full">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 px-6 py-4">
-          <DialogHeader className="text-white">
-            <DialogTitle className="text-lg font-semibold text-white">
+        <div className="panel-header px-6 py-4">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">
               {editingTemplate ? 'Edit Job Template' : 'Create Job Template'}
             </DialogTitle>
-            <DialogDescription className="text-blue-50">
+            <DialogDescription className="text-panel-header-muted">
               {editingTemplate
                 ? 'Update job template settings'
                 : 'Create a new reusable job template'}
@@ -1246,14 +1246,14 @@ export function TemplateFormDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-3 bg-gray-50 border-t border-gray-200">
+        <div className="flex justify-end gap-3 px-6 py-3 bg-muted border-t border-border">
           <Button
             variant="outline"
             onClick={() => {
               onOpenChange(false)
               resetForm()
             }}
-            className="h-9 px-4 border-gray-300 text-gray-700 hover:bg-gray-100"
+            className="h-9 px-4"
           >
             Cancel
           </Button>
@@ -1262,7 +1262,7 @@ export function TemplateFormDialog({
             disabled={
               !isFormValid() || createTemplate.isPending || updateTemplate.isPending
             }
-            className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400 disabled:cursor-not-allowed"
+            className="h-9 px-4"
           >
             {editingTemplate ? (
               <>

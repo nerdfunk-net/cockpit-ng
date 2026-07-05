@@ -69,7 +69,7 @@ export function ExportDevicesResultView({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <CheckCircle2 className="h-5 w-5 text-success-foreground" />
             Export Summary
           </CardTitle>
           <CardDescription>Device export completed successfully</CardDescription>
@@ -77,33 +77,33 @@ export function ExportDevicesResultView({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-600">Exported Devices</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">Exported Devices</p>
+              <p className="text-2xl font-bold text-foreground">
                 {result.exported_devices}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Requested Devices</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">Requested Devices</p>
+              <p className="text-2xl font-bold text-foreground">
                 {result.requested_devices}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Properties</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">Properties</p>
+              <p className="text-2xl font-bold text-foreground">
                 {result.properties_count}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">File Size</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">File Size</p>
+              <p className="text-2xl font-bold text-foreground">
                 {formatBytes(result.file_size_bytes)}
               </p>
             </div>
           </div>
 
           <div className="pt-4 border-t">
-            <p className="text-sm text-gray-600 mb-2">
+            <p className="text-sm text-muted-foreground mb-2">
               <strong>Message:</strong> {result.message}
             </p>
           </div>
@@ -114,19 +114,19 @@ export function ExportDevicesResultView({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-blue-500" />
+            <FileText className="h-5 w-5 text-primary" />
             Export File Information
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-600">Filename</p>
-              <p className="text-sm text-gray-900 font-mono">{result.filename}</p>
+              <p className="text-sm font-medium text-muted-foreground">Filename</p>
+              <p className="text-sm text-foreground font-mono">{result.filename}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Format</p>
-              <p className="text-sm text-gray-900 uppercase font-semibold">
+              <p className="text-sm font-medium text-muted-foreground">Format</p>
+              <p className="text-sm text-foreground uppercase font-semibold">
                 {result.export_format}
               </p>
             </div>
@@ -145,29 +145,29 @@ export function ExportDevicesResultView({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-purple-500" />
+            <Database className="h-5 w-5 text-primary" />
             Export Details
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between py-2 border-b">
-              <span className="font-medium text-gray-600">Total Devices Exported:</span>
-              <span className="text-gray-900">
+              <span className="font-medium text-muted-foreground">Total Devices Exported:</span>
+              <span className="text-foreground">
                 {result.exported_devices} / {result.requested_devices}
               </span>
             </div>
             <div className="flex justify-between py-2 border-b">
-              <span className="font-medium text-gray-600">Export Format:</span>
-              <span className="text-gray-900 uppercase">{result.export_format}</span>
+              <span className="font-medium text-muted-foreground">Export Format:</span>
+              <span className="text-foreground uppercase">{result.export_format}</span>
             </div>
             <div className="flex justify-between py-2 border-b">
-              <span className="font-medium text-gray-600">Properties Included:</span>
-              <span className="text-gray-900">{result.properties_count}</span>
+              <span className="font-medium text-muted-foreground">Properties Included:</span>
+              <span className="text-foreground">{result.properties_count}</span>
             </div>
             <div className="flex justify-between py-2">
-              <span className="font-medium text-gray-600">File Size:</span>
-              <span className="text-gray-900">
+              <span className="font-medium text-muted-foreground">File Size:</span>
+              <span className="text-foreground">
                 {formatBytes(result.file_size_bytes)}
               </span>
             </div>

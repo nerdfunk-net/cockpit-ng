@@ -27,22 +27,22 @@ export function RunCommandsJobTemplate({
   commandTemplates,
 }: RunCommandsJobTemplateProps) {
   return (
-    <div className="rounded-lg border border-violet-200 bg-violet-50/30 p-4 space-y-3">
+    <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <Terminal className="h-4 w-4 text-violet-600" />
-        <Label className="text-sm font-semibold text-violet-900">
+        <Terminal className="h-4 w-4 text-info-foreground" />
+        <Label className="text-sm font-semibold text-info-foreground">
           Command Template
         </Label>
       </div>
       <Select value={formCommandTemplate} onValueChange={setFormCommandTemplate}>
-        <SelectTrigger className="h-9 bg-white border-violet-200">
+        <SelectTrigger className="h-9 bg-card border-info-border">
           <SelectValue placeholder="Select command template" />
         </SelectTrigger>
         <SelectContent>
           {commandTemplates.map(template => (
             <SelectItem key={template.id} value={template.name}>
               <div className="flex items-center gap-2">
-                <Terminal className="h-4 w-4 text-gray-500" />
+                <Terminal className="h-4 w-4 text-muted-foreground" />
                 <span>{template.name}</span>
                 {template.category && (
                   <Badge variant="secondary" className="text-xs">
@@ -54,7 +54,7 @@ export function RunCommandsJobTemplate({
           ))}
         </SelectContent>
       </Select>
-      <p className="text-xs text-violet-600">
+      <p className="text-xs text-info-foreground">
         Templates can be created in Network / Automation / Templates
       </p>
     </div>

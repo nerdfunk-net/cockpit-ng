@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { StatusBadge } from '@/components/shared/status-badge'
 import type {
   PortScanHostResult,
   PortScanJobResult,
@@ -75,16 +76,16 @@ export function PortScanResultView({ result }: PortScanResultViewProps) {
 
   return (
     <div className="space-y-4">
-      <Card className="border-blue-200 bg-gradient-to-br from-blue-50/80 to-sky-50/50">
+      <Card className="border-info-border bg-info">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-900">
-            <Radar className="h-5 w-5 text-blue-600" />
+          <CardTitle className="flex items-center gap-2 text-info-foreground">
+            <Radar className="h-5 w-5 text-info-foreground" />
             Port Scan Summary
           </CardTitle>
           <CardDescription>
             Nmap port scan results
             {result.agent_id && (
-              <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+              <span className="ml-2 text-xs bg-info text-info-foreground px-2 py-0.5 rounded border border-info-border">
                 Agent: {result.agent_id}
               </span>
             )}
@@ -116,16 +117,16 @@ export function PortScanResultView({ result }: PortScanResultViewProps) {
 
           <div className="flex flex-wrap gap-2">
             {result.scan_type && (
-              <Badge variant="outline" className="bg-white">
+              <Badge variant="outline" className="bg-card">
                 {SCAN_TYPE_LABELS[result.scan_type] ?? result.scan_type}
               </Badge>
             )}
             {result.ports && (
-              <Badge variant="outline" className="bg-white font-mono">
+              <Badge variant="outline" className="bg-card font-mono">
                 Ports: {result.ports}
               </Badge>
             )}
-            <Badge variant="outline" className="bg-white">
+            <Badge variant="outline" className="bg-card">
               Hosts scanned: {result.total_hosts_scanned ?? totalHosts}
             </Badge>
           </div>
@@ -146,12 +147,12 @@ export function PortScanResultView({ result }: PortScanResultViewProps) {
       {networks.map(network => (
         <Card
           key={network.network}
-          className="overflow-hidden border-l-4 border-l-blue-500 shadow-sm p-0"
+          className="overflow-hidden border-l-4 border-l-primary shadow-sm p-0"
         >
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-sky-50 border-b py-3 px-4 rounded-none m-0">
+          <CardHeader className="bg-muted border-b py-3 px-4 rounded-none m-0">
             <div className="flex items-center justify-between gap-3">
-              <CardTitle className="text-base font-mono text-slate-700 flex items-center gap-2">
-                <Network className="h-4 w-4 text-blue-600 shrink-0" />
+              <CardTitle className="text-base font-mono text-foreground flex items-center gap-2">
+                <Network className="h-4 w-4 text-primary shrink-0" />
                 <span className="truncate">{network.network}</span>
               </CardTitle>
               <Badge variant="outline" className="shrink-0 font-semibold">
@@ -192,15 +193,15 @@ function SummaryStat({
 }) {
   const valueClass =
     accent === 'green'
-      ? 'text-green-600'
+      ? 'text-success-foreground'
       : accent === 'blue'
-        ? 'text-blue-600'
+        ? 'text-primary'
         : accent === 'purple'
-          ? 'text-violet-600'
-          : 'text-slate-800'
+          ? 'text-foreground'
+          : 'text-foreground'
 
   return (
-    <div className="rounded-lg border bg-white/80 p-3 text-center shadow-sm">
+    <div className="rounded-lg border bg-card/80 p-3 text-center shadow-sm">
       <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
         {label}
       </p>
@@ -224,21 +225,21 @@ function HostResultCard({
   const udpCount = host.udp_ports?.length ?? 0
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-slate-50 transition-colors"
+        className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-muted transition-colors"
       >
         <div className="flex items-center gap-3 min-w-0">
           {host.success ? (
-            <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+            <CheckCircle className="h-4 w-4 text-success-foreground shrink-0" />
           ) : (
-            <XCircle className="h-4 w-4 text-red-600 shrink-0" />
+            <XCircle className="h-4 w-4 text-error-foreground shrink-0" />
           )}
-          <Server className="h-4 w-4 text-blue-600 shrink-0" />
+          <Server className="h-4 w-4 text-primary shrink-0" />
           <div className="min-w-0">
-            <p className="font-mono text-sm font-medium text-slate-800 truncate">
+            <p className="font-mono text-sm font-medium text-foreground truncate">
               {host.ip_address}
             </p>
             {host.hostname && host.hostname !== host.ip_address && (
@@ -266,16 +267,15 @@ function HostResultCard({
       </button>
 
       {expanded && host.success && (
-        <div className="border-t border-slate-100 p-4 space-y-4 bg-slate-50/50">
+        <div className="border-t border-border p-4 space-y-4 bg-muted/50">
           {host.host_status && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Host status:</span>
-              <Badge
-                variant={host.host_status === 'up' ? 'default' : 'secondary'}
-                className={host.host_status === 'up' ? 'bg-green-600' : undefined}
-              >
-                {host.host_status}
-              </Badge>
+              {host.host_status === 'up' ? (
+                <StatusBadge variant="success">{host.host_status}</StatusBadge>
+              ) : (
+                <Badge variant="secondary">{host.host_status}</Badge>
+              )}
             </div>
           )}
 
@@ -284,8 +284,8 @@ function HostResultCard({
 
           {host.services && host.services.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-slate-700">Detected Services</h4>
-              <div className="rounded-md border bg-white overflow-hidden">
+              <h4 className="text-sm font-semibold text-foreground">Detected Services</h4>
+              <div className="rounded-md border bg-card overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -323,6 +323,8 @@ function HostResultCard({
           )}
 
           {host.scan_arguments && (
+            // Terminal-style output block: intentionally hardcoded dark regardless of
+            // theme, matching the established pattern used across job-result views.
             <div className="rounded-md bg-slate-900 p-3">
               <p className="text-xs text-slate-400 mb-1">Scan arguments</p>
               <p className="text-xs font-mono text-slate-100 break-all">
@@ -347,14 +349,14 @@ function PortSection({
 }) {
   const badgeClass =
     accent === 'blue'
-      ? 'bg-blue-100 text-blue-800 hover:bg-blue-100'
+      ? 'bg-info text-info-foreground hover:bg-info'
       : accent === 'purple'
-        ? 'bg-violet-100 text-violet-800 hover:bg-violet-100'
+        ? 'bg-muted text-foreground hover:bg-muted'
         : undefined
 
   return (
     <div>
-      <h4 className="text-sm font-semibold text-slate-700 mb-2">
+      <h4 className="text-sm font-semibold text-foreground mb-2">
         {title}{' '}
         <span className="font-normal text-muted-foreground">({ports.length})</span>
       </h4>

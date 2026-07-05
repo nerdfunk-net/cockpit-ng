@@ -381,7 +381,7 @@ export function EditableDeviceTable({
                 typeof window !== 'undefined' &&
                 createPortal(
                   <div
-                    className="fixed bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                    className="fixed bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto"
                     style={{
                       top: `${dropdownPosition.top}px`,
                       left: `${dropdownPosition.left}px`,
@@ -392,7 +392,7 @@ export function EditableDeviceTable({
                     {filteredLocations.map(location => (
                       <div
                         key={location.value}
-                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                        className="px-3 py-2 hover:bg-muted cursor-pointer text-sm"
                         onClick={() => {
                           const changes = modifiedDevices.get(device.id) || {}
                           onDeviceModified(device.id, {
@@ -451,14 +451,14 @@ export function EditableDeviceTable({
 
       if (column.field === 'status') {
         const statusColors: Record<string, string> = {
-          active: 'bg-green-100 text-green-800',
-          planned: 'bg-blue-100 text-blue-800',
-          maintenance: 'bg-yellow-100 text-yellow-800',
-          failed: 'bg-red-100 text-red-800',
-          decommissioning: 'bg-gray-100 text-gray-800',
+          active: 'bg-success text-success-foreground',
+          planned: 'bg-info text-info-foreground',
+          maintenance: 'bg-warning text-warning-foreground',
+          failed: 'bg-error text-error-foreground',
+          decommissioning: 'bg-muted text-muted-foreground',
         }
         const colorClass =
-          statusColors[value.toLowerCase()] || 'bg-gray-100 text-gray-800'
+          statusColors[value.toLowerCase()] || 'bg-muted text-muted-foreground'
 
         return (
           <div className="flex items-center h-12">
@@ -474,7 +474,7 @@ export function EditableDeviceTable({
         return (
           <div className="flex items-center gap-1 h-12">
             <span className="text-sm flex-1">
-              {value || <span className="text-gray-400 italic">Empty</span>}
+              {value || <span className="text-muted-foreground italic">Empty</span>}
             </span>
             <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
@@ -486,10 +486,10 @@ export function EditableDeviceTable({
                     name: value.toUpperCase(),
                   })
                 }}
-                className="p-0.5 hover:bg-gray-200 rounded"
+                className="p-0.5 hover:bg-muted rounded"
                 title="Convert to UPPERCASE"
               >
-                <ArrowUp className="h-3 w-3 text-gray-600" />
+                <ArrowUp className="h-3 w-3 text-muted-foreground" />
               </button>
               <button
                 onClick={e => {
@@ -500,10 +500,10 @@ export function EditableDeviceTable({
                     name: value.toLowerCase(),
                   })
                 }}
-                className="p-0.5 hover:bg-gray-200 rounded"
+                className="p-0.5 hover:bg-muted rounded"
                 title="Convert to lowercase"
               >
-                <ArrowDown className="h-3 w-3 text-gray-600" />
+                <ArrowDown className="h-3 w-3 text-muted-foreground" />
               </button>
             </div>
           </div>
@@ -513,7 +513,7 @@ export function EditableDeviceTable({
       return (
         <div className="flex items-center h-12">
           <span className="text-sm">
-            {value || <span className="text-gray-400 italic">Empty</span>}
+            {value || <span className="text-muted-foreground italic">Empty</span>}
           </span>
         </div>
       )
@@ -536,7 +536,7 @@ export function EditableDeviceTable({
 
   const getCellClassName = useCallback((column: ColumnDefinition) => {
     const baseClass = 'px-4 py-0'
-    const hoverClass = column.editable ? 'cursor-pointer hover:bg-gray-50' : ''
+    const hoverClass = column.editable ? 'cursor-pointer hover:bg-muted' : ''
 
     return `${baseClass} ${hoverClass}`
   }, [])
@@ -545,8 +545,8 @@ export function EditableDeviceTable({
     (device: DeviceInfo) => {
       const baseClass = 'border-b transition-colors h-12 group'
       const modifiedClass = isDeviceModified(device.id)
-        ? 'bg-red-50 hover:bg-red-100'
-        : 'hover:bg-gray-50'
+        ? 'bg-warning hover:bg-warning/80'
+        : 'hover:bg-muted'
 
       return `${baseClass} ${modifiedClass}`
     },
@@ -571,7 +571,7 @@ export function EditableDeviceTable({
                 >
                   {column.label}
                   {column.editable && (
-                    <span className="ml-1 text-xs text-gray-400">(editable)</span>
+                    <span className="ml-1 text-xs text-muted-foreground">(editable)</span>
                   )}
                 </TableHead>
               ))}
@@ -582,7 +582,7 @@ export function EditableDeviceTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center py-8 text-gray-500"
+                  className="text-center py-8 text-muted-foreground"
                 >
                   No devices selected
                 </TableCell>

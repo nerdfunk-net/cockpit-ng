@@ -266,7 +266,7 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
       <DialogContent className="!max-w-[880px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+            <FileSpreadsheet className="h-5 w-5 text-primary" />
             Bulk Update Devices from CSV
           </DialogTitle>
           <DialogDescription>
@@ -279,7 +279,7 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
         <div className="space-y-4 py-4">
           {/* CSV Settings */}
           {!parsedData && !showProgress && (
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border">
+            <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg border">
               <div className="space-y-2">
                 <Label htmlFor="csv-delimiter">CSV Delimiter</Label>
                 <Input
@@ -290,7 +290,7 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
                   className="w-full"
                   placeholder=","
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Character used to separate fields (default: comma)
                 </p>
               </div>
@@ -304,7 +304,7 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
                   className="w-full"
                   placeholder='"'
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Character used to quote fields (default: double quote)
                 </p>
               </div>
@@ -314,7 +314,7 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
           {/* File Upload */}
           {!parsedData && !showProgress && (
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -325,14 +325,14 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
                 />
                 <label htmlFor="bulk-update-csv-upload" className="cursor-pointer">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
-                      <Upload className="h-8 w-8 text-blue-600" />
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Upload className="h-8 w-8 text-primary" />
                     </div>
                     <div>
-                      <p className="text-base font-medium text-gray-900">
+                      <p className="text-base font-medium text-foreground">
                         Upload CSV File
                       </p>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         Click to browse or drag and drop your CSV file here
                       </p>
                     </div>
@@ -389,19 +389,19 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
               </Alert>
 
               {/* CSV Summary */}
-              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div className="bg-muted rounded-lg p-4 space-y-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">
                     File Information:
                   </p>
                   <div className="space-y-1 text-sm">
-                    <p className="text-gray-600">
+                    <p className="text-muted-foreground">
                       <strong>Filename:</strong> {csvFile?.name}
                     </p>
-                    <p className="text-gray-600">
+                    <p className="text-muted-foreground">
                       <strong>Devices:</strong> {parsedData.rowCount}
                     </p>
-                    <p className="text-gray-600">
+                    <p className="text-muted-foreground">
                       <strong>Identifier:</strong>{' '}
                       <Badge variant="outline" className="font-mono">
                         {parsedData.identifierField}
@@ -411,7 +411,7 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">
                     Columns to Update:
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -431,12 +431,12 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
 
                 {/* Preview first few rows */}
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">
                     Preview (first {Math.min(3, parsedData.rowCount)} rows):
                   </p>
-                  <div className="bg-white rounded border text-xs overflow-x-auto">
+                  <div className="bg-card rounded border text-xs overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-100">
+                      <thead className="bg-muted">
                         <tr>
                           {parsedData.headers.map(header => (
                             <th
@@ -485,9 +485,9 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
                 </AlertDescription>
               </Alert>
 
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <div className="bg-muted rounded-lg p-4 space-y-2">
                 <p className="text-sm font-medium">Task Details:</p>
-                <div className="space-y-1 text-sm text-gray-600">
+                <div className="space-y-1 text-sm text-muted-foreground">
                   <p>
                     <strong>Task ID:</strong> <code className="text-xs">{taskId}</code>
                   </p>

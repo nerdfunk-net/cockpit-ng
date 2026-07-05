@@ -22,13 +22,13 @@ export function CheckIPSummary({ results }: CheckIPSummaryProps) {
 
   return (
     <Card className="shadow-lg border-0 overflow-hidden p-0">
-      <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+      <CardHeader className="panel-header border-b-0 rounded-none m-0 py-2 px-4">
         <CardTitle className="flex items-center space-x-2 text-sm font-medium">
           <Info className="h-4 w-4" />
           <span>Summary</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50">
+      <CardContent className="p-6 panel-content">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Total Devices</p>
@@ -36,19 +36,19 @@ export function CheckIPSummary({ results }: CheckIPSummaryProps) {
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Matches</p>
-            <p className="text-2xl font-bold text-green-600">{stats.matches}</p>
+            <p className="text-2xl font-bold text-success-foreground">{stats.matches}</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Mismatches</p>
-            <p className="text-2xl font-bold text-yellow-600">{stats.mismatches}</p>
+            <p className="text-2xl font-bold text-warning-foreground">{stats.mismatches}</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Partial Mismatches</p>
-            <p className="text-2xl font-bold text-orange-500">{stats.partialMismatches}</p>
+            <p className="text-2xl font-bold text-warning-foreground">{stats.partialMismatches}</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Not Found</p>
-            <p className="text-2xl font-bold text-red-600">{stats.notFound}</p>
+            <p className="text-2xl font-bold text-error-foreground">{stats.notFound}</p>
           </div>
         </div>
       </CardContent>

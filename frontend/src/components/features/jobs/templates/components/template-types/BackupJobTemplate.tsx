@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { FileText, Clock, Zap, Bot, Server } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface CustomField {
   id: string
@@ -79,36 +80,36 @@ export function BackupJobTemplate({
   return (
     <>
       {/* Backup Paths Section */}
-      <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-4 space-y-4">
+      <div className="rounded-lg border border-warning-border bg-warning/30 p-4 space-y-4">
         <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-amber-600" />
-          <Label className="text-sm font-semibold text-amber-900">
+          <FileText className="h-4 w-4 text-warning-foreground" />
+          <Label className="text-sm font-semibold text-warning-foreground">
             Backup Configuration Paths
           </Label>
         </div>
 
-        <div className="bg-amber-100/50 border border-amber-200 rounded-md px-3 py-2 space-y-1">
-          <p className="text-xs text-amber-800 leading-relaxed">
+        <div className="bg-warning border border-warning-border rounded-md px-3 py-2 space-y-1">
+          <p className="text-xs text-warning-foreground leading-relaxed">
             <span className="font-semibold">Available variables</span> (leave empty to
             use defaults):
           </p>
-          <p className="text-xs text-amber-700 leading-relaxed">
+          <p className="text-xs text-warning-foreground leading-relaxed">
             Device: {'{device_name}'}, {'{hostname}'}, {'{serial}'}, {'{asset_tag}'}
           </p>
-          <p className="text-xs text-amber-700 leading-relaxed">
+          <p className="text-xs text-warning-foreground leading-relaxed">
             Location: {'{location.name}'}, {'{location.parent.name}'},{' '}
             {'{location.parent.parent.name}'}
           </p>
-          <p className="text-xs text-amber-700 leading-relaxed">
+          <p className="text-xs text-warning-foreground leading-relaxed">
             Modifier: use <span className="font-mono">{'| location_type:Value'}</span>{' '}
             to filter by location type — e.g.{' '}
             <span className="font-mono">{'| location_type:City'}</span>
           </p>
-          <p className="text-xs text-amber-700 leading-relaxed">
+          <p className="text-xs text-warning-foreground leading-relaxed">
             Platform: {'{platform.name}'}, {'{platform.manufacturer.name}'},{' '}
             {'{device_type.model}'}
           </p>
-          <p className="text-xs text-amber-700 leading-relaxed">
+          <p className="text-xs text-warning-foreground leading-relaxed">
             Other: {'{role.name}'}, {'{status.name}'}, {'{tenant.name}'},{' '}
             {'{rack.name}'}, {'{custom_field_data.FIELD_NAME}'}
           </p>
@@ -118,44 +119,44 @@ export function BackupJobTemplate({
           <div className="space-y-2">
             <Label
               htmlFor="running-config-path"
-              className="text-sm text-amber-900 font-medium flex items-center gap-1"
+              className="text-sm text-warning-foreground font-medium flex items-center gap-1"
             >
               Running Config Path{' '}
-              <span className="text-xs text-amber-600 font-normal">(optional)</span>
+              <span className="text-xs text-warning-foreground font-normal">(optional)</span>
             </Label>
             <Input
               id="running-config-path"
               placeholder="{custom_field_data.net}/{location.name}/{device_name}.running_config"
               value={formBackupRunningConfigPath}
               onChange={e => setFormBackupRunningConfigPath(e.target.value)}
-              className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
+              className="h-9 bg-card border-warning-border font-mono text-sm focus:ring-ring/30 focus:border-primary"
             />
           </div>
 
           <div className="space-y-2">
             <Label
               htmlFor="startup-config-path"
-              className="text-sm text-amber-900 font-medium flex items-center gap-1"
+              className="text-sm text-warning-foreground font-medium flex items-center gap-1"
             >
               Startup Config Path{' '}
-              <span className="text-xs text-amber-600 font-normal">(optional)</span>
+              <span className="text-xs text-warning-foreground font-normal">(optional)</span>
             </Label>
             <Input
               id="startup-config-path"
               placeholder="{custom_field_data.net}/{location.name}/{device_name}.startup_config"
               value={formBackupStartupConfigPath}
               onChange={e => setFormBackupStartupConfigPath(e.target.value)}
-              className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
+              className="h-9 bg-card border-warning-border font-mono text-sm focus:ring-ring/30 focus:border-primary"
             />
           </div>
         </div>
       </div>
 
       {/* Backup Timestamp Section */}
-      <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-4">
+      <div className="rounded-lg border border-info-border bg-info/30 p-4">
         <div className="flex items-center gap-2 mb-3">
-          <Clock className="h-4 w-4 text-teal-600" />
-          <Label className="text-sm font-semibold text-teal-900">
+          <Clock className="h-4 w-4 text-info-foreground" />
+          <Label className="text-sm font-semibold text-info-foreground">
             Backup Timestamp
           </Label>
         </div>
@@ -174,7 +175,7 @@ export function BackupJobTemplate({
             />
             <Label
               htmlFor="write-timestamp"
-              className="text-sm text-teal-900 cursor-pointer"
+              className="text-sm text-info-foreground cursor-pointer"
             >
               Write timestamp to custom field
             </Label>
@@ -189,11 +190,12 @@ export function BackupJobTemplate({
               >
                 <SelectTrigger
                   id="timestamp-custom-field"
-                  className={`h-9 bg-white ${
+                  className={cn(
+                    'h-9 bg-card',
                     !formTimestampCustomFieldName
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-teal-200'
-                  }`}
+                      ? 'border-destructive focus:ring-destructive/30 focus:border-destructive'
+                      : 'border-info-border'
+                  )}
                 >
                   <SelectValue
                     placeholder={
@@ -217,14 +219,14 @@ export function BackupJobTemplate({
                 </SelectContent>
               </Select>
               {!formTimestampCustomFieldName && (
-                <p className="text-xs text-red-600 font-medium">
+                <p className="text-xs text-destructive font-medium">
                   Please select a custom field
                 </p>
               )}
             </div>
           )}
         </div>
-        <p className="text-xs text-teal-600 mt-2">
+        <p className="text-xs text-info-foreground mt-2">
           When enabled, the backup completion timestamp will be written to the selected
           custom field in Nautobot
         </p>
@@ -232,10 +234,10 @@ export function BackupJobTemplate({
 
       {/* Execution Engine Section — only shown when at least one Netmiko agent is available */}
       {netmikoAgents.length > 0 && (
-        <div className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-4 space-y-3">
+        <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Server className="h-4 w-4 text-indigo-600" />
-            <Label className="text-sm font-semibold text-indigo-900">
+            <Server className="h-4 w-4 text-info-foreground" />
+            <Label className="text-sm font-semibold text-info-foreground">
               Execution Engine
             </Label>
           </div>
@@ -247,19 +249,19 @@ export function BackupJobTemplate({
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="celery" id="exec-celery" />
-              <Label htmlFor="exec-celery" className="text-sm text-indigo-900 cursor-pointer font-medium">
+              <Label htmlFor="exec-celery" className="text-sm text-info-foreground cursor-pointer font-medium">
                 Celery Worker
               </Label>
-              <span className="text-xs text-indigo-600">
+              <span className="text-xs text-info-foreground">
                 — direct SSH from the backend (parallel execution supported)
               </span>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="agent" id="exec-agent" />
-              <Label htmlFor="exec-agent" className="text-sm text-indigo-900 cursor-pointer font-medium">
+              <Label htmlFor="exec-agent" className="text-sm text-info-foreground cursor-pointer font-medium">
                 Netmiko Agent
               </Label>
-              <span className="text-xs text-indigo-600">
+              <span className="text-xs text-info-foreground">
                 — route SSH through a remote cockpit agent (sequential)
               </span>
             </div>
@@ -267,8 +269,8 @@ export function BackupJobTemplate({
 
           {executionMode === 'agent' && (
             <div className="space-y-1.5 pt-1">
-              <Label className="text-xs text-indigo-700">
-                Select Agent <span className="text-red-500">*</span>
+              <Label className="text-xs text-info-foreground">
+                Select Agent <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formBackupAgentId}
@@ -276,11 +278,10 @@ export function BackupJobTemplate({
                 disabled={loadingAgents}
               >
                 <SelectTrigger
-                  className={`h-9 bg-white ${
-                    !formBackupAgentId
-                      ? 'border-red-300'
-                      : 'border-indigo-200'
-                  }`}
+                  className={cn(
+                    'h-9 bg-card',
+                    !formBackupAgentId ? 'border-destructive' : 'border-info-border'
+                  )}
                 >
                   <SelectValue placeholder="Select agent…" />
                 </SelectTrigger>
@@ -288,17 +289,18 @@ export function BackupJobTemplate({
                   {netmikoAgents.map(agent => (
                     <SelectItem key={agent.agent_id} value={agent.agent_id}>
                       <div className="flex items-center gap-2">
-                        <Bot className="h-4 w-4 text-gray-500" />
+                        <Bot className="h-4 w-4 text-muted-foreground" />
                         <span>{agent.hostname}</span>
                         <Badge
                           variant="secondary"
-                          className={`text-xs ${
+                          className={cn(
+                            'text-xs',
                             agent.status === 'online'
-                              ? 'bg-green-100 text-green-700'
+                              ? 'bg-success text-success-foreground'
                               : agent.status === 'offline'
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-blue-100 text-blue-700'
-                          }`}
+                              ? 'bg-error text-error-foreground'
+                              : 'bg-info text-info-foreground'
+                          )}
                         >
                           {agent.status}
                         </Badge>
@@ -308,7 +310,7 @@ export function BackupJobTemplate({
                 </SelectContent>
               </Select>
               {!formBackupAgentId && (
-                <p className="text-xs text-red-600 font-medium">Please select an agent</p>
+                <p className="text-xs text-destructive font-medium">Please select an agent</p>
               )}
             </div>
           )}
@@ -317,10 +319,10 @@ export function BackupJobTemplate({
 
       {/* Parallel Execution Section — hidden when agent mode is active */}
       {!formBackupAgentId && (
-        <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
+        <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-purple-600" />
-            <Label className="text-sm font-semibold text-purple-900">
+            <Zap className="h-4 w-4 text-info-foreground" />
+            <Label className="text-sm font-semibold text-info-foreground">
               Parallel Execution
             </Label>
           </div>
@@ -329,7 +331,7 @@ export function BackupJobTemplate({
             <div className="flex items-center justify-between">
               <Label
                 htmlFor="parallel-tasks"
-                className="text-sm text-purple-900 font-medium"
+                className="text-sm text-info-foreground font-medium"
               >
                 Number of Parallel Tasks
               </Label>
@@ -347,9 +349,9 @@ export function BackupJobTemplate({
                 const value = parseInt(e.target.value) || 1
                 setFormParallelTasks(Math.min(50, Math.max(1, value)))
               }}
-              className="h-9 bg-white border-purple-200 focus:ring-purple-500 focus:border-purple-500"
+              className="h-9 bg-card border-info-border focus:ring-ring/30 focus:border-primary"
             />
-            <p className="text-xs text-purple-600 leading-relaxed">
+            <p className="text-xs text-info-foreground leading-relaxed">
               <span className="font-semibold">Recommended:</span> 1 = sequential (safe,
               slow), 5-10 = moderate parallel execution, 20+ = high parallel execution
               (requires sufficient Celery workers)

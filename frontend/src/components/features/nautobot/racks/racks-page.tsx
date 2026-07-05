@@ -4,6 +4,11 @@ import { useState, useCallback, useEffect, useMemo } from 'react'
 import { LayoutGrid, Loader2, Map } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { IconChip } from '@/components/shared/icon-chip'
+
+// Translucent badge treatment for badges placed on the gradient panel header
+const HEADER_BADGE_CLASS =
+  'bg-panel-header-foreground/20 text-panel-header-foreground text-xs border-0'
 
 import { useRackSaveMutation } from './hooks/use-rack-save-mutation'
 import { useLocationsQuery } from './hooks/use-locations-query'
@@ -457,11 +462,11 @@ export function RacksPage() {
     <div className="space-y-6">
       {/* Page header */}
       <div className="flex items-center gap-4">
-        <div className="bg-blue-100 p-2 rounded-lg">
-          <LayoutGrid className="h-6 w-6 text-blue-600" />
-        </div>
+        <IconChip variant="primary">
+          <LayoutGrid className="h-6 w-6" />
+        </IconChip>
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Rack Management</h1>
+          <h1 className="text-3xl font-bold text-foreground">Rack Management</h1>
           <p className="text-muted-foreground mt-1">
             Visualize and manage device placement in racks
           </p>
@@ -469,11 +474,11 @@ export function RacksPage() {
       </div>
 
       {/* Selector bar */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center rounded-t-lg">
           <span className="text-sm font-medium">Select Rack</span>
         </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50 rounded-b-lg">
+        <div className="p-6 panel-content rounded-b-lg">
           <RackSelectorBar
             locations={locations}
             selectedLocationId={selectedLocationId}
@@ -536,18 +541,16 @@ export function RacksPage() {
 
       {/* Rack view */}
       {selectedRackId && (
-        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center gap-3 rounded-t-lg">
+        <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+          <div className="panel-header py-2 px-4 flex items-center gap-3 rounded-t-lg">
             <span className="text-sm font-medium">
               {rackMetadata?.name ?? selectedRack?.name ?? 'Rack'}
             </span>
             {rackMetadata && (
               <>
-                <Badge className="bg-white/20 text-white text-xs border-0">
-                  {uHeight}U
-                </Badge>
+                <Badge className={HEADER_BADGE_CLASS}>{uHeight}U</Badge>
                 {rackMetadata.status?.name && (
-                  <Badge className="bg-white/20 text-white text-xs border-0">
+                  <Badge className={HEADER_BADGE_CLASS}>
                     {rackMetadata.status.name}
                   </Badge>
                 )}
@@ -556,14 +559,14 @@ export function RacksPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="ml-auto text-white hover:bg-white/20 hover:text-white gap-1.5 h-7 px-2 text-xs"
+              className="ml-auto hover:bg-panel-header-foreground/20 gap-1.5 h-7 px-2 text-xs"
               onClick={() => setMappingsDialogOpen(true)}
             >
               <Map className="h-3.5 w-3.5" />
               Show Mappings
             </Button>
           </div>
-          <div className="p-6 bg-gradient-to-b from-white to-gray-50 rounded-b-lg">
+          <div className="p-6 panel-content rounded-b-lg">
             {isLoadingRackData ? (
               <div className="flex items-center justify-center py-16">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

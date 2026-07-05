@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { StatusBadge } from '@/components/shared/status-badge'
 import {
   Table,
   TableBody,
@@ -93,16 +94,16 @@ export function CsvSummaryStep({
       {/* Header */}
       <div className="flex items-center gap-3">
         {isSuccess ? (
-          <CheckCircle className="h-7 w-7 text-green-500 flex-shrink-0" />
+          <CheckCircle className="h-7 w-7 text-success-foreground flex-shrink-0" />
         ) : (
-          <AlertTriangle className="h-7 w-7 text-red-500 flex-shrink-0" />
+          <AlertTriangle className="h-7 w-7 text-error-foreground flex-shrink-0" />
         )}
         <div>
           <h3 className="text-base font-semibold">
             {isSuccess ? 'Update Complete' : 'Update Failed'}
           </h3>
           {payload?.message && (
-            <p className="text-sm text-gray-500">{payload.message}</p>
+            <p className="text-sm text-muted-foreground">{payload.message}</p>
           )}
         </div>
       </div>
@@ -118,32 +119,28 @@ export function CsvSummaryStep({
       {/* Stats cards */}
       {isSuccess && total > 0 && (
         <div className="flex flex-wrap gap-3">
-          <div className="flex items-center gap-1.5 px-3 py-2 border rounded-md bg-gray-50">
-            <span className="text-sm text-gray-600">Total</span>
+          <div className="flex items-center gap-1.5 px-3 py-2 border rounded-md bg-muted">
+            <span className="text-sm text-muted-foreground">Total</span>
             <Badge variant="secondary">{total}</Badge>
           </div>
           {successful > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-2 border rounded-md bg-green-50 border-green-200">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-green-700">Updated</span>
-              <Badge className="bg-green-100 text-green-800 border-green-300">
-                {successful}
-              </Badge>
+            <div className="flex items-center gap-1.5 px-3 py-2 border border-success-border rounded-md bg-success">
+              <CheckCircle className="h-4 w-4 text-success-foreground" />
+              <span className="text-sm text-success-foreground">Updated</span>
+              <StatusBadge variant="success">{successful}</StatusBadge>
             </div>
           )}
           {failed > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-2 border rounded-md bg-red-50 border-red-200">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <span className="text-sm text-red-700">Failed</span>
+            <div className="flex items-center gap-1.5 px-3 py-2 border border-error-border rounded-md bg-error">
+              <AlertTriangle className="h-4 w-4 text-error-foreground" />
+              <span className="text-sm text-error-foreground">Failed</span>
               <Badge variant="destructive">{failed}</Badge>
             </div>
           )}
           {skipped > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-2 border rounded-md bg-yellow-50 border-yellow-200">
-              <span className="text-sm text-yellow-700">Skipped</span>
-              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                {skipped}
-              </Badge>
+            <div className="flex items-center gap-1.5 px-3 py-2 border border-warning-border rounded-md bg-warning">
+              <span className="text-sm text-warning-foreground">Skipped</span>
+              <StatusBadge variant="warning">{skipped}</StatusBadge>
             </div>
           )}
         </div>
@@ -152,7 +149,7 @@ export function CsvSummaryStep({
       {/* Per-device results table */}
       {allRows.length > 0 && (
         <div className="space-y-1">
-          <p className="text-sm font-medium text-gray-700">Device Results</p>
+          <p className="text-sm font-medium text-foreground">Device Results</p>
           <div className="border rounded-md overflow-auto max-h-72">
             <Table>
               <TableHeader>
@@ -166,12 +163,12 @@ export function CsvSummaryStep({
               <TableBody>
                 {allRows.map((row, i) => (
                   // eslint-disable-next-line react/no-array-index-key
-                  <TableRow key={i} className={row.ok ? '' : 'bg-red-50'}>
+                  <TableRow key={i} className={row.ok ? '' : 'bg-error'}>
                     <TableCell className="px-3 py-2">
                       {row.ok ? (
-                        <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                        <CheckCircle className="h-3.5 w-3.5 text-success-foreground" />
                       ) : (
-                        <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+                        <AlertTriangle className="h-3.5 w-3.5 text-error-foreground" />
                       )}
                     </TableCell>
                     <TableCell className="text-xs font-mono px-3 py-2">
@@ -179,22 +176,22 @@ export function CsvSummaryStep({
                     </TableCell>
                     <TableCell className="text-xs px-3 py-2">
                       {row.updated_fields && row.updated_fields.length > 0 ? (
-                        <span className="text-gray-600">
+                        <span className="text-muted-foreground">
                           {row.updated_fields.join(', ')}
                         </span>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
                     <TableCell className="text-xs px-3 py-2">
                       {row.error ? (
-                        <span className="text-red-600">{row.error}</span>
+                        <span className="text-error-foreground">{row.error}</span>
                       ) : row.warnings && row.warnings.length > 0 ? (
-                        <span className="text-yellow-600">
+                        <span className="text-warning-foreground">
                           {row.warnings.join('; ')}
                         </span>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -207,14 +204,14 @@ export function CsvSummaryStep({
 
       {/* Task ID */}
       {taskId && (
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-muted-foreground">
           Task ID: <span className="font-mono">{taskId}</span>
           {jobId != null && (
             <a
               href={`/jobs/view?job=${jobId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 inline-flex items-center gap-0.5 text-blue-500 hover:text-blue-700"
+              className="ml-2 inline-flex items-center gap-0.5 text-primary hover:text-primary/80"
             >
               View job <ExternalLink className="h-3 w-3" />
             </a>
@@ -228,7 +225,7 @@ export function CsvSummaryStep({
           <button
             type="button"
             onClick={() => setShowRawJson(v => !v)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground bg-muted hover:bg-muted/70 transition-colors text-left"
           >
             {showRawJson ? (
               <ChevronDown className="h-3.5 w-3.5 flex-shrink-0" />
@@ -238,6 +235,7 @@ export function CsvSummaryStep({
             View Raw JSON
           </button>
           {showRawJson && (
+            // Terminal/console-style output block — left hardcoded per repo precedent
             <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap break-all p-3 bg-slate-50 border-t max-h-96 overflow-auto">
               {JSON.stringify(taskResult as Record<string, unknown>, null, 2)}
             </pre>

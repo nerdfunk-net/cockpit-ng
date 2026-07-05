@@ -242,20 +242,20 @@ export function CsvUpdateWizard() {
     currentStepIndex <= INDICATOR_STEPS.length - 1
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
       {/* Gradient header */}
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 rounded-t-lg">
+      <div className="panel-header py-2 px-4 rounded-t-lg">
         <div className="flex items-center gap-2">
           <FileSpreadsheet className="h-4 w-4" />
           <span className="text-sm font-medium">CSV Update Wizard</span>
         </div>
-        <div className="text-xs text-blue-100">
+        <div className="text-xs text-panel-header-muted">
           Follow the steps to configure and submit your CSV update
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
+      <div className="p-6 panel-content space-y-6">
         {/* Step Indicator */}
         {!isProcessingOrSummary && (
           <div className="flex items-center gap-1">
@@ -267,24 +267,24 @@ export function CsvUpdateWizard() {
                   <div
                     className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium flex-shrink-0 ${
                       isActive
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-primary text-primary-foreground'
                         : isPast
-                          ? 'bg-blue-100 text-blue-600'
-                          : 'bg-gray-100 text-gray-400'
+                          ? 'bg-success text-success-foreground'
+                          : 'bg-muted text-muted-foreground'
                     }`}
                   >
                     {i + 1}
                   </div>
                   <span
                     className={`text-xs truncate ${
-                      isActive ? 'text-blue-600 font-medium' : 'text-gray-400'
+                      isActive ? 'text-primary font-medium' : 'text-muted-foreground'
                     }`}
                   >
                     {STEP_LABELS[s]}
                   </span>
                   {i < INDICATOR_STEPS.length - 1 && (
                     <div
-                      className={`flex-1 h-px ${isPast ? 'bg-blue-200' : 'bg-gray-200'}`}
+                      className={`flex-1 h-px ${isPast ? 'bg-success' : 'bg-border'}`}
                     />
                   )}
                 </div>
@@ -402,7 +402,6 @@ export function CsvUpdateWizard() {
                       validationSummary.errorCount > 0 ||
                       parsedData.rowCount === 0
                     }
-                    className="bg-blue-600 hover:bg-blue-700"
                   >
                     <Play className="h-4 w-4 mr-1" />
                     Submit{' '}

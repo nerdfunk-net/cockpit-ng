@@ -13,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { StatusAlert } from '@/components/shared/status-alert'
+import { StatusBadge } from '@/components/shared/status-badge'
 import type { ParsedCSVData, ValidationResult } from '../types'
 
 const TERMINAL_STATUSES = ['SUCCESS', 'FAILURE', 'REVOKED']
@@ -65,21 +67,21 @@ export function CsvPreviewStep({
     <div className="space-y-4">
       {/* Validation Summary */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-medium text-gray-700">Validation:</span>
+        <span className="text-sm font-medium text-muted-foreground">Validation:</span>
         <Badge variant="secondary">{parsedData.rowCount} rows</Badge>
         {validationSummary.errorCount > 0 && (
           <Badge variant="destructive">{validationSummary.errorCount} errors</Badge>
         )}
         {validationSummary.warningCount > 0 && (
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+          <StatusBadge variant="warning">
             {validationSummary.warningCount} warnings
-          </Badge>
+          </StatusBadge>
         )}
         {validationSummary.isValid && (
-          <Badge className="bg-green-100 text-green-800 border-green-300">
+          <StatusBadge variant="success">
             <CheckCircle className="h-3 w-3 mr-1" />
             Valid
-          </Badge>
+          </StatusBadge>
         )}
       </div>
 
@@ -91,10 +93,10 @@ export function CsvPreviewStep({
               key={`${result.type}-${result.rowNumber ?? ''}-${result.message}`}
               className={`px-3 py-1.5 text-xs border-b last:border-0 flex items-start gap-1.5 ${
                 result.type === 'error'
-                  ? 'bg-red-50 text-red-800'
+                  ? 'bg-error text-error-foreground'
                   : result.type === 'warning'
-                    ? 'bg-yellow-50 text-yellow-800'
-                    : 'bg-green-50 text-green-800'
+                    ? 'bg-warning text-warning-foreground'
+                    : 'bg-success text-success-foreground'
               }`}
             >
               {result.type === 'error' ? (
@@ -116,8 +118,8 @@ export function CsvPreviewStep({
       {/* Preview Table */}
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700">Data Preview</span>
-          <span className="text-xs text-gray-400">
+          <span className="text-sm font-medium text-muted-foreground">Data Preview</span>
+          <span className="text-xs text-muted-foreground">
             (first {Math.min(PREVIEW_ROW_LIMIT, parsedData.rowCount)} rows
             {hasMoreColumns ? `, first 8 of ${parsedData.headers.length} columns` : ''})
           </span>
@@ -129,13 +131,13 @@ export function CsvPreviewStep({
                 {previewHeaders.map(h => (
                   <TableHead
                     key={h}
-                    className="text-xs font-mono bg-slate-50 whitespace-nowrap px-2 py-1.5"
+                    className="text-xs font-mono bg-muted whitespace-nowrap px-2 py-1.5"
                   >
                     {h}
                   </TableHead>
                 ))}
                 {hasMoreColumns && (
-                  <TableHead className="text-xs text-gray-400 bg-slate-50 px-2 py-1.5">
+                  <TableHead className="text-xs text-muted-foreground bg-muted px-2 py-1.5">
                     +{parsedData.headers.length - 8} more
                   </TableHead>
                 )}
@@ -155,7 +157,7 @@ export function CsvPreviewStep({
                     </TableCell>
                   ))}
                   {hasMoreColumns && (
-                    <TableCell className="text-xs text-gray-300 px-2">…</TableCell>
+                    <TableCell className="text-xs text-muted-foreground px-2">…</TableCell>
                   )}
                 </TableRow>
               ))}
@@ -166,22 +168,22 @@ export function CsvPreviewStep({
 
       {/* Dry Run Result */}
       {dryRunTaskId && (
-        <div className="border rounded-md p-3 bg-slate-50 space-y-2">
+        <div className="border rounded-md p-3 bg-muted space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Dry Run Result</span>
             {isDryRunPolling &&
               !TERMINAL_STATUSES.includes(dryRunStatus?.status ?? '') && (
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
               )}
             {dryRunStatus && (
               <Badge
                 variant="outline"
                 className={
                   dryRunStatus.status === 'SUCCESS'
-                    ? 'border-green-400 text-green-700'
+                    ? 'border-success-border text-success-foreground'
                     : dryRunStatus.status === 'FAILURE'
-                      ? 'border-red-400 text-red-700'
-                      : 'border-blue-400 text-blue-700'
+                      ? 'border-error-border text-error-foreground'
+                      : 'border-info-border text-info-foreground'
                 }
               >
                 {dryRunStatus.status}
@@ -190,58 +192,48 @@ export function CsvPreviewStep({
           </div>
 
           {!dryRunStatus && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
               Waiting for task to start…
             </div>
           )}
 
           {dryRunStatus?.status === 'PROGRESS' && dryRunStatus.progress && (
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-muted-foreground">
               {(dryRunStatus.progress as { status?: string }).status ?? 'Processing…'}
             </p>
           )}
 
           {dryRunStatus?.status === 'SUCCESS' && (
-            <Alert className="border-green-200 bg-green-50">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-xs text-green-800">
-                Dry run completed successfully. No errors found.
-                {dryRunStatus.result != null && (
-                  <pre className="mt-1 font-mono whitespace-pre-wrap break-all">
-                    {JSON.stringify(
-                      dryRunStatus.result as Record<string, unknown>,
-                      null,
-                      2
-                    )}
-                  </pre>
-                )}
-              </AlertDescription>
-            </Alert>
+            <StatusAlert variant="success">
+              Dry run completed successfully. No errors found.
+              {dryRunStatus.result != null && (
+                <pre className="mt-1 font-mono whitespace-pre-wrap break-all">
+                  {JSON.stringify(
+                    dryRunStatus.result as Record<string, unknown>,
+                    null,
+                    2
+                  )}
+                </pre>
+              )}
+            </StatusAlert>
           )}
 
           {dryRunStatus?.status === 'FAILURE' && (
-            <Alert className="status-error">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                Dry run failed: {dryRunStatus.error ?? 'Unknown error'}
-              </AlertDescription>
-            </Alert>
+            <StatusAlert variant="error">
+              Dry run failed: {dryRunStatus.error ?? 'Unknown error'}
+            </StatusAlert>
           )}
 
-          <p className="text-xs text-gray-400">Task ID: {dryRunTaskId}</p>
+          <p className="text-xs text-muted-foreground">Task ID: {dryRunTaskId}</p>
         </div>
       )}
 
       {/* Blocking error warning */}
       {validationSummary.errorCount > 0 && (
-        <Alert className="status-error">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="text-sm">
-            Fix the {validationSummary.errorCount} validation error(s) before
-            submitting.
-          </AlertDescription>
-        </Alert>
+        <StatusAlert variant="error">
+          Fix the {validationSummary.errorCount} validation error(s) before submitting.
+        </StatusAlert>
       )}
 
       {parsedData.rowCount === 0 && (

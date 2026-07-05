@@ -51,21 +51,23 @@ export function JobsTable({
   if (jobs.length === 0) {
     return (
       <div className="rounded-xl border shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+        <div className="panel-header py-2 px-4">
           <div className="flex items-center space-x-2">
             <History className="h-4 w-4" />
             <div>
               <h3 className="text-sm font-semibold">Job Runs</h3>
-              <p className="text-blue-100 text-xs">Background job execution history</p>
+              <p className="text-panel-header-muted text-xs">
+                Background job execution history
+              </p>
             </div>
           </div>
         </div>
-        <div className="bg-white flex flex-col items-center justify-center py-16">
-          <div className="p-4 bg-gray-100 rounded-full mb-4">
-            <History className="h-10 w-10 text-gray-400" />
+        <div className="bg-card flex flex-col items-center justify-center py-16">
+          <div className="p-4 bg-muted rounded-full mb-4">
+            <History className="h-10 w-10 text-muted-foreground" />
           </div>
-          <p className="text-lg font-semibold text-gray-700 mb-1">No job runs found</p>
-          <p className="text-sm text-gray-500">
+          <p className="text-lg font-semibold text-foreground mb-1">No job runs found</p>
+          <p className="text-sm text-muted-foreground">
             Job execution history will appear here when jobs are scheduled or run
             manually
           </p>
@@ -76,44 +78,46 @@ export function JobsTable({
 
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+      <div className="panel-header py-2 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <History className="h-4 w-4" />
             <div>
               <h3 className="text-sm font-semibold">Job Runs ({total})</h3>
-              <p className="text-blue-100 text-xs">Background job execution history</p>
+              <p className="text-panel-header-muted text-xs">
+                Background job execution history
+              </p>
             </div>
           </div>
         </div>
       </div>
-      <div className="bg-white">
+      <div className="bg-card">
         <TooltipProvider>
           <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50 hover:bg-gray-50">
-                <TableHead className="w-[180px] text-gray-600 font-semibold">
+              <TableRow className="bg-muted hover:bg-muted">
+                <TableHead className="w-[180px] text-muted-foreground font-semibold">
                   Job Name
                 </TableHead>
-                <TableHead className="w-[120px] text-gray-600 font-semibold">
+                <TableHead className="w-[120px] text-muted-foreground font-semibold">
                   Type
                 </TableHead>
-                <TableHead className="w-[90px] text-gray-600 font-semibold">
+                <TableHead className="w-[90px] text-muted-foreground font-semibold">
                   Status
                 </TableHead>
-                <TableHead className="w-[80px] text-gray-600 font-semibold">
+                <TableHead className="w-[80px] text-muted-foreground font-semibold">
                   Trigger
                 </TableHead>
-                <TableHead className="w-[110px] text-gray-600 font-semibold">
+                <TableHead className="w-[110px] text-muted-foreground font-semibold">
                   Started
                 </TableHead>
-                <TableHead className="w-[80px] text-gray-600 font-semibold">
+                <TableHead className="w-[80px] text-muted-foreground font-semibold">
                   Duration
                 </TableHead>
-                <TableHead className="w-[100px] text-gray-600 font-semibold">
+                <TableHead className="w-[100px] text-muted-foreground font-semibold">
                   Template
                 </TableHead>
-                <TableHead className="w-[60px] text-right text-gray-600 font-semibold">
+                <TableHead className="w-[60px] text-right text-muted-foreground font-semibold">
                   Actions
                 </TableHead>
               </TableRow>
@@ -122,34 +126,30 @@ export function JobsTable({
               {jobs.map((run, index) => (
                 <TableRow
                   key={run.id}
-                  className={`hover:bg-blue-50/50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                  className={`hover:bg-primary/5 transition-colors ${index % 2 === 0 ? 'bg-card' : 'bg-muted/50'}`}
                 >
                   {/* Job Name */}
-                  <TableCell className="font-medium text-gray-700">
+                  <TableCell className="font-medium text-foreground">
                     <div className="flex items-center gap-2">
                       {isJobSuspicious(run) && (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <AlertTriangle className="h-4 w-4 text-amber-500 animate-pulse flex-shrink-0" />
+                            <AlertTriangle className="h-4 w-4 text-warning-foreground animate-pulse flex-shrink-0" />
                           </TooltipTrigger>
                           <TooltipContent
                             side="right"
                             className="max-w-sm status-warning"
                           >
                             <div className="space-y-1 text-xs">
-                              <p className="font-semibold text-amber-900">
-                                ⚠️ Job May Be Stuck
-                              </p>
-                              <p className="text-amber-700">
-                                {getSuspiciousJobWarning(run)}
-                              </p>
+                              <p className="font-semibold">⚠️ Job May Be Stuck</p>
+                              <p>{getSuspiciousJobWarning(run)}</p>
                             </div>
                           </TooltipContent>
                         </Tooltip>
                       )}
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="cursor-help truncate block max-w-[160px] hover:text-blue-600 transition-colors">
+                          <span className="cursor-help truncate block max-w-[160px] hover:text-primary transition-colors">
                             {run.job_name}
                           </span>
                         </TooltipTrigger>
@@ -173,7 +173,7 @@ export function JobsTable({
                               </p>
                             )}
                             {run.error_message && (
-                              <p className="text-red-400 mt-2">{run.error_message}</p>
+                              <p className="text-destructive mt-2">{run.error_message}</p>
                             )}
                           </div>
                         </TooltipContent>
@@ -183,7 +183,7 @@ export function JobsTable({
 
                   {/* Job Type */}
                   <TableCell>
-                    <span className="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">
+                    <span className="text-sm font-mono bg-muted px-2 py-0.5 rounded text-foreground">
                       {run.job_type}
                     </span>
                   </TableCell>
@@ -207,12 +207,12 @@ export function JobsTable({
                   </TableCell>
 
                   {/* Started */}
-                  <TableCell className="text-sm text-gray-600">
+                  <TableCell className="text-sm text-muted-foreground">
                     {formatDateTime(run.started_at || run.queued_at)}
                   </TableCell>
 
                   {/* Duration */}
-                  <TableCell className="text-sm text-gray-600">
+                  <TableCell className="text-sm text-muted-foreground">
                     <span className="font-mono text-xs">
                       {formatDuration(
                         run.duration_seconds,
@@ -223,7 +223,7 @@ export function JobsTable({
                   </TableCell>
 
                   {/* Template */}
-                  <TableCell className="text-sm text-gray-600">
+                  <TableCell className="text-sm text-muted-foreground">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="truncate block max-w-[90px] cursor-help">

@@ -21,8 +21,8 @@ export function JobsPagination({
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t">
-      <div className="text-sm text-gray-600">
+    <div className="flex items-center justify-between px-4 py-3 bg-muted border-t">
+      <div className="text-sm text-muted-foreground">
         Showing {(currentPage - 1) * pageSize + 1} -{' '}
         {Math.min(currentPage * pageSize, total)} of {total} runs
       </div>
@@ -36,7 +36,7 @@ export function JobsPagination({
           <ChevronLeft className="h-4 w-4" />
           Previous
         </Button>
-        <span className="text-sm text-gray-600 px-2">
+        <span className="text-sm text-muted-foreground px-2">
           Page {currentPage} of {totalPages}
         </span>
         <Button

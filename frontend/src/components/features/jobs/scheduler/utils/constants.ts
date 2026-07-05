@@ -30,16 +30,6 @@ export const SCHEDULE_TYPE_LABELS: Record<string, string> = {
   custom: 'Custom',
 } as const
 
-export const SCHEDULE_TYPE_COLORS: Record<string, string> = {
-  now: 'bg-blue-500',
-  interval: 'bg-cyan-500',
-  hourly: 'bg-green-500',
-  daily: 'bg-purple-500',
-  weekly: 'bg-orange-500',
-  monthly: 'bg-pink-500',
-  custom: 'bg-gray-500',
-} as const
-
 export const JOB_TYPE_LABELS: Record<string, string> = {
   backup: 'Backup',
   compare_devices: 'Compare Devices',

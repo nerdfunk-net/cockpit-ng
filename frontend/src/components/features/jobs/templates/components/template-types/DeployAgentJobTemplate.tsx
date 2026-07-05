@@ -193,22 +193,22 @@ export function DeployAgentJobTemplate({
   return (
     <>
       {/* Panel 1: Target Agent */}
-      <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-4 space-y-3">
+      <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Rocket className="h-4 w-4 text-teal-600" />
-          <Label className="text-sm font-semibold text-teal-900">Target Agent</Label>
+          <Rocket className="h-4 w-4 text-info-foreground" />
+          <Label className="text-sm font-semibold text-info-foreground">Target Agent</Label>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="deploy-agent" className="text-sm text-teal-900">
-            Agent <span className="text-red-500">*</span>
+          <Label htmlFor="deploy-agent" className="text-sm text-info-foreground">
+            Agent <span className="text-destructive">*</span>
           </Label>
           <Select
             value={formDeployAgentId || 'none'}
             onValueChange={value => setFormDeployAgentId(value === 'none' ? '' : value)}
             disabled={loadingAgents}
           >
-            <SelectTrigger className="bg-white border-teal-200 focus:border-teal-400 focus:ring-teal-400">
+            <SelectTrigger className="bg-card border-info-border focus:border-primary focus:ring-ring/30">
               <SelectValue
                 placeholder={loadingAgents ? 'Loading...' : 'Select an agent...'}
               />
@@ -221,14 +221,14 @@ export function DeployAgentJobTemplate({
                     <Bot className="h-3 w-3" />
                     {a.name}
                     {!a.agent_id && (
-                      <span className="text-xs text-red-500">(no agent_id)</span>
+                      <span className="text-xs text-destructive">(no agent_id)</span>
                     )}
                   </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-teal-700">
+          <p className="text-xs text-info-foreground">
             Agent with a Git repository configured for deployment
           </p>
         </div>
@@ -238,9 +238,9 @@ export function DeployAgentJobTemplate({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Label className="text-sm font-semibold text-teal-900">Templates</Label>
+            <Label className="text-sm font-semibold text-info-foreground">Templates</Label>
             {loadingTemplates && (
-              <Loader2 className="h-3 w-3 animate-spin text-teal-500" />
+              <Loader2 className="h-3 w-3 animate-spin text-info-foreground" />
             )}
           </div>
           <Button
@@ -248,7 +248,7 @@ export function DeployAgentJobTemplate({
             variant="outline"
             size="sm"
             onClick={handleAddEntry}
-            className="h-7 text-xs border-teal-200 text-teal-700 hover:bg-teal-50"
+            className="h-7 text-xs border-info-border text-info-foreground hover:bg-info"
           >
             <Plus className="h-3 w-3 mr-1" />
             Add Template
@@ -272,10 +272,10 @@ export function DeployAgentJobTemplate({
       </div>
 
       {/* Panel 3: Agent Activation */}
-      <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-4 space-y-3">
+      <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <RefreshCw className="h-4 w-4 text-teal-600" />
-          <Label className="text-sm font-semibold text-teal-900">
+          <RefreshCw className="h-4 w-4 text-info-foreground" />
+          <Label className="text-sm font-semibold text-info-foreground">
             Agent Activation
           </Label>
         </div>
@@ -287,12 +287,12 @@ export function DeployAgentJobTemplate({
           />
           <Label
             htmlFor="activate-after-deploy"
-            className="text-sm text-teal-900 cursor-pointer"
+            className="text-sm text-info-foreground cursor-pointer"
           >
             Activate (pull and restart) after deploying the agent
           </Label>
         </div>
-        <p className="text-xs text-teal-700">
+        <p className="text-xs text-info-foreground">
           When enabled, the agent will automatically pull the latest changes from Git
           and restart after deployment completes.
         </p>

@@ -21,18 +21,23 @@ export function isBackupJob(jobType: string): boolean {
   return jobType.toLowerCase() === 'backup'
 }
 
+import type { StatusVariant } from '@/components/shared/status-badge'
+
+/** Neutral fallback badge classes for statuses/triggers with no dedicated status token. */
+export const NEUTRAL_BADGE_CLASSES = 'bg-muted text-muted-foreground border-border'
+
 /**
- * Get badge CSS classes for job status
+ * Map a job status to a shared StatusBadge variant, or null when the status
+ * has no dedicated status token (falls back to neutral badge classes).
  */
-export function getStatusBadgeClasses(status: string): string {
-  const classes: Record<string, string> = {
-    completed: 'bg-green-100 text-green-700 border-green-200',
-    running: 'bg-blue-100 text-blue-700 border-blue-200 animate-pulse',
-    pending: 'bg-amber-100 text-amber-700 border-amber-200',
-    failed: 'bg-red-100 text-red-700 border-red-200',
-    cancelled: 'bg-slate-100 text-slate-600 border-slate-200',
+export function getStatusBadgeVariant(status: string): StatusVariant | null {
+  const variants: Record<string, StatusVariant> = {
+    completed: 'success',
+    running: 'info',
+    pending: 'warning',
+    failed: 'error',
   }
-  return classes[status.toLowerCase()] || 'bg-slate-100 text-slate-600 border-slate-200'
+  return variants[status.toLowerCase()] || null
 }
 
 /**
@@ -40,13 +45,10 @@ export function getStatusBadgeClasses(status: string): string {
  */
 export function getTriggerBadgeClasses(triggeredBy: string): string {
   const classes: Record<string, string> = {
-    manual: 'bg-purple-100 text-purple-700 border-purple-200',
-    system: 'bg-cyan-100 text-cyan-700 border-cyan-200',
-    schedule: 'bg-slate-100 text-slate-600 border-slate-200',
+    manual: 'bg-info text-info-foreground border-info-border',
+    system: 'bg-success text-success-foreground border-success-border',
   }
-  return (
-    classes[triggeredBy.toLowerCase()] || 'bg-slate-100 text-slate-600 border-slate-200'
-  )
+  return classes[triggeredBy.toLowerCase()] || NEUTRAL_BADGE_CLASSES
 }
 
 /**

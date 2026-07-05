@@ -45,14 +45,14 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
           {/* Required Fields */}
           <section>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertCircle className="h-4 w-4 text-error-foreground" />
               Required Fields
             </h3>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-900 font-medium mb-2">
+            <div className="bg-error border border-error-border rounded-lg p-4">
+              <p className="text-sm text-error-foreground font-medium mb-2">
                 The following fields are mandatory:
               </p>
-              <ul className="list-disc list-inside space-y-1 text-sm text-red-800">
+              <ul className="list-disc list-inside space-y-1 text-sm text-error-foreground">
                 <li>
                   <strong>Device Name</strong> - Unique identifier for the device
                 </li>
@@ -120,11 +120,11 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
               Click the &quot;Manage Tags&quot; button in the Device Information section
               to open the tags modal.
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-900">
+            <div className="bg-info border border-info-border rounded-lg p-4">
+              <p className="text-sm text-info-foreground">
                 <strong>How to use:</strong>
               </p>
-              <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800 mt-2">
+              <ol className="list-decimal list-inside space-y-1 text-sm text-info-foreground mt-2">
                 <li>Click &quot;Manage Tags&quot; button</li>
                 <li>Browse available tags or search for specific ones</li>
                 <li>Click on tags to select/deselect them</li>
@@ -142,11 +142,11 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
               your organization&apos;s needs. These fields are defined by your Nautobot
               administrators.
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-900">
+            <div className="bg-info border border-info-border rounded-lg p-4">
+              <p className="text-sm text-info-foreground">
                 <strong>How to use:</strong>
               </p>
-              <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800 mt-2">
+              <ol className="list-decimal list-inside space-y-1 text-sm text-info-foreground mt-2">
                 <li>Click &quot;Manage Custom Fields&quot; button</li>
                 <li>Fill in values for available custom fields</li>
                 <li>
@@ -227,11 +227,11 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
               Each interface can have multiple IP addresses assigned. IP addresses must
               be in CIDR notation.
             </p>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-sm text-amber-900 font-medium mb-2">
+            <div className="bg-warning border border-warning-border rounded-lg p-4">
+              <p className="text-sm text-warning-foreground font-medium mb-2">
                 Required IP Address Fields:
               </p>
-              <ul className="list-disc list-inside space-y-1 text-sm text-amber-800">
+              <ul className="list-disc list-inside space-y-1 text-sm text-warning-foreground">
                 <li>
                   <strong>Address</strong> - IP address in CIDR format (e.g.,
                   192.168.1.10/24 or 2001:db8::1/64)
@@ -240,11 +240,11 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
                   <strong>Namespace</strong> - IP namespace for address organization
                 </li>
               </ul>
-              <div className="mt-3 pt-3 border-t border-amber-300">
-                <p className="text-sm text-amber-900 font-medium mb-1">
+              <div className="mt-3 pt-3 border-t border-warning-border">
+                <p className="text-sm text-warning-foreground font-medium mb-1">
                   Optional IP Address Fields:
                 </p>
-                <ul className="list-disc list-inside space-y-1 text-sm text-amber-800">
+                <ul className="list-disc list-inside space-y-1 text-sm text-warning-foreground">
                   <li>
                     <strong>Role</strong> - Purpose of the IP (e.g., Loopback,
                     Management, HSRP)
@@ -260,17 +260,17 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
           {/* Primary IP */}
           <section>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertCircle className="h-4 w-4 text-warning-foreground" />
               Primary IP Address
             </h3>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-sm text-amber-900">
+            <div className="bg-warning border border-warning-border rounded-lg p-4">
+              <p className="text-sm text-warning-foreground">
                 <strong>Important:</strong> Each device can have only{' '}
                 <strong>ONE primary IPv4 address</strong> and
                 <strong> ONE primary IPv6 address</strong>. The primary IP is the main
                 address used to access and manage the device.
               </p>
-              <p className="text-sm text-amber-800 mt-2">
+              <p className="text-sm text-warning-foreground mt-2">
                 To set a primary IP, check the &quot;Primary&quot; checkbox for the
                 desired IP address on each interface. If you mark multiple IPs as
                 primary for the same IP version, the system will use the last one
@@ -308,8 +308,8 @@ export function HelpModal({ open, onOpenChange }: HelpModalProps) {
           {/* Workflow */}
           <section>
             <h3 className="text-lg font-semibold mb-3">Recommended Workflow</h3>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <ol className="list-decimal list-inside space-y-2 text-sm text-green-900">
+            <div className="bg-success border border-success-border rounded-lg p-4">
+              <ol className="list-decimal list-inside space-y-2 text-sm text-success-foreground">
                 <li>Fill in all required device information fields</li>
                 <li>Optionally add tags and custom fields</li>
                 <li>Configure prefix settings if you want automatic IP assignment</li>

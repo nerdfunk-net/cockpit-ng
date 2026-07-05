@@ -179,12 +179,12 @@ export function DeployTemplateEntryComponent({
   )
 
   return (
-    <div className="rounded-lg border border-teal-200 bg-teal-50/20 p-4 space-y-3 relative">
+    <div className="rounded-lg border border-info-border bg-info/20 p-4 space-y-3 relative">
       {/* Header with remove button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileCode className="h-4 w-4 text-teal-600" />
-          <Label className="text-sm font-semibold text-teal-900">
+          <FileCode className="h-4 w-4 text-info-foreground" />
+          <Label className="text-sm font-semibold text-info-foreground">
             Template {index + 1}
           </Label>
         </div>
@@ -193,7 +193,7 @@ export function DeployTemplateEntryComponent({
             variant="ghost"
             size="sm"
             onClick={() => onRemove(index)}
-            className="h-7 w-7 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-error"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -204,15 +204,15 @@ export function DeployTemplateEntryComponent({
       <div className="grid grid-cols-2 gap-3">
         {/* Template Selector */}
         <div className="space-y-1.5">
-          <Label className="text-xs text-teal-700">
-            Agent Template <span className="text-red-500">*</span>
+          <Label className="text-xs text-info-foreground">
+            Agent Template <span className="text-destructive">*</span>
           </Label>
           <Select
             value={entry.templateId?.toString() || 'none'}
             onValueChange={handleTemplateChange}
             disabled={loadingTemplates}
           >
-            <SelectTrigger className="h-9 bg-white border-teal-200 focus:border-teal-400">
+            <SelectTrigger className="h-9 bg-card border-info-border focus:border-primary">
               <SelectValue
                 placeholder={loadingTemplates ? 'Loading...' : 'Select template...'}
               />
@@ -230,17 +230,17 @@ export function DeployTemplateEntryComponent({
 
         {/* Inventory Selector */}
         <div className="space-y-1.5">
-          <Label className="text-xs text-teal-700">Inventory</Label>
+          <Label className="text-xs text-info-foreground">Inventory</Label>
           {loadingInventories ? (
-            <div className="flex items-center justify-center h-9 bg-white border border-teal-200 rounded-md">
-              <Loader2 className="h-4 w-4 animate-spin text-teal-500" />
+            <div className="flex items-center justify-center h-9 bg-card border border-info-border rounded-md">
+              <Loader2 className="h-4 w-4 animate-spin text-info-foreground" />
             </div>
           ) : (
             <Select
               value={entry.inventoryId?.toString() || 'none'}
               onValueChange={handleInventoryChange}
             >
-              <SelectTrigger className="h-9 bg-white border-teal-200 focus:border-teal-400">
+              <SelectTrigger className="h-9 bg-card border-info-border focus:border-primary">
                 <SelectValue placeholder="Select inventory..." />
               </SelectTrigger>
               <SelectContent>
@@ -268,7 +268,7 @@ export function DeployTemplateEntryComponent({
 
       {/* Deployment Path */}
       <div className="space-y-1.5">
-        <Label className="text-xs text-teal-700">
+        <Label className="text-xs text-info-foreground">
           <div className="flex items-center gap-1">
             <FileCode className="h-3 w-3" />
             Deployment Path
@@ -278,9 +278,9 @@ export function DeployTemplateEntryComponent({
           value={entry.path}
           onChange={e => handlePathChange(e.target.value)}
           placeholder="e.g., configs/telegraf.conf"
-          className="h-9 bg-white border-teal-200 focus:border-teal-400"
+          className="h-9 bg-card border-info-border focus:border-primary"
         />
-        <p className="text-xs text-teal-600">
+        <p className="text-xs text-info-foreground">
           File path relative to Git repo root. Defaults to template&apos;s file_path if
           not set.
         </p>
@@ -289,8 +289,8 @@ export function DeployTemplateEntryComponent({
       {/* Loading template detail */}
       {loadingDetail && (
         <div className="flex items-center justify-center py-2">
-          <Loader2 className="h-4 w-4 animate-spin text-teal-500" />
-          <span className="ml-2 text-xs text-gray-600">
+          <Loader2 className="h-4 w-4 animate-spin text-info-foreground" />
+          <span className="ml-2 text-xs text-muted-foreground">
             Loading template details...
           </span>
         </div>
@@ -299,19 +299,19 @@ export function DeployTemplateEntryComponent({
       {/* Custom Variables */}
       {!loadingDetail && templateDetail && customVariables.length > 0 && (
         <div className="space-y-2">
-          <Label className="text-xs text-teal-700 font-medium">Custom Variables</Label>
+          <Label className="text-xs text-info-foreground font-medium">Custom Variables</Label>
           <div className="grid grid-cols-2 gap-3">
             {customVariables.map(({ name, defaultValue, currentValue }) => (
               <div key={name} className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium text-teal-900">{name}</Label>
-                  <span className="text-xs text-teal-500">Default: {defaultValue}</span>
+                  <Label className="text-xs font-medium text-info-foreground">{name}</Label>
+                  <span className="text-xs text-info-foreground">Default: {defaultValue}</span>
                 </div>
                 <Input
                   value={currentValue}
                   onChange={e => handleVariableChange(name, e.target.value)}
                   placeholder={`Override value for ${name}`}
-                  className="h-8 text-sm bg-white border-teal-200 focus:border-teal-400"
+                  className="h-8 text-sm bg-card border-info-border focus:border-primary"
                 />
               </div>
             ))}

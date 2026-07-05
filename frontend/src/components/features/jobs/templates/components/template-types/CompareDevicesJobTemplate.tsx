@@ -1,31 +1,31 @@
 import { Label } from '@/components/ui/label'
-import { GitCompare, Info } from 'lucide-react'
+import { GitCompare } from 'lucide-react'
+import { StatusAlert } from '@/components/shared/status-alert'
 
 export function CompareDevicesJobTemplate() {
   return (
-    <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-3">
+    <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <GitCompare className="h-4 w-4 text-purple-600" />
-        <Label className="text-sm font-semibold text-purple-900">Compare Devices</Label>
+        <GitCompare className="h-4 w-4 text-info-foreground" />
+        <Label className="text-sm font-semibold text-info-foreground">Compare Devices</Label>
       </div>
 
-      <div className="flex items-start gap-2 bg-purple-100/50 border border-purple-200 rounded-md p-3">
-        <Info className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
-        <div className="space-y-2 text-sm text-purple-900">
+      <StatusAlert variant="info">
+        <div className="space-y-2 text-sm">
           <p className="leading-relaxed">
             This job compares device configurations between Nautobot and CheckMK to
             identify discrepancies.
           </p>
-          <ul className="list-disc list-inside space-y-1 text-purple-800">
+          <ul className="list-disc list-inside space-y-1">
             <li>Fetches device data from Nautobot</li>
             <li>Retrieves corresponding configuration from CheckMK</li>
             <li>Compares and reports differences</li>
             <li>Results are stored and viewable in the Sync Devices app</li>
           </ul>
         </div>
-      </div>
+      </StatusAlert>
 
-      <p className="text-xs text-purple-600">
+      <p className="text-xs text-info-foreground">
         No additional configuration required - the job will compare all selected devices
         automatically
       </p>

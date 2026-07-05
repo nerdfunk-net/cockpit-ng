@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,7 +19,6 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import {
-  AlertCircle,
   ChevronDown,
   ChevronRight,
   Filter,
@@ -28,6 +26,7 @@ import {
   Settings2,
   Upload,
 } from 'lucide-react'
+import { StatusAlert } from '@/components/shared/status-alert'
 import type { CsvRepoFile, GitRepository } from '../../types'
 import { CSV_IMPORT_FORMAT_LABELS, CSV_IMPORT_TYPE_LABELS } from '../../utils/constants'
 
@@ -106,9 +105,9 @@ export function CsvImportJobTemplate({
     <div className="space-y-4">
       {/* Panel 1: CSV Import Configuration */}
       <Collapsible open={configOpen} onOpenChange={setConfigOpen}>
-        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
           <CollapsibleTrigger asChild>
-            <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg cursor-pointer select-none">
+            <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg cursor-pointer select-none">
               <div className="flex items-center space-x-2">
                 <Upload className="h-4 w-4" />
                 <span className="text-sm font-medium">CSV Import Configuration</span>
@@ -121,21 +120,18 @@ export function CsvImportJobTemplate({
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+            <div className="panel-content p-6 space-y-4">
               {/* Info alert */}
-              <Alert className="status-info">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  The <strong>CSV File</strong> and file filter below are used only to
-                  load an example file for column mapping configuration. The actual
-                  files imported at runtime are determined by the{' '}
-                  <strong>Import Options</strong> file filter below.
-                </AlertDescription>
-              </Alert>
+              <StatusAlert variant="info">
+                The <strong>CSV File</strong> and file filter below are used only to
+                load an example file for column mapping configuration. The actual
+                files imported at runtime are determined by the{' '}
+                <strong>Import Options</strong> file filter below.
+              </StatusAlert>
 
               {/* Git Repository */}
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">
+                <Label className="text-xs font-medium text-muted-foreground">
                   Git Repository
                 </Label>
                 <Select
@@ -146,7 +142,7 @@ export function CsvImportJobTemplate({
                     setFormCsvImportPrimaryKey('')
                   }}
                 >
-                  <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                  <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
                     <SelectValue placeholder="Select a CSV imports repository..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -158,7 +154,7 @@ export function CsvImportJobTemplate({
                   </SelectContent>
                 </Select>
                 {csvImportRepos.length === 0 && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     No repositories with category &quot;csv_imports&quot; found. Add one
                     in Settings → Git.
                   </p>
@@ -168,11 +164,11 @@ export function CsvImportJobTemplate({
               {/* File Selector */}
               {formCsvImportRepoId && (
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     CSV File (example for mapping)
                   </Label>
                   <Input
-                    className="h-7 text-xs mb-1 bg-white border-gray-300 shadow-sm"
+                    className="h-7 text-xs mb-1 bg-card border-border shadow-sm"
                     placeholder="Filter files..."
                     value={fileQuery}
                     onChange={e => setFileQuery(e.target.value)}
@@ -184,9 +180,9 @@ export function CsvImportJobTemplate({
                       setFormCsvImportPrimaryKey('')
                     }}
                   >
-                    <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                    <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
                       {csvFilesLoading ? (
-                        <span className="flex items-center gap-1 text-gray-500">
+                        <span className="flex items-center gap-1 text-muted-foreground">
                           <Loader2 className="h-3 w-3 animate-spin" /> Loading...
                         </span>
                       ) : (
@@ -213,7 +209,7 @@ export function CsvImportJobTemplate({
 
               {/* Import Type */}
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">Import Type</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Import Type</Label>
                 <Select
                   value={formCsvImportType}
                   onValueChange={val => {
@@ -221,7 +217,7 @@ export function CsvImportJobTemplate({
                     setFormCsvImportPrimaryKey('')
                   }}
                 >
-                  <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                  <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
                     <SelectValue placeholder="Select object type..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -236,7 +232,7 @@ export function CsvImportJobTemplate({
 
               {/* Primary Key */}
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">
+                <Label className="text-xs font-medium text-muted-foreground">
                   Primary Key Column
                 </Label>
                 <Select
@@ -248,9 +244,9 @@ export function CsvImportJobTemplate({
                     csvHeaders.length === 0
                   }
                 >
-                  <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                  <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
                     {csvHeadersLoading ? (
-                      <span className="flex items-center gap-1 text-gray-500">
+                      <span className="flex items-center gap-1 text-muted-foreground">
                         <Loader2 className="h-3 w-3 animate-spin" /> Loading headers...
                       </span>
                     ) : (
@@ -273,7 +269,7 @@ export function CsvImportJobTemplate({
                       ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Column used to look up existing objects in Nautobot (e.g.
                   &quot;name&quot;, &quot;address&quot;)
                 </p>
@@ -282,10 +278,10 @@ export function CsvImportJobTemplate({
               {/* Update Existing */}
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-xs font-medium text-gray-600">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     Update Existing Objects
                   </Label>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     When off, existing objects are skipped instead of updated
                   </p>
                 </div>
@@ -298,9 +294,9 @@ export function CsvImportJobTemplate({
               {/* Delimiter & Quote Char */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">Delimiter</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Delimiter</Label>
                   <Input
-                    className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                    className="h-8 text-sm bg-card border-border shadow-sm"
                     value={formCsvImportDelimiter}
                     onChange={e => setFormCsvImportDelimiter(e.target.value)}
                     placeholder=","
@@ -308,11 +304,11 @@ export function CsvImportJobTemplate({
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     Quote Character
                   </Label>
                   <Input
-                    className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                    className="h-8 text-sm bg-card border-border shadow-sm"
                     value={formCsvImportQuoteChar}
                     onChange={e => setFormCsvImportQuoteChar(e.target.value)}
                     placeholder={'"'}
@@ -324,7 +320,7 @@ export function CsvImportJobTemplate({
               {/* Column Mapping */}
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-xs font-medium text-gray-600">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     Column Mapping
                   </Label>
                   {mappedColumnCount > 0 && (
@@ -352,9 +348,9 @@ export function CsvImportJobTemplate({
 
       {/* Panel 2: Import Options */}
       <Collapsible open={optionsOpen} onOpenChange={setOptionsOpen}>
-        <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
+        <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
           <CollapsibleTrigger asChild>
-            <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg cursor-pointer select-none">
+            <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg cursor-pointer select-none">
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4" />
                 <span className="text-sm font-medium">Import Options</span>
@@ -367,16 +363,16 @@ export function CsvImportJobTemplate({
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+            <div className="panel-content p-6 space-y-4">
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">
+                <Label className="text-xs font-medium text-muted-foreground">
                   Import Format
                 </Label>
                 <Select
                   value={formCsvImportFormat}
                   onValueChange={setFormCsvImportFormat}
                 >
-                  <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                  <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
                     <SelectValue placeholder="Select import format..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -387,7 +383,7 @@ export function CsvImportJobTemplate({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Cockpit: multi-row per device (one row per interface). Nautobot:
                   single-row export with NULL filtering. Generic: plain CSV.
                 </p>
@@ -395,10 +391,10 @@ export function CsvImportJobTemplate({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-xs font-medium text-gray-600">
+                    <Label className="text-xs font-medium text-muted-foreground">
                       Add Missing IP Prefixes
                     </Label>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       Automatically create parent prefixes when an IP address has no
                       matching prefix in Nautobot
                     </p>
@@ -410,11 +406,11 @@ export function CsvImportJobTemplate({
                 </div>
                 {formCsvImportAddPrefixes && (
                   <div className="space-y-1">
-                    <Label className="text-xs font-medium text-gray-600">
+                    <Label className="text-xs font-medium text-muted-foreground">
                       Default Prefix Length
                     </Label>
                     <Input
-                      className="h-8 text-sm bg-white border-gray-300 shadow-sm w-32"
+                      className="h-8 text-sm bg-card border-border shadow-sm w-32"
                       value={formCsvImportDefaultPrefixLength}
                       onChange={e =>
                         setFormCsvImportDefaultPrefixLength(e.target.value)
@@ -422,7 +418,7 @@ export function CsvImportJobTemplate({
                       placeholder="e.g. 24"
                       maxLength={3}
                     />
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       Applied when an IP in the CSV has no CIDR mask (e.g.{' '}
                       <code>192.168.1.1</code> → <code>192.168.1.1/24</code>). IPs that
                       already include a mask (e.g. <code>192.168.1.1/24</code>) are used
@@ -432,14 +428,14 @@ export function CsvImportJobTemplate({
                 )}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-600">File Filter</Label>
+                <Label className="text-xs font-medium text-muted-foreground">File Filter</Label>
                 <Input
-                  className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                  className="h-8 text-sm bg-card border-border shadow-sm"
                   value={formCsvImportFileFilter}
                   onChange={e => setFormCsvImportFileFilter(e.target.value)}
                   placeholder="e.g. *.csv or devices_*.csv"
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Glob pattern to select which CSV files are imported when the job runs.
                   All matching files in the repository will be processed sequentially.
                   Leave empty to import only the example file selected above.

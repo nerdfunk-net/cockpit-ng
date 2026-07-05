@@ -282,8 +282,8 @@ export function InterfaceTable({
   }
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium">Network Interfaces</span>
           {interfaceSource && onInterfaceSourceChange && (
@@ -292,7 +292,7 @@ export function InterfaceTable({
               onValueChange={value => onInterfaceSourceChange(value as InterfaceSource)}
               disabled={isLoading}
             >
-              <SelectTrigger className="h-7 w-[140px] bg-white/20 border-white/30 text-white text-xs">
+              <SelectTrigger className="h-7 w-[140px] bg-card border-border text-foreground text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -301,7 +301,7 @@ export function InterfaceTable({
               </SelectContent>
             </Select>
           )}
-          <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+          <Badge variant="secondary" className="bg-card text-foreground border-border">
             {interfaces.length} interface{interfaces.length !== 1 ? 's' : ''},{' '}
             {tableRows.length} IP{tableRows.length !== 1 ? 's' : ''}
           </Badge>
@@ -313,7 +313,7 @@ export function InterfaceTable({
               onClick={onGetPrimaryIP}
               disabled={isLoading}
               size="sm"
-              className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 text-xs"
+              className="bg-card text-primary hover:bg-info border-info-border h-7 text-xs"
               title="Fetch primary IP from Nautobot and populate interface"
             >
               <Download className="h-3 w-3 mr-1" />
@@ -325,7 +325,7 @@ export function InterfaceTable({
             onClick={handleSetValues}
             disabled={isLoading}
             size="sm"
-            className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 text-xs"
+            className="bg-card text-primary hover:bg-info border-info-border h-7 text-xs"
           >
             <Settings className="h-3 w-3 mr-1" />
             Set Values
@@ -335,7 +335,7 @@ export function InterfaceTable({
             onClick={handleAddInterface}
             disabled={isLoading}
             size="sm"
-            className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 text-xs"
+            className="bg-card text-primary hover:bg-info border-info-border h-7 text-xs"
           >
             <Plus className="h-3 w-3 mr-1" />
             Add Interface
@@ -343,33 +343,33 @@ export function InterfaceTable({
         </div>
       </div>
 
-      <div className="p-4 bg-gradient-to-b from-white to-gray-50">
+      <div className="p-4 panel-content">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b-2 border-gray-300 bg-gray-50">
-                <th className="text-left p-2 text-xs font-semibold text-gray-700">
+              <tr className="border-b-2 border-border bg-muted">
+                <th className="text-left p-2 text-xs font-semibold text-muted-foreground">
                   Interface Name
                 </th>
-                <th className="text-left p-2 text-xs font-semibold text-gray-700">
+                <th className="text-left p-2 text-xs font-semibold text-muted-foreground">
                   Type
                 </th>
-                <th className="text-left p-2 text-xs font-semibold text-gray-700">
+                <th className="text-left p-2 text-xs font-semibold text-muted-foreground">
                   Status
                 </th>
-                <th className="text-left p-2 text-xs font-semibold text-gray-700">
+                <th className="text-left p-2 text-xs font-semibold text-muted-foreground">
                   IP Address
                 </th>
-                <th className="text-left p-2 text-xs font-semibold text-gray-700">
+                <th className="text-left p-2 text-xs font-semibold text-muted-foreground">
                   Namespace
                 </th>
-                <th className="text-left p-2 text-xs font-semibold text-gray-700">
+                <th className="text-left p-2 text-xs font-semibold text-muted-foreground">
                   Role
                 </th>
-                <th className="text-center p-2 text-xs font-semibold text-gray-700">
+                <th className="text-center p-2 text-xs font-semibold text-muted-foreground">
                   Primary
                 </th>
-                <th className="text-center p-2 text-xs font-semibold text-gray-700">
+                <th className="text-center p-2 text-xs font-semibold text-muted-foreground">
                   Actions
                 </th>
               </tr>
@@ -396,8 +396,8 @@ export function InterfaceTable({
                   return (
                     <tr
                       key={`${row.interfaceId}-${row.ipId || 'no-ip'}`}
-                      className={`border-b hover:bg-blue-50/30 transition-colors ${
-                        row.isFirstIpForInterface ? 'border-t-2 border-blue-200' : ''
+                      className={`border-b hover:bg-info/30 transition-colors ${
+                        row.isFirstIpForInterface ? 'border-t-2 border-info-border' : ''
                       }`}
                     >
                       {/* Interface Name */}
@@ -414,7 +414,7 @@ export function InterfaceTable({
                             }
                             placeholder="e.g., eth0"
                             disabled={isLoading}
-                            className="border-2 border-slate-300 bg-white focus:border-blue-500 text-xs h-8 min-w-[120px]"
+                            className="border-2 border-border bg-card focus:border-primary text-xs h-8 min-w-[120px]"
                           />
                           {row.isFirstIpForInterface && interfaceErrors?.name && (
                             <p className="text-xs text-destructive">
@@ -434,7 +434,7 @@ export function InterfaceTable({
                             }
                             disabled={isLoading}
                           >
-                            <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 text-xs h-8 min-w-[140px]">
+                            <SelectTrigger className="border-2 border-border bg-card focus:border-primary text-xs h-8 min-w-[140px]">
                               <SelectValue placeholder="Select..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -463,7 +463,7 @@ export function InterfaceTable({
                             }
                             disabled={isLoading}
                           >
-                            <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 text-xs h-8 min-w-[100px]">
+                            <SelectTrigger className="border-2 border-border bg-card focus:border-primary text-xs h-8 min-w-[100px]">
                               <SelectValue placeholder="Select..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -498,7 +498,7 @@ export function InterfaceTable({
                               }
                               placeholder="192.168.1.10/24"
                               disabled={isLoading}
-                              className="border-2 border-slate-300 bg-white focus:border-blue-500 text-xs h-8 min-w-[140px]"
+                              className="border-2 border-border bg-card focus:border-primary text-xs h-8 min-w-[140px]"
                             />
                             {ipErrors?.address && (
                               <p className="text-xs text-destructive">
@@ -529,7 +529,7 @@ export function InterfaceTable({
                               }
                               disabled={isLoading}
                             >
-                              <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 text-xs h-8 min-w-[120px]">
+                              <SelectTrigger className="border-2 border-border bg-card focus:border-primary text-xs h-8 min-w-[120px]">
                                 <SelectValue placeholder="Select..." />
                               </SelectTrigger>
                               <SelectContent>
@@ -566,7 +566,7 @@ export function InterfaceTable({
                             }
                             disabled={isLoading}
                           >
-                            <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 text-xs h-8 min-w-[110px]">
+                            <SelectTrigger className="border-2 border-border bg-card focus:border-primary text-xs h-8 min-w-[110px]">
                               <SelectValue placeholder="Select..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -660,7 +660,7 @@ export function InterfaceTable({
                               }
                             >
                               <Trash2
-                                className={`h-3 w-3 ${row.totalIpsForInterface > 1 ? 'text-orange-600' : 'text-gray-400'}`}
+                                className={`h-3 w-3 ${row.totalIpsForInterface > 1 ? 'text-warning-foreground' : 'text-muted-foreground'}`}
                               />
                             </Button>
                           )}
@@ -681,7 +681,7 @@ export function InterfaceTable({
                               }
                             >
                               <Trash2
-                                className={`h-3 w-3 ${row.totalInterfaces > 1 ? 'text-destructive' : 'text-gray-400'}`}
+                                className={`h-3 w-3 ${row.totalInterfaces > 1 ? 'text-destructive' : 'text-muted-foreground'}`}
                               />
                             </Button>
                           ) : (

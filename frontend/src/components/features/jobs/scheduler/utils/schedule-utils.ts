@@ -1,9 +1,5 @@
 import type { JobSchedule } from '../types'
-import {
-  SCHEDULE_TYPE_LABELS,
-  SCHEDULE_TYPE_COLORS,
-  JOB_TYPE_LABELS,
-} from './constants'
+import { SCHEDULE_TYPE_LABELS, JOB_TYPE_LABELS } from './constants'
 
 /**
  * Get human-readable label for schedule type
@@ -25,13 +21,6 @@ export function getScheduleTypeLabel(
   }
 
   return SCHEDULE_TYPE_LABELS[type] || type
-}
-
-/**
- * Get color class for schedule type badge
- */
-export function getScheduleTypeColor(type: JobSchedule['schedule_type']): string {
-  return SCHEDULE_TYPE_COLORS[type] || 'bg-gray-500'
 }
 
 /**

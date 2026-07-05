@@ -110,21 +110,21 @@ export function PropertiesPanel({
   const totalUpdateable = updateableHeaders.length
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium">Update Properties</span>
         </div>
-        <span className="text-xs text-white/80">
+        <span className="text-xs text-panel-header-muted">
           {selectedCount} of {totalUpdateable} columns selected
         </span>
       </div>
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
+      <div className="p-6 panel-content space-y-6">
         {/* UUID Handling - Only for IP Prefixes with ID column */}
         {objectType === 'ip-prefixes' && hasIdColumn && (
           <div className="space-y-3">
             <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
               <div className="space-y-2 flex-1">
                 <Label className="text-sm font-medium">UUID Handling</Label>
                 <p className="text-xs text-muted-foreground">
@@ -172,7 +172,7 @@ export function PropertiesPanel({
         {hasTagsColumn && (
           <div className="space-y-3">
             <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
               <div className="space-y-2 flex-1">
                 <Label className="text-sm font-medium">Tags Handling</Label>
                 <p className="text-xs text-muted-foreground">
@@ -232,7 +232,7 @@ export function PropertiesPanel({
               </AlertDescription>
             </Alert>
           ) : (
-            <div className="border rounded-md bg-white">
+            <div className="border rounded-md bg-card">
               <div className="max-h-64 overflow-y-auto p-3 space-y-2">
                 {updateableHeaders.map(header => {
                   const isIgnored = ignoredColumns.has(header)
@@ -250,7 +250,7 @@ export function PropertiesPanel({
                         htmlFor={`column-${header}`}
                         className="text-sm font-normal cursor-pointer flex-1"
                       >
-                        <span className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">
+                        <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
                           {header}
                         </span>
                       </Label>

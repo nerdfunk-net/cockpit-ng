@@ -1,6 +1,6 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/shared/status-badge'
 import {
   Card,
   CardContent,
@@ -46,7 +46,7 @@ export function PingAgentResultView({ result }: PingAgentResultViewProps) {
               <p className="text-xs text-muted-foreground uppercase tracking-wider">
                 Reachable
               </p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-success-foreground">
                 {output?.reachable_count ?? 0}
               </p>
             </div>
@@ -54,7 +54,7 @@ export function PingAgentResultView({ result }: PingAgentResultViewProps) {
               <p className="text-xs text-muted-foreground uppercase tracking-wider">
                 Unreachable
               </p>
-              <p className="text-2xl font-bold text-red-600">
+              <p className="text-2xl font-bold text-error-foreground">
                 {output?.unreachable_count ?? 0}
               </p>
             </div>
@@ -85,15 +85,15 @@ export function PingAgentResultView({ result }: PingAgentResultViewProps) {
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium text-sm">{device.device_name}</span>
                       {hasReachable ? (
-                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 text-xs">
+                        <StatusBadge variant="success" className="text-xs">
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                           Reachable
-                        </Badge>
+                        </StatusBadge>
                       ) : (
-                        <Badge variant="destructive" className="text-xs">
+                        <StatusBadge variant="error" className="text-xs">
                           <XCircle className="h-3 w-3 mr-1" />
                           Unreachable
-                        </Badge>
+                        </StatusBadge>
                       )}
                     </div>
 
@@ -105,22 +105,22 @@ export function PingAgentResultView({ result }: PingAgentResultViewProps) {
                             className="flex items-center gap-3 text-xs text-muted-foreground"
                           >
                             {ip.reachable ? (
-                              <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
+                              <CheckCircle2 className="h-3 w-3 text-success-foreground shrink-0" />
                             ) : (
-                              <XCircle className="h-3 w-3 text-red-500 shrink-0" />
+                              <XCircle className="h-3 w-3 text-error-foreground shrink-0" />
                             )}
                             <span className="font-mono w-40">{ip.ip_address}</span>
                             {ip.reachable ? (
-                              <span className="text-green-700">
+                              <span className="text-success-foreground">
                                 {ip.latency_ms != null
                                   ? `${ip.latency_ms} ms`
                                   : 'reachable'}
                               </span>
                             ) : (
-                              <span className="text-red-500">not reachable</span>
+                              <span className="text-error-foreground">not reachable</span>
                             )}
                             {ip.packet_loss_percent > 0 && ip.reachable && (
-                              <span className="text-amber-500">
+                              <span className="text-warning-foreground">
                                 {ip.packet_loss_percent}% loss
                               </span>
                             )}

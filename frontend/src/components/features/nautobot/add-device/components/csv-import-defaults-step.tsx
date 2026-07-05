@@ -158,16 +158,16 @@ function LocationDefaultField({
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-medium text-gray-600">
-        Location <span className="text-blue-500 ml-1">*</span>
+      <Label className="text-xs font-medium text-muted-foreground">
+        Location <span className="text-destructive ml-1">*</span>
       </Label>
       {formValueDisplay && (
         <button
           type="button"
           className={`w-full text-left text-xs px-3 py-1.5 rounded border transition-colors ${
             value === `${FORM_VALUE_PREFIX}location`
-              ? 'bg-blue-50 border-blue-300 text-blue-700'
-              : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+              ? 'bg-info border-info-border text-info-foreground'
+              : 'bg-muted border-border text-muted-foreground hover:bg-muted/80'
           }`}
           onClick={() => {
             if (formValue) onChange(formValue)
@@ -182,7 +182,7 @@ function LocationDefaultField({
         placeholder="Search location..."
         required={false}
         disabled={false}
-        inputClassName="h-8 text-sm bg-white border-gray-300 shadow-sm"
+        inputClassName="h-8 text-sm bg-card border-border shadow-sm"
         dropdownState={locationDropdown}
         renderItem={item => <span>{item.hierarchicalPath ?? item.name}</span>}
         getItemKey={item => item.id}
@@ -269,9 +269,9 @@ export function CsvImportDefaultsStep({
 
             return (
               <div key={field} className="space-y-2">
-                <Label className="text-xs font-medium text-gray-600">
+                <Label className="text-xs font-medium text-muted-foreground">
                   {config.label}
-                  <span className="text-blue-500 ml-1">*</span>
+                  <span className="text-destructive ml-1">*</span>
                 </Label>
 
                 {/* Quick button to use form value */}
@@ -280,8 +280,8 @@ export function CsvImportDefaultsStep({
                     type="button"
                     className={`w-full text-left text-xs px-3 py-1.5 rounded border transition-colors ${
                       currentValue === formValue
-                        ? 'bg-blue-50 border-blue-300 text-blue-700'
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                        ? 'bg-info border-info-border text-info-foreground'
+                        : 'bg-muted border-border text-muted-foreground hover:bg-muted/80'
                     }`}
                     onClick={() => {
                       if (formValue) handleChange(field, formValue)
@@ -298,14 +298,14 @@ export function CsvImportDefaultsStep({
                     handleChange(field, val === NO_DEFAULT ? '' : val)
                   }
                 >
-                  <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                  <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
                     <SelectValue
                       placeholder={`Select default ${config.label.toLowerCase()}...`}
                     />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={NO_DEFAULT}>
-                      <span className="text-gray-400">
+                      <span className="text-muted-foreground">
                         -- No default (required in CSV) --
                       </span>
                     </SelectItem>
@@ -333,8 +333,8 @@ export function CsvImportDefaultsStep({
       )}
 
       {!allFieldsMapped && unmappedInterfaceFields.length > 0 && (
-        <div className="space-y-4 pt-2 border-t border-gray-200">
-          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+        <div className="space-y-4 pt-2 border-t border-border">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Default Interface Settings
           </p>
           <Alert className="status-info py-2">
@@ -352,11 +352,11 @@ export function CsvImportDefaultsStep({
               if (field === 'interface_name') {
                 return (
                   <div key={field} className="space-y-2">
-                    <Label className="text-xs font-medium text-gray-600">
-                      Interface Name <span className="text-blue-500 ml-1">*</span>
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Interface Name <span className="text-destructive ml-1">*</span>
                     </Label>
                     <Input
-                      className="h-8 text-sm bg-white border-gray-300 shadow-sm"
+                      className="h-8 text-sm bg-card border-border shadow-sm"
                       placeholder="e.g. Management0"
                       value={currentValue}
                       onChange={e => handleChange(field, e.target.value)}
@@ -368,8 +368,8 @@ export function CsvImportDefaultsStep({
               if (field === 'interface_type') {
                 return (
                   <div key={field} className="space-y-2">
-                    <Label className="text-xs font-medium text-gray-600">
-                      Interface Type <span className="text-blue-500 ml-1">*</span>
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Interface Type <span className="text-destructive ml-1">*</span>
                     </Label>
                     <Select
                       value={currentValue || NO_DEFAULT}
@@ -377,12 +377,12 @@ export function CsvImportDefaultsStep({
                         handleChange(field, val === NO_DEFAULT ? '' : val)
                       }
                     >
-                      <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                      <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
                         <SelectValue placeholder="Select interface type..." />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NO_DEFAULT}>
-                          <span className="text-gray-400">-- Select type --</span>
+                          <span className="text-muted-foreground">-- Select type --</span>
                         </SelectItem>
                         {dropdownData.interfaceTypes.map(t => (
                           <SelectItem key={t.value} value={t.value}>
@@ -398,8 +398,8 @@ export function CsvImportDefaultsStep({
               if (field === 'interface_status') {
                 return (
                   <div key={field} className="space-y-2">
-                    <Label className="text-xs font-medium text-gray-600">
-                      Interface Status <span className="text-blue-500 ml-1">*</span>
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Interface Status <span className="text-destructive ml-1">*</span>
                     </Label>
                     <Select
                       value={currentValue || NO_DEFAULT}
@@ -407,12 +407,12 @@ export function CsvImportDefaultsStep({
                         handleChange(field, val === NO_DEFAULT ? '' : val)
                       }
                     >
-                      <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                      <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
                         <SelectValue placeholder="Select interface status..." />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NO_DEFAULT}>
-                          <span className="text-gray-400">-- Select status --</span>
+                          <span className="text-muted-foreground">-- Select status --</span>
                         </SelectItem>
                         {dropdownData.interfaceStatuses.map(s => (
                           <SelectItem key={s.id} value={s.id}>
@@ -428,8 +428,8 @@ export function CsvImportDefaultsStep({
               if (field === 'interface_namespace') {
                 return (
                   <div key={field} className="space-y-2">
-                    <Label className="text-xs font-medium text-gray-600">
-                      IP Namespace <span className="text-blue-500 ml-1">*</span>
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      IP Namespace <span className="text-destructive ml-1">*</span>
                     </Label>
                     <Select
                       value={currentValue || NO_DEFAULT}
@@ -437,12 +437,12 @@ export function CsvImportDefaultsStep({
                         handleChange(field, val === NO_DEFAULT ? '' : val)
                       }
                     >
-                      <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm">
+                      <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
                         <SelectValue placeholder="Select namespace..." />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NO_DEFAULT}>
-                          <span className="text-gray-400">-- Select namespace --</span>
+                          <span className="text-muted-foreground">-- Select namespace --</span>
                         </SelectItem>
                         {dropdownData.namespaces.map(n => (
                           <SelectItem key={n.id} value={n.id}>
@@ -462,8 +462,8 @@ export function CsvImportDefaultsStep({
       )}
 
       {/* Prefix Configuration — always shown */}
-      <div className="space-y-3 pt-2 border-t border-gray-200">
-        <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+      <div className="space-y-3 pt-2 border-t border-border">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Prefix Configuration
         </p>
         <div className="flex items-center gap-3">
@@ -483,7 +483,7 @@ export function CsvImportDefaultsStep({
         </div>
         {prefixConfig.addPrefix && (
           <div className="flex items-center gap-3">
-            <Label className="text-xs font-medium text-gray-600 w-28 shrink-0">
+            <Label className="text-xs font-medium text-muted-foreground w-28 shrink-0">
               Prefix length
             </Label>
             <Select
@@ -492,7 +492,7 @@ export function CsvImportDefaultsStep({
                 onPrefixConfigChange({ ...prefixConfig, defaultPrefixLength: val })
               }
             >
-              <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm w-32">
+              <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -508,8 +508,8 @@ export function CsvImportDefaultsStep({
       </div>
 
       {/* Form Data — Tags & Custom Fields */}
-      <div className="space-y-3 pt-2 border-t border-gray-200">
-        <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+      <div className="space-y-3 pt-2 border-t border-border">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Form Data
         </p>
         {hasFormTags || hasFormCustomFields ? (

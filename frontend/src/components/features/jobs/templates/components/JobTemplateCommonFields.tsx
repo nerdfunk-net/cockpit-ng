@@ -56,28 +56,28 @@ export function JobTemplateCommonFields({
       {/* Name and Type in grid */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="template-name" className="text-sm font-medium text-gray-700">
-            Name <span className="text-red-500">*</span>
+          <Label htmlFor="template-name" className="text-sm font-medium text-foreground">
+            Name <span className="text-destructive">*</span>
           </Label>
           <Input
             id="template-name"
             placeholder="Enter template name"
             value={formName}
             onChange={e => setFormName(e.target.value)}
-            className="h-9 bg-white"
+            className="h-9 bg-card"
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="job-type" className="text-sm font-medium text-gray-700">
-            Type <span className="text-red-500">*</span>
+          <Label htmlFor="job-type" className="text-sm font-medium text-foreground">
+            Type <span className="text-destructive">*</span>
           </Label>
           <Select
             value={formJobType}
             onValueChange={setFormJobType}
             disabled={editingTemplate}
           >
-            <SelectTrigger id="job-type" className="h-9 bg-white">
+            <SelectTrigger id="job-type" className="h-9 bg-card">
               <SelectValue placeholder="Select job type" />
             </SelectTrigger>
             <SelectContent>
@@ -98,7 +98,7 @@ export function JobTemplateCommonFields({
 
       {/* Description */}
       <div className="space-y-1.5">
-        <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="description" className="text-sm font-medium text-foreground">
           Description
         </Label>
         <Textarea
@@ -106,13 +106,13 @@ export function JobTemplateCommonFields({
           placeholder="Enter a description for this template"
           value={formDescription}
           onChange={e => setFormDescription(e.target.value)}
-          className="bg-white resize-none"
+          className="bg-card resize-none"
           rows={2}
         />
       </div>
 
       {/* Global/Private Switch */}
-      <div className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-4 space-y-3">
+      <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Switch
@@ -123,16 +123,16 @@ export function JobTemplateCommonFields({
             />
             <Label
               htmlFor="is-global"
-              className="text-sm font-medium text-indigo-900 cursor-pointer flex items-center gap-2"
+              className="text-sm font-medium text-info-foreground cursor-pointer flex items-center gap-2"
             >
               {formIsGlobal ? (
                 <>
-                  <Globe className="h-4 w-4 text-indigo-600" />
+                  <Globe className="h-4 w-4 text-info-foreground" />
                   Global Template
                 </>
               ) : (
                 <>
-                  <Lock className="h-4 w-4 text-indigo-600" />
+                  <Lock className="h-4 w-4 text-info-foreground" />
                   Private Template
                 </>
               )}
@@ -141,21 +141,21 @@ export function JobTemplateCommonFields({
           {canCreateGlobalTemplate && (
             <Badge
               variant="secondary"
-              className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100"
+              className="text-xs bg-info text-info-foreground hover:bg-info"
             >
               {user?.roles?.includes('admin') ? 'Admin' : 'Write Access'}
             </Badge>
           )}
         </div>
-        <p className="text-xs text-indigo-600">
+        <p className="text-xs text-info-foreground">
           {formIsGlobal
             ? 'Global templates can be scheduled by all users'
             : 'Private templates can only be scheduled by you'}
         </p>
         {!canCreateGlobalTemplate && (
-          <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-amber-50 border border-amber-200">
-            <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-amber-700">
+          <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-warning border border-warning-border">
+            <ShieldAlert className="h-4 w-4 text-warning-foreground mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-warning-foreground">
               You don&apos;t have permission to create global templates. Contact your
               administrator to request{' '}
               <span className="font-mono font-semibold">jobs:write</span> permission.

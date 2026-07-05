@@ -38,20 +38,20 @@ function PrimaryKeySelector({
   onPrimaryKeyColumnChange: (col: string) => void
 }) {
   return (
-    <div className="border rounded-md p-4 space-y-3 bg-amber-50 border-amber-200">
+    <div className="border rounded-md p-4 space-y-3 bg-warning border-warning-border">
       <div className="flex items-center gap-2">
-        <Key className="h-4 w-4 text-amber-600 flex-shrink-0" />
-        <Label className="text-sm font-medium text-amber-900">
+        <Key className="h-4 w-4 text-warning-foreground flex-shrink-0" />
+        <Label className="text-sm font-medium text-warning-foreground">
           Identify objects by
         </Label>
       </div>
-      <p className="text-xs text-amber-700">
+      <p className="text-xs text-warning-foreground">
         Select which CSV column is used to look up existing objects in Nautobot. Use{' '}
-        <code className="bg-amber-100 px-1 rounded">id</code> for exact UUID match, or a
+        <code className="bg-warning/50 px-1 rounded">id</code> for exact UUID match, or a
         name / address column for lookup by value.
       </p>
       <Select value={primaryKeyColumn} onValueChange={onPrimaryKeyColumnChange}>
-        <SelectTrigger className="w-64 bg-white border-amber-300">
+        <SelectTrigger className="w-64 bg-card border-warning-border">
           <SelectValue placeholder="Select a column…" />
         </SelectTrigger>
         <SelectContent>

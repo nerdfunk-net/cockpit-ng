@@ -185,9 +185,9 @@ describe('EditableDeviceTable', () => {
     expect(screen.queryByText('router-01')).not.toBeInTheDocument()
 
     // Verify row has modified class (we can check for bg-color or class name)
-    // The implementation adds 'bg-red-50' to the row
+    // The implementation adds 'bg-warning' to the row
     const modifiedCell = screen.getByText('MODIFIED_NAME').closest('tr')
-    expect(modifiedCell).toHaveClass('bg-red-50')
+    expect(modifiedCell).toHaveClass('bg-warning')
   })
 
   it('should support mixed case for Name field interactions', async () => {

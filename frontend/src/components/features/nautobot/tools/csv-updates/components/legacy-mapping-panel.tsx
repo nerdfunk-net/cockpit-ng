@@ -78,13 +78,13 @@ export function LegacyMappingPanel({
   }
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-amber-400/80 to-amber-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="status-warning border-b py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium">Legacy CSV Format Mapping</span>
         </div>
       </div>
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+      <div className="p-6 panel-content space-y-4">
         <Alert className="status-warning">
           <AlertDescription className="flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -112,7 +112,7 @@ export function LegacyMappingPanel({
         )}
 
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-4 pb-2 border-b-2 border-gray-300 font-semibold text-sm">
+          <div className="grid grid-cols-2 gap-4 pb-2 border-b-2 border-border font-semibold text-sm">
             <div>CSV Column</div>
             <div>Nautobot Field</div>
           </div>
@@ -135,7 +135,7 @@ export function LegacyMappingPanel({
                 >
                   <SelectTrigger
                     id={`mapping-${header}`}
-                    className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                    className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -151,7 +151,7 @@ export function LegacyMappingPanel({
                           disabled={!isAvailable}
                         >
                           {field.label}
-                          {isRequired && <span className="text-red-500 ml-1">*</span>}
+                          {isRequired && <span className="text-destructive ml-1">*</span>}
                           {!isAvailable && (
                             <span className="text-muted-foreground ml-1">
                               (already mapped)
@@ -168,9 +168,9 @@ export function LegacyMappingPanel({
         </div>
 
         {mappedFields.size > 0 && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm font-medium text-blue-900 mb-1">Current Mapping:</p>
-            <ul className="text-sm text-blue-800 space-y-1">
+          <div className="mt-4 p-3 bg-info border border-info-border rounded-lg">
+            <p className="text-sm font-medium text-info-foreground mb-1">Current Mapping:</p>
+            <ul className="text-sm text-info-foreground space-y-1">
               {Object.entries(legacyMapping)
                 .filter(([_, field]) => field !== 'none')
                 .map(([csvCol, nautobotField]) => (

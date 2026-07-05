@@ -11,9 +11,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, CheckCircle2, XCircle, AlertCircle, ExternalLink } from 'lucide-react'
+import { Loader2, AlertCircle, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { useApi } from '@/hooks/use-api'
+import { StatusIcon } from '@/components/shared/status-icon'
 
 interface JobStatus {
   id: number
@@ -110,32 +111,32 @@ export function ProgressDialog({
   }
 
   const getStatusIcon = () => {
-    if (!jobStatus) return <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+    if (!jobStatus || jobStatus.status === 'running') {
+      return <Loader2 className="h-5 w-5 animate-spin text-primary" />
+    }
 
     switch (jobStatus.status) {
       case 'completed':
-        return <CheckCircle2 className="h-5 w-5 text-green-600" />
+        return <StatusIcon variant="success" />
       case 'failed':
-        return <XCircle className="h-5 w-5 text-red-600" />
-      case 'running':
-        return <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+        return <StatusIcon variant="error" />
       default:
-        return <AlertCircle className="h-5 w-5 text-yellow-600" />
+        return <StatusIcon variant="warning" />
     }
   }
 
   const getStatusColor = () => {
-    if (!jobStatus) return 'text-blue-600'
+    if (!jobStatus) return 'text-primary'
 
     switch (jobStatus.status) {
       case 'completed':
-        return 'text-green-600'
+        return 'text-success-foreground'
       case 'failed':
-        return 'text-red-600'
+        return 'text-error-foreground'
       case 'running':
-        return 'text-blue-600'
+        return 'text-primary'
       default:
-        return 'text-yellow-600'
+        return 'text-warning-foreground'
     }
   }
 
@@ -194,7 +195,7 @@ export function ProgressDialog({
               <span className={`font-medium ${getStatusColor()}`}>
                 {jobStatus?.status.toUpperCase() || 'LOADING'}
               </span>
-              <span className="text-gray-600">{progressPercent.toFixed(0)}%</span>
+              <span className="text-muted-foreground">{progressPercent.toFixed(0)}%</span>
             </div>
             <Progress value={progressPercent} className="h-2" />
           </div>
@@ -207,37 +208,37 @@ export function ProgressDialog({
                 <div className="grid grid-cols-3 gap-3">
                   <div className="border rounded-lg p-3 text-center">
                     <div className="flex items-center justify-center mb-1">
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      <StatusIcon variant="success" />
                     </div>
-                    <div className="text-2xl font-bold text-green-600">
+                    <div className="text-2xl font-bold text-success-foreground">
                       {jobStatus.result.successful_updates}
                     </div>
-                    <div className="text-xs text-gray-600">Successful</div>
+                    <div className="text-xs text-muted-foreground">Successful</div>
                   </div>
                   <div className="border rounded-lg p-3 text-center">
                     <div className="flex items-center justify-center mb-1">
-                      <XCircle className="h-5 w-5 text-red-600" />
+                      <StatusIcon variant="error" />
                     </div>
-                    <div className="text-2xl font-bold text-red-600">
+                    <div className="text-2xl font-bold text-error-foreground">
                       {jobStatus.result.failed_updates}
                     </div>
-                    <div className="text-xs text-gray-600">Failed</div>
+                    <div className="text-xs text-muted-foreground">Failed</div>
                   </div>
                   <div className="border rounded-lg p-3 text-center">
                     <div className="flex items-center justify-center mb-1">
-                      <AlertCircle className="h-5 w-5 text-gray-600" />
+                      <AlertCircle className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <div className="text-2xl font-bold text-gray-600">
+                    <div className="text-2xl font-bold text-muted-foreground">
                       {jobStatus.result.devices_processed}
                     </div>
-                    <div className="text-xs text-gray-600">Total Processed</div>
+                    <div className="text-xs text-muted-foreground">Total Processed</div>
                   </div>
                 </div>
               )}
 
               {/* Progress Info */}
               {jobStatus.result?.devices_processed !== undefined && (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   Processed {jobStatus.result.devices_processed} devices
                 </div>
               )}
@@ -251,7 +252,7 @@ export function ProgressDialog({
               )}
 
               {/* Timestamps */}
-              <div className="text-xs text-gray-500 space-y-1">
+              <div className="text-xs text-muted-foreground space-y-1">
                 {jobStatus.started_at && (
                   <div>Started: {new Date(jobStatus.started_at).toLocaleString()}</div>
                 )}
@@ -269,7 +270,7 @@ export function ProgressDialog({
             <div className="pt-4 border-t">
               <Link
                 href={`/jobs/view?job_id=${jobId}`}
-                className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
                 onClick={handleClose}
               >
                 <ExternalLink className="h-4 w-4" />
