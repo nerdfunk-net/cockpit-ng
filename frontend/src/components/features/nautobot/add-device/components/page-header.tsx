@@ -2,6 +2,7 @@
 
 import { Server, FileSpreadsheet, HelpCircle, Wand2, Bot, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { IconChip } from '@/components/shared/icon-chip'
 
 interface PageHeaderProps {
   isLoading: boolean
@@ -25,11 +26,11 @@ export function PageHeader({
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <div className="bg-blue-100 p-2 rounded-lg">
-          <Server className="h-6 w-6 text-blue-600" />
-        </div>
+        <IconChip variant="primary">
+          <Server className="h-6 w-6" />
+        </IconChip>
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Add Device to Nautobot</h1>
+          <h1 className="text-3xl font-bold text-foreground">Add Device to Nautobot</h1>
           <p className="text-muted-foreground mt-2">
             Add a new network device or bare metal server
           </p>

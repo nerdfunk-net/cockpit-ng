@@ -278,7 +278,7 @@ export function OffboardDevicePage() {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center space-x-2">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
           <span>Loading devices...</span>
         </div>
       </div>

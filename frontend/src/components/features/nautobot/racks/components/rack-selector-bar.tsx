@@ -83,7 +83,7 @@ export function RackSelectorBar({
           label="Location"
           placeholder="Search location..."
           required
-          inputClassName="border-gray-400 bg-white shadow-sm"
+          inputClassName="border-border bg-card shadow-sm"
           dropdownState={locationDropdown}
           renderItem={loc => (
             <div className="flex flex-col">
@@ -104,7 +104,7 @@ export function RackSelectorBar({
         <SearchableDropdownInput
           id="rack-select"
           label="Rack"
-          inputClassName="border-gray-400 bg-white shadow-sm"
+          inputClassName="border-border bg-card shadow-sm"
           placeholder={
             !selectedLocationId
               ? 'Select a location first'
@@ -137,7 +137,7 @@ export function RackSelectorBar({
           <Select value={mode} onValueChange={val => onModeChange(val as RackMode)}>
             <SelectTrigger
               id="rack-mode"
-              className="border-gray-400 bg-white shadow-sm"
+              className="border-border bg-card shadow-sm"
             >
               <SelectValue />
             </SelectTrigger>

@@ -250,7 +250,7 @@ export function RackElevation({
               {isReservation ? (
                 <button
                   type="button"
-                  className="shrink-0 h-full flex items-center justify-center text-amber-300 hover:bg-amber-600 hover:text-white transition-colors cursor-pointer"
+                  className="shrink-0 h-full flex items-center justify-center text-warning-foreground hover:bg-warning-foreground hover:text-warning transition-colors cursor-pointer"
                   style={{ width: 18 }}
                   title="Move back to Unresolved CSV Devices"
                   onClick={() => onMoveReservationToUnknown(pos)}
@@ -260,7 +260,7 @@ export function RackElevation({
               ) : (
                 <button
                   type="button"
-                  className="shrink-0 h-full flex items-center justify-center text-blue-300 hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
+                  className="shrink-0 h-full flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
                   style={{ width: 18 }}
                   title="Move to unpositioned (keep rack)"
                   onClick={() => onMoveToUnpositioned(pos)}
@@ -271,7 +271,7 @@ export function RackElevation({
               {/* Remove button */}
               <button
                 type="button"
-                className="shrink-0 h-full flex items-center justify-center text-red-300 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
+                className="shrink-0 h-full flex items-center justify-center text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors cursor-pointer"
                 style={{ width: 18 }}
                 title={isReservation ? 'Remove reservation' : 'Remove device from rack'}
                 onClick={() => onRemove(pos)}
@@ -306,7 +306,7 @@ export function RackElevation({
                   style={{ minHeight: RACK_UNIT_HEIGHT_PX, zIndex: 50 }}
                 >
                   <div
-                    className="flex items-center w-full bg-white border border-blue-400 shadow-sm"
+                    className="flex items-center w-full bg-card border border-primary shadow-sm"
                     style={{ height: RACK_UNIT_HEIGHT_PX }}
                   >
                     <Input
@@ -336,11 +336,11 @@ export function RackElevation({
                     )}
                   </div>
                   {deviceSearchResults.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full bg-white border border-gray-200 shadow-lg max-h-40 overflow-y-auto z-50 rounded-b-md">
+                    <div className="absolute left-0 right-0 top-full bg-card border border-border shadow-lg max-h-40 overflow-y-auto z-50 rounded-b-md">
                       {deviceSearchResults.map(device => (
                         <div
                           key={device.id}
-                          className="px-2 py-1 text-xs hover:bg-blue-50 cursor-pointer border-b last:border-b-0 text-gray-800"
+                          className="px-2 py-1 text-xs hover:bg-info cursor-pointer border-b last:border-b-0 text-foreground"
                           onMouseDown={e => {
                             e.preventDefault()
                             onAdd(u, device)
@@ -356,8 +356,8 @@ export function RackElevation({
                   {deviceSearchQuery.length >= 2 &&
                     !isSearching &&
                     deviceSearchResults.length === 0 && (
-                      <div className="absolute left-0 right-0 top-full bg-white border border-gray-200 shadow-lg z-50 rounded-b-md">
-                        <div className="px-2 py-1 text-xs text-gray-400 italic">
+                      <div className="absolute left-0 right-0 top-full bg-card border border-border shadow-lg z-50 rounded-b-md">
+                        <div className="px-2 py-1 text-xs text-muted-foreground italic">
                           No devices found
                         </div>
                       </div>
@@ -371,7 +371,7 @@ export function RackElevation({
                   style={{ zIndex: 50 }}
                 >
                   <div
-                    className="flex items-center w-full bg-white border border-amber-400 shadow-sm"
+                    className="flex items-center w-full bg-card border border-warning-border shadow-sm"
                     style={{ height: RACK_UNIT_HEIGHT_PX }}
                   >
                     <Input
@@ -400,7 +400,7 @@ export function RackElevation({
                 <div className="flex items-center w-full h-full">
                   <button
                     type="button"
-                    className="flex-1 h-full flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors cursor-pointer"
+                    className="flex-1 h-full flex items-center justify-center text-muted-foreground hover:bg-info hover:text-primary transition-colors cursor-pointer"
                     onClick={() => {
                       onSetActiveSlot({ position: u, face })
                       onDeviceSearchQueryChange('')
@@ -410,7 +410,7 @@ export function RackElevation({
                   </button>
                   <button
                     type="button"
-                    className="shrink-0 h-full flex items-center justify-center text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors cursor-pointer border-l border-gray-200"
+                    className="shrink-0 h-full flex items-center justify-center text-muted-foreground hover:bg-warning hover:text-warning-foreground transition-colors cursor-pointer border-l border-border"
                     style={{ width: 32, fontSize: 9 }}
                     title="Add reservation"
                     onClick={() => {

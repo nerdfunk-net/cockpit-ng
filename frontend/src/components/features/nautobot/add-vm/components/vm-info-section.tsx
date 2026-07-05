@@ -38,15 +38,15 @@ export function VMInfoSection({
   } = form
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <span className="text-sm font-medium">Virtual Machine</span>
         <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 text-white hover:bg-white/20 hover:text-white"
+            className="h-7 text-current hover:bg-card/20 hover:text-current"
             onClick={onOpenTags}
             disabled={isLoading}
           >
@@ -55,7 +55,7 @@ export function VMInfoSection({
             {selectedTagsCount > 0 && (
               <Badge
                 variant="secondary"
-                className="ml-1.5 h-5 px-1.5 text-xs bg-white/20 text-white hover:bg-white/20"
+                className="ml-1.5 h-5 px-1.5 text-xs bg-card/20 text-current hover:bg-card/20"
               >
                 {selectedTagsCount}
               </Badge>
@@ -65,7 +65,7 @@ export function VMInfoSection({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 text-white hover:bg-white/20 hover:text-white"
+            className="h-7 text-current hover:bg-card/20 hover:text-current"
             onClick={onOpenCustomFields}
             disabled={isLoading}
           >
@@ -74,7 +74,7 @@ export function VMInfoSection({
           </Button>
         </div>
       </div>
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+      <div className="p-6 panel-content">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Name */}
           <div className="space-y-1">
@@ -85,7 +85,7 @@ export function VMInfoSection({
               id="name"
               {...register('name')}
               disabled={isLoading}
-              className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+              className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
             />
             {errors.name && (
               <p className="text-xs text-destructive">{errors.name.message}</p>
@@ -104,7 +104,7 @@ export function VMInfoSection({
             >
               <SelectTrigger
                 id="role"
-                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+                className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm disabled:bg-muted disabled:border-border"
               >
                 <SelectValue placeholder="Select role..." />
               </SelectTrigger>
@@ -130,7 +130,7 @@ export function VMInfoSection({
             >
               <SelectTrigger
                 id="status"
-                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+                className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm disabled:bg-muted disabled:border-border"
               >
                 <SelectValue placeholder="Select status..." />
               </SelectTrigger>

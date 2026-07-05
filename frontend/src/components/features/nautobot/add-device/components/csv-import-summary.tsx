@@ -22,18 +22,18 @@ export function CSVImportSummary({ importSummary }: CSVImportSummaryProps) {
       {/* Summary Counts */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5 text-green-500" />
+          <CheckCircle2 className="h-5 w-5 text-success-foreground" />
           <span className="font-medium">{importSummary.success} succeeded</span>
         </div>
         {importSummary.failed > 0 && (
           <div className="flex items-center gap-2">
-            <XCircle className="h-5 w-5 text-red-500" />
+            <XCircle className="h-5 w-5 text-error-foreground" />
             <span className="font-medium">{importSummary.failed} failed</span>
           </div>
         )}
         {importSummary.skipped > 0 && (
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-yellow-500" />
+            <AlertCircle className="h-5 w-5 text-warning-foreground" />
             <span className="font-medium">{importSummary.skipped} skipped</span>
           </div>
         )}
@@ -55,7 +55,7 @@ export function CSVImportSummary({ importSummary }: CSVImportSummaryProps) {
                 <TableCell className="font-medium">{result.deviceName}</TableCell>
                 <TableCell>
                   {result.status === 'success' && (
-                    <Badge className="bg-green-100 text-green-800">Success</Badge>
+                    <Badge className="bg-success text-success-foreground">Success</Badge>
                   )}
                   {result.status === 'error' && (
                     <Badge variant="destructive">Failed</Badge>

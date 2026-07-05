@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { FieldErrors, useWatch } from 'react-hook-form'
 import { Server, Loader2 } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 
 // TanStack Query Hooks
 import {
@@ -410,11 +411,11 @@ export function AddDevicePage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <Server className="h-6 w-6 text-blue-600" />
-            </div>
+            <IconChip variant="primary">
+              <Server className="h-6 w-6" />
+            </IconChip>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">
+              <h1 className="text-3xl font-bold text-foreground">
                 Add Device to Nautobot
               </h1>
               <p className="text-muted-foreground mt-2">

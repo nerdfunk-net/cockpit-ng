@@ -126,20 +126,22 @@ export function extractFilterOptions(devices: Device[]): {
 }
 
 /**
- * Get status badge color class
+ * Get status badge semantic variant
  */
-export function getStatusBadgeClass(status: string): string {
+export function getStatusBadgeVariant(
+  status: string
+): 'info' | 'error' | 'warning' | 'neutral' {
   const statusLower = status.toLowerCase()
   if (statusLower.includes('active') || statusLower.includes('online')) {
-    return 'bg-blue-500'
+    return 'info'
   }
   if (statusLower.includes('failed') || statusLower.includes('offline')) {
-    return 'bg-red-500'
+    return 'error'
   }
   if (statusLower.includes('maintenance')) {
-    return 'bg-yellow-500'
+    return 'warning'
   }
-  return 'bg-gray-500'
+  return 'neutral'
 }
 
 /**

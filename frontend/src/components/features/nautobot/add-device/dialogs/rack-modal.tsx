@@ -80,7 +80,7 @@ export function RackModal({
                     onSelectRackGroup(val === '__none__' ? '' : val)
                   }
                 >
-                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectTrigger className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm">
                     <SelectValue placeholder="Any rack group..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -101,7 +101,7 @@ export function RackModal({
                   value={selectedRack || '__none__'}
                   onValueChange={val => onSelectRack(val === '__none__' ? '' : val)}
                 >
-                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectTrigger className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm">
                     <SelectValue placeholder="Select rack..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -122,7 +122,7 @@ export function RackModal({
                   value={selectedFace || '__none__'}
                   onValueChange={val => onSelectFace(val === '__none__' ? '' : val)}
                 >
-                  <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                  <SelectTrigger className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm">
                     <SelectValue placeholder="Select face..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -137,7 +137,7 @@ export function RackModal({
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Position (U)</Label>
                 {!selectedRack ? (
-                  <p className="text-xs text-muted-foreground italic py-2 px-3 border-2 border-slate-200 rounded-md bg-slate-50">
+                  <p className="text-xs text-muted-foreground italic py-2 px-3 border-2 border-border rounded-md bg-muted">
                     Please select a rack first
                   </p>
                 ) : (
@@ -147,7 +147,7 @@ export function RackModal({
                       onSetPosition(val === '__none__' ? '' : Number(val))
                     }
                   >
-                    <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                    <SelectTrigger className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm">
                       <SelectValue placeholder="Select position..." />
                     </SelectTrigger>
                     <SelectContent>

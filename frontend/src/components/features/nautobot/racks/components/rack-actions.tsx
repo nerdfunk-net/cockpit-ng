@@ -19,7 +19,7 @@ export function RackActions({
   onValidateNames,
 }: RackActionsProps) {
   return (
-    <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
+    <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
       <div className="flex items-center gap-2">
         {onImportPositions && (
           <Button

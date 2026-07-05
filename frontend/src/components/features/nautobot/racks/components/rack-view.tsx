@@ -42,7 +42,7 @@ export function RackView({
     <div className="flex gap-12 justify-center overflow-x-auto pb-4">
       {/* Front face */}
       <div className="flex flex-col items-center gap-2">
-        <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
           Front
         </h3>
         <RackElevation
@@ -65,7 +65,7 @@ export function RackView({
 
       {/* Rear face */}
       <div className="flex flex-col items-center gap-2">
-        <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
           Rear
         </h3>
         <RackElevation

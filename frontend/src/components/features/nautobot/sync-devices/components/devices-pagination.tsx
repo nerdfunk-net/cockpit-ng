@@ -29,9 +29,9 @@ export function DevicesPagination({
   const endItem = Math.min((currentPage + 1) * pageSize, totalItems)
 
   return (
-    <div className="bg-gray-50 px-4 py-3 border-t flex items-center justify-between">
+    <div className="bg-muted px-4 py-3 border-t flex items-center justify-between">
       <div className="flex items-center space-x-2">
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-muted-foreground">
           Showing {startItem} to {endItem} of {totalItems} devices
         </span>
         <Select
@@ -49,7 +49,7 @@ export function DevicesPagination({
             ))}
           </SelectContent>
         </Select>
-        <span className="text-sm text-gray-600">per page</span>
+        <span className="text-sm text-muted-foreground">per page</span>
       </div>
 
       <div className="flex items-center space-x-1">

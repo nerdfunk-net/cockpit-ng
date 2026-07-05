@@ -62,7 +62,7 @@ export function CsvImportPreviewStep({
     <div className="space-y-4">
       {/* Summary Stats */}
       <div className="flex items-center gap-4 text-sm">
-        <span className="text-gray-600">
+        <span className="text-muted-foreground">
           <strong>{parseResult.devices.length}</strong> device(s) from{' '}
           <strong>{parseResult.rowCount}</strong> row(s)
         </span>
@@ -105,7 +105,7 @@ export function CsvImportPreviewStep({
               key={`${error.deviceName}-${error.field}-${error.message}`}
               className="flex items-start gap-2 text-xs"
             >
-              <XCircle className="h-3.5 w-3.5 text-red-500 mt-0.5 shrink-0" />
+              <XCircle className="h-3.5 w-3.5 text-error-foreground mt-0.5 shrink-0" />
               <span>
                 <strong>{error.deviceName}</strong> — {error.field}: {error.message}
               </span>
@@ -116,7 +116,7 @@ export function CsvImportPreviewStep({
               key={`${warning.deviceName}-${warning.field}-${warning.message}`}
               className="flex items-start gap-2 text-xs"
             >
-              <AlertCircle className="h-3.5 w-3.5 text-yellow-500 mt-0.5 shrink-0" />
+              <AlertCircle className="h-3.5 w-3.5 text-warning-foreground mt-0.5 shrink-0" />
               <span>
                 <strong>{warning.deviceName}</strong> — {warning.field}:{' '}
                 {warning.message}
@@ -181,26 +181,26 @@ export function CsvImportPreviewStep({
                 const hasError = deviceErrors.length > 0
 
                 return (
-                  <TableRow key={device.name} className={hasError ? 'bg-red-50' : ''}>
+                  <TableRow key={device.name} className={hasError ? 'bg-error' : ''}>
                     <TableCell className="text-xs font-medium">{device.name}</TableCell>
                     <TableCell className="text-xs">
                       {resolve(device.device_type, 'deviceType') || (
-                        <span className="text-red-500 italic">missing</span>
+                        <span className="text-destructive italic">missing</span>
                       )}
                     </TableCell>
                     <TableCell className="text-xs">
                       {resolve(device.role, 'role') || (
-                        <span className="text-red-500 italic">missing</span>
+                        <span className="text-destructive italic">missing</span>
                       )}
                     </TableCell>
                     <TableCell className="text-xs">
                       {resolve(device.status, 'status') || (
-                        <span className="text-red-500 italic">missing</span>
+                        <span className="text-destructive italic">missing</span>
                       )}
                     </TableCell>
                     <TableCell className="text-xs">
                       {resolve(device.location, 'location') || (
-                        <span className="text-red-500 italic">missing</span>
+                        <span className="text-destructive italic">missing</span>
                       )}
                     </TableCell>
                     <TableCell className="text-xs">

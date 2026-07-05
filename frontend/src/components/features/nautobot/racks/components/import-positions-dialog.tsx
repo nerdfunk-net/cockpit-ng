@@ -46,23 +46,23 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
             <div
               className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium border-2 transition-colors ${
                 isActive
-                  ? 'bg-blue-600 border-blue-600 text-white'
+                  ? 'bg-primary border-primary text-primary-foreground'
                   : isDone
-                    ? 'bg-blue-100 border-blue-400 text-blue-700'
-                    : 'bg-gray-100 border-gray-300 text-gray-500'
+                    ? 'bg-info border-primary/50 text-primary'
+                    : 'bg-muted border-border text-muted-foreground'
               }`}
             >
               {idx + 1}
             </div>
             <span
               className={`text-xs font-medium ${
-                isActive ? 'text-blue-700' : isDone ? 'text-blue-500' : 'text-gray-400'
+                isActive ? 'text-primary' : isDone ? 'text-primary/70' : 'text-muted-foreground'
               }`}
             >
               {label}
             </span>
             {idx < STEPS.length - 1 && (
-              <ChevronRight className="h-3 w-3 text-gray-300 mx-1" />
+              <ChevronRight className="h-3 w-3 text-muted-foreground/50 mx-1" />
             )}
           </div>
         )

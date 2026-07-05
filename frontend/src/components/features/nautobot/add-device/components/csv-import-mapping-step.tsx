@@ -37,7 +37,7 @@ export function CsvImportMappingStep({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Map each CSV column to a Nautobot field. Select &quot;Not Used&quot; to skip a
           column.
         </p>
@@ -49,18 +49,18 @@ export function CsvImportMappingStep({
       </div>
 
       {headers.length === 0 ? (
-        <p className="text-sm text-gray-500 py-4 text-center">
+        <p className="text-sm text-muted-foreground py-4 text-center">
           No CSV headers available. Upload a file first.
         </p>
       ) : (
         <div className="max-h-[45vh] overflow-y-auto border rounded-lg">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-white">
+            <thead className="sticky top-0 bg-card">
               <tr className="border-b">
-                <th className="text-left py-2 px-3 text-gray-600 font-medium w-1/2">
+                <th className="text-left py-2 px-3 text-muted-foreground font-medium w-1/2">
                   CSV Column
                 </th>
-                <th className="text-left py-2 px-3 text-gray-600 font-medium w-1/2">
+                <th className="text-left py-2 px-3 text-muted-foreground font-medium w-1/2">
                   Nautobot Field
                 </th>
               </tr>
@@ -90,7 +90,10 @@ export function CsvImportMappingStep({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={NOT_USED} className="text-gray-400 italic">
+                          <SelectItem
+                            value={NOT_USED}
+                            className="text-muted-foreground italic"
+                          >
                             Not Used
                           </SelectItem>
                           <SelectItem value={header}>{header} (auto)</SelectItem>

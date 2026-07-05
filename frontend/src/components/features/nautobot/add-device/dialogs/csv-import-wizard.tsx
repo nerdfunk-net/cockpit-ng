@@ -222,24 +222,24 @@ export function CsvImportWizard({
                   <div
                     className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
                       isActive
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-primary text-primary-foreground'
                         : isPast
-                          ? 'bg-blue-100 text-blue-600'
-                          : 'bg-gray-100 text-gray-400'
+                          ? 'bg-info text-primary'
+                          : 'bg-muted text-muted-foreground'
                     }`}
                   >
                     {i + 1}
                   </div>
                   <span
                     className={`text-xs truncate ${
-                      isActive ? 'text-blue-600 font-medium' : 'text-gray-400'
+                      isActive ? 'text-primary font-medium' : 'text-muted-foreground'
                     }`}
                   >
                     {STEP_LABELS[s]}
                   </span>
                   {i < STEP_ORDER.length - 1 && (
                     <div
-                      className={`flex-1 h-px ${isPast ? 'bg-blue-200' : 'bg-gray-200'}`}
+                      className={`flex-1 h-px ${isPast ? 'bg-info-border' : 'bg-border'}`}
                     />
                   )}
                 </div>
@@ -262,14 +262,14 @@ export function CsvImportWizard({
               />
               <div className="flex items-center gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     Import Format
                   </Label>
                   <Select
                     value={importFormat}
                     onValueChange={v => onImportFormatChange(v as CsvImportFormat)}
                   >
-                    <SelectTrigger className="h-8 text-sm bg-white border-gray-300 shadow-sm w-40">
+                    <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm w-40">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -280,9 +280,9 @@ export function CsvImportWizard({
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">Delimiter</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Delimiter</Label>
                   <Input
-                    className="h-8 text-sm bg-white border-gray-300 shadow-sm w-20"
+                    className="h-8 text-sm bg-card border-border shadow-sm w-20"
                     value={delimiter}
                     onChange={e => onDelimiterChange(e.target.value)}
                     placeholder=","
@@ -390,7 +390,6 @@ export function CsvImportWizard({
                     disabled={
                       errorCount > 0 || !parseResult || parseResult.devices.length === 0
                     }
-                    className="bg-blue-600 hover:bg-blue-700"
                   >
                     <Play className="h-4 w-4 mr-1" />
                     Import {parseResult?.devices.length || 0} Device(s)

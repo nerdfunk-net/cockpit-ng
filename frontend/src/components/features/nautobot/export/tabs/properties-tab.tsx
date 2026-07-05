@@ -115,11 +115,11 @@ function SortablePropertyItem({ property, onToggle }: SortablePropertyItemProps)
       style={style}
       className={`
         group relative flex items-center gap-2 p-2 rounded-md border transition-all
-        ${isDragging ? 'border-blue-400 bg-blue-50 shadow-lg z-50 opacity-90' : ''}
+        ${isDragging ? 'border-primary bg-info shadow-lg z-50 opacity-90' : ''}
         ${
           property.enabled
-            ? 'border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 hover:border-blue-300 hover:shadow'
-            : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+            ? 'border-info-border bg-info hover:border-primary/50 hover:shadow'
+            : 'border-border bg-muted hover:border-muted-foreground/50'
         }
       `}
     >
@@ -129,7 +129,7 @@ function SortablePropertyItem({ property, onToggle }: SortablePropertyItemProps)
         {...listeners}
         className={`
           cursor-grab active:cursor-grabbing p-1 rounded transition-colors
-          ${property.enabled ? 'text-blue-600 hover:bg-blue-100' : 'text-gray-400 hover:bg-gray-100'}
+          ${property.enabled ? 'text-primary hover:bg-info-border/30' : 'text-muted-foreground hover:bg-muted'}
         `}
         aria-label="Drag to reorder"
       >
@@ -140,14 +140,14 @@ function SortablePropertyItem({ property, onToggle }: SortablePropertyItemProps)
       <div className="flex-1 min-w-0">
         <Label
           className={`text-sm font-medium block cursor-pointer leading-tight ${
-            property.enabled ? 'text-gray-900' : 'text-gray-500'
+            property.enabled ? 'text-foreground' : 'text-muted-foreground'
           }`}
           onClick={() => onToggle(property.id)}
         >
           {property.label}
         </Label>
         <p
-          className={`text-xs leading-tight ${property.enabled ? 'text-gray-600' : 'text-gray-400'}`}
+          className={`text-xs leading-tight ${property.enabled ? 'text-muted-foreground' : 'text-muted-foreground/70'}`}
         >
           {property.description}
         </p>
@@ -160,8 +160,8 @@ function SortablePropertyItem({ property, onToggle }: SortablePropertyItemProps)
           px-2 py-1 rounded transition-all flex items-center gap-1.5 font-medium text-xs
           ${
             property.enabled
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+              : 'bg-muted text-muted-foreground hover:bg-muted-foreground/20'
           }
         `}
         aria-label={property.enabled ? 'Disable property' : 'Enable property'}
@@ -285,16 +285,16 @@ export function PropertiesTab({
 
   return (
     <div className="space-y-3">
-      <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 py-2">
-        <Info className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-blue-900 text-sm">
+      <Alert className="status-info py-2">
+        <Info className="h-4 w-4" />
+        <AlertDescription className="text-sm">
           <strong>Drag and drop</strong> to reorder (CSV column order). Click{' '}
           <strong>Export/Skip</strong> to toggle.
         </AlertDescription>
       </Alert>
 
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <Filter className="h-4 w-4" />
             <span className="text-sm font-medium">Export Properties</span>
@@ -302,19 +302,19 @@ export function PropertiesTab({
           <div className="flex items-center gap-2">
             <button
               onClick={handleOnboardingPreset}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-current bg-card/10 hover:bg-card/20 rounded transition-colors"
             >
               Onboarding
             </button>
             <button
               onClick={handleEnableAll}
-              className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 rounded transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-primary bg-card hover:bg-info rounded transition-colors"
             >
               Enable All
             </button>
             <button
               onClick={handleDisableAll}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-blue-700 hover:bg-blue-800 rounded transition-colors border border-blue-400"
+              className="px-3 py-1.5 text-xs font-medium text-current bg-card/20 hover:bg-card/30 rounded transition-colors border border-card/30"
             >
               Disable All
             </button>
@@ -342,13 +342,13 @@ export function PropertiesTab({
             </SortableContext>
           </DndContext>
 
-          <div className="mt-3 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded border border-blue-200">
-            <p className="text-xs font-medium text-gray-900">
-              <span className="text-blue-600 font-bold text-base">{enabledCount}</span>{' '}
+          <div className="mt-3 p-2 bg-info rounded border border-info-border">
+            <p className="text-xs font-medium text-foreground">
+              <span className="text-primary font-bold text-base">{enabledCount}</span>{' '}
               of {properties.length} properties enabled
             </p>
             {enabledCount === 0 && (
-              <p className="text-xs text-red-600 font-medium mt-0.5">
+              <p className="text-xs text-destructive font-medium mt-0.5">
                 ⚠️ At least one property must be enabled to export
               </p>
             )}

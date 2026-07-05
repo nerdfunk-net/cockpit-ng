@@ -20,16 +20,16 @@ export function PrefixConfiguration({ form, isLoading }: PrefixConfigurationProp
   const { watch, setValue } = form
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium">Prefix Configuration</span>
         </div>
-        <div className="text-xs text-blue-100">
+        <div className="text-xs text-panel-header-muted">
           Automatically add prefix to IP addresses
         </div>
       </div>
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+      <div className="p-6 panel-content">
         <div className="flex items-center gap-4">
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -54,7 +54,7 @@ export function PrefixConfiguration({ form, isLoading }: PrefixConfigurationProp
             >
               <SelectTrigger
                 id="defaultPrefixLength"
-                className="w-24 h-8 border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+                className="w-24 h-8 border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm disabled:bg-muted disabled:border-border"
               >
                 <SelectValue />
               </SelectTrigger>

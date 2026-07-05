@@ -74,8 +74,8 @@ export function InterfacePropertiesModal({
 
         <div className="space-y-4 py-4">
           {/* Basic Settings Section */}
-          <div className="rounded-lg border bg-green-50 p-4">
-            <h4 className="text-sm font-semibold text-green-700 mb-3">
+          <div className="rounded-lg border bg-success p-4">
+            <h4 className="text-sm font-semibold text-success-foreground mb-3">
               Basic Settings
             </h4>
             <div className="space-y-3">
@@ -99,7 +99,7 @@ export function InterfacePropertiesModal({
                   <Input
                     {...register(`interfaces.${interfaceIndex}.mac_address`)}
                     placeholder="00:1A:2B:3C:4D:5E"
-                    className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                    className="h-8 text-sm border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
                   />
                 </div>
                 <div className="space-y-1">
@@ -110,7 +110,7 @@ export function InterfacePropertiesModal({
                       valueAsNumber: true,
                     })}
                     placeholder="1500"
-                    className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                    className="h-8 text-sm border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
                   />
                 </div>
                 <div className="space-y-1">
@@ -118,7 +118,7 @@ export function InterfacePropertiesModal({
                   <Input
                     {...register(`interfaces.${interfaceIndex}.description`)}
                     placeholder="Interface description"
-                    className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                    className="h-8 text-sm border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
                   />
                 </div>
               </div>
@@ -126,8 +126,8 @@ export function InterfacePropertiesModal({
           </div>
 
           {/* VLAN Configuration Section */}
-          <div className="rounded-lg border bg-blue-50 p-4">
-            <h4 className="text-sm font-semibold text-blue-700 mb-3">
+          <div className="rounded-lg border bg-info p-4">
+            <h4 className="text-sm font-semibold text-info-foreground mb-3">
               VLAN Configuration
             </h4>
             {isLoadingVlans && (
@@ -146,7 +146,7 @@ export function InterfacePropertiesModal({
                       setValue(`interfaces.${interfaceIndex}.mode`, value)
                     }
                   >
-                    <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                    <SelectTrigger className="h-8 text-sm border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm">
                       <SelectValue placeholder="Select mode" />
                     </SelectTrigger>
                     <SelectContent>
@@ -172,7 +172,7 @@ export function InterfacePropertiesModal({
                     }
                     disabled={isLoadingVlans}
                   >
-                    <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+                    <SelectTrigger className="h-8 text-sm border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm disabled:bg-muted disabled:border-border">
                       <SelectValue
                         placeholder={isLoadingVlans ? 'Loading...' : 'Select VLAN'}
                       />
@@ -206,7 +206,7 @@ export function InterfacePropertiesModal({
                       watch(`interfaces.${interfaceIndex}.mode`) !== 'tagged'
                     }
                   >
-                    <SelectTrigger className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+                    <SelectTrigger className="h-8 text-sm border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm disabled:bg-muted disabled:border-border">
                       <SelectValue
                         placeholder={
                           watch(`interfaces.${interfaceIndex}.mode`) !== 'tagged'
@@ -267,8 +267,8 @@ export function InterfacePropertiesModal({
           </div>
 
           {/* Advanced Settings Section */}
-          <div className="rounded-lg border bg-purple-50 p-4">
-            <h4 className="text-sm font-semibold text-purple-700 mb-3">
+          <div className="rounded-lg border bg-muted p-4">
+            <h4 className="text-sm font-semibold text-foreground mb-3">
               Advanced Settings
             </h4>
             <div className="grid grid-cols-2 gap-3">
@@ -277,7 +277,7 @@ export function InterfacePropertiesModal({
                 <Input
                   {...register(`interfaces.${interfaceIndex}.parent_interface`)}
                   placeholder="UUID"
-                  className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                  className="h-8 text-sm border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
                 />
               </div>
               <div className="space-y-1">
@@ -285,7 +285,7 @@ export function InterfacePropertiesModal({
                 <Input
                   {...register(`interfaces.${interfaceIndex}.bridge`)}
                   placeholder="UUID"
-                  className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                  className="h-8 text-sm border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
                 />
               </div>
             </div>
@@ -303,7 +303,7 @@ export function InterfacePropertiesModal({
                   setValue(`interfaces.${interfaceIndex}.tags`, tags)
                 }}
                 placeholder="production, critical, monitored"
-                className="h-8 text-sm border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                className="h-8 text-sm border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
               />
             </div>
           </div>

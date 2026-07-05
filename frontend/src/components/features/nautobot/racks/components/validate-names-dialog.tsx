@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { StatusIcon } from '@/components/shared/status-icon'
 import { useApi } from '@/hooks/use-api'
 import { applyNameTransform } from '../utils/name-transform'
 import type {
@@ -195,20 +196,20 @@ export function ValidateNamesDialog({
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-blue-500" />
+            <ShieldCheck className="h-5 w-5 text-primary" />
             Validate Device Names
           </DialogTitle>
         </DialogHeader>
 
         {/* Settings summary */}
-        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 pb-3 border-b border-gray-100">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pb-3 border-b">
           <span>Matching strategy:</span>
           <Badge variant="outline" className="text-xs font-normal">
             {STRATEGY_LABELS[matchingStrategy]}
           </Badge>
           {nameTransform?.pattern ? (
             <>
-              <span className="text-gray-300">·</span>
+              <span className="text-muted-foreground/50">·</span>
               <span>Name transform:</span>
               <Badge variant="outline" className="text-xs font-normal font-mono">
                 {nameTransform.mode === 'regex' ? 'regex' : 'replace'}:{' '}
@@ -217,8 +218,8 @@ export function ValidateNamesDialog({
             </>
           ) : (
             <>
-              <span className="text-gray-300">·</span>
-              <span className="text-gray-400 italic">No name transform</span>
+              <span className="text-muted-foreground/50">·</span>
+              <span className="text-muted-foreground italic">No name transform</span>
             </>
           )}
         </div>
@@ -245,63 +246,59 @@ export function ValidateNamesDialog({
           <>
             {/* Summary */}
             <div className="flex items-center gap-3 text-sm">
-              <span className="flex items-center gap-1.5 text-green-700">
+              <span className="flex items-center gap-1.5 text-success-foreground">
                 <CheckCircle2 className="h-4 w-4" />
                 {foundCount} found
               </span>
               {notFoundCount > 0 && (
-                <span className="flex items-center gap-1.5 text-red-600">
+                <span className="flex items-center gap-1.5 text-error-foreground">
                   <XCircle className="h-4 w-4" />
                   {notFoundCount} not found
                 </span>
               )}
             </div>
 
-            <div className="rounded-md border border-gray-200 overflow-hidden">
+            <div className="rounded-md border overflow-hidden">
               <table className="w-full text-xs">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-muted border-b">
                   <tr>
-                    <th className="text-left px-3 py-2 font-medium text-gray-600 w-5" />
-                    <th className="text-left px-3 py-2 font-medium text-gray-600">
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground w-5" />
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">
                       Device name (in rack)
                     </th>
                     {showTransformColumn && (
                       <>
                         <th className="w-5" />
-                        <th className="text-left px-3 py-2 font-medium text-gray-600">
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">
                           Lookup name
                         </th>
                       </>
                     )}
-                    <th className="text-left px-3 py-2 font-medium text-gray-600">
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">
                       Nautobot match
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y">
                   {results.map(entry => (
-                    <tr
-                      key={entry.deviceId}
-                      className={entry.found ? '' : 'bg-red-50/40'}
-                    >
+                    <tr key={entry.deviceId} className={entry.found ? '' : 'bg-error/40'}>
                       <td className="px-3 py-2 text-center">
-                        {entry.found ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600 inline" />
-                        ) : (
-                          <XCircle className="h-3.5 w-3.5 text-red-500 inline" />
-                        )}
+                        <StatusIcon
+                          variant={entry.found ? 'success' : 'error'}
+                          className="h-3.5 w-3.5 inline"
+                        />
                       </td>
-                      <td className="px-3 py-2 font-mono text-gray-700">
+                      <td className="px-3 py-2 font-mono text-muted-foreground">
                         {entry.deviceName}
                       </td>
                       {showTransformColumn && (
                         <>
-                          <td className="text-center text-gray-300">
+                          <td className="text-center text-muted-foreground/50">
                             {entry.lookupName !== entry.deviceName && (
                               <ArrowRight className="h-3 w-3 inline" />
                             )}
                           </td>
-                          <td className="px-3 py-2 font-mono text-blue-700">
+                          <td className="px-3 py-2 font-mono text-primary">
                             {entry.lookupName !== entry.deviceName
                               ? entry.lookupName
                               : ''}
@@ -310,9 +307,11 @@ export function ValidateNamesDialog({
                       )}
                       <td className="px-3 py-2 font-mono">
                         {entry.found ? (
-                          <span className="text-green-700">{entry.matchedName}</span>
+                          <span className="text-success-foreground">
+                            {entry.matchedName}
+                          </span>
                         ) : (
-                          <span className="text-red-400 italic">not found</span>
+                          <span className="text-destructive italic">not found</span>
                         )}
                       </td>
                     </tr>
@@ -324,7 +323,7 @@ export function ValidateNamesDialog({
         )}
 
         {/* Footer */}
-        <DialogFooter className="flex items-center justify-between gap-2 pt-4 border-t border-gray-100 mt-2">
+        <DialogFooter className="flex items-center justify-between gap-2 pt-4 border-t mt-2">
           <div>
             {!isValidating && foundCount > 0 && (
               <Button onClick={handleApplyNames} className="gap-2">

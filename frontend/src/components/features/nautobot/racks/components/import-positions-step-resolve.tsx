@@ -34,24 +34,24 @@ export function ImportPositionsStepResolve({
   return (
     <div className="space-y-6">
       {/* Rack Location Disambiguation */}
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+      <div className="rounded-lg border border-warning-border bg-warning p-4 space-y-3">
         <div className="flex items-center gap-2 mb-1">
-          <MapPin className="h-4 w-4 text-amber-600" />
-          <h3 className="text-sm font-semibold text-gray-800">
+          <MapPin className="h-4 w-4 text-warning-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">
             Rack Location Disambiguation
           </h3>
         </div>
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-muted-foreground">
           Rack names must be unique within a location, but the same rack name can exist
           in multiple locations (e.g., both{' '}
           <span className="font-medium">Building A</span> and{' '}
           <span className="font-medium">Building B</span> may each have a rack named{' '}
-          <span className="font-medium text-gray-800">{rackName || 'A_1'}</span>).
+          <span className="font-medium text-foreground">{rackName || 'A_1'}</span>).
           Select the CSV column that identifies the location so the correct rows can be
           filtered.
         </p>
         <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
-          <span className="text-xs text-gray-600 whitespace-nowrap">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
             Location column
           </span>
           <Select
@@ -64,7 +64,10 @@ export function ImportPositionsStepResolve({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NOT_USED_SENTINEL} className="text-xs text-gray-400">
+              <SelectItem
+                value={NOT_USED_SENTINEL}
+                className="text-xs text-muted-foreground"
+              >
                 NOT USED
               </SelectItem>
               {headers.map(col => (
@@ -76,7 +79,7 @@ export function ImportPositionsStepResolve({
           </Select>
         </div>
         {locationColumn && (
-          <p className="text-xs text-amber-700">
+          <p className="text-xs text-warning-foreground">
             Column <span className="font-medium">{locationColumn}</span> will be matched
             against location name <span className="font-medium">{locationName}</span>.
           </p>
@@ -85,19 +88,19 @@ export function ImportPositionsStepResolve({
 
       {/* Match preview */}
       {rackName && (
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-2">Row Preview</h3>
+        <div className="rounded-lg border bg-card p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-2">Row Preview</h3>
           {previewMatchCount > 0 ? (
             <div className="flex items-center gap-2">
-              <Badge className="bg-green-100 text-green-800 border-green-300">
+              <Badge className="bg-success text-success-foreground border-success-border">
                 {previewMatchCount} {previewMatchCount === 1 ? 'row' : 'rows'} matched
               </Badge>
-              <span className="text-xs text-gray-500">
-                for rack <span className="font-medium text-gray-700">{rackName}</span>
+              <span className="text-xs text-muted-foreground">
+                for rack <span className="font-medium text-foreground">{rackName}</span>
                 {locationColumn && locationName && (
                   <>
                     {' '}
-                    at <span className="font-medium text-gray-700">{locationName}</span>
+                    at <span className="font-medium text-foreground">{locationName}</span>
                   </>
                 )}
               </span>
@@ -105,7 +108,7 @@ export function ImportPositionsStepResolve({
           ) : (
             <div className="flex items-center gap-2">
               <Badge variant="destructive">0 rows matched</Badge>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-muted-foreground">
                 No rows found for rack <span className="font-medium">{rackName}</span>.
                 {!locationColumn && ' Try selecting a location column above.'}
                 {locationColumn &&
@@ -117,7 +120,7 @@ export function ImportPositionsStepResolve({
       )}
 
       {isResolving && (
-        <div className="text-xs text-gray-500 text-center py-2">
+        <div className="text-xs text-muted-foreground text-center py-2">
           Resolving device names in Nautobot…
         </div>
       )}

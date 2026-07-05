@@ -86,7 +86,7 @@ export function RackMappingsDialog({
           DB&rdquo; is enabled during import.
         </p>
 
-        <div className="rounded-md border border-gray-200 overflow-hidden">
+        <div className="rounded-md border overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -98,26 +98,26 @@ export function RackMappingsDialog({
           ) : (
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-3 py-2 text-left font-medium text-gray-600">
+                <tr className="bg-muted border-b">
+                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                     CSV Name
                   </th>
-                  <th className="px-3 py-2 text-left font-medium text-gray-600">
+                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                     Nautobot Name
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y">
                 {mappings.map(m => (
                   <tr key={m.origin_name}>
                     <td
-                      className="px-3 py-2 font-mono text-gray-700 truncate max-w-[180px]"
+                      className="px-3 py-2 font-mono text-muted-foreground truncate max-w-[180px]"
                       title={m.origin_name}
                     >
                       {m.origin_name}
                     </td>
                     <td
-                      className="px-3 py-2 font-mono text-gray-700 truncate max-w-[180px]"
+                      className="px-3 py-2 font-mono text-muted-foreground truncate max-w-[180px]"
                       title={m.mapped_name}
                     >
                       {m.mapped_name}

@@ -30,7 +30,7 @@ export function ConfirmationModal({
             Are you sure you want to offboard <strong>{selectedCount}</strong> device
             {selectedCount !== 1 ? 's' : ''}?
           </p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             This action will remove the selected devices and their associated data
             according to your settings.
           </p>

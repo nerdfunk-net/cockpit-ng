@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Edit } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
 import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/hooks/use-toast'
@@ -374,11 +375,11 @@ export default function BulkEditPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-purple-100 p-2 rounded-lg">
-            <Edit className="h-6 w-6 text-purple-600" />
-          </div>
+          <IconChip variant="info">
+            <Edit className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Bulk Edit Devices</h1>
+            <h1 className="text-3xl font-bold text-foreground">Bulk Edit Devices</h1>
             <p className="text-muted-foreground mt-2">
               Edit multiple device properties efficiently
             </p>

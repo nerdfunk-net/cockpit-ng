@@ -23,19 +23,19 @@ export function OffboardPanel({
 }: OffboardPanelProps) {
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-red-400/80 to-red-500/80 text-white py-2 px-4">
+      <div className="panel-header py-2 px-4">
         <div className="flex items-center space-x-2">
           <Minus className="h-4 w-4" />
           <div>
             <h3 className="text-sm font-semibold">Offboarding</h3>
-            <p className="text-red-100 text-xs">Configure removal settings</p>
+            <p className="text-panel-header-muted text-xs">Configure removal settings</p>
           </div>
         </div>
       </div>
-      <div className="p-4 bg-white space-y-3">
+      <div className="p-4 bg-card space-y-3">
         {/* IP Removal Options */}
         <div className="space-y-3">
-          <Label className="text-sm font-semibold text-gray-700">
+          <Label className="text-sm font-semibold text-muted-foreground">
             IP Address Removal
           </Label>
           <div className="space-y-2">
@@ -74,7 +74,7 @@ export function OffboardPanel({
 
         {/* CheckMK Removal Option */}
         <div className="space-y-3">
-          <Label className="text-sm font-semibold text-gray-700">
+          <Label className="text-sm font-semibold text-muted-foreground">
             CheckMK Integration
           </Label>
           <div className="space-y-2">
@@ -101,11 +101,12 @@ export function OffboardPanel({
           <Button
             onClick={onOffboard}
             disabled={!isFormValid || isSubmitting}
-            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+            className="w-full"
+            variant="destructive"
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-destructive-foreground mr-2" />
                 Offboarding...
               </>
             ) : (

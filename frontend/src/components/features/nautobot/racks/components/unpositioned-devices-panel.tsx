@@ -102,18 +102,20 @@ export function UnpositionedDevicesPanel({
 
   return (
     <div className="flex flex-col shrink-0" style={{ minWidth: 300, maxWidth: 380 }}>
-      <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-2">
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
         Non-Racked Devices
       </h3>
-      <div className="border border-gray-200 rounded-md overflow-hidden">
+      <div className="border rounded-md overflow-hidden">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-2 py-1.5 text-left font-medium text-gray-600">Name</th>
-              <th className="px-2 py-1.5 text-left font-medium text-gray-600">
+            <tr className="bg-muted border-b">
+              <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">
+                Name
+              </th>
+              <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">
                 Position
               </th>
-              <th className="px-2 py-1.5 text-left font-medium text-gray-600">
+              <th className="px-2 py-1.5 text-left font-medium text-muted-foreground">
                 Action
               </th>
             </tr>
@@ -124,12 +126,9 @@ export function UnpositionedDevicesPanel({
               const isPositionSet = selectedPos !== UNSET_VALUE
 
               return (
-                <tr
-                  key={device.id}
-                  className="border-b border-gray-100 last:border-b-0"
-                >
+                <tr key={device.id} className="border-b last:border-b-0">
                   <td
-                    className="px-2 py-1.5 text-gray-800 truncate max-w-[140px]"
+                    className="px-2 py-1.5 text-foreground truncate max-w-[140px]"
                     title={device.name}
                   >
                     {device.name}
@@ -158,7 +157,7 @@ export function UnpositionedDevicesPanel({
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-6 px-1.5 text-xs font-semibold text-amber-600 border-amber-400 hover:bg-amber-50"
+                          className="h-6 px-1.5 text-xs font-semibold text-warning-foreground border-warning-border hover:bg-warning"
                           title="Place as rack reservation"
                           disabled={!isPositionSet}
                           onClick={() => handleAssignReservation(device)}

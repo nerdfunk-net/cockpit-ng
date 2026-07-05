@@ -174,12 +174,12 @@ export function ImportPositionsStepProperties({
   return (
     <div className="space-y-4">
       {/* Matching Strategy */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+      <div className="rounded-lg border bg-card p-4 space-y-3">
         <div className="flex items-center gap-2 mb-1">
-          <Search className="h-4 w-4 text-blue-500" />
-          <h3 className="text-sm font-semibold text-gray-800">Matching Strategy</h3>
+          <Search className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Matching Strategy</h3>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           How to find the device in Nautobot using the (transformed) name from the CSV.
         </p>
 
@@ -189,8 +189,8 @@ export function ImportPositionsStepProperties({
               key={option.value}
               className={`flex items-start gap-3 cursor-pointer rounded-md border p-3 transition-colors ${
                 matchingStrategy === option.value
-                  ? 'border-blue-400 bg-blue-50'
-                  : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                  ? 'border-primary bg-info'
+                  : 'border-border bg-muted hover:border-muted-foreground/50'
               }`}
             >
               <input
@@ -199,13 +199,13 @@ export function ImportPositionsStepProperties({
                 value={option.value}
                 checked={matchingStrategy === option.value}
                 onChange={() => onMatchingStrategyChange(option.value)}
-                className="mt-0.5 accent-blue-600"
+                className="mt-0.5 accent-primary"
               />
               <div>
-                <span className="text-sm font-medium text-gray-800">
+                <span className="text-sm font-medium text-foreground">
                   {option.label}
                 </span>
-                <p className="text-xs text-gray-500 mt-0.5">{option.description}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{option.description}</p>
               </div>
             </label>
           ))}
@@ -213,12 +213,12 @@ export function ImportPositionsStepProperties({
       </div>
 
       {/* Load devices up to */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+      <div className="rounded-lg border bg-card p-4 space-y-3">
         <div className="flex items-center gap-2 mb-1">
-          <MapPin className="h-4 w-4 text-blue-500" />
-          <h3 className="text-sm font-semibold text-gray-800">Load devices up to</h3>
+          <MapPin className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Load devices up to</h3>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           Widen the device search to include all devices at this level of the location
           hierarchy or below. Use this when a device&apos;s Nautobot location is a
           parent of the rack&apos;s location.
@@ -231,7 +231,7 @@ export function ImportPositionsStepProperties({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__none__" className="text-xs text-gray-500">
+            <SelectItem value="__none__" className="text-xs text-muted-foreground">
               Rack location only
             </SelectItem>
             {locationTypeOptions.map(opt => (
@@ -244,19 +244,19 @@ export function ImportPositionsStepProperties({
       </div>
 
       {/* Customize Name */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+      <div className="rounded-lg border bg-card p-4 space-y-3">
         <div className="flex items-center gap-2 mb-1">
-          <Pencil className="h-4 w-4 text-blue-500" />
-          <h3 className="text-sm font-semibold text-gray-800">Customize Name</h3>
+          <Pencil className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Customize Name</h3>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           Transform the CSV name value before it is used to look up the device in
-          Nautobot. Leave <span className="font-medium text-gray-700">Pattern</span>{' '}
+          Nautobot. Leave <span className="font-medium text-foreground">Pattern</span>{' '}
           empty to skip transformation.
         </p>
 
         <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center">
-          <Label className="text-xs text-gray-600 whitespace-nowrap">Mode</Label>
+          <Label className="text-xs text-muted-foreground whitespace-nowrap">Mode</Label>
           <Select
             value={nameTransform?.mode ?? 'regex'}
             onValueChange={v => handleNameTransformModeChange(v as NameTransformMode)}
@@ -274,7 +274,7 @@ export function ImportPositionsStepProperties({
             </SelectContent>
           </Select>
 
-          <Label className="text-xs text-gray-600 whitespace-nowrap">Pattern</Label>
+          <Label className="text-xs text-muted-foreground whitespace-nowrap">Pattern</Label>
           <Input
             value={nameTransform?.pattern ?? ''}
             onChange={e => handleNameTransformPatternChange(e.target.value)}
@@ -288,7 +288,7 @@ export function ImportPositionsStepProperties({
 
           {nameTransform?.mode === 'replace' && (
             <>
-              <Label className="text-xs text-gray-600 whitespace-nowrap">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">
                 Replacement
               </Label>
               <Input
@@ -303,7 +303,7 @@ export function ImportPositionsStepProperties({
 
         {nameTransform?.pattern && (
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-blue-600">
+            <p className="text-xs text-primary">
               {nameTransform.mode === 'regex'
                 ? 'The first match (or captured group) will replace the original name.'
                 : `Matches of the pattern will be replaced with "${
@@ -334,24 +334,24 @@ export function ImportPositionsStepProperties({
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-sm">
-              <FlaskConical className="h-4 w-4 text-blue-500" />
+              <FlaskConical className="h-4 w-4 text-primary" />
               Name Transform Preview
             </DialogTitle>
           </DialogHeader>
 
-          <div className="text-xs text-gray-500 mb-3">
+          <div className="text-xs text-muted-foreground mb-3">
             Mode:{' '}
-            <span className="font-medium text-gray-700">
+            <span className="font-medium text-foreground">
               {nameTransform?.mode === 'regex' ? 'Regular Expression' : 'Replace'}
             </span>
             {' · '}Pattern:{' '}
-            <code className="font-mono bg-gray-100 px-1 rounded">
+            <code className="font-mono bg-muted px-1 rounded">
               {nameTransform?.pattern}
             </code>
             {nameTransform?.mode === 'replace' && (
               <>
                 {' · '}Replacement:{' '}
-                <code className="font-mono bg-gray-100 px-1 rounded">
+                <code className="font-mono bg-muted px-1 rounded">
                   {nameTransform.replacement || '(empty)'}
                 </code>
               </>
@@ -359,7 +359,7 @@ export function ImportPositionsStepProperties({
           </div>
 
           {tryResults.some(r => r.error) && (
-            <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 mb-3">
+            <div className="flex items-center gap-2 rounded-md border border-error-border bg-error px-3 py-2 text-xs text-error-foreground mb-3">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               <span>
                 <span className="font-medium">Invalid pattern:</span>{' '}
@@ -368,37 +368,37 @@ export function ImportPositionsStepProperties({
             </div>
           )}
 
-          <div className="max-h-96 overflow-y-auto rounded-md border border-gray-200">
+          <div className="max-h-96 overflow-y-auto rounded-md border">
             <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+              <thead className="sticky top-0 bg-muted border-b">
                 <tr>
-                  <th className="text-left px-3 py-2 font-medium text-gray-600 w-1/2">
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground w-1/2">
                     Original (CSV)
                   </th>
                   <th className="w-5" />
-                  <th className="text-left px-3 py-2 font-medium text-gray-600 w-1/2">
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground w-1/2">
                     Result (used for lookup)
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y">
                 {tryResults.map(row => {
                   const changed = row.result !== row.original && !row.error
                   return (
-                    <tr key={row.original} className={changed ? 'bg-blue-50/40' : ''}>
-                      <td className="px-3 py-1.5 font-mono text-gray-700">
+                    <tr key={row.original} className={changed ? 'bg-info/40' : ''}>
+                      <td className="px-3 py-1.5 font-mono text-muted-foreground">
                         {row.original}
                       </td>
-                      <td className="text-center text-gray-400">
+                      <td className="text-center text-muted-foreground">
                         <ArrowRight className="h-3 w-3 inline" />
                       </td>
                       <td
                         className={`px-3 py-1.5 font-mono ${
                           row.error
-                            ? 'text-red-500 italic'
+                            ? 'text-destructive italic'
                             : changed
-                              ? 'text-blue-700 font-medium'
-                              : 'text-gray-400'
+                              ? 'text-primary font-medium'
+                              : 'text-muted-foreground'
                         }`}
                       >
                         {row.error ? 'error' : row.result}
@@ -410,7 +410,7 @@ export function ImportPositionsStepProperties({
             </table>
           </div>
 
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {tryResults.filter(r => r.result !== r.original && !r.error).length} of{' '}
             {tryResults.length} names will be transformed.
           </p>
@@ -418,7 +418,7 @@ export function ImportPositionsStepProperties({
       </Dialog>
 
       {/* Clear rack before import */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-4">
+      <div className="rounded-lg border bg-card p-4 space-y-4">
         <div className="flex items-start gap-3">
           <Checkbox
             id="clear-rack"
@@ -431,7 +431,7 @@ export function ImportPositionsStepProperties({
               htmlFor="clear-rack"
               className="text-sm font-medium cursor-pointer flex items-center gap-2"
             >
-              <Trash2 className="h-4 w-4 text-gray-500" />
+              <Trash2 className="h-4 w-4 text-muted-foreground" />
               Clear rack before import
             </Label>
             <p className="text-xs text-muted-foreground">
@@ -444,7 +444,7 @@ export function ImportPositionsStepProperties({
       </div>
 
       {/* Use Mapping from DB */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-4">
+      <div className="rounded-lg border bg-card p-4 space-y-4">
         <div className="flex items-start gap-3">
           <Checkbox
             id="use-mapping-db"
@@ -457,7 +457,7 @@ export function ImportPositionsStepProperties({
               htmlFor="use-mapping-db"
               className="text-sm font-medium cursor-pointer flex items-center gap-2"
             >
-              <Database className="h-4 w-4 text-gray-500" />
+              <Database className="h-4 w-4 text-muted-foreground" />
               Use Mapping from DB
             </Label>
             <p className="text-xs text-muted-foreground">

@@ -81,14 +81,14 @@ export function ExportTab({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-700">Devices</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">Devices</p>
+              <p className="text-2xl font-bold text-foreground">
                 {selectedDevices.length}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-700">Properties</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-muted-foreground">Properties</p>
+              <p className="text-2xl font-bold text-foreground">
                 {selectedProperties.length}
               </p>
             </div>
@@ -96,14 +96,14 @@ export function ExportTab({
 
           {selectedProperties.length > 0 && (
             <div className="pt-4 border-t">
-              <p className="text-sm font-medium text-gray-700 mb-2">
+              <p className="text-sm font-medium text-muted-foreground mb-2">
                 Selected Properties:
               </p>
               <div className="flex flex-wrap gap-2">
                 {selectedProperties.map(prop => (
                   <span
                     key={prop}
-                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                    className="px-3 py-1 bg-info text-info-foreground rounded-full text-sm font-medium"
                   >
                     {prop}
                   </span>
@@ -126,19 +126,19 @@ export function ExportTab({
               onClick={() => onExportFormatChange('yaml')}
               className={`p-4 border-2 rounded-lg transition-all ${
                 exportFormat === 'yaml'
-                  ? 'border-blue-500 bg-blue-50 shadow-sm'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-primary bg-info shadow-sm'
+                  : 'border-border hover:border-muted-foreground/50'
               }`}
             >
               <div className="flex items-center space-x-3">
                 <FileText
                   className={
-                    exportFormat === 'yaml' ? 'text-blue-600' : 'text-gray-400'
+                    exportFormat === 'yaml' ? 'text-primary' : 'text-muted-foreground'
                   }
                 />
                 <div className="text-left">
-                  <p className="font-semibold text-gray-900">YAML</p>
-                  <p className="text-xs text-gray-500">Structured data format</p>
+                  <p className="font-semibold text-foreground">YAML</p>
+                  <p className="text-xs text-muted-foreground">Structured data format</p>
                 </div>
               </div>
             </button>
@@ -147,17 +147,19 @@ export function ExportTab({
               onClick={() => onExportFormatChange('csv')}
               className={`p-4 border-2 rounded-lg transition-all ${
                 exportFormat === 'csv'
-                  ? 'border-blue-500 bg-blue-50 shadow-sm'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-primary bg-info shadow-sm'
+                  : 'border-border hover:border-muted-foreground/50'
               }`}
             >
               <div className="flex items-center space-x-3">
                 <FileText
-                  className={exportFormat === 'csv' ? 'text-blue-600' : 'text-gray-400'}
+                  className={
+                    exportFormat === 'csv' ? 'text-primary' : 'text-muted-foreground'
+                  }
                 />
                 <div className="text-left">
-                  <p className="font-semibold text-gray-900">CSV</p>
-                  <p className="text-xs text-gray-500">Spreadsheet format</p>
+                  <p className="font-semibold text-foreground">CSV</p>
+                  <p className="text-xs text-muted-foreground">Spreadsheet format</p>
                 </div>
               </div>
             </button>
@@ -184,7 +186,7 @@ export function ExportTab({
                   maxLength={1}
                   className="font-mono"
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Character to separate values (e.g., comma, semicolon)
                 </p>
               </div>
@@ -199,7 +201,9 @@ export function ExportTab({
                   maxLength={1}
                   className="font-mono"
                 />
-                <p className="text-xs text-gray-500">Character to quote text values</p>
+                <p className="text-xs text-muted-foreground">
+                  Character to quote text values
+                </p>
               </div>
             </div>
 
@@ -214,11 +218,11 @@ export function ExportTab({
               </Label>
             </div>
 
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm font-medium text-muted-foreground mb-2">
                 Preview Settings:
               </p>
-              <div className="font-mono text-xs text-gray-600 space-y-1">
+              <div className="font-mono text-xs text-muted-foreground space-y-1">
                 <p>
                   Delimiter:{' '}
                   <span className="font-bold">{csvDelimiter || '(empty)'}</span>
@@ -244,7 +248,7 @@ export function ExportTab({
           disabled={!canExport}
           size="lg"
           variant="outline"
-          className="gap-2 border-green-300 text-green-600 hover:bg-green-50 hover:text-green-700"
+          className="gap-2 border-success-border text-success-foreground hover:bg-success"
         >
           <Eye className="h-5 w-5" />
           Preview

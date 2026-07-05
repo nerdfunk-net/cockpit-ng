@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { Monitor, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { IconChip } from '@/components/shared/icon-chip'
 
 import {
   useVMDropdownsQuery,
@@ -197,11 +198,11 @@ export function AddVMPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <div className="bg-purple-100 p-2 rounded-lg">
-            <Monitor className="h-6 w-6 text-purple-600" />
-          </div>
+          <IconChip variant="info">
+            <Monitor className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Add Virtual Machine</h1>
+            <h1 className="text-3xl font-bold text-foreground">Add Virtual Machine</h1>
             <p className="text-muted-foreground mt-2">Create a new VM in Nautobot</p>
           </div>
         </div>
@@ -217,11 +218,11 @@ export function AddVMPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-purple-100 p-2 rounded-lg">
-            <Monitor className="h-6 w-6 text-purple-600" />
-          </div>
+          <IconChip variant="info">
+            <Monitor className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Add Virtual Machine</h1>
+            <h1 className="text-3xl font-bold text-foreground">Add Virtual Machine</h1>
             <p className="text-muted-foreground mt-2">
               Create a new VM in Nautobot. Only name, status, and cluster are required.
             </p>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Search, RotateCcw } from 'lucide-react'
+import { StatusBadge } from '@/components/shared/status-badge'
 import type {
   Device,
   TableFilters,
@@ -12,7 +13,7 @@ import type {
   LocationItem,
   PaginationState,
 } from '../types'
-import { getStatusBadgeClass } from '../utils'
+import { getStatusBadgeVariant } from '../utils'
 import { DevicesFilters } from './devices-filters'
 import { DevicesPagination } from './devices-pagination'
 
@@ -87,13 +88,13 @@ export function DevicesTable({
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+      <div className="panel-header py-2 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Search className="h-4 w-4" />
             <div>
               <h3 className="text-sm font-semibold">Devices</h3>
-              <p className="text-blue-100 text-xs">
+              <p className="text-panel-header-muted text-xs">
                 Select devices to synchronize with Nautobot
               </p>
             </div>
@@ -103,7 +104,7 @@ export function DevicesTable({
               variant="ghost"
               size="sm"
               onClick={onClearFilters}
-              className="text-white hover:bg-white/20 text-xs h-6"
+              className="text-current hover:bg-card/20 text-xs h-6"
             >
               <RotateCcw className="h-3 w-3 mr-1" />
               Clear Filters
@@ -112,7 +113,7 @@ export function DevicesTable({
               variant="ghost"
               size="sm"
               onClick={onReloadDevices}
-              className="text-white hover:bg-white/20 text-xs h-6"
+              className="text-current hover:bg-card/20 text-xs h-6"
               disabled={isReloading}
             >
               <Search className="h-3 w-3 mr-1" />
@@ -136,33 +137,33 @@ export function DevicesTable({
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-100 border-b">
+            <thead className="bg-muted border-b">
               <tr>
                 <th className="pl-4 pr-2 py-3 w-8 text-left">
                   <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} />
                 </th>
-                <th className="pl-4 pr-2 py-3 w-48 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="pl-4 pr-2 py-3 w-48 text-left text-xs font-medium text-muted-foreground uppercase">
                   Device Name
                 </th>
-                <th className="px-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="px-4 py-3 w-32 text-left text-xs font-medium text-muted-foreground uppercase">
                   IP Address
                 </th>
-                <th className="pl-8 pr-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="pl-8 pr-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                   Role
                 </th>
-                <th className="pl-4 pr-2 py-3 w-40 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="pl-4 pr-2 py-3 w-40 text-left text-xs font-medium text-muted-foreground uppercase">
                   Location
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                   Status
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-border">
               {devices.map((device, index) => (
                 <tr
                   key={device.id}
-                  className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+                  className={index % 2 === 0 ? 'bg-card' : 'bg-muted/50'}
                 >
                   <td className="pl-4 pr-2 py-3 w-8 text-left">
                     <Checkbox
@@ -172,30 +173,42 @@ export function DevicesTable({
                       }
                     />
                   </td>
-                  <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-gray-900">
+                  <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-foreground">
                     {device.name || 'Unnamed Device'}
                   </td>
-                  <td className="px-4 py-3 w-32 text-sm text-gray-600">
+                  <td className="px-4 py-3 w-32 text-sm text-muted-foreground">
                     {device.primary_ip4?.address || 'N/A'}
                   </td>
-                  <td className="pl-8 pr-4 py-3 text-sm text-gray-600">
+                  <td className="pl-8 pr-4 py-3 text-sm text-muted-foreground">
                     {device.role?.name || 'Unknown'}
                   </td>
-                  <td className="pl-4 pr-2 py-3 w-40 text-sm text-gray-600">
+                  <td className="pl-4 pr-2 py-3 w-40 text-sm text-muted-foreground">
                     {device.location?.name || 'Unknown'}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge
-                      className={`text-white ${getStatusBadgeClass(device.status?.name || 'unknown')}`}
-                    >
-                      {device.status?.name || 'Unknown'}
-                    </Badge>
+                    {(() => {
+                      const variant = getStatusBadgeVariant(
+                        device.status?.name || 'unknown'
+                      )
+                      return variant === 'neutral' ? (
+                        <Badge variant="secondary">
+                          {device.status?.name || 'Unknown'}
+                        </Badge>
+                      ) : (
+                        <StatusBadge variant={variant}>
+                          {device.status?.name || 'Unknown'}
+                        </StatusBadge>
+                      )
+                    })()}
                   </td>
                 </tr>
               ))}
               {devices.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-muted-foreground"
+                  >
                     No devices found matching the current filters.
                   </td>
                 </tr>

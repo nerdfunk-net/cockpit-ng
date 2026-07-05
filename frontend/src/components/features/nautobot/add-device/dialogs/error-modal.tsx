@@ -21,7 +21,7 @@ export function ErrorModal({ open, onOpenChange, message }: ErrorModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600">
+          <DialogTitle className="flex items-center gap-2 text-destructive">
             <AlertCircle className="h-5 w-5" />
             Device Creation Failed
           </DialogTitle>
@@ -30,8 +30,10 @@ export function ErrorModal({ open, onOpenChange, message }: ErrorModalProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-sm text-red-800 whitespace-pre-wrap">{message}</p>
+          <div className="bg-error border border-error-border rounded-lg p-4">
+            <p className="text-sm text-error-foreground whitespace-pre-wrap">
+              {message}
+            </p>
           </div>
           <div className="flex justify-end">
             <Button onClick={() => onOpenChange(false)} variant="default">

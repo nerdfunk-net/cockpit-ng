@@ -167,12 +167,12 @@ export function BulkEditTab({
 
   return (
     <div className="space-y-6">
-      <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 rounded-t-lg">
+      <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+        <div className="panel-header py-2 px-4 rounded-t-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium">Bulk Edit Devices</span>
-              <div className="text-xs text-blue-100">
+              <div className="text-xs text-panel-header-muted">
                 Edit multiple devices at once. Modified rows are highlighted in red.
               </div>
             </div>
@@ -183,7 +183,7 @@ export function BulkEditTab({
                   disabled={isReloadingData}
                   variant="outline"
                   size="sm"
-                  className="bg-white/10 hover:bg-white/20 border-white/30 text-white"
+                  className="bg-card/10 hover:bg-card/20 border-card/30 text-current"
                 >
                   <RotateCcw
                     className={`h-4 w-4 mr-2 ${isReloadingData ? 'animate-spin' : ''}`}
@@ -203,13 +203,13 @@ export function BulkEditTab({
         </div>
         <div className="p-6 space-y-4">
           {/* Device count and modified count */}
-          <div className="flex items-center justify-between text-sm text-gray-600">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div>
               Showing <strong>{selectedDevices.length}</strong> device
               {selectedDevices.length !== 1 ? 's' : ''}
             </div>
             {modifiedCount > 0 && (
-              <div className="text-red-600 font-medium">
+              <div className="text-destructive font-medium">
                 {modifiedCount} device{modifiedCount !== 1 ? 's' : ''} modified
               </div>
             )}

@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, AlertCircle, CheckCircle2, XCircle } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
+import { StatusIcon } from '@/components/shared/status-icon'
 import type { DeviceInfo } from '@/components/shared/device-selector'
 
 interface DryRunResult {
@@ -90,7 +91,7 @@ export function PreviewChangesDialog({
           {/* Modified Devices Summary */}
           <div className="border rounded-lg p-4">
             <h3 className="font-semibold mb-2">Modified Devices</h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               {modifiedDevices.size} device(s) will be updated
             </p>
 
@@ -99,10 +100,10 @@ export function PreviewChangesDialog({
               {Array.from(modifiedDevices.entries()).map(([deviceId, changes]) => (
                 <div
                   key={deviceId}
-                  className="text-sm border-l-2 border-blue-500 pl-3 py-1"
+                  className="text-sm border-l-2 border-primary pl-3 py-1"
                 >
                   <div className="font-medium">Device ID: {deviceId}</div>
-                  <div className="text-gray-600">
+                  <div className="text-muted-foreground">
                     Fields: {Object.keys(changes).join(', ')}
                   </div>
                 </div>
@@ -144,30 +145,30 @@ export function PreviewChangesDialog({
               <div className="grid grid-cols-3 gap-3">
                 <div className="border rounded-lg p-3 text-center">
                   <div className="flex items-center justify-center mb-1">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <StatusIcon variant="success" />
                   </div>
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-2xl font-bold text-success-foreground">
                     {dryRunResult.successful_updates}
                   </div>
-                  <div className="text-xs text-gray-600">Will Succeed</div>
+                  <div className="text-xs text-muted-foreground">Will Succeed</div>
                 </div>
                 <div className="border rounded-lg p-3 text-center">
                   <div className="flex items-center justify-center mb-1">
-                    <XCircle className="h-5 w-5 text-red-600" />
+                    <StatusIcon variant="error" />
                   </div>
-                  <div className="text-2xl font-bold text-red-600">
+                  <div className="text-2xl font-bold text-error-foreground">
                     {dryRunResult.failed_updates}
                   </div>
-                  <div className="text-xs text-gray-600">Will Fail</div>
+                  <div className="text-xs text-muted-foreground">Will Fail</div>
                 </div>
                 <div className="border rounded-lg p-3 text-center">
                   <div className="flex items-center justify-center mb-1">
-                    <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    <StatusIcon variant="warning" />
                   </div>
-                  <div className="text-2xl font-bold text-yellow-600">
+                  <div className="text-2xl font-bold text-warning-foreground">
                     {dryRunResult.skipped_updates}
                   </div>
-                  <div className="text-xs text-gray-600">Skipped</div>
+                  <div className="text-xs text-muted-foreground">Skipped</div>
                 </div>
               </div>
 
@@ -180,22 +181,23 @@ export function PreviewChangesDialog({
                       key={result.device_id}
                       className={`flex items-start gap-2 p-2 rounded ${
                         result.success
-                          ? 'bg-green-50 border border-green-200'
-                          : 'bg-red-50 border border-red-200'
+                          ? 'bg-success border border-success-border'
+                          : 'bg-error border border-error-border'
                       }`}
                     >
-                      {result.success ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-                      )}
+                      <StatusIcon
+                        variant={result.success ? 'success' : 'error'}
+                        className="h-4 w-4 mt-0.5 flex-shrink-0"
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm">
                           {result.device_name || result.device_id}
                         </div>
-                        <div className="text-xs text-gray-600">{result.message}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {result.message}
+                        </div>
                         {result.changes && (
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-muted-foreground/80 mt-1">
                             Changes: {Object.keys(result.changes).join(', ')}
                           </div>
                         )}

@@ -194,27 +194,27 @@ export default function StacksPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200">
+                  <tr className="border-b border-border">
                     <th className="text-left py-2 pr-4 w-10">
                       <Checkbox
                         checked={allSelected}
                         onCheckedChange={toggleAll}
                         aria-label="Select all devices"
                         className={
-                          someSelected ? 'data-[state=checked]:bg-blue-400' : ''
+                          someSelected ? 'data-[state=checked]:bg-primary/70' : ''
                         }
                       />
                     </th>
-                    <th className="text-left py-2 pr-4 font-medium text-gray-700">
+                    <th className="text-left py-2 pr-4 font-medium text-muted-foreground">
                       Device name
                     </th>
-                    <th className="text-left py-2 pr-4 font-medium text-gray-700">
+                    <th className="text-left py-2 pr-4 font-medium text-muted-foreground">
                       Serial numbers
                     </th>
-                    <th className="text-left py-2 pr-4 font-medium text-gray-700">
+                    <th className="text-left py-2 pr-4 font-medium text-muted-foreground">
                       Device type
                     </th>
-                    <th className="text-left py-2 font-medium text-gray-700">
+                    <th className="text-left py-2 font-medium text-muted-foreground">
                       Location
                     </th>
                   </tr>
@@ -230,8 +230,8 @@ export default function StacksPage() {
                     return (
                       <tr
                         key={device.id}
-                        className={`border-b border-gray-100 last:border-0 cursor-pointer hover:bg-blue-50/40 transition-colors ${
-                          isSelected ? 'bg-blue-50' : ''
+                        className={`border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/40 transition-colors ${
+                          isSelected ? 'bg-info' : ''
                         }`}
                         onClick={() => toggleDevice(device.id)}
                       >
@@ -242,7 +242,7 @@ export default function StacksPage() {
                             aria-label={`Select ${device.name}`}
                           />
                         </td>
-                        <td className="py-2.5 pr-4 font-medium text-gray-900">
+                        <td className="py-2.5 pr-4 font-medium text-foreground">
                           {device.name}
                         </td>
                         <td className="py-2.5 pr-4">
@@ -258,12 +258,12 @@ export default function StacksPage() {
                             ))}
                           </div>
                         </td>
-                        <td className="py-2.5 pr-4 text-gray-600">
+                        <td className="py-2.5 pr-4 text-muted-foreground">
                           {device.device_type
                             ? `${device.device_type.manufacturer?.name ?? ''} ${device.device_type.model}`.trim()
                             : '—'}
                         </td>
-                        <td className="py-2.5 text-gray-600">
+                        <td className="py-2.5 text-muted-foreground">
                           {device.location?.name ?? '—'}
                         </td>
                       </tr>

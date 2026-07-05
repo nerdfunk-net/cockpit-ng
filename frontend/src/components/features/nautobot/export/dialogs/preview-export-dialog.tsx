@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { StatusAlert } from '@/components/shared/status-alert'
 import { Eye, Copy, Check, Loader2 } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import type { DeviceInfo } from '@/components/shared/device-selector'
@@ -118,7 +119,7 @@ export function PreviewExportDialog({
       <DialogContent className="sm:max-w-[900px] max-h-[85vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5 text-green-600" />
+            <Eye className="h-5 w-5 text-success-foreground" />
             Export Preview
           </DialogTitle>
           <DialogDescription>
@@ -130,87 +131,87 @@ export function PreviewExportDialog({
         {/* Loading/Error States */}
         {isLoading && (
           <div className="p-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-green-600" />
-            <p className="text-sm text-gray-600">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-success-foreground" />
+            <p className="text-sm text-muted-foreground">
               Fetching full device data from Nautobot...
             </p>
           </div>
         )}
 
         {error && (
-          <div className="p-3 bg-red-50 border-l-4 border-red-500 rounded">
-            <p className="text-sm text-red-800">
-              <strong>Error:</strong> {error}
-            </p>
-          </div>
+          <StatusAlert variant="error">
+            <strong>Error:</strong> {error}
+          </StatusAlert>
         )}
 
         {!isLoading && !error && previewDevices.length > 0 && (
           <>
             {/* Success Notice */}
-            <div className="p-3 bg-green-50 border-l-4 border-green-500 rounded">
-              <p className="text-sm text-green-800">
-                <strong>✓ Real Data Preview:</strong> Showing complete device data
-                fetched directly from Nautobot using the same GraphQL query as the
-                export. All properties including{' '}
-                <code className="bg-green-100 px-1 py-0.5 rounded text-xs">serial</code>
-                ,{' '}
-                <code className="bg-green-100 px-1 py-0.5 rounded text-xs">
-                  asset_tag
-                </code>
-                ,{' '}
-                <code className="bg-green-100 px-1 py-0.5 rounded text-xs">
-                  _custom_field_data
-                </code>
-                , etc. are shown with actual values.
-              </p>
-            </div>
+            <StatusAlert variant="success">
+              <strong>✓ Real Data Preview:</strong> Showing complete device data
+              fetched directly from Nautobot using the same GraphQL query as the
+              export. All properties including{' '}
+              <code className="bg-success-border/30 px-1 py-0.5 rounded text-xs">
+                serial
+              </code>
+              ,{' '}
+              <code className="bg-success-border/30 px-1 py-0.5 rounded text-xs">
+                asset_tag
+              </code>
+              ,{' '}
+              <code className="bg-success-border/30 px-1 py-0.5 rounded text-xs">
+                _custom_field_data
+              </code>
+              , etc. are shown with actual values.
+            </StatusAlert>
           </>
         )}
 
         {!isLoading && !error && previewDevices.length > 0 && (
           <>
             {/* Preview Stats */}
-            <div className="flex items-center gap-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-4 p-3 bg-success border border-success-border rounded-lg">
               <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
-                  className="bg-white border-green-300 text-green-700"
+                  className="bg-card border-success-border text-success-foreground"
                 >
                   {devices.length} device{devices.length !== 1 ? 's' : ''}
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="bg-white border-green-300 text-green-700"
+                  className="bg-card border-success-border text-success-foreground"
                 >
                   {properties.length} propert{properties.length !== 1 ? 'ies' : 'y'}
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="bg-white border-green-300 text-green-700"
+                  className="bg-card border-success-border text-success-foreground"
                 >
                   {format.toUpperCase()}
                 </Badge>
               </div>
-              <div className="ml-auto text-xs text-green-700">
+              <div className="ml-auto text-xs text-success-foreground">
                 {lineCount} lines · {charCount.toLocaleString()} characters
               </div>
             </div>
 
             {/* Format-specific info */}
             {format === 'csv' && csvOptions && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm font-medium text-blue-800 mb-2">CSV Options:</p>
-                <div className="grid grid-cols-3 gap-4 text-xs text-blue-700">
+              <div className="p-3 bg-info border border-info-border rounded-lg">
+                <p className="text-sm font-medium text-info-foreground mb-2">
+                  CSV Options:
+                </p>
+                <div className="grid grid-cols-3 gap-4 text-xs text-info-foreground">
                   <div>
                     <span className="font-medium">Delimiter:</span>{' '}
-                    <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">
+                    <code className="bg-card px-1.5 py-0.5 rounded border border-info-border">
                       {csvOptions.delimiter || '(empty)'}
                     </code>
                   </div>
                   <div>
                     <span className="font-medium">Quote:</span>{' '}
-                    <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">
+                    <code className="bg-card px-1.5 py-0.5 rounded border border-info-border">
                       {csvOptions.quoteChar || '(empty)'}
                     </code>
                   </div>
@@ -227,7 +228,7 @@ export function PreviewExportDialog({
               </div>
             )}
 
-            {/* Preview Content */}
+            {/* Preview Content — terminal/console-style output, left hardcoded per repo precedent */}
             <div className="border rounded-lg overflow-hidden">
               <div className="bg-gray-800 text-gray-100 px-4 py-2 flex items-center justify-between">
                 <span className="text-sm font-medium">Preview (First 5 devices)</span>
@@ -258,13 +259,11 @@ export function PreviewExportDialog({
             </div>
 
             {devices.length > 5 && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm text-amber-800">
-                  <strong>Note:</strong> This preview shows only the first 5 devices.
-                  The full export will contain all <strong>{devices.length}</strong>{' '}
-                  selected devices.
-                </p>
-              </div>
+              <StatusAlert variant="warning">
+                <strong>Note:</strong> This preview shows only the first 5 devices. The
+                full export will contain all <strong>{devices.length}</strong> selected
+                devices.
+              </StatusAlert>
             )}
           </>
         )}

@@ -71,13 +71,13 @@ export function DeviceTable({
 
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+      <div className="panel-header py-2 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Search className="h-4 w-4" />
             <div>
               <h3 className="text-sm font-semibold">Devices</h3>
-              <p className="text-blue-100 text-xs">
+              <p className="text-panel-header-muted text-xs">
                 Select devices to offboard from Nautobot
               </p>
             </div>
@@ -87,7 +87,7 @@ export function DeviceTable({
               variant="ghost"
               size="sm"
               onClick={onClearFilters}
-              className="text-white hover:bg-white/20 text-xs h-6"
+              className="text-current hover:bg-card/20 text-xs h-6"
             >
               <RotateCcw className="h-3 w-3 mr-1" />
               Clear Filters
@@ -96,7 +96,7 @@ export function DeviceTable({
               variant="ghost"
               size="sm"
               onClick={onReloadDevices}
-              className="text-white hover:bg-white/20 text-xs h-6"
+              className="text-current hover:bg-card/20 text-xs h-6"
               disabled={isLoading}
             >
               <Search className="h-3 w-3 mr-1" />
@@ -130,7 +130,7 @@ export function DeviceTable({
               allSelected={allSelected}
               onSelectAll={onSelectAll}
             />
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-border">
               {devices.map((device, index) => (
                 <DeviceTableRow
                   key={device.id}

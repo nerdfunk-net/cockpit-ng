@@ -13,7 +13,9 @@ export function StatusAlert({ statusMessage }: StatusAlertProps) {
   return (
     <Alert
       className={
-        statusMessage.type === 'success' ? 'border-green-500' : 'border-blue-500'
+        statusMessage.type === 'success'
+          ? 'border-success-border'
+          : 'border-info-border'
       }
     >
       <AlertDescription>{statusMessage.message}</AlertDescription>

@@ -69,7 +69,7 @@ export function CustomFieldsModal({
                   {customFields.map((field, index) => (
                     <tr
                       key={field.id}
-                      className={index % 2 === 0 ? 'bg-white' : 'bg-muted/20'}
+                      className={index % 2 === 0 ? 'bg-card' : 'bg-muted/20'}
                     >
                       <td className="py-2 px-3 border-r">
                         <div>
@@ -123,13 +123,13 @@ export function CustomFieldsModal({
                             type="number"
                             value={customFieldValues[field.key] || ''}
                             onChange={e => onUpdateField(field.key, e.target.value)}
-                            className="h-9 bg-white border"
+                            className="h-9 bg-card border"
                           />
                         ) : (
                           <Input
                             value={customFieldValues[field.key] || ''}
                             onChange={e => onUpdateField(field.key, e.target.value)}
-                            className="h-9 bg-white border"
+                            className="h-9 bg-card border"
                             placeholder="Enter value..."
                           />
                         )}

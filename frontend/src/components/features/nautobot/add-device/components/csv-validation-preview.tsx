@@ -218,7 +218,7 @@ export function CSVValidationPreview({
         </span>
         {errorCount > 0 && <Badge variant="destructive">{errorCount} error(s)</Badge>}
         {warningCount > 0 && (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+          <Badge variant="secondary" className="bg-warning text-warning-foreground">
             {warningCount} warning(s)
           </Badge>
         )}
@@ -310,9 +310,9 @@ export function CSVValidationPreview({
                 className="flex items-start gap-2"
               >
                 {error.severity === 'error' ? (
-                  <XCircle className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
+                  <XCircle className="h-3 w-3 text-error-foreground mt-0.5 flex-shrink-0" />
                 ) : (
-                  <AlertCircle className="h-3 w-3 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <AlertCircle className="h-3 w-3 text-warning-foreground mt-0.5 flex-shrink-0" />
                 )}
                 <span>
                   <strong>{error.deviceName}</strong> - {error.field}: {error.message}
@@ -341,11 +341,15 @@ export function CSVValidationPreview({
               return (
                 <TableRow
                   key={device.name}
-                  className={hasConflict ? 'bg-red-50 border-l-4 border-l-red-500' : ''}
+                  className={
+                    hasConflict ? 'bg-error border-l-4 border-l-destructive' : ''
+                  }
                 >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      {hasConflict && <AlertCircle className="h-4 w-4 text-red-500" />}
+                      {hasConflict && (
+                        <AlertCircle className="h-4 w-4 text-destructive" />
+                      )}
                       {device.name}
                     </div>
                   </TableCell>
@@ -361,7 +365,7 @@ export function CSVValidationPreview({
                   </TableCell>
                   <TableCell>
                     {getDeviceTypeName(device.device_type) || (
-                      <span className="text-red-500">missing</span>
+                      <span className="text-destructive">missing</span>
                     )}
                   </TableCell>
                   <TableCell className="text-center">

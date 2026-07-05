@@ -13,6 +13,9 @@ import {
 import { Settings, RefreshCw } from 'lucide-react'
 import type { SyncProperties, DropdownOption } from '../types'
 
+const SELECT_TRIGGER_CLASSES =
+  'h-8 border-2 bg-card border-border hover:border-muted-foreground/50 focus:border-primary'
+
 interface SyncPropertiesPanelProps {
   syncProperties: SyncProperties
   onSyncPropertiesChange: (props: SyncProperties) => void
@@ -62,28 +65,30 @@ export function SyncPropertiesPanel({
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+      <div className="panel-header py-2 px-4">
         <div className="flex items-center space-x-2">
           <Settings className="h-4 w-4" />
           <div>
             <h3 className="text-sm font-semibold">Sync Properties</h3>
-            <p className="text-blue-100 text-xs">Configure synchronization settings</p>
+            <p className="text-panel-header-muted text-xs">
+              Configure synchronization settings
+            </p>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-4 bg-white space-y-3">
+      <div className="p-4 bg-card space-y-3">
         {/* Namespace */}
         <div className="space-y-1">
           <Label htmlFor="namespace" className="text-xs font-medium">
-            Namespace <span className="text-red-500">*</span>
+            Namespace <span className="text-destructive">*</span>
           </Label>
           <Select
             value={syncProperties.namespace}
             onValueChange={value => handlePropertyChange('namespace', value)}
           >
-            <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+            <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
               <SelectValue placeholder="Select namespace..." />
             </SelectTrigger>
             <SelectContent>
@@ -99,13 +104,13 @@ export function SyncPropertiesPanel({
         {/* Prefix Status */}
         <div className="space-y-1">
           <Label className="text-xs font-medium">
-            Prefix Status <span className="text-red-500">*</span>
+            Prefix Status <span className="text-destructive">*</span>
           </Label>
           <Select
             value={syncProperties.prefix_status}
             onValueChange={value => handlePropertyChange('prefix_status', value)}
           >
-            <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+            <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
               <SelectValue placeholder="Select prefix status..." />
             </SelectTrigger>
             <SelectContent>
@@ -121,13 +126,13 @@ export function SyncPropertiesPanel({
         {/* Interface Status */}
         <div className="space-y-1">
           <Label className="text-xs font-medium">
-            Interface Status <span className="text-red-500">*</span>
+            Interface Status <span className="text-destructive">*</span>
           </Label>
           <Select
             value={syncProperties.interface_status}
             onValueChange={value => handlePropertyChange('interface_status', value)}
           >
-            <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+            <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
               <SelectValue placeholder="Select interface status..." />
             </SelectTrigger>
             <SelectContent>
@@ -143,13 +148,13 @@ export function SyncPropertiesPanel({
         {/* IP Address Status */}
         <div className="space-y-1">
           <Label className="text-xs font-medium">
-            IP Address Status <span className="text-red-500">*</span>
+            IP Address Status <span className="text-destructive">*</span>
           </Label>
           <Select
             value={syncProperties.ip_address_status}
             onValueChange={value => handlePropertyChange('ip_address_status', value)}
           >
-            <SelectTrigger className="h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+            <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
               <SelectValue placeholder="Select IP address status..." />
             </SelectTrigger>
             <SelectContent>
@@ -191,11 +196,11 @@ export function SyncPropertiesPanel({
           <Button
             onClick={onSync}
             disabled={!isFormValid || isSubmitting}
-            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+            className="w-full"
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2" />
                 Syncing...
               </>
             ) : (

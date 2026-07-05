@@ -16,6 +16,10 @@ import type { VMFormValues } from '../hooks/use-vm-form'
 import type { VMDropdownsResponse } from '../types'
 import { DEFAULT_INTERFACE, DEFAULT_IP_ADDRESS } from '../constants'
 
+const SELECT_TRIGGER_CLASSES =
+  'border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm disabled:bg-muted disabled:border-border'
+const SMALL_INPUT_CLASSES = 'border-2 border-border bg-card text-xs h-8'
+
 interface InterfaceListProps {
   form: UseFormReturn<VMFormValues>
   dropdownData: VMDropdownsResponse
@@ -63,8 +67,8 @@ export function InterfaceList({
   }
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium">Network Interfaces</span>
         </div>
@@ -73,13 +77,13 @@ export function InterfaceList({
           onClick={handleAddInterface}
           disabled={isLoading}
           size="sm"
-          className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-7 text-xs"
+          className="bg-card/20 border-card/30 text-current hover:bg-card/30 h-7 text-xs"
         >
           <Plus className="h-3 w-3 mr-1" />
           Add Interface
         </Button>
       </div>
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+      <div className="p-6 panel-content">
         <div className="space-y-3">
           {fields.map((field, index) => {
             const interfaceErrors = errors.interfaces?.[index]
@@ -127,7 +131,7 @@ export function InterfaceList({
                       {...register(`interfaces.${index}.name`)}
                       placeholder="e.g., eth0, Ethernet0/0"
                       disabled={isLoading}
-                      className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                      className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
                     />
                     {interfaceErrors?.name && (
                       <p className="text-xs text-destructive">
@@ -148,7 +152,7 @@ export function InterfaceList({
                       }
                       disabled={isLoading}
                     >
-                      <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200">
+                      <SelectTrigger className={SELECT_TRIGGER_CLASSES}>
                         <SelectValue placeholder="Select status..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -211,7 +215,7 @@ export function InterfaceList({
                       return (
                         <div
                           key={`ip-${field.id}-${ipAddr?.id || ipAddr?.address || `temp-${ipIndex}`}`}
-                          className="p-3 border rounded bg-slate-50 space-y-2"
+                          className="p-3 border rounded bg-muted space-y-2"
                         >
                           <div className="flex items-center justify-between mb-2">
                             <Badge variant="secondary" className="text-xs">
@@ -249,7 +253,7 @@ export function InterfaceList({
                                 )}
                                 placeholder="192.168.1.10/24"
                                 disabled={isLoading}
-                                className="border-2 border-slate-300 bg-white text-xs h-8"
+                                className={SMALL_INPUT_CLASSES}
                               />
                               {ipErrors?.address && (
                                 <p className="text-xs text-destructive">
@@ -277,7 +281,7 @@ export function InterfaceList({
                                 }
                                 disabled={isLoading}
                               >
-                                <SelectTrigger className="border-2 border-slate-300 bg-white text-xs h-8">
+                                <SelectTrigger className={SMALL_INPUT_CLASSES}>
                                   <SelectValue placeholder="Select..." />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -312,7 +316,7 @@ export function InterfaceList({
                                 }
                                 disabled={isLoading}
                               >
-                                <SelectTrigger className="border-2 border-slate-300 bg-white text-xs h-8">
+                                <SelectTrigger className={SMALL_INPUT_CLASSES}>
                                   <SelectValue placeholder="Select..." />
                                 </SelectTrigger>
                                 <SelectContent>

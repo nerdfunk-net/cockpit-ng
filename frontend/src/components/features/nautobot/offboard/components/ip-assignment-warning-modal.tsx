@@ -32,7 +32,7 @@ export function IpAssignmentWarningModal({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+            <AlertTriangle className="h-5 w-5 text-warning-foreground" />
             Shared IP Address Detected
           </DialogTitle>
         </DialogHeader>

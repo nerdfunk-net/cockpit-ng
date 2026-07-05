@@ -5,8 +5,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { CheckCircle, AlertCircle, Minus } from 'lucide-react'
+import { Minus } from 'lucide-react'
+import { StatusIcon } from '@/components/shared/status-icon'
+import { StatusBadge } from '@/components/shared/status-badge'
 import type { OffboardSummary } from '@/types/features/nautobot/offboard'
 
 interface ResultsModalProps {
@@ -23,7 +24,7 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <Minus className="h-5 w-5 text-red-500" />
+            <Minus className="h-5 w-5 text-destructive" />
             <span>Offboarding Results</span>
           </DialogTitle>
         </DialogHeader>
@@ -31,23 +32,23 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
         <div className="space-y-6">
           {/* Summary Stats */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
+            <div className="bg-info p-4 rounded-lg">
+              <div className="text-2xl font-bold text-info-foreground">
                 {summary.totalDevices}
               </div>
-              <div className="text-sm text-blue-600">Total Devices</div>
+              <div className="text-sm text-info-foreground">Total Devices</div>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="bg-success p-4 rounded-lg">
+              <div className="text-2xl font-bold text-success-foreground">
                 {summary.successfulDevices}
               </div>
-              <div className="text-sm text-green-600">Successful</div>
+              <div className="text-sm text-success-foreground">Successful</div>
             </div>
-            <div className="bg-red-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">
+            <div className="bg-error p-4 rounded-lg">
+              <div className="text-2xl font-bold text-error-foreground">
                 {summary.failedDevices}
               </div>
-              <div className="text-sm text-red-600">Failed</div>
+              <div className="text-sm text-error-foreground">Failed</div>
             </div>
           </div>
 
@@ -60,30 +61,20 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
                 key={result.device_id}
                 className={`border rounded-lg p-4 ${
                   result.success
-                    ? 'border-green-200 bg-green-50'
-                    : 'border-red-200 bg-red-50'
+                    ? 'border-success-border bg-success'
+                    : 'border-error-border bg-error'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    {result.success ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-red-500" />
-                    )}
+                    <StatusIcon variant={result.success ? 'success' : 'error'} />
                     <span className="font-medium">
                       {result.device_name || result.device_id}
                     </span>
                   </div>
-                  <Badge
-                    className={`${
-                      result.success
-                        ? 'bg-green-500 hover:bg-green-600'
-                        : 'bg-red-500 hover:bg-red-600'
-                    } text-white`}
-                  >
+                  <StatusBadge variant={result.success ? 'success' : 'error'}>
                     {result.success ? 'Success' : 'Failed'}
-                  </Badge>
+                  </StatusBadge>
                 </div>
 
                 <div className="text-sm mb-3">
@@ -92,8 +83,10 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
 
                 {result.removed_items.length > 0 && (
                   <div className="mb-3">
-                    <strong className="text-sm text-green-700">Items Removed:</strong>
-                    <ul className="list-disc list-inside mt-1 text-sm text-green-600">
+                    <strong className="text-sm text-success-foreground">
+                      Items Removed:
+                    </strong>
+                    <ul className="list-disc list-inside mt-1 text-sm text-success-foreground">
                       {result.removed_items.map(item => (
                         <li key={item}>{item}</li>
                       ))}
@@ -103,8 +96,10 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
 
                 {result.skipped_items.length > 0 && (
                   <div className="mb-3">
-                    <strong className="text-sm text-yellow-700">Items Skipped:</strong>
-                    <ul className="list-disc list-inside mt-1 text-sm text-yellow-600">
+                    <strong className="text-sm text-warning-foreground">
+                      Items Skipped:
+                    </strong>
+                    <ul className="list-disc list-inside mt-1 text-sm text-warning-foreground">
                       {result.skipped_items.map(item => (
                         <li key={item}>{item}</li>
                       ))}
@@ -114,8 +109,8 @@ export function ResultsModal({ isOpen, summary, onClose }: ResultsModalProps) {
 
                 {result.errors.length > 0 && (
                   <div className="mb-3">
-                    <strong className="text-sm text-red-700">Errors:</strong>
-                    <ul className="list-disc list-inside mt-1 text-sm text-red-600">
+                    <strong className="text-sm text-error-foreground">Errors:</strong>
+                    <ul className="list-disc list-inside mt-1 text-sm text-error-foreground">
                       {result.errors.map(error => (
                         <li key={error}>{error}</li>
                       ))}

@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { History, RefreshCw } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { IconChip } from '@/components/shared/icon-chip'
 import { JobResultDialog } from './dialogs/job-result-dialog'
 import { JobsFilter } from './components/jobs-filter'
 import { JobsTable } from './components/jobs-table'
@@ -171,8 +172,8 @@ export function JobsViewPage() {
       <div className="p-6">
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
-            <RefreshCw className="h-8 w-8 text-blue-500 animate-spin mx-auto mb-3" />
-            <p className="text-gray-600">Loading job history...</p>
+            <RefreshCw className="h-8 w-8 text-primary animate-spin mx-auto mb-3" />
+            <p className="text-muted-foreground">Loading job history...</p>
           </div>
         </div>
       </div>
@@ -185,11 +186,11 @@ export function JobsViewPage() {
       <TooltipProvider>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-purple-100 p-2 rounded-lg">
-              <History className="h-6 w-6 text-purple-600" />
-            </div>
+            <IconChip variant="info">
+              <History className="h-6 w-6" />
+            </IconChip>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Job History</h1>
+              <h1 className="text-3xl font-bold text-foreground">Job History</h1>
               <p className="text-muted-foreground mt-2">
                 View running and completed background jobs
               </p>

@@ -49,11 +49,11 @@ function ValidationRow({
     <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
       <div className="flex items-center gap-2">
         {isValid ? (
-          <CheckCircle className="h-4 w-4 text-green-600" />
+          <CheckCircle className="h-4 w-4 text-success-foreground" />
         ) : useAlertIcon ? (
-          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertCircle className="h-4 w-4 text-destructive" />
         ) : (
-          <XCircle className="h-4 w-4 text-red-600" />
+          <XCircle className="h-4 w-4 text-destructive" />
         )}
         <span className="text-sm font-medium">{label}</span>
       </div>
@@ -76,12 +76,12 @@ export function ValidationSummaryModal({
           <DialogTitle className="flex items-center gap-2">
             {results.isValid ? (
               <>
-                <CheckCircle className="h-5 w-5 text-green-600" />
+                <CheckCircle className="h-5 w-5 text-success-foreground" />
                 <span>Validation Passed</span>
               </>
             ) : (
               <>
-                <XCircle className="h-5 w-5 text-red-600" />
+                <XCircle className="h-5 w-5 text-destructive" />
                 <span>Validation Failed</span>
               </>
             )}

@@ -26,6 +26,9 @@ import type {
 } from '@/types/features/nautobot/offboard'
 import type { RefObject } from 'react'
 
+const INPUT_CLASSES =
+  'h-8 text-xs border-2 bg-card border-border hover:border-muted-foreground/50 focus:border-primary'
+
 interface DeviceFiltersProps {
   filters: TableFilters
   roleFilters: Record<string, boolean>
@@ -60,7 +63,7 @@ export function DeviceFilters({
   onLocationDropdownToggle,
 }: DeviceFiltersProps) {
   return (
-    <div className="bg-gray-50 border-b">
+    <div className="bg-muted border-b">
       <div className="overflow-x-auto">
         <table className="w-full">
           <tbody>
@@ -71,14 +74,14 @@ export function DeviceFilters({
               {/* Device Name Filter */}
               <td className="pl-4 pr-2 py-3 w-48">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     Device Name
                   </Label>
                   <Input
                     placeholder="Filter by name..."
                     value={filters.deviceName}
                     onChange={e => onFilterChange('deviceName', e.target.value)}
-                    className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                    className={INPUT_CLASSES}
                   />
                 </div>
               </td>
@@ -86,14 +89,14 @@ export function DeviceFilters({
               {/* IP Address Filter */}
               <td className="px-4 py-3 w-32">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     IP Address
                   </Label>
                   <Input
                     placeholder="Filter by IP..."
                     value={filters.ipAddress}
                     onChange={e => onFilterChange('ipAddress', e.target.value)}
-                    className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                    className={INPUT_CLASSES}
                   />
                 </div>
               </td>
@@ -101,7 +104,7 @@ export function DeviceFilters({
               {/* Role Filter - Multi-select with checkboxes */}
               <td className="pl-8 pr-4 py-3">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">Role</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Role</Label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -125,7 +128,7 @@ export function DeviceFilters({
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        className="cursor-pointer text-red-600 hover:bg-red-50"
+                        className="cursor-pointer text-destructive hover:bg-error"
                         onSelect={() => {
                           const resetRoleFilters: Record<string, boolean> = {}
                           dropdownOptions.roles.forEach(role => {
@@ -159,22 +162,22 @@ export function DeviceFilters({
               {/* Location Filter - hierarchical searchable dropdown */}
               <td className="pl-4 pr-2 py-3 w-40">
                 <div className="space-y-1 relative" ref={locationContainerRef}>
-                  <Label className="text-xs font-medium text-gray-600">Location</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Location</Label>
                   <div>
                     <Input
                       placeholder="Filter by location..."
                       value={locationSearch}
                       onChange={e => onLocationSearchChange(e.target.value)}
                       onFocus={() => onLocationDropdownToggle(true)}
-                      className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                      className={INPUT_CLASSES}
                     />
                     {showLocationDropdown && (
-                      <div className="absolute z-50 mt-1 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      <div className="absolute z-50 mt-1 left-0 right-0 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
                         {locationFiltered.length > 0 ? (
                           locationFiltered.map(loc => (
                             <div
                               key={loc.id}
-                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                              className="px-3 py-2 hover:bg-muted cursor-pointer text-sm border-b border-border/50 last:border-b-0"
                               onClick={() => {
                                 onLocationSelect(loc)
                                 onFilterChange('location', loc.name)
@@ -184,7 +187,7 @@ export function DeviceFilters({
                             </div>
                           ))
                         ) : (
-                          <div className="px-3 py-2 text-sm text-gray-500 italic">
+                          <div className="px-3 py-2 text-sm text-muted-foreground italic">
                             No locations found
                           </div>
                         )}
@@ -197,12 +200,12 @@ export function DeviceFilters({
               {/* Status Filter */}
               <td className="px-4 py-3">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-600">Status</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Status</Label>
                   <Select
                     value={filters.status}
                     onValueChange={value => onFilterChange('status', value)}
                   >
-                    <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                    <SelectTrigger className={INPUT_CLASSES}>
                       <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>

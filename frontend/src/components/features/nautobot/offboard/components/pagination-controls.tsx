@@ -22,9 +22,9 @@ export function PaginationControls({
   onPageSizeChange,
 }: PaginationControlsProps) {
   return (
-    <div className="bg-gray-50 px-4 py-3 border-t flex items-center justify-between">
+    <div className="bg-muted px-4 py-3 border-t flex items-center justify-between">
       <div className="flex items-center space-x-2">
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-muted-foreground">
           Showing {pagination.currentPage * pagination.pageSize + 1} to{' '}
           {Math.min(
             (pagination.currentPage + 1) * pagination.pageSize,
@@ -47,7 +47,7 @@ export function PaginationControls({
             ))}
           </SelectContent>
         </Select>
-        <span className="text-sm text-gray-600">per page</span>
+        <span className="text-sm text-muted-foreground">per page</span>
       </div>
 
       <div className="flex items-center space-x-1">

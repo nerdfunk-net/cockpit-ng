@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { RefreshCw } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 
 // Feature imports
 import type { SyncProperties, Device, DropdownOption, LocationItem } from './types'
@@ -131,7 +132,7 @@ export function SyncDevicesPage() {
   if (devicesLoading) {
     return (
       <div className="p-6 flex items-center justify-center space-x-2">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
         <span>Loading sync devices...</span>
       </div>
     )
@@ -141,11 +142,11 @@ export function SyncDevicesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <div className="bg-blue-100 p-2 rounded-lg">
-          <RefreshCw className="h-6 w-6 text-blue-600" />
-        </div>
+        <IconChip variant="primary">
+          <RefreshCw className="h-6 w-6" />
+        </IconChip>
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Sync Devices</h1>
+          <h1 className="text-3xl font-bold text-foreground">Sync Devices</h1>
           <p className="text-muted-foreground mt-2">
             Synchronize device data with Nautobot
           </p>

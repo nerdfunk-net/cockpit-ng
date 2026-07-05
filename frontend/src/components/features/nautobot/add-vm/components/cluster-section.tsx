@@ -35,11 +35,11 @@ export function ClusterSection({ form, dropdownData, isLoading }: ClusterSection
   }, [dropdownData.clusters, selectedClusterGroup])
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center rounded-t-lg">
         <span className="text-sm font-medium">Cluster</span>
       </div>
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+      <div className="p-6 panel-content">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Cluster Group */}
           <div className="space-y-1">
@@ -57,7 +57,7 @@ export function ClusterSection({ form, dropdownData, isLoading }: ClusterSection
             >
               <SelectTrigger
                 id="clusterGroup"
-                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+                className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm disabled:bg-muted disabled:border-border"
               >
                 <SelectValue placeholder="All groups..." />
               </SelectTrigger>
@@ -84,7 +84,7 @@ export function ClusterSection({ form, dropdownData, isLoading }: ClusterSection
             >
               <SelectTrigger
                 id="cluster"
-                className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm disabled:bg-slate-100 disabled:border-slate-200"
+                className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm disabled:bg-muted disabled:border-border"
               >
                 <SelectValue placeholder="Select cluster..." />
               </SelectTrigger>

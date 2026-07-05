@@ -32,14 +32,14 @@ export function ImportPositionsStepMapping({
   return (
     <div className="space-y-4">
       {/* Device Name Column */}
-      <div className="border rounded-md p-4 space-y-3 bg-amber-50 border-amber-200">
+      <div className="border rounded-md p-4 space-y-3 bg-warning border-warning-border">
         <div className="flex items-center gap-2">
-          <Key className="h-4 w-4 text-amber-600 flex-shrink-0" />
-          <Label className="text-sm font-medium text-amber-900">
+          <Key className="h-4 w-4 text-warning-foreground flex-shrink-0" />
+          <Label className="text-sm font-medium text-warning-foreground">
             Device Name Column
           </Label>
         </div>
-        <p className="text-xs text-amber-700">
+        <p className="text-xs text-warning-foreground">
           Select which CSV column contains the device name used to look up the device in
           Nautobot.
         </p>
@@ -49,13 +49,13 @@ export function ImportPositionsStepMapping({
             onDeviceNameColumnChange(v === NOT_USED_SENTINEL ? null : v)
           }
         >
-          <SelectTrigger className="w-64 bg-white border-amber-300">
+          <SelectTrigger className="w-64 bg-card border-warning-border">
             <SelectValue placeholder="Select a column…" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem
               value={NOT_USED_SENTINEL}
-              className="text-gray-400 italic text-xs"
+              className="text-muted-foreground italic text-xs"
             >
               Not selected
             </SelectItem>

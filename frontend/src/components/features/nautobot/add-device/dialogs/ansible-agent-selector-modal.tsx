@@ -51,7 +51,7 @@ export function AnsibleAgentSelectorModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-blue-600" />
+            <Bot className="h-5 w-5 text-primary" />
             Select Ansible Agent
           </DialogTitle>
           <DialogDescription>
@@ -69,7 +69,7 @@ export function AnsibleAgentSelectorModal({
                 className={cn(
                   'w-full text-left rounded-md border px-4 py-3 transition-colors',
                   selectedAgentId === agent.agent_id
-                    ? 'border-blue-500 bg-blue-50'
+                    ? 'border-primary bg-info'
                     : 'border-border hover:bg-muted/50'
                 )}
               >

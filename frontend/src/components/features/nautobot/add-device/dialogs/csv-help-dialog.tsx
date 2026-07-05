@@ -148,10 +148,10 @@ test-1;virtual;12345;testnet;tag-1;eth1;192.168.100.2/24;1000BASE-T (1GE);testde
             </p>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="bg-info border border-info-border rounded-lg p-3">
             <div className="flex gap-2">
-              <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-blue-800">
+              <AlertCircle className="h-4 w-4 text-info-foreground flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-info-foreground">
                 <p className="font-semibold mb-1">Tips:</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>

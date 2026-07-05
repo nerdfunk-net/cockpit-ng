@@ -11,11 +11,11 @@ export function ResourcesSection({ form, isLoading }: ResourcesSectionProps) {
   const { register } = form
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center rounded-t-lg">
         <span className="text-sm font-medium">Resources</span>
       </div>
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+      <div className="p-6 panel-content">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* vCPUs */}
           <div className="space-y-1">
@@ -29,7 +29,7 @@ export function ResourcesSection({ form, isLoading }: ResourcesSectionProps) {
               placeholder="e.g. 4"
               {...register('vcpus')}
               disabled={isLoading}
-              className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+              className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
             />
           </div>
 
@@ -45,7 +45,7 @@ export function ResourcesSection({ form, isLoading }: ResourcesSectionProps) {
               placeholder="e.g. 4096"
               {...register('memory')}
               disabled={isLoading}
-              className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+              className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
             />
           </div>
 
@@ -61,7 +61,7 @@ export function ResourcesSection({ form, isLoading }: ResourcesSectionProps) {
               placeholder="e.g. 100"
               {...register('disk')}
               disabled={isLoading}
-              className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+              className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
             />
           </div>
         </div>
